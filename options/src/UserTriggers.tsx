@@ -19,7 +19,6 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
         <div className="d-flex align-items-center gap-2 mb-1">
             <Form.Select
                 size="sm"
-                className="w-auto"
                 value={macro.type}
                 onChange={e => onChange({ ...macro, type: e.target.value as any })}
             >
@@ -31,7 +30,6 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
             <Form.Control
                 type="color"
                     size="sm"
-                    className="w-auto"
                     style={{ width: '2.2rem' }}
                     value={macro.color || '#ffffff'}
                     onChange={e => onChange({ ...macro, color: e.target.value })}
@@ -139,7 +137,7 @@ function UserTriggers() {
                         onRemove={() => removeMacro(i)}
                     />
                 ))}
-                <Button size="sm" onClick={addMacro}>Add macro</Button>
+                <Button size="sm" onClick={addMacro}>Add action</Button>
                 <div className="d-flex gap-2">
                     <Button size="sm" onClick={save}>{editIndex === null ? 'Add trigger' : 'Save trigger'}</Button>
                     {editIndex !== null && (
