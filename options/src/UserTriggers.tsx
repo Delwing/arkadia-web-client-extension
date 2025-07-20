@@ -29,10 +29,11 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 <option value="replace">Replace</option>
             </Form.Select>
             {macro.type === 'color' && (
-                <Form.Control
-                    type="color"
+            <Form.Control
+                type="color"
                     size="sm"
                     className="w-auto"
+                    style={{ width: '2.2rem' }}
                     value={macro.color || '#ffffff'}
                     onChange={e => onChange({ ...macro, color: e.target.value })}
                 />
@@ -104,6 +105,7 @@ function TriggerPopup({ show, onClose, onSave, initial }: { show: boolean; onClo
                     <Form.Control
                         type="text"
                         size="sm"
+                        autoFocus
                         value={pattern}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
                     />
