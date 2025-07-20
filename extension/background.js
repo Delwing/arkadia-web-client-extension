@@ -9,6 +9,7 @@ const defaultSettings = {
     mapWidth: null,
     mapHeight: null,
     xtermPalette: 'arkadia',
+    shortenExits: false,
     binds: {
         main: { key: 'BracketRight' },
         lamp: { key: 'Digit4', ctrl: true },
@@ -101,6 +102,7 @@ function loadIframe(tabId) {
                 mapWidth: null,
                 mapHeight: null,
                 xtermPalette: 'arkadia',
+                shortenExits: false,
                 binds: {
                     main: { key: 'BracketRight' },
                     lamp: { key: 'Digit4', ctrl: true },

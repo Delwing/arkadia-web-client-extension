@@ -13,6 +13,7 @@ const defaultSettings = {
     guilds: [],
     packageHelper: true,
     inlineCompassRose: true,
+    shortenExits: false,
     emojiLabels: false,
     prettyContainers: true,
     containerColumns: 2,
