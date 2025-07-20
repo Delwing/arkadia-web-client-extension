@@ -1,5 +1,8 @@
 import Client from "../Client";
 import { SKIP_LINE } from "../ControlConstants";
+import { colorString, findClosestColor } from "../Colors";
+
+const ORANGE = findClosestColor('#ffa500');
 
 const polishToEnglish: Record<string, string> = {
     polnoc: "north",
@@ -30,7 +33,7 @@ const longToShort: Record<string, string> = {
 
 export function toShort(dir: string): string {
     const long = polishToEnglish[dir] ?? dir.toLowerCase();
-    return longToShort[long] ?? "";
+    return longToShort[long] ?? dir;
 }
 
 export function parseExitString(str: string): string[] {
@@ -82,10 +85,10 @@ export default function initShortExits(client: Client) {
 
     const callback = (_r: string, _l: string, m: RegExpMatchArray) => {
         if (!enabled) return undefined;
-        const dirs = parseExitString(m[1]).map(toShort).filter(Boolean);
+        const dirs = parseExitString(m[1]).map(toShort);
         if (dirs.length === 0) return undefined;
         const str = "\n-----:" + dirs.map(d => " " + d.toUpperCase()).join("") + "\n";
-        client.println(str);
+        client.println(colorString(str, ORANGE));
         return SKIP_LINE;
     };
 
