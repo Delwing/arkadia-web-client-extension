@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Form, Modal } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
@@ -55,6 +55,8 @@ function UserTriggers() {
     const [pattern, setPattern] = useState('');
     const [macros, setMacros] = useState<UserMacro[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [filter, setFilter] = useState('');
 
     useEffect(() => {
         storage.getItem('triggers').then(res => {
@@ -77,6 +79,7 @@ function UserTriggers() {
 
     function openNew() {
         resetForm();
+        setShowModal(true);
     }
 
     function edit(idx: number) {
@@ -84,6 +87,7 @@ function UserTriggers() {
         setPattern(t.pattern);
         setMacros(t.macros ? [...t.macros] : []);
         setEditIndex(idx);
+        setShowModal(true);
     }
 
     function remove(idx: number) {
@@ -118,35 +122,25 @@ function UserTriggers() {
         resetForm();
     }
 
+    const filteredTriggers = triggers.filter(t =>
+        t.pattern.toLowerCase().includes(filter.toLowerCase())
+    );
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <Form.Group className="d-flex flex-column gap-2">
+            <div className="d-flex gap-2 align-items-center">
                 <Form.Control
                     type="text"
                     size="sm"
-                    placeholder="Pattern"
-                    value={pattern}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                    style={{ maxWidth: '10rem' }}
+                    placeholder="Filter"
+                    value={filter}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
+                    style={{ width: '100%', maxWidth: '12rem' }}
                 />
-                {macros.map((m, i) => (
-                    <MacroEditor
-                        key={i}
-                        macro={m}
-                        onChange={macro => updateMacro(i, macro)}
-                        onRemove={() => removeMacro(i)}
-                    />
-                ))}
-                <Button size="sm" onClick={addMacro}>Add action</Button>
-                <div className="d-flex gap-2">
-                    <Button size="sm" onClick={save}>{editIndex === null ? 'Add trigger' : 'Save trigger'}</Button>
-                    {editIndex !== null && (
-                        <Button size="sm" variant="secondary" onClick={resetForm}>Cancel</Button>
-                    )}
-                </div>
-            </Form.Group>
+                <Button size="sm" onClick={openNew}>Add trigger</Button>
+            </div>
             <ul className="list-unstyled ms-3">
-                {triggers.map((t, i) => (
+                {filteredTriggers.map((t, i) => (
                     <li key={i} className="d-flex align-items-center gap-2">
                         <span>{t.pattern}</span>
                         <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
@@ -154,6 +148,37 @@ function UserTriggers() {
                     </li>
                 ))}
             </ul>
+
+            <Modal show={showModal} onHide={() => setShowModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{editIndex === null ? 'Add trigger' : 'Edit trigger'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="d-flex flex-column gap-2">
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            placeholder="Pattern"
+                            value={pattern}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                            style={{ maxWidth: '10rem' }}
+                        />
+                        {macros.map((m, i) => (
+                            <MacroEditor
+                                key={i}
+                                macro={m}
+                                onChange={macro => updateMacro(i, macro)}
+                                onRemove={() => removeMacro(i)}
+                            />
+                        ))}
+                        <Button size="sm" onClick={addMacro}>Add action</Button>
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowModal(false); }}>Cancel</Button>
+                    <Button size="sm" onClick={() => { save(); setShowModal(false); }}>{editIndex === null ? 'Add' : 'Save'}</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }
