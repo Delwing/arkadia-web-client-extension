@@ -24,6 +24,7 @@ import Scripts from "@options/src/Scripts.tsx"
 import Aliases from "@options/src/Aliases.tsx"
 import Recordings from "@options/src/Recordings.tsx"
 import Guilds from "@options/src/Guilds.tsx"
+import UserTriggers from "@options/src/UserTriggers.tsx"
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
@@ -387,6 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const guildsButton = document.getElementById('guilds-button') as HTMLButtonElement | null;
     const scriptsButton = document.getElementById('scripts-button') as HTMLButtonElement | null;
     const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
+    const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     const playbackControls = document.getElementById('playback-controls') as HTMLElement | null;
@@ -412,6 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const scriptsModal = scriptsModalElement ? new Modal(scriptsModalElement) : null;
     const aliasesModalElement = document.getElementById('aliases-modal');
     const aliasesModal = aliasesModalElement ? new Modal(aliasesModalElement) : null;
+    const triggersModalElement = document.getElementById('triggers-modal');
+    const triggersModal = triggersModalElement ? new Modal(triggersModalElement) : null;
     const recordingsModalElement = document.getElementById('recordings-modal');
     const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
@@ -441,6 +445,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (aliasesModal) {
             aliasesModal.hide();
+        }
+        if (triggersModal) {
+            triggersModal.hide();
         }
         if (recordingsModal) {
             recordingsModal.hide();
@@ -481,6 +488,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (aliasesButton && aliasesModal) {
         aliasesButton.addEventListener('click', () => {
             aliasesModal.show();
+        });
+    }
+
+    if (triggersButton && triggersModal) {
+        triggersButton.addEventListener('click', () => {
+            triggersModal.show();
         });
     }
 
@@ -776,6 +789,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const aliasesRoot = document.getElementById('aliases-options');
     if (aliasesRoot) {
         createRoot(aliasesRoot).render(createElement(Aliases));
+    }
+
+    const triggersRoot = document.getElementById('triggers-options');
+    if (triggersRoot) {
+        createRoot(triggersRoot).render(createElement(UserTriggers));
     }
 
     const recordingsRoot = document.getElementById('recordings-options');
