@@ -1,6 +1,10 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 
+function toUpperSafe(text: string) {
+    return text.split(/(\x1B\[[0-9;]*m)/g).map((seg, i) => i % 2 === 0 ? seg.toUpperCase() : seg).join('');
+}
+
 export interface UserMacro {
     type: 'uppercase' | 'color' | 'replace';
     color?: string;
@@ -34,7 +38,7 @@ export default function initUserTriggers(client: Client) {
                 item.macros?.forEach(m => {
                     switch (m.type) {
                         case 'uppercase':
-                            line = line.toUpperCase();
+                            line = toUpperSafe(line);
                             break;
                         case 'color':
                             if (m.color) {
