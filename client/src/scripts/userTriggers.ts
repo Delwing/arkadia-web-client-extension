@@ -8,7 +8,6 @@ function toUpperSafe(text: string) {
 export interface UserMacro {
     type: 'uppercase' | 'color' | 'replace';
     color?: string;
-    from?: string;
     to?: string;
 }
 
@@ -33,32 +32,29 @@ export default function initUserTriggers(client: Client) {
                 console.error('Invalid trigger pattern', item.pattern, e);
                 return;
             }
-            const trigger = client.Triggers.registerTrigger(regexp, (raw) => {
-                let line = raw;
-                item.macros?.forEach(m => {
-                    switch (m.type) {
-                        case 'uppercase':
-                            line = toUpperSafe(line);
-                            break;
-                        case 'color':
-                            if (m.color) {
-                                const code = findClosestColor(m.color);
-                                line = colorString(line, code);
-                            }
-                            break;
-                        case 'replace':
-                            if (m.from) {
-                                try {
-                                    const r = new RegExp(m.from, 'g');
-                                    line = line.replace(r, m.to || '');
-                                } catch {
-                                    line = line.split(m.from).join(m.to || '');
+            const trigger = client.Triggers.registerTrigger(regexp, (raw, _, matches) => {
+                if (!matches) return raw;
+                const r = new RegExp(regexp.source, regexp.flags.includes('g') ? regexp.flags : regexp.flags + 'g');
+                return raw.replace(r, (match) => {
+                    let result = match;
+                    item.macros?.forEach(m => {
+                        switch (m.type) {
+                            case 'uppercase':
+                                result = toUpperSafe(result);
+                                break;
+                            case 'color':
+                                if (m.color) {
+                                    const code = findClosestColor(m.color);
+                                    result = colorString(result, code);
                                 }
-                            }
-                            break;
-                    }
+                                break;
+                            case 'replace':
+                                result = m.to || '';
+                                break;
+                        }
+                    });
+                    return result;
                 });
-                return line;
             }, STORAGE_KEY);
             registered.push(trigger);
         });

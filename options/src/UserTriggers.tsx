@@ -6,7 +6,6 @@ import storage from "./storage";
 export interface UserMacro {
     type: 'uppercase' | 'color' | 'replace';
     color?: string;
-    from?: string;
     to?: string;
 }
 
@@ -39,24 +38,14 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 />
             )}
             {macro.type === 'replace' && (
-                <>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        placeholder="From"
-                        value={macro.from || ''}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, from: e.target.value })}
-                        style={{ width: '100%', maxWidth: '6rem' }}
-                    />
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        placeholder="To"
-                        value={macro.to || ''}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
-                        style={{ width: '100%', maxWidth: '6rem' }}
-                    />
-                </>
+                <Form.Control
+                    type="text"
+                    size="sm"
+                    placeholder="Replacement"
+                    value={macro.to || ''}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
+                    style={{ width: '100%', maxWidth: '8rem' }}
+                />
             )}
             <Button size="sm" variant="secondary" onClick={onRemove}><TiDelete /></Button>
         </div>
