@@ -29,8 +29,11 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/cechy** - uruchamia licznik poziomowania i wyświetla postępy.
 - **/z _skrot_** - wykonuje polecenie `zabij` na obiekcie o podanym skrócie.
 - **/zas _skrot_** - zasłania obiekt o podanym skrócie; jeśli nie jest w drużynie używa komendy `zaslon przed`.
+- **/za _skrot_** - to samo co `/zas _skrot_`.
 - **/z** - atakuje cel oznaczony jako cel ataku.
 - **/zas** - zasłania cel oznaczony jako cel obrony lub `zaslon przed`, gdy cel nie jest w drużynie.
+- **/za** - to samo co `/zas`.
+- **/puszczaj** - przełącza automatyczne zwalnianie zasłony przy użyciu `/za` lub `/zas`.
 - **/zap** - wykonuje polecenie `zapal lampe`.
 - **/zap _numer_** - zaprasza do drużyny obiekt o podanym numerze.
 - **/zg** - wykonuje polecenie `zgas lampe`.
