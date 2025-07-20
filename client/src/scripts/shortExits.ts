@@ -1,5 +1,4 @@
 import Client from "../Client";
-import { SKIP_LINE } from "../ControlConstants";
 import { colorString, findClosestColor } from "../Colors";
 
 const ORANGE = findClosestColor('#ffa500');
@@ -87,9 +86,8 @@ export default function initShortExits(client: Client) {
         if (!enabled) return undefined;
         const dirs = parseExitString(m[1]).map(toShort);
         if (dirs.length === 0) return undefined;
-        const str = "\n-----:" + dirs.map(d => " " + d.toUpperCase()).join("") + "\n";
-        client.println(colorString(str, ORANGE));
-        return SKIP_LINE;
+        const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
+        return colorString(str, ORANGE);
     };
 
     client.Triggers.registerTrigger(EXIT_PATTERNS, callback, 'shortExits');
