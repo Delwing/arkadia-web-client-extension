@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
@@ -63,74 +63,10 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
     );
 }
 
-function TriggerPopup({ show, onClose, onSave, initial }: { show: boolean; onClose: () => void; onSave: (t: UserTrigger) => void; initial?: UserTrigger }) {
-    const [pattern, setPattern] = useState('');
-    const [macros, setMacros] = useState<UserMacro[]>([]);
-
-    useEffect(() => {
-        if (initial) {
-            setPattern(initial.pattern);
-            setMacros(initial.macros ? [...initial.macros] : []);
-        } else {
-            setPattern('');
-            setMacros([]);
-        }
-    }, [initial]);
-
-    function addMacro() {
-        setMacros(prev => [...prev, { type: 'uppercase' }]);
-    }
-
-    function updateMacro(idx: number, macro: UserMacro) {
-        setMacros(prev => prev.map((m, i) => i === idx ? macro : m));
-    }
-
-    function removeMacro(idx: number) {
-        setMacros(prev => prev.filter((_, i) => i !== idx));
-    }
-
-    function save() {
-        if (!pattern.trim()) return;
-        onSave({ pattern: pattern.trim(), macros });
-    }
-
-    return (
-        <Modal show={show} onHide={onClose} centered>
-            <Modal.Header closeButton>
-                <Modal.Title>Trigger</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form.Group className="mb-2">
-                    <Form.Label>Pattern</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        autoFocus
-                        value={pattern}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                    />
-                </Form.Group>
-                {macros.map((m, i) => (
-                    <MacroEditor
-                        key={i}
-                        macro={m}
-                        onChange={macro => updateMacro(i, macro)}
-                        onRemove={() => removeMacro(i)}
-                    />
-                ))}
-                <Button size="sm" onClick={addMacro}>Add macro</Button>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button size="sm" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button size="sm" onClick={save}>Save</Button>
-            </Modal.Footer>
-        </Modal>
-    );
-}
-
 function UserTriggers() {
     const [triggers, setTriggers] = useState<UserTrigger[]>([]);
-    const [showPopup, setShowPopup] = useState(false);
+    const [pattern, setPattern] = useState('');
+    const [macros, setMacros] = useState<UserMacro[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null);
 
     useEffect(() => {
@@ -146,14 +82,21 @@ function UserTriggers() {
         storage.setItem('triggers', list);
     }
 
-    function openNew() {
+    function resetForm() {
+        setPattern('');
+        setMacros([]);
         setEditIndex(null);
-        setShowPopup(true);
+    }
+
+    function openNew() {
+        resetForm();
     }
 
     function edit(idx: number) {
+        const t = triggers[idx];
+        setPattern(t.pattern);
+        setMacros(t.macros ? [...t.macros] : []);
         setEditIndex(idx);
-        setShowPopup(true);
     }
 
     function remove(idx: number) {
@@ -162,22 +105,59 @@ function UserTriggers() {
         saveList(updated);
     }
 
-    function saveTrigger(t: UserTrigger) {
-        const list = [...triggers];
-        if (editIndex === null) {
-            list.push(t);
-        } else {
-            list[editIndex] = t;
-        }
-        saveList(list);
-        setShowPopup(false);
+    function addMacro() {
+        setMacros(prev => [...prev, { type: 'uppercase' }]);
     }
 
-    const current = editIndex !== null ? triggers[editIndex] : undefined;
+    function updateMacro(idx: number, macro: UserMacro) {
+        setMacros(prev => prev.map((m, i) => i === idx ? macro : m));
+    }
+
+    function removeMacro(idx: number) {
+        setMacros(prev => prev.filter((_, i) => i !== idx));
+    }
+
+    function save() {
+        const p = pattern.trim();
+        if (!p) return;
+        const list = [...triggers];
+        const entry = { pattern: p, macros };
+        if (editIndex === null) {
+            list.push(entry);
+        } else {
+            list[editIndex] = entry;
+        }
+        saveList(list);
+        resetForm();
+    }
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <Button size="sm" onClick={openNew}>Add trigger</Button>
+            <Form.Group className="d-flex flex-column gap-2">
+                <Form.Control
+                    type="text"
+                    size="sm"
+                    placeholder="Pattern"
+                    value={pattern}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                    style={{ maxWidth: '10rem' }}
+                />
+                {macros.map((m, i) => (
+                    <MacroEditor
+                        key={i}
+                        macro={m}
+                        onChange={macro => updateMacro(i, macro)}
+                        onRemove={() => removeMacro(i)}
+                    />
+                ))}
+                <Button size="sm" onClick={addMacro}>Add macro</Button>
+                <div className="d-flex gap-2">
+                    <Button size="sm" onClick={save}>{editIndex === null ? 'Add trigger' : 'Save trigger'}</Button>
+                    {editIndex !== null && (
+                        <Button size="sm" variant="secondary" onClick={resetForm}>Cancel</Button>
+                    )}
+                </div>
+            </Form.Group>
             <ul className="list-unstyled ms-3">
                 {triggers.map((t, i) => (
                     <li key={i} className="d-flex align-items-center gap-2">
@@ -187,12 +167,6 @@ function UserTriggers() {
                     </li>
                 ))}
             </ul>
-            <TriggerPopup
-                show={showPopup}
-                onClose={() => setShowPopup(false)}
-                onSave={saveTrigger}
-                initial={current}
-            />
         </div>
     );
 }
