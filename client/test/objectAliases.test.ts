@@ -10,6 +10,7 @@ class FakeClient {
     getAccumulatedObjectsData: jest.fn(() => ({})),
   };
   sendCommand = jest.fn();
+  print = jest.fn();
 }
 
 describe('object aliases', () => {
@@ -19,6 +20,7 @@ describe('object aliases', () => {
   let killTarget: () => void;
   let shieldTarget: () => void;
   let invite: (m: RegExpMatchArray) => void;
+  let toggle: () => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -29,6 +31,7 @@ describe('object aliases', () => {
     killTarget = aliases[2].callback as any;
     shieldTarget = aliases[3].callback as any;
     invite = aliases[4].callback as any;
+    toggle = aliases[7].callback as any;
     (global as any).Input = { send: jest.fn() };
   });
 
@@ -69,5 +72,12 @@ describe('object aliases', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 8, shortcut: '2' }]);
     invite(['', '2'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zapros ob_8');
+  });
+
+  test('/puszczaj toggles release flag', () => {
+    toggle();
+    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('ON'));
+    toggle();
+    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('OFF'));
   });
 });
