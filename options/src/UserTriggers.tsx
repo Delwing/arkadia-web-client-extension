@@ -75,9 +75,6 @@ function UserTriggers() {
         setEditIndex(null);
     }
 
-    function openNew() {
-        resetForm();
-    }
 
     function edit(idx: number) {
         const t = triggers[idx];
