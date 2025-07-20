@@ -472,7 +472,8 @@ button:focus-visible {
 .mobile-direction-buttons.collapsed .mobile-top-buttons,
 .mobile-direction-buttons.collapsed .mobile-direction-main,
 .mobile-direction-buttons.collapsed #z-buttons-list,
-.mobile-direction-buttons.collapsed #zas-buttons-list {
+.mobile-direction-buttons.collapsed #zas-buttons-list,
+.mobile-direction-buttons.collapsed #idz-buttons-list {
   display: none;
 }
 
