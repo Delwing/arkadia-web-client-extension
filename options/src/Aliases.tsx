@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Form, Modal } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
@@ -13,6 +13,8 @@ function Aliases() {
     const [pattern, setPattern] = useState("");
     const [command, setCommand] = useState("");
     const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [filter, setFilter] = useState("");
 
     useEffect(() => {
         storage.getItem("aliases").then(res => {
@@ -31,6 +33,19 @@ function Aliases() {
         setPattern("");
         setCommand("");
         setEditIndex(null);
+    }
+
+    function openNew() {
+        resetForm();
+        setShowModal(true);
+    }
+
+    function openEdit(idx: number) {
+        const a = aliases[idx];
+        setPattern(a.pattern);
+        setCommand(a.command);
+        setEditIndex(idx);
+        setShowModal(true);
     }
 
     function save() {
@@ -52,12 +67,6 @@ function Aliases() {
         resetForm();
     }
 
-    function edit(idx: number) {
-        const a = aliases[idx];
-        setPattern(a.pattern);
-        setCommand(a.command);
-        setEditIndex(idx);
-    }
 
     function remove(idx: number) {
         if (!confirm("Czy na pewno chcesz usunąć ten alias?")) return;
@@ -65,44 +74,70 @@ function Aliases() {
         saveList(updated);
     }
 
+    const filteredAliases = aliases.filter(a =>
+        a.pattern.toLowerCase().includes(filter.toLowerCase()) ||
+        a.command.toLowerCase().includes(filter.toLowerCase())
+    );
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <Form.Group className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 alias-form-group">
+            <div className="d-flex gap-2 align-items-center">
                 <Form.Control
                     type="text"
                     size="sm"
-                    placeholder="Pattern"
-                    value={pattern}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                    style={{width: '100%', maxWidth: '8rem'}}
-                />
-                <Form.Control
-                    type="text"
-                    size="sm"
-                    placeholder="Komenda"
-                    value={command}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                    placeholder="Filtruj"
+                    value={filter}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
                     style={{width: '100%', maxWidth: '12rem'}}
                 />
-                <Button size="sm" onClick={save}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
-                {editIndex !== null && (
-                    <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
-                )}
-            </Form.Group>
-            <small className="text-secondary">
-                Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.
-            </small>
+                <Button size="sm" onClick={openNew}>Dodaj alias</Button>
+            </div>
             <ul className="list-unstyled ms-3">
-                {aliases.map((a, i) => (
-                    <li key={i} className="d-flex align-items-center gap-2 alias-list-item">
-                        <span>{a.pattern}</span>
-                        <span className="text-secondary">→</span>
-                        <span>{a.command}</span>
-                        <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
-                        <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                {filteredAliases.map((a, i) => (
+                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
+                        <span>
+                            <span>{a.pattern}</span>
+                            <span className="text-secondary mx-1">→</span>
+                            <span>{a.command}</span>
+                        </span>
+                        <span className="d-flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(i)}><TiEdit /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                        </span>
                     </li>
                 ))}
             </ul>
+
+            <Modal show={showModal} onHide={() => setShowModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{editIndex === null ? 'Dodaj alias' : 'Edytuj alias'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="d-flex flex-column gap-2">
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            placeholder="Pattern"
+                            value={pattern}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                        />
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            placeholder="Komenda"
+                            value={command}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                        />
+                        <small className="text-secondary">
+                            Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.
+                        </small>
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button size="sm" variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+                    <Button size="sm" onClick={() => { save(); setShowModal(false); }}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }
