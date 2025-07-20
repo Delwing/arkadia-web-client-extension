@@ -38,6 +38,7 @@ import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
+import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initMapAliases from './scripts/mapAliases'
 import initCompareAll from './scripts/compareAll'
@@ -134,6 +135,7 @@ export function registerScripts(client: Client) {
     initCoinColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
+    initShortExits(client)
     initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)

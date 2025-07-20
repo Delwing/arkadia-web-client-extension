@@ -19,6 +19,7 @@ interface Settings {
     packageHelper: boolean;
     replaceMap: boolean;
     inlineCompassRose: boolean;
+    shortenExits: boolean;
     prettyContainers: boolean;
     containerColumns: number;
     collectMode: number;
@@ -33,6 +34,7 @@ function SettingsForm() {
         packageHelper: false,
         replaceMap: false,
         inlineCompassRose: false,
+        shortenExits: false,
         prettyContainers: true,
         containerColumns: 2,
         collectMode: 3,
@@ -90,6 +92,14 @@ function SettingsForm() {
                         label="Róża wiatrów"
                         checked={settings.inlineCompassRose}
                         onChange={e => onChangeSetting(s => s.inlineCompassRose = e.target.checked)}
+                        className="me-2"
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="shortenExits"
+                        label="Skrócone wyjścia"
+                        checked={settings.shortenExits}
+                        onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
                         className="me-2"
                     />
                     <Form.Group className="d-flex align-items-center">
