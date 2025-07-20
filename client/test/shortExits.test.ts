@@ -38,15 +38,13 @@ describe('short exits trigger', () => {
 
   test('replaces exit line', () => {
     const result = parse('Sa tutaj dwa widoczne wyjscia: polnoc i wschod.');
-    expect(result).toBe('~SKIP~');
-    expect(client.println).toHaveBeenCalledWith(colorString('\n-----: N E\n', ORANGE));
-    expect(client.println.mock.calls[0][0]).toContain(`\x1B[22;38;5;${ORANGE}m`);
+    expect(result).toBe(colorString('-----: N E', ORANGE));
+    expect(client.println).not.toHaveBeenCalled();
   });
 
   test('includes unknown directions in output', () => {
     const result = parse('Sa tutaj dwa widoczne wyjscia: polnoc i foo.');
-    expect(result).toBe('~SKIP~');
-    expect(client.println).toHaveBeenCalledWith(colorString('\n-----: N FOO\n', ORANGE));
-    expect(client.println.mock.calls[0][0]).toContain(`\x1B[22;38;5;${ORANGE}m`);
+    expect(result).toBe(colorString('-----: N FOO', ORANGE));
+    expect(client.println).not.toHaveBeenCalled();
   });
 });
