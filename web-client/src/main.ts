@@ -77,7 +77,7 @@ function disableTabSleepPrevention() {
 }
 
 loadNpcData().then(npc => {
-    window.clientExtension.eventTarget.dispatchEvent(new CustomEvent("npc", {detail: npc}))
+    client.sendEvent("npc", npc)
 })
 
 window.clientExtension.addEventListener('lampTimer', (ev: CustomEvent<number | null>) => {
