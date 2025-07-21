@@ -8,10 +8,11 @@ import SettingsFile from "./SettingsFile";
 import Binds from "./Binds";
 import Scripts from "./Scripts";
 import Recordings from "./Recordings";
+import Shortcuts from "./Shortcuts";
 
 
 function App() {
-    const [tab, setTab] = useState<'settings' | 'guilds' | 'npc' | 'file' | 'binds' | 'scripts' | 'recordings'>('settings')
+    const [tab, setTab] = useState<'settings' | 'guilds' | 'npc' | 'file' | 'binds' | 'scripts' | 'recordings' | 'shortcuts'>('settings')
 
     return (
         <div className="p-2 d-flex flex-column h-100">
@@ -36,6 +37,9 @@ function App() {
                 </Tab>
                 <Tab eventKey="recordings" title="Nagrania">
                     <Recordings />
+                </Tab>
+                <Tab eventKey="shortcuts" title="Skr\u00f3ty">
+                    <Shortcuts />
                 </Tab>
             </Tabs>
         </div>

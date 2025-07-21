@@ -4,6 +4,7 @@ import aliasesMd from "../../docs/ALIASES.md?raw";
 import bagManagerMd from "../../docs/BAG_MANAGER.md?raw";
 import bindsMd from "../../docs/BINDS.md?raw";
 import herbsMd from "../../docs/HERBS.md?raw";
+import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 
 interface DocDef {
   key: string;
@@ -14,7 +15,8 @@ const docs: DocDef[] = [
   { key: "aliases", title: "Aliasy", md: aliasesMd },
   { key: "bag", title: "Mened\u017cer pojemnik\u00f3w", md: bagManagerMd },
   { key: "binds", title: "Bindowanie", md: bindsMd },
-  { key: "herbs", title: "Licznik z\u00f3\u0142", md: herbsMd }
+  { key: "herbs", title: "Licznik z\u00f3\u0142", md: herbsMd },
+  { key: "shortcuts", title: "Skr\u00f3ty", md: shortcutsMd }
 ];
 
 function createModal() {

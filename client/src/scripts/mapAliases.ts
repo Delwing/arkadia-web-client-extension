@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { longToShort } from "../MapHelper";
+import { getShortcut } from "./shortcuts";
 
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
@@ -24,7 +25,8 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/prowadz (.*)$/,
             callback: (matches: RegExpMatchArray) => {
-                client.sendEvent('leadTo', matches[1]);
+                const dest = getShortcut(matches[1]) ?? matches[1];
+                client.sendEvent('leadTo', dest);
             }
         },
         {
