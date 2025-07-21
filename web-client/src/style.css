@@ -113,6 +113,10 @@ h1 {
   color: tomato;
 }
 
+#ride-progress-container {
+  pointer-events: none;
+}
+
 #break-item-warning {
   display: none;
   color: tomato;

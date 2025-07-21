@@ -59,8 +59,6 @@ interface MinimumTimes {
 
 class Ride {
     private stopTrigger: any = null;
-    private progressContainer: HTMLElement | null = null;
-    private progressBar: HTMLElement | null = null;
     private interval: number | null = null;
     private startTime: number = 0;
 
@@ -131,39 +129,28 @@ class Ride {
     }
 
     private showProgress() {
-        this.progressContainer = document.createElement('div');
-        this.progressContainer.style.position = 'absolute';
-        this.progressContainer.style.bottom = '10px';
-        this.progressContainer.style.right = '10px';
-        this.progressContainer.style.width = '350px';
-        this.progressContainer.style.height = '30px';
-        this.progressContainer.style.border = '1px solid #666';
-        this.progressContainer.style.background = '#222';
-        this.progressBar = document.createElement('div');
-        this.progressBar.style.height = '100%';
-        this.progressBar.style.width = '0';
-        this.progressBar.style.background = '#6a4';
-        this.progressContainer.appendChild(this.progressBar);
-        document.body.appendChild(this.progressContainer);
+        const stop = this.def.stops[this.index];
+        this.client.sendEvent('rideProgressShow', {
+            label: stop.label ?? '',
+            current: 0,
+            total: stop.time,
+        });
         this.updateProgress();
     }
 
     private updateProgress() {
-        if (!this.progressBar) return;
         const stop = this.def.stops[this.index];
         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
         const total = stop.time;
-        const perc = Math.min(1, elapsed / total);
-        this.progressBar.style.width = `${Math.floor(perc * 100)}%`;
-        this.progressBar.textContent = `${stop.label ?? ''} ${elapsed}/${total}`.trim();
+        this.client.sendEvent('rideProgressUpdate', {
+            label: stop.label ?? '',
+            current: elapsed,
+            total,
+        });
     }
 
     private hideProgress() {
-        if (this.progressContainer) {
-            this.progressContainer.remove();
-            this.progressContainer = null;
-            this.progressBar = null;
-        }
+        this.client.sendEvent('rideProgressHide');
     }
 
     cleanup() {
