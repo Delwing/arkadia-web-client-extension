@@ -353,6 +353,10 @@ function applyDirectionBinds(dirs: any) {
 
 // Add global keydown event listener for numpad directions
 document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.modal'))) {
+        return;
+    }
     const direction = numpadDirections[e.code];
     if (direction) {
         e.preventDefault();
