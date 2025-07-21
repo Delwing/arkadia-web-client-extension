@@ -1,1 +1,1 @@
-import "@map/embedded.js"
+import "../web-client/src/embed.ts"
