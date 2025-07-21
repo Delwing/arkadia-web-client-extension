@@ -43,7 +43,14 @@ export default function initShips(client: Client) {
         return undefined;
     };
 
-    client.Triggers.registerTrigger(/.*przybija wielki trojmasztowy galeon\.$/, board(true), "ships");
+    client.Triggers.registerTrigger(
+        [
+            /.*przybija wielki trojmasztowy galeon\.$/,
+            /^Wielki trojmasztowy galeon przybija do brzegu\.$/,
+        ],
+        board(true),
+        "ships"
+    );
 
     client.Triggers.registerTrigger(
         [
@@ -55,7 +62,11 @@ export default function initShips(client: Client) {
         "ships"
     );
 
-    client.Triggers.registerTrigger(/^(?!Ktos|Jakis|Jakas).*(Doplynelismy.*(Mozna|w calej swej)|Marynarze sprawnie cumuja)/, disembark, "ships");
+    client.Triggers.registerTrigger(
+        /^(?!Ktos|Jakas).*(Doplynelismy.*(Mozna|w calej swej)|Marynarze sprawnie cumuja)/,
+        disembark,
+        "ships"
+    );
 
     client.Triggers.registerTrigger(
         [
