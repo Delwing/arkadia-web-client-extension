@@ -1,0 +1,14 @@
+{
+  "name": "arkadia-web-client",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "client",
+    "map",
+    "options",
+    "scripts",
+    "web-client"
+  ],
+  "packageManager": "yarn@1.22.22"
+}

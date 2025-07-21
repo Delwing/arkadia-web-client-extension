@@ -18,6 +18,7 @@ import {attachGmcpListener} from "./gmcp";
 import {color} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
+import {parseAnsiPatterns} from "sandbox-react/src/ansiParser";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -255,7 +256,7 @@ export default class Client {
             printable = JSON.stringify(printable)
         }
         // @ts-ignore
-        const text = Text.parse_patterns(printable)
+        const text = parseAnsiPatterns(printable)
         this.buffer.push({out: text})
         if (!this.inLineProcess) {
             this.sendEvent('output-sent', 1)

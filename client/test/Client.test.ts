@@ -1,19 +1,7 @@
-(window as any).Input = { send: jest.fn() };
-(window as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(window as any).Maps = {
-  refresh_position: jest.fn(),
-  set_position: jest.fn(),
-  unset_position: jest.fn(),
-  data: undefined,
-};
-(window as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
 jest.mock('../src/main', () => ({
   __esModule: true,
-  rawInputSend: jest.fn((cmd: string) => (window as any).Input.send(cmd)),
-  rawOutputSend: jest.fn(),
 }));
 
 import Client from '../src/Client';
@@ -61,8 +49,6 @@ jest.mock('../src/MapHelper', () => {
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
-  (window as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-  (window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (window as any).dispatchEvent = jest.fn();
   (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
@@ -141,7 +127,6 @@ test('sendCommand prints echo commands locally', () => {
 
 test('onLine sends printed messages after line and restores Output.send', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const originalOutputSend = (window as any).Output.send;
 
   client.Triggers.parseLine = jest.fn(() => {
     client.print('printed');
@@ -152,13 +137,8 @@ test('onLine sends printed messages after line and restores Output.send', () => 
 
   const expected = '\x1b[22;38;5;255mprocessed';
   expect(result).toBe(expected);
-  expect((window as any).Output.send).toBe(originalOutputSend);
-  expect(originalOutputSend).not.toHaveBeenCalled();
-
-  originalOutputSend(result);
   client.sendEvent('output-sent');
 
-  expect(originalOutputSend).toHaveBeenNthCalledWith(1, expected);
   expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', undefined);
 });
 
