@@ -89,7 +89,10 @@ export function registerScripts(client: Client) {
         client.Map.followMove(matches[2])
     }, 'follow')
 
-    client.Triggers.registerTrigger('Wykonuje komende \'idz ', (): undefined => {
+    client.Triggers.registerTrigger([
+        /^Wykonuje komende \'idz /,
+        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szbkim biegiem) w droge\./
+    ], (): undefined => {
         client.sendEvent('refreshPositionWhenAble')
     })
 
