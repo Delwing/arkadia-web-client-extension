@@ -39,7 +39,9 @@ export default function initShips(client: Client) {
         return undefined;
     };
     const disembark = () => {
-        bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
+        if (onShip) {
+            bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
+        }
         return undefined;
     };
 
