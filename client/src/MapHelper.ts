@@ -43,6 +43,19 @@ const exits = {
     "d": "down"
 };
 
+const directionDeltas = {
+    north: {x: 0, y: 1, z: 0},
+    south: {x: 0, y: -1, z: 0},
+    east: {x: 1, y: 0, z: 0},
+    west: {x: -1, y: 0, z: 0},
+    northwest: {x: -1, y: 1, z: 0},
+    northeast: {x: 1, y: 1, z: 0},
+    southwest: {x: -1, y: -1, z: 0},
+    southeast: {x: 1, y: -1, z: 0},
+    up: {x: 0, y: 0, z: 1},
+    down: {x: 0, y: 0, z: -1}
+};
+
 function getLongDir(dir: string): string {
     return polishToEnglish[dir] ?? exits[dir] ?? dir;
 }
@@ -216,43 +229,22 @@ export default class MapHelper {
     }
 
     findRoomByExit(room: Room, targetRoom: Room, targetDir: string) {
-        const x = targetRoom.x;
-        const y = targetRoom.y;
-        const z = targetRoom.z;
-        const c_x = room.x;
-        const c_y = room.y;
-        const c_z = room.z;
+        const delta = directionDeltas[targetDir];
+        if (!delta) {
+            return false;
+        }
+        const dx = targetRoom.x - room.x;
+        const dy = targetRoom.y - room.y;
+        const dz = targetRoom.z - room.z;
 
-        if (targetDir === "south") {
-            return x === c_x && y < c_y && z === c_z;
-        }
-        if (targetDir === "north") {
-            return x === c_x && y > c_y && z === c_z;
-        }
-        if (targetDir === "east") {
-            return x > c_x && y === c_y && z === c_z;
-        }
-        if (targetDir === "west") {
-            return x < c_x && y === c_y && z === c_z;
-        }
-        if (targetDir === "northwest") {
-            return x < c_x && y > c_y && z === c_z;
-        }
-        if (targetDir === "northeast") {
-            return x > c_x && y > c_y && z === c_z;
-        }
-        if (targetDir === "southwest") {
-            return x < c_x && y < c_y && z === c_z;
-        }
-        if (targetDir === "southeast") {
-            return x > c_x && y < c_y && z === c_z;
-        }
-        if (targetDir === "down") {
-            return x === c_x && y === c_y && z < c_z;
-        }
-        if (targetDir === "up") {
-            return x === c_x && y === c_y && z > c_z;
-        }
+        const check = (d: number, expected: number) => {
+            if (expected === 0) {
+                return d === 0;
+            }
+            return expected > 0 ? d > 0 : d < 0;
+        };
+
+        return check(dx, delta.x) && check(dy, delta.y) && check(dz, delta.z);
     }
 
     handleNewLocation({room: room}) {
