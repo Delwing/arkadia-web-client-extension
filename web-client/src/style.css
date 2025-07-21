@@ -675,5 +675,6 @@ button:focus-visible {
 .logo {
   width: auto;
   height: auto;
+  max-height: 35vh;
   max-width: 75vw;
 }
