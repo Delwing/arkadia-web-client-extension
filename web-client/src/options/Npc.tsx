@@ -1,4 +1,4 @@
-import './App.css'
+import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
 import storage from "./storage.ts";
