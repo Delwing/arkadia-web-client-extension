@@ -56,7 +56,13 @@ describe('ships triggers', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'wlm');
   });
 
-  test('disembark trigger sends command and event', () => {
+  test('disembark trigger sends command and event when on ship', () => {
+    parse('Tratwa przybija do brzegu.');
+    const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    boardCallback();
+    client.FunctionalBind.set.mockClear();
+    client.sendCommand.mockClear();
+    client.sendEvent.mockClear();
     parse('Marynarze sprawnie cumuja');
     const [label, callback] = client.FunctionalBind.set.mock.calls.pop()!;
     expect(label).toBe('zejdz ze statku');
@@ -66,7 +72,13 @@ describe('ships triggers', () => {
     expect(client.sendEvent).toHaveBeenCalledWith('refreshPositionWhenAble');
   });
 
-  test('disembark message starting with Jakis also binds', () => {
+  test('disembark message starting with Jakis binds only when on ship', () => {
+    parse('Tratwa przybija do brzegu.');
+    const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    boardCallback();
+    client.FunctionalBind.set.mockClear();
+    client.sendCommand.mockClear();
+    client.sendEvent.mockClear();
     parse('Jakis mezczyzna krzyczy na galeonie: Doplynelismy do przystani w Urbimo! Mozna wysiadac!');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label] = client.FunctionalBind.set.mock.calls[0];
