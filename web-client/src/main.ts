@@ -354,7 +354,12 @@ function applyDirectionBinds(dirs: any) {
 // Add global keydown event listener for numpad directions
 document.addEventListener('keydown', (e) => {
     const active = document.activeElement as HTMLElement | null;
-    if (active && active.closest('.modal')) {
+    if (active &&
+        active.id !== 'message-input' &&
+        (active.matches('input, textarea') ||
+         active.isContentEditable ||
+         active.closest('.modal'))
+    ) {
         return;
     }
     const direction = numpadDirections[e.code];
