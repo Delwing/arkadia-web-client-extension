@@ -17,6 +17,73 @@ export default class OutputHandler {
         )
     }
 
+    private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
+        span.style.cursor = "pointer"
+        span.style.textDecoration = " underline"
+        span.style.textDecorationStyle = "dotted"
+        span.style.textDecorationSkipInk = "auto"
+        if (title) {
+            span.title = title
+        }
+        const cb = this.clickerCallbacks[cbIndex]
+        this.clickerCallbacks[cbIndex] = undefined as any
+        span.onclick = () => {
+            cb?.apply(null)
+        }
+    }
+
+    private parseSpanMarker(el: HTMLElement) {
+        const clickIndex = el.textContent.indexOf("{click:")
+        if (clickIndex === -1) {
+            return
+        }
+        const clickTitleSeparator = el.textContent.indexOf(":", clickIndex + 7)
+        const closerIndex = el.textContent.indexOf("}", clickIndex)
+        const hasTitle = clickTitleSeparator > clickIndex && clickTitleSeparator < closerIndex
+        const title = hasTitle ? el.textContent.substring(clickTitleSeparator + 1, closerIndex) : undefined
+        const callbackIndex = parseInt(el.textContent.substring(clickIndex + 7, hasTitle ? clickTitleSeparator : closerIndex))
+        el.textContent = el.textContent.substring(0, clickIndex) + el.textContent.substring(closerIndex + 1)
+        this.decorateClickable(el, callbackIndex, title)
+    }
+
+    private parseTextNodes(msg: HTMLElement) {
+        if (!msg.textContent || msg.textContent.indexOf("{click:") === -1) {
+            return
+        }
+        const clickReg = /\{click:(\d+)(?::([^}]+))?\}/
+        Array.from(msg.childNodes).forEach((node) => {
+            if (node.nodeType !== Node.TEXT_NODE) {
+                return
+            }
+            let text = node.textContent || ""
+            let match = clickReg.exec(text)
+            if (!match) {
+                return
+            }
+            const frag = document.createDocumentFragment()
+            while (match) {
+                const before = text.substring(0, match.index)
+                if (before) {
+                    frag.appendChild(document.createTextNode(before))
+                }
+                text = text.substring(match.index + match[0].length)
+                const nextMatch = clickReg.exec(text)
+                const nextIndex = nextMatch ? nextMatch.index : text.length
+                const clickableText = text.substring(0, nextIndex)
+                const span = document.createElement("span")
+                span.textContent = clickableText
+                this.decorateClickable(span, parseInt(match[1]), match[2])
+                frag.appendChild(span)
+                text = text.substring(nextIndex)
+                match = nextMatch
+            }
+            if (text) {
+                frag.appendChild(document.createTextNode(text))
+            }
+            node.replaceWith(frag)
+        })
+    }
+
     private processOutput(event: CustomEvent) {
         if (!this.output.children) {
             return
@@ -30,71 +97,9 @@ export default class OutputHandler {
             if (msg) {
                 const elements: HTMLElement[] = Array.from(msg.querySelectorAll("span")) as HTMLElement[]
                 elements.filter(el => el.textContent.indexOf("click:") > -1).forEach(el => {
-                    el.style.cursor = "pointer"
-                    el.style.textDecoration = " underline"
-                    el.style.textDecorationStyle = "dotted"
-                    el.style.textDecorationSkipInk = "auto"
-                    const clickIndex = el.textContent.indexOf("{click:")
-                    const clickTitleSeparator = el.textContent.indexOf(":", clickIndex + 7)
-                    const closerIndex = el.textContent.indexOf("}", clickIndex)
-                    const hasTitle = clickTitleSeparator > clickIndex && clickTitleSeparator < closerIndex
-                    if (hasTitle) {
-                        el.title = el.textContent.substring(clickTitleSeparator + 1, closerIndex)
-                    }
-                    const callbackIndex = parseInt(el.textContent.substring(clickIndex + 7, hasTitle ? clickTitleSeparator : closerIndex))
-                    el.textContent = el.textContent.substring(0, clickIndex) + el.textContent.substring(closerIndex + 1)
-                    const cb = this.clickerCallbacks[callbackIndex]
-                    this.clickerCallbacks[callbackIndex] = undefined as any
-                    el.onclick = () => {
-                        cb?.apply(null)
-                    }
+                    this.parseSpanMarker(el)
                 })
-                if (msg.textContent && msg.textContent.indexOf("{click:") > -1) {
-                    const clickReg = /\{click:(\d+)(?::([^}]+))?\}/
-                    Array.from(msg.childNodes).forEach((node) => {
-                        if (node.nodeType !== Node.TEXT_NODE) {
-                            return
-                        }
-                        let text = node.textContent || ""
-                        let match = clickReg.exec(text)
-                        if (!match) {
-                            return
-                        }
-                        const frag = document.createDocumentFragment()
-                        while (match) {
-                            const before = text.substring(0, match.index)
-                            if (before) {
-                                frag.appendChild(document.createTextNode(before))
-                            }
-                            text = text.substring(match.index + match[0].length)
-                            const nextMatch = clickReg.exec(text)
-                            const nextIndex = nextMatch ? nextMatch.index : text.length
-                            const clickableText = text.substring(0, nextIndex)
-                            const span = document.createElement("span")
-                            span.textContent = clickableText
-                            span.style.cursor = "pointer"
-                            span.style.textDecoration = " underline"
-                            span.style.textDecorationStyle = "dotted"
-                            span.style.textDecorationSkipInk = "auto"
-                            if (match[2]) {
-                                span.title = match[2]
-                            }
-                            const cbIndex = parseInt(match[1])
-                            const cb = this.clickerCallbacks[cbIndex]
-                            this.clickerCallbacks[cbIndex] = undefined as any
-                            span.onclick = () => {
-                                cb?.apply(null)
-                            }
-                            frag.appendChild(span)
-                            text = text.substring(nextIndex)
-                            match = nextMatch
-                        }
-                        if (text) {
-                            frag.appendChild(document.createTextNode(text))
-                        }
-                        node.replaceWith(frag)
-                    })
-                }
+                this.parseTextNodes(msg)
             }
         }
     }
