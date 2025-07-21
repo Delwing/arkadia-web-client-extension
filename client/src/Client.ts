@@ -165,6 +165,11 @@ export default class Client {
         }
 
         command = this.Map.parseCommand(command)
+        const postParseSplit = command.split(/[#;]/)
+        if (postParseSplit.length > 1) {
+            postParseSplit.forEach(part => this.sendCommand(part, echo))
+            return
+        }
         const isAlias = this.aliases.find(alias => {
             const matches = command.match(alias.pattern)
             if (matches) {
