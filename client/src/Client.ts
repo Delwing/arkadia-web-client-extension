@@ -77,6 +77,10 @@ export default class Client {
         Object.values(this.sounds).forEach((sound) => sound.load())
 
         window.addEventListener('keydown', (ev) => {
+            const target = ev.target as HTMLElement | null
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                return
+            }
             if (
                 (ev.code === this.lampBind.key || ev.key === this.lampBind.key) &&
                 !!this.lampBind.ctrl === ev.ctrlKey &&

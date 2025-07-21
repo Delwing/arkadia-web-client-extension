@@ -52,6 +52,10 @@ export class FunctionalBind {
         this.alt = !!options.alt;
         this.shift = !!options.shift;
         window.addEventListener('keydown', (ev) => {
+            const target = ev.target as HTMLElement | null;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                return;
+            }
             if (
                 (ev.code === this.key || ev.key === this.key) &&
                 (!!this.ctrl === ev.ctrlKey) &&
