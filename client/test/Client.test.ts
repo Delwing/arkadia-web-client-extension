@@ -107,9 +107,10 @@ test('createButton creates button attached to panel', () => {
 test('sendCommand dispatches event and splits commands', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   client.sendCommand('foo#bar');
-  expect(parseCommand).toHaveBeenCalledWith('foo');
+  expect(parseCommand).toHaveBeenCalledWith('foo#bar');
+  expect(parseCommand).toHaveBeenCalledWith('parsed:foo');
   expect(parseCommand).toHaveBeenCalledWith('bar');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:parsed:foo', true);
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true);
 });
 
