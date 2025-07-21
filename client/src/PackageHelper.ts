@@ -1,6 +1,7 @@
 import {colorStringInLine, findClosestColor, RESET} from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
+import loadNpcData from "./npcDataLoader";
 
 function toTitleCase(str) {
     return str.replace(
@@ -41,6 +42,16 @@ export default class PackageHelper {
         this.client = clientExtension
         this.client.addEventListener('npc', (event) => {
             event.detail.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
+        })
+
+        this.client.addEventListener('port-connected', () => {
+            this.client.port?.postMessage({ type: 'GET_STORAGE', key: 'npc' })
+            loadNpcData()
+                .then(list => {
+                    this.client.sendEvent('npc', list)
+                    this.client.port?.postMessage({ type: 'SET_STORAGE', key: 'npc', value: list })
+                })
+                .catch(e => console.error('Failed to load NPC data:', e))
         })
 
 
