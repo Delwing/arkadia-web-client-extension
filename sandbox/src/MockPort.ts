@@ -1,4 +1,4 @@
-import storage from "@options/src/storage.ts";
+import storage from "../web-client/src/options/storage.ts";
 
 export default class MockPort {
     listeners: Array<(msg: any) => void> = [];

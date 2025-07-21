@@ -18,14 +18,14 @@ const arkadiaClient = ArkadiaClient
 
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
-import Binds from "@options/src/Binds.tsx"
-import Npc from "@options/src/Npc.tsx"
-import Scripts from "@options/src/Scripts.tsx"
-import Aliases from "@options/src/Aliases.tsx"
-import Recordings from "@options/src/Recordings.tsx"
-import Guilds from "@options/src/Guilds.tsx"
-import UserTriggers from "@options/src/UserTriggers.tsx"
-import Shortcuts from "@options/src/Shortcuts.tsx"
+import Binds from "./options/Binds.tsx"
+import Npc from "./options/Npc.tsx"
+import Scripts from "./options/Scripts.tsx"
+import Aliases from "./options/Aliases.tsx"
+import Recordings from "./options/Recordings.tsx"
+import Guilds from "./options/Guilds.tsx"
+import UserTriggers from "./options/UserTriggers.tsx"
+import Shortcuts from "./options/Shortcuts.tsx"
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
@@ -848,7 +848,7 @@ window.client = arkadiaClient
 // background communication disabled
 
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
-import Settings from "@options/src/Settings.tsx";
+import Settings from "./options/Settings.tsx";
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
