@@ -39,6 +39,10 @@ body {
     -webkit-user-select: none;
     user-select: none;
   }
+  body.modal-open {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 h1 {
@@ -603,9 +607,8 @@ button:focus-visible {
   max-height: 85%;
 }
 
-.modal input,
-.modal textarea,
-.modal select {
+.modal,
+.modal * {
   -webkit-user-select: text;
   user-select: text;
 }
