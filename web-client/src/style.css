@@ -617,7 +617,6 @@ button:focus-visible {
   align-items: center;
   z-index: 1011;
   position: relative;
-  top: -150px;
 }
 
 #connecting-spinner {
