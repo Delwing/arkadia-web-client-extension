@@ -6,6 +6,7 @@ import initShips from './scripts/ships'
 import initTransportStops from './scripts/transportStops'
 import initBuses from './scripts/buses'
 import initGates from './scripts/gates'
+import initTransportRides from './scripts/transportRides'
 import initAttackBeep from './scripts/attackBeep'
 import initLamp from './scripts/lamp'
 import initBinds from './scripts/binds'
@@ -103,6 +104,7 @@ export function registerScripts(client: Client) {
     initTransportStops(client)
     initBuses(client)
     initGates(client)
+    initTransportRides(client)
     initAttackBeep(client)
     initLamp(client)
     initBinds(client, aliases)
