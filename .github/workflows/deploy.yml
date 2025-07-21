@@ -1,4 +1,4 @@
-name: Deploy sandbox
+name: Deploy web-client
 on:
   push:
     branches: [ master ]
@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Dist
-        run: yarn install && yarn build
       - run: yarn --cwd web-client install && yarn --cwd web-client build
       - name: Setup Pages
         uses: actions/configure-pages@v2
