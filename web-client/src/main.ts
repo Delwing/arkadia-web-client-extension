@@ -87,6 +87,15 @@ window.clientExtension.addEventListener('lampTimer', (ev: CustomEvent<number | n
 window.clientExtension.addEventListener('breakItem', (ev: CustomEvent<any>) => {
     arkadiaClient.emit('breakItem', ev.detail);
 });
+window.clientExtension.addEventListener('rideProgressShow', (ev: CustomEvent<any>) => {
+    arkadiaClient.emit('rideProgressShow', ev.detail);
+});
+window.clientExtension.addEventListener('rideProgressUpdate', (ev: CustomEvent<any>) => {
+    arkadiaClient.emit('rideProgressUpdate', ev.detail);
+});
+window.clientExtension.addEventListener('rideProgressHide', () => {
+    arkadiaClient.emit('rideProgressHide');
+});
 window.clientExtension.addEventListener('settings', (ev: CustomEvent) => {
     if (ev.detail?.binds?.directions) {
         applyDirectionBinds(ev.detail.binds.directions);
