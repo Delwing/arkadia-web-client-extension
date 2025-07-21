@@ -10,7 +10,7 @@ export default function initLeaderAttackWarning(client: Client) {
     const line = "=".repeat(width);
     const message = colorString(`${line}\n  ${text}  \n${line}`, RED)
     const warningInternval = 5000;
-    let interval: string | number | NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
     function printWarning() {
         client.println(message);
