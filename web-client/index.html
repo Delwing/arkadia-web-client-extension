@@ -53,7 +53,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Opcje</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="options"></div>
@@ -66,7 +66,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Bindowanie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="binds-options"></div>
@@ -79,7 +79,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Odbiorcy paczek</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="npc-options"></div>
@@ -92,7 +92,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Skrypty</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="scripts-options"></div>
@@ -105,7 +105,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Aliasy</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="aliases-options"></div>
@@ -118,7 +118,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Triggery</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="triggers-options"></div>
@@ -131,10 +131,23 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Nagrania</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="recordings-options"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="shortcuts-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Skróty</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="shortcuts-options"></div>
                 </div>
             </div>
         </div>
@@ -144,7 +157,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Gildie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="guilds-options"></div>
@@ -154,8 +167,8 @@
     </div>
     <div id="input-area">
         <div id="history-buttons">
-            <button id="history-up-button" aria-label="Previous command">▲</button>
-            <button id="history-down-button" aria-label="Next command">▼</button>
+            <button id="history-up-button">▲</button>
+            <button id="history-down-button">▼</button>
         </div>
         <input type="search" id="message-input" autocomplete="false" autocapitalize="off" spellcheck="false"/>
         <button id="send-button">➢</button>
@@ -193,6 +206,9 @@
                     <button class="w-100 p-1" id="recordings-button">Nagrania</button>
                 </li>
                 <li>
+                    <button class="w-100 p-1" id="shortcuts-button">Skróty</button>
+                </li>
+                <li>
                     <button class="w-100 p-1" id="docs-button">Dokumentacja</button>
                 </li>
                 <li>
@@ -206,10 +222,10 @@
     </div>
 
     <div id="auth-overlay">
-        <button id="auth-close" class="overlay-close" aria-label="Close">✖</button>
+        <button id="auth-close" class="overlay-close">✖</button>
         <div id="auth-panel">
-            <img src="logo.png" class="logo mb-3" alt="Logo" />
-            <div id="connecting-spinner" class="spinner-border text-light" role="status"></div>
+            <img src="logo.png" class="logo mb-3" />
+            <div id="connecting-spinner" class="spinner-border text-light"></div>
             <button id="connect-button">Connect</button>
             <div class="auth-or">- LUB -</div>
             <form id="login-form" class="d-flex flex-column gap-2">
@@ -227,7 +243,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Ustawienia UI</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body d-flex flex-column gap-2">
                     <label class="form-label">Rozmiar czcionki treści (rem)
@@ -269,7 +285,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Przyciski mobilne</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body position-relative d-flex flex-column align-items-center gap-2">
                     <div id="mobile-buttons-preview" class="mobile-direction-buttons">
@@ -1036,7 +1052,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Debug Log</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
             </div>

@@ -4,6 +4,7 @@ import aliasesMd from "../../docs/ALIASES.md?raw";
 import bagManagerMd from "../../docs/BAG_MANAGER.md?raw";
 import bindsMd from "../../docs/BINDS.md?raw";
 import herbsMd from "../../docs/HERBS.md?raw";
+import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 
 interface DocDef {
   key: string;
@@ -14,7 +15,8 @@ const docs: DocDef[] = [
   { key: "aliases", title: "Aliasy", md: aliasesMd },
   { key: "bag", title: "Mened\u017cer pojemnik\u00f3w", md: bagManagerMd },
   { key: "binds", title: "Bindowanie", md: bindsMd },
-  { key: "herbs", title: "Licznik z\u00f3\u0142", md: herbsMd }
+  { key: "herbs", title: "Licznik z\u00f3\u0142", md: herbsMd },
+  { key: "shortcuts", title: "Skr\u00f3ty", md: shortcutsMd }
 ];
 
 function createModal() {
@@ -27,14 +29,14 @@ function createModal() {
   <div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title">Dokumentacja</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
     <div class="modal-body d-flex flex-column gap-3">
       <div class="dropdown docs-nav align-self-start">
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="docs-menu" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="docs-menu" data-bs-toggle="dropdown">
           Wybierz dokument
         </button>
-        <ul class="dropdown-menu" aria-labelledby="docs-menu">
+        <ul class="dropdown-menu">
           ${docs
             .map(
               (d) =>

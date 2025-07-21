@@ -24,9 +24,6 @@
       "@client/*": [
         "../client/*"
       ],
-      "@map/*": [
-        "../map/*"
-      ],
       "@options/*": [
         "../options/*"
       ]
