@@ -120,6 +120,15 @@ test('sendCommand allows empty command', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true);
 });
 
+test('sendCommand splits commands returned by parseCommand', () => {
+  parseCommand.mockImplementationOnce(() => 'foo;bar');
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  client.sendCommand('e');
+  expect(parseCommand).toHaveBeenCalledWith('e');
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true);
+});
+
 test('onLine sends printed messages after line and restores Output.send', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const originalOutputSend = (window as any).Output.send;
