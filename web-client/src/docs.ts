@@ -27,14 +27,14 @@ function createModal() {
   <div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title">Dokumentacja</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
     <div class="modal-body d-flex flex-column gap-3">
       <div class="dropdown docs-nav align-self-start">
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="docs-menu" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="docs-menu" data-bs-toggle="dropdown">
           Wybierz dokument
         </button>
-        <ul class="dropdown-menu" aria-labelledby="docs-menu">
+        <ul class="dropdown-menu">
           ${docs
             .map(
               (d) =>
