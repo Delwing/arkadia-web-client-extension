@@ -15,14 +15,8 @@
     "noEmit": true,
   },
   "paths": {
-    "@extension/*": [
-      "../extension/*"
-    ],
     "@client/*": [
       "../client/*"
-    ],
-    "@options/*": [
-      "../options/*"
     ]
   },
   "include": [
