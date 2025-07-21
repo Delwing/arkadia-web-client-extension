@@ -13,7 +13,7 @@ import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
-import "@map/embedded.js"
+import "./embed.ts"
 const arkadiaClient = ArkadiaClient
 
 import {createElement} from 'react'

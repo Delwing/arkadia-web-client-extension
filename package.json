@@ -5,7 +5,6 @@
   "license": "MIT",
   "workspaces": [
     "client",
-    "map",
     "web-client"
   ],
   "devDependencies": {
