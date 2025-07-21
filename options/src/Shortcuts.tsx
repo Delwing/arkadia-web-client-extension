@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form, Table, Modal } from 'react-bootstrap';
+import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "./storage";
 
@@ -11,7 +11,7 @@ interface ShortcutEntry {
 
 function Shortcuts() {
     const [list, setList] = useState<ShortcutEntry[]>([]);
-    const [show, setShow] = useState(false);
+    const [showForm, setShowForm] = useState(false);
     const [key, setKey] = useState('');
     const [loc, setLoc] = useState('');
     const [label, setLabel] = useState('');
@@ -23,7 +23,7 @@ function Shortcuts() {
         });
     }, []);
 
-    function save(newList: ShortcutEntry[]) {
+    function saveList(newList: ShortcutEntry[]) {
         setList(newList);
         storage.setItem('shortcuts', newList);
     }
@@ -36,9 +36,9 @@ function Shortcuts() {
         if (!/^[a-zA-Z_0-9]+$/.test(k)) return;
         if (!list.find(s => s.key === k)) {
             const updated = [...list, { key: k, id, label: l }];
-            save(updated);
+            saveList(updated);
         }
-        setShow(false);
+        setShowForm(false);
         setKey('');
         setLoc('');
         setLabel('');
@@ -46,7 +46,7 @@ function Shortcuts() {
 
     function remove(k: string) {
         const updated = list.filter(s => s.key !== k);
-        save(updated);
+        saveList(updated);
     }
 
     function useCurrent() {
@@ -58,7 +58,28 @@ function Shortcuts() {
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <Button size="sm" onClick={() => setShow(true)}>Dodaj</Button>
+            <Button size="sm" onClick={() => setShowForm(true)}>Dodaj</Button>
+            {showForm && (
+                <div className="border rounded p-3">
+                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
+                        <Form.Label className="w-32 mb-0">Nazwa</Form.Label>
+                        <Form.Control type="text" size="sm" value={key} onChange={e => setKey(e.target.value)} />
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
+                        <Form.Label className="w-32 mb-0">Lokalizacja</Form.Label>
+                        <Form.Control type="number" size="sm" value={loc} onChange={e => setLoc(e.target.value)} />
+                        <Button size="sm" variant="secondary" onClick={useCurrent}>Aktualna</Button>
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
+                        <Form.Label className="w-32 mb-0">Opis</Form.Label>
+                        <Form.Control type="text" size="sm" value={label} onChange={e => setLabel(e.target.value)} />
+                    </Form.Group>
+                    <div className="d-flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setKey(''); setLoc(''); setLabel(''); }}>Anuluj</Button>
+                        <Button size="sm" onClick={add}>Zapisz</Button>
+                    </div>
+                </div>
+            )}
             <Table bordered size="sm" className="table-zebra">
                 <tbody className="align-middle">
                 {list.map(item => (
@@ -74,29 +95,6 @@ function Shortcuts() {
                 ))}
                 </tbody>
             </Table>
-            <Modal show={show} onHide={() => setShow(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Dodaj skrót</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="d-flex flex-column gap-2">
-                    <Form.Group className="d-flex align-items-center gap-2">
-                        <Form.Label className="w-32 mb-0">Nazwa</Form.Label>
-                        <Form.Control type="text" size="sm" value={key} onChange={e => setKey(e.target.value)} />
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center gap-2">
-                        <Form.Label className="w-32 mb-0">Lokalizacja</Form.Label>
-                        <Form.Control type="number" size="sm" value={loc} onChange={e => setLoc(e.target.value)} />
-                        <Button size="sm" variant="secondary" onClick={useCurrent}>Aktualna</Button>
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center gap-2">
-                        <Form.Label className="w-32 mb-0">Opis</Form.Label>
-                        <Form.Control type="text" size="sm" value={label} onChange={e => setLabel(e.target.value)} />
-                    </Form.Group>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button size="sm" onClick={add}>Zapisz</Button>
-                </Modal.Footer>
-            </Modal>
         </div>
     );
 }
