@@ -13,13 +13,31 @@ interface ObjectData {
     avatar_target?: boolean
 }
 
+/**
+ * Represents data accumulated from multiple gmcp objects.data events.
+ * All fields are optional because each event may provide only a subset of
+ * {@link ObjectData} properties.
+ */
+interface AccumulatedObjectData {
+    attack_num?: boolean | number
+    attack_target?: boolean
+    defense_target?: boolean
+    desc?: string
+    hp?: number
+    hidden?: false
+    living?: boolean
+    team?: boolean
+    team_leader?: boolean
+    avatar_target?: boolean
+}
+
 export default class TeamManager {
     private client: Client;
     private members: Set<string> = new Set();
     private leader?: string;
     private leaderId?: string;
     private tag = 'teamManager';
-    private accumulatedObjectsData = {}
+    private accumulatedObjectsData: Record<string, AccumulatedObjectData> = {}
     private playerNum?: string;
     private leaderAttackTargetId?: string
     private avatarAttackTargetId?: string
@@ -39,9 +57,9 @@ export default class TeamManager {
         }
     }
 
-    private handleObjectsData(data: Record<number, ObjectData>) {
+    private handleObjectsData(data: Record<string, AccumulatedObjectData>) {
         Object.entries(data).forEach(([id, obj]) => {
-            this.accumulatedObjectsData[id] = { ...(this.accumulatedObjectsData as any)[id], ...obj };
+            this.accumulatedObjectsData[id] = { ...(this.accumulatedObjectsData[id] ?? {}), ...obj };
 
             if (typeof obj.attack_target === 'boolean') {
                 if (obj.attack_target) {
@@ -74,7 +92,7 @@ export default class TeamManager {
         }
     }
 
-    private checkTeam(obj: ObjectData, id: string) {
+    private checkTeam(obj: AccumulatedObjectData, id: string) {
         if (!obj || !obj.team) {
             return;
         }
