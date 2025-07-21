@@ -6,14 +6,14 @@ export default function initStoneValue(
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
     const tag = "stone-value";
-    const pattern = /^Wydaje ci sie, ze (jest|sa) wart[aye]? okolo (([0-9]+) mied[a-z]+\.)$/;
+    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|Sa tu \d+ sztuki warte) ([0-9]+) mied[a-z]+/;
 
     let sum = 0;
 
     function run() {
         sum = 0;
         client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
-            const amount = parseInt(m[3], 10);
+            const amount = parseInt(m[1], 10);
             sum += amount;
             return processItemValue(raw, amount);
         }, tag);
