@@ -48,6 +48,7 @@ export default class Client {
         }),
     };
     aliases: { pattern: RegExp; callback: Function }[] = [];
+    shortcuts: Record<string, number> = {};
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
         ctrl?: boolean;
@@ -124,6 +125,16 @@ export default class Client {
                 this.eventTarget.dispatchEvent(new CustomEvent(key, {detail: value}))
             })
         })
+        if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+            chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+                if (msg?.type === 'LEAD_TO') {
+                    this.sendEvent('leadTo', msg.loc)
+                }
+                if (msg?.type === 'GET_LOCATION') {
+                    sendResponse({ loc: this.Map.currentRoom?.id })
+                }
+            })
+        }
     }
 
     connect(port: any, initial: boolean) {

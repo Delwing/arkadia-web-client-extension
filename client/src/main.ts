@@ -42,6 +42,7 @@ import initArmorEvaluation from './scripts/armorEvaluation'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initMapAliases from './scripts/mapAliases'
+import initShortcuts from './scripts/shortcuts'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
 import Client from "./Client";
@@ -58,6 +59,7 @@ export function registerScripts(client: Client) {
             return Output.send(Text.parse_patterns(client.onLine(matches[1])))
         }
     })
+    initShortcuts(client, aliases)
     initMapAliases(client, aliases)
 
     blockers.forEach(blocker => {
