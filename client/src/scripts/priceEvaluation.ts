@@ -26,9 +26,9 @@ export function processItemValue(rawLine: string, value: number): string {
 }
 
 export default function initPriceEvaluation(client: Client) {
-    const pattern = /^Wydaje ci sie, ze (jest|sa) wart[aye]? okolo (([0-9]+) mied[a-z]+\.)$/;
+    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|Sa tu \d+ sztuki warte) (([0-9]+) mied[a-z]+\.)$/;
     client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
-        const amount = parseInt(m[3], 10);
+        const amount = parseInt(m[2], 10);
         return processItemValue(raw, amount);
     });
 }
