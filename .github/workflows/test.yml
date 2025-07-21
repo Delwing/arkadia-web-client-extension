@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn --cwd client install --frozen-lockfile
       - name: Run tests
         run: yarn --cwd client test
