@@ -34,6 +34,14 @@ describe('ships triggers', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'wlm');
   });
 
+  test('galeon boarding trigger binds command and beeps', () => {
+    parse('Wielki trojmasztowy galeon przybija do brzegu.');
+    expect(client.playSound).toHaveBeenCalledTimes(1);
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
+  });
+
   test('statki trigger binds without beep', () => {
     client.playSound.mockClear();
     parse('Tajemniczy okret');
@@ -56,6 +64,18 @@ describe('ships triggers', () => {
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
     expect(client.sendCommand).toHaveBeenCalledWith('zejdz ze statku');
     expect(client.sendEvent).toHaveBeenCalledWith('refreshPositionWhenAble');
+  });
+
+  test('disembark message starting with Jakis also binds', () => {
+    parse('Jakis mezczyzna krzyczy na galeonie: Doplynelismy do przystani w Urbimo! Mozna wysiadac!');
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    const [label] = client.FunctionalBind.set.mock.calls[0];
+    expect(label).toBe('zejdz ze statku');
+  });
+
+  test('schodzi z galeonu line does not bind', () => {
+    parse('Wysoki kruczowlosy mezczyzna schodzi z galeonu na brzeg.');
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
 
   test('does not bind boarding command when already on ship', () => {
