@@ -158,18 +158,21 @@ export default class Client {
             command = stripPolishCharacters(command)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
+
+        let preparse = command
+        command = this.Map.parseCommand(command)
         const split = command.split(/[#;]/)
         if (split.length > 1) {
-            split.forEach(part => this.sendCommand(part, echo))
+            split.forEach(part => {
+                if (part !== preparse) {
+                    this.sendCommand(part, echo)
+                } else {
+                    this.clientAdapter.send(this.Map.move(part).direction, echo)
+                }
+            })
             return
         }
 
-        command = this.Map.parseCommand(command)
-        const postParseSplit = command.split(/[#;]/)
-        if (postParseSplit.length > 1) {
-            postParseSplit.forEach(part => this.sendCommand(part, echo))
-            return
-        }
         const isAlias = this.aliases.find(alias => {
             const matches = command.match(alias.pattern)
             if (matches) {
