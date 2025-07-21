@@ -1,6 +1,5 @@
 import initTransportStops from '../src/scripts/transportStops';
 import Triggers from '../src/Triggers';
-import Bjorn from '../src/scripts/ships/Bjorn.json';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
@@ -18,10 +17,9 @@ describe('transport stop triggers', () => {
     jest.clearAllMocks();
   });
 
-  test('stop pattern sets map location', () => {
-    const stop = Bjorn.stops[0];
+  test('stop pattern does not register trigger', () => {
     const line = 'Bjorn krzyczy: Doplynelismy do przystani na wyspie Mekan! Mozna wysiadac!';
     parse(line);
-    expect(client.Map.setMapRoomById).toHaveBeenCalledWith(stop.destination);
+    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
   });
 });
