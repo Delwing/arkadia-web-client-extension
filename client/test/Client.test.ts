@@ -130,6 +130,15 @@ test('sendCommand splits commands returned by parseCommand', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true);
 });
 
+test('sendCommand prints echo commands locally', () => {
+  parseCommand.mockImplementationOnce((cmd: string) => cmd);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const printSpy = jest.spyOn(client, 'print').mockImplementation();
+  client.sendCommand('echo <red> text');
+  expect(printSpy).toHaveBeenCalledWith('<red> text');
+  expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
+});
+
 test('onLine sends printed messages after line and restores Output.send', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const originalOutputSend = (window as any).Output.send;

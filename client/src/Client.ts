@@ -161,6 +161,10 @@ export default class Client {
 
         let preparse = command
         command = this.Map.parseCommand(command)
+        if (command.startsWith('echo ')) {
+            this.print(command.substring(5))
+            return
+        }
         const split = command.split(/[#;]/)
         if (split.length > 1) {
             split.forEach(part => {
