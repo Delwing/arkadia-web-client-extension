@@ -354,12 +354,16 @@ function applyDirectionBinds(dirs: any) {
 // Add global keydown event listener for numpad directions
 document.addEventListener('keydown', (e) => {
     const active = document.activeElement as HTMLElement | null;
+    const modalOpen = document.querySelector('.modal.show');
+    if (modalOpen && (!active || active.id !== 'message-input')) {
+        // Ignore all keybinds when any modal dialog is open, except for the main
+        // command input which is hidden behind the modal anyway
+        return;
+    }
+
     if (active &&
         active.id !== 'message-input' &&
-        (active.matches('input, textarea') ||
-         active.isContentEditable ||
-         active.closest('.modal'))
-    ) {
+        (active.matches('input, textarea') || active.isContentEditable)) {
         return;
     }
     const direction = numpadDirections[e.code];
