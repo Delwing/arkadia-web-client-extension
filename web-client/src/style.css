@@ -602,6 +602,13 @@ button:focus-visible {
   max-height: 85%;
 }
 
+.modal input,
+.modal textarea,
+.modal select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 #auth-panel {
   display: flex;
   flex-direction: column;
