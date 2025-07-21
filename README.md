@@ -8,7 +8,6 @@ Rozszerzenie przeglądarki, które rozbudowuje klienta webowego [Arkadia](https:
 |-------------|-------------------------------------------------------------------|
 | `extension` | Gotowe rozszerzenie                                               |
 | `client`    | Content script, zawiera modyfikacje klienta i skrypty             |
-| `map`       | Iframe mapy                                                       |
 | `options`   | Strona opcji rozszerzenia                                         |
 | `scripts`   | Skrypty pomocnicze do generowania plików danych.                  |
 | `sandbox`   | Sandbox do rozwoju (nie jest częścią publikowanego rozszerzenia). |
