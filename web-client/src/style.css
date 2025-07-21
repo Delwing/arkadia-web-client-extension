@@ -93,7 +93,7 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--bs-body-bg);
   border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
 }
 
@@ -170,7 +170,7 @@ h1 {
 #input-area {
   display: flex;
   padding: 1.5vh 1vh 2.5vh 1vh;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--bs-body-bg);
   border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
   gap: 1vw;
   position: relative;
