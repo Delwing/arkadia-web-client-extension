@@ -232,7 +232,7 @@ h1 {
 
 #input-area .dropdown-menu {
   display: none;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.5vh;
   padding: 0.5vh;
 }
@@ -242,7 +242,8 @@ h1 {
 }
 
 #input-area .dropdown-menu .dropdown-item {
-  width: 100%;
+  flex: 0 0 50%;
+  width: 50%;
   text-align: left;
 }
 
