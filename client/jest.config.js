@@ -7,7 +7,14 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',
-      {},
+      {
+        tsconfig: 'tsconfig.json',
+      },
     ],
+  },
+  moduleNameMapper: {
+    '^@client/(.*)$': '<rootDir>/$1',
+    '^@options/(.*)$': '<rootDir>/../options/$1',
+    '^@map/(.*)$': '<rootDir>/../map/$1'
   },
 }
