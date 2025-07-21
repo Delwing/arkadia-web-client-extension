@@ -32,6 +32,7 @@ import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
 import initPriceEvaluation from './scripts/priceEvaluation'
+import initStoneValue from './scripts/stoneValue'
 import initCoinColors from './scripts/coinColors'
 import initExternalScripts from './scripts/externalScripts'
 import initUserAliases from './scripts/userAliases'
@@ -132,6 +133,7 @@ export function registerScripts(client: Client) {
     initMagicKeys(client)
     initMagics(client)
     initPriceEvaluation(client)
+    initStoneValue(client, aliases)
     initCoinColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
