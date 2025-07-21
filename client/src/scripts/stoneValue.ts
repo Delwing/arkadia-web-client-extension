@@ -21,7 +21,7 @@ export default function initStoneValue(
         setTimeout(() => {
             client.Triggers.removeByTag(tag);
             if (sum > 0) {
-                client.print(`Laczna wartosc kamieni: ${convertCurrency(sum)}`);
+                client.println(`Laczna wartosc kamieni: ${convertCurrency(sum)}`);
             }
         }, 700);
     }
