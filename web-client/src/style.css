@@ -601,6 +601,7 @@ button:focus-visible {
 
 .modal-dialog {
   max-height: 85%;
+  pointer-events: auto;
 }
 
 .modal input,
