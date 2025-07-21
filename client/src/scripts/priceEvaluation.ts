@@ -5,8 +5,8 @@ import { MITHRIL_COLOR, GOLD_COLOR, SILVER_COLOR, COPPER_COLOR } from "./shop";
 export function convertCurrency(amount: number): string {
     const parts: string[] = [];
     let rest = amount;
-    const mth = Math.floor(rest / 2400);
-    rest %= 2400;
+    const mth = Math.floor(rest / 24000);
+    rest %= 24000;
     const zl = Math.floor(rest / 240);
     rest %= 240;
     const sr = Math.floor(rest / 12);

@@ -26,9 +26,9 @@ describe('price evaluation trigger', () => {
   });
 
   test('handles mithryl coins', () => {
-    const result = parse('Wydaje ci sie, ze jest wart okolo 4800 miedziakow.');
+    const result = parse('Wydaje ci sie, ze jest wart okolo 48000 miedziakow.');
     expect(stripAnsiCodes(result)).toBe(
-      'Wydaje ci sie, ze jest wart okolo 4800 miedziakow, czyli 2 mth.'
+      'Wydaje ci sie, ze jest wart okolo 48000 miedziakow, czyli 2 mth.'
     );
   });
 });
