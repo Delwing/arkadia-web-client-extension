@@ -56,7 +56,7 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         client.println(lines.length ? lines.join("\n") : "Brak skrotow.");
     }
 
-    function add(id: number, key: string, label: string) {
+    function add(id: number, key: string, label: string = '') {
         shortcuts[key] = { key, id, label };
         persist();
     }
@@ -75,7 +75,7 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
 
     if (aliases) {
         aliases.push({ pattern: /^\/pokaz_skroty$/, callback: printShortcuts });
-        aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) ([a-zA-Z_0-9]+) (.*)$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3]) });
+        aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) ([a-zA-Z_0-9]+)(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
         aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skroty$/, callback: clear });
     }

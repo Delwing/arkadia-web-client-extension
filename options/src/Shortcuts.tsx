@@ -32,7 +32,7 @@ function Shortcuts() {
         const id = parseInt(loc);
         const k = key.trim();
         const l = label.trim();
-        if (!k || isNaN(id) || !l) return;
+        if (!k || isNaN(id)) return;
         if (!/^[a-zA-Z_0-9]+$/.test(k)) return;
         if (!list.find(s => s.key === k)) {
             const updated = [...list, { key: k, id, label: l }];
