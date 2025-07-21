@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
@@ -13,7 +13,7 @@ function Aliases() {
     const [pattern, setPattern] = useState("");
     const [command, setCommand] = useState("");
     const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [showModal, setShowModal] = useState(false);
+    const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
@@ -37,7 +37,7 @@ function Aliases() {
 
     function openNew() {
         resetForm();
-        setShowModal(true);
+        setShowCreateForm(true);
     }
 
     function openEdit(idx: number) {
@@ -45,7 +45,7 @@ function Aliases() {
         setPattern(a.pattern);
         setCommand(a.command);
         setEditIndex(idx);
-        setShowModal(true);
+        setShowCreateForm(true);
     }
 
     function save() {
@@ -65,6 +65,7 @@ function Aliases() {
         }
         saveList(updated);
         resetForm();
+        setShowCreateForm(false);
     }
 
 
@@ -92,27 +93,10 @@ function Aliases() {
                 />
                 <Button size="sm" onClick={openNew}>Dodaj alias</Button>
             </div>
-            <ul className="list-unstyled ms-3">
-                {filteredAliases.map((a, i) => (
-                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
-                        <span>
-                            <span>{a.pattern}</span>
-                            <span className="text-secondary mx-1">→</span>
-                            <span>{a.command}</span>
-                        </span>
-                        <span className="d-flex gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => openEdit(i)}><TiEdit /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
-                        </span>
-                    </li>
-                ))}
-            </ul>
-
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>{editIndex === null ? 'Dodaj alias' : 'Edytuj alias'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+            
+            {showCreateForm && (
+                <div className="border rounded p-3 mb-3">
+                    <h6 className="mb-3">{editIndex === null ? 'Dodaj alias' : 'Edytuj alias'}</h6>
                     <Form.Group className="d-flex flex-column gap-2">
                         <Form.Control
                             type="text"
@@ -131,13 +115,29 @@ function Aliases() {
                         <small className="text-secondary">
                             Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.
                         </small>
+                        <div className="d-flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Anuluj</Button>
+                            <Button size="sm" onClick={save}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
+                        </div>
                     </Form.Group>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button size="sm" variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-                    <Button size="sm" onClick={() => { save(); setShowModal(false); }}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
-                </Modal.Footer>
-            </Modal>
+                </div>
+            )}
+            
+            <ul className="list-unstyled ms-3">
+                {filteredAliases.map((a, i) => (
+                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
+                        <span>
+                            <span>{a.pattern}</span>
+                            <span className="text-secondary mx-1">→</span>
+                            <span>{a.command}</span>
+                        </span>
+                        <span className="d-flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(i)}><TiEdit /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                        </span>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

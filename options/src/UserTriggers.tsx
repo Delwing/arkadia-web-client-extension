@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
@@ -55,7 +55,7 @@ function UserTriggers() {
     const [pattern, setPattern] = useState('');
     const [macros, setMacros] = useState<UserMacro[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [showModal, setShowModal] = useState(false);
+    const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState('');
 
     useEffect(() => {
@@ -79,7 +79,7 @@ function UserTriggers() {
 
     function openNew() {
         resetForm();
-        setShowModal(true);
+        setShowCreateForm(true);
     }
 
     function edit(idx: number) {
@@ -87,7 +87,7 @@ function UserTriggers() {
         setPattern(t.pattern);
         setMacros(t.macros ? [...t.macros] : []);
         setEditIndex(idx);
-        setShowModal(true);
+        setShowCreateForm(true);
     }
 
     function remove(idx: number) {
@@ -120,6 +120,7 @@ function UserTriggers() {
         }
         saveList(list);
         resetForm();
+        setShowCreateForm(false);
     }
 
     const filteredTriggers = triggers.filter(t =>
@@ -139,21 +140,10 @@ function UserTriggers() {
                 />
                 <Button size="sm" onClick={openNew}>Add trigger</Button>
             </div>
-            <ul className="list-unstyled ms-3">
-                {filteredTriggers.map((t, i) => (
-                    <li key={i} className="d-flex align-items-center gap-2">
-                        <span>{t.pattern}</span>
-                        <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
-                        <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
-                    </li>
-                ))}
-            </ul>
-
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>{editIndex === null ? 'Add trigger' : 'Edit trigger'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+            
+            {showCreateForm && (
+                <div className="border rounded p-3 mb-3">
+                    <h6 className="mb-3">{editIndex === null ? 'Add trigger' : 'Edit trigger'}</h6>
                     <Form.Group className="d-flex flex-column gap-2">
                         <Form.Control
                             type="text"
@@ -172,13 +162,23 @@ function UserTriggers() {
                             />
                         ))}
                         <Button size="sm" onClick={addMacro}>Add action</Button>
+                        <div className="d-flex gap-2 mt-2">
+                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Cancel</Button>
+                            <Button size="sm" onClick={save}>{editIndex === null ? 'Add' : 'Save'}</Button>
+                        </div>
                     </Form.Group>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowModal(false); }}>Cancel</Button>
-                    <Button size="sm" onClick={() => { save(); setShowModal(false); }}>{editIndex === null ? 'Add' : 'Save'}</Button>
-                </Modal.Footer>
-            </Modal>
+                </div>
+            )}
+            
+            <ul className="list-unstyled ms-3">
+                {filteredTriggers.map((t, i) => (
+                    <li key={i} className="d-flex align-items-center gap-2">
+                        <span>{t.pattern}</span>
+                        <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
+                        <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
