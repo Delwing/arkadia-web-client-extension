@@ -33,6 +33,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+@media (max-width: 768px) {
+  body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 h1 {
   font-size: 1.5rem;
   line-height: 1.1;
