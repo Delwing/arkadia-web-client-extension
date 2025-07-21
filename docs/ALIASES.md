@@ -46,3 +46,5 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/napraw** - Naprawianie sprzetu u kowala.
 - **/naprawa** - Alias do `/napraw`.
 - **/napraw_ubrania** - Naprawianie ubrania u krawca.
+- **/ocenkamienie** - oblicza łączną wartość kamieni.
+- **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
