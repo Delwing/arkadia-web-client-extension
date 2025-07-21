@@ -235,15 +235,15 @@ h1 {
   flex-wrap: wrap;
   gap: 0.5vh;
   padding: 0.5vh;
+  width: 400px;
 }
 
 #input-area .dropdown-menu.show {
   display: flex;
 }
 
-#input-area .dropdown-menu .dropdown-item {
-  flex: 0 0 50%;
-  width: 50%;
+#input-area .dropdown-menu li {
+  width: 48.5%;
   text-align: left;
 }
 
