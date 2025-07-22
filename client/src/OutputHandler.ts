@@ -103,8 +103,9 @@ export default class OutputHandler {
         if (!this.output.children) {
             return
         }
+        const offset = this.output.querySelector('#split-bottom') ? 2 : 1
         for (let i = 0; i < event.detail; i++) {
-            const element = this.output.children[this.output.children.length - 2 - i]
+            const element = this.output.children[this.output.children.length - offset - i]
             if (!element) {
                 return;
             }
