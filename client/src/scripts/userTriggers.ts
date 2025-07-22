@@ -6,7 +6,7 @@ function toUpperSafe(text: string) {
 }
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace';
+    type: 'uppercase' | 'color' | 'replace' | 'beep';
     color?: string;
     to?: string;
 }
@@ -50,6 +50,9 @@ export default function initUserTriggers(client: Client) {
                                 break;
                             case 'replace':
                                 result = m.to || '';
+                                break;
+                            case 'beep':
+                                client.playSound('beep');
                                 break;
                         }
                     });

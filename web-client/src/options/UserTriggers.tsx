@@ -4,7 +4,7 @@ import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "./storage";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace';
+    type: 'uppercase' | 'color' | 'replace' | 'beep';
     color?: string;
     to?: string;
 }
@@ -25,6 +25,7 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 <option value="uppercase">Uppercase</option>
                 <option value="color">Color</option>
                 <option value="replace">Replace</option>
+                <option value="beep">Beep</option>
             </Form.Select>
             {macro.type === 'color' && (
             <Form.Control
