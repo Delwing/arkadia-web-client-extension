@@ -15,7 +15,6 @@ export default async function loadMagics(): Promise<string[]> {
             localStorageKey: "magics",
             indexedDB: { dbName: "ArkadiaMagicsDB", storeName: "magics", key: "magics" },
             ttl: TTL,
-            cacheInLocalStorage: false,
         });
         const magics: string[] = [];
         for (const value of Object.values(data.magics)) {

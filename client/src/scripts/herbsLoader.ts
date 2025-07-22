@@ -31,7 +31,6 @@ export default async function loadHerbs(): Promise<HerbsData | null> {
             localStorageKey: "herbs_data",
             indexedDB: { dbName: "ArkadiaHerbsDB", storeName: "herbs", key: "herbs" },
             ttl: TTL,
-            cacheInLocalStorage: false,
         });
     } catch (e) {
         console.error("Failed to load herbs:", e);
