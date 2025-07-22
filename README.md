@@ -16,6 +16,12 @@ Rozszerzenie przeglądarki, które rozbudowuje klienta webowego [Arkadia](https:
 yarn install
 ```
 
+## Zarządzanie pamięcią podręczną
+
+Funkcja `loadCachedJSON` zapisuje pobrane dane w IndexedDB. Dodatkowe funkcje
+`clearIndexedDB` oraz `updateIndexedDB` pozwalają odpowiednio usuwać i odświeżać
+zapisane wpisy.
+
 ## Licencja
 
 MIT

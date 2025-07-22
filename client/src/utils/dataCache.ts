@@ -57,32 +57,24 @@ async function getFromIndexedDB(config: IndexedDBConfig, ttl?: number) {
     });
 }
 
-function storeInLocalStorage(key: string, data: any) {
-    try {
-        localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-    } catch (e) {
-        try {
-            localStorage.removeItem(key);
-            localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-        } catch {
-            console.error('Failed to cache data in localStorage:', e);
-        }
-    }
+export async function clearIndexedDB(config: IndexedDBConfig): Promise<void> {
+    const db = await openDatabase(config);
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([config.storeName], 'readwrite');
+        const store = tx.objectStore(config.storeName);
+        const req = store.delete(config.key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(new Error('Failed to clear IndexedDB'));
+    });
 }
 
-function getFromLocalStorage(key: string, ttl?: number) {
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
-    try {
-        const parsed = JSON.parse(cached);
-        if (!ttl || (parsed.timestamp && parsed.timestamp + ttl > Date.now())) {
-            return parsed.data;
-        }
-    } catch {
-        console.error('Failed to parse cached data');
-    }
-    return null;
+export async function updateIndexedDB<T>(config: IndexedDBConfig, url: string): Promise<T> {
+    const response = await fetch(url);
+    const data = await response.json();
+    await storeInIndexedDB(config, data);
+    return data as T;
 }
+
 
 export interface LoadOptions {
     url: string;
@@ -90,7 +82,6 @@ export interface LoadOptions {
     indexedDB?: IndexedDBConfig;
     ttl?: number;
     onProgress?: (progress: number, loaded?: number, total?: number) => void;
-    cacheInLocalStorage?: boolean;
 }
 
 export async function loadCachedJSON<T>(options: LoadOptions): Promise<T> {
@@ -99,21 +90,10 @@ export async function loadCachedJSON<T>(options: LoadOptions): Promise<T> {
             const data = await getFromIndexedDB(options.indexedDB, options.ttl);
             if (data) {
                 options.onProgress?.(100);
-                if (options.cacheInLocalStorage !== false && options.localStorageKey) {
-                    storeInLocalStorage(options.localStorageKey, data);
-                }
                 return data as T;
             }
         } catch (e) {
             console.warn('Failed to load from IndexedDB:', e);
-        }
-    }
-
-    if (options.cacheInLocalStorage !== false && options.localStorageKey) {
-        const localData = getFromLocalStorage(options.localStorageKey, options.ttl);
-        if (localData) {
-            options.onProgress?.(100);
-            return localData as T;
         }
     }
 
@@ -153,8 +133,6 @@ export async function loadCachedJSON<T>(options: LoadOptions): Promise<T> {
             console.warn('Failed to store in IndexedDB:', e);
         }
     }
-    if (options.cacheInLocalStorage !== false && options.localStorageKey) {
-        storeInLocalStorage(options.localStorageKey, data);
-    }
+
     return data;
 }

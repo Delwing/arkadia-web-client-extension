@@ -15,7 +15,6 @@ export default async function loadMagicKeys(): Promise<string[]> {
             localStorageKey: "magic_keys",
             indexedDB: { dbName: "ArkadiaMagicKeysDB", storeName: "magicKeys", key: "keys" },
             ttl: TTL,
-            cacheInLocalStorage: false,
         });
         if (!Array.isArray(data.magic_keys)) {
             throw new Error("Invalid data format");
