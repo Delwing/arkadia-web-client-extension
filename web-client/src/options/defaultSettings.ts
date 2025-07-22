@@ -1,6 +1,5 @@
 export interface Settings {
     packageHelper: boolean;
-    replaceMap: boolean;
     inlineCompassRose: boolean;
     shortenExits: boolean;
     prettyContainers: boolean;
@@ -13,7 +12,6 @@ export interface Settings {
 
 export const defaultSettings: Settings = {
     packageHelper: true,
-    replaceMap: false,
     inlineCompassRose: false,
     shortenExits: false,
     prettyContainers: true,
