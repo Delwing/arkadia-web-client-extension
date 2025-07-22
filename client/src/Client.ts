@@ -189,6 +189,10 @@ export default class Client {
             return false
         })
         if (!isAlias) {
+            if (command.trim().startsWith('/')) {
+                this.print(`Nieznany alias: ${command}`)
+                return
+            }
             this.clientAdapter.send(this.Map.move(command).direction, echo)
         }
     }
