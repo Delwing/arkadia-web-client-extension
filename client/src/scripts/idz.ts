@@ -1,10 +1,77 @@
 import Client from "../Client";
-import {longToShort} from "../MapHelper";
+import { longToShort } from "../MapHelper";
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     if (!aliases) return;
+
+    let path: number[] = [];
+    let index = 0;
+    let delay = 1;
+    let timer: number | null = null;
+    let paused = false;
+
+    const clearTimer = () => {
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+
+    const scheduleStep = () => {
+        if (paused || index >= path.length - 1) {
+            clearTimer();
+            return;
+        }
+
+        const current = client.Map.mapReader.getRoomById(path[index]);
+        const nextId = path[index + 1];
+        const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
+        const dir = Object.keys(exits).find(d => exits[d] === nextId);
+        if (!dir) {
+            clearTimer();
+            path = [];
+            return;
+        }
+
+        const time = (delay + (Math.random() * 0.6 - 0.3)) * 1000;
+        timer = window.setTimeout(() => {
+            timer = null;
+            if (paused) return;
+            client.sendCommand(longToShort[dir] ?? dir);
+            index += 1;
+            scheduleStep();
+        }, time);
+    };
+
+    const startWalk = (target: number, d: number) => {
+        const room: any = client.Map.currentRoom;
+        if (!room) return;
+        const p = client.Map.mapReader.getPath(room.id, target);
+        if (!p || p.length < 2) return;
+        path = p.map(n => parseInt(n));
+        index = 0;
+        delay = d;
+        paused = false;
+        clearTimer();
+        scheduleStep();
+    };
+
+    const stopWalk = () => {
+        paused = true;
+        clearTimer();
+    };
+
+    const resumeWalk = () => {
+        if (!paused || path.length === 0) return;
+        paused = false;
+        clearTimer();
+        scheduleStep();
+    };
+
+    client.addEventListener('stepBack', stopWalk);
+
     aliases.push({
-        pattern: /\/idz$/, 
+        pattern: /\/idz$/,
         callback: () => {
             const room: any = client.Map.currentRoom;
             if (!room) return;
@@ -23,6 +90,25 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
                 client.sendCommand(longToShort[dir] ?? dir);
             }
         }
+    });
+
+    aliases.push({
+        pattern: /^\/idz (\d+)(?:\s+([0-9]+(?:\.[0-9]+)?))?$/,
+        callback: (m: RegExpMatchArray) => {
+            const target = parseInt(m[1]);
+            const d = m[2] ? parseFloat(m[2]) : 1;
+            startWalk(target, d);
+        }
+    });
+
+    aliases.push({
+        pattern: /^\/stop$/,
+        callback: stopWalk
+    });
+
+    aliases.push({
+        pattern: /^\/dalej$/,
+        callback: resumeWalk
     });
 }
 
