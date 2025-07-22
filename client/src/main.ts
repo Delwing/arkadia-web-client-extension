@@ -34,6 +34,7 @@ import initBreakItem from './scripts/breakItem'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initCoinColors from './scripts/coinColors'
+import initWeaponColors from './scripts/weaponColors'
 import initExternalScripts from './scripts/externalScripts'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
@@ -141,6 +142,7 @@ export function registerScripts(client: Client) {
     initPriceEvaluation(client)
     initStoneValue(client, aliases)
     initCoinColors(client)
+    initWeaponColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
     initShortcuts(client, aliases)
