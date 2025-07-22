@@ -60,6 +60,7 @@ export default class Client {
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
+    suppressMapMoveEvent = false;
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {
