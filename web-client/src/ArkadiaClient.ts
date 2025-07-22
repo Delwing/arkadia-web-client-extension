@@ -151,6 +151,7 @@ class ArkadiaClient implements ClientAdapter{
         }
 
         try {
+            this.recorder.handleOutgoing(message);
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
             if (echo && this.receivedFirstGmcp && message) {
@@ -193,7 +194,6 @@ class ArkadiaClient implements ClientAdapter{
      * Compatibility wrapper matching old client API
      */
     sendCommand(command: string, echo: boolean = true): void {
-        this.recorder.handleOutgoing(command);
         this.send(command, echo);
     }
 
