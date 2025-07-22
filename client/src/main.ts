@@ -32,6 +32,7 @@ import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
 import initMagikZnika from './scripts/magikZnika'
+import initSeasonPrint from './scripts/seasonPrint'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initCoinColors from './scripts/coinColors'
@@ -147,6 +148,7 @@ export function registerScripts(client: Client) {
     initLeaderAttackWarning(client)
     initBreakItem(client)
     initMagikZnika(client)
+    initSeasonPrint(client)
     initShortcuts(client, aliases)
     initShortExits(client)
     initExternalScripts(client)
