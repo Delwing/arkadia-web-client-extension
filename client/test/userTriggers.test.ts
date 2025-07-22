@@ -7,6 +7,7 @@ class FakeClient {
   addEventListener = jest.fn();
   removeEventListener = jest.fn();
   port = { postMessage: jest.fn() } as any;
+  playSound = jest.fn();
 }
 
 describe('userTriggers', () => {
@@ -39,6 +40,17 @@ describe('userTriggers', () => {
     apply({ detail: { key: 'triggers', value: list } } as any);
     const result = client.Triggers.parseLine('foo foo', '');
     expect(result).toBe('bar bar');
+  });
+
+  test('beep plays sound', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.addEventListener.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'beep' }] }];
+    apply({ detail: { key: 'triggers', value: list } } as any);
+    const result = client.Triggers.parseLine('foo', '');
+    expect(result).toBe('foo');
+    expect(client.playSound).toHaveBeenCalledWith('beep');
   });
 });
 
