@@ -68,7 +68,7 @@ export function findClosestColor(hex: string | number[]): number {
 }
 
 export function mudletColorLine(line: string) {
-    return line.replace(/<(.+)>/g, (substring => {
+    return line.replace(/<(.+?)>/g, (substring => {
         const stringColor = substring.substring(1, substring.length - 1)
         if (stringColor === "reset") {
             return RESET
