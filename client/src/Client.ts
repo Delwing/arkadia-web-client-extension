@@ -190,7 +190,7 @@ export default class Client {
         })
         if (!isAlias) {
             if (command.trim().startsWith('/')) {
-                this.print(`Nieznany alias: ${command}`)
+                this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
                 return
             }
             this.clientAdapter.send(this.Map.move(command).direction, echo)
