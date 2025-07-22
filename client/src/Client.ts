@@ -4,7 +4,7 @@ import PackageHelper from "./PackageHelper";
 import MapHelper from "./MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
 import {Howl} from "howler";
-import {setXtermPalette} from "./Colors";
+import {mudletColorLine, setXtermPalette} from "./Colors";
 import {
     FunctionalBind,
     LINE_START_EVENT,
@@ -165,7 +165,7 @@ export default class Client {
         let preparse = command
         command = this.Map.parseCommand(command)
         if (command.startsWith('echo ')) {
-            this.print(command.substring(5))
+            this.print(mudletColorLine(command.substring(5)))
             return
         }
         const split = command.split(/[#;]/)

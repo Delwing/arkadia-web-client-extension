@@ -1,5 +1,6 @@
 import xtermArkadia from "./xtermArkadia";
 import xtermProper from "./xtermProper";
+import mudletColors from "./colors.json";
 
 function hexToRgb(hex: string): [number, number, number] {
     const value = parseInt(hex.replace(/^#/, ''), 16);
@@ -64,4 +65,15 @@ export function findClosestColor(hex: string | number[]): number {
         }
     })
     return currentPick + 1
+}
+
+export function mudletColorLine(line: string) {
+    return line.replace(/<(.+)>/g, (substring => {
+        const stringColor = substring.substring(1, substring.length - 1)
+        if (stringColor === "reset") {
+            return RESET
+        } else {
+            return color(findClosestColor(mudletColors[stringColor] ?? stringColor.split(",")))
+        }
+    }));
 }
