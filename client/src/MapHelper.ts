@@ -211,9 +211,11 @@ export default class MapHelper {
     moveBack() {
         this.locationHistory.pop()
         if (!this.locationHistory[this.locationHistory.length - 1]) {
+            this.client.sendEvent('stepBack')
             return
         }
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1])
+        this.client.sendEvent('stepBack')
     }
 
     renderRoom(room: Room) {
