@@ -2,6 +2,7 @@ import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
 import storage from "./storage.ts";
+import { Settings, defaultSettings } from './defaultSettings';
 
 const collectModeOptions = [
     "monety",
@@ -15,33 +16,9 @@ const collectModeOptions = [
 
 const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
-interface Settings {
-    packageHelper: boolean;
-    replaceMap: boolean;
-    inlineCompassRose: boolean;
-    shortenExits: boolean;
-    prettyContainers: boolean;
-    containerColumns: number;
-    collectMode: number;
-    collectMoneyType: number;
-    collectExtra: string[];
-    xtermPalette: 'arkadia' | 'proper';
-}
-
 function SettingsForm() {
 
-    const [settings, setSettings] = useState<Settings>({
-        packageHelper: false,
-        replaceMap: false,
-        inlineCompassRose: false,
-        shortenExits: false,
-        prettyContainers: true,
-        containerColumns: 2,
-        collectMode: 3,
-        collectMoneyType: 1,
-        collectExtra: [],
-        xtermPalette: 'arkadia',
-    })
+    const [settings, setSettings] = useState<Settings>(defaultSettings)
 
     const [extraInput, setExtraInput] = useState<string>('')
 
@@ -61,7 +38,7 @@ function SettingsForm() {
 
     useEffect(() => {
         storage.getItem("settings").then(res => {
-            setSettings(Object.assign({}, settings, res.settings));
+            setSettings(Object.assign({}, defaultSettings, res.settings));
         })
     }, []);
 
