@@ -26,6 +26,8 @@ export default class PackageHelper {
     enabled = false;
 
     private packages = []
+    private listTime = 0
+    private timer: number | undefined
     private remover = () => {
     };
     private locationListener;
@@ -64,6 +66,12 @@ export default class PackageHelper {
 
     private onPackageList() {
         this.packages = []
+        this.listTime = Date.now()
+        if (this.timer) {
+            clearInterval(this.timer)
+            this.timer = undefined
+            this.client.sendEvent('packageStatus', null)
+        }
         this.remover();
         this.remover = this.client.addEventListener("command", ({detail: command}) => this.handleCommand(command));
     }
@@ -80,6 +88,7 @@ export default class PackageHelper {
             }
             this.currentPackage = this.packages[this.pick - 1]
             this.leadToPackage(this.currentPackage.name)
+            this.startTimer()
             this.deliveryTrigger = this.client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (_, __, matches): undefined => {
                 if (matches[1] === 'Oddajesz') {
                     if (!this.npc[this.currentPackage.name]) {
@@ -92,6 +101,7 @@ export default class PackageHelper {
                     }
                 }
                 this.currentPackage = undefined;
+                this.stopTimer()
             })
         })
         this.failTrigger = this.client.Triggers.registerOneTimeTrigger(notTrustedMessage, (): undefined => {
@@ -166,6 +176,40 @@ export default class PackageHelper {
         };
     }
 
+    private startTimer() {
+        if (!this.currentPackage) {
+            return
+        }
+        const hours = this.currentPackage.time ? parseInt(this.currentPackage.time as any) : null
+        if (this.timer) {
+            clearInterval(this.timer)
+        }
+        if (hours == null) {
+            this.client.sendEvent('packageStatus', {recipient: this.currentPackage.name})
+            this.timer = undefined
+            return
+        }
+        const total = hours * 120
+        const update = () => {
+            const left = total - Math.floor((Date.now() - this.listTime) / 1000)
+            this.client.sendEvent('packageStatus', {recipient: this.currentPackage!.name, seconds: left})
+            if (left <= 0 && this.timer) {
+                clearInterval(this.timer)
+                this.timer = undefined
+            }
+        }
+        update()
+        this.timer = window.setInterval(update, 1000)
+    }
+
+    private stopTimer() {
+        if (this.timer) {
+            clearInterval(this.timer)
+            this.timer = undefined
+        }
+        this.client.sendEvent('packageStatus', null)
+    }
+
     private leadToPackage(name: string) {
         const location = this.npc[name]
         if (location) {
@@ -189,6 +233,7 @@ export default class PackageHelper {
 
     disable() {
         this.client.Triggers.removeByTag(tag)
+        this.stopTimer()
     }
 
 }

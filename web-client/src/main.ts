@@ -7,6 +7,7 @@ import CharState from "./CharState";
 import ObjectList from "./ObjectList";
 import LampTimer from "./LampTimer";
 import BreakItemWarning from "./BreakItemWarning";
+import PackageStatus from "./PackageStatus";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -763,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new CharState(arkadiaClient);
     new LampTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
+    new PackageStatus(arkadiaClient);
     new ObjectList(arkadiaClient);
 
     // Initialize mobile direction buttons
