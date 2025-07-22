@@ -18,6 +18,7 @@ import {attachGmcpListener} from "./gmcp";
 import {color} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
+import eventBus from "./eventBus";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -30,7 +31,7 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
-    eventTarget = new EventTarget();
+    eventTarget = eventBus;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
     packageHelper = new PackageHelper(this);
