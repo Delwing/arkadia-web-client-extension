@@ -258,9 +258,8 @@ class ArkadiaClient implements ClientAdapter{
                     let text = atob(gmcp.text)
                     this.messageBuffer.push({text, type: gmcp.type})
                 } else {
-                    eventBus.emit(`gmcp.${type}`, gmcp)
-                    eventBus.emit('gmcp', { path: type, value: gmcp })
                     this.emit(`gmcp.${type}`, gmcp);
+                    this.emit('gmcp', { path: type, value: gmcp });
                 }
             } catch (error) {
                 console.error('Error parsing GMCP JSON:', error);
@@ -280,15 +279,15 @@ class ArkadiaClient implements ClientAdapter{
         processed.forEach((message, i) => {
             this.sendLine(message.text, message.type, i)
         })
-        eventBus.emit('output-sent', processed.length)
+        this.emit('output-sent', processed.length)
         this.messageBuffer = []
     }
 
     private sendLine(text: string, type: string, i: number) {
         text = window.clientExtension.onLine(text, type)
-        eventBus.on('output-sent', () => eventBus.emit(`gmcp_msg.${type}`, text), {once: true})
+        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         Output.send(parseAnsiPatterns(text), type);
-        eventBus.emit('line-sent')
+        this.emit('line-sent')
     }
 
     startRecording(name: string) {
