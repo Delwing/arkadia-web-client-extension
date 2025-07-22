@@ -36,6 +36,17 @@ function Npc() {
             .catch(e => console.error('Failed to clear NPC data:', e));
     }
 
+    function exportNpcs() {
+        const json = JSON.stringify(npcs, null, 2)
+        const blob = new Blob([json], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'arkadia-npcs.json'
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
     function deleteNpc(npc: NpcProps) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
@@ -75,6 +86,7 @@ function Npc() {
         <div className="m-2">
             <div className="mb-2 d-flex align-items-center gap-2">
                 <Button variant="primary" size="sm" onClick={downloadNpcs}>Pobierz</Button>
+                <Button variant="secondary" size="sm" onClick={exportNpcs}>Eksport</Button>
                 <Button variant="danger" size="sm" onClick={clearNpcs}>Wyczyść</Button>
                 <Form.Control
                     type="text"
