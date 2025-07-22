@@ -1,4 +1,4 @@
-let limit = 25;
+let limit = 35;
 
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
 

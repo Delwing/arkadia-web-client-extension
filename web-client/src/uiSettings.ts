@@ -16,7 +16,7 @@ const defaultSettings: UiSettings = {
     objectsFontSize: 0.6,
     buttonSize: 1,
     mapScale: 0.30,
-    mapLimit: 25,
+    mapLimit: 35,
     showButtons: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
