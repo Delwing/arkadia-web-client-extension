@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { longToShort } from "../MapHelper";
+import { getShortcut } from "./shortcuts";
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     if (!aliases) return;
@@ -79,23 +80,23 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             const exitDirs = Object.keys(allExits);
             if (exitDirs.length === 0) return;
 
-            let dir: string;
             if (exitDirs.length === 2 && client.Map.locationHistory.length >= 2) {
                 const prevId = client.Map.locationHistory[client.Map.locationHistory.length - 2];
                 const cameFrom = exitDirs.find(d => allExits[d] === prevId);
                 const alt = exitDirs.find(d => d !== cameFrom);
                 if (alt) {
-                    dir = alt;
+                    client.sendCommand(longToShort[alt] ?? alt);
                 }
-                client.sendCommand(longToShort[dir] ?? dir);
             }
         }
     });
 
     aliases.push({
-        pattern: /^\/idz (\d+)(?:\s+([0-9]+(?:\.[0-9]+)?))?$/,
+        pattern: /^\/idz (\S+)(?:\s+([0-9]+(?:\.[0-9]+)?))?$/,
         callback: (m: RegExpMatchArray) => {
-            const target = parseInt(m[1]);
+            const key = m[1];
+            const target = getShortcut(key) ?? parseInt(key, 10);
+            if (isNaN(target)) return;
             const d = m[2] ? parseFloat(m[2]) : 1;
             startWalk(target, d);
         }
