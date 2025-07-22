@@ -28,6 +28,8 @@ export default class EmbeddedMap {
         this.settings.areaName = false;
         this.settings.scale = 90;
         this.settings.borders = true;
+        this.settings.transparentLabels = true;
+        this.settings
         let zoom = 0.30;
         try {
             const raw = localStorage.getItem('uiSettings');
