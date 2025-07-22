@@ -11,13 +11,13 @@ class FakeClient {
 
 describe('ships triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string, type?: string) => string;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initShips((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, line, type);
     jest.clearAllMocks();
   });
 
@@ -34,9 +34,9 @@ describe('ships triggers', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'wlm');
   });
 
-  test('galeon boarding trigger binds command and beeps', () => {
-    parse('Wielki trojmasztowy galeon przybija do brzegu.');
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+  test('galeon boarding trigger binds command without beep', () => {
+    parse('Wielki trojmasztowy galeon.', 'room.contents.object');
+    expect(client.playSound).not.toHaveBeenCalled();
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
@@ -44,7 +44,7 @@ describe('ships triggers', () => {
 
   test('statki trigger binds without beep', () => {
     client.playSound.mockClear();
-    parse('Tajemniczy okret');
+    parse('Tajemniczy okret', 'room.contents.object');
     expect(client.playSound).not.toHaveBeenCalled();
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
@@ -80,9 +80,7 @@ describe('ships triggers', () => {
     client.sendCommand.mockClear();
     client.sendEvent.mockClear();
     parse('Jakis mezczyzna krzyczy na galeonie: Doplynelismy do przystani w Urbimo! Mozna wysiadac!');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label] = client.FunctionalBind.set.mock.calls[0];
-    expect(label).toBe('zejdz ze statku');
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
 
   test('schodzi z galeonu line does not bind', () => {
@@ -90,17 +88,17 @@ describe('ships triggers', () => {
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
 
-  test('does not bind boarding command when already on ship', () => {
+  test('boarding command binds again when already on ship', () => {
     parse('Tratwa przybija do brzegu.');
     const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     boardCallback();
     client.FunctionalBind.set.mockClear();
     parse('Tratwa przybija do brzegu.');
-    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
   });
 
   test('prom without punctuation binds and beeps', () => {
-    parse('Szeroki zielony prom');
+    parse('Szeroki zielony prom.');
     expect(client.playSound).toHaveBeenCalledTimes(1);
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
