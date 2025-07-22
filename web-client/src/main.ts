@@ -80,15 +80,9 @@ loadNpcData().then(npc => {
     client.sendEvent("npc", npc)
 })
 
-window.clientExtension.addEventListener('lampTimer', (ev: CustomEvent<number | null>) => {
-    arkadiaClient.emit('lampTimer', ev.detail);
-});
-window.clientExtension.addEventListener('breakItem', (ev: CustomEvent<any>) => {
-    arkadiaClient.emit('breakItem', ev.detail);
-});
-window.clientExtension.addEventListener('settings', (ev: CustomEvent) => {
-    if (ev.detail?.binds?.directions) {
-        applyDirectionBinds(ev.detail.binds.directions);
+arkadiaClient.on('settings', (detail: any) => {
+    if (detail?.binds?.directions) {
+        applyDirectionBinds(detail.binds.directions);
     }
 });
 

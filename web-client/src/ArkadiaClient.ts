@@ -3,10 +3,10 @@ import { RecordedEvent } from './recordingStorage';
 import Recorder from './Recorder';
 import {SKIP_LINE} from "@client/src/ControlConstants.ts";
 import {ClientAdapter} from "@client/src/Client.ts";
+import eventBus from "@client/src/eventBus.ts";
 
 // Event emitter types
 type EventListener = (...args: any[]) => void;
-type EventMap = Record<string, EventListener[]>;
 
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
@@ -17,7 +17,6 @@ const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 
 class ArkadiaClient implements ClientAdapter{
     private socket!: WebSocket;
-    private events: EventMap = {};
     private receivedFirstGmcp: boolean = false;
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
@@ -35,29 +34,21 @@ class ArkadiaClient implements ClientAdapter{
      * Register an event listener
      */
     on(event: string, listener: EventListener): void {
-        if (!this.events[event]) {
-            this.events[event] = [];
-        }
-        this.events[event].push(listener);
+        eventBus.on(event, listener);
     }
 
     /**
      * Remove an event listener
      */
     off(event: string, listener: EventListener): void {
-        if (!this.events[event]) return;
-        const index = this.events[event].indexOf(listener);
-        if (index > -1) {
-            this.events[event].splice(index, 1);
-        }
+        eventBus.off(event, listener);
     }
 
     /**
      * Emit an event to all registered listeners
      */
     emit(event: string, ...args: any[]): void {
-        if (!this.events[event]) return;
-        this.events[event].forEach(listener => listener(...args));
+        eventBus.emit(event, ...args);
     }
 
     /**
@@ -267,9 +258,8 @@ class ArkadiaClient implements ClientAdapter{
                     let text = atob(gmcp.text)
                     this.messageBuffer.push({text, type: gmcp.type})
                 } else {
-                    window.clientExtension.sendEvent(`gmcp.${type}`, gmcp)
-                    window.clientExtension.sendEvent('gmcp', { path: type, value: gmcp })
                     this.emit(`gmcp.${type}`, gmcp);
+                    this.emit('gmcp', { path: type, value: gmcp });
                 }
             } catch (error) {
                 console.error('Error parsing GMCP JSON:', error);
@@ -289,15 +279,15 @@ class ArkadiaClient implements ClientAdapter{
         processed.forEach((message, i) => {
             this.sendLine(message.text, message.type, i)
         })
-        window.clientExtension.sendEvent('output-sent', processed.length)
+        this.emit('output-sent', processed.length)
         this.messageBuffer = []
     }
 
     private sendLine(text: string, type: string, i: number) {
         text = window.clientExtension.onLine(text, type)
-        window.clientExtension.addEventListener('output-sent', () => window.clientExtension.sendEvent(`gmcp_msg.${type}`, text), {once: true})
+        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         Output.send(parseAnsiPatterns(text), type);
-        window.clientExtension.sendEvent('line-sent')
+        this.emit('line-sent')
     }
 
     startRecording(name: string) {
