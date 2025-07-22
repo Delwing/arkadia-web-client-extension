@@ -39,6 +39,7 @@ import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
+import initParryShieldEvaluation from './scripts/parryShieldEvaluation'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initMapAliases from './scripts/mapAliases'
@@ -149,5 +150,6 @@ export function registerScripts(client: Client) {
     initUserTriggers(client)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
+    initParryShieldEvaluation(client)
 
 }

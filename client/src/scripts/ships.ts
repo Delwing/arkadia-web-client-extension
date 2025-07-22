@@ -1,5 +1,6 @@
 import Client from "../Client";
-import {isType} from "../Triggers";
+
+let onShip = false;
 
 const BOARD_CMDS = [
     "wem",
@@ -14,46 +15,70 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
         client.playSound("beep");
     }
     client.FunctionalBind.set(label, () => {
-        client.sendEvent("refreshPositionWhenAble");
+        if (commands.length === 1 && commands[0] === "zejdz ze statku") {
+            client.sendEvent("refreshPositionWhenAble");
+            onShip = false;
+        } else {
+            onShip = true;
+        }
         commands.forEach(cmd => client.sendCommand(cmd));
     });
 }
 
 export default function initShips(client: Client) {
+    onShip = false;
     const board = (beep: boolean) => (
         _raw: string,
         _line: string,
         _matches: RegExpMatchArray,
         _type: string
     ) => {
-        bindShip(client, BOARD_CMDS, BOARD_LABEL, beep);
+        if (!onShip) {
+            bindShip(client, BOARD_CMDS, BOARD_LABEL, beep);
+        }
         return undefined;
     };
     const disembark = () => {
-        bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
+        if (onShip) {
+            bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
+        }
         return undefined;
     };
 
-    const boardPatterns = [
-        /.*(Wszyscy na poklad!.*|przybija wielki trojmasztowy galeon\.)$/
-    ]
-    client.Triggers.registerTrigger(boardPatterns, board(true), "ships");
+    client.Triggers.registerTrigger(
+        [
+            /.*przybija wielki trojmasztowy galeon\.$/,
+            /^Wielki trojmasztowy galeon przybija do brzegu\.$/,
+        ],
+        board(true),
+        "ships"
+    );
 
-    const disembarkPatterns = [
-        /^(?!Ktos|Jakis|Jakas).*(Doplynelismy.*(Mozna|w calej swej)|Marynarze sprawnie cumuja)/
-    ]
-    client.Triggers.registerTrigger(disembarkPatterns, disembark, "ships");
+    client.Triggers.registerTrigger(
+        [
+            /.*(rypa|ratwa|rom|arka) przybija do brzegu\.$/,
+            /^Tratwa(\.|,| i)/,
+            /^Rzeczna tratwa(\.|,| i)/,
+        ],
+        board(true),
+        "ships"
+    );
 
-    const misc = [
-        /^[a-zA-Z]+ [a-z]+ prom[^a-z]$/,
-        /^Prom(\.|,| i)/,
-        /^Barka(\.|,| i)/,
-        /.*(rypa|ratwa|rom|arka) przybija do brzegu\.$/,
-        /^Tratwa(\.|,| i)/,
-        /^Rzeczna tratwa(\.|,| i)/,
-    ]
-    client.Triggers.registerTrigger(misc, board(true), "ships");
+    client.Triggers.registerTrigger(
+        /^(?!Ktos|Jakas).*(Doplynelismy.*(Mozna|w calej swej)|Marynarze sprawnie cumuja)/,
+        disembark,
+        "ships"
+    );
 
+    client.Triggers.registerTrigger(
+        [
+            /^[a-zA-Z]+ [a-z]+ prom(?:$|[^a-z])/,
+            /^Prom(\.|,| i)/,
+            /^Barka(\.|,| i)/,
+        ],
+        board(true),
+        "ships"
+    );
 
     const statki = [
         /^([A-Za-z]+) (statek|knara)(\.|,| i)/,
@@ -76,6 +101,5 @@ export default function initShips(client: Client) {
         /Dluga niezgrabna barka/,
         /Plaskodenny skeid/,
     ];
-    const parent = client.Triggers.registerTrigger(isType("room.contents.object"))
-    parent.registerChild(statki, board(false), "ships");
+    client.Triggers.registerTrigger(statki, board(false), "ships");
 }
