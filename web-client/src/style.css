@@ -464,8 +464,7 @@ button:focus-visible {
 
 .mobile-top-buttons {
   display: flex;
-  justify-content: center;
-  gap: 5px;
+  gap: 10px;
   margin-bottom: 5px;
 }
 
@@ -480,7 +479,7 @@ button:focus-visible {
 .mobile-attack-buttons {
   display: flex;
   justify-content: flex-start;
-  gap: 5px;
+  gap: 10px;
   margin-bottom: 5px;
 }
 
@@ -491,15 +490,15 @@ button:focus-visible {
 .mobile-right-buttons {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-left: 5px;
+  gap: 10px;
+  margin-left: 10px;
 }
 
 .mobile-direction-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
+  gap: 10px;
 }
 
 .mobile-button {
