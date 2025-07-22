@@ -431,9 +431,8 @@ button:focus-visible {
   position: fixed;
   right: 5px;
   top: 160px; /* Position relative to top */
-  flex-direction: column;
   z-index: 1000;
-  gap: 3px;
+  gap: 10px;
   background-color: rgba(135, 206, 235, 0.7); /* Sky blue with transparency */
   padding: 5px;
   border-radius: 5px;
@@ -442,11 +441,15 @@ button:focus-visible {
   user-select: none; /* Prevent text selection */
   -webkit-user-select: none;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow by default */
+  display: grid;
+  grid-template-columns: repeat(4, auto);
 }
 
 #mobile-buttons-preview {
   position: static;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 10px;
 }
 
 #mobile-buttons-modal .modal-body {
@@ -462,43 +465,10 @@ button:focus-visible {
   z-index: 1050;
 }
 
-.mobile-top-buttons {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 5px;
-}
-
-.mobile-direction-buttons.collapsed .mobile-attack-buttons > button:not(#buttons-toggle),
-.mobile-direction-buttons.collapsed .mobile-top-buttons,
-.mobile-direction-buttons.collapsed .mobile-direction-main,
+.mobile-direction-buttons.collapsed button:not(#buttons-toggle),
 .mobile-direction-buttons.collapsed #z-buttons-list,
 .mobile-direction-buttons.collapsed #zas-buttons-list {
   display: none;
-}
-
-.mobile-attack-buttons {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px;
-  margin-bottom: 5px;
-}
-
-.mobile-direction-main {
-  display: flex;
-}
-
-.mobile-right-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-left: 10px;
-}
-
-.mobile-direction-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 10px;
 }
 
 .mobile-button {

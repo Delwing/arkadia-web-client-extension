@@ -165,7 +165,7 @@ export default class MobileDirectionButtons {
 
         // Show buttons if enabled, regardless of device type
         if (this.enabled) {
-            this.container.style.display = 'flex';
+            this.container.style.display = 'grid';
         } else {
             this.container.style.display = 'none';
         }
@@ -194,7 +194,7 @@ export default class MobileDirectionButtons {
         if (this.enabled) return;
         this.enabled = true;
         // Show buttons regardless of device type
-        this.container.style.display = 'flex';
+        this.container.style.display = 'grid';
     }
 
     disable() {
