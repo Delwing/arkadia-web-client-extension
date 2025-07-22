@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {isType} from "../Triggers";
 
 const BOARD_CMDS = [
     "wem",
@@ -75,5 +76,6 @@ export default function initShips(client: Client) {
         /Dluga niezgrabna barka/,
         /Plaskodenny skeid/,
     ];
-    client.Triggers.registerTrigger(statki, board(false), "ships");
+    const parent = client.Triggers.registerTrigger(isType("room.contents.object"))
+    parent.registerChild(statki, board(false), "ships");
 }

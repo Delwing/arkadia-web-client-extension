@@ -23,6 +23,14 @@ export interface TriggerOptions {
     stayOpenLines?: number;
 }
 
+export function isType(type: string): TriggerMatchFunction {
+    const matches = [] as unknown as RegExpMatchArray;
+    matches.index = 0
+    return (_, __, ___, _type) => {
+        return _type === type ? matches : undefined;
+    };
+}
+
 export class Trigger {
     id = Math.random().toString(36).slice(2);
     children: Map<string, Trigger> = new Map();
