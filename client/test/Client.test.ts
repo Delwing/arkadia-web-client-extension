@@ -17,6 +17,7 @@ jest.mock('../src/main', () => ({
 }));
 
 import Client from '../src/Client';
+import { mudletColorLine } from '../src/Colors';
 import { Howl } from 'howler';
 
 jest.mock('howler', () => {
@@ -135,7 +136,7 @@ test('sendCommand prints echo commands locally', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const printSpy = jest.spyOn(client, 'print').mockImplementation();
   client.sendCommand('echo <red> text');
-  expect(printSpy).toHaveBeenCalledWith('<red> text');
+  expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
   expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
 });
 
