@@ -55,8 +55,9 @@ export function registerScripts(client: Client) {
     aliases.push({
         pattern: /\/fake (.*)/,
         callback: (matches: RegExpMatchArray) => {
+            client.clientAdapter.output(client.clientAdapter.parseAnsiPatterns(client.onLine(matches[1], 'other')))
             // @ts-ignore
-            return Output.send(Text.parse_patterns(client.onLine(matches[1])))
+            client.clientAdapter.flushMessageBuffer() //TODO figure that one
         }
     })
     initMapAliases(client, aliases)

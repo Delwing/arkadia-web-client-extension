@@ -1,7 +1,6 @@
 import { parseAnsiPatterns } from './ansiParser';
 import { RecordedEvent } from './recordingStorage';
 import Recorder from './Recorder';
-import {SKIP_LINE} from "@client/src/ControlConstants.ts";
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus from "@client/src/eventBus.ts";
 
@@ -155,7 +154,7 @@ class ArkadiaClient implements ClientAdapter{
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
             if (echo && this.receivedFirstGmcp && message) {
-                Output.send("→ " + message);
+                this.output("→ " + message, 'command');
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -199,6 +198,11 @@ class ArkadiaClient implements ClientAdapter{
 
     output(text?: string, type?: string) {
         this.emit('message', text, type)
+    }
+
+    //Should be done on all ouput
+    parseAnsiPatterns(text: string) {
+        return parseAnsiPatterns(text)
     }
 
     /**

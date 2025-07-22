@@ -52,7 +52,7 @@ export default function initShips(client: Client) {
         /^Tratwa(\.|,| i)/,
         /^Rzeczna tratwa(\.|,| i)/,
     ]
-    client.Triggers.registerTrigger(misc, board(false), "ships");
+    client.Triggers.registerTrigger(misc, board(true), "ships");
 
 
     const statki = [
