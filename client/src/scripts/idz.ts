@@ -17,6 +17,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let paused = false;
     let target: number | null = null;
 
+    const isWalking = () => !paused && path.length > 0;
+
     client.addEventListener('settings', (ev: CustomEvent) => {
         settings = ev.detail || {};
         const value = parseFloat(settings.autoWalkDelay);
@@ -81,14 +83,17 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         paused = false;
         target = targetId;
         clearTimer();
-        client.println(colorString(`[AUTO] ${info} -> ${targetId} (${delay.toFixed(2)}s)`, COLOR));
+        client.println(colorString(`[WALK] ${info} -> ${targetId} (${delay.toFixed(2)}s)`, COLOR));
         scheduleStep();
     };
 
     const stopWalk = () => {
+        const wasWalking = isWalking();
         paused = true;
         clearTimer();
-        client.println(colorString(`[AUTO] stopped`, COLOR));
+        if (wasWalking) {
+            client.println(colorString(`[WALK] stopped`, COLOR));
+        }
     };
 
     const resumeWalk = (d?: number) => {
@@ -161,7 +166,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[AUTO] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
         }
     });
 
@@ -172,7 +177,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, delay - 1);
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[AUTO] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
         }
     });
 
@@ -183,7 +188,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay += 1;
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[AUTO] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
         }
     });
 }
