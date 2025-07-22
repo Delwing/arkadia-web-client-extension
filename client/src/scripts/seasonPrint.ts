@@ -3,6 +3,7 @@ import { colorString, findClosestColor } from "../Colors";
 import { gmcp } from "../gmcp";
 
 const SEASON_NAMES = ["wiosna", "lato", "jesien", "zima"];
+const SEASON_TEXT = SEASON_NAMES.map(n => `[ ${n.toUpperCase()} ]`);
 const SEASON_COLORS = [
     findClosestColor("#00ff7f"),
     findClosestColor("#ffff00"),
@@ -21,7 +22,7 @@ export default function initSeasonPrint(client: Client) {
         client.Triggers.registerTrigger(p, raw => {
             const idx = typeof gmcp?.room?.time?.season === "number" ? gmcp.room.time.season : -1;
             if (idx < 0 || idx >= SEASON_NAMES.length) return raw;
-            return raw + " " + colorString(SEASON_NAMES[idx], SEASON_COLORS[idx]);
+            return raw + " " + colorString(SEASON_TEXT[idx], SEASON_COLORS[idx]);
         }, tag);
     });
 }
