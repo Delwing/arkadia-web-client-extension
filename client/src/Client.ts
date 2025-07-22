@@ -189,6 +189,10 @@ export default class Client {
             return false
         })
         if (!isAlias) {
+            if (command.trim().startsWith('/')) {
+                this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
+                return
+            }
             this.clientAdapter.send(this.Map.move(command).direction, echo)
         }
     }
