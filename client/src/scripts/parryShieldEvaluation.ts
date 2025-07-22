@@ -19,7 +19,7 @@ export default function initParryShieldEvaluation(client: Client) {
       if (!key) return SKIP_LINE;
       const parry = EFFECTIVENESS[key];
       const pad = 15;
-      const line = `${colorString("Typ zbroi", LABEL_COLOR)}: ${"puklerze".padEnd(pad, " ")}${colorString("Parowanie", LABEL_COLOR)}: ${parry.label}`;
+      const line = `${colorString("Typ zbroi", LABEL_COLOR)}: ${"puklerz".padEnd(pad, " ")}${colorString("Parowanie", LABEL_COLOR)}: ${parry.label}`;
       client.print(line);
       return SKIP_LINE;
     },

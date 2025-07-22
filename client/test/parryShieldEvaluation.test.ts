@@ -21,7 +21,7 @@ describe('parry shield evaluation trigger', () => {
     parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest ona fantastycznie skuteczna w parowaniu ciosow.');
 
     const output = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(output).toContain('Typ zbroi: puklerze');
+    expect(output).toContain('Typ zbroi: puklerz');
     expect(output).toContain('Parowanie: [14/14]');
     expect(output).not.toContain('Suma');
     expect(output).not.toContain('Srednia');
