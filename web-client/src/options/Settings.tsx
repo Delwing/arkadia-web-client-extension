@@ -49,14 +49,6 @@ function SettingsForm() {
                 <div className="d-flex flex-wrap gap-3">
                     <Form.Check
                         type="checkbox"
-                        id="replaceMap"
-                        label="Zamień wbudowaną mapę"
-                        checked={settings.replaceMap}
-                        onChange={e => onChangeSetting(s => s.replaceMap = e.target.checked)}
-                        className="me-2"
-                    />
-                    <Form.Check
-                        type="checkbox"
                         id="packageHelper"
                         label="Asystent paczek"
                         checked={settings.packageHelper}
