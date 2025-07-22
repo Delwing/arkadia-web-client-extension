@@ -31,7 +31,7 @@ interface Settings {
 function SettingsForm() {
 
     const [settings, setSettings] = useState<Settings>({
-        packageHelper: false,
+        packageHelper: true,
         replaceMap: false,
         inlineCompassRose: false,
         shortenExits: false,
