@@ -4,16 +4,32 @@ Rozszerzenie przeglądarki, które rozbudowuje klienta webowego [Arkadia](https:
 
 ## Pakiety
 
-| Pakiet      | Opis                                                              |
-|-------------|-------------------------------------------------------------------|
-| `client`    | Content script, zawiera modyfikacje klienta i skrypty             |
-| `scripts`   | Skrypty pomocnicze do generowania plików danych.                  |
-| `sandbox`   | Sandbox do rozwoju (nie jest częścią publikowanego rozszerzenia). |
+| Pakiet      | Opis |
+|-------------|------------------------------------------------------------|
+| `client`    | Content script, zawiera modyfikacje klienta i skrypty |
+| `web-client` | Aplikacja React wykorzystywana do rozwoju oraz strona opcji |
+| `scripts`   | Skrypty pomocnicze do generowania plików danych |
 
 ## Instalowanie zależności
 
 ```bash
 yarn install
+```
+
+## Uruchamianie testów
+
+```bash
+yarn --cwd client test
+```
+
+## Uruchamianie web-client
+
+Aplikacja `web-client` służy do rozwoju i zawiera stronę opcji.
+Uruchom ją poleceniem:
+
+```bash
+cd web-client
+yarn dev
 ```
 
 ## Zarządzanie pamięcią podręczną
