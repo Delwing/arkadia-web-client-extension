@@ -121,7 +121,16 @@ export default class EmbeddedMap {
             this.currentRoom = room;
             const label = document.getElementById('location-label');
             if (label && area) {
-                label.textContent = `#${room.id} ${area.areaName}`;
+                let text = `#${room.id} ${area.areaName}`;
+                if (this.destinations.length > 0) {
+                    const destId = this.destinations[0];
+                    const path = this.reader.getPath(room.id, destId);
+                    const distance = path ? path.length - 1 : 0;
+                    const destArea = this.reader.getAreaByRoomId(destId);
+                    const destName = destArea ? destArea.areaName : destId;
+                    text += ` -> #${destId} ${destName} (${distance})`;
+                }
+                label.textContent = text;
             }
 
             if (this.destinations.indexOf(room.id) > -1) {
