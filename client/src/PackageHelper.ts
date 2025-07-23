@@ -49,7 +49,7 @@ export default class PackageHelper {
         this.client.addEventListener('settings', (event) => {
             if (!this.enabled && event.detail.packageHelper) {
                 this.init()
-            } else {
+            } else if (this.enabled && !event.detail.packageHelper) {
                 this.disable()
             }
         })
