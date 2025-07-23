@@ -3,6 +3,7 @@ import { Button } from "react-bootstrap";
 import storage from "./storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
+import { defaultSettings } from "./defaultSettings";
 
 function Guilds() {
     const [selected, setSelected] = useState<string[]>([]);
@@ -56,7 +57,15 @@ function Guilds() {
 
     function save() {
         storage.getItem("settings").then(res => {
-            const settings = { ...(res.settings || {}), guilds: selected, enemyGuilds: enemySelected, guildColors: colors };
+            const base = res && res.settings
+                ? { ...defaultSettings, ...res.settings }
+                : { ...defaultSettings };
+            const settings = {
+                ...base,
+                guilds: selected,
+                enemyGuilds: enemySelected,
+                guildColors: colors,
+            };
             storage.setItem("settings", settings).then(() => {
                 window.dispatchEvent(new Event('close-options'));
             });
