@@ -1,13 +1,7 @@
 import {colorStringInLine, findClosestColor, RESET} from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
-
-function toTitleCase(str) {
-    return str.replace(
-        /\w\S*/g,
-        text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
-    );
-}
+import toTitleCase from "./utils/toTitleCase";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
