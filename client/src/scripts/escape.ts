@@ -3,6 +3,8 @@ import {colorString, findClosestColor} from "../Colors";
 
 const COLOR = findClosestColor('#6a5acd');
 const PANIC_COLOR = findClosestColor('#ff8c00');
+const SUCCESS_COLOR = findClosestColor('#ff0000');
+const PREFIX_COLOR = findClosestColor('#ffa500');
 
 export default function initEscape(client: Client) {
     const tag = 'escape';
@@ -24,6 +26,16 @@ export default function initEscape(client: Client) {
         printArrow(dir, PANIC_COLOR);
         return colorString(line, PANIC_COLOR);
     });
+
+    client.Triggers.registerTrigger(
+        /^Udalo ci sie gdzies uciec!$/,
+        (_r, line) =>
+            client.prefix(
+                colorString(line, SUCCESS_COLOR),
+                colorString('--- ', PREFIX_COLOR)
+            ),
+        tag
+    );
 
     function printArrow(dir, color) {
         if (dir === "poludnie") {
