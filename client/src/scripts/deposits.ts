@@ -54,18 +54,21 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         persist();
     }
 
-    const matchContents = (_raw: string, line: string) => {
-        const match = stripAnsiCodes(line).match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
+    const matchContents = (raw: string) => {
+        const line = stripAnsiCodes(raw).replace(/\s$/g, "");
+        const match = line.match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
         if (match) {
             match.groups = Object.assign({ container: 'depozyt' }, match.groups);
         }
         return match;
     };
-    const matchEmpty = (_raw: string, line: string) => {
-        return stripAnsiCodes(line).match(/^Twoj depozyt jest pusty\./);
+    const matchEmpty = (raw: string) => {
+        const line = stripAnsiCodes(raw).replace(/\s$/g, "");
+        return line.match(/^Twoj depozyt jest pusty\./);
     };
-    const matchNone = (_raw: string, line: string) => {
-        return stripAnsiCodes(line).match(/^Nie posiadasz wykupionego depozytu\./);
+    const matchNone = (raw: string) => {
+        const line = stripAnsiCodes(raw).replace(/\s$/g, "");
+        return line.match(/^Nie posiadasz wykupionego depozytu\./);
     };
 
     client.Triggers.registerTrigger(matchContents, (_r, _l, m) => {

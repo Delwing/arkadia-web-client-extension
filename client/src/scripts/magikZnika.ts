@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { stripAnsiCodes } from "../Triggers";
 
 export default function initMagikZnika(client: Client) {
     const COLOR = findClosestColor("#ff6347");
@@ -10,7 +11,8 @@ export default function initMagikZnika(client: Client) {
 
     client.Triggers.registerTrigger(
         /^Bialy, zimny plomien ogarnia (.*), w kilka chwil spopielajac .* calkowicie\.$/,
-        (_raw, line) => {
+        (raw) => {
+            const line = stripAnsiCodes(raw).replace(/\s$/g, "");
             return format(line);
         },
         tag

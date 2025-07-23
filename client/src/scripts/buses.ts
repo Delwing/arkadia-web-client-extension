@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { stripAnsiCodes } from "../Triggers";
 
 const DILIZANS_CMDS = ["wem", "wsiadz do dylizansu", "wlm"];
 const DILIZANS_LABEL = DILIZANS_CMDS.join(";");
@@ -31,7 +32,8 @@ export default function initBuses(client: Client) {
         "Otwarty jadacy powoz powoli zatrzymuje sie.",
     ];
 
-    const boardPowoz = (_raw: string, line: string) => {
+    const boardPowoz = (raw: string) => {
+        const line = stripAnsiCodes(raw).replace(/\s$/g, "");
         if (line.includes("powoli rusza w droge")) return undefined;
         if (exitPowozPatterns.some(p => typeof p === "string" ? line === p : p.test(line))) {
             return undefined;

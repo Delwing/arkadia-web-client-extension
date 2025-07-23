@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { stripAnsiCodes } from "../Triggers";
 
 
 interface GpsEntry {
@@ -62,10 +63,11 @@ export default function initGps(client: Client) {
                         { stayOpenLines: delta }
                     );
                     if (lines.length > 1) {
-                        parent.registerChild((_, line) => {
+                        parent.registerChild((raw) => {
                             if (!checkContext()) {
                                 return undefined;
                             }
+                            const line = stripAnsiCodes(raw).replace(/\s$/g, "");
                             if (line === lines[current]) {
                                 current++;
                                 if (current === lines.length) {

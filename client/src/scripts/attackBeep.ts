@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
+import { stripAnsiCodes } from "../Triggers";
 import people from '../people.json';
 
 const RED = findClosestColor("#ff0000");
@@ -69,5 +70,8 @@ export default function initAttackBeep(client: Client) {
         /^\w+(?: \w+){0,4} z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/
     ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
 
-    client.Triggers.registerTrigger(/atakuje cie!$/, (_r, line) => highlightPhrase(line), tag);
+    client.Triggers.registerTrigger(/atakuje cie!$/, (raw) => {
+        const line = stripAnsiCodes(raw).replace(/\s$/g, "");
+        return highlightPhrase(line);
+    }, tag);
 }

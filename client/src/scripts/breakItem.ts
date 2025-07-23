@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { stripAnsiCodes } from "../Triggers";
 
 export default function initBreakItem(client: Client) {
     const COLOR = findClosestColor("#ff6347");
@@ -20,7 +21,8 @@ export default function initBreakItem(client: Client) {
     const format = (line: string) => `\n\n${client.prefix(line, colorString("[  SPRZET  ] ", COLOR))}\n\n`;
 
     entries.forEach(({ pattern, command }) => {
-        client.Triggers.registerTrigger(pattern, (_raw, line) => {
+        client.Triggers.registerTrigger(pattern, (raw) => {
+            const line = stripAnsiCodes(raw).replace(/\s$/g, "");
             client.playSound("beep");
             client.sendEvent('breakItem', { text: line, command });
             const label = command ? ` >> ${command}` : " >> Sprzet zniszczony";

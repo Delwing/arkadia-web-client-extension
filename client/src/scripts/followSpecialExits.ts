@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { stripAnsiCodes } from "../Triggers";
 
 interface Entry {
     pattern: RegExp | string;
@@ -108,13 +109,14 @@ export default function initFollowSpecialExits(client: Client) {
         { pattern: /zeskakuje na skalna polke\./, command: "zeskocz na polke" },
     ];
 
-    function containsLeader(line: string) {
+    function containsLeader(text: string) {
         const leader = client.TeamManager.getLeader();
-        return !!leader && line.toLowerCase().includes(leader.toLowerCase());
+        return !!leader && text.toLowerCase().includes(leader.toLowerCase());
     }
 
     entries.forEach(({ pattern, command }) => {
-        client.Triggers.registerTrigger(pattern, (_r, line, m) => {
+        client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
+            const line = stripAnsiCodes(raw).replace(/\s$/g, "");
             if (!containsLeader(line)) return undefined;
             const cmd = typeof command === "function" ? command(m) : command;
             client.FunctionalBind.set(cmd);
