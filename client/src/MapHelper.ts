@@ -110,6 +110,9 @@ export default class MapHelper {
         if (command === "zerknij" || command === "spojrz" || command === "sp") {
             this.refreshPosition = true;
         }
+        if (command.trim() === "idz") {
+            this.refresh();
+        }
         if (this.currentRoom) {
             if (this.currentRoom.userData.dir_bind) {
                 const dirBinds = Object.fromEntries(this.currentRoom.userData.dir_bind.split("&").map((item: string) => item.split("=")))
