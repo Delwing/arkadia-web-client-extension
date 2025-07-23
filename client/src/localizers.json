@@ -660,9 +660,15 @@
     ]
   },
   {
+    "location": 10313,
+    "patterns": [
+      "^(?:Mlody zylasty mezczyzna|Asa).*zachodniego nabrzeza na wyspie Ard Skellig"
+    ]
+  },
+  {
     "location": 10314,
     "patterns": [
-      "zachodniego nabrzeza na wyspie Ard Skellig"
+      "^(?:Rudobrody rozmowny mezczyzna|Olaf).*zachodniego nabrzeza na wyspie Ard Skellig"
     ]
   },
   {
