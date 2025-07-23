@@ -638,6 +638,16 @@ button:focus-visible {
   margin: 2vh 0;
 }
 
+#commit-info {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0;
+  width: 100%;
+  color: #fff;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
 .output_msg, .output_msg_text {
     padding: 0;
 }
