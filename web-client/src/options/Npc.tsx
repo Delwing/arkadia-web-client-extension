@@ -24,10 +24,20 @@ function Npc() {
         })
     }, []);
 
-    function downloadNpcs() {
-        updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
-            .then(data => setNpcs(data))
-            .catch(e => console.error('Failed to update NPC data:', e));
+    async function downloadNpcs() {
+        try {
+            const remote = await updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
+            const merged = [...remote]
+            npcs.forEach(n => {
+                if (!remote.find(r => r.name === n.name && r.loc === n.loc)) {
+                    merged.push(n)
+                }
+            })
+            setNpcs(merged)
+            await saveNpcs(merged)
+        } catch (e) {
+            console.error('Failed to update NPC data:', e)
+        }
     }
 
     function clearNpcs() {
