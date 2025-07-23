@@ -181,8 +181,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     aliases.push({
         pattern: /^\/szybciej$/,
         callback: () => {
-            lastDelay = Math.max(0.5, lastDelay - 1);
-            delay = Math.max(0.5, delay - 1);
+            lastDelay = Math.max(0.5, lastDelay - 0.5);
+            delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
             client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
@@ -192,8 +192,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     aliases.push({
         pattern: /^\/wolniej$/,
         callback: () => {
-            lastDelay += 1;
-            delay += 1;
+            lastDelay += 0.5;
+            delay += 0.5;
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
             client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
