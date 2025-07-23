@@ -5,6 +5,7 @@ import { findClosestColor } from '../src/Colors';
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   print = jest.fn();
+  prefix = (line: string, prefix: string) => prefix + line;
 }
 
 describe('escape triggers', () => {
@@ -14,6 +15,10 @@ describe('escape triggers', () => {
   const prefix = `\x1B[22;38;5;${color}m`;
   const panicColor = findClosestColor('#ff8c00');
   const panicPrefix = `\x1B[22;38;5;${panicColor}m`;
+  const successColor = findClosestColor('#ff0000');
+  const successPrefix = `\x1B[22;38;5;${successColor}m`;
+  const orange = findClosestColor('#ffa500');
+  const orangePrefix = `\x1B[22;38;5;${orange}m`;
   const suffix = '\x1B[0m';
 
   beforeEach(() => {
@@ -61,5 +66,12 @@ describe('escape triggers', () => {
       '                  #',
       '\n'
     ]);
+  });
+
+  test('highlights escape success line', () => {
+    const result = parse('Udalo ci sie gdzies uciec!');
+    const expected =
+      orangePrefix + '--- ' + suffix + successPrefix + 'Udalo ci sie gdzies uciec!' + suffix;
+    expect(result).toBe(expected);
   });
 });
