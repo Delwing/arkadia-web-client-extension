@@ -307,6 +307,10 @@ export default class Client {
         return prefix + rawLine
     }
 
+    postfix(rawLine: string, postfix: string) {
+        return rawLine + postfix
+    }
+
     updateContentWidth() {
         const content = document.getElementById('main_text_output_msg_wrapper') as HTMLElement | null
         const measure = document.getElementById('content-width-measure') as HTMLElement | null

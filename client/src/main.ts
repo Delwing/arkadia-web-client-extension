@@ -43,6 +43,7 @@ import initUserTriggers from './scripts/userTriggers'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
 import initParryShieldEvaluation from './scripts/parryShieldEvaluation'
+import initGuildPostfix from './scripts/guildPostfix'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
@@ -155,6 +156,7 @@ export function registerScripts(client: Client) {
     initBreakItem(client)
     initMagikZnika(client)
     initSeasonPrint(client)
+    initGuildPostfix(client)
     initShortcuts(client, aliases)
     initShortExits(client)
     initExternalScripts(client)
