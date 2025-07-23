@@ -31,6 +31,7 @@ import initMagics from './scripts/magics'
 import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
+import initHpAlert from './scripts/hpAlert'
 import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
 import initPriceEvaluation from './scripts/priceEvaluation'
@@ -156,6 +157,7 @@ export function registerScripts(client: Client) {
     initWeaponColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
+    initHpAlert(client)
     initMagikZnika(client)
     initSeasonPrint(client)
     initGuildPostfix(client)
