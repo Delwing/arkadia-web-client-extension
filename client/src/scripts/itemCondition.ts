@@ -20,7 +20,11 @@ export const itemConditions: ItemCondition[] = [
     { patterns: ["w oplakanym stanie"], replacement: "[2/5]", color: "red" },
     { patterns: ["gotow.{1,2} sie rozpasc"], replacement: "[1/5]", color: "red" },
     { patterns: ["w dobrym stanie"], replacement: "[6/7]", color: "green" },
-    { patterns: ["liczne walki wyryly", "swoje pietno"], replacement: "[5/7]", color: "yellow" },
+    {
+        patterns: ["liczne walki wyryly.*swoje pietno"],
+        replacement: "[5/7]",
+        color: "yellow",
+    },
     { patterns: ["w zlym stanie"], replacement: "[4/7]", color: "red" },
     { patterns: ["w bardzo zlym stanie"], replacement: "[3/7]", color: "red" },
     { patterns: ["wymaga.{0,2} natychmiastowej konserwacji"], replacement: "[2/7]", color: "red" },
@@ -34,8 +38,8 @@ export function processItemCondition(rawLine: string, phrase: string): string {
             const colorCode = COLORS[condition.color] ?? COLORS.red;
             const colored = colorString(phrase, colorCode);
             const coloredValue = colorString(condition.replacement, colorCode);
-            const replaced = `${colored} ${coloredValue}`;
-            return rawLine.replace(phrase, replaced);
+            const replaced = `${colored}. ${coloredValue}`;
+            return rawLine.replace(`${phrase}.`, replaced);
         }
     }
     return rawLine;
