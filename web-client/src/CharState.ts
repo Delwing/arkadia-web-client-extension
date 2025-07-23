@@ -138,11 +138,12 @@ export default class CharState {
 
     this.state = { ...this.state, ...partialState };
 
-    const entries = (Object.keys(this.state) as (keyof CharStateData)[]).filter(
-      (key) =>
-        this.config[key].default === undefined ||
-        this.state[key] !== this.config[key].default,
-    );
+    const entries = (Object.keys(this.config) as (keyof CharStateData)[])
+      .filter((key) =>
+        this.state[key] !== undefined &&
+        (this.config[key].default === undefined ||
+          this.state[key] !== this.config[key].default)
+      );
     this.text.innerHTML = entries
       .map((key) => {
         let value = this.state[key] as number;
