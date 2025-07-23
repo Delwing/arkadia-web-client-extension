@@ -384,6 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tab sleep prevention activated for mobile device');
     }
 
+    const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
+    if (commitInfo) {
+        commitInfo.textContent = `${__COMMIT_SHA__} ${__COMMIT_DATE__}`;
+    }
+
     const messageInput = document.getElementById('message-input') as HTMLInputElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
