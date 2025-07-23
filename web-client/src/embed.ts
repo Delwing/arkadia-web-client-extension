@@ -19,10 +19,12 @@ export default class EmbeddedMap {
         this._pinchZoom = this._pinchZoom.bind(this);
         this._onTouchStart = this._onTouchStart.bind(this);
         this._onTouchEnd = this._onTouchEnd.bind(this);
+        this._onZoom = this._onZoom.bind(this);
         this.map.addEventListener('touchstart', this._onTouchStart, { passive: false });
         this.map.addEventListener('touchmove', this._pinchZoom, { passive: false });
         this.map.addEventListener('touchend', this._onTouchEnd);
         this.map.addEventListener('touchcancel', this._onTouchEnd);
+        this.map.addEventListener('zoom', this._onZoom);
         this.reader = new MapReader(mapData, colors);
         this.settings = new Settings();
         this.settings.areaName = false;
@@ -80,7 +82,6 @@ export default class EmbeddedMap {
             const delta = dist / this._touchStartDistance;
             this._touchStartDistance = dist;
             this.setZoom(this.zoom * delta);
-            this._saveZoom();
         }
     }
 
@@ -91,6 +92,11 @@ export default class EmbeddedMap {
             parsed.mapScale = this.zoom;
             localStorage.setItem('uiSettings', JSON.stringify(parsed));
         } catch {}
+    }
+
+    private _onZoom() {
+        this.zoom = this.renderer.paper.view.zoom;
+        this._saveZoom();
     }
 
     private _saveLimit() {
