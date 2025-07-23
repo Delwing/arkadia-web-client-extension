@@ -210,6 +210,10 @@ export default class Triggers {
             .filter(t => t.length > 0)
             .map(t => t.toLowerCase());
 
+        this.triggers.forEach(trigger => {
+            rawLine = trigger.execute(rawLine, type);
+        });
+
         this.tokenTriggers.forEach(({ words, trigger }) => {
             for (let i = 0; i <= tokens.length - words.length; i++) {
                 let found = true;
@@ -224,10 +228,6 @@ export default class Triggers {
                     break;
                 }
             }
-        });
-
-        this.triggers.forEach(trigger => {
-            rawLine = trigger.execute(rawLine, type);
         });
         return rawLine;
     }
