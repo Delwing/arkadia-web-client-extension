@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = 'notification';
             div.textContent = detail.text || '';
             notificationCenter.appendChild(div);
-            const timeout = typeof detail.time === 'number' ? detail.time : 1000;
+            const timeout = typeof detail.time === 'number' ? detail.time : 2000;
             setTimeout(() => div.remove(), timeout);
         });
     }

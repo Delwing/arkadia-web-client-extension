@@ -649,7 +649,7 @@ button:focus-visible {
 }
 
 #notification-center {
-  position: fixed;
+  position: absolute;
   bottom: 0.5rem;
   right: 0.5rem;
   display: flex;
@@ -667,4 +667,5 @@ button:focus-visible {
   -webkit-backdrop-filter: blur(2px);
   font-size: 0.8rem;
   pointer-events: none;
+  border: 1px solid #fff;
 }
