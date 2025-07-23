@@ -55,6 +55,8 @@ export default class PackageHelper {
                 this.disable()
             }
         })
+
+        this.init()
     }
 
     init() {
