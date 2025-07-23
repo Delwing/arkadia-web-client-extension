@@ -211,7 +211,11 @@ export default class PackageHelper {
     }
 
     private leadToPackage(name: string) {
-        const location = this.npc[name]
+        let location = this.npc[name]
+        if (!location) {
+            const [_, fallback] = Object.entries(this.npc).find(([npc, _]) => name.toLowerCase() === npc.toLowerCase())
+            location = fallback;
+        }
         if (location) {
             this.client.sendEvent('leadTo', location)
         }
