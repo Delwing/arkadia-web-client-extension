@@ -144,6 +144,11 @@ export default class MapHelper {
             if (locationId) {
                 this.locationHistory.push(locationId)
                 this.renderRoomById(locationId, true);
+                if (!this.client.suppressMapMoveEvent) {
+                    this.client.sendEvent('mapMove')
+                } else {
+                    this.client.suppressMapMoveEvent = false
+                }
                 return {direction: actualDirection, moved: true}
             }
         }
@@ -206,14 +211,26 @@ export default class MapHelper {
     setMapRoom(room: Room) {
         this.locationHistory = [room.id]
         this.renderRoom(room);
+        if (!this.client.suppressMapMoveEvent) {
+            this.client.sendEvent('mapMove')
+        } else {
+            this.client.suppressMapMoveEvent = false
+        }
     }
 
     moveBack() {
         this.locationHistory.pop()
         if (!this.locationHistory[this.locationHistory.length - 1]) {
+            this.client.sendEvent('stepBack')
             return
         }
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1])
+        this.client.sendEvent('stepBack')
+        if (!this.client.suppressMapMoveEvent) {
+            this.client.sendEvent('mapMove')
+        } else {
+            this.client.suppressMapMoveEvent = false
+        }
     }
 
     renderRoom(room: Room) {
