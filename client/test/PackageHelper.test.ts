@@ -94,9 +94,10 @@ describe('PackageHelper', () => {
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('pickTrigger');
   });
 
-  test('label trigger updates package status', () => {
+  test('label trigger updates package status without starting timer', () => {
     helper.init();
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
+    const startSpy = jest.spyOn(helper as any, 'startTimer');
     const raw = 'Wypisano na niej duzymi literami: Bob';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
@@ -105,8 +106,9 @@ describe('PackageHelper', () => {
 
     expect(helper.currentPackage).toEqual({ name: 'Bob' });
     expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
-    const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#63ba41'));
+    const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00'));
     expect(result).toBe(expectedColor);
+    expect(startSpy).not.toHaveBeenCalled();
   });
 
   test('packageTableCallback simplifies output when width is small', () => {

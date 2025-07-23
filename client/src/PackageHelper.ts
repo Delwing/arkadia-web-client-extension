@@ -61,12 +61,9 @@ export default class PackageHelper {
             const name = toTitleCase(matches[1])
             this.leadToPackage(name)
             this.currentPackage = { name }
-            if (this.timer) {
-                this.client.sendEvent('packageStatus', { recipient: name })
-            } else {
-                this.startTimer()
-            }
-            return colorStringInLine(rawLine, matches[1], KNOWN_NPC_COLOR)
+            this.client.sendEvent('packageStatus', { recipient: name })
+            const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
+            return colorStringInLine(rawLine, matches[1], colorCode)
         }, tag)
         this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
     }
