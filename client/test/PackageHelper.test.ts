@@ -29,6 +29,35 @@ describe('PackageHelper', () => {
       sendCommand: jest.fn(),
     };
     helper = new PackageHelper(client);
+    client.Triggers.registerTrigger.mockClear();
+    client.Triggers.registerMultilineTrigger.mockClear();
+  });
+
+  test('constructor initializes helper by default', () => {
+    const c = {
+      Triggers: {
+        registerTrigger: jest.fn(),
+        registerOneTimeTrigger: jest.fn(),
+        registerMultilineTrigger: jest.fn(),
+        removeTrigger: jest.fn(),
+        removeByTag: jest.fn(),
+      },
+      OutputHandler: {
+        makeClickable: jest.fn(),
+      },
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      sendEvent: jest.fn(),
+      createButton: jest.fn(() => ({ remove: jest.fn() })),
+      println: jest.fn(),
+      Map: { currentRoom: { id: 1 } },
+      port: { postMessage: jest.fn() },
+      FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
+      sendCommand: jest.fn(),
+    };
+    const h = new PackageHelper(c as any);
+    expect(c.Triggers.registerTrigger).toHaveBeenCalled();
+    expect(h.enabled).toBe(true);
   });
 
   test('packageLineCallback returns clickable line and stores package', () => {

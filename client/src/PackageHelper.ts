@@ -41,12 +41,16 @@ export default class PackageHelper {
 
 
         this.client.addEventListener('settings', (event) => {
-            if (!this.enabled && event.detail.packageHelper) {
+            const setting = event.detail?.packageHelper
+            const shouldEnable = setting === undefined ? true : setting
+            if (!this.enabled && shouldEnable) {
                 this.init()
-            } else if (this.enabled && !event.detail.packageHelper) {
+            } else if (this.enabled && !shouldEnable) {
                 this.disable()
             }
         })
+
+        this.init()
     }
 
     init() {
