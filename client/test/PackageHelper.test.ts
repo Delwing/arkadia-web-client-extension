@@ -93,6 +93,12 @@ describe('PackageHelper', () => {
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('pickTrigger');
   });
 
+  test('leadToPackage does nothing when npc is unknown', () => {
+    helper.npc = { Bob: 1 };
+    expect(() => helper['leadToPackage']('Alice')).not.toThrow();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('leadTo', expect.anything());
+  });
+
   test('packageTableCallback simplifies output when width is small', () => {
     client.contentWidth = 50;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
