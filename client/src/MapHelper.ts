@@ -265,7 +265,6 @@ export default class MapHelper {
     }
 
     handleNewLocation({room: room}) {
-        this.client.FunctionalBind.clear();
         this.client.addEventListener('output-sent', () => {
             if (room.userData?.bind) {
                 this.client.FunctionalBind.set(room.userData?.bind, () => this.client.sendCommand(room.userData?.bind))
