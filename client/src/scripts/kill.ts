@@ -312,7 +312,10 @@ class KillCounter {
     private formatPrefix(line: string, entry: KillEntry | null, label: string) {
         const color = KILL_PREFIX_COLOR;
         const counts = entry
-            ? ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`
+            ? colorString(
+                  ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`,
+                  color
+              )
             : "";
         const modified = line + counts;
         return (
