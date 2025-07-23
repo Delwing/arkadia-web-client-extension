@@ -3,11 +3,26 @@ import { colorString, findClosestColor } from "../Colors";
 
 const SLATE_BLUE = findClosestColor("#6a5acd");
 
+type GuildColorMap = Record<string, number | undefined>;
+
 export default function initGuildPostfix(client: Client) {
     const tag = "guildPostfix";
+    let guildColors: GuildColorMap = {};
+
+    client.addEventListener('settings', (ev: CustomEvent) => {
+        const colors: Record<string, string | undefined> = ev.detail.guildColors || {};
+        guildColors = {};
+        Object.entries(colors).forEach(([g, hex]) => {
+            if (hex) {
+                guildColors[g] = findClosestColor(hex);
+            }
+        });
+    });
+
     function register(pattern: RegExp | string, guild: string) {
         client.Triggers.registerTrigger(pattern, (raw) => {
-            return client.postfix(raw, colorString(` [${guild}]`, SLATE_BLUE));
+            const color = guildColors[guild] ?? SLATE_BLUE;
+            return client.postfix(raw, colorString(` [${guild}]`, color));
         }, tag);
     }
 
