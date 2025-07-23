@@ -1,12 +1,10 @@
 import Client from "../Client";
 import { longToShort } from "../MapHelper";
 import { getShortcut } from "./shortcuts";
-import { colorString, findClosestColor } from "../Colors";
+
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     if (!aliases) return;
-
-    const COLOR = findClosestColor("#ff6347");
 
     let path: number[] = [];
     let index = 0;
@@ -43,7 +41,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
                 target = null;
                 client.sendEvent('leadTo');
                 if (reached !== null) {
-                    client.println(colorString(`[WALK] reached ${reached}`, COLOR));
+                    client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
                 }
             }
             return;
@@ -90,7 +88,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         target = targetId;
         client.sendEvent('leadTo', targetId);
         clearTimer();
-        client.println(colorString(`[WALK] ${info} -> ${targetId} (${delay.toFixed(2)}s)`, COLOR));
+        client.sendEvent('notify', { text: `[WALK] ${info} -> ${targetId} (${delay.toFixed(2)}s)` });
         scheduleStep();
     };
 
@@ -100,7 +98,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         clearTimer();
         if (wasWalking) {
             client.sendEvent('leadTo');
-            client.println(colorString(`[WALK] stopped`, COLOR));
+            client.sendEvent('notify', { text: `[WALK] stopped` });
         }
     };
 
@@ -174,7 +172,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 
@@ -185,7 +183,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 
@@ -196,7 +194,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay += 0.5;
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.println(colorString(`[WALK] delay ${lastDelay.toFixed(2)}s`, COLOR));
+            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 }

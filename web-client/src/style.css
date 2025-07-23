@@ -95,6 +95,7 @@ h1 {
   font-size: 0.8rem;
   background-color: var(--bs-body-bg);
   border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 #lamp-timer {
@@ -646,4 +647,26 @@ button:focus-visible {
   height: auto;
   max-height: 35vh;
   max-width: 75vw;
+}
+
+#notification-center {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1104;
+}
+
+#notification-center .notification {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  font-size: 0.8rem;
+  pointer-events: none;
+  border: 1px solid #fff;
 }
