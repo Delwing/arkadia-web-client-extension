@@ -40,9 +40,16 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/binds** - wyświetla aktualnie ustawione skróty klawiaturowe.
 - **/przejrzyj** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami.
 - **/idz** - wybiera przeciwne wyjście w pomieszczeniu.
+- **/idz _id [opoznienie]_** - automatycznie idzie do wskazanej lokacji z opcjonalnym opoznieniem.
+- **/stop** - zatrzymuje automatyczne chodzenie.
+- **/dalej [opoznienie]** - wznawia wędrówkę z opcjonalnym opoznieniem.
+- **/opoz _sekundy_** - ustawia domyslne opoznienie kroków.
+- **/szybciej** - zmniejsza opoznienie o 0.5 s.
+- **/wolniej** - zwieksza opoznienie o 0.5 s.
 - **/ziola_buduj** - przegląda wszystkie woreczki z ziołami i podsumowuje ich zawartość.
 - **/ziola_pokaz** - wyświetla ostatnie podsumowanie ziół.
 - **/wezz _ziolo_ [_ilosc_]** - wyjmuje wskazaną liczbę zioła z woreczków (domyślnie jedną sztukę).
+- **/zi _akcja ziolo_** - wyjmuje zioło i od razu wykonuje wskazaną akcję.
 - **/napraw** - Naprawianie sprzetu u kowala.
 - **/naprawa** - Alias do `/napraw`.
 - **/napraw_ubrania** - Naprawianie ubrania u krawca.
