@@ -4,7 +4,7 @@ import Triggers from '../src/Triggers';
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
   Map = { setMapRoomById: jest.fn(), currentRoom: { id: 10, areaId: 'Area' } } as any;
-  println = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('gps triggers', () => {
@@ -48,6 +48,6 @@ describe('gps triggers', () => {
     parse('l1');
     parse('l2');
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(10);
-    expect(client.println).toHaveBeenCalled();
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: gps 10_0' });
   });
 });

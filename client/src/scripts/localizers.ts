@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
+
 import localizers from "../localizers.json";
 
 interface LocalizerEntry {
@@ -8,7 +8,6 @@ interface LocalizerEntry {
 }
 
 export default function initLocalizers(client: Client) {
-    const COLOR = findClosestColor("#ffa500");
     (localizers as LocalizerEntry[]).forEach(entry => {
         const patterns = entry.patterns;
         if (!patterns || patterns.length === 0) {
@@ -21,7 +20,7 @@ export default function initLocalizers(client: Client) {
             () => {
                 if (patterns.length === 1) {
                     client.Map.setMapRoomById(entry.location);
-                    client.println(colorString(` Map Sync: localizer ${entry.location}`, COLOR));
+                    client.sendEvent('notify', { text: `Map Sync: localizer ${entry.location}` });
                 } else {
                     current = 0;
                 }
@@ -36,7 +35,7 @@ export default function initLocalizers(client: Client) {
                     current++;
                     if (current === patterns.length) {
                         client.Map.setMapRoomById(entry.location);
-                        client.println(colorString(` Map Sync: localizer ${entry.location}`, COLOR));
+                        client.sendEvent('notify', { text: `Map Sync: localizer ${entry.location}` });
                         current = 1;
                     }
                     return [line];
