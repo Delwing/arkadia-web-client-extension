@@ -39,7 +39,12 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             clearTimer();
             if (index >= path.length - 1) {
                 path = [];
+                const reached = target;
                 target = null;
+                client.sendEvent('leadTo');
+                if (reached !== null) {
+                    client.println(colorString(`[WALK] reached ${reached}`, COLOR));
+                }
             }
             return;
         }
@@ -51,6 +56,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         if (!dir) {
             clearTimer();
             path = [];
+            client.sendEvent('leadTo');
             return;
         }
 
@@ -82,6 +88,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
         paused = false;
         target = targetId;
+        client.sendEvent('leadTo', targetId);
         clearTimer();
         client.println(colorString(`[WALK] ${info} -> ${targetId} (${delay.toFixed(2)}s)`, COLOR));
         scheduleStep();
@@ -92,6 +99,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         paused = true;
         clearTimer();
         if (wasWalking) {
+            client.sendEvent('leadTo');
             client.println(colorString(`[WALK] stopped`, COLOR));
         }
     };
