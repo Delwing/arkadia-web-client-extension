@@ -1,0 +1,699 @@
+[
+  {
+    "location": 2188,
+    "patterns": [
+      "Postoj przed brama Bialego Mostu."
+    ]
+  },
+  {
+    "location": 9990,
+    "patterns": [
+      "Postoj, Twierdza Hagge."
+    ]
+  },
+  {
+    "location": 1896,
+    "patterns": [
+      "Postoj pod brama miasta Murivel."
+    ]
+  },
+  {
+    "location": 1998,
+    "patterns": [
+      "Postoj, Plac Ratuszowy w Rinde."
+    ]
+  },
+  {
+    "location": 5468,
+    "patterns": [
+      "Fermata - Campogrotta"
+    ]
+  },
+  {
+    "location": 5439,
+    "patterns": [
+      "Fermata - incrocio alla Miragliano"
+    ]
+  },
+  {
+    "location": 5842,
+    "patterns": [
+      "incrocio alla Urbimo!"
+    ]
+  },
+  {
+    "location": 5985,
+    "patterns": [
+      "Fermata - Varieno"
+    ]
+  },
+  {
+    "location": 5625,
+    "patterns": [
+      "incrocio alla Viadaza!"
+    ]
+  },
+  {
+    "location": 266,
+    "patterns": [
+      "Postoj, na przeleczy."
+    ]
+  },
+  {
+    "location": 994,
+    "patterns": [
+      "Postoj, gosciniec rivski."
+    ]
+  },
+  {
+    "location": 860,
+    "patterns": [
+      "Postoj, na rogatkach."
+    ]
+  },
+  {
+    "location": 680,
+    "patterns": [
+      "Postoj, pod murem zajazdu."
+    ]
+  },
+  {
+    "location": 4163,
+    "patterns": [
+      "Postoj, glowny plac miasta."
+    ]
+  },
+  {
+    "location": 4092,
+    "patterns": [
+      "Postoj, srodek niewielkiej osady."
+    ]
+  },
+  {
+    "location": 3926,
+    "patterns": [
+      "Postoj, podgrodzie Tretogoru."
+    ]
+  },
+  {
+    "location": 6571,
+    "patterns": [
+      "Postoj, rozstaje przed zajazdem"
+    ]
+  },
+  {
+    "location": 6727,
+    "patterns": [
+      "Postoj, dziedziniec frontowy karczmy"
+    ]
+  },
+  {
+    "location": 6779,
+    "patterns": [
+      "Postoj, trakt przez wioske"
+    ]
+  },
+  {
+    "location": 7256,
+    "patterns": [
+      "Postoj, placyk w polnocnej czesci miasta"
+    ]
+  },
+  {
+    "location": 3525,
+    "patterns": [
+      "Postoj, placyk w Grabowej Buchcie"
+    ]
+  },
+  {
+    "location": 3457,
+    "patterns": [
+      "Postoj, centralny plac wioski"
+    ]
+  },
+  {
+    "location": 180,
+    "patterns": [
+      "Postoj, przystan powozowa"
+    ]
+  },
+  {
+    "location": 3343,
+    "patterns": [
+      "Postoj, na dziedzincu zajazdu"
+    ]
+  },
+  {
+    "location": 536,
+    "patterns": [
+      "Postoj, lesne rozdroze"
+    ]
+  },
+  {
+    "location": 3043,
+    "patterns": [
+      "Postoj, przed zajazdem."
+    ]
+  },
+  {
+    "location": 3221,
+    "patterns": [
+      "placyk w centrum wsi"
+    ]
+  },
+  {
+    "location": 829,
+    "patterns": [
+      "Woznica oznajmia glosno: Postoj, droga kolo Novigradu."
+    ]
+  },
+  {
+    "location": 804,
+    "patterns": [
+      "Woznica oznajmia glosno: Postoj, droga opodal Oxenfurtu."
+    ]
+  },
+  {
+    "location": 6520,
+    "patterns": [
+      "Postoj, na rynku Averheim"
+    ]
+  },
+  {
+    "location": 6430,
+    "patterns": [
+      "Postoj, dziedziniec zajazdu kompanii Cztery Pory Roku"
+    ]
+  },
+  {
+    "location": 7086,
+    "patterns": [
+      "Postoj, skrzyzowanie traktow w miasteczku"
+    ]
+  },
+  {
+    "location": 6448,
+    "patterns": [
+      "Postoj, nieduzy placyk"
+    ]
+  },
+  {
+    "location": 7131,
+    "patterns": [
+      "Postoj, przed karczma"
+    ]
+  },
+  {
+    "location": 6879,
+    "patterns": [
+      "Postoj, ulica Krancowa"
+    ]
+  },
+  {
+    "location": 7550,
+    "patterns": [
+      "Postoj, rynek przy fontannie"
+    ]
+  },
+  {
+    "location": 7640,
+    "patterns": [
+      "Postoj, placyk z fontanna"
+    ]
+  },
+  {
+    "location": 7458,
+    "patterns": [
+      "Postoj, przed zajazdem 'Pod Srebrnym Grotem'"
+    ]
+  },
+  {
+    "location": 7332,
+    "patterns": [
+      "Postoj, ulica Bramna"
+    ]
+  },
+  {
+    "location": 5200,
+    "patterns": [
+      "Postoj, placyk w centrum miasteczka Kreutzhofen"
+    ]
+  },
+  {
+    "location": 4985,
+    "patterns": [
+      "Postoj, dziedziniec przed zajazdem 'Pod piegowata elfka'"
+    ]
+  },
+  {
+    "location": 6903,
+    "patterns": [
+      "Postoj, niewielki plac w poludniowej czesci miasta"
+    ]
+  },
+  {
+    "location": 4922,
+    "patterns": [
+      "Postoj, rynek miejski Salignac La Rouge"
+    ]
+  },
+  {
+    "location": 7744,
+    "patterns": [
+      "Postoj, w wiosce Merceaux-Descloux"
+    ]
+  },
+  {
+    "location": 7786,
+    "patterns": [
+      "Postoj, centrum wioski Montlac"
+    ]
+  },
+  {
+    "location": 4659,
+    "patterns": [
+      "Postoj, plac Gillesa le Breton"
+    ]
+  },
+  {
+    "location": 5373,
+    "patterns": [
+      "Fermata - Ebino"
+    ]
+  },
+  {
+    "location": 5308,
+    "patterns": [
+      "Fermata - Toscania"
+    ]
+  },
+  {
+    "location": 5887,
+    "patterns": [
+      "Fermata - Urbimo"
+    ]
+  },
+  {
+    "location": 3760,
+    "patterns": [
+      "Postoj - wies Anchor"
+    ]
+  },
+  {
+    "location": 746,
+    "patterns": [
+      "Postoj - plac w centrum Bialego Mostu"
+    ]
+  },
+  {
+    "location": 764,
+    "patterns": [
+      "Postoj - rozdroza niedaleko Piany"
+    ]
+  },
+  {
+    "location": 790,
+    "patterns": [
+      "Postoj - wies na podgrodziu Oxenfurtu"
+    ]
+  },
+  {
+    "location": 729,
+    "patterns": [
+      "Postoj - pod Wyzima"
+    ]
+  },
+  {
+    "location": 2624,
+    "patterns": [
+      "Doplynelismy do przystani na polnocnym brzegu Pontaru! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 3442,
+    "patterns": [
+      "Doplynelismy do przystani na poludniowym brzegu Pontaru! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 5601,
+    "patterns": [
+      "Doplynelismy do przystani w Alimento! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 5206,
+    "patterns": [
+      "Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 9707,
+    "patterns": [
+      "zachodniego nabrzeza w Baccali"
+    ]
+  },
+  {
+    "location": 23792,
+    "patterns": [
+      "przystani na wyspie Mekan"
+    ]
+  },
+  {
+    "location": 3251,
+    "patterns": [
+      "Doplynelismy do wschodniego pomostu w Obawie! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 4651,
+    "patterns": [
+      "Doplynelismy do poludniowego nabrzeza w Quenelles! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 23669,
+    "patterns": [
+      "przystani na wyspie Faroe"
+    ]
+  },
+  {
+    "location": 3280,
+    "patterns": [
+      "przystani w twierdzy Rozrog"
+    ]
+  },
+  {
+    "location": 10313,
+    "patterns": [
+      "zachodniego nabrzeza na wyspie Ard Skellig"
+    ]
+  },
+  {
+    "location": 6429,
+    "patterns": [
+      "Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 5207,
+    "patterns": [
+      "Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 6621,
+    "patterns": [
+      "Doplynelismy do przystani na polnocnym brzegu Averu! Mozna wysiadac!",
+      "Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 7233,
+    "patterns": [
+      "Doplynelismy do wschodniego nabrzeza w Nuln! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 6427,
+    "patterns": [
+      "Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 15409,
+    "patterns": [
+      "Doplynelismy do przystani w twierdzy Karak Varn! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 4890,
+    "patterns": [
+      "Doplynelismy do przystani w Marguilles! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 4653,
+    "patterns": [
+      "Doplynelismy do poludniowego nabrzeza w Quenelles! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 4061,
+    "patterns": [
+      "przystani w Blaviken"
+    ]
+  },
+  {
+    "location": 11690,
+    "patterns": [
+      "przystani w Daevon"
+    ]
+  },
+  {
+    "location": 2223,
+    "patterns": [
+      "polnocnego nabrzeza w Novigradzie"
+    ]
+  },
+  {
+    "location": 9705,
+    "patterns": [
+      "centralnego nabrzeza w Baccali"
+    ]
+  },
+  {
+    "location": 7910,
+    "patterns": [
+      "poludniowego nabrzeza w Novigradzie"
+    ]
+  },
+  {
+    "location": 3281,
+    "patterns": [
+      "przystani w twierdzy Rozrog"
+    ]
+  },
+  {
+    "location": 3247,
+    "patterns": [
+      "zachodniego pomostu w Obawie"
+    ]
+  },
+  {
+    "location": 3248,
+    "patterns": [
+      "srodkowego pomostu w Obawie"
+    ]
+  },
+  {
+    "location": 7912,
+    "patterns": [
+      "poludniowego nabrzeza w Novigradzie"
+    ]
+  },
+  {
+    "location": 927,
+    "patterns": [
+      "przystani w twierdzy Scala"
+    ]
+  },
+  {
+    "location": 2212,
+    "patterns": [
+      "przystani w Bialym Moscie"
+    ]
+  },
+  {
+    "location": 7908,
+    "patterns": [
+      "poludniowego nabrzeza w Novigradzie"
+    ]
+  },
+  {
+    "location": 2467,
+    "patterns": [
+      "do pierwszego pomostu w Oxenfurcie"
+    ]
+  },
+  {
+    "location": 7907,
+    "patterns": [
+      "poludniowego nabrzeza w Novigradzie"
+    ]
+  },
+  {
+    "location": 10311,
+    "patterns": [
+      "polnocnego nabrzeza na wyspie Ard Skellig"
+    ]
+  },
+  {
+    "location": 3583,
+    "patterns": [
+      "przystani we wsi Nadrzecze"
+    ]
+  },
+  {
+    "location": 7903,
+    "patterns": [
+      "przystani nad Pontarem w Novigradzie"
+    ]
+  },
+  {
+    "location": 10486,
+    "patterns": [
+      "przystani stoczni w Novigradzie"
+    ]
+  },
+  {
+    "location": 7911,
+    "patterns": [
+      "Intrygujacy dlugowlosy mezczyzna krzyczy: Doplynelismy do poludniowego portu Novigradu w krolestwie Redanii! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 11153,
+    "patterns": [
+      "Intrygujacy dlugowlosy mezczyzna krzyczy: Doplynelismy do przystani na Wyspie Milosci! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 7568,
+    "patterns": [
+      "zachodniego nabrzeza w Bogenhafen"
+    ]
+  },
+  {
+    "location": 6891,
+    "patterns": [
+      "wschodniego nabrzeza w Nuln"
+    ]
+  },
+  {
+    "location": 4059,
+    "patterns": [
+      "przystani w Blaviken"
+    ]
+  },
+  {
+    "location": 2574,
+    "patterns": [
+      "czwartego pomostu w Oxenfurcie"
+    ]
+  },
+  {
+    "location": 3542,
+    "patterns": [
+      "przystani w Grabowej Buchcie"
+    ]
+  },
+  {
+    "location": 2464,
+    "patterns": [
+      "przystani promu w Oxenfurcie"
+    ]
+  },
+  {
+    "location": 7733,
+    "patterns": [
+      "przystani na poludniowym brzegu Grismerie"
+    ]
+  },
+  {
+    "location": 7732,
+    "patterns": [
+      "przystani na polnocnym brzegu Grismerie"
+    ]
+  },
+  {
+    "location": 10018,
+    "patterns": [
+      "przystani w Hagge"
+    ]
+  },
+  {
+    "location": 2616,
+    "patterns": [
+      "drugiego pomostu w Pianie"
+    ]
+  },
+  {
+    "location": 8087,
+    "patterns": [
+      "przystani w Starych Bukach"
+    ]
+  },
+  {
+    "location": 4824,
+    "patterns": [
+      "Doplynelismy do przystani na polnocnym brzegu Brienne! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 4841,
+    "patterns": [
+      "Doplynelismy do przystani na poludniowym brzegu Brienne! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 23708,
+    "patterns": [
+      "przystani na wyspie Mekan"
+    ]
+  },
+  {
+    "location": 3273,
+    "patterns": [
+      "przystani w twierdzy Rozrog"
+    ]
+  },
+  {
+    "location": 23678,
+    "patterns": [
+      "przystani na wyspie Hindarsfjall"
+    ]
+  },
+  {
+    "location": 10314,
+    "patterns": [
+      "zachodniego nabrzeza na wyspie Ard Skellig"
+    ]
+  },
+  {
+    "location": 23685,
+    "patterns": [
+      "przystani na wyspie Kaer Hemdall"
+    ]
+  },
+  {
+    "location": 10369,
+    "patterns": [
+      "zachodniej osady na wyspie Ard Skellig"
+    ]
+  },
+  {
+    "location": 4060,
+    "patterns": [
+      "przystani w Blaviken"
+    ]
+  },
+  {
+    "location": 6428,
+    "patterns": [
+      "przystani na Blekitnej Wstedze"
+    ]
+  },
+  {
+    "location": 7909,
+    "patterns": [
+      "Okret wplywa na wody delty Pontaru, wyraznie widac juz zebate blanki poteznych murow Novigradu"
+    ]
+  },
+  {
+    "location": 5947,
+    "patterns": [
+      "Okret zbliza sie do brzegu, wplywajac na spokojne wody zatoki Urbimo."
+    ]
+  }
+]
