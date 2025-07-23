@@ -45,6 +45,7 @@ import initArmorEvaluation from './scripts/armorEvaluation'
 import initParryShieldEvaluation from './scripts/parryShieldEvaluation'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
+import initLocalizers from './scripts/localizers'
 import initMapAliases from './scripts/mapAliases'
 import initShortcuts from './scripts/shortcuts'
 import initCompareAll from './scripts/compareAll'
@@ -122,6 +123,7 @@ export function registerScripts(client: Client) {
     initKillCounter(client, aliases)
     initEscape(client)
     initGps(client)
+    initLocalizers(client)
     initFollowSpecialExits(client)
 
 
