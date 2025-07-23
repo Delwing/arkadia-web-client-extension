@@ -1,0 +1,58 @@
+import initHpAlert from '../src/scripts/hpAlert';
+import { colorString, findClosestColor } from '../src/Colors';
+import { EventEmitter } from 'events';
+
+class FakeClient {
+  private emitter = new EventEmitter();
+  println = jest.fn();
+  playSound = jest.fn();
+  addEventListener(event: string, cb: any) {
+    this.emitter.on(event, cb);
+  }
+  sendEvent(type: string, detail?: any) {
+    this.emitter.emit(type, { detail });
+  }
+}
+
+describe('hp alert', () => {
+  let client: FakeClient;
+  const color = findClosestColor('#ffa500');
+
+  beforeEach(() => {
+    client = new FakeClient();
+    initHpAlert((client as unknown) as any);
+    jest.clearAllMocks();
+  });
+
+  function send(hp: number) {
+    client.sendEvent('gmcp.char.state', { hp });
+  }
+
+  test('beeps and prints when hp drops below 3', () => {
+    send(4);
+    send(2);
+    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const msg = colorString('Jestes ciezko ranny', color);
+    expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
+  });
+
+  test('prints again on further decrease', () => {
+    send(3);
+    send(2);
+    send(1);
+    expect(client.playSound).toHaveBeenCalledTimes(2);
+    const first = colorString('Jestes ciezko ranny', color);
+    const second = colorString('Jestes ledwo zywy', color);
+    expect(client.println).toHaveBeenNthCalledWith(1, `\n\n${first}\n\n`);
+    expect(client.println).toHaveBeenNthCalledWith(2, `\n\n${second}\n\n`);
+  });
+
+  test('does not trigger when hp rises', () => {
+    send(2);
+    client.println.mockClear();
+    client.playSound.mockClear();
+    send(4);
+    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.println).not.toHaveBeenCalled();
+  });
+});
