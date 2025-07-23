@@ -311,6 +311,16 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         });
         aliases.push({ pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10)) });
         aliases.push({ pattern: /^\/wezz ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1) });
+        aliases.push({
+            pattern: /^\/zi (\w+) (\w+)$/,
+            callback: async (m: RegExpMatchArray) => {
+                const action = m[1];
+                const herb = m[2].toLowerCase();
+                await take(herb, 1);
+                const biernik = herbs?.herb_id_to_odmiana[herb]?.biernik || herb;
+                client.sendCommand(`${action} ${biernik}`);
+            }
+        });
     }
 
     // load herb data in background so it's ready after refresh
