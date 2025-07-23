@@ -53,6 +53,15 @@ describe('ObjectManager', () => {
     ]);
   });
 
+  test('normalizes player name to title case', () => {
+    client.sendEvent('gmcp.char.info', { object_num: 1, name: 'hERO NAME' });
+    client.sendEvent('gmcp.char.state', { hp: 10 });
+    client.sendEvent('gmcp.objects.nums', []);
+    expect(manager.getObjectsOnLocation()).toEqual([
+      { num: 1, desc: 'Hero Name', state: 10, attack_num: undefined, avatar_target: undefined, shortcut: '@' },
+    ]);
+  });
+
   test('sets avatar target flag', () => {
     client.sendEvent('gmcp.objects.data', { '1': { desc: 'Ogre', avatar_target: true } });
     client.sendEvent('gmcp.objects.nums', ['1']);

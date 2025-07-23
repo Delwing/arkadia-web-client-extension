@@ -1,4 +1,5 @@
 import Client from "./Client";
+import toTitleCase from "./utils/toTitleCase";
 
 export interface ObjectData {
     desc?: string;
@@ -61,7 +62,7 @@ export default class ObjectManager {
                 this.data[this.playerNum] = {};
             }
             if (detail.name) {
-                this.data[this.playerNum].desc = detail.name;
+                this.data[this.playerNum].desc = toTitleCase(detail.name);
             }
         }
     }
