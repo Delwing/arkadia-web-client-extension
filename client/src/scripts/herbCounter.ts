@@ -30,6 +30,7 @@ function getHerbCase(herbId: string, amount: number, herbsData?: HerbsData | nul
 const polishNumbers: Record<string, number> = {
     'jeden': 1, 'jedna': 1, 'jedno': 1,
     'jednego': 1,
+    'jednej': 1,
     'dwa': 2, 'dwie': 2,
     'dwoch': 2,
     'trzy': 3,
@@ -131,7 +132,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     }
 
-    const countRegex = /^Doliczyl(?:es|as) sie (?<num>[0-9a-z ]+) sztuk\.$/;
+    const countRegex = /^Doliczyl(?:es|as) sie (?<num>[0-9a-z ]+) sztuki?\.$/;
     const contentRegex1 = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W srodku dostrzegasz (?<content>.*)\.$/;
     const contentRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W srodku dostrzegasz (?<content>[a-zA-Z0-9, -]+)\.$/;
     const emptyRegex = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W jego srodku nic jednak nie ma\.$/;
