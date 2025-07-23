@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
+
 
 interface GpsEntry {
     gps_string_lines: string[];
@@ -10,7 +10,6 @@ interface GpsEntry {
 }
 
 export default function initGps(client: Client) {
-    const COLOR = findClosestColor("#ffa500");
 
     function register(mapData: MapData.Map) {
         mapData.forEach(area => {
@@ -53,7 +52,7 @@ export default function initGps(client: Client) {
                             }
                             if (lines.length === 1) {
                                 client.Map.setMapRoomById(room.id);
-                                client.println(colorString(` Map Sync: gps ${gpsId}`, COLOR));
+                                client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
                             } else {
                                 current = 0;
                             }
@@ -71,7 +70,7 @@ export default function initGps(client: Client) {
                                 current++;
                                 if (current === lines.length) {
                                     client.Map.setMapRoomById(room.id);
-                                    client.println(colorString(` Map Sync: gps ${gpsId}`, COLOR));
+                                    client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
                                     current = 1;
                                 }
                                 return [line];

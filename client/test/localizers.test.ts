@@ -4,7 +4,7 @@ import Triggers from '../src/Triggers';
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
   Map = { setMapRoomById: jest.fn() } as any;
-  println = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('localizers triggers', () => {
@@ -21,6 +21,6 @@ describe('localizers triggers', () => {
   test('single line localizer sets map location', () => {
     parse('Postoj, placyk w Grabowej Buchcie');
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(3525);
-    expect(client.println).toHaveBeenCalled();
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: localizer 3525' });
   });
 });
