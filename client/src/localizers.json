@@ -404,7 +404,12 @@
   {
     "location": 6621,
     "patterns": [
-      "Doplynelismy do przystani na polnocnym brzegu Averu! Mozna wysiadac!",
+      "Doplynelismy do przystani na polnocnym brzegu Averu! Mozna wysiadac!"
+    ]
+  },
+  {
+    "location": 6621,
+    "patterns": [
       "Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!"
     ]
   },
