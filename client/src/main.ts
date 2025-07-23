@@ -31,6 +31,7 @@ import initMagics from './scripts/magics'
 import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
+import initHpAlert from './scripts/hpAlert'
 import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
 import initPriceEvaluation from './scripts/priceEvaluation'
@@ -47,6 +48,7 @@ import initGuildPostfix from './scripts/guildPostfix'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
+import initShipLocalizers from './scripts/shipLocalizers'
 import initMapAliases from './scripts/mapAliases'
 import initShortcuts from './scripts/shortcuts'
 import initCompareAll from './scripts/compareAll'
@@ -125,6 +127,7 @@ export function registerScripts(client: Client) {
     initEscape(client)
     initGps(client)
     initLocalizers(client)
+    initShipLocalizers(client)
     initFollowSpecialExits(client)
 
 
@@ -154,6 +157,7 @@ export function registerScripts(client: Client) {
     initWeaponColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
+    initHpAlert(client)
     initMagikZnika(client)
     initSeasonPrint(client)
     initGuildPostfix(client)
