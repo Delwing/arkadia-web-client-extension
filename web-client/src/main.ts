@@ -434,6 +434,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
+    const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
+
+    if (notificationCenter) {
+        client.eventTarget.addEventListener('notify', (ev: CustomEvent<{ text: string; time?: number }>) => {
+            const detail = ev.detail || {} as any;
+            const div = document.createElement('div');
+            div.className = 'notification';
+            div.textContent = detail.text || '';
+            notificationCenter.appendChild(div);
+            const timeout = typeof detail.time === 'number' ? detail.time : 1000;
+            setTimeout(() => div.remove(), timeout);
+        });
+    }
 
     if (menuButton) {
         new Dropdown(menuButton);

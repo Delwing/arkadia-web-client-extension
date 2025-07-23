@@ -647,3 +647,24 @@ button:focus-visible {
   max-height: 35vh;
   max-width: 75vw;
 }
+
+#notification-center {
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1104;
+}
+
+#notification-center .notification {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
