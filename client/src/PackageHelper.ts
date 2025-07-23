@@ -124,13 +124,20 @@ export default class PackageHelper {
         };
     }
 
+    private isMobileBrowser() {
+        return typeof navigator !== 'undefined' &&
+            /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
     private packageTableCallback() {
         const lineCallback = this.packageLineCallback();
         const widthLimit = 78;
         return (raw: string): string => {
             this.onPackageList();
             const lines = raw.split('\n');
-            if (this.client.contentWidth && this.client.contentWidth < widthLimit) {
+            const narrow = this.isMobileBrowser() ||
+                (this.client.contentWidth && this.client.contentWidth < widthLimit);
+            if (narrow) {
                 const out = [shortInfo];
                 lines.forEach(line => {
                     if (line.startsWith('Tablica zawiera liste')) {
