@@ -58,8 +58,12 @@ export default class PackageHelper {
     init() {
         this.enabled = true;
         this.client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (rawLine, __, matches): string => {
-            this.leadToPackage(toTitleCase(matches[1]));
-            return colorStringInLine(rawLine, matches[1], KNOWN_NPC_COLOR)
+            const name = toTitleCase(matches[1])
+            this.leadToPackage(name)
+            this.currentPackage = { name }
+            this.client.sendEvent('packageStatus', { recipient: name })
+            const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
+            return colorStringInLine(rawLine, matches[1], colorCode)
         }, tag)
         this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
     }
@@ -220,8 +224,10 @@ export default class PackageHelper {
     private leadToPackage(name: string) {
         let location = this.npc[name]
         if (!location) {
-            const [_, fallback] = Object.entries(this.npc).find(([npc, _]) => name.toLowerCase() === npc.toLowerCase())
-            location = fallback;
+            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
+            if (found) {
+                [, location] = found
+            }
         }
         if (location) {
             this.client.sendEvent('leadTo', location)
