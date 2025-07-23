@@ -95,6 +95,7 @@ h1 {
   font-size: 0.8rem;
   background-color: var(--bs-body-bg);
   border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 #lamp-timer {
@@ -650,7 +651,7 @@ button:focus-visible {
 
 #notification-center {
   position: absolute;
-  bottom: 0.5rem;
+  bottom: calc(100% + 0.5rem);
   right: 0.5rem;
   display: flex;
   flex-direction: column;
