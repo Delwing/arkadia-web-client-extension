@@ -99,6 +99,7 @@ export class Trigger {
         }
         let matched = false;
         if (matches) {
+            console.log(this)
             matched = true;
             if (this.options.stayOpenLines && this.options.stayOpenLines > 0) {
                 this.openInstances.push(this.options.stayOpenLines + 1);

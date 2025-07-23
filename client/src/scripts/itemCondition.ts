@@ -29,7 +29,7 @@ export const itemConditions: ItemCondition[] = [
 
 export function processItemCondition(rawLine: string, phrase: string): string {
     for (const condition of itemConditions) {
-        const found = condition.patterns.every(p => new RegExp(p).test(phrase));
+        const found = condition.patterns.every(p => new RegExp(`^${p}$`).test(phrase));
         if (found) {
             const colorCode = COLORS[condition.color] ?? COLORS.red;
             const colored = colorString(phrase, colorCode);
@@ -42,7 +42,7 @@ export function processItemCondition(rawLine: string, phrase: string): string {
 }
 
 export default function initItemCondition(client: Client) {
-    const pattern = /^(?:.* jest |Wyglada na to, ze (?:sa |jest )?)(.+)$/;
+    const pattern = /^(?:.* jest |Wyglada na to, ze (?:sa |jest )?)(.+)\.$/;
     client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
         const phrase = m[1];
         return processItemCondition(raw, phrase);
