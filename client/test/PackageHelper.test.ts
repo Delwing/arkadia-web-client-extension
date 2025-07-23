@@ -98,6 +98,7 @@ describe('PackageHelper', () => {
     helper.init();
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
     const startSpy = jest.spyOn(helper as any, 'startTimer');
+    const registerSpy = jest.spyOn(helper as any, 'registerDeliveryTrigger');
     const raw = 'Wypisano na niej duzymi literami: Bob';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
@@ -109,6 +110,49 @@ describe('PackageHelper', () => {
     const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00'));
     expect(result).toBe(expectedColor);
     expect(startSpy).not.toHaveBeenCalled();
+    expect(registerSpy).toHaveBeenCalled();
+  });
+
+  test('label trigger does not overwrite current package when name matches', () => {
+    helper.init();
+    helper.currentPackage = { name: 'Bob', time: '5' } as any;
+    const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
+    const raw = 'Wypisano na niej duzymi literami: Bob';
+    const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
+    const match = raw.match(regex)!;
+
+    trigger(raw, '', match);
+
+    expect(helper.currentPackage).toEqual({ name: 'Bob', time: '5' });
+    expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
+  });
+
+  test('label trigger skips registering delivery trigger when already registered', () => {
+    helper.init();
+    helper.deliveryTrigger = 'exists' as any;
+    const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
+    const spy = jest.spyOn(helper as any, 'registerDeliveryTrigger');
+    const raw = 'Wypisano na niej duzymi literami: Bob';
+    const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
+    const match = raw.match(regex)!;
+
+    trigger(raw, '', match);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('label trigger replaces current package when name differs', () => {
+    helper.init();
+    helper.currentPackage = { name: 'Bob', time: '5' } as any;
+    const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
+    const raw = 'Wypisano na niej duzymi literami: Tom';
+    const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
+    const match = raw.match(regex)!;
+
+    trigger(raw, '', match);
+
+    expect(helper.currentPackage).toEqual({ name: 'Tom' });
+    expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Tom' });
   });
 
   test('packageTableCallback simplifies output when width is small', () => {

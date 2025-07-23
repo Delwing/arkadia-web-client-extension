@@ -60,8 +60,13 @@ export default class PackageHelper {
         this.client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (rawLine, __, matches): string => {
             const name = toTitleCase(matches[1])
             this.leadToPackage(name)
-            this.currentPackage = { name }
+            if (!this.currentPackage || this.currentPackage.name !== name) {
+                this.currentPackage = { name }
+            }
             this.client.sendEvent('packageStatus', { recipient: name })
+            if (!this.deliveryTrigger) {
+                this.registerDeliveryTrigger()
+            }
             const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
             return colorStringInLine(rawLine, matches[1], colorCode)
         }, tag)
@@ -93,20 +98,7 @@ export default class PackageHelper {
             this.currentPackage = this.packages[this.pick - 1]
             this.leadToPackage(this.currentPackage.name)
             this.startTimer()
-            this.deliveryTrigger = this.client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (_, __, matches): undefined => {
-                if (matches[1] === 'Oddajesz') {
-                    if (!this.npc[this.currentPackage.name]) {
-                        this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
-                        this.client.port.postMessage({
-                            type: 'NEW_NPC',
-                            name: this.currentPackage.name,
-                            loc: this.client.Map.currentRoom.id
-                        })
-                    }
-                }
-                this.currentPackage = undefined;
-                this.stopTimer()
-            })
+            this.registerDeliveryTrigger()
         })
         this.failTrigger = this.client.Triggers.registerOneTimeTrigger(notTrustedMessage, (): undefined => {
             if (this.pickTrigger) {
@@ -219,6 +211,24 @@ export default class PackageHelper {
             this.timer = undefined
         }
         this.client.sendEvent('packageStatus', null)
+    }
+
+    private registerDeliveryTrigger() {
+        this.deliveryTrigger = this.client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (_, __, matches): undefined => {
+            if (matches[1] === 'Oddajesz') {
+                if (!this.npc[this.currentPackage.name]) {
+                    this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
+                    this.client.port.postMessage({
+                        type: 'NEW_NPC',
+                        name: this.currentPackage.name,
+                        loc: this.client.Map.currentRoom.id
+                    })
+                }
+            }
+            this.currentPackage = undefined;
+            this.stopTimer();
+            this.deliveryTrigger = undefined;
+        })
     }
 
     private leadToPackage(name: string) {
