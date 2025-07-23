@@ -111,7 +111,7 @@ export default class MapHelper {
             this.refreshPosition = true;
         }
         if (command.trim() === "idz") {
-            this.refresh();
+            this.refreshPosition = true;
         }
         if (this.currentRoom) {
             if (this.currentRoom.userData.dir_bind) {
