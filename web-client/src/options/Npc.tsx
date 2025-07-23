@@ -26,13 +26,19 @@ function Npc() {
 
     function downloadNpcs() {
         updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
-            .then(data => setNpcs(data))
+            .then(data => {
+                setNpcs(data)
+                ;(window as any).clientExtension?.sendEvent('npc', data)
+            })
             .catch(e => console.error('Failed to update NPC data:', e));
     }
 
     function clearNpcs() {
         clearIndexedDB(DB_CONFIG)
-            .then(() => setNpcs([]))
+            .then(() => {
+                setNpcs([])
+                ;(window as any).clientExtension?.sendEvent('npc', [])
+            })
             .catch(e => console.error('Failed to clear NPC data:', e));
     }
 
@@ -51,6 +57,7 @@ function Npc() {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
         saveNpcs(updated)
+        ;(window as any).clientExtension?.sendEvent('npc', updated)
     }
 
     async function saveNpcs(list: NpcProps[]) {
