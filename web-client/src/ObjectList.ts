@@ -1,5 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import { getItemSync, setItemSync } from "./options/storage.ts";
+import { getItemSync, setItemSync } from "@client/storage";
 
 export default class ObjectList {
     private client: typeof ArkadiaClient;

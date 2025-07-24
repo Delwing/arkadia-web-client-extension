@@ -1,7 +1,7 @@
 import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
-import storage from "./storage.ts";
+import storage from "@client/storage";
 import { Settings as BaseSettings, defaultSettings } from './defaultSettings';
 
 interface FormSettings extends BaseSettings {

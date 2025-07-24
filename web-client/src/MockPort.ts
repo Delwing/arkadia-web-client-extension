@@ -1,4 +1,4 @@
-import storage, { setItemSync, getItemSync } from "./options/storage.ts";
+import storage, { setItemSync, getItemSync } from "@client/storage";
 
 const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
 

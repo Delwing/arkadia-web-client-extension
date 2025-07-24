@@ -1,5 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
-import storage from "./options/storage.ts";
+import storage from "@client/storage";
 
 export type MacroType = 'functional' | 'zList' | 'zaList' | 'command' | 'specialExit' | 'kierunek';
 

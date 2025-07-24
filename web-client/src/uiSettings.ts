@@ -72,7 +72,7 @@ function apply(settings: UiSettings) {
     }
 }
 
-import storage from "./options/storage.ts";
+import storage from "@client/storage";
 
 async function load(): Promise<UiSettings> {
     try {

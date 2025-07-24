@@ -1,7 +1,7 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting } from "../mobileButtonSettings";
-import { getItemSync, setItemSync } from "../options/storage.ts";
+import { getItemSync, setItemSync } from "@client/storage";
 
 export default class MobileDirectionButtons {
     private client: Client;

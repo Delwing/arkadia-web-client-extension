@@ -1,7 +1,7 @@
 let limit = 35;
 
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
-import storage, { getItemSync, setItemSync } from "./options/storage.ts";
+import { getItemSync, setItemSync } from "@client/storage";
 
 export default class EmbeddedMap {
     private map: HTMLElement;
