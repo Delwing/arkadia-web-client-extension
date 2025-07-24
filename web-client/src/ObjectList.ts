@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import { getItemSync, setItemSync } from "./options/storage.ts";
 
 export default class ObjectList {
     private client: typeof ArkadiaClient;
@@ -24,7 +25,8 @@ export default class ObjectList {
     private setupDraggable() {
         if (!this.container) return;
 
-        const saved = localStorage.getItem("objectsListPosition");
+        const savedData = getItemSync("objectsListPosition");
+        const saved = savedData?.objectsListPosition;
         if (saved) {
             try {
                 const { x, y } = JSON.parse(saved);
@@ -77,7 +79,7 @@ export default class ObjectList {
             x: window.innerWidth - rect.right,
             y: rect.top,
         };
-        localStorage.setItem("objectsListPosition", JSON.stringify(position));
+        setItemSync("objectsListPosition", JSON.stringify(position));
         this.clampToViewport();
     };
 

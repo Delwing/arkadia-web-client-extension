@@ -2,7 +2,11 @@ import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
 import storage from "./storage.ts";
-import { Settings, defaultSettings } from './defaultSettings';
+import { Settings as BaseSettings, defaultSettings } from './defaultSettings';
+
+interface FormSettings extends BaseSettings {
+    xtermPalette: 'arkadia' | 'proper';
+}
 
 const collectModeOptions = [
     "monety",
@@ -18,11 +22,11 @@ const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
 function SettingsForm() {
 
-    const [settings, setSettings] = useState<Settings>(defaultSettings)
+    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings, xtermPalette: 'arkadia' })
 
     const [extraInput, setExtraInput] = useState<string>('')
 
-    function onChangeSetting(modifier: (settings: Settings) => void) {
+    function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
             const updated = {...prev}
             modifier(updated)
@@ -32,13 +36,27 @@ function SettingsForm() {
 
 
     function handleSubmission() {
-        storage.setItem("settings", settings)
-        window.dispatchEvent(new Event('close-options'))
+        const { xtermPalette, ...rest } = settings;
+        storage.setItem("settings", rest);
+        storage.getItem('uiSettings').then(res => {
+            const current = res?.uiSettings ? JSON.parse(res.uiSettings) : {};
+            storage.setItem('uiSettings', JSON.stringify({ ...current, xtermPalette }));
+        });
+        window.dispatchEvent(new Event('close-options'));
     }
 
     useEffect(() => {
-        storage.getItem("settings").then(res => {
-            setSettings(Object.assign({}, defaultSettings, res.settings));
+        Promise.all([storage.getItem("settings"), storage.getItem('uiSettings')]).then(([res, ui]) => {
+            const palette = (() => {
+                try { return JSON.parse(ui?.uiSettings ?? '').xtermPalette; }
+                catch {
+                    try {
+                        // TODO remove legacy fallback after migrating data
+                        return JSON.parse(res?.settings ?? '').xtermPalette;
+                    } catch { return 'arkadia'; }
+                }
+            })();
+            setSettings(Object.assign({}, defaultSettings, res.settings, { xtermPalette: palette === 'proper' ? 'proper' : 'arkadia' }));
         })
     }, []);
 

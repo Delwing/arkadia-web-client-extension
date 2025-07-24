@@ -9,6 +9,7 @@ interface UiSettings {
     showButtons: boolean;
     mapHeight: number;
     emojiLabels: boolean;
+    xtermPalette: 'arkadia' | 'proper';
 }
 
 const defaultSettings: UiSettings = {
@@ -20,6 +21,7 @@ const defaultSettings: UiSettings = {
     showButtons: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
+    xtermPalette: 'arkadia',
 };
 
 function apply(settings: UiSettings) {
@@ -65,16 +67,32 @@ function apply(settings: UiSettings) {
     }
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', { detail: { mobileDirectionButtons: settings.showButtons, emojiLabels: settings.emojiLabels } })
+            new CustomEvent('uiSettings', { detail: { mobileDirectionButtons: settings.showButtons, emojiLabels: settings.emojiLabels, xtermPalette: settings.xtermPalette } })
         );
     }
 }
 
-function load(): UiSettings {
+import storage from "./options/storage.ts";
+
+async function load(): Promise<UiSettings> {
     try {
-        const raw = localStorage.getItem('uiSettings');
+        const [uiData, settingsData] = await Promise.all([
+            storage.getItem('uiSettings'),
+            storage.getItem('settings'),
+        ]);
+        let raw = uiData?.uiSettings;
+        let parsed: any = {};
         if (raw) {
-            const parsed = JSON.parse(raw);
+            parsed = JSON.parse(raw);
+        }
+        if (!parsed.xtermPalette && settingsData?.settings) {
+            try {
+                const legacy = JSON.parse(settingsData.settings);
+                // TODO remove legacy fallback after migrating data
+                parsed.xtermPalette = legacy.xtermPalette;
+            } catch {}
+        }
+        if (raw || Object.keys(parsed).length > 0) {
             const mapScale = (() => {
                 const value = Math.abs(parseFloat(parsed.mapScale));
                 return value > 0 ? value : defaultSettings.mapScale;
@@ -83,7 +101,8 @@ function load(): UiSettings {
                 const value = parseInt(parsed.mapLimit);
                 return value > 0 ? value : defaultSettings.mapLimit;
             })();
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels };
+            const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette };
         }
     } catch {
         // ignore malformed data
@@ -92,10 +111,10 @@ function load(): UiSettings {
 }
 
 function save(settings: UiSettings) {
-    localStorage.setItem('uiSettings', JSON.stringify(settings));
+    storage.setItem('uiSettings', JSON.stringify(settings));
 }
 
-export default function initUiSettings() {
+export default async function initUiSettings() {
     const button = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
     const modalEl = document.getElementById('ui-settings-modal');
     if (!button || !modalEl) return;
@@ -111,7 +130,7 @@ export default function initUiSettings() {
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
-    let current = load();
+    let current = await load();
     contentInput.value = String(current.contentFontSize);
     objectsInput.value = String(current.objectsFontSize);
     buttonInput.value = String(current.buttonSize);
@@ -146,6 +165,7 @@ export default function initUiSettings() {
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
+            xtermPalette: current.xtermPalette,
         };
     }
 

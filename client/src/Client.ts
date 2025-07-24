@@ -107,6 +107,13 @@ export default class Client {
                 this.lampBind = {...lamp}
             }
             if (ev.detail?.xtermPalette) {
+                // legacy support, will be removed
+                setXtermPalette(ev.detail.xtermPalette);
+            }
+        })
+
+        this.addEventListener('uiSettings', (ev: CustomEvent) => {
+            if (ev.detail?.xtermPalette) {
                 setXtermPalette(ev.detail.xtermPalette);
             }
         })
@@ -133,6 +140,7 @@ export default class Client {
     connect(port: any, initial: boolean) {
         if (initial) {
             port.postMessage({type: 'GET_STORAGE', key: 'settings'})
+            port.postMessage({type: 'GET_STORAGE', key: 'uiSettings'})
             port.postMessage({type: 'GET_STORAGE', key: 'kill_counter'})
             port.postMessage({type: 'GET_STORAGE', key: 'containers'})
             port.postMessage({type: 'GET_STORAGE', key: 'deposits'})

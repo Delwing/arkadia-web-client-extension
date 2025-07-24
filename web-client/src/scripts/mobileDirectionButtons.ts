@@ -1,6 +1,7 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting } from "../mobileButtonSettings";
+import { getItemSync, setItemSync } from "../options/storage.ts";
 
 export default class MobileDirectionButtons {
     private client: Client;
@@ -232,8 +233,9 @@ export default class MobileDirectionButtons {
     private setupDraggable() {
         if (!this.container || !this.contentArea) return;
 
-        // Set initial position from localStorage if available
-        const savedPosition = localStorage.getItem('mobileButtonsPosition');
+        // Set initial position from storage if available
+        const savedData = getItemSync('mobileButtonsPosition');
+        const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
                 const { x, y } = JSON.parse(savedPosition);
@@ -336,7 +338,7 @@ export default class MobileDirectionButtons {
                 x: window.innerWidth - rect.right,
                 y: rect.top,
             };
-            localStorage.setItem('mobileButtonsPosition', JSON.stringify(position));
+            setItemSync('mobileButtonsPosition', JSON.stringify(position));
 
             this.isDragging = false;
             this.container.classList.remove('dragging');

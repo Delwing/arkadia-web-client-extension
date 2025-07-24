@@ -1,6 +1,7 @@
 let limit = 35;
 
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
+import storage, { getItemSync, setItemSync } from "./options/storage.ts";
 
 export default class EmbeddedMap {
     private map: HTMLElement;
@@ -34,7 +35,8 @@ export default class EmbeddedMap {
         this.settings
         let zoom = 0.30;
         try {
-            const raw = localStorage.getItem('uiSettings');
+            const data = getItemSync('uiSettings');
+            const raw = data?.uiSettings;
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
@@ -87,10 +89,10 @@ export default class EmbeddedMap {
 
     private _saveZoom() {
         try {
-            const raw = localStorage.getItem('uiSettings');
-            const parsed = raw ? JSON.parse(raw) : {};
+            const data = getItemSync('uiSettings');
+            const parsed = data?.uiSettings ? JSON.parse(data.uiSettings) : {};
             parsed.mapScale = this.zoom;
-            localStorage.setItem('uiSettings', JSON.stringify(parsed));
+            setItemSync('uiSettings', JSON.stringify(parsed));
         } catch {}
     }
 
@@ -101,10 +103,10 @@ export default class EmbeddedMap {
 
     private _saveLimit() {
         try {
-            const raw = localStorage.getItem('uiSettings');
-            const parsed = raw ? JSON.parse(raw) : {};
+            const data = getItemSync('uiSettings');
+            const parsed = data?.uiSettings ? JSON.parse(data.uiSettings) : {};
             parsed.mapLimit = this.limit;
-            localStorage.setItem('uiSettings', JSON.stringify(parsed));
+            setItemSync('uiSettings', JSON.stringify(parsed));
         } catch {}
     }
 
