@@ -106,7 +106,7 @@ export function registerScripts(client: Client) {
         client.sendEvent('refreshPositionWhenAble')
     })
 
-    client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, () => {
+    client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
         client.Map.refreshPosition = false
     })
 

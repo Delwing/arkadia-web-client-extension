@@ -170,10 +170,10 @@ h1 {
 
 #input-area {
   display: flex;
-  padding: 1.5vh 1vh 2.5vh 1vh;
+  padding: 7px 10px;
   background-color: var(--bs-body-bg);
   border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
-  gap: 1vw;
+  gap: 10px;
   position: relative;
   z-index: 1001;
 }
