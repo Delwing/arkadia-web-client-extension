@@ -15,6 +15,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
 import {attachGmcpListener} from "./gmcp";
+import { setCurrentCharacter } from "./storage";
 import {color} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
@@ -115,6 +116,17 @@ export default class Client {
         this.addEventListener('uiSettings', (ev: CustomEvent) => {
             if (ev.detail?.xtermPalette) {
                 setXtermPalette(ev.detail.xtermPalette);
+            }
+        })
+
+        this.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
+            if (ev.detail?.name) {
+                setCurrentCharacter(ev.detail.name);
+                if (this.port) {
+                    ['settings', 'kill_counter', 'deposits', 'herb_counts', 'mapperRoomId'].forEach(k => {
+                        this.port!.postMessage({ type: 'GET_STORAGE', key: k });
+                    });
+                }
             }
         })
 

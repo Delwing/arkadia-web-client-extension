@@ -25,12 +25,38 @@ const download = async (storage: Storage, url: string, ttl: number) => {
 }
 
 
+const characterScopedKeys = new Set(['settings', 'kill_counter', 'deposits', 'herb_counts', 'mapperRoomId']);
+
+let currentCharacter: string | null = null;
+export function setCurrentCharacter(name: string) {
+    currentCharacter = name ? String(name) : null;
+}
+
+function applyCharacterScope(key: string): string {
+    if (currentCharacter && characterScopedKeys.has(key)) {
+        return `${currentCharacter}:${key}`;
+    }
+    return key;
+}
+
+function stripCharacterScope(key: string): string {
+    const idx = key.indexOf(':');
+    if (idx > 0) {
+        const base = key.substring(idx + 1);
+        if (characterScopedKeys.has(base)) {
+            return base;
+        }
+    }
+    return key;
+}
+
 class LocalStorage implements Storage {
     private listeners: Array<(changes: { [key: string]: { oldValue: any, newValue: any } }) => void> = [];
 
     constructor() {
         window.addEventListener('storage', (ev: StorageEvent) => {
             if (!ev.key) return;
+            const baseKey = stripCharacterScope(ev.key);
             const changes: { [key: string]: { oldValue: any, newValue: any } } = {};
             let oldValue: any = undefined;
             if (ev.oldValue !== null) {
@@ -40,13 +66,14 @@ class LocalStorage implements Storage {
             if (ev.newValue !== null) {
                 try { newValue = JSON.parse(ev.newValue); } catch { newValue = ev.newValue; }
             }
-            changes[ev.key] = { oldValue, newValue };
+            changes[baseKey] = { oldValue, newValue };
             this.listeners.forEach(l => l(changes));
         });
     }
 
     getItem(key: string): Promise<any> {
-        const value = localStorage.getItem(key);
+        const realKey = applyCharacterScope(key);
+        const value = localStorage.getItem(realKey);
         if (value) {
             try {
                 const parsed = JSON.parse(value)
@@ -59,12 +86,13 @@ class LocalStorage implements Storage {
     }
 
     setItem(key: string, value: any): Promise<void> {
-        const oldRaw = localStorage.getItem(key);
+        const realKey = applyCharacterScope(key);
+        const oldRaw = localStorage.getItem(realKey);
         let oldValue: any = undefined;
         if (oldRaw !== null) {
             try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; }
         }
-        localStorage.setItem(key, JSON.stringify(value));
+        localStorage.setItem(realKey, JSON.stringify(value));
         const changes: { [key: string]: { oldValue: any, newValue: any } } = {
             [key]: { oldValue, newValue: value }
         };
@@ -90,7 +118,8 @@ const storage: Storage = new LocalStorage();
 export default storage;
 
 export function getItemSync(key: string) {
-    const value = localStorage.getItem(key);
+    const realKey = applyCharacterScope(key);
+    const value = localStorage.getItem(realKey);
     if (value !== null) {
         try { return { [key]: JSON.parse(value) }; } catch { return { [key]: value }; }
     }
@@ -98,12 +127,13 @@ export function getItemSync(key: string) {
 }
 
 export function setItemSync(key: string, value: any) {
-    const oldRaw = localStorage.getItem(key);
+    const realKey = applyCharacterScope(key);
+    const oldRaw = localStorage.getItem(realKey);
     let oldValue: any = undefined;
     if (oldRaw !== null) {
         try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; }
     }
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(realKey, JSON.stringify(value));
     const changes: { [key: string]: { oldValue: any, newValue: any } } = {
         [key]: { oldValue, newValue: value }
     };

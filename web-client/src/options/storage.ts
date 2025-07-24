@@ -1,3 +1,3 @@
-import storage, { getItemSync, setItemSync } from '@client/storage';
+import storage, { getItemSync, setItemSync, setCurrentCharacter } from '@client/storage';
 export default storage;
-export { getItemSync, setItemSync };
+export { getItemSync, setItemSync, setCurrentCharacter };
