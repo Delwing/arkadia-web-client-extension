@@ -38,6 +38,7 @@ import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initCoinColors from './scripts/coinColors'
 import initWeaponColors from './scripts/weaponColors'
+import initNewMail from './scripts/newMail'
 import initExternalScripts from './scripts/externalScripts'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
@@ -158,6 +159,7 @@ export function registerScripts(client: Client) {
     initLeaderAttackWarning(client)
     initBreakItem(client)
     initHpAlert(client)
+    initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
     initGuildPostfix(client)
