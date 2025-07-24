@@ -21,11 +21,11 @@ export default class PackageStatus {
     }
     const { recipient, seconds } = data;
     if (seconds == null || seconds <= 0) {
-      this.container.textContent = `paczka: ${recipient}`;
+      this.container.textContent = `📦: ${recipient}`;
     } else {
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
-      this.container.textContent = `paczka: ${recipient} ${m}:${s.toString().padStart(2, "0")}`;
+      this.container.textContent = `📦: ${recipient} ${m}:${s.toString().padStart(2, "0")}`;
     }
     this.container.style.display = "block";
   }
