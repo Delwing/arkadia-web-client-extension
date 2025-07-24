@@ -127,6 +127,11 @@ export default class ObjectList {
             let coloredDesc = rawDesc;
             if (obj.avatar_target) {
                 coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
+            } else {
+                const tm = (window as any).clientExtension?.TeamManager;
+                if (tm?.isInTeam?.(rawDesc)) {
+                    coloredDesc = `<span style="color:springgreen">${rawDesc}</span>`;
+                }
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
             let bar = "";
