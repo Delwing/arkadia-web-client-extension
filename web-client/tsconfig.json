@@ -8,11 +8,16 @@
       "path": "./tsconfig.node.json"
     }
   ],
-  "compilerOptions": {
-    "typeRoots": [
-      "node_modules/@types",
-      "./src/types",
-      "../client/src/types"
-    ]
-  }
+    "compilerOptions": {
+        "typeRoots": [
+            "node_modules/@types",
+            "./src/types",
+            "../client/src/types"
+        ],
+        "paths": {
+            "@client/*": [
+                "../client/src/*"
+            ]
+        }
+    }
 }

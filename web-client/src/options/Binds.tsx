@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {Form, Button} from 'react-bootstrap';
-import storage from "./storage";
+import storage from "@client/storage";
 
 interface Bind {
     key: string;
