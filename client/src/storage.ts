@@ -25,11 +25,22 @@ const download = async (storage: Storage, url: string, ttl: number) => {
 }
 
 
-const characterScopedKeys = new Set(['settings', 'kill_counter', 'deposits', 'herb_counts', 'mapperRoomId']);
+const characterScopedKeys = new Set([
+    'settings',
+    'kill_counter',
+    'deposits',
+    'herb_counts',
+    'mapperRoomId',
+]);
 
-let currentCharacter: string | null = null;
+let currentCharacter: string | null = localStorage.getItem('currentCharacter');
 export function setCurrentCharacter(name: string) {
     currentCharacter = name ? String(name) : null;
+    if (currentCharacter) {
+        localStorage.setItem('currentCharacter', currentCharacter);
+    } else {
+        localStorage.removeItem('currentCharacter');
+    }
 }
 
 function applyCharacterScope(key: string): string {
@@ -54,8 +65,17 @@ class LocalStorage implements Storage {
     private listeners: Array<(changes: { [key: string]: { oldValue: any, newValue: any } }) => void> = [];
 
     constructor() {
+        const saved = localStorage.getItem('currentCharacter');
+        if (saved) {
+            currentCharacter = saved;
+        }
+
         window.addEventListener('storage', (ev: StorageEvent) => {
             if (!ev.key) return;
+            if (ev.key === 'currentCharacter') {
+                currentCharacter = ev.newValue;
+                return;
+            }
             const baseKey = stripCharacterScope(ev.key);
             const changes: { [key: string]: { oldValue: any, newValue: any } } = {};
             let oldValue: any = undefined;
