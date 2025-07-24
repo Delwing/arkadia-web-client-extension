@@ -1751,15 +1751,15 @@
                                 "script": "trigger_func_skrypty_ui_gags_ciosy_masywny_dlugi_sztylet_moje()",
                                 "patterns": [
                                   {
-                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) blyskawicznym pchnieciem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?)\\. W ostatniej chwili przeciwnik cofa sie gwaltownie o krok, przez co ostrze nie wchodzi w jego cialo dosc gleboko\\.$",
+                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) blyskawicznym pchnieciem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?)\\. W ostatniej chwili przeciwnik (?<damage>cofa) sie gwaltownie o krok, przez co ostrze nie wchodzi w jego cialo dosc gleboko\\.$",
                                     "type": 1
                                   },
                                   {
-                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) raptownym ciosem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?) zostawiajac na (?:jego|jej|twojej) skorze plytka rane\\.$",
+                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) raptownym ciosem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?) zostawiajac na (?:jego|jej|twojej) skorze (?<damage>plytka) rane\\.$",
                                     "type": 1
                                   },
                                   {
-                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) wyprowadza gwaltowne pchniecie w (?<target>.+?), jednakze ostrze masywnego dlugiego sztyletu przecina tylko powietrze\\.$",
+                                    "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) wyprowadza gwaltowne pchniecie w (?<target>.+?), jednakze ostrze masywnego dlugiego sztyletu (?<damage>przecina) tylko powietrze\\.$",
                                     "type": 1
                                   },
                                   {
