@@ -15,8 +15,9 @@ export default function initHpAlert(client: Client) {
     ];
     let prev = Infinity;
     client.addEventListener('gmcp.char.state', (ev: CustomEvent) => {
-        const hp = ev.detail?.hp;
+        let hp = ev.detail?.hp;
         if (typeof hp !== 'number') return;
+        hp++;
         if (hp < prev && hp < 3) {
             const msg = colorString(`Jestes ${CONDITIONS[hp] ?? ''}`, ORANGE);
             client.playSound('beep');
