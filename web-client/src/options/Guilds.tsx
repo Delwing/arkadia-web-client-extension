@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "react-bootstrap";
-import storage from "@client/storage";
+import storage from "@client/src/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { defaultSettings } from "./defaultSettings";

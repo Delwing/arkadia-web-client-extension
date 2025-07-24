@@ -25,7 +25,7 @@
     ],
     "paths": {
       "@client/*": [
-        "../client/src/*"
+        "../client/*"
       ],
     }
   },

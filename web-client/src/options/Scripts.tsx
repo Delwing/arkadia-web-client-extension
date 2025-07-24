@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
-import storage from "@client/storage";
+import storage from "@client/src/storage";
 
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
