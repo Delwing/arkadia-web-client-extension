@@ -29,17 +29,17 @@ describe('hp alert', () => {
   }
 
   test('beeps and prints when hp drops below 3', () => {
-    send(4);
-    send(2);
+    send(3);
+    send(1);
     expect(client.playSound).toHaveBeenCalledTimes(1);
     const msg = colorString('Jestes ciezko ranny', color);
     expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
   });
 
   test('prints again on further decrease', () => {
-    send(3);
     send(2);
     send(1);
+    send(0);
     expect(client.playSound).toHaveBeenCalledTimes(2);
     const first = colorString('Jestes ciezko ranny', color);
     const second = colorString('Jestes ledwo zywy', color);
