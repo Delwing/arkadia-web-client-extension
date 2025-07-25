@@ -79,11 +79,11 @@ function Binds() {
         storage.getItem('settings').then(res => {
             setBinds({
                 ...defaultBinds,
-                main: res.settings?.binds?.main || defaultBinds.main,
-                lamp: res.settings?.binds?.lamp || defaultBinds.lamp,
+                main: res?.settings?.binds?.main || defaultBinds.main,
+                lamp: res?.settings?.binds?.lamp || defaultBinds.lamp,
                 directions: {
                     ...defaultBinds.directions,
-                    ...res.settings?.binds?.directions,
+                    ...res?.settings?.binds?.directions,
                 },
             });
         });

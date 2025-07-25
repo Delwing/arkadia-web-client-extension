@@ -105,6 +105,19 @@ export default class MapHelper {
             this.refreshPosition = true;
         });
 
+        this.client.addEventListener('gmcp.char.info', () => {
+            const listener = (event: CustomEvent) => {
+                if (event.detail.key === STORAGE_KEY) {
+                    const value = parseInt(event.detail.value);
+                    if (!isNaN(value)) {
+                        this.savedRoomId = value;
+                        this.setMapRoomById(this.savedRoomId);
+                    }
+                }
+            };
+            this.client.addEventListener('storage', listener);
+        });
+
         this.client.sendEvent('refreshPositionWhenAble');
     }
 

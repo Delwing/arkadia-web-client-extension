@@ -4,15 +4,8 @@ import {resolve} from "path";
 import tsconfigPaths from "vite-tsconfig-paths";
 import {execSync} from 'child_process';
 
-function safeExec(command: string, fallback: string): string {
-    try {
-        return execSync(command).toString().trim();
-    } catch {
-        return fallback;
-    }
-}
-const commitSha = safeExec('git rev-parse --short HEAD', 'dev');
-const commitDate = safeExec('git log -1 --format=%cd --date=short', new Date().toISOString().slice(0, 10));
+const commitSha = execSync('git rev-parse --short HEAD').toString().trim();
+const commitDate = execSync('git log -1 --format=%cd --date=short').toString().trim();
 
 export default defineConfig({
     plugins: [

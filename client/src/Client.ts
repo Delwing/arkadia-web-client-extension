@@ -147,11 +147,6 @@ export default class Client {
 
     connect(port: any, initial: boolean) {
         if (initial) {
-            port.postMessage({type: 'GET_STORAGE', key: 'settings'})
-            port.postMessage({type: 'GET_STORAGE', key: 'uiSettings'})
-            port.postMessage({type: 'GET_STORAGE', key: 'kill_counter'})
-            port.postMessage({type: 'GET_STORAGE', key: 'containers'})
-            port.postMessage({type: 'GET_STORAGE', key: 'deposits'})
             port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
         }
         this.port = port

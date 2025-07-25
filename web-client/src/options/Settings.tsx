@@ -54,7 +54,7 @@ function SettingsForm() {
     useEffect(() => {
         const load = () => {
             storage.getItem("settings").then(res => {
-                setSettings(Object.assign({}, defaultSettings, res.settings));
+                setSettings(Object.assign({}, defaultSettings, res?.settings));
             });
         };
 
