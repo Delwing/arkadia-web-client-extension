@@ -109,7 +109,12 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  flex-grow: 1;
+  flex-grow: 0;
+}
+
+.char-state-bar .progress {
+  width: 10ch;
+  font-size: 0.8rem;
 }
 
 #lamp-timer {
