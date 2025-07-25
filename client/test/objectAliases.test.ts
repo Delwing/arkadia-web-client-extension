@@ -24,6 +24,7 @@ describe('object aliases', () => {
   let invite: (m: RegExpMatchArray) => void;
   let toggle: () => void;
   let shieldGroup: (m: RegExpMatchArray) => void;
+  let withdraw: (m: RegExpMatchArray) => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -36,6 +37,7 @@ describe('object aliases', () => {
     invite = aliases[4].callback as any;
     toggle = aliases[7].callback as any;
     shieldGroup = aliases[8].callback as any;
+    withdraw = aliases[9].callback as any;
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
@@ -103,5 +105,19 @@ describe('object aliases', () => {
     expect(client.sendGMCP).toHaveBeenNthCalledWith(1, 'char.options.group_cover', 2);
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_11');
     expect(client.sendGMCP).toHaveBeenNthCalledWith(2, 'char.options.group_cover', 1);
+  });
+
+  test('/w alias withdraws behind object', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 17, shortcut: 'X' }]);
+    withdraw(['', 'X'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('gzwycofaj sie za ob_17');
+  });
+
+  test('/w alias releases after withdraw when toggle is on', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 18, shortcut: 'Y' }]);
+    toggle();
+    withdraw(['', 'Y'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_18');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
   });
 });
