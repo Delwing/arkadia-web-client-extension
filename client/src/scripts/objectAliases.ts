@@ -32,6 +32,14 @@ export default function initObjectAliases(
             }
         }
     }
+
+    function breakDefense(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            client.sendCommand("przestan kryc sie za zaslona");
+            client.sendCommand(`przelam obrone ob_${obj.num}`);
+        }
+    }
     let releaseGuard = false;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -77,6 +85,10 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /\/za ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => shield(m[1])
+        });
+        aliases.push({
+            pattern: /\/prze ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => breakDefense(m[1])
         });
         aliases.push({
             pattern: /^\/za$/,
