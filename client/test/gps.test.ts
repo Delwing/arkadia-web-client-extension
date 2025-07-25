@@ -15,6 +15,7 @@ describe('gps triggers', () => {
     client = new FakeClient();
     initGps(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    client.Map.currentRoom.id = 1;
     const mapData = [
       {
         areaName: 'Area',
@@ -44,10 +45,19 @@ describe('gps triggers', () => {
     window.dispatchEvent(new CustomEvent('map-ready', { detail: { mapData, colors: [] } }));
   });
 
-  test('gps lines set map location', () => {
+  test('gps lines set map location when different from current', () => {
     parse('l1');
     parse('l2');
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(10);
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: gps 10_0' });
+  });
+
+  test('gps lines do not update when already at location', () => {
+    jest.clearAllMocks();
+    client.Map.currentRoom.id = 10;
+    parse('l1');
+    parse('l2');
+    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalled();
   });
 });
