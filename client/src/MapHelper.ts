@@ -105,6 +105,24 @@ export default class MapHelper {
             this.refreshPosition = true;
         });
 
+        this.client.addEventListener('storage', (event: CustomEvent) => {
+            if (event.detail.key === STORAGE_KEY) {
+                const value = parseInt(event.detail.value);
+                if (!isNaN(value)) {
+                    this.savedRoomId = value;
+                    if (this.mapReader) {
+                        this.renderRoomById(value);
+                    }
+                }
+            }
+        });
+
+        this.client.addEventListener('port-connected', () => {
+            this.client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+        });
+
+        this.client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+
         this.client.sendEvent('refreshPositionWhenAble');
     }
 
