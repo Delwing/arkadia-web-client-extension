@@ -86,21 +86,11 @@ import storage from "@client/src/storage";
 
 async function load(): Promise<UiSettings> {
     try {
-        const [uiData, settingsData] = await Promise.all([
-            storage.getItem('uiSettings'),
-            storage.getItem('settings'),
-        ]);
+        const uiData = await storage.getItem('uiSettings');
         let raw = uiData?.uiSettings;
         let parsed: any = {};
         if (raw) {
             parsed = raw as any;
-        }
-        if (!parsed.xtermPalette && settingsData?.settings) {
-            try {
-                const legacy = JSON.parse(settingsData.settings);
-                // TODO remove legacy fallback after migrating data
-                parsed.xtermPalette = legacy.xtermPalette;
-            } catch {}
         }
         if (raw || Object.keys(parsed).length > 0) {
             const mapScale = (() => {
@@ -139,6 +129,7 @@ export default async function initUiSettings() {
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
+    const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
@@ -151,6 +142,7 @@ export default async function initUiSettings() {
     mapLimitInput.value = String(current.mapLimit);
     showButtonsInput.checked = current.showButtons;
     emojiLabelsInput.checked = current.emojiLabels;
+    xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     apply(current);
 
@@ -178,7 +170,7 @@ export default async function initUiSettings() {
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
-            xtermPalette: current.xtermPalette,
+            xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
             footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode
         };
     }
