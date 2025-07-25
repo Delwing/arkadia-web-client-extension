@@ -5,9 +5,11 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
     function printBinds() {
         const main = client.FunctionalBind.getLabel();
         const lamp = formatLabel(client.lampBind);
+        const support = formatLabel(client.supportBind);
         const lines = [
             `Domy\u015Blny: ${main}`,
             `Nape\u0142nij lamp\u0119: ${lamp}`,
+            `Wesprzyj: ${support}`,
         ];
         client.println(lines.join("\n"));
     }
