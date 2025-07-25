@@ -55,7 +55,17 @@ function notifyCharacterChange(prev: string | null) {
 
 export function setCurrentCharacter(name: string) {
     const prev = currentCharacter;
+    const firstCharacter = !currentCharacter && !localStorage.getItem('currentCharacter');
     currentCharacter = name ? String(name) : null;
+    if (firstCharacter && currentCharacter) {
+        characterScopedKeys.forEach(key => {
+            const raw = localStorage.getItem(key);
+            if (raw !== null) {
+                localStorage.setItem(`${currentCharacter}:${key}`, raw);
+                localStorage.removeItem(key);
+            }
+        });
+    }
     if (currentCharacter) {
         localStorage.setItem('currentCharacter', currentCharacter);
     } else {
