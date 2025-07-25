@@ -8,7 +8,13 @@ const pickCommand = "wybierz paczke"
 const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/
 const packageTableRegex = /Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:[\s\S]*?Symbolem \* oznaczono przesylki ciezkie\./
 const shortInfo = 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
-const notTrustedMessage = 'Nie ufam ci na tyle, aby powierzyc ci dostarczenie tej przesylki.'
+const pickFailMessages = [
+    'Nie ufam ci na tyle, aby powierzyc ci dostarczenie tej przesylki.',
+    'Lista przesylek zmienila sie i ta, ktora chcesz podjac byc moze nie jest juz ta, ktora widziales w spisie. Sprawdz spis ponownie, badz sprobuj podjac paczke jeszcze raz, jesli mimo to chcesz ja dostarczyc.',
+    'Ty juz dla nas dostatecznie ciezko zapracowales',
+    'Cos ci sie chyba pomylilo, nie ma takiej oferty',
+    'Niestety, nie widzisz tu nikogo, od kogo mozna by wziac zlecenie',
+]
 
 const KNOWN_NPC_COLOR = findClosestColor('#63ba41');
 const UNKNOWN_NPC_COLOR = findClosestColor('#aaaaaa');
@@ -98,7 +104,7 @@ export default class PackageHelper {
             this.startTimer()
             this.registerDeliveryTrigger()
         })
-        this.failTrigger = this.client.Triggers.registerOneTimeTrigger(notTrustedMessage, (): undefined => {
+        this.failTrigger = this.client.Triggers.registerOneTimeTrigger(pickFailMessages, (): undefined => {
             if (this.pickTrigger) {
                 this.client.Triggers.removeTrigger(this.pickTrigger)
                 this.pickTrigger = undefined
