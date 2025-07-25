@@ -2,6 +2,13 @@ import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
 
+const HEADER_COLOR = findClosestColor("#90ee90");
+const SECTION_COLOR = findClosestColor("#ffa500");
+const LABEL_COLOR = HEADER_COLOR;
+const COUNT_COLOR = SECTION_COLOR;
+const POSTEP_COLOR = findClosestColor("#6a5acd");
+const TIME_COLOR = findClosestColor("#ffff00");
+
 const STATES = [
     "minimalne",
     "nieznaczne",
@@ -125,7 +132,7 @@ export default class ImproveCounter {
         const WIDTH = 74;
         const INNER = WIDTH - 2;
         const pad = createPad(INNER, 1, 1);
-        const header = createHeader(WIDTH, 2, findClosestColor("#87cefa"));
+        const header = createHeader(WIDTH, 2, HEADER_COLOR);
 
         const now = new Date();
         const avg = this.entries.length
@@ -134,9 +141,13 @@ export default class ImproveCounter {
         const lines: string[] = [];
         lines.push(header("Postepy"));
         lines.push(pad());
+        const current = colorString(
+            `Aktualny czas   : ${formatDate(now)}`,
+            TIME_COLOR
+        );
         lines.push(
             pad(
-                `Aktualny czas   : ${formatDate(now)}    : sred ${formatDuration(avg)}       Dzisiaj: ${this.entries.length}`
+                `${current}    : sred ${formatDuration(avg)}       Dzisiaj: ${this.entries.length}`
             )
         );
         lines.push(pad());
@@ -152,19 +163,30 @@ export default class ImproveCounter {
             );
         });
         lines.push(pad());
-        lines.push(pad("ZABITYCH"));
+        lines.push(pad(colorString("ZABITYCH", SECTION_COLOR)));
         const totals = this.getKills();
-        lines.push(pad(`JA ... : ${totals.my}`));
-        lines.push(pad(`WSZYSCY: ${totals.my + totals.team}`));
+        lines.push(
+            pad(
+                `${colorString("JA ... :", LABEL_COLOR)} ${colorString(String(totals.my), COUNT_COLOR)}`
+            )
+        );
+        lines.push(
+            pad(
+                `${colorString("WSZYSCY:", LABEL_COLOR)} ${colorString(String(totals.my + totals.team), COUNT_COLOR)}`
+            )
+        );
         lines.push(pad());
         const since = Date.now() - this.lastTime;
         const myDelta = totals.my - this.lastKills.my;
         const teamDelta = totals.team - this.lastKills.team;
         lines.push(
             pad(
-                `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${
-                    myDelta + teamDelta
-                }`
+                colorString(
+                    `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${
+                        myDelta + teamDelta
+                    }`,
+                    POSTEP_COLOR
+                )
             )
         );
         lines.push(pad());
