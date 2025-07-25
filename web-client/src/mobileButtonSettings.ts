@@ -38,14 +38,14 @@ export async function loadSettings(): Promise<Record<string, ButtonSetting>> {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
-            return { ...defaultSettings, ...JSON.parse(raw) };
+            return { ...defaultSettings, ...(raw as any) };
         }
     } catch {}
     return { ...defaultSettings };
 }
 
 export function saveSettings(settings: Record<string, ButtonSetting>) {
-    storage.setItem('mobileButtonSettings', JSON.stringify(settings));
+    storage.setItem('mobileButtonSettings', settings);
 }
 
 export function applySettings(settings: Record<string, ButtonSetting>) {

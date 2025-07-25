@@ -39,8 +39,8 @@ function SettingsForm() {
         const { xtermPalette, ...rest } = settings;
         storage.setItem("settings", rest);
         storage.getItem('uiSettings').then(res => {
-            const current = res?.uiSettings ? JSON.parse(res.uiSettings) : {};
-            storage.setItem('uiSettings', JSON.stringify({ ...current, xtermPalette }));
+            const current = res?.uiSettings ? res.uiSettings : {} as any;
+            storage.setItem('uiSettings', { ...current, xtermPalette });
         });
         window.dispatchEvent(new Event('close-options'));
     }
@@ -48,7 +48,7 @@ function SettingsForm() {
     useEffect(() => {
         Promise.all([storage.getItem("settings"), storage.getItem('uiSettings')]).then(([res, ui]) => {
             const palette = (() => {
-                try { return JSON.parse(ui?.uiSettings ?? '').xtermPalette; }
+                try { return ui?.uiSettings?.xtermPalette; }
                 catch {
                     try {
                         // TODO remove legacy fallback after migrating data

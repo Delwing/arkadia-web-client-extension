@@ -83,7 +83,7 @@ async function load(): Promise<UiSettings> {
         let raw = uiData?.uiSettings;
         let parsed: any = {};
         if (raw) {
-            parsed = JSON.parse(raw);
+            parsed = raw as any;
         }
         if (!parsed.xtermPalette && settingsData?.settings) {
             try {
@@ -111,7 +111,7 @@ async function load(): Promise<UiSettings> {
 }
 
 function save(settings: UiSettings) {
-    storage.setItem('uiSettings', JSON.stringify(settings));
+    storage.setItem('uiSettings', settings);
 }
 
 export default async function initUiSettings() {

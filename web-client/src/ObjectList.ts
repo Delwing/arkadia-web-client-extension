@@ -29,7 +29,7 @@ export default class ObjectList {
         const saved = savedData?.objectsListPosition;
         if (saved) {
             try {
-                const { x, y } = JSON.parse(saved);
+                const { x, y } = saved as any;
                 this.container.style.right = `${x}px`;
                 this.container.style.top = `${y}px`;
             } catch (e) {
@@ -79,7 +79,7 @@ export default class ObjectList {
             x: window.innerWidth - rect.right,
             y: rect.top,
         };
-        setItemSync("objectsListPosition", JSON.stringify(position));
+        setItemSync("objectsListPosition", position);
         this.clampToViewport();
     };
 

@@ -36,9 +36,8 @@ export default class EmbeddedMap {
         let zoom = 0.30;
         try {
             const data = getItemSync('uiSettings');
-            const raw = data?.uiSettings;
-            if (raw) {
-                const parsed = JSON.parse(raw);
+            const parsed = data?.uiSettings as any;
+            if (parsed) {
                 if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
                     zoom = parsed.mapScale;
                 }
@@ -90,9 +89,9 @@ export default class EmbeddedMap {
     private _saveZoom() {
         try {
             const data = getItemSync('uiSettings');
-            const parsed = data?.uiSettings ? JSON.parse(data.uiSettings) : {};
+            const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
             parsed.mapScale = this.zoom;
-            setItemSync('uiSettings', JSON.stringify(parsed));
+            setItemSync('uiSettings', parsed);
         } catch {}
     }
 
@@ -104,9 +103,9 @@ export default class EmbeddedMap {
     private _saveLimit() {
         try {
             const data = getItemSync('uiSettings');
-            const parsed = data?.uiSettings ? JSON.parse(data.uiSettings) : {};
+            const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
             parsed.mapLimit = this.limit;
-            setItemSync('uiSettings', JSON.stringify(parsed));
+            setItemSync('uiSettings', parsed);
         } catch {}
     }
 

@@ -239,7 +239,7 @@ export default class MobileDirectionButtons {
         const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
-                const { x, y } = JSON.parse(savedPosition);
+                const { x, y } = savedPosition as any;
                 this.container.style.right = `${x}px`;
                 this.container.style.top = `${y}px`;
             } catch (e) {
@@ -339,7 +339,7 @@ export default class MobileDirectionButtons {
                 x: window.innerWidth - rect.right,
                 y: rect.top,
             };
-            setItemSync('mobileButtonsPosition', JSON.stringify(position));
+            setItemSync('mobileButtonsPosition', position);
 
             this.isDragging = false;
             this.container.classList.remove('dragging');

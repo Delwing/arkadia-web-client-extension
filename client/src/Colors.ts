@@ -20,16 +20,16 @@ export const colorCodes = {
 
 const palette = (() => {
     try {
-        let raw: string | undefined | null = undefined;
+        let raw: any = undefined;
         const ui = getItemSync('uiSettings');
         raw = ui?.uiSettings;
         if (!raw) {
             const legacy = getItemSync('settings');
             // TODO remove legacy fallback after migrating data
-            raw = legacy?.settings;
+            raw = legacy?.settings ? JSON.parse(legacy.settings) : undefined;
         }
         if (raw) {
-            const parsed = JSON.parse(raw);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             return parsed.xtermPalette === 'proper' ? 'proper' : 'arkadia';
         }
     } catch {}
