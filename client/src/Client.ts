@@ -58,6 +58,12 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    attackBind = {key: "Digit1", ctrl: true} as {
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        shift?: boolean;
+    };
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
@@ -89,6 +95,16 @@ export default class Client {
             ) {
                 this.sendCommand('napelnij lampe olejem')
                 ev.preventDefault()
+                return
+            }
+            if (
+                (ev.code === this.attackBind.key || ev.key === this.attackBind.key) &&
+                !!this.attackBind.ctrl === ev.ctrlKey &&
+                !!this.attackBind.alt === ev.altKey &&
+                !!this.attackBind.shift === ev.shiftKey
+            ) {
+                this.sendCommand('/z')
+                ev.preventDefault()
             }
         })
 
@@ -106,6 +122,10 @@ export default class Client {
             const lamp = ev.detail?.binds?.lamp
             if (lamp) {
                 this.lampBind = {...lamp}
+            }
+            const attack = ev.detail?.binds?.attack
+            if (attack) {
+                this.attackBind = {...attack}
             }
         })
 
