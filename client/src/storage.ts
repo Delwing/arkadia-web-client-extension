@@ -34,13 +34,33 @@ const characterScopedKeys = new Set([
 ]);
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');
+
+function notifyCharacterChange(prev: string | null) {
+    characterScopedKeys.forEach(key => {
+        const prevKey = prev ? `${prev}:${key}` : key;
+        const newKey = currentCharacter ? `${currentCharacter}:${key}` : key;
+        const oldRaw = localStorage.getItem(prevKey);
+        const newRaw = localStorage.getItem(newKey);
+        let oldValue: any = undefined;
+        let newValue: any = undefined;
+        if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+        if (newRaw !== null) { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+        const changes: { [key: string]: { oldValue: any, newValue: any } } = {
+            [key]: { oldValue, newValue }
+        };
+        (storage as any).listeners?.forEach?.((l: any) => l(changes));
+    });
+}
+
 export function setCurrentCharacter(name: string) {
+    const prev = currentCharacter;
     currentCharacter = name ? String(name) : null;
     if (currentCharacter) {
         localStorage.setItem('currentCharacter', currentCharacter);
     } else {
         localStorage.removeItem('currentCharacter');
     }
+    notifyCharacterChange(prev);
 }
 
 function applyCharacterScope(key: string): string {
@@ -73,7 +93,9 @@ class LocalStorage implements Storage {
         window.addEventListener('storage', (ev: StorageEvent) => {
             if (!ev.key) return;
             if (ev.key === 'currentCharacter') {
+                const prev = currentCharacter;
                 currentCharacter = ev.newValue;
+                notifyCharacterChange(prev);
                 return;
             }
             const baseKey = stripCharacterScope(ev.key);
