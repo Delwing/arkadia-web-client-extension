@@ -95,16 +95,17 @@ export default class MockPort {
     private sendStorage(key: string) {
         const data = getItemSync(key);
         const raw = data ? data[key] : null;
+        let value: any = {};
         if (raw !== null) {
             try {
-                const value = JSON.parse(raw);
-                this.dispatch({storage: {key, value}});
-                if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
-                    this.dispatch({[key]: value});
-                }
+                value = JSON.parse(raw);
             } catch {
                 // ignore malformed json
             }
+        }
+        this.dispatch({ storage: { key, value } });
+        if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
+            this.dispatch({ [key]: value });
         }
     };
 }

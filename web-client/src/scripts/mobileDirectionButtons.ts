@@ -34,7 +34,7 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
-    private buttonSettings: Record<string, ButtonSetting> = loadMobileButtonSettings();
+    private buttonSettings: Record<string, ButtonSetting> = {};
 
     private readonly polishToEnglish: Record<string, string> = {
         "polnoc": "north",
@@ -101,7 +101,14 @@ export default class MobileDirectionButtons {
             if (btn) btn.dataset.direction = dir;
         });
 
-        this.setupEventHandlers();
+        loadMobileButtonSettings().then(settings => {
+            this.buttonSettings = settings;
+            this.setupEventHandlers();
+            Object.keys(this.buttonSettings).forEach(id => {
+                const btn = document.getElementById(id) as HTMLButtonElement | null;
+                if (btn) this.applyConfigToButton(id, btn);
+            });
+        });
         this.updateBracketRightButton();
         this.updateToggleButton();
         this.setupDraggable();
@@ -180,12 +187,6 @@ export default class MobileDirectionButtons {
                 this.toggleVisibility();
             });
         }
-
-        Object.keys(this.buttonSettings).forEach(id => {
-            const btn = document.getElementById(id) as HTMLButtonElement | null;
-            if (!btn) return;
-            this.applyConfigToButton(id, btn);
-        });
 
         // Center and special exit buttons configured via settings
     }
