@@ -80,4 +80,13 @@ describe('object aliases', () => {
     toggle();
     expect(client.print).toHaveBeenCalledWith(expect.stringContaining('OFF'));
   });
+
+  test('/zas alias with release first guards then releases', () => {
+    client.TeamManager.getDefenseTargetId.mockReturnValue('15');
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 15: { team: true } });
+    toggle();
+    shieldTarget();
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zaslon ob_15');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
+  });
 });
