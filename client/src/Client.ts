@@ -139,9 +139,15 @@ export default class Client {
 
         this.port = port
         port.onMessage.addListener((message) => {
-            Object.entries(message).forEach(([key, value]) => {
-                this.eventTarget.dispatchEvent(new CustomEvent(key, {detail: value}))
-            })
+            if (message && typeof message.type === 'string') {
+                this.eventTarget.dispatchEvent(new CustomEvent(message.type, {detail: message.data}))
+                return
+            }
+            if (message && typeof message === 'object') {
+                Object.entries(message).forEach(([key, value]) => {
+                    this.eventTarget.dispatchEvent(new CustomEvent(key, {detail: value}))
+                })
+            }
         })
     }
 
