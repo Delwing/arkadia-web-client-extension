@@ -123,7 +123,7 @@ export default class Client {
             if (ev.detail?.name) {
                 setCurrentCharacter(ev.detail.name);
                 if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'herb_counts', 'mapperRoomId'].forEach(k => {
+                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId'].forEach(k => {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
                     });
                 }

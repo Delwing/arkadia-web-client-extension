@@ -29,6 +29,7 @@ const characterScopedKeys = new Set([
     'settings',
     'kill_counter',
     'deposits',
+    'containers',
     'herb_counts',
     'mapperRoomId',
 ]);
