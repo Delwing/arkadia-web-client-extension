@@ -113,7 +113,7 @@ async function load(): Promise<UiSettings> {
             })();
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalettem footerMode };
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode };
         }
     } catch {
         // ignore malformed data
