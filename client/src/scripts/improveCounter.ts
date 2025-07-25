@@ -139,7 +139,7 @@ export default class ImproveCounter {
         const WIDTH = 74;
         const INNER = WIDTH - 2;
         const pad = createPad(INNER, 1, 1);
-        const header = createHeader(WIDTH, 2, HEADER_COLOR);
+        const header = createHeader(INNER, 2, HEADER_COLOR);
 
         const now = new Date();
         const avg = this.entries.length
