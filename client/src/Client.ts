@@ -58,7 +58,7 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
-    supportBind = {key: "KeyW", ctrl: true} as {
+    supportBind = {key: "KeyQ", ctrl: true} as {
         key: string;
         ctrl?: boolean;
         alt?: boolean;
