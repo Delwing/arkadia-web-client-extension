@@ -31,7 +31,7 @@ describe('object aliases', () => {
     killTarget = aliases[2].callback as any;
     shieldTarget = aliases[3].callback as any;
     invite = aliases[4].callback as any;
-    toggle = aliases[7].callback as any;
+    toggle = aliases[9].callback as any;
     (global as any).Input = { send: jest.fn() };
   });
 

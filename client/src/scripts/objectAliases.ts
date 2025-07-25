@@ -32,6 +32,16 @@ export default function initObjectAliases(
             }
         }
     }
+
+    function withdraw(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            client.sendCommand(`gzwycofaj sie za ob_${obj.num}`);
+            if (releaseGuard) {
+                client.sendCommand("przestan zaslaniac");
+            }
+        }
+    }
     let releaseGuard = false;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -75,6 +85,10 @@ export default function initObjectAliases(
             callback: (m: RegExpMatchArray) => exec(m[1], "zapros")
         });
         aliases.push({
+            pattern: /\/w ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => withdraw(m[1])
+        });
+        aliases.push({
             pattern: /\/za ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => shield(m[1])
         });
@@ -87,6 +101,18 @@ export default function initObjectAliases(
                     const isTeam = data && data[id]?.team;
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
+                    if (releaseGuard) {
+                        client.sendCommand("przestan zaslaniac");
+                    }
+                }
+            }
+        });
+        aliases.push({
+            pattern: /^\/w$/,
+            callback: () => {
+                const id = client.TeamManager.getDefenseTargetId();
+                if (id) {
+                    client.sendCommand(`gzwycofaj sie za ob_${id}`);
                     if (releaseGuard) {
                         client.sendCommand("przestan zaslaniac");
                     }
