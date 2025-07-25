@@ -18,13 +18,35 @@ function Guilds() {
     }, []);
 
     useEffect(() => {
-        storage.getItem("settings").then(res => {
-            if (res && res.settings) {
-                setSelected(res.settings.guilds || []);
-                setEnemySelected(res.settings.enemyGuilds || []);
-                setColors(res.settings.guildColors || {});
+        const load = () => {
+            storage.getItem("settings").then(res => {
+                if (res && res.settings) {
+                    setSelected(res.settings.guilds || []);
+                    setEnemySelected(res.settings.enemyGuilds || []);
+                    setColors(res.settings.guildColors || {});
+                } else {
+                    setSelected([]);
+                    setEnemySelected([]);
+                    setColors({});
+                }
+            });
+        };
+
+        load();
+
+        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+            if (changes.settings) {
+                const s = changes.settings.newValue || {};
+                setSelected(s.guilds || []);
+                setEnemySelected(s.enemyGuilds || []);
+                setColors(s.guildColors || {});
             }
-        });
+        };
+
+        storage.onChanged?.addListener(listener);
+        return () => {
+            storage.onChanged?.removeListener?.(listener);
+        };
     }, []);
 
     function onChange(guild: string, checked: boolean) {
