@@ -44,4 +44,9 @@ describe('itemCondition trigger', () => {
     const result = parse('Puklerz jest moze peknac w kazdej chwili.');
     expect(stripAnsiCodes(result)).toBe('Puklerz jest moze peknac w kazdej chwili. [1/7]');
   });
+
+  test('handles juz alternative', () => {
+    const result = parse('Zauwazasz, ze miecz jest juz w zlym stanie.');
+    expect(stripAnsiCodes(result)).toBe('Zauwazasz, ze miecz jest juz w zlym stanie. [4/7]');
+  });
 });
