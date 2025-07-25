@@ -146,7 +146,7 @@ export default class ObjectList {
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => o.shortcut);
             const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
-            return `${numLabel} ${desc} ${bar}${arrow}`.trimEnd();
+            return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
         });
         this.container.innerHTML = lines.join("<br>");
     }
