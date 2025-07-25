@@ -1,7 +1,7 @@
 import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
-import storage from "@client/src/storage";
+import storage, { getCurrentCharacter } from "@client/src/storage";
 import { Settings as BaseSettings, defaultSettings } from './defaultSettings';
 
 interface FormSettings extends BaseSettings {
@@ -23,6 +23,18 @@ const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 function SettingsForm() {
 
     const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings, xtermPalette: 'arkadia' })
+
+    const [locked, setLocked] = useState(!getCurrentCharacter())
+
+    useEffect(() => {
+        const update = () => setLocked(!getCurrentCharacter());
+        storage.onChanged?.addListener(update);
+        window.addEventListener('storage', update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener('storage', update);
+        };
+    }, []);
 
     const [extraInput, setExtraInput] = useState<string>('')
 
@@ -62,6 +74,12 @@ function SettingsForm() {
 
     return (
         <div className="my-4 p-2">
+            {locked && (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            )}
+            <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
                 <div className="d-flex flex-wrap gap-3">
@@ -203,6 +221,7 @@ function SettingsForm() {
                 </div>
             </div>
             <Button onClick={handleSubmission}>Zapisz</Button>
+            </fieldset>
         </div>
     )
 }

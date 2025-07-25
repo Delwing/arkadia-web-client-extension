@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "react-bootstrap";
-import storage from "@client/src/storage";
+import storage, { getCurrentCharacter } from "@client/src/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { defaultSettings } from "./defaultSettings";
@@ -9,12 +9,23 @@ function Guilds() {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
+    const [locked, setLocked] = useState(!getCurrentCharacter());
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
         guilds.forEach(g => {
             map[g] = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
         });
         return map;
+    }, []);
+
+    useEffect(() => {
+        const update = () => setLocked(!getCurrentCharacter());
+        storage.onChanged?.addListener(update);
+        window.addEventListener('storage', update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener('storage', update);
+        };
     }, []);
 
     useEffect(() => {
@@ -96,18 +107,25 @@ function Guilds() {
 
     return (
         <div className="m-2">
-            <GuildSection
-                selected={selected}
-                enemySelected={enemySelected}
-                colors={colors}
-                defaultColors={defaultColors}
-                onChange={onChange}
-                onEnemyChange={onEnemyChange}
-                onColorChange={onColorChange}
-                onChangeAll={onChangeAll}
-                onChangeAllEnemy={onChangeAllEnemy}
-            />
-            <Button onClick={save}>Zapisz</Button>
+            {locked && (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            )}
+            <fieldset disabled={locked} className="p-0 border-0 m-0">
+                <GuildSection
+                    selected={selected}
+                    enemySelected={enemySelected}
+                    colors={colors}
+                    defaultColors={defaultColors}
+                    onChange={onChange}
+                    onEnemyChange={onEnemyChange}
+                    onColorChange={onColorChange}
+                    onChangeAll={onChangeAll}
+                    onChangeAllEnemy={onChangeAllEnemy}
+                />
+                <Button onClick={save}>Zapisz</Button>
+            </fieldset>
         </div>
     );
 }

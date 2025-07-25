@@ -64,6 +64,10 @@ export function setCurrentCharacter(name: string) {
     notifyCharacterChange(prev);
 }
 
+export function getCurrentCharacter() {
+    return currentCharacter;
+}
+
 function applyCharacterScope(key: string): string {
     if (currentCharacter && characterScopedKeys.has(key)) {
         return `${currentCharacter}:${key}`;
