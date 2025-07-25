@@ -173,13 +173,20 @@ export default class CharState {
         value = Math.max(0, Math.min(maxValue, value));
         const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
-        let text = '';
+        let text = "";
         if (this.mode === 1 || this.mode === 2) {
           const barMax = this.mode === 2 ? 10 : maxValue;
           const filledLen = Math.round((value / maxValue) * barMax);
           const emptyLen = barMax - filledLen;
-          const bar = '#'.repeat(filledLen) + '-'.repeat(emptyLen);
-          text = `${label}: [${bar}]`;
+          const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
+          const ratio = value / maxValue;
+          let color = "green";
+          if (ratio <= 1 / 3) {
+            color = "red";
+          } else if (ratio <= 2 / 3) {
+            color = "yellow";
+          }
+          text = `${label}: <span style="color:${color}">[${bar}]</span>`;
         } else {
           text = `${label}: [${value}/${maxValue}]`;
         }
