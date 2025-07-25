@@ -23,13 +23,13 @@ export default function initObjectAliases(
     function shield(short: string) {
         const obj = findByShortcut(short);
         if (obj) {
-            if (releaseGuard) {
-                client.sendCommand("przestan zaslaniac");
-            }
             const data = client.TeamManager.getAccumulatedObjectsData?.();
             const isTeam = data && data[obj.num]?.team;
             const cmd = isTeam ? `zaslon ob_${obj.num}` : `zaslon przed ob_${obj.num}`;
             client.sendCommand(cmd);
+            if (releaseGuard) {
+                client.sendCommand("przestan zaslaniac");
+            }
         }
     }
     let releaseGuard = false;
@@ -60,13 +60,13 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
                 if (id) {
-                    if (releaseGuard) {
-                        client.sendCommand("przestan zaslaniac");
-                    }
                     const data = client.TeamManager.getAccumulatedObjectsData?.();
                     const isTeam = data && data[id]?.team;
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
+                    if (releaseGuard) {
+                        client.sendCommand("przestan zaslaniac");
+                    }
                 }
             }
         });
@@ -83,13 +83,13 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
                 if (id) {
-                    if (releaseGuard) {
-                        client.sendCommand("przestan zaslaniac");
-                    }
                     const data = client.TeamManager.getAccumulatedObjectsData?.();
                     const isTeam = data && data[id]?.team;
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
+                    if (releaseGuard) {
+                        client.sendCommand("przestan zaslaniac");
+                    }
                 }
             }
         });

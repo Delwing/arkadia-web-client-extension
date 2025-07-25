@@ -18,6 +18,7 @@ export interface CharStateConfig {
   label: string;
   max: number;
   default?: number;
+  flip?: boolean;
   transform?: (
     value: number,
     max: number,
@@ -54,7 +55,7 @@ const EMOJI_LABELS: Record<keyof CharStateData, string> = {
 
 const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
   hp: { label: TEXT_LABELS.hp, max: 6, transform: (value, max) => ({ value: value + 1, max: max + 1 }) },
-  fatigue: { label: TEXT_LABELS.fatigue, max: 9 },
+  fatigue: { label: TEXT_LABELS.fatigue, max: 9, flip: true },
   stuffed: { label: TEXT_LABELS.stuffed, max: 3, default: 3 },
   encumbrance: { label: TEXT_LABELS.encumbrance, max: 6, default: 0 },
   soaked: { label: TEXT_LABELS.soaked, max: 3, default: 3 },
@@ -70,9 +71,27 @@ export default class CharState {
   private client: typeof ArkadiaClient;
   private container: HTMLElement | null;
   private text: HTMLElement | null;
+  private bars: HTMLElement | null;
   private config: Record<keyof CharStateData, CharStateConfig>;
   private state: Partial<CharStateData> = {};
   private useEmoji = false;
+  private mode = 0;
+
+  private applyMode(mode: number) {
+    if (typeof mode === "number" && mode >= 0 && mode <= 3) {
+      this.mode = mode;
+      if (this.text && this.bars) {
+        if (mode === 3) {
+          this.text.style.display = "none";
+          this.bars.style.display = "flex";
+        } else {
+          this.text.style.display = "";
+          this.bars.style.display = "none";
+        }
+      }
+      this.update({});
+    }
+  }
 
   private applyLabelMode(useEmoji: boolean) {
     this.useEmoji = useEmoji;
@@ -92,6 +111,7 @@ export default class CharState {
     this.client = client;
     this.container = document.getElementById("char-state");
     this.text = document.getElementById("char-state-text");
+    this.bars = document.getElementById("char-state-bars");
 
     this.config = { ...DEFAULT_CONFIG };
 
@@ -110,11 +130,18 @@ export default class CharState {
       if (emojiAttr) {
         this.applyLabelMode(emojiAttr === 'true' || emojiAttr === '1');
       }
+      const modeAttr = this.container.getAttribute('data-footer-mode');
+      if (modeAttr) {
+        this.applyMode(parseInt(modeAttr));
+      }
     }
 
     this.client.on('settings', (ev: any) => {
       if (typeof ev.detail?.emojiLabels === 'boolean') {
         this.applyLabelMode(ev.detail.emojiLabels);
+      }
+      if (typeof ev.detail?.footerMode === 'number') {
+        this.applyMode(ev.detail.footerMode);
       }
     });
 
@@ -123,6 +150,9 @@ export default class CharState {
       ext.addEventListener('uiSettings', (ev: CustomEvent) => {
         if (typeof ev.detail?.emojiLabels === 'boolean') {
           this.applyLabelMode(ev.detail.emojiLabels);
+        }
+        if (typeof ev.detail?.footerMode === 'number') {
+          this.applyMode(ev.detail.footerMode);
         }
       });
     }
@@ -144,6 +174,59 @@ export default class CharState {
         (this.config[key].default === undefined ||
           this.state[key] !== this.config[key].default)
       );
+    if (this.mode === 3 && this.bars) {
+      this.bars.innerHTML = "";
+      entries.forEach((key) => {
+        let value = this.state[key] as number;
+        const { max, label, transform, default: def } = this.config[key];
+        let maxValue = max;
+        if (transform && typeof value === "number") {
+          ({ value, max: maxValue } = transform(value, maxValue));
+        }
+        value = Math.max(0, Math.min(maxValue, value));
+        const ratio = value / maxValue;
+        const reverse = def === 0 || this.config[key].flip === true;
+        let colorClass = "bg-success";
+        if (reverse) {
+          if (ratio >= 2 / 3) {
+            colorClass = "bg-danger";
+          } else if (ratio >= 1 / 3) {
+            colorClass = "bg-warning";
+          }
+        } else {
+          if (ratio <= 1 / 3) {
+            colorClass = "bg-danger";
+          } else if (ratio <= 2 / 3) {
+            colorClass = "bg-warning";
+          }
+        }
+        const opposite =
+          def !== undefined ? (def > 0 ? 0 : maxValue) : null;
+        const highlight = opposite !== null && value === opposite;
+
+        const group = document.createElement("div");
+        group.className = "char-state-bar";
+        const labelEl = document.createElement("span");
+        labelEl.textContent = label + ":";
+        if (highlight) labelEl.style.color = "tomato";
+        const progress = document.createElement("div");
+        progress.className = "progress position-relative";
+        const bar = document.createElement("div");
+        bar.className = `progress-bar ${colorClass}`;
+        bar.style.width = `${Math.floor(ratio * 100)}%`;
+        const valueSpan = document.createElement("span");
+        valueSpan.className = "progress-value";
+        valueSpan.textContent = `${value}/${maxValue}`;
+        progress.appendChild(bar);
+        progress.appendChild(valueSpan);
+        group.appendChild(labelEl);
+        group.appendChild(progress);
+        this.bars!.appendChild(group);
+      });
+      this.text.innerHTML = "";
+      return;
+    }
+
     this.text.innerHTML = entries
       .map((key) => {
         let value = this.state[key] as number;
@@ -152,11 +235,37 @@ export default class CharState {
         if (transform && typeof value === "number") {
           ({ value, max: maxValue } = transform(value, maxValue));
         }
+        value = Math.max(0, Math.min(maxValue, value));
         const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
-        const text = `${label}: [${value}/${maxValue}]`;
+        let text = "";
+        if (this.mode === 1 || this.mode === 2) {
+          const barMax = this.mode === 2 ? 10 : maxValue;
+          const filledLen = Math.round((value / maxValue) * barMax);
+          const emptyLen = barMax - filledLen;
+          const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
+          const ratio = value / maxValue;
+          const reverse = def === 0 || this.config[key].flip === true;
+          let color = "green";
+          if (reverse) {
+            if (ratio >= 2 / 3) {
+              color = "red";
+            } else if (ratio >= 1 / 3) {
+              color = "yellow";
+            }
+          } else {
+            if (ratio <= 1 / 3) {
+              color = "red";
+            } else if (ratio <= 2 / 3) {
+              color = "yellow";
+            }
+          }
+          text = `${label}: <span style="color:${color}">[${bar}]</span>`;
+        } else {
+          text = `${label}: [${value}/${maxValue}]`;
+        }
         return highlight ? `<span style="color:tomato">${text}</span>` : text;
       })
-      .join(" ");
+      .join(' ');
   }
 }

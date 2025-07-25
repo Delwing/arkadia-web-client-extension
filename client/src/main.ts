@@ -11,6 +11,7 @@ import initLamp from './scripts/lamp'
 import initBinds from './scripts/binds'
 import initIdz from './scripts/idz'
 import { initKillCounter } from './scripts/kill'
+import { initImproveCounter } from './scripts/improveCounter'
 import initEscape from './scripts/escape'
 import { initItemCollector } from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
@@ -38,6 +39,7 @@ import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initCoinColors from './scripts/coinColors'
 import initWeaponColors from './scripts/weaponColors'
+import initNewMail from './scripts/newMail'
 import initExternalScripts from './scripts/externalScripts'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
@@ -123,7 +125,9 @@ export function registerScripts(client: Client) {
     initLamp(client)
     initBinds(client, aliases)
     initIdz(client, aliases)
-    initKillCounter(client, aliases)
+    const killCounter = initKillCounter(client, aliases)
+    ;(client as any).killCounter = killCounter
+    initImproveCounter(client, killCounter, aliases)
     initEscape(client)
     initGps(client)
     initLocalizers(client)
@@ -158,6 +162,7 @@ export function registerScripts(client: Client) {
     initLeaderAttackWarning(client)
     initBreakItem(client)
     initHpAlert(client)
+    initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
     initGuildPostfix(client)

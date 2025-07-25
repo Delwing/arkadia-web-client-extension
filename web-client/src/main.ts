@@ -740,6 +740,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Swipe gestures for command history on touch devices
+    let swipeStartX: number | null = null;
+    let swipeStartY: number | null = null;
+
+    messageInput.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            swipeStartX = e.touches[0].clientX;
+            swipeStartY = e.touches[0].clientY;
+        }
+    });
+
+    messageInput.addEventListener('touchend', (e) => {
+        if (swipeStartX === null || swipeStartY === null) return;
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - swipeStartX;
+        const dy = touch.clientY - swipeStartY;
+        swipeStartX = null;
+        swipeStartY = null;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+            e.preventDefault();
+            if (dx < 0) {
+                navigateHistory('up');
+            } else {
+                navigateHistory('down');
+            }
+        }
+    });
+
     if (historyUpButton) {
         historyUpButton.addEventListener('click', () => navigateHistory('up'));
     }

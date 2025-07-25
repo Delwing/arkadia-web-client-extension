@@ -33,8 +33,9 @@
             <div id="sticky-area"></div>
         </div>
     </div>
-    <div id="char-state" data-emoji-labels="0">
+    <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
         <span id="char-state-text"></span>
+        <div id="char-state-bars" class="flex-grow-1"></div>
         <span id="lamp-timer"></span>
         <span id="break-item-warning"></span>
         <span id="package-status"></span>
@@ -265,6 +266,14 @@
                     <label class="form-label">
                         <input id="ui-emoji-labels" type="checkbox" class="form-check-input me-2" />
                         Etykiety emoji w stanie postaci
+                    </label>
+                    <label class="form-label">Tryb stopki
+                        <select id="ui-footer-mode" class="form-select">
+                            <option value="0">Liczbowy</option>
+                            <option value="1">Pasek</option>
+                            <option value="2">Pasek jednolity</option>
+                            <option value="3">Pasek graficzny</option>
+                        </select>
                     </label>
                     <label class="form-label">Powiększenie mapy
                         <input id="ui-map-scale" type="number" step="0.05" min="0.05" class="form-control" />

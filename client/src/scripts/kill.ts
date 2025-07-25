@@ -244,7 +244,7 @@ class KillCounter {
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
                 (this.client as any).ItemCollector?.killedAction();
-                return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ");
+                return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
             }
         );
 
@@ -259,7 +259,7 @@ class KillCounter {
                 if (entry) {
                     (this.client as any).ItemCollector?.teamKilledAction(mob);
                 }
-                return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ");
+                return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
             }
         );
 
@@ -309,14 +309,26 @@ class KillCounter {
         return entry;
     }
 
-    private formatPrefix(line: string, entry: KillEntry | null, label: string) {
+    getSessionTotals() {
+        const totals = { my: 0, team: 0 };
+        Object.values(this.kills).forEach((e) => {
+            totals.my += e.mySession;
+            totals.team += e.teamSession;
+        });
+        return totals;
+    }
+
+    private formatPrefix(
+        line: string,
+        entry: KillEntry | null,
+        label: string,
+        highlight: boolean
+    ) {
         const color = KILL_PREFIX_COLOR;
-        const counts = entry
-            ? colorString(
-                  ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`,
-                  color
-              )
+        const countsRaw = entry
+            ? ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`
             : "";
+        const counts = highlight && entry ? colorString(countsRaw, color) : countsRaw;
         const modified = line + counts;
         return (
             "  \n" +

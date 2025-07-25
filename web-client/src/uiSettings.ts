@@ -10,6 +10,7 @@ interface UiSettings {
     mapHeight: number;
     emojiLabels: boolean;
     xtermPalette: 'arkadia' | 'proper';
+    footerMode: number;
 }
 
 const defaultSettings: UiSettings = {
@@ -22,6 +23,7 @@ const defaultSettings: UiSettings = {
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
     xtermPalette: 'arkadia',
+    footerMode: 0,
 };
 
 function apply(settings: UiSettings) {
@@ -32,6 +34,7 @@ function apply(settings: UiSettings) {
     const charState = document.getElementById('char-state');
     if (charState) {
         charState.style.fontSize = settings.contentFontSize + 'rem';
+        charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
     const objects = document.getElementById('objects-list');
     if (objects) {
@@ -67,7 +70,14 @@ function apply(settings: UiSettings) {
     }
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', { detail: { mobileDirectionButtons: settings.showButtons, emojiLabels: settings.emojiLabels, xtermPalette: settings.xtermPalette } })
+            new CustomEvent('uiSettings', {
+                detail: {
+                    mobileDirectionButtons: settings.showButtons,
+                    emojiLabels: settings.emojiLabels,
+                    xtermPalette: settings.xtermPalette,
+                    footerMode: settings.footerMode,
+                },
+            })
         );
     }
 }
@@ -102,7 +112,8 @@ async function load(): Promise<UiSettings> {
                 return value > 0 ? value : defaultSettings.mapLimit;
             })();
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette };
+            const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalettem footerMode };
         }
     } catch {
         // ignore malformed data
@@ -128,6 +139,7 @@ export default async function initUiSettings() {
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
+    const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -139,6 +151,7 @@ export default async function initUiSettings() {
     mapLimitInput.value = String(current.mapLimit);
     showButtonsInput.checked = current.showButtons;
     emojiLabelsInput.checked = current.emojiLabels;
+    footerModeInput.value = String(current.footerMode);
     apply(current);
 
     function read(): UiSettings {
@@ -166,6 +179,7 @@ export default async function initUiSettings() {
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             xtermPalette: current.xtermPalette,
+            footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode
         };
     }
 
