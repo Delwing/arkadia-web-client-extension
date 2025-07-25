@@ -11,6 +11,7 @@ import initLamp from './scripts/lamp'
 import initBinds from './scripts/binds'
 import initIdz from './scripts/idz'
 import { initKillCounter } from './scripts/kill'
+import initImproveCounter from './scripts/improveCounter'
 import initEscape from './scripts/escape'
 import { initItemCollector } from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
@@ -124,7 +125,9 @@ export function registerScripts(client: Client) {
     initLamp(client)
     initBinds(client, aliases)
     initIdz(client, aliases)
-    initKillCounter(client, aliases)
+    const killCounter = initKillCounter(client, aliases)
+    ;(client as any).killCounter = killCounter
+    initImproveCounter(client, killCounter, aliases)
     initEscape(client)
     initGps(client)
     initLocalizers(client)
