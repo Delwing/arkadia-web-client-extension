@@ -98,6 +98,20 @@ h1 {
   position: relative;
 }
 
+#char-state-bars {
+  display: none;
+  flex-grow: 1;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.char-state-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-grow: 1;
+}
+
 #lamp-timer {
   display: none;
 }

@@ -71,14 +71,24 @@ export default class CharState {
   private client: typeof ArkadiaClient;
   private container: HTMLElement | null;
   private text: HTMLElement | null;
+  private bars: HTMLElement | null;
   private config: Record<keyof CharStateData, CharStateConfig>;
   private state: Partial<CharStateData> = {};
   private useEmoji = false;
   private mode = 0;
 
   private applyMode(mode: number) {
-    if (typeof mode === 'number' && mode >= 0 && mode <= 2) {
+    if (typeof mode === "number" && mode >= 0 && mode <= 3) {
       this.mode = mode;
+      if (this.text && this.bars) {
+        if (mode === 3) {
+          this.text.style.display = "none";
+          this.bars.style.display = "flex";
+        } else {
+          this.text.style.display = "";
+          this.bars.style.display = "none";
+        }
+      }
       this.update({});
     }
   }
@@ -101,6 +111,7 @@ export default class CharState {
     this.client = client;
     this.container = document.getElementById("char-state");
     this.text = document.getElementById("char-state-text");
+    this.bars = document.getElementById("char-state-bars");
 
     this.config = { ...DEFAULT_CONFIG };
 
@@ -163,6 +174,55 @@ export default class CharState {
         (this.config[key].default === undefined ||
           this.state[key] !== this.config[key].default)
       );
+    if (this.mode === 3 && this.bars) {
+      this.bars.innerHTML = "";
+      entries.forEach((key) => {
+        let value = this.state[key] as number;
+        const { max, label, transform, default: def } = this.config[key];
+        let maxValue = max;
+        if (transform && typeof value === "number") {
+          ({ value, max: maxValue } = transform(value, maxValue));
+        }
+        value = Math.max(0, Math.min(maxValue, value));
+        const ratio = value / maxValue;
+        const reverse = def === 0 || this.config[key].flip === true;
+        let colorClass = "bg-success";
+        if (reverse) {
+          if (ratio >= 2 / 3) {
+            colorClass = "bg-danger";
+          } else if (ratio >= 1 / 3) {
+            colorClass = "bg-warning";
+          }
+        } else {
+          if (ratio <= 1 / 3) {
+            colorClass = "bg-danger";
+          } else if (ratio <= 2 / 3) {
+            colorClass = "bg-warning";
+          }
+        }
+        const opposite =
+          def !== undefined ? (def > 0 ? 0 : maxValue) : null;
+        const highlight = opposite !== null && value === opposite;
+
+        const group = document.createElement("div");
+        group.className = "char-state-bar";
+        const labelEl = document.createElement("span");
+        labelEl.textContent = label + ":";
+        if (highlight) labelEl.style.color = "tomato";
+        const progress = document.createElement("div");
+        progress.className = "progress flex-grow-1";
+        const bar = document.createElement("div");
+        bar.className = `progress-bar ${colorClass}`;
+        bar.style.width = `${Math.floor(ratio * 100)}%`;
+        progress.appendChild(bar);
+        group.appendChild(labelEl);
+        group.appendChild(progress);
+        this.bars!.appendChild(group);
+      });
+      this.text.innerHTML = "";
+      return;
+    }
+
     this.text.innerHTML = entries
       .map((key) => {
         let value = this.state[key] as number;
