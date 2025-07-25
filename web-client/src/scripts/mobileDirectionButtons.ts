@@ -1,6 +1,7 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting } from "../mobileButtonSettings";
+import { getItemSync, setItemSync } from "@client/src/storage";
 
 export default class MobileDirectionButtons {
     private client: Client;
@@ -33,7 +34,7 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
-    private buttonSettings: Record<string, ButtonSetting> = loadMobileButtonSettings();
+    private buttonSettings: Record<string, ButtonSetting> = {};
 
     private readonly polishToEnglish: Record<string, string> = {
         "polnoc": "north",
@@ -100,7 +101,14 @@ export default class MobileDirectionButtons {
             if (btn) btn.dataset.direction = dir;
         });
 
-        this.setupEventHandlers();
+        loadMobileButtonSettings().then(settings => {
+            this.buttonSettings = settings;
+            this.setupEventHandlers();
+            Object.keys(this.buttonSettings).forEach(id => {
+                const btn = document.getElementById(id) as HTMLButtonElement | null;
+                if (btn) this.applyConfigToButton(id, btn);
+            });
+        });
         this.updateBracketRightButton();
         this.updateToggleButton();
         this.setupDraggable();
@@ -180,12 +188,6 @@ export default class MobileDirectionButtons {
             });
         }
 
-        Object.keys(this.buttonSettings).forEach(id => {
-            const btn = document.getElementById(id) as HTMLButtonElement | null;
-            if (!btn) return;
-            this.applyConfigToButton(id, btn);
-        });
-
         // Center and special exit buttons configured via settings
     }
 
@@ -232,11 +234,12 @@ export default class MobileDirectionButtons {
     private setupDraggable() {
         if (!this.container || !this.contentArea) return;
 
-        // Set initial position from localStorage if available
-        const savedPosition = localStorage.getItem('mobileButtonsPosition');
+        // Set initial position from storage if available
+        const savedData = getItemSync('mobileButtonsPosition');
+        const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
-                const { x, y } = JSON.parse(savedPosition);
+                const { x, y } = savedPosition as any;
                 this.container.style.right = `${x}px`;
                 this.container.style.top = `${y}px`;
             } catch (e) {
@@ -336,7 +339,7 @@ export default class MobileDirectionButtons {
                 x: window.innerWidth - rect.right,
                 y: rect.top,
             };
-            localStorage.setItem('mobileButtonsPosition', JSON.stringify(position));
+            setItemSync('mobileButtonsPosition', position);
 
             this.isDragging = false;
             this.container.classList.remove('dragging');

@@ -1,6 +1,7 @@
 import xtermArkadia from "./xtermArkadia";
 import xtermProper from "./xtermProper";
 import mudletColors from "./colors.json";
+import { getItemSync } from "./storage";
 
 function hexToRgb(hex: string): [number, number, number] {
     const value = parseInt(hex.replace(/^#/, ''), 16);
@@ -19,9 +20,10 @@ export const colorCodes = {
 
 const palette = (() => {
     try {
-        const raw = localStorage.getItem('settings');
+        const ui = getItemSync('uiSettings');
+        const raw = ui?.uiSettings;
         if (raw) {
-            const parsed = JSON.parse(raw);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             return parsed.xtermPalette === 'proper' ? 'proper' : 'arkadia';
         }
     } catch {}

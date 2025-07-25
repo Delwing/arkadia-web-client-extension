@@ -9,4 +9,4 @@ Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczk
 3. Za pomocą `/wezz nazwa [ilosc]` wyjmiesz wskazane zioło z woreczków. Jeśli ilość nie zostanie podana, domyślnie wyjmowana jest jedna sztuka.
 4. Polecenie `/zi akcja nazwa` wyjmuje zioło i wykonuje podaną akcję.
 
-Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki i wczytywane po ponownym uruchomieniu klienta.
+Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki osobno dla każdej postaci i wczytywane po ponownym uruchomieniu klienta.

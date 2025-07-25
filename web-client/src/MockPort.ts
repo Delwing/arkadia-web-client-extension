@@ -1,4 +1,4 @@
-import storage from "./options/storage.ts";
+import storage, { setItemSync, getItemSync } from "@client/src/storage";
 
 const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
 
@@ -56,7 +56,7 @@ export default class MockPort {
         storage.onChanged?.addListener(changes => {
             Object.entries(changes).forEach(([key, {newValue}]) => {
                 this.dispatch({storage: {key, value: newValue}});
-                if (key === 'settings' || key === 'npc') {
+                if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
                     this.dispatch({[key]: newValue});
                 }
             });
@@ -81,9 +81,9 @@ export default class MockPort {
             return;
         }
         if (message.type === 'SET_STORAGE') {
-            localStorage.setItem(message.key, JSON.stringify(message.value));
+            setItemSync(message.key, message.value);
             this.dispatch({storage: {key: message.key, value: message.value}});
-            if (message.key === 'settings' || message.key === 'npc') {
+            if (message.key === 'settings' || message.key === 'npc' || message.key === 'uiSettings') {
                 this.dispatch({[message.key]: message.value});
             }
         }
@@ -93,17 +93,11 @@ export default class MockPort {
     }
 
     private sendStorage(key: string) {
-        const raw = localStorage.getItem(key);
-        if (raw !== null) {
-            try {
-                const value = JSON.parse(raw);
-                this.dispatch({storage: {key, value}});
-                if (key === 'settings' || key === 'npc') {
-                    this.dispatch({[key]: value});
-                }
-            } catch {
-                // ignore malformed json
-            }
+        const data = getItemSync(key);
+        const value = data ? data[key] : {};
+        this.dispatch({ storage: { key, value } });
+        if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
+            this.dispatch({ [key]: value });
         }
     };
 }

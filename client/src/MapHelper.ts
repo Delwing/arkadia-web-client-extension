@@ -1,5 +1,6 @@
 import {MapReader} from "mudlet-map-renderer";
 import Client from "./Client";
+import { getItemSync, setItemSync } from "./storage";
 import Room = MapData.Room;
 
 const STORAGE_KEY = 'mapperRoomId';
@@ -77,7 +78,8 @@ export default class MapHelper {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const savedData = getItemSync(STORAGE_KEY);
+        const saved = savedData ? savedData[STORAGE_KEY] : null;
         if (saved) {
             this.savedRoomId = parseInt(saved);
         }
@@ -101,6 +103,19 @@ export default class MapHelper {
 
         this.client.addEventListener('refreshPositionWhenAble', () => {
             this.refreshPosition = true;
+        });
+
+        this.client.addEventListener('gmcp.char.info', () => {
+            const listener = (event: CustomEvent) => {
+                if (event.detail.key === STORAGE_KEY) {
+                    const value = parseInt(event.detail.value);
+                    if (!isNaN(value)) {
+                        this.savedRoomId = value;
+                        this.setMapRoomById(this.savedRoomId);
+                    }
+                }
+            };
+            this.client.addEventListener('storage', listener);
         });
 
         this.client.sendEvent('refreshPositionWhenAble');
@@ -245,7 +260,7 @@ export default class MapHelper {
 
     renderRoomById(id: number, sendEvent = true) {
         this.currentRoom = this.mapReader.getRoomById(id)
-        localStorage.setItem(STORAGE_KEY, id.toString())
+        setItemSync(STORAGE_KEY, id.toString())
         if (sendEvent) {
             this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
         }

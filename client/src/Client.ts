@@ -15,6 +15,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
 import {attachGmcpListener} from "./gmcp";
+import { setCurrentCharacter } from "./storage";
 import {color} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
@@ -106,8 +107,22 @@ export default class Client {
             if (lamp) {
                 this.lampBind = {...lamp}
             }
+        })
+
+        this.addEventListener('uiSettings', (ev: CustomEvent) => {
             if (ev.detail?.xtermPalette) {
                 setXtermPalette(ev.detail.xtermPalette);
+            }
+        })
+
+        this.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
+            if (ev.detail?.name) {
+                setCurrentCharacter(ev.detail.name);
+                if (this.port) {
+                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId'].forEach(k => {
+                        this.port!.postMessage({ type: 'GET_STORAGE', key: k });
+                    });
+                }
             }
         })
 
@@ -124,18 +139,20 @@ export default class Client {
 
         this.port = port
         port.onMessage.addListener((message) => {
-            Object.entries(message).forEach(([key, value]) => {
-                this.eventTarget.dispatchEvent(new CustomEvent(key, {detail: value}))
-            })
+            if (message && typeof message.type === 'string') {
+                this.eventTarget.dispatchEvent(new CustomEvent(message.type, {detail: message.data}))
+                return
+            }
+            if (message && typeof message === 'object') {
+                Object.entries(message).forEach(([key, value]) => {
+                    this.eventTarget.dispatchEvent(new CustomEvent(key, {detail: value}))
+                })
+            }
         })
     }
 
     connect(port: any, initial: boolean) {
         if (initial) {
-            port.postMessage({type: 'GET_STORAGE', key: 'settings'})
-            port.postMessage({type: 'GET_STORAGE', key: 'kill_counter'})
-            port.postMessage({type: 'GET_STORAGE', key: 'containers'})
-            port.postMessage({type: 'GET_STORAGE', key: 'deposits'})
             port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
         }
         this.port = port

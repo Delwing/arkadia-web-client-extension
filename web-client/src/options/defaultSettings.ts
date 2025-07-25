@@ -7,7 +7,6 @@ export interface Settings {
     collectMode: number;
     collectMoneyType: number;
     collectExtra: string[];
-    xtermPalette: 'arkadia' | 'proper';
 }
 
 export const defaultSettings: Settings = {
@@ -19,5 +18,4 @@ export const defaultSettings: Settings = {
     collectMode: 3,
     collectMoneyType: 1,
     collectExtra: [],
-    xtermPalette: 'arkadia',
 };

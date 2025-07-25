@@ -1,8 +1,11 @@
 import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
-import storage from "./storage.ts";
-import { Settings, defaultSettings } from './defaultSettings';
+import storage, { getCurrentCharacter } from "@client/src/storage";
+import { Settings as BaseSettings, defaultSettings } from './defaultSettings';
+
+interface FormSettings extends BaseSettings {
+}
 
 const collectModeOptions = [
     "monety",
@@ -18,11 +21,23 @@ const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
 function SettingsForm() {
 
-    const [settings, setSettings] = useState<Settings>(defaultSettings)
+    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings })
+
+    const [locked, setLocked] = useState(!getCurrentCharacter())
+
+    useEffect(() => {
+        const update = () => setLocked(!getCurrentCharacter());
+        storage.onChanged?.addListener(update);
+        window.addEventListener('storage', update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener('storage', update);
+        };
+    }, []);
 
     const [extraInput, setExtraInput] = useState<string>('')
 
-    function onChangeSetting(modifier: (settings: Settings) => void) {
+    function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
             const updated = {...prev}
             modifier(updated)
@@ -32,18 +47,45 @@ function SettingsForm() {
 
 
     function handleSubmission() {
-        storage.setItem("settings", settings)
-        window.dispatchEvent(new Event('close-options'))
+        storage.setItem("settings", settings);
+        window.dispatchEvent(new Event('close-options'));
     }
 
     useEffect(() => {
-        storage.getItem("settings").then(res => {
-            setSettings(Object.assign({}, defaultSettings, res.settings));
-        })
+        const load = () => {
+            storage.getItem("settings").then(res => {
+                setSettings(Object.assign({}, defaultSettings, res?.settings));
+            });
+        };
+
+        load();
+
+        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+            if (changes.settings) {
+                load();
+            }
+        };
+
+        storage.onChanged?.addListener(listener);
+        return () => {
+            storage.onChanged?.removeListener?.(listener);
+        };
     }, []);
+
+    const char = getCurrentCharacter();
 
     return (
         <div className="my-4 p-2">
+            {locked ? (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            ) : char && (
+                <div className="alert alert-info" role="alert">
+                    Ustawienia dotyczą postaci: <strong>{char}</strong>
+                </div>
+            )}
+            <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
                 <div className="d-flex flex-wrap gap-3">
@@ -71,18 +113,6 @@ function SettingsForm() {
                         onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
                         className="me-2"
                     />
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Paleta kolorów:</Form.Label>
-                        <Form.Select
-                            size="sm"
-                            value={settings.xtermPalette}
-                            onChange={e => onChangeSetting(s => s.xtermPalette = e.target.value as any)}
-                            className="w-auto"
-                        >
-                            <option value="arkadia">Arkadia</option>
-                            <option value="proper">XTerm</option>
-                        </Form.Select>
-                    </Form.Group>
                 </div>
             </div>
             <div className="mb-4 border rounded p-3">
@@ -185,6 +215,7 @@ function SettingsForm() {
                 </div>
             </div>
             <Button onClick={handleSubmission}>Zapisz</Button>
+            </fieldset>
         </div>
     )
 }

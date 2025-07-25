@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
-import storage from "./storage";
+import storage from "@client/src/storage";
 
 interface ShortcutEntry {
     key: string;

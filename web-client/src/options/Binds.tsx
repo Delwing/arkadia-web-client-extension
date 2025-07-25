@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {Form, Button} from 'react-bootstrap';
-import storage from "./storage";
+import storage, { getCurrentCharacter } from "@client/src/storage";
 
 interface Bind {
     key: string;
@@ -63,16 +63,27 @@ function label(bind: Bind) {
 
 function Binds() {
     const [binds, setBinds] = useState<BindSettings>(defaultBinds);
+    const [locked, setLocked] = useState(!getCurrentCharacter());
+
+    useEffect(() => {
+        const update = () => setLocked(!getCurrentCharacter());
+        storage.onChanged?.addListener(update);
+        window.addEventListener('storage', update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener('storage', update);
+        };
+    }, []);
 
     useEffect(() => {
         storage.getItem('settings').then(res => {
             setBinds({
                 ...defaultBinds,
-                main: res.settings?.binds?.main || defaultBinds.main,
-                lamp: res.settings?.binds?.lamp || defaultBinds.lamp,
+                main: res?.settings?.binds?.main || defaultBinds.main,
+                lamp: res?.settings?.binds?.lamp || defaultBinds.lamp,
                 directions: {
                     ...defaultBinds.directions,
-                    ...res.settings?.binds?.directions,
+                    ...res?.settings?.binds?.directions,
                 },
             });
         });
@@ -102,8 +113,20 @@ function Binds() {
         });
     }
 
+    const char = getCurrentCharacter();
+
     return (
         <div className="m-2 d-flex flex-column gap-3">
+            {locked ? (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            ) : char && (
+                <div className="alert alert-info" role="alert">
+                    Ustawienia dotyczą postaci: <strong>{char}</strong>
+                </div>
+            )}
+            <fieldset disabled={locked} className="p-0 border-0 m-0">
             <Form.Group className="d-flex align-items-center gap-2">
                 <Form.Label className="w-32 mb-0">Domyślny</Form.Label>
                 <Form.Control
@@ -248,6 +271,7 @@ function Binds() {
                 />
             </Form.Group>
             <Button className="mt-2 w-auto" onClick={save}>Zapisz</Button>
+            </fieldset>
         </div>
     );
 }

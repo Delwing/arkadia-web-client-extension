@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import storage from "@client/src/storage";
 
 export type MacroType = 'functional' | 'zList' | 'zaList' | 'command' | 'specialExit' | 'kierunek';
 
@@ -32,18 +33,19 @@ const defaultSettings: Record<string, ButtonSetting> = {
     'se-button': { macro: 'kierunek', label: '↘', color: '#6CA6CD', command: 'se', direction: 'se' },
 };
 
-export function loadSettings(): Record<string, ButtonSetting> {
+export async function loadSettings(): Promise<Record<string, ButtonSetting>> {
     try {
-        const raw = localStorage.getItem('mobileButtonSettings');
+        const data = await storage.getItem('mobileButtonSettings');
+        const raw = data?.mobileButtonSettings;
         if (raw) {
-            return { ...defaultSettings, ...JSON.parse(raw) };
+            return { ...defaultSettings, ...(raw as any) };
         }
     } catch {}
     return { ...defaultSettings };
 }
 
 export function saveSettings(settings: Record<string, ButtonSetting>) {
-    localStorage.setItem('mobileButtonSettings', JSON.stringify(settings));
+    storage.setItem('mobileButtonSettings', settings);
 }
 
 export function applySettings(settings: Record<string, ButtonSetting>) {
@@ -65,7 +67,7 @@ export function applySettings(settings: Record<string, ButtonSetting>) {
     }
 }
 
-export default function initMobileButtonSettings() {
+export default async function initMobileButtonSettings() {
     const button = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const modalEl = document.getElementById('mobile-buttons-modal');
     if (!button || !modalEl) return;
@@ -95,7 +97,7 @@ export default function initMobileButtonSettings() {
         }
     };
 
-    let current = loadSettings();
+    let current = await loadSettings();
     const applyLive = (id: string, labelVal: string, colorVal: string) => {
         const btn = realMap[id];
         if (btn) {

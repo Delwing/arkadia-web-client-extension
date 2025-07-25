@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
-import storage from "./storage";
+import storage from "@client/src/storage";
 
 export interface UserMacro {
     type: 'uppercase' | 'color' | 'replace' | 'beep';
