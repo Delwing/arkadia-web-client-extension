@@ -208,6 +208,9 @@ export default class MapHelper {
     }
 
     setMapRoomById(id: number) {
+        if (this.currentRoom?.id === id) {
+            return;
+        }
         this.setMapRoom(this.mapReader.getRoomById(id))
     }
 
