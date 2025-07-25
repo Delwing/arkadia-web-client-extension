@@ -58,18 +58,33 @@ function SettingsForm() {
     }
 
     useEffect(() => {
-        Promise.all([storage.getItem("settings"), storage.getItem('uiSettings')]).then(([res, ui]) => {
-            const palette = (() => {
-                try { return ui?.uiSettings?.xtermPalette; }
-                catch {
-                    try {
-                        // TODO remove legacy fallback after migrating data
-                        return JSON.parse(res?.settings ?? '').xtermPalette;
-                    } catch { return 'arkadia'; }
-                }
-            })();
-            setSettings(Object.assign({}, defaultSettings, res.settings, { xtermPalette: palette === 'proper' ? 'proper' : 'arkadia' }));
-        })
+        const load = () => {
+            Promise.all([storage.getItem("settings"), storage.getItem('uiSettings')]).then(([res, ui]) => {
+                const palette = (() => {
+                    try { return ui?.uiSettings?.xtermPalette; }
+                    catch {
+                        try {
+                            // TODO remove legacy fallback after migrating data
+                            return JSON.parse(res?.settings ?? '').xtermPalette;
+                        } catch { return 'arkadia'; }
+                    }
+                })();
+                setSettings(Object.assign({}, defaultSettings, res.settings, { xtermPalette: palette === 'proper' ? 'proper' : 'arkadia' }));
+            });
+        };
+
+        load();
+
+        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+            if (changes.settings || changes.uiSettings) {
+                load();
+            }
+        };
+
+        storage.onChanged?.addListener(listener);
+        return () => {
+            storage.onChanged?.removeListener?.(listener);
+        };
     }, []);
 
     const char = getCurrentCharacter();
