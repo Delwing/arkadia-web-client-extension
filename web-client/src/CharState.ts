@@ -18,6 +18,7 @@ export interface CharStateConfig {
   label: string;
   max: number;
   default?: number;
+  flip?: boolean;
   transform?: (
     value: number,
     max: number,
@@ -54,7 +55,7 @@ const EMOJI_LABELS: Record<keyof CharStateData, string> = {
 
 const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
   hp: { label: TEXT_LABELS.hp, max: 6, transform: (value, max) => ({ value: value + 1, max: max + 1 }) },
-  fatigue: { label: TEXT_LABELS.fatigue, max: 9 },
+  fatigue: { label: TEXT_LABELS.fatigue, max: 9, flip: true },
   stuffed: { label: TEXT_LABELS.stuffed, max: 3, default: 3 },
   encumbrance: { label: TEXT_LABELS.encumbrance, max: 6, default: 0 },
   soaked: { label: TEXT_LABELS.soaked, max: 3, default: 3 },
@@ -180,7 +181,7 @@ export default class CharState {
           const emptyLen = barMax - filledLen;
           const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
           const ratio = value / maxValue;
-          const reverse = def === 0;
+          const reverse = def === 0 || this.config[key].flip === true;
           let color = "green";
           if (reverse) {
             if (ratio >= 2 / 3) {
