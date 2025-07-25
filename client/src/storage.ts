@@ -42,6 +42,9 @@ function notifyCharacterChange(prev: string | null) {
         const newKey = currentCharacter ? `${currentCharacter}:${key}` : key;
         const oldRaw = localStorage.getItem(prevKey);
         const newRaw = localStorage.getItem(newKey);
+        if (oldRaw === newRaw) {
+            return;
+        }
         let oldValue: any = undefined;
         let newValue: any = undefined;
         if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
