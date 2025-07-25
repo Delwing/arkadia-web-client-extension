@@ -117,6 +117,10 @@ h1 {
   font-size: 0.8rem;
 }
 
+.char-state-bar .progress-bar {
+  justify-content: center;
+}
+
 #lamp-timer {
   display: none;
 }
