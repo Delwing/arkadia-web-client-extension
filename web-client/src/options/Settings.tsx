@@ -72,11 +72,17 @@ function SettingsForm() {
         })
     }, []);
 
+    const char = getCurrentCharacter();
+
     return (
         <div className="my-4 p-2">
-            {locked && (
+            {locked ? (
                 <div className="alert alert-info" role="alert">
                     Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            ) : char && (
+                <div className="alert alert-info" role="alert">
+                    Ustawienia dotyczą postaci: <strong>{char}</strong>
                 </div>
             )}
             <fieldset disabled={locked} className="p-0 border-0 m-0">
