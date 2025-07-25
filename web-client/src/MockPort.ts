@@ -94,7 +94,7 @@ export default class MockPort {
 
     private sendStorage(key: string) {
         const data = getItemSync(key);
-        const value = data ? data[key] : null;
+        const value = data ? data[key] : {};
         this.dispatch({ storage: { key, value } });
         if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
             this.dispatch({ [key]: value });
