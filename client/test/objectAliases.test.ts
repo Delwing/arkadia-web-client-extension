@@ -1,4 +1,5 @@
 import initObjectAliases from '../src/scripts/objectAliases';
+import { gmcp } from '../src/gmcp';
 
 class FakeClient {
   ObjectManager = {
@@ -10,6 +11,7 @@ class FakeClient {
     getAccumulatedObjectsData: jest.fn(() => ({})),
   };
   sendCommand = jest.fn();
+  sendGMCP = jest.fn();
   print = jest.fn();
 }
 
@@ -21,6 +23,7 @@ describe('object aliases', () => {
   let shieldTarget: () => void;
   let invite: (m: RegExpMatchArray) => void;
   let toggle: () => void;
+  let shieldGroup: (m: RegExpMatchArray) => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -32,7 +35,10 @@ describe('object aliases', () => {
     shieldTarget = aliases[3].callback as any;
     invite = aliases[4].callback as any;
     toggle = aliases[7].callback as any;
+    shieldGroup = aliases[8].callback as any;
     (global as any).Input = { send: jest.fn() };
+    (window as any).gmcp = gmcp;
+    gmcp.char = { options: { group_cover: 1 } } as any;
   });
 
   test('kill alias sends zabij with object number', () => {
@@ -88,5 +94,14 @@ describe('object aliases', () => {
     shieldTarget();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zaslon ob_15');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
+  });
+
+  test('/za2 alias sets group_cover during command', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 11, shortcut: 'C' }]);
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 11: { team: true } });
+    shieldGroup(['', '2', 'C'] as unknown as RegExpMatchArray);
+    expect(client.sendGMCP).toHaveBeenNthCalledWith(1, 'char.options.group_cover', 2);
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_11');
+    expect(client.sendGMCP).toHaveBeenNthCalledWith(2, 'char.options.group_cover', 1);
   });
 });

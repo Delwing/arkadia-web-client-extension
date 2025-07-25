@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { gmcp } from "../gmcp";
 
 export default function initObjectAliases(
     client: Client,
@@ -100,6 +101,15 @@ export default function initObjectAliases(
                 const color = releaseGuard ? ON_COLOR : OFF_COLOR;
                 const state = releaseGuard ? 'ON' : 'OFF';
                 client.print(colorString(`Puszczanie zaslon: ${state}`, color));
+            }
+        });
+        aliases.push({
+            pattern: /^\/za([234]) ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const original = gmcp?.char?.options?.group_cover;
+                client.sendGMCP('char.options.group_cover', parseInt(m[1], 10));
+                shield(m[2]);
+                client.sendGMCP('char.options.group_cover', original);
             }
         });
     }
