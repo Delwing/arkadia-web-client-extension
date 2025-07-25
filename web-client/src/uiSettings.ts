@@ -9,6 +9,7 @@ interface UiSettings {
     showButtons: boolean;
     mapHeight: number;
     emojiLabels: boolean;
+    footerMode: number;
 }
 
 const defaultSettings: UiSettings = {
@@ -20,6 +21,7 @@ const defaultSettings: UiSettings = {
     showButtons: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
+    footerMode: 0,
 };
 
 function apply(settings: UiSettings) {
@@ -30,6 +32,7 @@ function apply(settings: UiSettings) {
     const charState = document.getElementById('char-state');
     if (charState) {
         charState.style.fontSize = settings.contentFontSize + 'rem';
+        charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
     const objects = document.getElementById('objects-list');
     if (objects) {
@@ -65,7 +68,13 @@ function apply(settings: UiSettings) {
     }
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', { detail: { mobileDirectionButtons: settings.showButtons, emojiLabels: settings.emojiLabels } })
+            new CustomEvent('uiSettings', {
+                detail: {
+                    mobileDirectionButtons: settings.showButtons,
+                    emojiLabels: settings.emojiLabels,
+                    footerMode: settings.footerMode,
+                },
+            })
         );
     }
 }
@@ -83,7 +92,8 @@ function load(): UiSettings {
                 const value = parseInt(parsed.mapLimit);
                 return value > 0 ? value : defaultSettings.mapLimit;
             })();
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels };
+            const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, footerMode };
         }
     } catch {
         // ignore malformed data
@@ -109,6 +119,7 @@ export default function initUiSettings() {
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
+    const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = load();
@@ -120,6 +131,7 @@ export default function initUiSettings() {
     mapLimitInput.value = String(current.mapLimit);
     showButtonsInput.checked = current.showButtons;
     emojiLabelsInput.checked = current.emojiLabels;
+    footerModeInput.value = String(current.footerMode);
     apply(current);
 
     function read(): UiSettings {
@@ -146,6 +158,7 @@ export default function initUiSettings() {
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
+            footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
         };
     }
 

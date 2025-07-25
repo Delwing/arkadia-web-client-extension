@@ -73,6 +73,14 @@ export default class CharState {
   private config: Record<keyof CharStateData, CharStateConfig>;
   private state: Partial<CharStateData> = {};
   private useEmoji = false;
+  private mode = 0;
+
+  private applyMode(mode: number) {
+    if (typeof mode === 'number' && mode >= 0 && mode <= 2) {
+      this.mode = mode;
+      this.update({});
+    }
+  }
 
   private applyLabelMode(useEmoji: boolean) {
     this.useEmoji = useEmoji;
@@ -110,11 +118,18 @@ export default class CharState {
       if (emojiAttr) {
         this.applyLabelMode(emojiAttr === 'true' || emojiAttr === '1');
       }
+      const modeAttr = this.container.getAttribute('data-footer-mode');
+      if (modeAttr) {
+        this.applyMode(parseInt(modeAttr));
+      }
     }
 
     this.client.on('settings', (ev: any) => {
       if (typeof ev.detail?.emojiLabels === 'boolean') {
         this.applyLabelMode(ev.detail.emojiLabels);
+      }
+      if (typeof ev.detail?.footerMode === 'number') {
+        this.applyMode(ev.detail.footerMode);
       }
     });
 
@@ -123,6 +138,9 @@ export default class CharState {
       ext.addEventListener('uiSettings', (ev: CustomEvent) => {
         if (typeof ev.detail?.emojiLabels === 'boolean') {
           this.applyLabelMode(ev.detail.emojiLabels);
+        }
+        if (typeof ev.detail?.footerMode === 'number') {
+          this.applyMode(ev.detail.footerMode);
         }
       });
     }
@@ -152,11 +170,21 @@ export default class CharState {
         if (transform && typeof value === "number") {
           ({ value, max: maxValue } = transform(value, maxValue));
         }
+        value = Math.max(0, Math.min(maxValue, value));
         const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
-        const text = `${label}: [${value}/${maxValue}]`;
+        let text = '';
+        if (this.mode === 1 || this.mode === 2) {
+          const barMax = this.mode === 2 ? 10 : maxValue;
+          const filledLen = Math.round((value / maxValue) * barMax);
+          const emptyLen = barMax - filledLen;
+          const bar = '#'.repeat(filledLen) + '-'.repeat(emptyLen);
+          text = `${label}: [${bar}]`;
+        } else {
+          text = `${label}: [${value}/${maxValue}]`;
+        }
         return highlight ? `<span style="color:tomato">${text}</span>` : text;
       })
-      .join(" ");
+      .join(' ');
   }
 }
