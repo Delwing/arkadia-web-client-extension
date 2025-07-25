@@ -175,6 +175,10 @@ export default class TeamManager {
         return this.leader;
     }
 
+    getLeaderId(): string | undefined {
+        return this.leaderId;
+    }
+
     clearTeam() {
         this.members.clear();
         this.leader = undefined;

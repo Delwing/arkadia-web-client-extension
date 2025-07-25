@@ -58,6 +58,12 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    supportBind = {key: "KeyW", ctrl: true} as {
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        shift?: boolean;
+    };
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
@@ -90,6 +96,19 @@ export default class Client {
                 this.sendCommand('napelnij lampe olejem')
                 ev.preventDefault()
             }
+            if (
+                (ev.code === this.supportBind.key || ev.key === this.supportBind.key) &&
+                !!this.supportBind.ctrl === ev.ctrlKey &&
+                !!this.supportBind.alt === ev.altKey &&
+                !!this.supportBind.shift === ev.shiftKey
+            ) {
+                this.sendCommand('wesprzyj')
+                const id = this.TeamManager.getLeaderId?.()
+                if (id) {
+                    this.sendCommand(`wesprzyj ob_${id}`)
+                }
+                ev.preventDefault()
+            }
         })
 
         this.addEventListener('settings', (ev: CustomEvent) => {
@@ -106,6 +125,10 @@ export default class Client {
             const lamp = ev.detail?.binds?.lamp
             if (lamp) {
                 this.lampBind = {...lamp}
+            }
+            const support = ev.detail?.binds?.support
+            if (support) {
+                this.supportBind = {...support}
             }
         })
 
