@@ -1,6 +1,7 @@
 import { initImproveCounter } from '../src/scripts/improveCounter';
 import { initKillCounter } from '../src/scripts/kill';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
+import { colorString, findClosestColor } from '../src/Colors';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -9,6 +10,7 @@ class FakeClient {
   TeamManager = { isInTeam: jest.fn() };
   prefix = (line: string, prefix: string) => prefix + line;
   print = jest.fn();
+  println = jest.fn();
   port = { postMessage: jest.fn() } as any;
 
   addEventListener(event: string, cb: any) {
@@ -39,11 +41,14 @@ describe('improve counter', () => {
     show = improveAliases[0].callback;
   });
 
-  test('records state changes and prints table', () => {
+  test('records state changes, prints notification and table', () => {
     client.dispatch('gmcp.char.info', {});
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    parse('Poczyniles male postepy');
+    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    const orange = findClosestColor('#ffa500');
+    const message = colorString('Wlasnie wbiles postepy: male (czas: 0:30)', orange);
+    expect(client.println).toHaveBeenCalledWith(message);
     show();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/1\. male/);

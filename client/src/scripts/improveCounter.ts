@@ -126,6 +126,13 @@ export default class ImproveCounter {
         this.entries.push(entry);
         this.lastTime = now;
         this.lastKills = kills;
+        const msg = colorString(
+            `Wlasnie wbiles postepy: ${state} (czas: ${formatDuration(
+                entry.delta,
+            )})`,
+            SECTION_COLOR,
+        );
+        this.client.println(msg);
     }
 
     private formatTable(): string {
