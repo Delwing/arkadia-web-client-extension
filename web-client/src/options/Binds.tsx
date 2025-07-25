@@ -27,6 +27,7 @@ interface BindSettings {
     main: Bind;
     lamp: Bind;
     attack: Bind;
+    support: Bind;
     directions: DirectionBinds;
 }
 
@@ -34,6 +35,7 @@ const defaultBinds: BindSettings = {
     main: { key: 'BracketRight' },
     lamp: { key: 'Digit4', ctrl: true },
     attack: { key: 'Digit1', ctrl: true },
+    support: { key: 'KeyW', ctrl: true },
     directions: {
         n: { key: 'Numpad8' },
         s: { key: 'Numpad2' },
@@ -84,6 +86,7 @@ function Binds() {
                 main: res?.settings?.binds?.main || defaultBinds.main,
                 lamp: res?.settings?.binds?.lamp || defaultBinds.lamp,
                 attack: res?.settings?.binds?.attack || defaultBinds.attack,
+                support: res?.settings?.binds?.support || defaultBinds.support,
                 directions: {
                     ...defaultBinds.directions,
                     ...res?.settings?.binds?.directions,
@@ -109,7 +112,7 @@ function Binds() {
 
     function save() {
             storage.getItem('settings').then(res => {
-                const settings = { ...(res.settings || {}), binds: { main: binds.main, lamp: binds.lamp, attack: binds.attack, directions: binds.directions } };
+                const settings = { ...(res.settings || {}), binds: { main: binds.main, lamp: binds.lamp, attack: binds.attack, support: binds.support, directions: binds.directions } };
                 storage.setItem('settings', settings).then(() => {
                     window.dispatchEvent(new Event('close-options'));
             });
@@ -161,6 +164,17 @@ function Binds() {
                     className="w-40"
                     value={label(binds.attack)}
                     onKeyDown={ev => handleCapture('attack', ev)}
+                />
+            </Form.Group>
+            <Form.Group className="d-flex align-items-center gap-2">
+                <Form.Label className="w-32 mb-0">Wesprzyj</Form.Label>
+                <Form.Control
+                    type="text"
+                    readOnly
+                    size="sm"
+                    className="w-40"
+                    value={label(binds.support)}
+                    onKeyDown={ev => handleCapture('support', ev)}
                 />
             </Form.Group>
             <Form.Group className="d-flex align-items-center gap-2">

@@ -58,6 +58,13 @@ describe('TeamManager', () => {
     expect(manager.isInTeam('Pablo')).toBe(true);
   });
 
+  test('returns leader id when available', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeaderId()).toBe('5');
+  });
+
   test('emits event when leader attacks different target', () => {
     const callback = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', callback);
