@@ -210,12 +210,15 @@ export default class CharState {
         labelEl.textContent = label + ":";
         if (highlight) labelEl.style.color = "tomato";
         const progress = document.createElement("div");
-        progress.className = "progress";
+        progress.className = "progress position-relative";
         const bar = document.createElement("div");
         bar.className = `progress-bar ${colorClass}`;
         bar.style.width = `${Math.floor(ratio * 100)}%`;
-        bar.textContent = `${value}/${maxValue}`;
+        const valueSpan = document.createElement("span");
+        valueSpan.className = "progress-value";
+        valueSpan.textContent = `${value}/${maxValue}`;
         progress.appendChild(bar);
+        progress.appendChild(valueSpan);
         group.appendChild(labelEl);
         group.appendChild(progress);
         this.bars!.appendChild(group);
