@@ -309,6 +309,15 @@ class KillCounter {
         return entry;
     }
 
+    getSessionTotals() {
+        const totals = { my: 0, team: 0 };
+        Object.values(this.kills).forEach((e) => {
+            totals.my += e.mySession;
+            totals.team += e.teamSession;
+        });
+        return totals;
+    }
+
     private formatPrefix(
         line: string,
         entry: KillEntry | null,
