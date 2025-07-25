@@ -51,8 +51,10 @@ export default function initGps(client: Client) {
                                 return;
                             }
                             if (lines.length === 1) {
-                                client.Map.setMapRoomById(room.id);
-                                client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                if (client.Map.currentRoom?.id !== room.id) {
+                                    client.Map.setMapRoomById(room.id);
+                                    client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                }
                             } else {
                                 current = 0;
                             }
@@ -69,8 +71,10 @@ export default function initGps(client: Client) {
                             if (line === lines[current]) {
                                 current++;
                                 if (current === lines.length) {
-                                    client.Map.setMapRoomById(room.id);
-                                    client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                    if (client.Map.currentRoom?.id !== room.id) {
+                                        client.Map.setMapRoomById(room.id);
+                                        client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                    }
                                     current = 1;
                                 }
                                 return [line];
