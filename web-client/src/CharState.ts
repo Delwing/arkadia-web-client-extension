@@ -180,11 +180,20 @@ export default class CharState {
           const emptyLen = barMax - filledLen;
           const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
           const ratio = value / maxValue;
+          const reverse = def === 0;
           let color = "green";
-          if (ratio <= 1 / 3) {
-            color = "red";
-          } else if (ratio <= 2 / 3) {
-            color = "yellow";
+          if (reverse) {
+            if (ratio >= 2 / 3) {
+              color = "red";
+            } else if (ratio >= 1 / 3) {
+              color = "yellow";
+            }
+          } else {
+            if (ratio <= 1 / 3) {
+              color = "red";
+            } else if (ratio <= 2 / 3) {
+              color = "yellow";
+            }
           }
           text = `${label}: <span style="color:${color}">[${bar}]</span>`;
         } else {
