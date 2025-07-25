@@ -107,10 +107,6 @@ export default class Client {
             if (lamp) {
                 this.lampBind = {...lamp}
             }
-            if (ev.detail?.xtermPalette) {
-                // legacy support, will be removed
-                setXtermPalette(ev.detail.xtermPalette);
-            }
         })
 
         this.addEventListener('uiSettings', (ev: CustomEvent) => {

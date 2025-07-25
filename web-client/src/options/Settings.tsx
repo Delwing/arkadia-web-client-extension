@@ -60,16 +60,8 @@ function SettingsForm() {
     useEffect(() => {
         const load = () => {
             Promise.all([storage.getItem("settings"), storage.getItem('uiSettings')]).then(([res, ui]) => {
-                const palette = (() => {
-                    try { return ui?.uiSettings?.xtermPalette; }
-                    catch {
-                        try {
-                            // TODO remove legacy fallback after migrating data
-                            return JSON.parse(res?.settings ?? '').xtermPalette;
-                        } catch { return 'arkadia'; }
-                    }
-                })();
-                setSettings(Object.assign({}, defaultSettings, res.settings, { xtermPalette: palette === 'proper' ? 'proper' : 'arkadia' }));
+                const palette = ui?.uiSettings?.xtermPalette === 'proper' ? 'proper' : 'arkadia';
+                setSettings(Object.assign({}, defaultSettings, res.settings, { xtermPalette: palette }));
             });
         };
 
