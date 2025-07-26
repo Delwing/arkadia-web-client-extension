@@ -407,6 +407,8 @@ export default class MobileDirectionButtons {
     private hideLists() {
         if (this.zList) this.zList.style.display = 'none';
         if (this.zasList) this.zasList.style.display = 'none';
+        if (this.zToggle) this.zToggle.classList.remove('active');
+        if (this.zasToggle) this.zasToggle.classList.remove('active');
     }
 
     private applyButtonSize(btn: HTMLButtonElement) {
@@ -498,6 +500,8 @@ export default class MobileDirectionButtons {
         const newBtn = clone;
         this.applyButtonSize(newBtn);
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
+        if (id === 'z-list-toggle') this.zToggle = newBtn;
+        if (id === 'zas-list-toggle') this.zasToggle = newBtn;
         if (id.endsWith('-button')) {
             const dirKey = id.replace('-button', '');
             if (Object.prototype.hasOwnProperty.call(this.directionButtons, dirKey)) {
@@ -532,6 +536,7 @@ export default class MobileDirectionButtons {
                         this.hideLists();
                         this.renderZList();
                         if (this.zList) this.zList.style.display = 'grid';
+                        newBtn.classList.add('active');
                     }
                     break;
                 case 'zaList':
@@ -541,6 +546,7 @@ export default class MobileDirectionButtons {
                         this.hideLists();
                         this.renderZasList();
                         if (this.zasList) this.zasList.style.display = 'grid';
+                        newBtn.classList.add('active');
                     }
                     break;
                 case 'command':
