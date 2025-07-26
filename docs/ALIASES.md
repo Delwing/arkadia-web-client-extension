@@ -27,6 +27,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zbieraj_extra _przedmiot_** - dodaje przedmiot do listy ekstra rzeczy zbieranych z ciał.
 - **/nie_zbieraj_extra [_przedmiot_]** - usuwa wskazany przedmiot z listy ekstra lub bez parametru czyści całą listę.
 - **/cechy** - uruchamia licznik poziomowania i wyświetla postępy.
+- **/postepy** - wyświetla postępy ulepszeń.
 - **/z _skrot_** - wykonuje polecenie `zabij` na obiekcie o podanym skrócie.
 - **/zas _skrot_** - zasłania obiekt o podanym skrócie; jeśli nie jest w drużynie używa komendy `zaslon przed`.
 - **/za _skrot_** - to samo co `/zas _skrot_`.
@@ -38,6 +39,10 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zap _numer_** - zaprasza do drużyny obiekt o podanym numerze.
 - **/zg** - wykonuje polecenie `zgas lampe`.
 - **/binds** - wyświetla aktualnie ustawione skróty klawiaturowe.
+- **/pokaz_skroty** - wyświetla listę ustawionych skrótów.
+- **/dodaj_skrot _klawisz nazwa [komenda]_** - dodaje skrót klawiaturowy.
+- **/usun_skrot _nazwa_** - usuwa wskazany skrót.
+- **/usun_skroty** - usuwa wszystkie skróty.
 - **/przejrzyj** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami.
 - **/idz** - wybiera przeciwne wyjście w pomieszczeniu.
 - **/idz _id [opoznienie]_** - automatycznie idzie do wskazanej lokacji z opcjonalnym opoznieniem.
@@ -55,3 +60,8 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/napraw_ubrania** - Naprawianie ubrania u krawca.
 - **/ocenkamienie** - oblicza łączną wartość kamieni.
 - **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
+- **/za2 _skrot_** - zasłania obiekt z poziomem krycia 2.
+- **/za3 _skrot_** - zasłania obiekt z poziomem krycia 3.
+- **/za4 _skrot_** - zasłania obiekt z poziomem krycia 4.
+- **/w _skrot_** - wycofuje postać za wskazany obiekt.
+- **/prze** - przełamuje obronę oznaczonego celu.
