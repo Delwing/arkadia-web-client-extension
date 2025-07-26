@@ -70,6 +70,21 @@ export function setCurrentCharacter(name: string) {
             }
         });
     }
+
+    if (!localStorage.getItem('binds')) {
+        const scopedKey = currentCharacter ? `${currentCharacter}:settings` : 'settings';
+        const raw = localStorage.getItem(scopedKey);
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed.binds) {
+                    localStorage.setItem('binds', JSON.stringify(parsed.binds));
+                    delete parsed.binds;
+                    localStorage.setItem(scopedKey, JSON.stringify(parsed));
+                }
+            } catch {}
+        }
+    }
     if (currentCharacter) {
         localStorage.setItem('currentCharacter', currentCharacter);
     } else {

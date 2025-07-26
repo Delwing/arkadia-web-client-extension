@@ -152,8 +152,8 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for bind settings changes
-        this.client.addEventListener('settings', (ev: CustomEvent) => {
-            const bind = ev.detail?.binds?.main;
+        this.client.addEventListener('binds', (ev: CustomEvent) => {
+            const bind = ev.detail?.main;
             if (bind) {
                 this.boundKey = bind.key;
                 this.boundCtrl = !!bind.ctrl;

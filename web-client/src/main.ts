@@ -81,9 +81,9 @@ loadNpcData().then(npc => {
     client.sendEvent("npc", npc)
 })
 
-arkadiaClient.on('settings', (detail: any) => {
-    if (detail?.binds?.directions) {
-        applyDirectionBinds(detail.binds.directions);
+arkadiaClient.on('binds', (detail: any) => {
+    if (detail?.directions) {
+        applyDirectionBinds(detail.directions);
     }
 });
 

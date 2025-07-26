@@ -78,15 +78,13 @@ function Binds() {
     }, []);
 
     useEffect(() => {
-        storage.getItem('settings').then(res => {
+        storage.getItem('binds').then(res => {
             setBinds({
                 ...defaultBinds,
-                main: res?.settings?.binds?.main || defaultBinds.main,
-                lamp: res?.settings?.binds?.lamp || defaultBinds.lamp,
-                support: res?.settings?.binds?.support || defaultBinds.support,
+                ...res?.binds,
                 directions: {
                     ...defaultBinds.directions,
-                    ...res?.settings?.binds?.directions,
+                    ...(res?.binds?.directions || {}),
                 },
             });
         });
@@ -108,11 +106,8 @@ function Binds() {
     }
 
     function save() {
-            storage.getItem('settings').then(res => {
-                const settings = { ...(res.settings || {}), binds: { main: binds.main, lamp: binds.lamp, support: binds.support, directions: binds.directions } };
-                storage.setItem('settings', settings).then(() => {
-                    window.dispatchEvent(new Event('close-options'));
-            });
+        storage.setItem('binds', binds).then(() => {
+            window.dispatchEvent(new Event('close-options'));
         });
     }
 
