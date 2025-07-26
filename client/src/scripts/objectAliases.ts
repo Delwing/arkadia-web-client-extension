@@ -33,6 +33,16 @@ export default function initObjectAliases(
             }
         }
     }
+
+    function withdraw(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            client.sendCommand(`gzwycofaj sie za ob_${obj.num}`);
+            if (releaseGuard) {
+                client.sendCommand("przestan zaslaniac");
+            }
+        }
+    }
     let releaseGuard = false;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -111,6 +121,10 @@ export default function initObjectAliases(
                 shield(m[2]);
                 client.sendGMCP('char.options.group_cover', original);
             }
+        });
+        aliases.push({
+            pattern: /\/w ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => withdraw(m[1])
         });
     }
 }
