@@ -43,6 +43,14 @@ export default function initObjectAliases(
             }
         }
     }
+
+    function breakDefenseTarget() {
+        const id = client.TeamManager.getDefenseTargetId();
+        if (id) {
+            client.sendCommand("przestan kryc sie za zaslona");
+            client.sendCommand(`przelam obrone ob_${id}`);
+        }
+    }
     let releaseGuard = false;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -125,6 +133,10 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /\/w ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => withdraw(m[1])
+        });
+        aliases.push({
+            pattern: /^\/prze$/,
+            callback: () => breakDefenseTarget()
         });
     }
 }
