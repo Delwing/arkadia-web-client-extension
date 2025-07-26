@@ -58,6 +58,12 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    attackBind = {key: "Digit1", ctrl: true} as {
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        shift?: boolean;
+    };
     supportBind = {key: "KeyW", ctrl: true} as {
         key: string;
         ctrl?: boolean;
@@ -97,6 +103,18 @@ export default class Client {
                 ev.preventDefault()
             }
             if (
+                (ev.code === this.attackBind.key || ev.key === this.attackBind.key) &&
+                !!this.attackBind.ctrl === ev.ctrlKey &&
+                !!this.attackBind.alt === ev.altKey &&
+                !!this.attackBind.shift === ev.shiftKey
+            ) {
+                const id = this.TeamManager.getAttackTargetId?.()
+                if (id) {
+                    this.sendCommand(`zabij ob_${id}`)
+                }
+                ev.preventDefault()
+            }
+            if (
                 (ev.code === this.supportBind.key || ev.key === this.supportBind.key) &&
                 !!this.supportBind.ctrl === ev.ctrlKey &&
                 !!this.supportBind.alt === ev.altKey &&
@@ -125,6 +143,10 @@ export default class Client {
             const lamp = ev.detail?.binds?.lamp
             if (lamp) {
                 this.lampBind = {...lamp}
+            }
+            const attack = ev.detail?.binds?.attack
+            if (attack) {
+                this.attackBind = {...attack}
             }
             const support = ev.detail?.binds?.support
             if (support) {
