@@ -196,5 +196,10 @@ export default class TeamManager {
         return this.defenseTargetId;
     }
 
+    getAvatarAttackTargetId() {
+        return this.avatarAttackTargetId;
+    }
+
+
 
 }

@@ -173,4 +173,11 @@ describe('TeamManager', () => {
     expect(manager.getDefenseTargetId()).toBe('2');
   });
 
+  test('returns avatar attack target id', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '99': { desc: 'You', living: true, team: true, attack_num: '4' },
+    });
+    expect(manager.getAvatarAttackTargetId()).toBe('4');
+  });
+
 });

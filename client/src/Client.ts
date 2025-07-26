@@ -120,11 +120,7 @@ export default class Client {
                 !!this.supportBind.alt === ev.altKey &&
                 !!this.supportBind.shift === ev.shiftKey
             ) {
-                this.sendCommand('wesprzyj')
-                const id = this.TeamManager.getLeaderId?.()
-                if (id) {
-                    this.sendCommand(`wesprzyj ob_${id}`)
-                }
+                this.support()
                 ev.preventDefault()
             }
         })
@@ -225,6 +221,14 @@ export default class Client {
 
     send(command: string, echo: boolean = true) {
         this.clientAdapter.send(command, echo)
+    }
+
+    support() {
+        this.sendCommand('wesprzyj')
+        const id = this.TeamManager.getLeaderId?.()
+        if (id) {
+            this.sendCommand(`wesprzyj ob_${id}`)
+        }
     }
 
     sendCommand(command: string, echo: boolean = true) {
