@@ -88,7 +88,7 @@ function SettingsForm() {
             <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
-                <div className="d-flex flex-wrap gap-3">
+                <div className="d-flex flex-wrap gap-3 align-items-center">
                     <Form.Check
                         type="checkbox"
                         id="packageHelper"
@@ -117,7 +117,7 @@ function SettingsForm() {
             </div>
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pojemniki</h5>
-                <div className="d-flex flex-wrap gap-3">
+                <div className="d-flex flex-wrap gap-3 align-items-center">
                     <Form.Check
                         type="checkbox"
                         id="prettyContainers"
