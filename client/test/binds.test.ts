@@ -3,6 +3,7 @@ import initBinds from '../src/scripts/binds';
 class FakeClient {
   FunctionalBind = { getLabel: jest.fn(() => ']') };
   lampBind = { key: 'Digit4', ctrl: true };
+  attackBind = { key: 'Digit1', ctrl: true };
   supportBind = { key: 'KeyQ', ctrl: true };
   println = jest.fn();
 }
@@ -17,6 +18,7 @@ describe('binds alias', () => {
     expect(client.println).toHaveBeenCalledTimes(1);
     const printed = client.println.mock.calls[0][0];
     expect(printed).toContain('Domy\u015Blny: ]');
+    expect(printed).toContain('Atakuj: CTRL+1');
     expect(printed).toContain('Nape\u0142nij lamp\u0119: CTRL+4');
     expect(printed).toContain('Wesprzyj: CTRL+Q');
   });
