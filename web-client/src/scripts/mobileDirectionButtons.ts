@@ -476,7 +476,6 @@ export default class MobileDirectionButtons {
             b.textContent = v;
             b.addEventListener('click', () => {
                 this.client.sendCommand(`/${prefix} ${v}`);
-                this.hideLists();
             });
             target.appendChild(b);
         });
