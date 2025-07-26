@@ -47,7 +47,7 @@ describe('improve counter', () => {
     jest.advanceTimersByTime(30000);
     parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
     const orange = findClosestColor('#ffa500');
-    const message = colorString('Wlasnie wbiles postepy: male (czas: 0:30)', orange);
+    const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
     show();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);

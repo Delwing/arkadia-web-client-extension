@@ -127,7 +127,7 @@ export default class ImproveCounter {
         this.lastTime = now;
         this.lastKills = kills;
         const msg = colorString(
-            `Wlasnie wbiles postepy: ${state} (czas: ${formatDuration(
+            `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
             )})`,
             SECTION_COLOR,
