@@ -44,8 +44,14 @@ export default function initObjectAliases(
         }
     }
 
-    function breakDefenseTarget() {
-        const id = client.TeamManager.getDefenseTargetId();
+    function breakDefenseTarget(short?: string) {
+        let id: string | undefined;
+        if (short) {
+            const obj = findByShortcut(short);
+            id = obj?.num?.toString();
+        } else {
+            id = client.TeamManager.getAttackTargetId();
+        }
         if (id) {
             client.sendCommand("przestan kryc sie za zaslona");
             client.sendCommand(`przelam obrone ob_${id}`);
@@ -135,8 +141,8 @@ export default function initObjectAliases(
             callback: (m: RegExpMatchArray) => withdraw(m[1])
         });
         aliases.push({
-            pattern: /^\/prze$/,
-            callback: () => breakDefenseTarget()
+            pattern: /\/prze(?: ([A-Za-z0-9@]+))?$/,
+            callback: (m?: RegExpMatchArray) => breakDefenseTarget(m?.[1])
         });
     }
 }

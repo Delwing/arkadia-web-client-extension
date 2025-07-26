@@ -25,7 +25,7 @@ describe('object aliases', () => {
   let toggle: () => void;
   let shieldGroup: (m: RegExpMatchArray) => void;
   let withdraw: (m: RegExpMatchArray) => void;
-  let breakDefense: () => void;
+  let breakDefense: (m?: RegExpMatchArray) => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -123,10 +123,17 @@ describe('object aliases', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
   });
 
-  test('/prze alias breaks defense of current target', () => {
-    client.TeamManager.getDefenseTargetId.mockReturnValue('21');
+  test('/prze alias breaks defense of attack target', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('21');
     breakDefense();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_21');
+  });
+
+  test('/prze alias breaks defense of given shortcut', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 30, shortcut: '1' }]);
+    breakDefense(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_30');
   });
 });
