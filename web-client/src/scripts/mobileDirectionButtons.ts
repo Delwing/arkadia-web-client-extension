@@ -122,6 +122,17 @@ export default class MobileDirectionButtons {
 
         this.highlightExits([]);
 
+        const updateLists = () => {
+            if (this.zList && this.zList.style.display !== 'none') {
+                this.renderZList();
+            }
+            if (this.zasList && this.zasList.style.display !== 'none') {
+                this.renderZasList();
+            }
+        };
+        this.client.addEventListener('gmcp.objects.nums', updateLists);
+        this.client.addEventListener('gmcp.objects.data', updateLists);
+
         // Listen for window resize to check if mobile view
         window.addEventListener('resize', () => {
             this.checkMobile();
