@@ -202,7 +202,7 @@ export default class ImproveCounter {
     }
 
     show() {
-        this.client.print("\n" + this.formatTable() + "\n");
+        this.client.print("\n\n" + this.formatTable() + "\n\n");
     }
 }
 
