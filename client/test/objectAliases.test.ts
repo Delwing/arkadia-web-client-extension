@@ -25,6 +25,7 @@ describe('object aliases', () => {
   let toggle: () => void;
   let shieldGroup: (m: RegExpMatchArray) => void;
   let withdraw: (m: RegExpMatchArray) => void;
+  let breakDefense: () => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -38,6 +39,7 @@ describe('object aliases', () => {
     toggle = aliases[7].callback as any;
     shieldGroup = aliases[8].callback as any;
     withdraw = aliases[9].callback as any;
+    breakDefense = aliases[10].callback as any;
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
@@ -119,5 +121,12 @@ describe('object aliases', () => {
     withdraw(['', 'Y'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_18');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
+  });
+
+  test('/prze alias breaks defense of current target', () => {
+    client.TeamManager.getDefenseTargetId.mockReturnValue('21');
+    breakDefense();
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_21');
   });
 });
