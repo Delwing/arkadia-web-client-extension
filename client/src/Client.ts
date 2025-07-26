@@ -129,8 +129,8 @@ export default class Client {
             }
         })
 
-        this.addEventListener('settings', (ev: CustomEvent) => {
-            const bind = ev.detail?.binds?.main
+        const applyBinds = (b: any) => {
+            const bind = b?.main
             if (bind) {
                 this.FunctionalBind.updateOptions({
                     key: bind.key,
@@ -140,18 +140,26 @@ export default class Client {
                     label: formatLabel(bind)
                 })
             }
-            const lamp = ev.detail?.binds?.lamp
+            const lamp = b?.lamp
             if (lamp) {
-                this.lampBind = {...lamp}
+                this.lampBind = { ...lamp }
             }
-            const attack = ev.detail?.binds?.attack
+            const attack = b?.attack
             if (attack) {
-                this.attackBind = {...attack}
+                this.attackBind = { ...attack }
             }
-            const support = ev.detail?.binds?.support
+            const support = b?.support
             if (support) {
-                this.supportBind = {...support}
+                this.supportBind = { ...support }
             }
+        }
+
+        this.addEventListener('settings', (ev: CustomEvent) => {
+            applyBinds(ev.detail?.binds)
+        })
+
+        this.addEventListener('binds', (ev: CustomEvent) => {
+            applyBinds(ev.detail)
         })
 
         this.addEventListener('uiSettings', (ev: CustomEvent) => {
@@ -164,7 +172,7 @@ export default class Client {
             if (ev.detail?.name) {
                 setCurrentCharacter(ev.detail.name);
                 if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId'].forEach(k => {
+                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds'].forEach(k => {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
                     });
                 }

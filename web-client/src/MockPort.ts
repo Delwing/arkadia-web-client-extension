@@ -56,7 +56,7 @@ export default class MockPort {
         storage.onChanged?.addListener(changes => {
             Object.entries(changes).forEach(([key, {newValue}]) => {
                 this.dispatch({storage: {key, value: newValue}});
-                if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
+                if (key === 'settings' || key === 'npc' || key === 'uiSettings' || key === 'binds') {
                     this.dispatch({[key]: newValue});
                 }
             });
@@ -83,7 +83,7 @@ export default class MockPort {
         if (message.type === 'SET_STORAGE') {
             setItemSync(message.key, message.value);
             this.dispatch({storage: {key: message.key, value: message.value}});
-            if (message.key === 'settings' || message.key === 'npc' || message.key === 'uiSettings') {
+            if (message.key === 'settings' || message.key === 'npc' || message.key === 'uiSettings' || message.key === 'binds') {
                 this.dispatch({[message.key]: message.value});
             }
         }
@@ -96,7 +96,7 @@ export default class MockPort {
         const data = getItemSync(key);
         const value = data ? data[key] : {};
         this.dispatch({ storage: { key, value } });
-        if (key === 'settings' || key === 'npc' || key === 'uiSettings') {
+        if (key === 'settings' || key === 'npc' || key === 'uiSettings' || key === 'binds') {
             this.dispatch({ [key]: value });
         }
     };
