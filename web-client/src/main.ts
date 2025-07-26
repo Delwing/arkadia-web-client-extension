@@ -87,6 +87,12 @@ arkadiaClient.on('settings', (detail: any) => {
     }
 });
 
+client.addEventListener('binds', (ev: CustomEvent) => {
+    if (ev.detail?.directions) {
+        applyDirectionBinds(ev.detail.directions);
+    }
+});
+
 if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('iPod')) {
     const baseOffset = window.outerHeight - window.visualViewport.height
     window.visualViewport.addEventListener("resize", () => {
