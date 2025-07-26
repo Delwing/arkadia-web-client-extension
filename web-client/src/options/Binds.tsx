@@ -35,7 +35,7 @@ const defaultBinds: BindSettings = {
     main: { key: 'BracketRight' },
     lamp: { key: 'Digit4', ctrl: true },
     attack: { key: 'Digit1', ctrl: true },
-    support: { key: 'KeyW', ctrl: true },
+    support: { key: 'KeyQ', ctrl: true },
     directions: {
         n: { key: 'Numpad8' },
         s: { key: 'Numpad2' },
