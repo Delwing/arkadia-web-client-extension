@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import {Form, Button} from 'react-bootstrap';
+import {Form, Button, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
 
 interface Bind {
@@ -106,174 +106,193 @@ function Binds() {
     }
 
     return (
-        <div className="m-2 d-flex flex-column gap-3">
+        <div className="m-2 d-flex flex-column gap-2">
             <fieldset className="p-0 border-0 m-0">
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">Domyślny</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.main)}
-                    onKeyDown={ev => handleCapture('main', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">Napełnij lampę</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.lamp)}
-                    onKeyDown={ev => handleCapture('lamp', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">Atakuj</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.attack)}
-                    onKeyDown={ev => handleCapture('attack', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">Wesprzyj</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.support)}
-                    onKeyDown={ev => handleCapture('support', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">N</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.n)}
-                    onKeyDown={ev => handleCaptureDir('n', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">S</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.s)}
-                    onKeyDown={ev => handleCaptureDir('s', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">W</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.w)}
-                    onKeyDown={ev => handleCaptureDir('w', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">E</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.e)}
-                    onKeyDown={ev => handleCaptureDir('e', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">NW</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.nw)}
-                    onKeyDown={ev => handleCaptureDir('nw', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">NE</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.ne)}
-                    onKeyDown={ev => handleCaptureDir('ne', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">SW</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.sw)}
-                    onKeyDown={ev => handleCaptureDir('sw', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">SE</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.se)}
-                    onKeyDown={ev => handleCaptureDir('se', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">U</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.u)}
-                    onKeyDown={ev => handleCaptureDir('u', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">D</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.d)}
-                    onKeyDown={ev => handleCaptureDir('d', ev)}
-                />
-            </Form.Group>
-            <Form.Group className="d-flex align-items-center gap-2">
-                <Form.Label className="w-32 mb-0">Specjalne</Form.Label>
-                <Form.Control
-                    type="text"
-                    readOnly
-                    size="sm"
-                    className="w-40"
-                    value={label(binds.directions.special)}
-                    onKeyDown={ev => handleCaptureDir('special', ev)}
-                />
-            </Form.Group>
-            <Button className="mt-2 w-auto" onClick={save}>Zapisz</Button>
+                <Table bordered size="sm" className="table-zebra mb-2">
+                    <tbody className="align-middle">
+                        <tr>
+                            <td className="w-32">Domyślny</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.main)}
+                                    onKeyDown={ev => handleCapture('main', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Napełnij lampę</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.lamp)}
+                                    onKeyDown={ev => handleCapture('lamp', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Atakuj</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.attack)}
+                                    onKeyDown={ev => handleCapture('attack', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Wesprzyj</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.support)}
+                                    onKeyDown={ev => handleCapture('support', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">N</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.n)}
+                                    onKeyDown={ev => handleCaptureDir('n', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">S</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.s)}
+                                    onKeyDown={ev => handleCaptureDir('s', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">W</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.w)}
+                                    onKeyDown={ev => handleCaptureDir('w', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">E</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.e)}
+                                    onKeyDown={ev => handleCaptureDir('e', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">NW</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.nw)}
+                                    onKeyDown={ev => handleCaptureDir('nw', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">NE</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.ne)}
+                                    onKeyDown={ev => handleCaptureDir('ne', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">SW</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.sw)}
+                                    onKeyDown={ev => handleCaptureDir('sw', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">SE</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.se)}
+                                    onKeyDown={ev => handleCaptureDir('se', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">U</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.u)}
+                                    onKeyDown={ev => handleCaptureDir('u', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">D</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.d)}
+                                    onKeyDown={ev => handleCaptureDir('d', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Specjalne</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.special)}
+                                    onKeyDown={ev => handleCaptureDir('special', ev)}
+                                />
+                            </td>
+                        </tr>
+                    </tbody>
+                </Table>
+                <Button className="mt-2 w-auto" onClick={save}>Zapisz</Button>
             </fieldset>
         </div>
     );
