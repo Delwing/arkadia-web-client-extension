@@ -1,8 +1,8 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import Client from "@client/src/Client";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
 export default class ObjectList {
-    private client: typeof ArkadiaClient;
+    private client: Client;
     private readonly container: HTMLElement | null;
     private isDragging = false;
     private startX = 0;
@@ -11,14 +11,14 @@ export default class ObjectList {
     private offsetTop = 0;
     private pointerId = 0;
 
-    constructor(client: typeof ArkadiaClient) {
+    constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
         this.setupDraggable();
         window.addEventListener("resize", this.clampToViewport);
-        this.client.on("gmcp.objects.nums", () => this.render());
-        this.client.on("gmcp.objects.data", () => this.render());
-        this.client.on("gmcp.char.state", () => this.render());
+        this.client.addEventListener("gmcp.objects.nums", () => this.render());
+        this.client.addEventListener("gmcp.objects.data", () => this.render());
+        this.client.addEventListener("gmcp.char.state", () => this.render());
         this.render();
     }
 
@@ -112,10 +112,15 @@ export default class ObjectList {
 
     private render() {
         if (!this.container) return;
-        const manager = (window as any).clientExtension?.ObjectManager;
+        const manager = this.client.ObjectManager;
         if (!manager) return;
         const objects = manager.getObjectsOnLocation();
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+        const tm = this.client.TeamManager;
+        const teamAttacking = objects.some((o: any) => {
+            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        });
+
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut)
             let prefix = "  ";
@@ -130,9 +135,13 @@ export default class ObjectList {
             if (obj.avatar_target) {
                 coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
             } else {
-                const tm = (window as any).clientExtension?.TeamManager;
                 if (tm?.isInTeam?.(rawDesc)) {
-                    coloredDesc = `<span style="color:springgreen">${rawDesc}</span>`;
+                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+                    let style = "color:springgreen";
+                    if (teamAttacking && !isAttacking) {
+                        style += ";font-style:italic";
+                    }
+                    coloredDesc = `<span style="${style}">${rawDesc}</span>`;
                 }
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));

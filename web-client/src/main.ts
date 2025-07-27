@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new LampTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new PackageStatus(arkadiaClient);
-    new ObjectList(arkadiaClient);
+    new ObjectList(client);
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
