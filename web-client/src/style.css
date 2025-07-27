@@ -101,6 +101,7 @@ h1 {
 #char-state-bars {
   display: none;
   flex-grow: 1;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
 }
