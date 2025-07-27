@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function sendMessage() {
+    function sendMessage(focus = true) {
         const message = messageInput.value.trim();
         if (message) {
             // Only add command to history if we've received the first GMCP event
@@ -716,7 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentInput = '';
 
                 client.sendCommand(message);
-                messageInput.select();
+                if (focus) messageInput.select();
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
                 client.sendCommand(message);
@@ -727,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    sendButton.addEventListener('click', sendMessage);
+    sendButton.addEventListener('click', () => sendMessage(false));
 
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
