@@ -55,4 +55,11 @@ describe('improve counter', () => {
     expect(printed).toMatch(/czas 0:30/);
     expect(printed).toMatch(/zabici 1\/1/);
   });
+
+  test('ignores poznawanie swiata messages', () => {
+    parse(
+      'Masz wrazenie, iz ostatnimi czasy poczyniles nieznaczne postepy w poznawaniu swiata.'
+    );
+    expect(client.println).not.toHaveBeenCalled();
+  });
 });
