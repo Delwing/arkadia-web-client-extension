@@ -88,7 +88,10 @@ export default class ImproveCounter {
         this.client.addEventListener("gmcp.char.info", () => this.reset());
 
         const states = STATES.join("|");
-        const regex = new RegExp(`^(?:.*? )?(?<state>${states}) postepy`, "i");
+        const regex = new RegExp(
+            `^(?:.*? )?(?<state>${states}) postepy(?! w poznawaniu)`,
+            "i",
+        );
         this.client.Triggers.registerTrigger(
             regex,
             (_raw, _line, matches) => {
