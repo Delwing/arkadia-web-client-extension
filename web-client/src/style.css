@@ -29,6 +29,7 @@ body {
   margin: 0;
   min-width: 100vw;
   height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -50,6 +51,7 @@ h1 {
   display: flex;
   flex-direction: column;
   height: 100svh;
+  height: 100dvh;
   width: 100vw;
 }
 
@@ -459,7 +461,7 @@ button:focus-visible {
   /* Fix for virtual keyboard pushing content */
   @supports (-webkit-touch-callout: none) {
   #main-container {
-    height: -webkit-fill-available;
+    height: 100dvh;
   }
   }
 }
