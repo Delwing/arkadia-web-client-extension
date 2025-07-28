@@ -10,6 +10,7 @@ export default class EmbeddedMap {
     private settings: any;
     private currentRoom: any;
     private destinations: number[] = [];
+    private highlights: number[] = []
     private _touchStartDistance: number | null = null;
     private zoom: number;
     private limit: number;
@@ -60,6 +61,11 @@ export default class EmbeddedMap {
         window.addEventListener('leadTo', (ev: any) => {
             this.leadTo(ev.detail);
         });
+
+        window.addEventListener('highlights', (ev: any) => {
+            this.highlights = ev.detail;
+            this.refresh();
+        })
     }
 
     private _onTouchStart(ev: TouchEvent) {
@@ -149,6 +155,13 @@ export default class EmbeddedMap {
             this.destinations.forEach(destination => {
                 this.renderer.controls.renderPath(room.id, destination);
             });
+
+            this.highlights.forEach(highlight => {
+                const room = this.reader.getRoomById(highlight)
+                if (room.render) {
+                    this.renderer.renderHighlight(highlight);
+                }
+            })
         }
     }
 
