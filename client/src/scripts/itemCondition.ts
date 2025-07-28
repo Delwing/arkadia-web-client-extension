@@ -15,7 +15,7 @@ const COLORS: Record<string, number> = {
 
 export const itemConditions: ItemCondition[] = [
     { patterns: ["w znakomitym stanie"], replacement: "[max]", color: "green" },
-    { patterns: ["lekko podniszcz"], replacement: "[4/5]", color: "yellow" },
+    { patterns: ["lekko podniszcz\\w+"], replacement: "[4/5]", color: "yellow" },
     { patterns: ["w kiepskim stanie"], replacement: "[3/5]", color: "red" },
     { patterns: ["w oplakanym stanie"], replacement: "[2/5]", color: "red" },
     { patterns: ["gotow.{1,2} sie rozpasc"], replacement: "[1/5]", color: "red" },
@@ -32,6 +32,7 @@ export const itemConditions: ItemCondition[] = [
 ];
 
 export function processItemCondition(rawLine: string, phrase: string): string {
+    console.log(phrase);
     for (const condition of itemConditions) {
         const found = condition.patterns.every(p => new RegExp(`^${p}$`).test(phrase));
         if (found) {
