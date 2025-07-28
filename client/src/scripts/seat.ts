@@ -7,12 +7,12 @@ export default function initSeat(client: Client) {
 
     client.Triggers.registerTrigger(pattern, (_raw, _line, matches) => {
         const options = matches[1]
-            .split(/(?:,| czy)/)
+            .split(/(?:,| czy| lub)/)
             .map(o => o.trim())
             .filter(o => o.length > 0);
         if (options.length === 0) return undefined;
         const choice = options[Math.floor(Math.random() * options.length)];
-        const command = `usiadz ${choice}`;
+        const command = `usiadz ${choice}`.toLowerCase();
         client.FunctionalBind.set(command, () => client.sendCommand(command));
         return undefined;
     }, tag);

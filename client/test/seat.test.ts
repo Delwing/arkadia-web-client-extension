@@ -24,13 +24,22 @@ describe('seat trigger', () => {
     (Math.random as jest.Mock).mockRestore();
   });
 
-  test('binds random seat command', () => {
-    parse('Gdzie chcesz usiasc? Przy drewnianym stole, przy drugim drewnianym stole czy przy trzecim drewnianym stole?');
+  test('binds random seat command and lowercases it', () => {
+    parse('Gdzie chcesz usiasc? Przy DREWNIANYM stole, PRZY DRUGIM stole czy PRZY TRZECIM stole?');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
-    expect(label).toBe('usiadz przy drugim drewnianym stole');
+    expect(label).toBe('usiadz przy drugim stole');
     callback();
-    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy drugim drewnianym stole');
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy drugim stole');
+  });
+
+  test('handles "lub" delimiter', () => {
+    parse('Gdzie chcesz usiasc? Przy stole lub przy oknie?');
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(label).toBe('usiadz przy oknie');
+    callback();
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy oknie');
   });
 
   test('binds simple sit command', () => {
