@@ -158,7 +158,7 @@ export default class EmbeddedMap {
 
             this.highlights.forEach(highlight => {
                 const room = this.reader.getRoomById(highlight)
-                if (room.render && this.renderer.area.getRoomById(highlight)) {
+                if (room.render !== undefined && this.renderer.area.getRoomById(highlight) !== undefined) {
                     this.renderer.renderHighlight(highlight);
                 }
             })
