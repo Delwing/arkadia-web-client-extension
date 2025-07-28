@@ -16,7 +16,7 @@ import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
 import {attachGmcpListener} from "./gmcp";
 import { setCurrentCharacter } from "./storage";
-import {color} from "./Colors";
+import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
@@ -35,6 +35,7 @@ export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
     eventTarget = eventBus;
+    Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
     packageHelper = new PackageHelper(this);

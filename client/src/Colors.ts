@@ -79,3 +79,11 @@ export function mudletColorLine(line: string) {
         }
     }));
 }
+
+export const Colors = {
+    color,
+    colorString,
+    colorStringInLine,
+    findClosestColor,
+    mudletColorLine,
+}
