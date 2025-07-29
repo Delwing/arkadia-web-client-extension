@@ -102,8 +102,11 @@ export default class EmbeddedMap {
     }
 
     private _onZoom() {
+        let shouldSave = this.renderer.paper.view.zoom !== this.zoom;
         this.zoom = this.renderer.paper.view.zoom;
-        this._saveZoom();
+        if (shouldSave) {
+            this._saveZoom();
+        }
     }
 
     private _saveLimit() {
