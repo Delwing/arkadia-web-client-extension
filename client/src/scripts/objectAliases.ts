@@ -60,6 +60,7 @@ export default function initObjectAliases(
     let releaseGuard = true;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
+    client.sendEvent('releaseGuard', releaseGuard);
 
 
     if (aliases) {
@@ -125,6 +126,7 @@ export default function initObjectAliases(
                 const color = releaseGuard ? ON_COLOR : OFF_COLOR;
                 const state = releaseGuard ? 'ON' : 'OFF';
                 client.print(colorString(`Puszczanie zaslon: ${state}`, color));
+                client.sendEvent('releaseGuard', releaseGuard);
             }
         });
         aliases.push({

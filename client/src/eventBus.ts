@@ -10,6 +10,7 @@ export interface KnownEvents {
     'lampTimer': number | null;
     'breakItem': { text: string; command?: string };
     'packageStatus': { recipient: string; seconds?: number } | null;
+    'releaseGuard': boolean;
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'npc': any;
