@@ -1,34 +1,61 @@
-class EventBus extends EventTarget {
-    private wrappers = new WeakMap<(...args: any[]) => void, EventListener>();
+export interface KnownEvents {
+    'command': string;
+    'port-connected': void;
+    'output-sent': number;
+    'buffer-sent': number;
+    'mapMove': void;
+    'stepBack': void;
+    'leadTo': number;
+    'notify': { text: string };
+    'lampTimer': number | null;
+    'breakItem': { text: string; command?: string };
+    'packageStatus': { recipient: string; seconds?: number } | null;
+    'contentWidth': number;
+    'enterLocation': { id: number; room: any };
+    'npc': any;
+}
 
-    on(event: string, listener: (...args: any[]) => void, options?: AddEventListenerOptions | boolean) {
+export type ClientEvents = KnownEvents & {
+    [key: `gmcp.${string}`]: any;
+    [key: `gmcp_msg.${string}`]: string;
+    [key: string]: any;
+};
+
+type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+type Handler<T> = (...args: Params<T>) => void;
+
+class EventBus<Events extends Record<string, any>> extends EventTarget {
+    private wrappers = new WeakMap<Handler<any>, EventListener>();
+
+    on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean) {
         const wrapper: EventListener = (ev: Event) => {
             const detail = (ev as CustomEvent).detail;
             if (Array.isArray(detail)) {
-                listener(...detail);
+                (listener as (...args: any[]) => void)(...detail);
             } else if (detail !== undefined) {
-                listener(detail);
+                (listener as (...args: any[]) => void)(detail);
             } else {
-                listener();
+                (listener as () => void)();
             }
         };
         this.wrappers.set(listener, wrapper);
-        this.addEventListener(event, wrapper, options);
+        this.addEventListener(event as string, wrapper, options);
     }
 
-    off(event: string, listener: (...args: any[]) => void) {
+    off<K extends keyof Events>(event: K, listener: Handler<Events[K]>) {
         const wrapper = this.wrappers.get(listener);
         if (wrapper) {
-            this.removeEventListener(event, wrapper);
+            this.removeEventListener(event as string, wrapper);
             this.wrappers.delete(listener);
         }
     }
 
-    emit(event: string, ...args: any[]) {
+    emit<K extends keyof Events>(event: K, ...args: Params<Events[K]>) {
         const detail = args.length === 1 ? args[0] : args;
-        this.dispatchEvent(new CustomEvent(event, { detail }));
+        this.dispatchEvent(new CustomEvent(event as string, { detail }));
     }
 }
 
-const eventBus = new EventBus();
+const eventBus = new EventBus<ClientEvents>();
 export default eventBus;
+export { EventBus };
