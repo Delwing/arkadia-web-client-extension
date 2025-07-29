@@ -1,4 +1,4 @@
-import { parseAnsiPatterns } from './ansiParser';
+import { parseAnsiPatterns } from '../src/ansiParser';
 import { colorCodes } from '@client/src/Colors.ts';
 
 describe('parseAnsiPatterns', () => {

@@ -1,4 +1,4 @@
-import BreakItemWarning from './BreakItemWarning';
+import BreakItemWarning from '../src/BreakItemWarning';
 
 class MockClient {
   private events: Record<string, Function[]> = {};

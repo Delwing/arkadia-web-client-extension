@@ -1,4 +1,4 @@
-import PackageStatus from './PackageStatus';
+import PackageStatus from '../src/PackageStatus';
 
 class MockClient {
   private events: Record<string, Function[]> = {};

@@ -1,4 +1,4 @@
-import CoverTimer from './CoverTimer';
+import CoverTimer from '../src/CoverTimer';
 
 class MockClient {
   private events: Record<string, Function[]> = {};

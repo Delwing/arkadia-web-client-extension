@@ -1,4 +1,4 @@
-import LampTimer from './LampTimer';
+import LampTimer from '../src/LampTimer';
 
 class MockClient {
   private events: Record<string, Function[]> = {};
