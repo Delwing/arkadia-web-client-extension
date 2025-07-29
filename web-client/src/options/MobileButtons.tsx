@@ -10,13 +10,13 @@ import {
 } from "../mobileButtonSettings";
 
 const macroOptions: { value: MacroType; label: string }[] = [
-    { value: "functional", label: "Send functional" },
-    { value: "zList", label: "Create /z dropdown list" },
-    { value: "zaList", label: "Create /za dropdown list" },
-    { value: "command", label: "Send command" },
-    { value: "kierunek", label: "Direction button" },
-    { value: "specialExit", label: "Use special exit" },
-    { value: "wesprzyj", label: "Support leader" },
+    { value: "functional", label: "Bind funkcyjny" },
+    { value: "zList", label: "Lista /z" },
+    { value: "zaList", label: "Lista /za" },
+    { value: "command", label: "Wyślij komendę" },
+    { value: "kierunek", label: "Kierunek" },
+    { value: "specialExit", label: "Wyjście specjalne" },
+    { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
 ];
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
