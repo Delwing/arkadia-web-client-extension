@@ -7,7 +7,7 @@ const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
 const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/
 const packageTableRegex = /Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:[\s\S]*?Symbolem \* oznaczono przesylki ciezkie\./
-const shortInfo = 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
+const shortInfo = RESET + 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n'
 const pickFailMessages = [
     'Nie ufam ci na tyle, aby powierzyc ci dostarczenie tej przesylki.',
     'Lista przesylek zmienila sie i ta, ktora chcesz podjac byc moze nie jest juz ta, ktora widziales w spisie. Sprawdz spis ponownie, badz sprobuj podjac paczke jeszcze raz, jesli mimo to chcesz ja dostarczyc.',
@@ -153,8 +153,8 @@ export default class PackageHelper {
                     const index = matches.groups.number;
                     const name = matches.groups.name;
                     const city = matches.groups.city ? `, ${matches.groups.city}` : '';
-                    const heavy = matches.groups.heavy ? '* ' : '';
-                    const first = `${heavy}${index}. ${name}${city}`;
+                    const heavy = matches.groups.heavy ? '* ' : '  ';
+                    const first = RESET  + `${heavy}${index}. ${name}${city}`;
                     const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
                     this.packages.push({ name, time: matches.groups.time });
                     const clickable = this.client.OutputHandler.makeClickable(
@@ -166,7 +166,7 @@ export default class PackageHelper {
                         'wybierz paczke ' + index
                     ) + RESET   ;
                     const time = matches.groups.time ? matches.groups.time + ' godz.' : 'nieogr.';
-                    const second = `   ${matches.groups.gold}/${matches.groups.silver}/${matches.groups.copper} ${time}`;
+                    const second = `   ${matches.groups.gold}/${matches.groups.silver}/${matches.groups.copper} ${time}\n`;
                     out.push(clickable, second);
                 });
                 return out.join('\n');
