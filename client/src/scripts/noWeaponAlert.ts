@@ -11,15 +11,14 @@ export default function initNoWeaponAlert(client: Client) {
 
     let timer: number | null = null;
 
-    function alert(_r: string, _l: string, m: RegExpMatchArray): undefined {
+    function alert(_r: string, _l: string): undefined {
         if (timer !== null) {
             return;
         }
         timer = window.setTimeout(() => {
             timer = null;
         }, 5000);
-        const target = m.groups?.target ? ` ${m.groups.target}` : '';
-        const msg = colorString(` >> Walczysz bez broni${target ? ` z${target}` : ''}!`, RED);
+        const msg = colorString(` >> Walczysz bez broni!`, RED);
         client.println(msg);
         return;
     }

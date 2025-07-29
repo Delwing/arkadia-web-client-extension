@@ -3,11 +3,11 @@ import Client from "../Client";
 export default function initSeat(client: Client) {
     const tag = "seat";
     const pattern = /^Gdzie chcesz usiasc\?\s*([^?]+)\?$/;
-    const sitPrompt = /mowi do ciebie: A moze najpierw gdzies usiadziesz\?$/;
+    const sitPrompt = /(?:mowi do ciebie: )?A moze najpierw gdzies usiadziesz\?$/;
 
     client.Triggers.registerTrigger(pattern, (_raw, _line, matches) => {
         const options = matches[1]
-            .split(/(?:,| czy| lub)/)
+            .split(/,| czy| lub/)
             .map(o => o.trim())
             .filter(o => o.length > 0);
         if (options.length === 0) return undefined;
