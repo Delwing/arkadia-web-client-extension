@@ -27,6 +27,7 @@ import Recordings from "./options/Recordings.tsx"
 import Guilds from "./options/Guilds.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
+import MobileButtons from "./options/MobileButtons.tsx"
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
@@ -878,6 +879,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsRoot = document.getElementById('shortcuts-options');
     if (shortcutsRoot) {
         createRoot(shortcutsRoot).render(createElement(Shortcuts));
+    }
+
+    const mobileButtonsRoot = document.getElementById('mobile-buttons-options');
+    if (mobileButtonsRoot) {
+        createRoot(mobileButtonsRoot).render(createElement(MobileButtons));
     }
 });
 

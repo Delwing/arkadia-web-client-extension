@@ -11,7 +11,7 @@ export interface ButtonSetting {
     direction?: string;
 }
 
-const defaultSettings: Record<string, ButtonSetting> = {
+export const defaultSettings: Record<string, ButtonSetting> = {
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#87CEEB' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
     'go-button': { macro: 'command', label: '/go', color: '#87CEEB', command: '/go' },
@@ -216,5 +216,4 @@ export default async function initMobileButtonSettings() {
     applySettings(current);
 }
 
-document.addEventListener('DOMContentLoaded', initMobileButtonSettings);
 
