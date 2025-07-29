@@ -156,7 +156,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
     };
 
-    function buildSummary(bags: Record<number, Record<string, number>>): string[] {
+    function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
             Object.entries(contents).forEach(([id, c]) => {
@@ -202,7 +202,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         if (normal) {
             lines.push('-----------------------------------------------------------');
         }
-        if (Object.keys(bags).length > 0) {
+        if (includeBags && Object.keys(bags).length > 0) {
             lines.push('');
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
@@ -311,7 +311,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 const listener = (ev: CustomEvent) => {
                     if (ev.detail.key === STORAGE_KEY) {
                         const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
-                        const lines = buildSummary(bags);
+                        const lines = buildSummary(bags, false);
                         if (lines.length > 0) {
                             client.println(lines.join('\n'));
                         } else {
