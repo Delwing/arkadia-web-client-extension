@@ -143,7 +143,20 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagTotals: Record<number, Record<string, number>> = {};
     let currentBag = 0;
 
-    function buildSummary(bags: Record<number, Record<string, number>>): string[] {
+    const showHerbActions = (id: string, ev: MouseEvent) => {
+        const actions = herbs?.herb_id_to_use[id];
+        if (!actions || actions.length === 0) return;
+        const amounts = [1, 3, 5];
+        const items = actions.flatMap(a =>
+            amounts.map(n => ({
+                label: `${a.action} ${n}`,
+                action: () => client.sendCommand(`/z ${a.action} ${id} ${n}`)
+            }))
+        );
+        client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
+    };
+
+    function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
             Object.entries(contents).forEach(([id, c]) => {
@@ -168,7 +181,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${u.effect}`).join(' | ') || '--';
 
             if (normal) {
-                const base = `${String(c).padStart(5, ' ')} | ${id.padEnd(18, ' ')} | `;
+                const name = client.OutputHandler.makeStringRightClickable(id.padEnd(18, ' '), (ev) => showHerbActions(id, ev));
+                const base = `${String(c).padStart(5, ' ')} | ${name} | `;
                 const available = width - stripAnsiCodes(base).length;
                 if (available >= stripAnsiCodes(uses).length) {
                     lines.push(base + uses);
@@ -176,11 +190,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     lines.push(base + uses.slice(0, available));
                     lines.push(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available));
                 } else {
-                    lines.push(`${String(c).padStart(5, ' ')} | ${id}`);
+                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`);
                     lines.push(' '.repeat(prefixWidth) + uses);
                 }
             } else {
-                const base = `${String(c).padStart(3, ' ')} ${id}`;
+                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`;
                 lines.push(base);
                 lines.push(' '.repeat(4) + uses);
             }
@@ -188,12 +202,12 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         if (normal) {
             lines.push('-----------------------------------------------------------');
         }
-        if (Object.keys(bags).length > 0) {
+        if (includeBags && Object.keys(bags).length > 0) {
             lines.push('');
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([id, c]) => `${c} ${id}`)
+                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`)
                     .join(', ');
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });
@@ -297,7 +311,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 const listener = (ev: CustomEvent) => {
                     if (ev.detail.key === STORAGE_KEY) {
                         const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
-                        const lines = buildSummary(bags);
+                        const lines = buildSummary(bags, false);
                         if (lines.length > 0) {
                             client.println(lines.join('\n'));
                         } else {

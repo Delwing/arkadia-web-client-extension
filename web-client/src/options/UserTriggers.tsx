@@ -22,10 +22,10 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 value={macro.type}
                 onChange={e => onChange({ ...macro, type: e.target.value as any })}
             >
-                <option value="uppercase">Uppercase</option>
-                <option value="color">Color</option>
-                <option value="replace">Replace</option>
-                <option value="beep">Beep</option>
+                <option value="uppercase">Wielkie litery</option>
+                <option value="color">Koloruj</option>
+                <option value="replace">Zamień</option>
+                <option value="beep">Dźwięk</option>
             </Form.Select>
             {macro.type === 'color' && (
             <Form.Control
