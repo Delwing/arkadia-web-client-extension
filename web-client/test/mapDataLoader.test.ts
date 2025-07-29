@@ -1,4 +1,4 @@
-import { loadMapData, loadColors } from './mapDataLoader';
+import { loadMapData, loadColors } from '../src/mapDataLoader';
 import { loadCachedJSON } from '@client/src/utils/dataCache.ts';
 
 jest.mock('@client/src/utils/dataCache.ts', () => ({

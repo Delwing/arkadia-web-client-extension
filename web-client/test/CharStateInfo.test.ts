@@ -1,4 +1,4 @@
-import CharStateInfo from './CharStateInfo';
+import CharStateInfo from '../src/CharStateInfo';
 
 class MockClient {
   private events: Record<string, Function[]> = {};

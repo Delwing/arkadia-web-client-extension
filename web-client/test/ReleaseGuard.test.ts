@@ -1,4 +1,4 @@
-import ReleaseGuard from './ReleaseGuard';
+import ReleaseGuard from '../src/ReleaseGuard';
 
 class MockClient {
   private events: Record<string, Function[]> = {};

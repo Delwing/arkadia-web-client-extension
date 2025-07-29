@@ -1,4 +1,4 @@
-import { loadNpcData } from './npcDataLoader';
+import { loadNpcData } from '../src/npcDataLoader';
 import { loadCachedJSON } from '@client/src/utils/dataCache.ts';
 
 jest.mock('@client/src/utils/dataCache.ts', () => ({
