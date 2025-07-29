@@ -23,6 +23,7 @@ import initHerbShop from './scripts/herbShop'
 import initArmorShop from './scripts/armorShop'
 import initSmith from './scripts/smith'
 import initHerbCounter from './scripts/herbCounter'
+import initHerbDescriptions from './scripts/herbDescriptions'
 import initLvlCalc from './scripts/lvlCalc'
 import initItemCondition from './scripts/itemCondition'
 import initDurability from './scripts/durability'
@@ -138,6 +139,7 @@ export function registerScripts(client: Client) {
     initArmorShop(client)
     initSmith(client, aliases)
     initHerbCounter(client, aliases)
+    initHerbDescriptions(client)
     initLvlCalc(client, aliases)
     initCompareAll(client, aliases)
     initItemCondition(client)
