@@ -46,6 +46,7 @@ declare namespace MapData {
         areaId: string;
         weight: number;
         symbol: string;
+        name: string;
         userData: Record<string, string>;
         customLines: Record<string, Line>;
         stubs: number[];

@@ -36,7 +36,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/move _kierunek_** - przesuwa postać w wybranym kierunku.
 - **/ustaw _id_** - ustawia bieżącą pozycję na mapie na podany identyfikator.
 - **/zlok** - wymusza odświeżenie bieżącej pozycji na mapie.
-- **/przeszukaj _tekst_** - wyszukuje w danych mapy etykiety zawierające podany tekst.
+- **/przeszukaj _tekst_** - wyszukuje w danych mapy pokoje z nazwami zawierającymi podany tekst i wypisuje do 10 najbliższych.
 - **/prowadz _id_** - rozpoczyna prowadzenie innej osoby do wskazanego pokoju.
 - **/prowadz-** - kończy prowadzenie rozpoczęte komendą `/prowadz`.
 - **/go** - gdy aktywne jest prowadzenie, wybiera wyjście zgodnie z wyznaczoną trasą.

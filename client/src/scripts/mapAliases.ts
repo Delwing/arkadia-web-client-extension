@@ -63,18 +63,23 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             callback: (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
                 const reader = client.Map.mapReader;
-                if (!reader) return;
-                const results: string[] = [];
+                const current = client.Map.currentRoom as any;
+                if (!reader || !current) return;
+                const matches: { name: string; area: string; dist: number }[] = [];
                 reader.getAreas().forEach((area: MapData.Area) => {
-                    area.labels.forEach((label: MapData.Label) => {
-                        const text = label.Text;
-                        if (text && text.toLowerCase().includes(term)) {
-                            results.push(`${text} (${area.areaName})`);
+                    area.rooms.forEach((room: any) => {
+                        const name = room.name as string | undefined;
+                        if (name && name.toLowerCase().includes(term)) {
+                            const path = reader.getPath(current.id, room.id);
+                            const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
+                            matches.push({ name: room.name, area: area.areaName, dist });
                         }
                     });
                 });
-                if (results.length) {
-                    client.println(results.join('\n'));
+                matches.sort((a, b) => a.dist - b.dist);
+                const lines = matches.slice(0, 10).map(m => `${m.name} (${m.area})`);
+                if (lines.length) {
+                    client.println(lines.join('\n'));
                 } else {
                     client.println('Nie znaleziono.');
                 }
