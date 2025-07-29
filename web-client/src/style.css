@@ -178,6 +178,10 @@ h1 {
   min-width: 350px
 }
 
+#objects-list .team-not-attacking {
+  font-style: italic;
+}
+
 #recording-button {
   position: fixed;
   top: 0.5rem;

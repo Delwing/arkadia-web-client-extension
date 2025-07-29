@@ -138,10 +138,12 @@ export default class ObjectList {
                 if (tm?.isInTeam?.(rawDesc)) {
                     const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
                     let style = "color:springgreen";
+                    const classes = [] as string[];
                     if (teamAttacking && !isAttacking) {
-                        style += ";font-style:italic";
+                        classes.push("team-not-attacking");
                     }
-                    coloredDesc = `<span style="${style}">${rawDesc}</span>`;
+                    const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
+                    coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
                 }
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
