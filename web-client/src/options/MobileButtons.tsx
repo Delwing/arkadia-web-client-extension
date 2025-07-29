@@ -25,14 +25,49 @@ type SettingsMap = Record<string, ButtonSetting>;
 function MobileButtons() {
     const [settings, setSettings] = useState<SettingsMap>({});
     const [active, setActive] = useState<string | null>(null);
-    const [pos, setPos] = useState<{left:number,top:number}>({left:0,top:0});
+    const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const previewRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadSettings().then(setSettings);
     }, []);
 
-    const order = Object.keys(defaultSettings);
+    const notEditable = ['buttons-toggle'];
+    const order = [
+        'z-list-toggle',
+        'zas-list-toggle',
+        'go-button',
+        'buttons-toggle',
+        'bracket-right-button',
+        'button-1',
+        'button-2',
+        'button-3',
+        'nw-button',
+        'n-button',
+        'ne-button',
+        'u-button',
+        'w-button',
+        'c-button',
+        'e-button',
+        'd-button',
+        'sw-button',
+        's-button',
+        'se-button',
+        'special-exit-button',
+    ];
+
+    const topButtons = [
+        'z-list-toggle',
+        'zas-list-toggle',
+        'go-button',
+        'buttons-toggle',
+        'bracket-right-button',
+        'button-1',
+        'button-2',
+        'button-3',
+    ];
+
+    const textDirButtons = ['u-button', 'c-button', 'd-button', 'special-exit-button'];
 
     function openConfig(id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
@@ -73,15 +108,23 @@ function MobileButtons() {
                 className="mobile-direction-buttons mb-2"
             >
                 {order.map(id => {
-                    const cfg = settings[id] || defaultSettings[id];
-                    const classes = id.endsWith("-button") ? "mobile-button mobile-button-text top-button" : "mobile-button direction-button";
+                    const cfg = settings[id] || defaultSettings[id] || { label: '⇩', color: '#87CEEB', macro: 'functional' };
+                    let classes = 'mobile-button';
+                    if (topButtons.includes(id)) {
+                        classes += ' mobile-button-text top-button';
+                    } else if (textDirButtons.includes(id)) {
+                        classes += ' mobile-button-text direction-button';
+                    } else {
+                        classes += ' direction-button';
+                    }
+                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(id, ev);
                     return (
                         <button
                             key={id}
                             data-button-id={id}
                             className={classes}
                             style={{ backgroundColor: cfg.color }}
-                            onClick={ev => openConfig(id, ev)}
+                            onClick={handle}
                         >
                             {cfg.label}
                         </button>
@@ -94,6 +137,11 @@ function MobileButtons() {
                     style={{ left: pos.left, top: pos.top }}
                     onClick={ev => ev.stopPropagation()}
                 >
+                    <button
+                        type="button"
+                        className="btn-close position-absolute end-0"
+                        onClick={close}
+                    />
                     <Form.Group className="form-label mb-2">
                         <Form.Label>Makro</Form.Label>
                         <Form.Select
