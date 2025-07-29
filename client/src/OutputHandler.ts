@@ -69,6 +69,31 @@ export default class OutputHandler {
                         ev.preventDefault()
                         cb.right?.call(null, ev)
                     }
+                    let timer: number | undefined
+                    const clear = () => {
+                        if (timer !== undefined) {
+                            clearTimeout(timer)
+                            timer = undefined
+                        }
+                    }
+                    span.addEventListener('touchstart', (ev: any) => {
+                        clear()
+                        timer = window.setTimeout(() => {
+                            const t = ev.touches && ev.touches[0]
+                            if (t) {
+                                const me = new MouseEvent('contextmenu', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    clientX: t.clientX,
+                                    clientY: t.clientY,
+                                })
+                                cb.right?.call(null, me)
+                            }
+                        }, 500)
+                    })
+                    span.addEventListener('touchend', clear)
+                    span.addEventListener('touchcancel', clear)
+                    span.addEventListener('touchmove', clear)
                 }
             }
         }
