@@ -558,6 +558,9 @@ export default class MobileDirectionButtons {
                         this.client.sendCommand(cfg.direction);
                     }
                     break;
+                case 'wesprzyj':
+                    this.client.support();
+                    break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
                     const firstExit = Object.keys(specialExits)[0];

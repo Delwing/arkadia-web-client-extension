@@ -16,6 +16,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "command", label: "Send command" },
     { value: "kierunek", label: "Direction button" },
     { value: "specialExit", label: "Use special exit" },
+    { value: "wesprzyj", label: "Support leader" },
 ];
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
