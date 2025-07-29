@@ -75,21 +75,25 @@ export class FunctionalBind {
             this.functionalBind = () => {
                 callback();
                 if (clearAfterUse) {
-                    this.clear()
-                }
-            }
-        } else {
-            this.functionalBind = () => {
-                this.client.sendCommand(printable)
-                if (clearAfterUse) {
-                    this.clear()
+                    this.clear();
                 }
             };
+        } else {
+            this.functionalBind = () => {
+                this.client.sendCommand(printable);
+                if (clearAfterUse) {
+                    this.clear();
+                }
+            };
+        }
+
+        if (this.button) {
+            this.button.onclick = this.functionalBind;
         }
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
                 const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
-                const clickable = this.client.OutputHandler.makeClickable(line, printable, callback);
+                const clickable = this.client.OutputHandler.makeClickable(line, printable, this.functionalBind);
                 this.client.println(clickable);
                 this.printedInMessage = true;
             }
@@ -100,9 +104,9 @@ export class FunctionalBind {
         this.button?.remove();
         if (printable) {
             const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
-            const clickable = this.client.OutputHandler.makeClickable(line, printable, callback);
+            const clickable = this.client.OutputHandler.makeClickable(line, printable, this.functionalBind);
             this.client.println(clickable);
-            this.button = this.client.createButton(printable, callback);
+            this.button = this.client.createButton(printable, this.functionalBind);
         }
     }
 
