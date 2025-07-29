@@ -412,6 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
     const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
+    const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     const playbackControls = document.getElementById('playback-controls') as HTMLElement | null;
     const playbackPause = document.getElementById('playback-pause') as HTMLButtonElement | null;
@@ -442,6 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
     const shortcutsModalElement = document.getElementById('shortcuts-modal');
     const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
+    const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
+    const mobileButtonsModal = mobileButtonsModalElement ? new Modal(mobileButtonsModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
@@ -491,6 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (shortcutsModal) {
             shortcutsModal.hide();
+        }
+        if (mobileButtonsModal) {
+            mobileButtonsModal.hide();
         }
     });
 
@@ -546,6 +552,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (shortcutsButton && shortcutsModal) {
         shortcutsButton.addEventListener('click', () => {
             shortcutsModal.show();
+        });
+    }
+
+    if (mobileButtonsButton && mobileButtonsModal) {
+        mobileButtonsButton.addEventListener('click', () => {
+            mobileButtonsModal.show();
         });
     }
 
