@@ -758,3 +758,32 @@ button:focus-visible {
   pointer-events: none;
   border: 1px solid #fff;
 }
+
+.context-menu {
+  position: absolute;
+  display: none;
+  background-color: var(--bs-body-bg);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0;
+  z-index: 1105;
+  min-width: 8rem;
+}
+
+.context-menu.show {
+  display: block;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.context-menu button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}

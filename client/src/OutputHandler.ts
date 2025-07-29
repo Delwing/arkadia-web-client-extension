@@ -5,6 +5,7 @@ export default class OutputHandler {
     client: Client
     output = document.getElementById("main_text_output_msg_wrapper")
     clickerCallbacks: any[] = [];
+    private contextMenu = document.getElementById('context-menu') as HTMLElement | null;
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -15,6 +16,31 @@ export default class OutputHandler {
                 this.processOutput(event);
             }
         )
+        document.addEventListener('click', this.hideContextMenu)
+    }
+
+    private hideContextMenu = () => {
+        if (this.contextMenu) {
+            this.contextMenu.classList.remove('show')
+            this.contextMenu.innerHTML = ''
+        }
+    }
+
+    showContextMenu(items: { label: string; action: () => void }[], x: number, y: number) {
+        if (!this.contextMenu) return
+        this.hideContextMenu()
+        items.forEach(item => {
+            const btn = document.createElement('button')
+            btn.textContent = item.label
+            btn.onclick = () => {
+                this.hideContextMenu()
+                item.action()
+            }
+            this.contextMenu!.appendChild(btn)
+        })
+        this.contextMenu.style.left = `${x}px`
+        this.contextMenu.style.top = `${y}px`
+        this.contextMenu.classList.add('show')
     }
 
     private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
@@ -34,14 +60,14 @@ export default class OutputHandler {
                 }
             } else {
                 if (cb.left) {
-                    span.onclick = () => {
-                        cb.left?.apply(null)
+                    span.onclick = (ev) => {
+                        cb.left?.call(null, ev)
                     }
                 }
                 if (cb.right) {
                     span.oncontextmenu = (ev) => {
                         ev.preventDefault()
-                        cb.right?.apply(null)
+                        cb.right?.call(null, ev)
                     }
                 }
             }
@@ -138,7 +164,7 @@ export default class OutputHandler {
         return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`
     }
 
-    makeStringRightClickable(string: string, callback: Function, title?: string) {
+    makeStringRightClickable(string: string, callback: (ev: MouseEvent) => void, title?: string) {
         this.clickerCallbacks.push({ right: callback })
         const index = this.clickerCallbacks.length - 1
         return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`

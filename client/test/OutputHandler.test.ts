@@ -17,7 +17,7 @@ class FakeClient {
 describe('OutputHandler clickable text', () => {
   test('handles clicks without span elements', () => {
     document.body.innerHTML =
-      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"><div id="sticky-area"></div></div></div>';
+      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"><div id="sticky-area"></div></div></div><div id="context-menu"></div>';
     const client = new FakeClient();
     const handler = new OutputHandler((client as unknown) as any);
     const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
@@ -43,7 +43,7 @@ describe('OutputHandler clickable text', () => {
 
   test('handles right click', () => {
     document.body.innerHTML =
-      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"></div></div>';
+      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"></div></div><div id="context-menu"></div>';
     const client = new FakeClient();
     const handler = new OutputHandler((client as unknown) as any);
     const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
@@ -61,13 +61,15 @@ describe('OutputHandler clickable text', () => {
 
     const span = msg.querySelector('span') as HTMLSpanElement | null;
     expect(span).not.toBeNull();
-    span!.oncontextmenu!(new MouseEvent('contextmenu'));
+    const event = new MouseEvent('contextmenu');
+    span!.oncontextmenu!(event);
     expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledWith(event);
   });
 
   test('handles links in sticky area', () => {
     document.body.innerHTML =
-      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"><div id="sticky-area"></div></div></div>';
+      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"><div id="sticky-area"></div></div></div><div id="context-menu"></div>';
     const client = new FakeClient();
     const handler = new OutputHandler((client as unknown) as any);
 
