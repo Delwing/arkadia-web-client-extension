@@ -28,7 +28,7 @@ describe('no weapon alert', () => {
   test('prints colored message on match', () => {
     parse('Probujesz trafic Orka lewym piescia');
     expect(client.playSound).not.toHaveBeenCalled();
-    const expected = colorString(' >> Walczysz bez broni z Orka!', color);
+    const expected = colorString(' >> Walczysz bez broni!', color);
     expect(client.println).toHaveBeenCalledWith(expected);
   });
 
