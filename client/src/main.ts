@@ -81,18 +81,6 @@ export function registerScripts(client: Client) {
         }, 'blocker')
     })
 
-    /*
-        People
-     */
-    new People(client)
-    registerGagTriggers(client)
-    registerLuaGagTriggers(client)
-
-    /*
-        Follows
-     */
-
-
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
         const direction = tokenized[tokenized.length - 1]
@@ -178,5 +166,9 @@ export function registerScripts(client: Client) {
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
+
+    new People(client)
+    registerGagTriggers(client)
+    registerLuaGagTriggers(client)
 
 }
