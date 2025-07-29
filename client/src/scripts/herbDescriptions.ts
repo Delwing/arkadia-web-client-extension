@@ -10,6 +10,19 @@ export default async function initHerbDescriptions(client: Client) {
     try {
         const herbs = await loadHerbs();
         if (!herbs) return;
+
+        const showHerbActions = (herbId: string, ev: MouseEvent) => {
+            const actions = herbs.herb_id_to_use[herbId];
+            if (!actions || actions.length === 0) return;
+            const amounts = [1, 3, 5];
+            const items = actions.flatMap(a =>
+                amounts.map(n => ({
+                    label: `${a.action} ${n}`,
+                    action: () => client.sendCommand(`/z ${a.action} ${herbId} ${n}`)
+                }))
+            );
+            client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
+        };
         Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {
             Object.values(forms).forEach(desc => {
                 client.Triggers.registerTokenTrigger(desc, (raw, _line, m) => {
@@ -21,7 +34,8 @@ export default async function initHerbDescriptions(client: Client) {
                     if (after.startsWith("(")) {
                         return raw;
                     }
-                    return prefix + token + ` (${color(HERB_NAME_COLOR)}${id}${RESET})` + suffix;
+                    const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
+                    return prefix + token + ` (${color(HERB_NAME_COLOR)}${clickable}${RESET})` + suffix;
                 }, tag);
             });
         });

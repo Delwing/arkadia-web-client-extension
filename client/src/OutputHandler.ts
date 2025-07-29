@@ -4,7 +4,8 @@ export default class OutputHandler {
 
     client: Client
     output = document.getElementById("main_text_output_msg_wrapper")
-    clickerCallbacks: Function[] = [];
+    clickerCallbacks: any[] = [];
+    private contextMenu = document.getElementById('context-menu') as HTMLElement | null;
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -15,6 +16,31 @@ export default class OutputHandler {
                 this.processOutput(event);
             }
         )
+        document.addEventListener('click', this.hideContextMenu)
+    }
+
+    private hideContextMenu = () => {
+        if (this.contextMenu) {
+            this.contextMenu.classList.remove('show')
+            this.contextMenu.innerHTML = ''
+        }
+    }
+
+    showContextMenu(items: { label: string; action: () => void }[], x: number, y: number) {
+        if (!this.contextMenu) return
+        this.hideContextMenu()
+        items.forEach(item => {
+            const btn = document.createElement('button')
+            btn.textContent = item.label
+            btn.onclick = () => {
+                this.hideContextMenu()
+                item.action()
+            }
+            this.contextMenu!.appendChild(btn)
+        })
+        this.contextMenu.style.left = `${x}px`
+        this.contextMenu.style.top = `${y}px`
+        this.contextMenu.classList.add('show')
     }
 
     private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
@@ -27,8 +53,49 @@ export default class OutputHandler {
         }
         const cb = this.clickerCallbacks[cbIndex]
         this.clickerCallbacks[cbIndex] = undefined as any
-        span.onclick = () => {
-            cb?.apply(null)
+        if (cb) {
+            if (typeof cb === 'function') {
+                span.onclick = () => {
+                    cb?.apply(null)
+                }
+            } else {
+                if (cb.left) {
+                    span.onclick = (ev) => {
+                        cb.left?.call(null, ev)
+                    }
+                }
+                if (cb.right) {
+                    span.oncontextmenu = (ev) => {
+                        ev.preventDefault()
+                        cb.right?.call(null, ev)
+                    }
+                    let timer: number | undefined
+                    const clear = () => {
+                        if (timer !== undefined) {
+                            clearTimeout(timer)
+                            timer = undefined
+                        }
+                    }
+                    span.addEventListener('touchstart', (ev: any) => {
+                        clear()
+                        timer = window.setTimeout(() => {
+                            const t = ev.touches && ev.touches[0]
+                            if (t) {
+                                const me = new MouseEvent('contextmenu', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    clientX: t.clientX,
+                                    clientY: t.clientY,
+                                })
+                                cb.right?.call(null, me)
+                            }
+                        }, 500)
+                    })
+                    span.addEventListener('touchend', clear)
+                    span.addEventListener('touchcancel', clear)
+                    span.addEventListener('touchmove', clear)
+                }
+            }
         }
     }
 
@@ -118,6 +185,12 @@ export default class OutputHandler {
 
     makeStringClickable(string: string, callback: Function, title?: string) {
         this.clickerCallbacks.push(callback)
+        const index = this.clickerCallbacks.length - 1
+        return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`
+    }
+
+    makeStringRightClickable(string: string, callback: (ev: MouseEvent) => void, title?: string) {
+        this.clickerCallbacks.push({ right: callback })
         const index = this.clickerCallbacks.length - 1
         return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`
     }

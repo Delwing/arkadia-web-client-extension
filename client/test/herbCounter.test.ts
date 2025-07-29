@@ -7,6 +7,14 @@ class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
   println = jest.fn();
+  private index = 0;
+  OutputHandler = {
+    makeStringRightClickable: (str: string) => {
+      const idx = this.index++;
+      return `{clickOpen:${idx}}${str}{clickClose}`;
+    }
+  } as any;
+  FunctionalBind = { set: jest.fn() } as any;
   contentWidth = 80;
   addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
   removeEventListener(event: string, cb: any) { this.emitter.off(event, cb); }
@@ -54,8 +62,8 @@ describe('herb counter', () => {
     const printed = client.println.mock.calls[0][0];
     expect(printed).toMatch(/3/);
     expect(printed).toMatch(/deliona/);
-    expect(printed).toMatch(/1\.\s+2 deliona/);
-    expect(printed).toMatch(/2\.\s+1 deliona/);
+    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}deliona{clickClose}/);
+    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}deliona{clickClose}/);
   });
 
   test('splits summary when width is limited', async () => {
