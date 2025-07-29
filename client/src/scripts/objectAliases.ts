@@ -57,7 +57,7 @@ export default function initObjectAliases(
             client.sendCommand(`przelam obrone ob_${id}`);
         }
     }
-    let releaseGuard = false;
+    let releaseGuard = true;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
 

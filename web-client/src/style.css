@@ -154,6 +154,10 @@ h1 {
   color: tomato;
 }
 
+#state-info {
+  display: none;
+}
+
 #break-item-warning {
   display: none;
   color: tomato;
