@@ -23,12 +23,12 @@ describe('ReleaseGuard', () => {
 
   test('updates state display', () => {
     // initial state should be visible
-    expect(container.textContent).toBe('Zaslona: on');
+    expect(container.textContent).toBe('Pusc zas: on');
     expect(container.style.display).toBe('block');
     expect(container.className).toBe('on');
 
     client.emit('releaseGuard', false);
-    expect(container.textContent).toBe('Zaslona: off');
+    expect(container.textContent).toBe('Pusc zas: off');
     expect(container.className).toBe('off');
   });
 });

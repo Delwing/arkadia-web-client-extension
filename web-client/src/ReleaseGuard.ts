@@ -15,7 +15,7 @@ export default class ReleaseGuard {
 
   private update(state: boolean) {
     if (!this.container) return;
-    this.container.textContent = `Zaslona: ${state ? 'on' : 'off'}`;
+    this.container.textContent = `Pusc zas: ${state ? 'on' : 'off'}`;
     this.container.style.display = 'block';
     this.container.className = state ? 'on' : 'off';
   }
