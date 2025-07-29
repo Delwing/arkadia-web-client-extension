@@ -2,18 +2,6 @@ import Client from "../Client";
 import { longToShort } from "../MapHelper";
 import { getShortcut } from "./shortcuts";
 
-async function asyncSort<T>(arr: T[], compare: (a: T, b: T) => number): Promise<void> {
-    for (let i = 1; i < arr.length; i++) {
-        let j = i;
-        while (j > 0 && compare(arr[j - 1], arr[j]) > 0) {
-            [arr[j - 1], arr[j]] = [arr[j], arr[j - 1]];
-            j--;
-            if (j % 100 === 0) await Promise.resolve();
-        }
-        if (i % 100 === 0) await Promise.resolve();
-    }
-}
-
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
         {
@@ -72,7 +60,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         },
         {
             pattern: /^\/przeszukaj (.+)$/,
-            callback: async (m: RegExpMatchArray) => {
+            callback: (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
                 const reader = client.Map.mapReader;
                 const current = client.Map.currentRoom;
@@ -87,10 +75,8 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                             matches.push({ name: room.name, area: area.areaName, dist });
                         }
                     }
-                    // allow other handlers to run
-                    await Promise.resolve();
                 }
-                await asyncSort(matches, (a, b) => a.dist - b.dist);
+                matches.sort((a, b) => a.dist - b.dist);
                 const lines = matches.slice(0, 10).map(m => `${m.name} (${m.area})`);
                 if (lines.length) {
                     client.println(lines.join('\n'));
