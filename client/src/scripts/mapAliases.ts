@@ -65,21 +65,26 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const reader = client.Map.mapReader;
                 const current = client.Map.currentRoom as any;
                 if (!reader || !current) return;
-                const matches: { name: string; area: string; dist: number }[] = [];
+                const matches: { name: string; area: string; dist: number; id: number }[] = [];
                 reader.getAreas().forEach((area: MapData.Area) => {
                     area.rooms.forEach((room: any) => {
                         const name = room.name as string | undefined;
                         if (name && name.toLowerCase().includes(term)) {
                             const path = reader.getPath(current.id, room.id);
                             const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
-                            matches.push({ name: room.name, area: area.areaName, dist });
+                            matches.push({ name: room.name, area: area.areaName, dist, id: room.id });
                         }
                     });
                 });
                 matches.sort((a, b) => a.dist - b.dist);
-                const lines = matches.slice(0, 10).map(m => `${m.name} (${m.area})`);
+                const lines = matches.slice(0, 10).map(match => {
+                    const text = `${match.name} (${match.area})`;
+                    return client.OutputHandler.makeStringClickable(text, () => {
+                        client.sendCommand(`/prowadz ${match.id}`);
+                    });
+                });
                 if (lines.length) {
-                    client.println(lines.join('\n'));
+                    client.println(lines.join('\n\n'));
                 } else {
                     client.println('Nie znaleziono.');
                 }
