@@ -5,6 +5,11 @@ export default class ReleaseGuard {
   private state = true;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("release-guard");
+    if (this.container) {
+      this.container.addEventListener("click", () => {
+        client.emit("releaseGuard", !this.state);
+      });
+    }
     client.on("releaseGuard", (state: boolean) => {
       this.state = state;
       this.update(state);
