@@ -2,10 +2,10 @@ import { parseAnsiPatterns } from './ansiParser';
 import { RecordedEvent } from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import eventBus from "@client/src/eventBus.ts";
+import eventBus, { ClientEvents } from "@client/src/eventBus.ts";
 
-// Event emitter types
-type EventListener = (...args: any[]) => void;
+type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
@@ -32,21 +32,21 @@ class ArkadiaClient implements ClientAdapter{
     /**
      * Register an event listener
      */
-    on(event: string, listener: EventListener): void {
+    on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
         eventBus.on(event, listener);
     }
 
     /**
      * Remove an event listener
      */
-    off(event: string, listener: EventListener): void {
+    off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
         eventBus.off(event, listener);
     }
 
     /**
      * Emit an event to all registered listeners
      */
-    emit(event: string, ...args: any[]): void {
+    emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
         eventBus.emit(event, ...args);
     }
 
