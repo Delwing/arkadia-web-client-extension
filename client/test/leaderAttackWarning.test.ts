@@ -4,7 +4,12 @@ import { EventEmitter } from 'events';
 
 class FakeClient {
   private emitter = new EventEmitter();
-  TeamManager = {} as any;
+  TeamManager = {
+    getAttackTargetId: jest.fn(),
+    getAvatarAttackTargetId: jest.fn(),
+  } as any;
+  supportBind = { key: 'KeyQ', ctrl: true };
+  attackBind = { key: 'Digit1', ctrl: true };
   println = jest.fn();
   addEventListener(event: string, cb: any) {
     this.emitter.on(event, cb);
@@ -30,25 +35,28 @@ describe('leader attack warning', () => {
     jest.useRealTimers();
   });
 
-  test('prints warning when event fired', () => {
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    expect(client.println).toHaveBeenCalledTimes(1);
+  test('suggests attacking when leader hits attack target', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('1');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
     const text = stripAnsiCodes(client.println.mock.calls[0][0]);
-    expect(text).toContain('Atakujesz inny cel');
+    expect(text).toContain('Zaatakuj cel ataku');
+    expect(text).toContain('CTRL+1');
   });
 
-  test('does not print again while interval is active', () => {
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    expect(client.println).toHaveBeenCalledTimes(1);
+  test('suggests support when leader hits different target', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('2');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    const text = stripAnsiCodes(client.println.mock.calls[0][0]);
+    expect(text).toContain('wesprzyj');
+    expect(text).toContain('CTRL+Q');
   });
 
-  test('prints again after state changes', () => {
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    expect(client.println).toHaveBeenCalledTimes(1);
-    client.sendEvent('teamLeaderTargetAvatar');
-    client.sendEvent('teamLeaderTargetNoAvatar');
-    expect(client.println).toHaveBeenCalledTimes(2);
+  test('prints nothing when avatar attacks attack target', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('3');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue('3');
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).not.toHaveBeenCalled();
   });
 });
