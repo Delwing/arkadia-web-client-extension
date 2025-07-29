@@ -1,7 +1,9 @@
 import Client from "../Client";
+import { colorString, findClosestColor } from "../Colors";
 
 export default function initNoWeaponAlert(client: Client) {
     const tag = 'no-weapon-alert';
+    const RED = findClosestColor("#ff0000");
     const patterns = [
         /(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz) (?<target>.+?) (lew\w+|praw\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)/,
         /^Wykonujesz zamach ((lewym|prawym) butem) mierzac w (?<target>.+?), lecz t(a|en) paruje go .*\.$/
@@ -17,8 +19,8 @@ export default function initNoWeaponAlert(client: Client) {
             timer = null;
         }, 5000);
         const target = m.groups?.target ? ` ${m.groups.target}` : '';
-        client.playSound('beep');
-        client.println(` >> Walczysz bez broni${target ? ` z${target}` : ''}!`);
+        const msg = colorString(` >> Walczysz bez broni${target ? ` z${target}` : ''}!`, RED);
+        client.println(msg);
         return;
     }
 
