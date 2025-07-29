@@ -164,6 +164,18 @@ h1 {
   cursor: pointer;
 }
 
+#release-guard {
+  display: none;
+}
+
+#release-guard.on {
+  color: springgreen;
+}
+
+#release-guard.off {
+  color: tomato;
+}
+
 #objects-list {
   position: absolute;
   top: 0;

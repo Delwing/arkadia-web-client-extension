@@ -9,6 +9,7 @@ import LampTimer from "./LampTimer";
 import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
+import ReleaseGuard from "./ReleaseGuard";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -829,6 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new CharStateInfo(arkadiaClient);
     new LampTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
+    new ReleaseGuard(arkadiaClient);
     new PackageStatus(arkadiaClient);
     new ObjectList(client);
 
