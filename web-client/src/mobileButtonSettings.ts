@@ -1,7 +1,14 @@
 import Modal from "bootstrap/js/dist/modal";
 import storage from "@client/src/storage";
 
-export type MacroType = 'functional' | 'zList' | 'zaList' | 'command' | 'specialExit' | 'kierunek';
+export type MacroType =
+    | 'functional'
+    | 'zList'
+    | 'zaList'
+    | 'command'
+    | 'specialExit'
+    | 'kierunek'
+    | 'wesprzyj';
 
 export interface ButtonSetting {
     macro: MacroType;
@@ -17,7 +24,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
     'go-button': { macro: 'command', label: '/go', color: '#87CEEB', command: '/go' },
     'bracket-right-button': { macro: 'functional', label: ']', color: '#87CEEB' },
-    'button-1': { macro: 'command', label: 'wesprzyj', color: '#87CEEB', command: 'wesprzyj' },
+    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#87CEEB' },
     'button-2': { macro: 'command', label: '/z cel', color: '#87CEEB', command: '/z' },
     'button-3': { macro: 'command', label: '/za cel', color: '#87CEEB', command: '/za' },
 
