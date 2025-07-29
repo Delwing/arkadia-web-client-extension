@@ -8,6 +8,7 @@ import ObjectList from "./ObjectList";
 import LampTimer from "./LampTimer";
 import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
+import CharStateInfo from "./CharStateInfo";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -814,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Display character state and lamp timer
     new CharState(arkadiaClient);
+    new CharStateInfo(arkadiaClient);
     new LampTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new PackageStatus(arkadiaClient);

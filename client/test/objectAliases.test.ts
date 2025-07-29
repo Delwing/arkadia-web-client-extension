@@ -86,15 +86,14 @@ describe('object aliases', () => {
 
   test('/puszczaj toggles release flag', () => {
     toggle();
-    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('ON'));
-    toggle();
     expect(client.print).toHaveBeenCalledWith(expect.stringContaining('OFF'));
+    toggle();
+    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('ON'));
   });
 
   test('/zas alias with release first guards then releases', () => {
     client.TeamManager.getDefenseTargetId.mockReturnValue('15');
     client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 15: { team: true } });
-    toggle();
     shieldTarget();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zaslon ob_15');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
@@ -115,9 +114,8 @@ describe('object aliases', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('gzwycofaj sie za ob_17');
   });
 
-  test('/w alias releases after withdraw when toggle is on', () => {
+  test('/w alias releases after withdraw when release is on', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 18, shortcut: 'Y' }]);
-    toggle();
     withdraw(['', 'Y'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_18');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
