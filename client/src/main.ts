@@ -36,6 +36,7 @@ import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
 import initHpAlert from './scripts/hpAlert'
+import initNoWeaponAlert from './scripts/noWeaponAlert'
 import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
 import initPriceEvaluation from './scripts/priceEvaluation'
@@ -156,6 +157,7 @@ export function registerScripts(client: Client) {
     initLeaderAttackWarning(client)
     initBreakItem(client)
     initHpAlert(client)
+    initNoWeaponAlert(client)
     initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
