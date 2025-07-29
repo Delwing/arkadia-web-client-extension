@@ -59,7 +59,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 
 ## Zioła
 - **/ziola_buduj** - przegląda wszystkie woreczki z ziołami i podsumowuje ich zawartość.
-- **/ziola_pokaz** - wyświetla ostatnie podsumowanie ziół.
+- **/ziola_pokaz** - wyświetla ostatnie podsumowanie ziół (bez listy woreczków).
 - **/wezz _ziolo_ [_ilosc_]** - wyjmuje wskazaną liczbę zioła z woreczków (domyślnie jedną sztukę).
 - **/zi _akcja ziolo_** - wyjmuje zioło i od razu wykonuje wskazaną akcję.
 
