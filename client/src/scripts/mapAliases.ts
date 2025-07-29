@@ -57,6 +57,28 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             callback: () => {
                 client.Map.refresh();
             }
+        },
+        {
+            pattern: /^\/przeszukaj (.+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const term = m[1].toLowerCase();
+                const reader: any = (client as any).Map.mapReader;
+                if (!reader) return;
+                const results: string[] = [];
+                reader.getAreas().forEach((area: any) => {
+                    area.labels.forEach((label: any) => {
+                        const text = label.Text;
+                        if (text && text.toLowerCase().includes(term)) {
+                            results.push(`${text} (${area.areaName})`);
+                        }
+                    });
+                });
+                if (results.length) {
+                    client.println(results.join('\n'));
+                } else {
+                    client.println('Nie znaleziono.');
+                }
+            }
         }
     );
 }
