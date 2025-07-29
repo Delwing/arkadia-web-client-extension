@@ -62,11 +62,11 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             pattern: /^\/przeszukaj (.+)$/,
             callback: (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
-                const reader: any = (client as any).Map.mapReader;
+                const reader = client.Map.mapReader;
                 if (!reader) return;
                 const results: string[] = [];
-                reader.getAreas().forEach((area: any) => {
-                    area.labels.forEach((label: any) => {
+                reader.getAreas().forEach((area: MapData.Area) => {
+                    area.labels.forEach((label: MapData.Label) => {
                         const text = label.Text;
                         if (text && text.toLowerCase().includes(term)) {
                             results.push(`${text} (${area.areaName})`);

@@ -13,6 +13,8 @@ declare module "mudlet-map-renderer" {
 
         getPath(from: number, to: number): string[];
 
+        getAreas(): MapData.Area[];
+
     }
 
 }
