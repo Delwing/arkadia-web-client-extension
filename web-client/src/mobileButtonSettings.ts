@@ -11,7 +11,8 @@ export interface ButtonSetting {
     direction?: string;
 }
 
-const defaultSettings: Record<string, ButtonSetting> = {
+export const defaultSettings: Record<string, ButtonSetting> = {
+    // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#87CEEB' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
     'go-button': { macro: 'command', label: '/go', color: '#87CEEB', command: '/go' },
@@ -19,18 +20,20 @@ const defaultSettings: Record<string, ButtonSetting> = {
     'button-1': { macro: 'command', label: 'wesprzyj', color: '#87CEEB', command: 'wesprzyj' },
     'button-2': { macro: 'command', label: '/z cel', color: '#87CEEB', command: '/z' },
     'button-3': { macro: 'command', label: '/za cel', color: '#87CEEB', command: '/za' },
-    'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', command: 'zerknij' },
-    'u-button': { macro: 'kierunek', label: 'u', color: '#6CA6CD', command: 'u', direction: 'u' },
-    'd-button': { macro: 'kierunek', label: 'd', color: '#6CA6CD', command: 'd', direction: 'd' },
-    'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
+
+    // direction buttons in visual order
     'nw-button': { macro: 'kierunek', label: '↖', color: '#6CA6CD', command: 'nw', direction: 'nw' },
     'n-button': { macro: 'kierunek', label: '↑', color: '#6CA6CD', command: 'n', direction: 'n' },
     'ne-button': { macro: 'kierunek', label: '↗', color: '#6CA6CD', command: 'ne', direction: 'ne' },
+    'u-button': { macro: 'kierunek', label: 'u', color: '#6CA6CD', command: 'u', direction: 'u' },
     'w-button': { macro: 'kierunek', label: '←', color: '#6CA6CD', command: 'w', direction: 'w' },
+    'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', command: 'zerknij' },
     'e-button': { macro: 'kierunek', label: '→', color: '#6CA6CD', command: 'e', direction: 'e' },
+    'd-button': { macro: 'kierunek', label: 'd', color: '#6CA6CD', command: 'd', direction: 'd' },
     'sw-button': { macro: 'kierunek', label: '↙', color: '#6CA6CD', command: 'sw', direction: 'sw' },
     's-button': { macro: 'kierunek', label: '↓', color: '#6CA6CD', command: 's', direction: 's' },
     'se-button': { macro: 'kierunek', label: '↘', color: '#6CA6CD', command: 'se', direction: 'se' },
+    'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
 export async function loadSettings(): Promise<Record<string, ButtonSetting>> {
@@ -216,5 +219,4 @@ export default async function initMobileButtonSettings() {
     applySettings(current);
 }
 
-document.addEventListener('DOMContentLoaded', initMobileButtonSettings);
 
