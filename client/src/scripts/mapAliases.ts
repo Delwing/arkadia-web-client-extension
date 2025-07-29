@@ -75,12 +75,12 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             callback: async (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
                 const reader = client.Map.mapReader;
-                const current = client.Map.currentRoom as any;
+                const current = client.Map.currentRoom;
                 if (!reader || !current) return;
                 const matches: { name: string; area: string; dist: number }[] = [];
                 for (const area of reader.getAreas()) {
-                    for (const room of area.rooms as any[]) {
-                        const name = room.name as string | undefined;
+                    for (const room of area.rooms) {
+                        const name = room.name;
                         if (name && name.toLowerCase().includes(term)) {
                             const path = reader.getPath(current.id, room.id);
                             const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
