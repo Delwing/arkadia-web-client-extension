@@ -779,11 +779,14 @@ button:focus-visible {
   display: block;
   width: 100%;
   background: none;
-  border: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
+  margin: 0.125rem 0.25rem;
   text-align: left;
 }
 
 .context-menu button:hover {
   background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.3);
 }
