@@ -60,7 +60,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         },
         {
             pattern: /^\/przeszukaj (.+)$/,
-            callback: (m: RegExpMatchArray) => {
+            callback: async (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
                 const reader = client.Map.mapReader;
                 const current = client.Map.currentRoom;
