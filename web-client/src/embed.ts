@@ -156,12 +156,15 @@ export default class EmbeddedMap {
                 this.renderer.controls.renderPath(room.id, destination);
             });
 
-            this.highlights.forEach(highlight => {
-                const room = this.reader.getRoomById(highlight)
-                if (room.render !== undefined && this.renderer.area.getRoomById(highlight) !== undefined) {
+            this.highlights.forEach((highlight) => {
+                const room = this.reader.getRoomById(highlight);
+                if (
+                    room.z === this.currentRoom.z &&
+                    this.renderer.area.getRoomById(highlight) !== undefined
+                ) {
                     this.renderer.renderHighlight(highlight);
                 }
-            })
+            });
         }
     }
 
