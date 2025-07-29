@@ -6065,11 +6065,6 @@ pacote@^18.0.0, pacote@^18.0.6:
     ssri "^10.0.0"
     tar "^6.1.11"
 
-pako@1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/pako/-/pako-1.0.5.tgz#d2205dfe5b9da8af797e7c163db4d1f84e4600bc"
-  integrity sha512-umumrxStF9I4G8OZlhzEgTlwktjp4bofYq7E0mfH/IM7fctJ1pzLBhVrhNmP86hA1b3RNP5gAzxJJ4mjj0Up6Q==
-
 paper-jsdom@^0.12.17:
   version "0.12.18"
   resolved "https://registry.yarnpkg.com/paper-jsdom/-/paper-jsdom-0.12.18.tgz#b8f1a1045a1be858c784c3c65dc33920b23e7885"
