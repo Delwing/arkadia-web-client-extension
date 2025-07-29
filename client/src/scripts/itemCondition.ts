@@ -32,7 +32,6 @@ export const itemConditions: ItemCondition[] = [
 ];
 
 export function processItemCondition(rawLine: string, phrase: string): string {
-    console.log(phrase);
     for (const condition of itemConditions) {
         const found = condition.patterns.every(p => new RegExp(`^${p}$`).test(phrase));
         if (found) {
