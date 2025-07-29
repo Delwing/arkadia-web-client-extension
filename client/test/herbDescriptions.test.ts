@@ -4,6 +4,14 @@ import { color, RESET } from '../src/Colors';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
+  private index = 0;
+  OutputHandler = {
+    makeStringRightClickable: (str: string) => {
+      const idx = this.index++;
+      return `{clickOpen:${idx}}${str}{clickClose}`;
+    }
+  } as any;
+  FunctionalBind = { set: jest.fn() } as any;
 }
 
 describe('herb descriptions', () => {
@@ -37,7 +45,7 @@ describe('herb descriptions', () => {
       'Widzisz zolty jasny kwiat ' +
         '(' +
         color(HERB_NAME_COLOR) +
-        'deliona' +
+        '{clickOpen:0}deliona{clickClose}' +
         RESET +
         ')'
     );

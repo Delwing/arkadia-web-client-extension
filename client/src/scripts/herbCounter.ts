@@ -143,6 +143,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagTotals: Record<number, Record<string, number>> = {};
     let currentBag = 0;
 
+    const bindHerb = (id: string) => {
+        const action = herbs?.herb_id_to_use[id]?.[0]?.action;
+        if (action) {
+            const cmd = `/z ${action} ${id}`;
+            client.FunctionalBind.set(cmd, () => client.sendCommand(cmd));
+        }
+    };
+
     function buildSummary(bags: Record<number, Record<string, number>>): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
@@ -168,7 +176,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${u.effect}`).join(' | ') || '--';
 
             if (normal) {
-                const base = `${String(c).padStart(5, ' ')} | ${id.padEnd(18, ' ')} | `;
+                const name = client.OutputHandler.makeStringRightClickable(id.padEnd(18, ' '), () => bindHerb(id));
+                const base = `${String(c).padStart(5, ' ')} | ${name} | `;
                 const available = width - stripAnsiCodes(base).length;
                 if (available >= stripAnsiCodes(uses).length) {
                     lines.push(base + uses);
@@ -176,11 +185,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     lines.push(base + uses.slice(0, available));
                     lines.push(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available));
                 } else {
-                    lines.push(`${String(c).padStart(5, ' ')} | ${id}`);
+                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(id, () => bindHerb(id))}`);
                     lines.push(' '.repeat(prefixWidth) + uses);
                 }
             } else {
-                const base = `${String(c).padStart(3, ' ')} ${id}`;
+                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(id, () => bindHerb(id))}`;
                 lines.push(base);
                 lines.push(' '.repeat(4) + uses);
             }
@@ -193,7 +202,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([id, c]) => `${c} ${id}`)
+                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(id, () => bindHerb(id))}`)
                     .join(', ');
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });

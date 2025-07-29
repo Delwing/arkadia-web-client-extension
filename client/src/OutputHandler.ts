@@ -4,7 +4,7 @@ export default class OutputHandler {
 
     client: Client
     output = document.getElementById("main_text_output_msg_wrapper")
-    clickerCallbacks: Function[] = [];
+    clickerCallbacks: any[] = [];
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -27,8 +27,24 @@ export default class OutputHandler {
         }
         const cb = this.clickerCallbacks[cbIndex]
         this.clickerCallbacks[cbIndex] = undefined as any
-        span.onclick = () => {
-            cb?.apply(null)
+        if (cb) {
+            if (typeof cb === 'function') {
+                span.onclick = () => {
+                    cb?.apply(null)
+                }
+            } else {
+                if (cb.left) {
+                    span.onclick = () => {
+                        cb.left?.apply(null)
+                    }
+                }
+                if (cb.right) {
+                    span.oncontextmenu = (ev) => {
+                        ev.preventDefault()
+                        cb.right?.apply(null)
+                    }
+                }
+            }
         }
     }
 
@@ -118,6 +134,12 @@ export default class OutputHandler {
 
     makeStringClickable(string: string, callback: Function, title?: string) {
         this.clickerCallbacks.push(callback)
+        const index = this.clickerCallbacks.length - 1
+        return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`
+    }
+
+    makeStringRightClickable(string: string, callback: Function, title?: string) {
+        this.clickerCallbacks.push({ right: callback })
         const index = this.clickerCallbacks.length - 1
         return `{clickOpen:${index}${title ? ":" + title : ""}}${string}{clickClose}`
     }
