@@ -14,6 +14,7 @@ class FakeClient {
   sendGMCP = jest.fn();
   print = jest.fn();
   sendEvent = jest.fn();
+  addEventListener = jest.fn();
 }
 
 describe('object aliases', () => {

@@ -5,9 +5,9 @@ class MockClient {
   on(event: string, listener: Function) {
     (this.events[event] ||= []).push(listener);
   }
-  emit(event: string, ...args: any[]) {
+  emit = jest.fn((event: string, ...args: any[]) => {
     (this.events[event] || []).forEach(fn => fn(...args));
-  }
+  });
 }
 
 describe('ReleaseGuard', () => {
@@ -30,5 +30,15 @@ describe('ReleaseGuard', () => {
     client.emit('releaseGuard', false);
     expect(container.textContent).toBe('Pusc zas: off');
     expect(container.className).toBe('off');
+  });
+
+  test('click toggles state and emits event', () => {
+    container.click();
+    expect(client.emit).toHaveBeenLastCalledWith('releaseGuard', false);
+    expect(container.textContent).toBe('Pusc zas: off');
+
+    container.click();
+    expect(client.emit).toHaveBeenLastCalledWith('releaseGuard', true);
+    expect(container.textContent).toBe('Pusc zas: on');
   });
 });
