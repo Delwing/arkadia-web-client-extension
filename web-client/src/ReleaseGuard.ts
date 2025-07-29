@@ -3,8 +3,17 @@ import ArkadiaClient from "./ArkadiaClient.ts";
 export default class ReleaseGuard {
   private container: HTMLElement | null;
   private state = true;
+  private client: typeof ArkadiaClient;
   constructor(client: typeof ArkadiaClient) {
+    this.client = client;
     this.container = document.getElementById("release-guard");
+    if (this.container) {
+      this.container.addEventListener('click', () => {
+        this.state = !this.state;
+        this.update(this.state);
+        this.client.emit('releaseGuard', this.state);
+      });
+    }
     client.on("releaseGuard", (state: boolean) => {
       this.state = state;
       this.update(state);
