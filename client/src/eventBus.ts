@@ -8,6 +8,7 @@ export interface KnownEvents {
     'leadTo': number;
     'notify': { text: string };
     'lampTimer': number | null;
+    'coverTimer': number | null;
     'breakItem': { text: string; command?: string };
     'packageStatus': { recipient: string; seconds?: number } | null;
     'releaseGuard': boolean;

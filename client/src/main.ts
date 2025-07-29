@@ -9,6 +9,7 @@ import initGates from './scripts/gates'
 import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
 import initLamp from './scripts/lamp'
+import initCoverTimer from './scripts/coverTimer'
 import initBinds from './scripts/binds'
 import initIdz from './scripts/idz'
 import { initKillCounter } from './scripts/kill'
@@ -125,6 +126,7 @@ export function registerScripts(client: Client) {
     initSeat(client)
     initAttackBeep(client)
     initLamp(client)
+    initCoverTimer(client)
     initBinds(client, aliases)
     initIdz(client, aliases)
     const killCounter = initKillCounter(client, aliases)

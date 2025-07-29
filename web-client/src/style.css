@@ -154,6 +154,10 @@ h1 {
   color: tomato;
 }
 
+#cover-timer {
+  display: none;
+}
+
 #state-info {
   display: none;
 }

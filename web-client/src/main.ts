@@ -6,6 +6,7 @@ import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";
 import LampTimer from "./LampTimer";
+import CoverTimer from "./CoverTimer";
 import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
@@ -829,6 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new CharState(arkadiaClient);
     new CharStateInfo(arkadiaClient);
     new LampTimer(arkadiaClient);
+    new CoverTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
     new PackageStatus(arkadiaClient);
