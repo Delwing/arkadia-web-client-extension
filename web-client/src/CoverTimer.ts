@@ -11,9 +11,11 @@ export default class CoverTimer {
   private update(seconds: number | null) {
     if (!this.container) return;
     if (seconds == null || seconds <= 0) {
-      this.container.textContent = "cover";
+      this.container.textContent = "Zas: OK";
+      this.container.className = "green";
     } else {
-      this.container.textContent = `cover ${seconds.toFixed(2)}`;
+      this.container.textContent = `Zas: ${seconds.toFixed(2)}`;
+      this.container.className = "yellow";
     }
     this.container.style.display = "block";
   }

@@ -23,12 +23,14 @@ describe('CoverTimer', () => {
 
   test('shows ready when no time', () => {
     client.emit('coverTimer', null);
-    expect(container.textContent).toBe('cover');
+    expect(container.textContent).toBe('Zas: OK');
     expect(container.style.display).toBe('block');
+    expect(container.className).toBe('green');
   });
 
   test('shows time with two decimals', () => {
     client.emit('coverTimer', 4.567);
-    expect(container.textContent).toBe('cover 4.57');
+    expect(container.textContent).toBe('Zas: 4.57');
+    expect(container.className).toBe('yellow');
   });
 });

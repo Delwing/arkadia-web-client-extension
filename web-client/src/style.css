@@ -158,6 +158,14 @@ h1 {
   display: none;
 }
 
+#cover-timer.green {
+  color: springgreen;
+}
+
+#cover-timer.yellow {
+  color: yellow;
+}
+
 #state-info {
   display: none;
 }
