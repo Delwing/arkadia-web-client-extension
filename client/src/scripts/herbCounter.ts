@@ -146,10 +146,13 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const showHerbActions = (id: string, ev: MouseEvent) => {
         const actions = herbs?.herb_id_to_use[id];
         if (!actions || actions.length === 0) return;
-        const items = actions.map(a => ({
-            label: a.action,
-            action: () => client.sendCommand(`/z ${a.action} ${id}`)
-        }));
+        const amounts = [1, 3, 5];
+        const items = actions.flatMap(a =>
+            amounts.map(n => ({
+                label: `${a.action} ${n}`,
+                action: () => client.sendCommand(`/z ${a.action} ${id} ${n}`)
+            }))
+        );
         client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
     };
 
