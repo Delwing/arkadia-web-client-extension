@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import { gmcp } from "@client/src/gmcp";
 
 export interface CharStateData {
   hp: number;
@@ -169,11 +170,20 @@ export default class CharState {
     this.state = { ...this.state, ...partialState };
 
     const entries = (Object.keys(this.config) as (keyof CharStateData)[])
-      .filter((key) =>
-        this.state[key] !== undefined &&
-        (this.config[key].default === undefined ||
-          this.state[key] !== this.config[key].default)
-      );
+      .filter((key) => {
+        if (
+          key === 'form' &&
+          this.state[key] === 0 &&
+          gmcp.char?.options?.form === 0
+        ) {
+          return false;
+        }
+        return (
+          this.state[key] !== undefined &&
+          (this.config[key].default === undefined ||
+            this.state[key] !== this.config[key].default)
+        );
+      });
     if (this.mode === 3 && this.bars) {
       this.bars.innerHTML = "";
       entries.forEach((key) => {
