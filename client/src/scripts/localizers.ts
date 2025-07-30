@@ -22,7 +22,7 @@ export default function initLocalizers(client: Client) {
         "Woznica oznajmia glosno",
     ];
 
-    const parent = client.Triggers.registerTrigger(parentPatterns, () => undefined, 'localizers', { stayOpenLines: 1 });
+    const parent = client.Triggers.registerTrigger(parentPatterns, () => undefined, 'localizers');
 
     const entries: Localizer[] = [
         // kz-nuln
@@ -98,6 +98,5 @@ export default function initLocalizers(client: Client) {
     entries.forEach(entry => {
         const handler = createHandler(client, entry.roomId);
         parent.registerChild(entry.pattern, handler, 'localizers');
-        client.Triggers.registerTrigger(entry.pattern, handler, 'localizers');
     });
 }
