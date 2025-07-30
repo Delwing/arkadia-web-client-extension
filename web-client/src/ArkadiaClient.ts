@@ -4,7 +4,6 @@ import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
-import pako from "pako"
 
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
@@ -21,6 +20,7 @@ class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
     private telnetNegotiator = new TelnetOptionNegotiation(this)
     private mccp = false;
+    // @ts-ignore
     private readInflator = new pako.Inflate()
     private receivedFirstGmcp: boolean = false;
     private userCommand: string | null = null;
@@ -84,11 +84,15 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.stopPing();
+
+                // @ts-ignore
+                this.readInflator = new pako.Inflate()
             };
 
             this.socket.onopen = (event: Event) => {
                 this.emit('open', event);
                 this.emit('client.connect');
+                this.mccp = false;
                 this.startPing();
                 if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
                     this.send(this.userCommand, false);
