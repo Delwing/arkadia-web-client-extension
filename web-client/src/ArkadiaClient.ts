@@ -1,8 +1,10 @@
-import { parseAnsiPatterns } from './ansiParser';
-import { RecordedEvent } from './recordingStorage';
+import {parseAnsiPatterns} from './ansiParser';
+import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import eventBus, { ClientEvents } from "@client/src/eventBus.ts";
+import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
+import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
+
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
@@ -10,18 +12,22 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const GMCP_COMMAND_CODE = 201;
+const MCCP_COMMAND_CODE = 86;
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 
 
-
-class ArkadiaClient implements ClientAdapter{
+class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
+    private telnetNegotiator = new TelnetOptionNegotiation(this)
+    private mccp = false;
+    // @ts-ignore
+    private readInflator = new pako.Inflate()
     private receivedFirstGmcp: boolean = false;
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
     private lastConnectManual = true;
     private pingTimer: number | null = null;
-    private messageBuffer: {text: string, type: string}[] = []
+    private messageBuffer: { text: string, type: string }[] = []
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
         sendCommand: (cmd) => this.sendCommand(cmd),
@@ -61,12 +67,13 @@ class ArkadiaClient implements ClientAdapter{
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
-                    const decodedData = atob(event.data);
+                    const decodedData = this.inflate(atob(event.data));
                     this.recorder.handleIncoming(decodedData);
                     this.processIncomingData(decodedData);
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
+                setTimeout(() => this.telnetNegotiator.initializeProtocols(), 1000);
             };
 
             this.socket.onerror = (error: Event) => {
@@ -77,11 +84,15 @@ class ArkadiaClient implements ClientAdapter{
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.stopPing();
+
+                // @ts-ignore
+                this.readInflator = new pako.Inflate()
             };
 
             this.socket.onopen = (event: Event) => {
                 this.emit('open', event);
                 this.emit('client.connect');
+                this.mccp = false;
                 this.startPing();
                 if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
                     this.send(this.userCommand, false);
@@ -95,6 +106,30 @@ class ArkadiaClient implements ClientAdapter{
         }
     }
 
+    private inflate(decodedData: string) {
+        if (this.mccp) {
+            try {
+                const byteArray = decodedData.split("").map(function (char) {
+                    return char.charCodeAt(0);
+                });
+                this.readInflator.push(byteArray, 2);
+                if (this.readInflator.err) {
+                    console.error("MCCP decompression error: " + this.readInflator.msg);
+                    return decodedData;
+                }
+                const decompressed = new Uint16Array(this.readInflator.result);
+                const length = decompressed.length;
+                decodedData = "";
+                for (let i = 0; i < length; i++) {
+                    decodedData += String.fromCharCode(decompressed[i]);
+                }
+            } catch (error) {
+                console.log("MCCP decompression error: " + error.message);
+            }
+        }
+        return decodedData;
+    }
+
     /**
      * Disconnect from the WebSocket server
      */
@@ -102,6 +137,7 @@ class ArkadiaClient implements ClientAdapter{
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.close();
         }
+        this.mccp = false;
         this.stopPing();
     }
 
@@ -131,6 +167,19 @@ class ArkadiaClient implements ClientAdapter{
      */
     setStoredCharacter(character: string | null): void {
         this.userCommand = character;
+    }
+
+    sendRaw(message: string): void {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket is not connected');
+            return;
+        }
+        try {
+            this.socket.send(message);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.emit('error', error);
+        }
     }
 
     /**
@@ -209,10 +258,6 @@ class ArkadiaClient implements ClientAdapter{
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string) {
-        if (data.length === 3) {
-            return
-        }
-
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length >= 0) {
@@ -226,7 +271,7 @@ class ArkadiaClient implements ClientAdapter{
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-
+            this.telnetNegotiator.parseOptionNegotiation(optionData)
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
@@ -240,6 +285,11 @@ class ArkadiaClient implements ClientAdapter{
         if (data.length === 0) return;
 
         const firstChar = data.charCodeAt(0);
+        if (firstChar === MCCP_COMMAND_CODE) {
+            this.mccp = true;
+            console.log("MCCP enabled")
+        }
+
         if (firstChar === GMCP_COMMAND_CODE) {
             const gmcpData = data.substring(1);
             if (!gmcpData.length) return;
@@ -263,7 +313,7 @@ class ArkadiaClient implements ClientAdapter{
                     this.messageBuffer.push({text, type: gmcp.type})
                 } else {
                     this.emit(`gmcp.${type}`, gmcp);
-                    this.emit('gmcp', { path: type, value: gmcp });
+                    this.emit('gmcp', {path: type, value: gmcp});
                 }
             } catch (error) {
                 console.error('Error parsing GMCP JSON:', error);
@@ -274,11 +324,11 @@ class ArkadiaClient implements ClientAdapter{
     flushMessageBuffer() {
         let processed = [];
         this.messageBuffer.forEach((message, i) => {
-           if (processed[processed.length - 1]?.type === message.type) {
-               processed[processed.length - 1].text += message.text
-           } else {
-               processed.push(message)
-           }
+            if (processed[processed.length - 1]?.type === message.type) {
+                processed[processed.length - 1].text += message.text
+            } else {
+                processed.push(message)
+            }
         })
         processed.forEach((message, i) => {
             this.sendLine(message.text, message.type, i)
