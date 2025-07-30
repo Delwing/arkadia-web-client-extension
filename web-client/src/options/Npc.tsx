@@ -24,6 +24,19 @@ function Npc() {
         })
     }, []);
 
+    useEffect(() => {
+        const handler = (ev: Event) => {
+            const detail = (ev as CustomEvent).detail
+            if (Array.isArray(detail)) {
+                setNpcs(detail)
+            }
+        }
+        window.addEventListener('npc', handler as EventListener)
+        return () => {
+            window.removeEventListener('npc', handler as EventListener)
+        }
+    }, [])
+
     function downloadNpcs() {
         updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
             .then(data => {
