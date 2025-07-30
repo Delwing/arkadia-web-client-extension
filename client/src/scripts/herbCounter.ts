@@ -2,7 +2,10 @@ import Client from "../Client";
 import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
+import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 
+const headerColor = findClosestColor('#8470ff')
+const WHITE = findClosestColor('#ffffff');
 const STORAGE_KEY = "herb_counts";
 
 const biernikDigits = new Set([2, 3, 4]);
@@ -170,19 +173,19 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const lines: string[] = [];
         const normal = width >= 63;
         if (normal) {
-            lines.push('------+--------------------+---------------------------');
-            lines.push('  ile |        nazwa       |              dzialanie           ');
-            lines.push('------+--------------------+---------------------------');
+            lines.push('------+--------------------+-------------------------------');
+            lines.push(`  ${colorString('ile', headerColor)} |        ${colorString('nazwa', headerColor)}       |            ${colorString('dzialanie', headerColor)}             `);
+            lines.push('------+--------------------+-------------------------------');
         }
 
         const prefixWidth = normal ? 28 : 0;
 
         entries.sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, c]) => {
-            const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${u.effect}`).join(' | ') || '--';
+            const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${mudletColorLine(u.effect)}`).join(' | ') || '--';
 
             if (normal) {
-                const name = client.OutputHandler.makeStringRightClickable(id.padEnd(18, ' '), (ev) => showHerbActions(id, ev));
-                const base = `${String(c).padStart(5, ' ')} | ${name} | `;
+                const name = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
+                const base = `${String(c).padStart(5, ' ')} | ${name.padEnd(43, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
                 if (available >= stripAnsiCodes(uses).length) {
                     lines.push(base + uses);
@@ -212,7 +215,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });
         }
-        return lines;
+
+        return lines.map(line => color(WHITE) + line);
     }
 
     function finish() {
