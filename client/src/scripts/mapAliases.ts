@@ -65,19 +65,21 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const reader = client.Map.mapReader;
                 const current = client.Map.currentRoom;
                 if (!reader || !current) return;
-                const matches: { name: string; area: string; dist: number }[] = [];
+                const matches: { id: number, name: string; area: string; dist: number }[] = [];
                 for (const area of reader.getAreas()) {
                     for (const room of area.rooms) {
                         const name = room.name;
                         if (name && name.toLowerCase().includes(term)) {
                             const path = reader.getPath(current.id, room.id);
                             const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
-                            matches.push({ name: room.name, area: area.areaName, dist });
+                            matches.push({ id: room.id, name: room.name, area: area.areaName, dist });
                         }
                     }
                 }
                 matches.sort((a, b) => a.dist - b.dist);
-                const lines = matches.slice(0, 10).map(m => `${m.name} (${m.area})`);
+                const lines = matches.slice(0, 10).map(m => client.OutputHandler.makeStringClickable(`${m.name} (${m.area})`, () => {
+                    client.sendEvent('leadTo', m.id);
+                }));
                 if (lines.length) {
                     client.println(lines.join('\n'));
                 } else {
