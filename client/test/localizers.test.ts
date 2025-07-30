@@ -19,8 +19,14 @@ describe('localizers triggers', () => {
   });
 
   test('single line localizer sets map location', () => {
-    parse('Postoj, placyk w Grabowej Buchcie');
+    parse('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w Grabowej Buchcie');
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(3525);
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: localizer 3525' });
+  });
+
+  test('single line localizer without proper parent does not move map', () => {
+    parse('Postoj, placyk w Grabowej Buchcie');
+    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalled();
   });
 });
