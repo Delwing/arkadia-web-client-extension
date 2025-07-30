@@ -1,5 +1,5 @@
 import initHerbCounter from '../src/scripts/herbCounter';
-import Triggers from '../src/Triggers';
+import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -105,7 +105,7 @@ describe('herb counter', () => {
     const printed = client.println.mock.calls[0][0];
     const lines = printed.split('\n');
     lines.forEach((l) => {
-      expect(l.length).toBeLessThanOrEqual(client.contentWidth);
+      expect(stripAnsiCodes(l).length).toBeLessThanOrEqual(client.contentWidth);
     });
   });
 
