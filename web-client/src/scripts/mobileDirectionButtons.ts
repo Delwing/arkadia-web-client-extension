@@ -13,7 +13,7 @@ export default class MobileDirectionButtons {
     private readonly idzList: HTMLDivElement | null = null;
     private readonly zToggle: HTMLButtonElement | null = null;
     private readonly zasToggle: HTMLButtonElement | null = null;
-    private readonly idzToggle: HTMLButtonElement | null = null;
+    private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
     private readonly toggleButton: HTMLButtonElement | null = null;
     private boundKey = 'BracketRight';
@@ -80,7 +80,7 @@ export default class MobileDirectionButtons {
         this.idzList = document.getElementById('idz-buttons-list') as HTMLDivElement;
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
-        this.idzToggle = document.getElementById('idz-list-toggle') as HTMLButtonElement;
+        this.idzToggle = null;
         this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;
 
@@ -531,7 +531,11 @@ export default class MobileDirectionButtons {
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
-        if (id === 'idz-list-toggle') this.idzToggle = newBtn;
+        if (cfg.macro === 'idzList') {
+            this.idzToggle = newBtn;
+        } else if (this.idzToggle === newBtn) {
+            this.idzToggle = null;
+        }
         if (id.endsWith('-button')) {
             const dirKey = id.replace('-button', '');
             if (Object.prototype.hasOwnProperty.call(this.directionButtons, dirKey)) {

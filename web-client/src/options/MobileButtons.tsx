@@ -38,7 +38,6 @@ function MobileButtons() {
     const order = [
         'z-list-toggle',
         'zas-list-toggle',
-        'idz-list-toggle',
         'go-button',
         'buttons-toggle',
         'bracket-right-button',
@@ -62,7 +61,6 @@ function MobileButtons() {
     const topButtons = [
         'z-list-toggle',
         'zas-list-toggle',
-        'idz-list-toggle',
         'go-button',
         'buttons-toggle',
         'bracket-right-button',
