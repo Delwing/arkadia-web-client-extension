@@ -75,6 +75,8 @@ export default class Client {
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
     suppressMapMoveEvent = false;
+    moveMode = 0;
+    moveModeButton?: HTMLInputElement;
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {
@@ -250,7 +252,8 @@ export default class Client {
                 if (part !== preparse) {
                     this.sendCommand(part, echo)
                 } else {
-                    this.clientAdapter.send(this.Map.move(part).direction, echo)
+                    const moveRes = this.Map.move(part)
+                    this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
                 }
             })
             return
@@ -269,12 +272,20 @@ export default class Client {
                 this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
                 return
             }
-            this.clientAdapter.send(this.Map.move(command).direction, echo)
+            const moveRes = this.Map.move(command)
+            this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
         }
     }
 
     sendGMCP(type: string, payload?: any) {
         this.clientAdapter.sendGmcp(type, payload)
+    }
+
+    private applyMoveMode(cmd: string, moved?: boolean): string {
+        if (!moved) return cmd
+        if (this.moveMode === 1) return `przemknij ${cmd}`
+        if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
+        return cmd
     }
 
     onLine(line: string, type: string) {

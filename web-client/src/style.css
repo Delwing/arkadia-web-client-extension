@@ -613,6 +613,20 @@ button:focus-visible {
   gap: 5px;
 }
 
+.mobile-idz-buttons {
+  position: absolute;
+  right: 100%;
+  top: 4px;
+  margin-right: 5px;
+  display: none;
+  grid-template-columns: 1fr;
+  grid-auto-rows: 36px;
+  gap: 5px;
+}
+.mobile-idz-buttons .mobile-button {
+  width: 72px;
+}
+
 #map-progress-container {
   pointer-events: none;
 }

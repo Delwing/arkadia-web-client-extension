@@ -11,6 +11,7 @@ import initAttackBeep from './scripts/attackBeep'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initBinds from './scripts/binds'
+import initMoveMode from './scripts/moveMode'
 import initIdz from './scripts/idz'
 import { initKillCounter } from './scripts/kill'
 import { initImproveCounter } from './scripts/improveCounter'
@@ -118,6 +119,7 @@ export function registerScripts(client: Client) {
     initLamp(client)
     initCoverTimer(client)
     initBinds(client, aliases)
+    initMoveMode(client)
     initIdz(client, aliases)
     const killCounter = initKillCounter(client, aliases)
     ;(client as any).killCounter = killCounter

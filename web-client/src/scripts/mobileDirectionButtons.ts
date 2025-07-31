@@ -10,8 +10,10 @@ export default class MobileDirectionButtons {
     private readonly contentArea: HTMLElement | null = null;
     private readonly zList: HTMLDivElement | null = null;
     private readonly zasList: HTMLDivElement | null = null;
+    private readonly idzList: HTMLDivElement | null = null;
     private readonly zToggle: HTMLButtonElement | null = null;
     private readonly zasToggle: HTMLButtonElement | null = null;
+    private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
     private readonly toggleButton: HTMLButtonElement | null = null;
     private boundKey = 'BracketRight';
@@ -76,8 +78,10 @@ export default class MobileDirectionButtons {
         this.contentArea = document.getElementById('main_text_output_msg_wrapper');
         this.zList = document.getElementById('z-buttons-list') as HTMLDivElement;
         this.zasList = document.getElementById('zas-buttons-list') as HTMLDivElement;
+        this.idzList = document.getElementById('idz-buttons-list') as HTMLDivElement;
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
+        this.idzToggle = null;
         this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;
 
@@ -127,6 +131,9 @@ export default class MobileDirectionButtons {
             }
             if (this.zasList && this.zasList.style.display !== 'none') {
                 this.renderZasList();
+            }
+            if (this.idzList && this.idzList.style.display !== 'none') {
+                this.renderIdzList();
             }
         };
         this.client.addEventListener('gmcp.objects.nums', updateLists);
@@ -408,8 +415,10 @@ export default class MobileDirectionButtons {
     private hideLists() {
         if (this.zList) this.zList.style.display = 'none';
         if (this.zasList) this.zasList.style.display = 'none';
+        if (this.idzList) this.idzList.style.display = 'none';
         if (this.zToggle) this.zToggle.classList.remove('active');
         if (this.zasToggle) this.zasToggle.classList.remove('active');
+        if (this.idzToggle) this.idzToggle.classList.remove('active');
     }
 
     private applyButtonSize(btn: HTMLButtonElement) {
@@ -490,6 +499,27 @@ export default class MobileDirectionButtons {
         this.renderList(this.zasList, /^[A-Z]$/, 'zas');
     }
 
+    private renderIdzList() {
+        if (!this.idzList) return;
+        this.idzList.innerHTML = '';
+        const cmds = [
+            { label: 'idz niespiesznie', cmd: 'idz niespiesznie' },
+            { label: 'idz marszem', cmd: 'idz marszem' },
+            { label: 'idz truchtem', cmd: 'idz truchtem' },
+            { label: 'idz biegiem', cmd: 'idz biegiem' },
+            { label: 'idz s. biegiem', cmd: 'idz szybkiem biegiem' },
+        ];
+        cmds.forEach(c => {
+            const b = document.createElement('button');
+            b.className = 'mobile-button';
+            this.applyButtonSize(b);
+            b.style.width = '72px';
+            b.textContent = c.label;
+            b.addEventListener('click', () => this.client.sendCommand(c.cmd));
+            this.idzList!.appendChild(b);
+        });
+    }
+
     private applyAllButtons() {
         Object.keys(this.buttonSettings[this.currentMode]).forEach(id => {
             const btn = document.getElementById(id) as HTMLButtonElement | null;
@@ -509,6 +539,11 @@ export default class MobileDirectionButtons {
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
+        if (cfg.macro === 'idzList') {
+            this.idzToggle = newBtn;
+        } else if (this.idzToggle === newBtn) {
+            this.idzToggle = null;
+        }
         if (id.endsWith('-button')) {
             const dirKey = id.replace('-button', '');
             if (Object.prototype.hasOwnProperty.call(this.directionButtons, dirKey)) {
@@ -553,6 +588,16 @@ export default class MobileDirectionButtons {
                         this.hideLists();
                         this.renderZasList();
                         if (this.zasList) this.zasList.style.display = 'grid';
+                        newBtn.classList.add('active');
+                    }
+                    break;
+                case 'idzList':
+                    if (this.idzList && this.idzList.style.display === 'grid') {
+                        this.hideLists();
+                    } else {
+                        this.hideLists();
+                        this.renderIdzList();
+                        if (this.idzList) this.idzList.style.display = 'grid';
                         newBtn.classList.add('active');
                     }
                     break;
