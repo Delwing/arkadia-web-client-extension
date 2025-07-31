@@ -18,7 +18,12 @@ export interface ButtonSetting {
     direction?: string;
 }
 
-export const defaultSettings: Record<string, ButtonSetting> = {
+export interface DualButtonSettings {
+    solo: Record<string, ButtonSetting>;
+    team: Record<string, ButtonSetting>;
+}
+
+export const defaultButtonSettings: Record<string, ButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#87CEEB' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
@@ -43,18 +48,32 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
-export async function loadSettings(): Promise<Record<string, ButtonSetting>> {
+export const defaultSettings: DualButtonSettings = {
+    solo: { ...defaultButtonSettings },
+    team: { ...defaultButtonSettings },
+};
+
+export async function loadSettings(): Promise<DualButtonSettings> {
     try {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
-            return { ...defaultSettings, ...(raw as any) };
+            if (typeof raw.solo === 'object' && typeof raw.team === 'object') {
+                return {
+                    solo: { ...defaultButtonSettings, ...(raw as any).solo },
+                    team: { ...defaultButtonSettings, ...(raw as any).team },
+                };
+            }
+            return {
+                solo: { ...defaultButtonSettings, ...(raw as any) },
+                team: { ...defaultButtonSettings, ...(raw as any) },
+            };
         }
     } catch {}
-    return { ...defaultSettings };
+    return { solo: { ...defaultButtonSettings }, team: { ...defaultButtonSettings } };
 }
 
-export function saveSettings(settings: Record<string, ButtonSetting>) {
+export function saveSettings(settings: DualButtonSettings) {
     storage.setItem('mobileButtonSettings', settings);
 }
 
@@ -93,7 +112,7 @@ export default async function initMobileButtonSettings() {
         const id = btn.dataset.buttonId!;
         previewMap[id] = btn;
     });
-    Object.keys(defaultSettings).forEach(id => {
+    Object.keys(defaultButtonSettings).forEach(id => {
         const el = document.getElementById(id) as HTMLButtonElement | null;
         if (el) realMap[id] = el;
     });
@@ -107,7 +126,8 @@ export default async function initMobileButtonSettings() {
         }
     };
 
-    let current = await loadSettings();
+    let all = await loadSettings();
+    let current = { ...all.solo };
     const applyLive = (id: string, labelVal: string, colorVal: string) => {
         const btn = realMap[id];
         if (btn) {
@@ -117,7 +137,7 @@ export default async function initMobileButtonSettings() {
     };
     sections.forEach(section => {
         const id = section.dataset.buttonId!;
-        const cfg = current[id] || defaultSettings[id];
+        const cfg = current[id] || defaultButtonSettings[id];
         const preview = previewMap[id];
         const macro = section.querySelector('.mobile-button-macro') as HTMLSelectElement;
         const label = section.querySelector('.mobile-button-label') as HTMLInputElement;
@@ -153,7 +173,7 @@ export default async function initMobileButtonSettings() {
         macro.addEventListener('change', update);
         if (reset) {
             reset.addEventListener('click', () => {
-                color.value = defaultSettings[id].color;
+                color.value = defaultButtonSettings[id].color;
                 if (preview) preview.style.backgroundColor = color.value;
                 applyLive(id, label.value, color.value);
             });
@@ -214,8 +234,9 @@ export default async function initMobileButtonSettings() {
 
     saveBtn.addEventListener('click', () => {
         current = read();
-        saveSettings(current);
-        applySettings(current);
+        all = { ...all, solo: current };
+        saveSettings(all);
+        applySettings(all.solo);
         modal.hide();
     });
 
@@ -223,7 +244,7 @@ export default async function initMobileButtonSettings() {
         modal.show();
     });
 
-    applySettings(current);
+    applySettings(all.solo);
 }
 
 

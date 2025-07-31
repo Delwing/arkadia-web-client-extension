@@ -15,6 +15,7 @@ export interface KnownEvents {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'npc': any;
+    'teamChange': boolean;
 }
 
 export type ClientEvents = KnownEvents & {

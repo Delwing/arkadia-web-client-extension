@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
 
-    loadMobileButtonSettings().then(applyMobileButtonSettings);
+    loadMobileButtonSettings().then(settings => applyMobileButtonSettings(settings.solo));
 
     initUiSettings();
 

@@ -1,6 +1,6 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
-import { loadSettings as loadMobileButtonSettings, ButtonSetting } from "../mobileButtonSettings";
+import { loadSettings as loadMobileButtonSettings, ButtonSetting, DualButtonSettings } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
 export default class MobileDirectionButtons {
@@ -34,7 +34,8 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
-    private buttonSettings: Record<string, ButtonSetting> = {};
+    private buttonSettings: DualButtonSettings = { solo: {}, team: {} };
+    private currentMode: 'solo' | 'team' = 'solo';
 
     private readonly polishToEnglish: Record<string, string> = {
         "polnoc": "north",
@@ -103,11 +104,9 @@ export default class MobileDirectionButtons {
 
         loadMobileButtonSettings().then(settings => {
             this.buttonSettings = settings;
+            this.currentMode = this.client.TeamManager.getTeamMembers().length > 0 ? 'team' : 'solo';
             this.setupEventHandlers();
-            Object.keys(this.buttonSettings).forEach(id => {
-                const btn = document.getElementById(id) as HTMLButtonElement | null;
-                if (btn) this.applyConfigToButton(id, btn);
-            });
+            this.applyAllButtons();
         });
         this.updateBracketRightButton();
         this.updateToggleButton();
@@ -156,10 +155,12 @@ export default class MobileDirectionButtons {
 
         this.client.addEventListener('mobileButtonsSettings', (ev: CustomEvent) => {
             this.buttonSettings = ev.detail || this.buttonSettings;
-            Object.keys(this.buttonSettings).forEach(id => {
-                const b = document.getElementById(id) as HTMLButtonElement | null;
-                if (b) this.applyConfigToButton(id, b);
-            });
+            this.applyAllButtons();
+        });
+
+        this.client.addEventListener('teamChange', (ev: CustomEvent) => {
+            this.currentMode = ev.detail ? 'team' : 'solo';
+            this.applyAllButtons();
         });
 
         // Listen for bind settings changes
@@ -489,8 +490,15 @@ export default class MobileDirectionButtons {
         this.renderList(this.zasList, /^[A-Z]$/, 'zas');
     }
 
+    private applyAllButtons() {
+        Object.keys(this.buttonSettings[this.currentMode]).forEach(id => {
+            const btn = document.getElementById(id) as HTMLButtonElement | null;
+            if (btn) this.applyConfigToButton(id, btn);
+        });
+    }
+
     private applyConfigToButton(id: string, btn: HTMLButtonElement) {
-        const cfg = this.buttonSettings[id];
+        const cfg = this.buttonSettings[this.currentMode][id];
         if (!cfg) return;
         btn.textContent = cfg.label;
         btn.style.backgroundColor = cfg.color;

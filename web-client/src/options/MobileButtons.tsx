@@ -4,8 +4,9 @@ import {
     loadSettings,
     saveSettings,
     applySettings,
-    defaultSettings,
+    defaultButtonSettings,
     ButtonSetting,
+    DualButtonSettings,
     MacroType,
 } from "../mobileButtonSettings";
 
@@ -21,10 +22,11 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
-type SettingsMap = Record<string, ButtonSetting>;
+type SettingsMap = DualButtonSettings;
 
 function MobileButtons() {
-    const [settings, setSettings] = useState<SettingsMap>({});
+    const [settings, setSettings] = useState<SettingsMap>({ solo: {}, team: {} });
+    const [mode, setMode] = useState<'solo' | 'team'>('solo');
     const [active, setActive] = useState<string | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const previewRef = useRef<HTMLDivElement>(null);
@@ -85,31 +87,38 @@ function MobileButtons() {
     }
 
     function update(id: string, field: keyof ButtonSetting, value: any) {
-        setSettings(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+        setSettings(prev => ({
+            ...prev,
+            [mode]: { ...prev[mode], [id]: { ...prev[mode][id], [field]: value } }
+        }));
     }
 
     function resetColor(id: string) {
-        update(id, "color", defaultSettings[id].color);
+        update(id, "color", defaultButtonSettings[id].color);
     }
 
     function save() {
         saveSettings(settings);
-        applySettings(settings);
+        applySettings(settings[mode]);
         const modal = (window as any).bootstrap?.Modal.getInstance(document.getElementById('mobile-buttons-modal')!);
         modal?.hide();
     }
 
-    const activeCfg = active ? (settings[active] || defaultSettings[active]) : null;
+    const activeCfg = active ? (settings[mode][active] || defaultButtonSettings[active]) : null;
 
     return (
         <div onClick={close} className="w-100 position-relative">
+            <div className="mb-2">
+                <Button size="sm" variant={mode === 'solo' ? 'primary' : 'secondary'} onClick={() => setMode('solo')} className="me-1">Bez drużyny</Button>
+                <Button size="sm" variant={mode === 'team' ? 'primary' : 'secondary'} onClick={() => setMode('team')}>Drużyna</Button>
+            </div>
             <div
                 ref={previewRef}
                 id="mobile-buttons-preview"
                 className="mobile-direction-buttons mb-2"
             >
                 {order.map(id => {
-                    const cfg = settings[id] || defaultSettings[id] || { label: '⇩', color: '#87CEEB', macro: 'functional' };
+                    const cfg = settings[mode][id] || defaultButtonSettings[id] || { label: '⇩', color: '#87CEEB', macro: 'functional' };
                     let classes = 'mobile-button';
                     if (topButtons.includes(id)) {
                         classes += ' mobile-button-text top-button';

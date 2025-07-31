@@ -43,6 +43,7 @@ export default class TeamManager {
     private avatarAttackTargetId?: string
     private attackTargetId?: string
     private defenseTargetId?: string
+    private hasTeam = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -154,6 +155,7 @@ export default class TeamManager {
 
     private addMember(name: string) {
         this.members.add(name);
+        this.emitTeamChange();
     }
 
     private removeMember(name: string) {
@@ -161,6 +163,7 @@ export default class TeamManager {
         if (this.leader === name) {
             this.leader = undefined;
         }
+        this.emitTeamChange();
     }
 
     getTeamMembers(): string[] {
@@ -182,6 +185,15 @@ export default class TeamManager {
     clearTeam() {
         this.members.clear();
         this.leader = undefined;
+        this.emitTeamChange();
+    }
+
+    private emitTeamChange() {
+        const hasTeamNow = this.members.size > 0;
+        if (this.hasTeam !== hasTeamNow) {
+            this.hasTeam = hasTeamNow;
+            this.client.sendEvent('teamChange', this.hasTeam);
+        }
     }
 
     getAccumulatedObjectsData() {
