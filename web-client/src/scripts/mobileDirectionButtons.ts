@@ -526,6 +526,7 @@ export default class MobileDirectionButtons {
             if (btn) this.applyConfigToButton(id, btn);
         });
     }
+
     private applyConfigToButton(id: string, btn: HTMLButtonElement) {
         const cfg = this.buttonSettings[this.currentMode][id];
         if (!cfg) return;
