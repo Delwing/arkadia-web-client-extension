@@ -5,6 +5,7 @@ export type MacroType =
     | 'functional'
     | 'zList'
     | 'zaList'
+    | 'idzList'
     | 'command'
     | 'specialExit'
     | 'kierunek'
