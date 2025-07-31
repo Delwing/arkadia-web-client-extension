@@ -46,8 +46,8 @@ export function colorString(string: string, colorCode: number) {
     return color(colorCode) + string + RESET;
 }
 
-export function colorStringInLine(rawLine: string, string: string, colorCode: number) {
-    const matchIndex = rawLine.indexOf(string)
+export function colorStringInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
+    const matchIndex = rawLine.indexOf(string, startIndex)
     if (matchIndex === -1) {
         return rawLine
     }

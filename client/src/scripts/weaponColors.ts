@@ -25,14 +25,26 @@ export default function initWeaponColors(client: Client) {
     client.Triggers.registerTrigger(
         /^Trzyma(?:sz)? (?<weapon1>[a-z ]+?) w (?:lewej|prawej) rece(?: oraz (?<weapon2>[a-z ]+?) w (?:lewej|prawej) rece)?\.$/,
         (raw, _line, m) => {
-            let line = raw;
             const { weapon1, weapon2 } = m.groups as { weapon1: string; weapon2?: string };
-            if (!isMagicColored(line, weapon1)) {
-                line = colorStringInLine(line, weapon1, WEAPON_COLOR);
+            if (!weapon2) {
+                if (isMagicColored(raw, weapon1)) {
+                    return raw;
+                }
+                return colorStringInLine(raw, weapon1, WEAPON_COLOR);
             }
-            if (weapon2 && !isMagicColored(line, weapon2)) {
-                line = colorStringInLine(line, weapon2, WEAPON_COLOR);
+
+            const firstIndex = raw.indexOf(weapon1);
+            const secondIndex = raw.indexOf(weapon2, firstIndex + weapon1.length);
+            let line = raw;
+
+            if (!isMagicColored(raw, weapon2) && secondIndex > -1) {
+                line = colorStringInLine(line, weapon2, WEAPON_COLOR, secondIndex);
             }
+
+            if (!isMagicColored(raw, weapon1) && firstIndex > -1) {
+                line = colorStringInLine(line, weapon1, WEAPON_COLOR, firstIndex);
+            }
+
             return line;
         },
         tag

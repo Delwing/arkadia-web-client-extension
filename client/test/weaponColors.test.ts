@@ -34,6 +34,18 @@ describe('weapon colors trigger', () => {
     expect(result).toBe(expected);
   });
 
+  test('colors identical weapons in both hands', () => {
+    const line = 'Trzymasz zebaty szeroki noz bojowy w lewej rece oraz zebaty szeroki noz bojowy w prawej rece.';
+    const weapon = 'zebaty szeroki noz bojowy';
+    const firstIndex = line.indexOf(weapon);
+    const secondIndex = line.indexOf(weapon, firstIndex + weapon.length);
+    let expected = colorStringInLine(line, weapon, WEAPON_COLOR, secondIndex);
+    expected = colorStringInLine(expected, weapon, WEAPON_COLOR, firstIndex);
+    const result = parse(line);
+    expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));
+    expect(result).toBe(expected);
+  });
+
   test('keeps magic color for single weapon', () => {
     const line = 'Trzymasz oburacz stalowy miecz.';
     const magicColored = color(MAGICS_COLOR) + 'stalowy miecz' + RESET;
