@@ -5,6 +5,7 @@ export type MacroType =
     | 'functional'
     | 'zList'
     | 'zaList'
+    | 'idzList'
     | 'command'
     | 'specialExit'
     | 'kierunek'
@@ -22,6 +23,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#87CEEB' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
+    'idz-list-toggle': { macro: 'idzList', label: '/idz', color: '#87CEEB' },
     'go-button': { macro: 'command', label: '/go', color: '#87CEEB', command: '/go' },
     'bracket-right-button': { macro: 'functional', label: ']', color: '#87CEEB' },
     'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#87CEEB' },

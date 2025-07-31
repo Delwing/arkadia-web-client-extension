@@ -13,6 +13,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "functional", label: "Bind funkcyjny" },
     { value: "zList", label: "Lista /z" },
     { value: "zaList", label: "Lista /za" },
+    { value: "idzList", label: "Lista idz" },
     { value: "command", label: "Wyślij komendę" },
     { value: "kierunek", label: "Kierunek" },
     { value: "specialExit", label: "Wyjście specjalne" },
@@ -37,6 +38,7 @@ function MobileButtons() {
     const order = [
         'z-list-toggle',
         'zas-list-toggle',
+        'idz-list-toggle',
         'go-button',
         'buttons-toggle',
         'bracket-right-button',
@@ -60,6 +62,7 @@ function MobileButtons() {
     const topButtons = [
         'z-list-toggle',
         'zas-list-toggle',
+        'idz-list-toggle',
         'go-button',
         'buttons-toggle',
         'bracket-right-button',
