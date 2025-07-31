@@ -21,13 +21,13 @@ export interface ButtonSetting {
 
 export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
-    'z-list-toggle': { macro: 'zList', label: '/z', color: '#87CEEB' },
-    'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#87CEEB' },
-    'go-button': { macro: 'command', label: '/go', color: '#87CEEB', command: '/go' },
-    'bracket-right-button': { macro: 'functional', label: ']', color: '#87CEEB' },
-    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#87CEEB' },
-    'button-2': { macro: 'command', label: '/z cel', color: '#87CEEB', command: '/z' },
-    'button-3': { macro: 'command', label: '/za cel', color: '#87CEEB', command: '/za' },
+    'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
+    'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC' },
+    'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', command: '/go' },
+    'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC' },
+    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC' },
+    'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', command: '/z' },
+    'button-3': { macro: 'command', label: '/za cel', color: '#6EB4DC', command: '/za' },
 
     // direction buttons in visual order
     'nw-button': { macro: 'kierunek', label: '↖', color: '#6CA6CD', command: 'nw', direction: 'nw' },
