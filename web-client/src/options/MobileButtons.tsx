@@ -110,7 +110,7 @@ function MobileButtons() {
                 className="mobile-direction-buttons mb-2"
             >
                 {order.map(id => {
-                    const cfg = settings[id] || defaultSettings[id] || { label: '⇩', color: '#87CEEB', macro: 'functional' };
+                    const cfg = settings[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
                     let classes = 'mobile-button';
                     if (topButtons.includes(id)) {
                         classes += ' mobile-button-text top-button';
