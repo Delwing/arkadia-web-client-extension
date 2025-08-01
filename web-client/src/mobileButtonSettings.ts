@@ -44,23 +44,38 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
-export async function loadSettings(): Promise<Record<string, ButtonSetting>> {
+export interface Settings {
+    solo: Record<string, ButtonSetting>;
+    team: Record<string, ButtonSetting>;
+}
+
+export async function loadSettings(): Promise<Settings> {
     try {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
-            return { ...defaultSettings, ...(raw as any) };
+            if (raw.solo || raw.team) {
+                return {
+                    solo: { ...defaultSettings, ...(raw.solo || {}) },
+                    team: { ...defaultSettings, ...(raw.team || raw.solo || {}) },
+                };
+            }
+            return {
+                solo: { ...defaultSettings, ...(raw as any) },
+                team: { ...defaultSettings, ...(raw as any) },
+            };
         }
     } catch {}
-    return { ...defaultSettings };
+    return { solo: { ...defaultSettings }, team: { ...defaultSettings } };
 }
 
-export function saveSettings(settings: Record<string, ButtonSetting>) {
+export function saveSettings(settings: Settings) {
     storage.setItem('mobileButtonSettings', settings);
 }
 
-export function applySettings(settings: Record<string, ButtonSetting>) {
-    Object.entries(settings).forEach(([id, cfg]) => {
+export function applySettings(settings: Settings, inTeam = false) {
+    const set = inTeam ? settings.team : settings.solo;
+    Object.entries(set).forEach(([id, cfg]) => {
         const el = document.getElementById(id) as HTMLButtonElement | null;
         if (!el) return;
         el.textContent = cfg.label;
@@ -73,7 +88,7 @@ export function applySettings(settings: Record<string, ButtonSetting>) {
     });
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: settings })
+            new CustomEvent('mobileButtonsSettings', { detail: set })
         );
     }
 }
@@ -108,7 +123,7 @@ export default async function initMobileButtonSettings() {
         }
     };
 
-    let current = await loadSettings();
+    let current = (await loadSettings()).solo;
     const applyLive = (id: string, labelVal: string, colorVal: string) => {
         const btn = realMap[id];
         if (btn) {
@@ -215,8 +230,9 @@ export default async function initMobileButtonSettings() {
 
     saveBtn.addEventListener('click', () => {
         current = read();
-        saveSettings(current);
-        applySettings(current);
+        const all = { solo: current, team: current } as Settings;
+        saveSettings(all);
+        applySettings(all);
         modal.hide();
     });
 
@@ -224,7 +240,7 @@ export default async function initMobileButtonSettings() {
         modal.show();
     });
 
-    applySettings(current);
+    applySettings({ solo: current, team: current });
 }
 
 

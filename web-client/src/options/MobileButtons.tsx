@@ -7,6 +7,7 @@ import {
     defaultSettings,
     ButtonSetting,
     MacroType,
+    Settings,
 } from "../mobileButtonSettings";
 
 const macroOptions: { value: MacroType; label: string }[] = [
@@ -25,10 +26,11 @@ const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 type SettingsMap = Record<string, ButtonSetting>;
 
 function MobileButtons() {
-    const [settings, setSettings] = useState<SettingsMap>({});
-    const [active, setActive] = useState<string | null>(null);
+    const [settings, setSettings] = useState<Settings>({ solo: {}, team: {} });
+    const [active, setActive] = useState<{ set: 'solo' | 'team'; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
-    const previewRef = useRef<HTMLDivElement>(null);
+    const soloRef = useRef<HTMLDivElement>(null);
+    const teamRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -71,13 +73,13 @@ function MobileButtons() {
 
     const textDirButtons = ['u-button', 'c-button', 'd-button', 'special-exit-button'];
 
-    function openConfig(id: string, ev: React.MouseEvent<HTMLButtonElement>) {
+    function openConfig(setName: 'solo' | 'team', id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
-        const parent = previewRef.current?.getBoundingClientRect();
+        const parent = (setName === 'solo' ? soloRef.current : teamRef.current)?.getBoundingClientRect();
         if (parent) {
             setPos({ left: rect.left - parent.left, top: rect.bottom - parent.top + 4 });
         }
-        setActive(id);
+        setActive({ set: setName, id });
         ev.stopPropagation();
     }
 
@@ -85,32 +87,34 @@ function MobileButtons() {
         setActive(null);
     }
 
-    function update(id: string, field: keyof ButtonSetting, value: any) {
-        setSettings(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+    function update(setName: 'solo' | 'team', id: string, field: keyof ButtonSetting, value: any) {
+        setSettings(prev => ({ ...prev, [setName]: { ...prev[setName], [id]: { ...prev[setName][id], [field]: value } } }));
     }
 
-    function resetColor(id: string) {
-        update(id, "color", defaultSettings[id].color);
+    function resetColor(setName: 'solo' | 'team', id: string) {
+        update(setName, "color", defaultSettings[id].color);
     }
 
     function save() {
         saveSettings(settings);
-        applySettings(settings);
+        const teamActive = !!(window as any).clientExtension?.TeamManager?.getLeader?.();
+        applySettings(settings, teamActive);
         const modal = (window as any).bootstrap?.Modal.getInstance(document.getElementById('mobile-buttons-modal')!);
         modal?.hide();
     }
 
-    const activeCfg = active ? (settings[active] || defaultSettings[active]) : null;
+    const activeCfg = active ? (settings[active.set][active.id] || defaultSettings[active.id]) : null;
 
     return (
         <div onClick={close} className="w-100 position-relative">
+            <h6>Bez drużyny</h6>
             <div
-                ref={previewRef}
-                id="mobile-buttons-preview"
+                ref={soloRef}
+                id="mobile-buttons-preview-solo"
                 className="mobile-direction-buttons mb-2"
             >
                 {order.map(id => {
-                    const cfg = settings[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
+                    const cfg = settings.solo[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
                     let classes = 'mobile-button';
                     if (topButtons.includes(id)) {
                         classes += ' mobile-button-text top-button';
@@ -119,7 +123,37 @@ function MobileButtons() {
                     } else {
                         classes += ' direction-button';
                     }
-                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(id, ev);
+                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('solo', id, ev);
+                    return (
+                        <button
+                            key={id}
+                            data-button-id={id}
+                            className={classes}
+                            style={{ backgroundColor: cfg.color }}
+                            onClick={handle}
+                        >
+                            {cfg.label}
+                        </button>
+                    );
+                })}
+            </div>
+            <h6 className="mt-3">W drużynie</h6>
+            <div
+                ref={teamRef}
+                id="mobile-buttons-preview-team"
+                className="mobile-direction-buttons mb-2"
+            >
+                {order.map(id => {
+                    const cfg = settings.team[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
+                    let classes = 'mobile-button';
+                    if (topButtons.includes(id)) {
+                        classes += ' mobile-button-text top-button';
+                    } else if (textDirButtons.includes(id)) {
+                        classes += ' mobile-button-text direction-button';
+                    } else {
+                        classes += ' direction-button';
+                    }
+                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('team', id, ev);
                     return (
                         <button
                             key={id}
@@ -150,7 +184,7 @@ function MobileButtons() {
                             size="sm"
                             className="mobile-button-macro"
                             value={activeCfg.macro}
-                            onChange={e => update(active, "macro", e.target.value as MacroType)}
+                            onChange={e => update(active!.set, active!.id, "macro", e.target.value as MacroType)}
                         >
                             {macroOptions.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -164,7 +198,7 @@ function MobileButtons() {
                             className="mobile-button-label"
                             type="text"
                             value={activeCfg.label}
-                            onChange={e => update(active!, "label", e.target.value)}
+                            onChange={e => update(active!.set, active!.id, "label", e.target.value)}
                         />
                     </Form.Group>
                     <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
@@ -174,9 +208,9 @@ function MobileButtons() {
                             type="color"
                             className="mobile-button-color flex-grow-1"
                             value={activeCfg.color}
-                            onChange={e => update(active!, "color", e.target.value)}
+                            onChange={e => update(active!.set, active!.id, "color", e.target.value)}
                         />
-                        <Button size="sm" variant="secondary" onClick={() => resetColor(active!)}>↺</Button>
+                        <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                     </Form.Group>
                     {activeCfg.macro === "kierunek" && (
                         <Form.Group className="form-label mb-2">
@@ -185,7 +219,7 @@ function MobileButtons() {
                                 size="sm"
                                 className="mobile-button-direction"
                                 value={activeCfg.direction || ""}
-                                onChange={e => update(active!, "direction", e.target.value)}
+                                onChange={e => update(active!.set, active!.id, "direction", e.target.value)}
                             >
                                 {directionOptions.map(d => (
                                     <option key={d} value={d}>{d}</option>
@@ -201,7 +235,7 @@ function MobileButtons() {
                                 size="sm"
                                 className="mobile-button-command"
                                 value={activeCfg.command || ""}
-                                onChange={e => update(active!, "command", e.target.value)}
+                                onChange={e => update(active!.set, active!.id, "command", e.target.value)}
                             />
                         </Form.Group>
                     )}
