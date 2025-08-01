@@ -553,7 +553,7 @@ button:focus-visible {
   font-size: 14px;
   border: 1px solid #a0d0e0;
   border-radius: 4px;
-  background-color: #87CEEB; /* Sky blue */
+  background-color: #6EB4DC; /* Darker sky blue for better contrast */
   color: inherit;
   cursor: pointer;
   display: flex;
