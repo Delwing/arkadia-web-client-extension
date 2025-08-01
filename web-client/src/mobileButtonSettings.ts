@@ -102,7 +102,9 @@ export default async function initMobileButtonSettings() {
     const saveBtn = modalEl.querySelector('#mobile-buttons-save') as HTMLButtonElement;
 
     const sections = Array.from(modalEl.querySelectorAll<HTMLElement>('.mobile-button-config'));
-    const previewButtons = Array.from(modalEl.querySelectorAll<HTMLButtonElement>('#mobile-buttons-preview button[data-button-id]'));
+    const previewButtons = Array.from(modalEl.querySelectorAll<HTMLButtonElement>(
+        '#mobile-buttons-preview-solo button[data-button-id], #mobile-buttons-preview-team button[data-button-id]'
+    ));
     const previewMap: Record<string, HTMLButtonElement> = {};
     const realMap: Record<string, HTMLButtonElement> = {};
     previewButtons.forEach(btn => {
@@ -207,7 +209,9 @@ export default async function initMobileButtonSettings() {
 
     modalEl.addEventListener('click', (ev) => {
         if (activeConfig && !activeConfig.contains(ev.target as Node)) {
-            const isButton = (ev.target as HTMLElement).closest('#mobile-buttons-preview button');
+            const isButton = (ev.target as HTMLElement).closest(
+                '#mobile-buttons-preview-solo button, #mobile-buttons-preview-team button'
+            );
             if (!isButton) hideConfig();
         }
     });
