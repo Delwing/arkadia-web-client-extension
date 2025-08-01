@@ -137,7 +137,10 @@ export default class MobileDirectionButtons {
                 this.renderIdzList();
             }
         };
-        this.client.addEventListener('gmcp.objects.nums', updateLists);
+        this.client.addEventListener('gmcp.objects.nums', () => {
+            updateLists();
+            this.updateTeamMode();
+        });
         this.client.addEventListener('gmcp.objects.data', () => {
             updateLists();
             this.updateTeamMode();
