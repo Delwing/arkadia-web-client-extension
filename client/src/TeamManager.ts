@@ -101,11 +101,15 @@ export default class TeamManager {
             return;
         }
 
-        this.members.add(name);
+        this.addMember(name);
 
         if (obj.team_leader) {
+            const changed = this.leader !== name || this.leaderId !== id;
             this.leader = name;
-            this.leaderId = id
+            this.leaderId = id;
+            if (changed) {
+                this.client.sendEvent('teamChange');
+            }
         }
     }
 
@@ -153,13 +157,20 @@ export default class TeamManager {
     }
 
     private addMember(name: string) {
+        const size = this.members.size;
         this.members.add(name);
+        if (this.members.size !== size) {
+            this.client.sendEvent('teamChange');
+        }
     }
 
     private removeMember(name: string) {
-        this.members.delete(name);
+        const hadMember = this.members.delete(name);
         if (this.leader === name) {
             this.leader = undefined;
+        }
+        if (hadMember || this.leader === undefined) {
+            this.client.sendEvent('teamChange');
         }
     }
 
@@ -180,8 +191,12 @@ export default class TeamManager {
     }
 
     clearTeam() {
+        const hadMembers = this.members.size > 0 || this.leader !== undefined;
         this.members.clear();
         this.leader = undefined;
+        if (hadMembers) {
+            this.client.sendEvent('teamChange');
+        }
     }
 
     getAccumulatedObjectsData() {

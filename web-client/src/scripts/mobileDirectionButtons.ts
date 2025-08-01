@@ -145,6 +145,9 @@ export default class MobileDirectionButtons {
             updateLists();
             this.updateTeamMode();
         });
+        this.client.addEventListener('teamChange', () => {
+            this.updateTeamMode();
+        });
 
         // Listen for window resize to check if mobile view
         window.addEventListener('resize', () => {
