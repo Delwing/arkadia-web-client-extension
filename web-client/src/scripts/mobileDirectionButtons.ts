@@ -533,7 +533,7 @@ export default class MobileDirectionButtons {
     }
 
     private updateTeamMode() {
-        const team = !!this.client.TeamManager.getLeader?.();
+        const team = !!this.client.TeamManager.isInAnyTeam?.();
         if (team !== this.teamMode) {
             this.teamMode = team;
             this.applyActiveSettings();

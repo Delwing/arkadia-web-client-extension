@@ -34,6 +34,7 @@ interface AccumulatedObjectData {
 export default class TeamManager {
     private client: Client;
     private members: Set<string> = new Set();
+    private joined = false;
     private leader?: string;
     private leaderId?: string;
     private tag = 'teamManager';
@@ -147,8 +148,10 @@ export default class TeamManager {
             }
         }, tag);
         triggers.registerTrigger(/^Dolaczasz do druzyny/, (): undefined => {
+            this.joined = true;
             this.client.sendGMCP("objects.nums")
             this.client.sendGMCP("objects.data")
+            this.client.sendEvent('teamChange');
         })
     }
 
@@ -159,6 +162,7 @@ export default class TeamManager {
     private addMember(name: string) {
         const size = this.members.size;
         this.members.add(name);
+        this.joined = true;
         if (this.members.size !== size) {
             this.client.sendEvent('teamChange');
         }
@@ -172,6 +176,9 @@ export default class TeamManager {
         if (hadMember || this.leader === undefined) {
             this.client.sendEvent('teamChange');
         }
+        if (this.members.size === 0) {
+            this.joined = false;
+        }
     }
 
     getTeamMembers(): string[] {
@@ -180,6 +187,10 @@ export default class TeamManager {
 
     isInTeam(name: string): boolean {
         return this.members.has(name);
+    }
+
+    isInAnyTeam(): boolean {
+        return this.joined || this.members.size > 0 || this.leader !== undefined;
     }
 
     getLeader(): string | undefined {
@@ -194,6 +205,7 @@ export default class TeamManager {
         const hadMembers = this.members.size > 0 || this.leader !== undefined;
         this.members.clear();
         this.leader = undefined;
+        this.joined = false;
         if (hadMembers) {
             this.client.sendEvent('teamChange');
         }

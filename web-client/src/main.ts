@@ -840,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new MobileDirectionButtons(client);
 
     loadMobileButtonSettings().then(s => {
-        const inTeam = !!client.TeamManager.getLeader?.();
+        const inTeam = !!client.TeamManager.isInAnyTeam?.();
         applyMobileButtonSettings(s, inTeam);
     });
 
