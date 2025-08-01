@@ -73,7 +73,6 @@ class ArkadiaClient implements ClientAdapter {
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
-                setTimeout(() => this.telnetNegotiator.initializeProtocols(), 1000);
             };
 
             this.socket.onerror = (error: Event) => {

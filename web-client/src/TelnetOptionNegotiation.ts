@@ -22,11 +22,6 @@ export default class TelnetOptionNegotiation {
         this.client = client;
     }
 
-    initializeProtocols() {
-        this.send(this.IAC + this.DO + this.MCCP_OPTION);
-        this.send(this.IAC + this.DO + this.GMCP_OPTION);
-    }
-
     send(data: string) {
         this.client.sendRaw(btoa(data));
     }
