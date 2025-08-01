@@ -518,7 +518,9 @@ button:focus-visible {
   grid-template-columns: repeat(4, auto);
 }
 
-#mobile-buttons-preview {
+#mobile-buttons-preview,
+#mobile-buttons-preview-solo,
+#mobile-buttons-preview-team {
   position: static;
   display: grid;
   grid-template-columns: repeat(4, auto);

@@ -34,6 +34,7 @@ interface AccumulatedObjectData {
 export default class TeamManager {
     private client: Client;
     private members: Set<string> = new Set();
+    private joined = false;
     private leader?: string;
     private leaderId?: string;
     private tag = 'teamManager';
@@ -101,11 +102,15 @@ export default class TeamManager {
             return;
         }
 
-        this.members.add(name);
+        this.addMember(name);
 
         if (obj.team_leader) {
+            const changed = this.leader !== name || this.leaderId !== id;
             this.leader = name;
-            this.leaderId = id
+            this.leaderId = id;
+            if (changed) {
+                this.client.sendEvent('teamChange');
+            }
         }
     }
 
@@ -143,8 +148,10 @@ export default class TeamManager {
             }
         }, tag);
         triggers.registerTrigger(/^Dolaczasz do druzyny/, (): undefined => {
+            this.joined = true;
             this.client.sendGMCP("objects.nums")
             this.client.sendGMCP("objects.data")
+            this.client.sendEvent('teamChange');
         })
     }
 
@@ -153,13 +160,24 @@ export default class TeamManager {
     }
 
     private addMember(name: string) {
+        const size = this.members.size;
         this.members.add(name);
+        this.joined = true;
+        if (this.members.size !== size) {
+            this.client.sendEvent('teamChange');
+        }
     }
 
     private removeMember(name: string) {
-        this.members.delete(name);
+        const hadMember = this.members.delete(name);
         if (this.leader === name) {
             this.leader = undefined;
+        }
+        if (hadMember || this.leader === undefined) {
+            this.client.sendEvent('teamChange');
+        }
+        if (this.members.size === 0) {
+            this.joined = false;
         }
     }
 
@@ -171,6 +189,10 @@ export default class TeamManager {
         return this.members.has(name);
     }
 
+    isInAnyTeam(): boolean {
+        return this.joined || this.members.size > 0 || this.leader !== undefined;
+    }
+
     getLeader(): string | undefined {
         return this.leader;
     }
@@ -180,8 +202,13 @@ export default class TeamManager {
     }
 
     clearTeam() {
+        const hadMembers = this.members.size > 0 || this.leader !== undefined;
         this.members.clear();
         this.leader = undefined;
+        this.joined = false;
+        if (hadMembers) {
+            this.client.sendEvent('teamChange');
+        }
     }
 
     getAccumulatedObjectsData() {

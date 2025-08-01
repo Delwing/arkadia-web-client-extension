@@ -1,6 +1,6 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
-import { loadSettings as loadMobileButtonSettings, ButtonSetting } from "../mobileButtonSettings";
+import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
 export default class MobileDirectionButtons {
@@ -36,7 +36,9 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
+    private allSettings: Settings = { solo: {}, team: {} };
     private buttonSettings: Record<string, ButtonSetting> = {};
+    private teamMode = false;
 
     private readonly polishToEnglish: Record<string, string> = {
         "polnoc": "north",
@@ -106,12 +108,10 @@ export default class MobileDirectionButtons {
         });
 
         loadMobileButtonSettings().then(settings => {
-            this.buttonSettings = settings;
+            this.allSettings = settings;
+            this.updateTeamMode();
             this.setupEventHandlers();
-            Object.keys(this.buttonSettings).forEach(id => {
-                const btn = document.getElementById(id) as HTMLButtonElement | null;
-                if (btn) this.applyConfigToButton(id, btn);
-            });
+            this.applyActiveSettings();
         });
         this.updateBracketRightButton();
         this.updateToggleButton();
@@ -137,8 +137,17 @@ export default class MobileDirectionButtons {
                 this.renderIdzList();
             }
         };
-        this.client.addEventListener('gmcp.objects.nums', updateLists);
-        this.client.addEventListener('gmcp.objects.data', updateLists);
+        this.client.addEventListener('gmcp.objects.nums', () => {
+            updateLists();
+            this.updateTeamMode();
+        });
+        this.client.addEventListener('gmcp.objects.data', () => {
+            updateLists();
+            this.updateTeamMode();
+        });
+        this.client.addEventListener('teamChange', () => {
+            this.updateTeamMode();
+        });
 
         // Listen for window resize to check if mobile view
         window.addEventListener('resize', () => {
@@ -166,6 +175,10 @@ export default class MobileDirectionButtons {
             Object.keys(this.buttonSettings).forEach(id => {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
                 if (b) this.applyConfigToButton(id, b);
+            });
+            loadMobileButtonSettings().then(s => {
+                this.allSettings = s;
+                this.updateTeamMode();
             });
         });
 
@@ -516,6 +529,22 @@ export default class MobileDirectionButtons {
             b.textContent = c.label;
             b.addEventListener('click', () => this.client.sendCommand(c.cmd));
             this.idzList!.appendChild(b);
+        });
+    }
+
+    private updateTeamMode() {
+        const team = !!this.client.TeamManager.isInAnyTeam?.();
+        if (team !== this.teamMode) {
+            this.teamMode = team;
+            this.applyActiveSettings();
+        }
+    }
+
+    private applyActiveSettings() {
+        this.buttonSettings = this.teamMode ? this.allSettings.team : this.allSettings.solo;
+        Object.keys(this.buttonSettings).forEach(id => {
+            const btn = document.getElementById(id) as HTMLButtonElement | null;
+            if (btn) this.applyConfigToButton(id, btn);
         });
     }
 
