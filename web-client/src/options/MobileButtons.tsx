@@ -29,6 +29,7 @@ function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({ solo: {}, team: {} });
     const [active, setActive] = useState<{ set: 'solo' | 'team'; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+    const [view, setView] = useState<'solo' | 'team'>('solo');
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +84,11 @@ function MobileButtons() {
         ev.stopPropagation();
     }
 
+    function changeView(v: 'solo' | 'team') {
+        setView(v);
+        setActive(null);
+    }
+
     function close() {
         setActive(null);
     }
@@ -107,11 +113,26 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <h6>Bez drużyny</h6>
+            <div className="btn-group mb-2">
+                <Button
+                    size="sm"
+                    variant={view === 'solo' ? 'primary' : 'secondary'}
+                    onClick={() => changeView('solo')}
+                >
+                    Bez drużyny
+                </Button>
+                <Button
+                    size="sm"
+                    variant={view === 'team' ? 'primary' : 'secondary'}
+                    onClick={() => changeView('team')}
+                >
+                    W drużynie
+                </Button>
+            </div>
             <div
                 ref={soloRef}
                 id="mobile-buttons-preview-solo"
-                className="mobile-direction-buttons mb-2"
+                className={`mobile-direction-buttons mb-2 ${view === 'solo' ? '' : 'd-none'}`}
             >
                 {order.map(id => {
                     const cfg = settings.solo[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
@@ -137,11 +158,10 @@ function MobileButtons() {
                     );
                 })}
             </div>
-            <h6 className="mt-3">W drużynie</h6>
             <div
                 ref={teamRef}
                 id="mobile-buttons-preview-team"
-                className="mobile-direction-buttons mb-2"
+                className={`mobile-direction-buttons mb-2 ${view === 'team' ? '' : 'd-none'}`}
             >
                 {order.map(id => {
                     const cfg = settings.team[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
