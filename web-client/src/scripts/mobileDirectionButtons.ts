@@ -3,6 +3,8 @@ import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
+const MOVE_MODE_LABELS = ["zwykly", "przemknij", "przemknij z druzyna"];
+
 export default class MobileDirectionButtons {
     private client: Client;
     private readonly container: HTMLDivElement;
@@ -635,18 +637,25 @@ export default class MobileDirectionButtons {
                 case 'wesprzyj':
                     this.client.support();
                     break;
+                case 'moveMode':
+                    this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
+                    newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
+                    break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
                     const firstExit = Object.keys(specialExits)[0];
                     if (firstExit) {
                         this.client.sendCommand(firstExit);
-                    }
+                        }
                     break;
             }
         };
         newBtn.addEventListener('click', handler);
 
-        if (cfg.macro === 'specialExit') {
+        if (cfg.macro === 'moveMode') {
+            this.client.moveModeButton = newBtn;
+            newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
+        } else if (cfg.macro === 'specialExit') {
             const updateLabel = () => {
                 const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
                 const firstExit = Object.keys(specialExits)[0];
