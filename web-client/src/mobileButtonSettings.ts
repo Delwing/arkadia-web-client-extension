@@ -9,7 +9,8 @@ export type MacroType =
     | 'command'
     | 'specialExit'
     | 'kierunek'
-    | 'wesprzyj';
+    | 'wesprzyj'
+    | 'moveMode';
 
 export interface ButtonSetting {
     macro: MacroType;

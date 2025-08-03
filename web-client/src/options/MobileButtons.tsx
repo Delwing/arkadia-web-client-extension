@@ -19,6 +19,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "kierunek", label: "Kierunek" },
     { value: "specialExit", label: "Wyjście specjalne" },
     { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
+    { value: "moveMode", label: "Tryb ruchu" },
 ];
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
