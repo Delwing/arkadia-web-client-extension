@@ -26,7 +26,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
-const emptySetting: ButtonSetting = { macro: 'command', label: '', color: 'transparent' };
+const emptySetting: ButtonSetting = { macro: 'command', label: '', color: '#6EB4DC' };
 
 type SettingsMap = Record<string, ButtonSetting>;
 
@@ -159,6 +159,13 @@ function MobileButtons() {
         update(setName, "color", def);
     }
 
+    function makeBlank(setName: 'solo' | 'team', id: string) {
+        setSettings(prev => ({
+            ...prev,
+            [setName]: { ...prev[setName], [id]: { ...emptySetting } },
+        }));
+    }
+
     function save() {
         saveSettings(settings);
         const teamActive = !!(window as any).clientExtension?.TeamManager?.getLeader?.();
@@ -201,7 +208,7 @@ function MobileButtons() {
                         <div
                             ref={soloRef}
                             id="mobile-buttons-preview-solo"
-                            className={`mobile-direction-buttons mb-2 ${view === 'solo' ? '' : 'd-none'}`}
+                            className={`mobile-direction-buttons preview mb-2 ${view === 'solo' ? '' : 'd-none'}`}
                             style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
                         >
                             {settings.order.map(id => {
@@ -219,7 +226,7 @@ function MobileButtons() {
                                         key={id}
                                         data-button-id={id}
                                         className={classes}
-                                        style={{ backgroundColor: cfg.color }}
+                                        style={{ backgroundColor: cfg.label ? cfg.color : 'transparent' }}
                                         onClick={handle}
                                     >
                                         {cfg.label}
@@ -230,7 +237,7 @@ function MobileButtons() {
                         <div
                             ref={teamRef}
                             id="mobile-buttons-preview-team"
-                            className={`mobile-direction-buttons mb-2 ${view === 'team' ? '' : 'd-none'}`}
+                            className={`mobile-direction-buttons preview mb-2 ${view === 'team' ? '' : 'd-none'}`}
                             style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
                         >
                             {settings.order.map(id => {
@@ -248,7 +255,7 @@ function MobileButtons() {
                                         key={id}
                                         data-button-id={id}
                                         className={classes}
-                                        style={{ backgroundColor: cfg.color }}
+                                        style={{ backgroundColor: cfg.label ? cfg.color : 'transparent' }}
                                         onClick={handle}
                                     >
                                         {cfg.label}
@@ -312,6 +319,14 @@ function MobileButtons() {
                         />
                         <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                     </Form.Group>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mb-2"
+                        onClick={() => makeBlank(active!.set, active!.id)}
+                    >
+                        Pusty
+                    </Button>
                     {activeCfg.macro === "kierunek" && (
                         <Form.Group className="form-label mb-2">
                             <Form.Label>Kierunek</Form.Label>
