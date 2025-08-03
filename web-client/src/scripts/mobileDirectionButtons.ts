@@ -39,7 +39,10 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
-    private allSettings: Settings = { solo: {}, team: {} };
+    private allSettings: Settings = {
+        solo: { buttons: {}, order: [], cols: 0 },
+        team: { buttons: {}, order: [], cols: 0 },
+    };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
 
@@ -563,7 +566,7 @@ export default class MobileDirectionButtons {
     }
 
     private applyActiveSettings() {
-        this.buttonSettings = this.teamMode ? this.allSettings.team : this.allSettings.solo;
+        this.buttonSettings = (this.teamMode ? this.allSettings.team : this.allSettings.solo).buttons;
         Object.keys(this.buttonSettings).forEach(id => {
             const btn = document.getElementById(id) as HTMLButtonElement | null;
             if (btn) this.applyConfigToButton(id, btn);
@@ -573,8 +576,9 @@ export default class MobileDirectionButtons {
     private applyConfigToButton(id: string, btn: HTMLButtonElement) {
         const cfg = this.buttonSettings[id];
         if (!cfg) return;
-        btn.textContent = cfg.label;
-        if (!cfg.label) {
+        const isEmpty = cfg.macro === 'empty' || !cfg.label;
+        btn.textContent = isEmpty ? '' : cfg.label;
+        if (isEmpty) {
             btn.classList.add('empty');
             btn.style.backgroundColor = 'transparent';
             btn.style.border = 'none';
@@ -610,6 +614,8 @@ export default class MobileDirectionButtons {
 
         const handler = () => {
             switch (cfg.macro) {
+                case 'empty':
+                    break;
                 case 'functional':
                     const event = new KeyboardEvent('keydown', {
                         code: this.boundKey,
