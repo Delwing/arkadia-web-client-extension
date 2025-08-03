@@ -96,7 +96,7 @@ export function registerScripts(client: Client) {
 
     client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /,
-        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szbkim biegiem) w droge\./
+        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) w droge\./
     ], (): undefined => {
         client.sendEvent('refreshPositionWhenAble')
     })

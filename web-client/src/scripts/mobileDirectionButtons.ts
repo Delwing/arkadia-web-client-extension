@@ -522,7 +522,7 @@ export default class MobileDirectionButtons {
             { label: 'idz marszem', cmd: 'idz marszem' },
             { label: 'idz truchtem', cmd: 'idz truchtem' },
             { label: 'idz biegiem', cmd: 'idz biegiem' },
-            { label: 'idz s. biegiem', cmd: 'idz szybkiem biegiem' },
+            { label: 'idz s. biegiem', cmd: 'idz szybkim biegiem' },
         ];
         cmds.forEach(c => {
             const b = document.createElement('button');
