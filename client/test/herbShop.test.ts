@@ -34,7 +34,7 @@ describe('herb shop width adjustments', () => {
 
   test('adjusts split line', () => {
     const result = parse(split);
-    expect(result).toBe('+'.padEnd(client.contentWidth - 3, '-') + '+');
+    expect(result).toBe('+'.padEnd(client.contentWidth - 1, '-') + '+');
   });
 
   test('splits header and item lines when narrow', () => {

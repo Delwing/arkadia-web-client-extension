@@ -8,7 +8,7 @@ export default function initHerbShop(client: Client) {
         splitReg: /^\+-{58}\+-{4}\+-{4}\+-{4}\+-{4}\+-{7}\+$/,
         headerReg: /^\|\s*Nazwa towaru\s*\|\s*mt\s*\|\s*zl\s*\|\s*sr\s*\|\s*md\s*\|\s*Ilosc\s*\|$/,
         itemReg: /^\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|$/,
-        makeSplit: (width) => `+${"-".repeat(Math.max(0, width - 4))}+`,
+        makeSplit: (width) => `+${"-".repeat(Math.max(0, width - 2))}+`,
         makeHeader: (width, pad) => {
             const nameLine = `| ${pad('Nazwa towaru', width - 3)}|`;
             const numbersLine = `| ${pad('mt/zl/sr/md Ilosc', width - 3)}|`;
