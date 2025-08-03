@@ -25,7 +25,6 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC' },
     'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', command: '/go' },
-    'move-mode-button': { macro: 'moveMode', label: 'Ruch:', color: '#6EB4DC' },
     'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC' },
     'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC' },
     'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', command: '/z' },

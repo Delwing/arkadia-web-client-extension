@@ -3,7 +3,8 @@ import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
-const MOVE_MODE_LABELS = ["zwykly", "przemknij", "przemknij z druzyna"];
+const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
+const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
 export default class MobileDirectionButtons {
     private client: Client;
@@ -640,6 +641,7 @@ export default class MobileDirectionButtons {
                 case 'moveMode':
                     this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
                     newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
+                    newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
                     break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
@@ -655,6 +657,7 @@ export default class MobileDirectionButtons {
         if (cfg.macro === 'moveMode') {
             this.client.moveModeButton = newBtn;
             newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
+            newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
         } else if (cfg.macro === 'specialExit') {
             const updateLabel = () => {
                 const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
