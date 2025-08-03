@@ -82,7 +82,7 @@ export interface Settings {
     team: LayoutSettings;
 }
 
-function createDefaultLayout(): LayoutSettings {
+export function createDefaultLayout(): LayoutSettings {
     return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols };
 }
 

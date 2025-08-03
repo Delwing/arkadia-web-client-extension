@@ -10,6 +10,7 @@ import {
     Settings,
     defaultOrder,
     defaultCols,
+    createDefaultLayout,
 } from "../mobileButtonSettings";
 
 const macroOptions: { value: MacroType; label: string }[] = [
@@ -179,6 +180,14 @@ function MobileButtons() {
         }));
     }
 
+    function restoreDefaults(setName: 'solo' | 'team') {
+        setSettings(prev => ({
+            ...prev,
+            [setName]: createDefaultLayout(),
+        }));
+        setActive(null);
+    }
+
     function save() {
         saveSettings(settings);
         const teamActive = !!(window as any).clientExtension?.TeamManager?.getLeader?.();
@@ -191,20 +200,25 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="btn-group mb-2">
-                <Button
-                    size="sm"
-                    variant={view === 'solo' ? 'primary' : 'secondary'}
-                    onClick={() => changeView('solo')}
-                >
-                    Bez drużyny
-                </Button>
-                <Button
-                    size="sm"
-                    variant={view === 'team' ? 'primary' : 'secondary'}
-                    onClick={() => changeView('team')}
-                >
-                    W drużynie
+            <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="btn-group">
+                    <Button
+                        size="sm"
+                        variant={view === 'solo' ? 'primary' : 'secondary'}
+                        onClick={() => changeView('solo')}
+                    >
+                        Bez drużyny
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant={view === 'team' ? 'primary' : 'secondary'}
+                        onClick={() => changeView('team')}
+                    >
+                        W drużynie
+                    </Button>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
+                    Domyślne
                 </Button>
             </div>
             <div className="d-flex flex-column align-items-center mb-2">
