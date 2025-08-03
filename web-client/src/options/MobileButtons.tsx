@@ -187,77 +187,85 @@ function MobileButtons() {
                     W drużynie
                 </Button>
             </div>
-            <div className="d-flex justify-content-between mb-2 flex-wrap gap-2">
-                <div className="btn-group">
+            <div className="d-flex flex-column align-items-center mb-2">
+                <div className="d-flex gap-1 mb-2">
                     <Button size="sm" variant="secondary" onClick={() => addRow('top')}>+R↑</Button>
                     <Button size="sm" variant="secondary" onClick={() => removeRow('top')}>-R↑</Button>
+                </div>
+                <div className="d-flex align-items-center">
+                    <div className="d-flex flex-column gap-1 me-2">
+                        <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
+                        <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
+                    </div>
+                    <div>
+                        <div
+                            ref={soloRef}
+                            id="mobile-buttons-preview-solo"
+                            className={`mobile-direction-buttons mb-2 ${view === 'solo' ? '' : 'd-none'}`}
+                            style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
+                        >
+                            {settings.order.map(id => {
+                                const cfg = settings.solo[id] || defaultSettings[id] || emptySetting;
+                                let classes = 'mobile-button';
+                                if (cfg.macro === 'kierunek') {
+                                    classes += ' direction-button';
+                                } else {
+                                    classes += ' mobile-button-text';
+                                }
+                                if (!cfg.label) classes += ' empty';
+                                const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('solo', id, ev);
+                                return (
+                                    <button
+                                        key={id}
+                                        data-button-id={id}
+                                        className={classes}
+                                        style={{ backgroundColor: cfg.color }}
+                                        onClick={handle}
+                                    >
+                                        {cfg.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div
+                            ref={teamRef}
+                            id="mobile-buttons-preview-team"
+                            className={`mobile-direction-buttons mb-2 ${view === 'team' ? '' : 'd-none'}`}
+                            style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
+                        >
+                            {settings.order.map(id => {
+                                const cfg = settings.team[id] || defaultSettings[id] || emptySetting;
+                                let classes = 'mobile-button';
+                                if (cfg.macro === 'kierunek') {
+                                    classes += ' direction-button';
+                                } else {
+                                    classes += ' mobile-button-text';
+                                }
+                                if (!cfg.label) classes += ' empty';
+                                const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('team', id, ev);
+                                return (
+                                    <button
+                                        key={id}
+                                        data-button-id={id}
+                                        className={classes}
+                                        style={{ backgroundColor: cfg.color }}
+                                        onClick={handle}
+                                    >
+                                        {cfg.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="d-flex flex-column gap-1 ms-2">
+                        <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
+                        <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
+                    </div>
+                </div>
+                <div className="d-flex gap-1 mt-2">
                     <Button size="sm" variant="secondary" onClick={() => addRow('bottom')}>+R↓</Button>
                     <Button size="sm" variant="secondary" onClick={() => removeRow('bottom')}>-R↓</Button>
                 </div>
-                <div className="btn-group">
-                    <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
-                    <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
-                    <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
-                    <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
-                </div>
-            </div>
-            <div
-                ref={soloRef}
-                id="mobile-buttons-preview-solo"
-                className={`mobile-direction-buttons mb-2 ${view === 'solo' ? '' : 'd-none'}`}
-                style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
-            >
-                {settings.order.map(id => {
-                    const cfg = settings.solo[id] || defaultSettings[id] || emptySetting;
-                    let classes = 'mobile-button';
-                    if (cfg.macro === 'kierunek') {
-                        classes += ' direction-button';
-                    } else {
-                        classes += ' mobile-button-text';
-                    }
-                    if (!cfg.label) classes += ' empty';
-                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('solo', id, ev);
-                    return (
-                        <button
-                            key={id}
-                            data-button-id={id}
-                            className={classes}
-                            style={{ backgroundColor: cfg.color }}
-                            onClick={handle}
-                        >
-                            {cfg.label}
-                        </button>
-                    );
-                })}
-            </div>
-            <div
-                ref={teamRef}
-                id="mobile-buttons-preview-team"
-                className={`mobile-direction-buttons mb-2 ${view === 'team' ? '' : 'd-none'}`}
-                style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
-            >
-                {settings.order.map(id => {
-                    const cfg = settings.team[id] || defaultSettings[id] || emptySetting;
-                    let classes = 'mobile-button';
-                    if (cfg.macro === 'kierunek') {
-                        classes += ' direction-button';
-                    } else {
-                        classes += ' mobile-button-text';
-                    }
-                    if (!cfg.label) classes += ' empty';
-                    const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('team', id, ev);
-                    return (
-                        <button
-                            key={id}
-                            data-button-id={id}
-                            className={classes}
-                            style={{ backgroundColor: cfg.color }}
-                            onClick={handle}
-                        >
-                            {cfg.label}
-                        </button>
-                    );
-                })}
             </div>
             {active && activeCfg && (
                 <div

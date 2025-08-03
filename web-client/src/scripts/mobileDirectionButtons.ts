@@ -192,6 +192,7 @@ export default class MobileDirectionButtons {
                 u: document.getElementById('u-button') as HTMLButtonElement | null,
                 d: document.getElementById('d-button') as HTMLButtonElement | null,
             };
+            this.updateToggleButton();
             this.setupEventHandlers();
             Object.keys(this.buttonSettings).forEach(id => {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
