@@ -58,8 +58,11 @@ function apply(settings: UiSettings) {
         content.scrollTop = content.scrollHeight;
     }
 
-    // Adjust grid row size for dynamically created Z buttons
-    document.querySelectorAll<HTMLDivElement>('.mobile-z-buttons').forEach(div => {
+    // Adjust grid row size for dynamically created Z and idz buttons
+    const lists = document.querySelectorAll<HTMLDivElement>(
+        '.mobile-z-buttons, .mobile-idz-buttons'
+    );
+    lists.forEach(div => {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
