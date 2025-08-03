@@ -37,7 +37,7 @@ function MobileButtons() {
         loadSettings().then(setSettings);
     }, []);
 
-    const notEditable = ['buttons-toggle'];
+    const notEditable: string[] = [];
     const order = [
         'z-list-toggle',
         'zas-list-toggle',

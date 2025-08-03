@@ -455,7 +455,12 @@ export default class MobileDirectionButtons {
 
     private updateToggleButton() {
         if (!this.toggleButton) return;
-        this.toggleButton.textContent = this.collapsed ? '⇧' : '⇩';
+        const cfg = this.buttonSettings['buttons-toggle'];
+        if (cfg && cfg.macro !== 'functional') {
+            this.toggleButton.textContent = cfg.label;
+        } else {
+            this.toggleButton.textContent = this.collapsed ? '⇧' : '⇩';
+        }
     }
 
     private toggleVisibility() {
@@ -560,6 +565,7 @@ export default class MobileDirectionButtons {
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
+        if (id === 'buttons-toggle') this.toggleButton = newBtn;
         if (cfg.macro === 'idzList') {
             this.idzToggle = newBtn;
         } else if (this.idzToggle === newBtn) {
@@ -581,16 +587,20 @@ export default class MobileDirectionButtons {
         const handler = () => {
             switch (cfg.macro) {
                 case 'functional':
-                    const event = new KeyboardEvent('keydown', {
-                        code: this.boundKey,
-                        key: this.boundKey,
-                        ctrlKey: this.boundCtrl,
-                        altKey: this.boundAlt,
-                        shiftKey: this.boundShift,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    document.dispatchEvent(event);
+                    if (id === 'buttons-toggle') {
+                        this.toggleVisibility();
+                    } else {
+                        const event = new KeyboardEvent('keydown', {
+                            code: this.boundKey,
+                            key: this.boundKey,
+                            ctrlKey: this.boundCtrl,
+                            altKey: this.boundAlt,
+                            shiftKey: this.boundShift,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        document.dispatchEvent(event);
+                    }
                     break;
                 case 'zList':
                     if (this.zList && this.zList.style.display === 'grid') {
