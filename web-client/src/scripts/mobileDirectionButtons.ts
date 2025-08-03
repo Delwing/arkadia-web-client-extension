@@ -175,6 +175,24 @@ export default class MobileDirectionButtons {
 
         this.client.addEventListener('mobileButtonsSettings', (ev: CustomEvent) => {
             this.buttonSettings = ev.detail || this.buttonSettings;
+            this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement | null;
+            this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
+            this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
+            this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement | null;
+            this.idzToggle = null;
+            this.directionButtons = {
+                nw: document.getElementById('nw-button') as HTMLButtonElement | null,
+                n: document.getElementById('n-button') as HTMLButtonElement | null,
+                ne: document.getElementById('ne-button') as HTMLButtonElement | null,
+                w: document.getElementById('w-button') as HTMLButtonElement | null,
+                e: document.getElementById('e-button') as HTMLButtonElement | null,
+                sw: document.getElementById('sw-button') as HTMLButtonElement | null,
+                s: document.getElementById('s-button') as HTMLButtonElement | null,
+                se: document.getElementById('se-button') as HTMLButtonElement | null,
+                u: document.getElementById('u-button') as HTMLButtonElement | null,
+                d: document.getElementById('d-button') as HTMLButtonElement | null,
+            };
+            this.setupEventHandlers();
             Object.keys(this.buttonSettings).forEach(id => {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
                 if (b) this.applyConfigToButton(id, b);
@@ -217,9 +235,9 @@ export default class MobileDirectionButtons {
 
 
         if (this.toggleButton) {
-            this.toggleButton.addEventListener('click', () => {
+            this.toggleButton.onclick = () => {
                 this.toggleVisibility();
-            });
+            };
         }
 
         // Center and special exit buttons configured via settings
@@ -555,7 +573,15 @@ export default class MobileDirectionButtons {
         const cfg = this.buttonSettings[id];
         if (!cfg) return;
         btn.textContent = cfg.label;
-        btn.style.backgroundColor = cfg.color;
+        if (!cfg.label) {
+            btn.classList.add('empty');
+            btn.style.backgroundColor = 'transparent';
+            btn.style.border = 'none';
+        } else {
+            btn.classList.remove('empty');
+            btn.style.backgroundColor = cfg.color;
+            btn.style.border = '';
+        }
         const clone = btn.cloneNode(true) as HTMLButtonElement;
         btn.replaceWith(clone);
         const newBtn = clone;

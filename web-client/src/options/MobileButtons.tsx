@@ -8,6 +8,8 @@ import {
     ButtonSetting,
     MacroType,
     Settings,
+    defaultOrder,
+    defaultCols,
 } from "../mobileButtonSettings";
 
 const macroOptions: { value: MacroType; label: string }[] = [
@@ -24,10 +26,12 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
+const emptySetting: ButtonSetting = { macro: 'command', label: '', color: 'transparent' };
+
 type SettingsMap = Record<string, ButtonSetting>;
 
 function MobileButtons() {
-    const [settings, setSettings] = useState<Settings>({ solo: {}, team: {} });
+    const [settings, setSettings] = useState<Settings>({ solo: {}, team: {}, order: [...defaultOrder], cols: defaultCols });
     const [active, setActive] = useState<{ set: 'solo' | 'team'; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const [view, setView] = useState<'solo' | 'team'>('solo');
@@ -37,43 +41,95 @@ function MobileButtons() {
     useEffect(() => {
         loadSettings().then(setSettings);
     }, []);
-
     const notEditable = ['buttons-toggle'];
-    const order = [
-        'z-list-toggle',
-        'zas-list-toggle',
-        'go-button',
-        'buttons-toggle',
-        'bracket-right-button',
-        'button-1',
-        'button-2',
-        'button-3',
-        'nw-button',
-        'n-button',
-        'ne-button',
-        'u-button',
-        'w-button',
-        'c-button',
-        'e-button',
-        'd-button',
-        'sw-button',
-        's-button',
-        'se-button',
-        'special-exit-button',
-    ];
 
-    const topButtons = [
-        'z-list-toggle',
-        'zas-list-toggle',
-        'go-button',
-        'buttons-toggle',
-        'bracket-right-button',
-        'button-1',
-        'button-2',
-        'button-3',
-    ];
+    function nextId(ids: string[]) {
+        const max = ids.reduce((m, id) => {
+            const match = /^button-(\d+)$/.exec(id);
+            return match ? Math.max(m, parseInt(match[1], 10)) : m;
+        }, 3);
+        let current = max;
+        return () => `button-${++current}`;
+    }
 
-    const textDirButtons = ['u-button', 'c-button', 'd-button', 'special-exit-button'];
+    function addRow(pos: 'top' | 'bottom') {
+        setSettings(prev => {
+            const makeId = nextId(prev.order);
+            const ids = Array.from({ length: prev.cols }, () => makeId());
+            const solo: SettingsMap = { ...prev.solo };
+            const team: SettingsMap = { ...prev.team };
+            ids.forEach(id => {
+                solo[id] = { ...emptySetting };
+                team[id] = { ...emptySetting };
+            });
+            const order = pos === 'top' ? [...ids, ...prev.order] : [...prev.order, ...ids];
+            return { ...prev, solo, team, order };
+        });
+    }
+
+    function removeRow(pos: 'top' | 'bottom') {
+        setSettings(prev => {
+            const rows = Math.floor(prev.order.length / prev.cols);
+            if (rows <= 1) return prev;
+            const start = pos === 'top' ? 0 : prev.order.length - prev.cols;
+            const removed = prev.order.slice(start, start + prev.cols);
+            const order = pos === 'top' ? prev.order.slice(prev.cols) : prev.order.slice(0, start);
+            const solo: SettingsMap = { ...prev.solo };
+            const team: SettingsMap = { ...prev.team };
+            removed.forEach(id => { delete solo[id]; delete team[id]; });
+            return { ...prev, solo, team, order };
+        });
+    }
+
+    function addCol(side: 'left' | 'right') {
+        setSettings(prev => {
+            const makeId = nextId(prev.order);
+            const solo: SettingsMap = { ...prev.solo };
+            const team: SettingsMap = { ...prev.team };
+            const order: string[] = [];
+            const rows = Math.floor(prev.order.length / prev.cols);
+            for (let r = 0; r < rows; r++) {
+                if (side === 'left') {
+                    const id = makeId();
+                    order.push(id);
+                    solo[id] = { ...emptySetting };
+                    team[id] = { ...emptySetting };
+                }
+                const row = prev.order.slice(r * prev.cols, (r + 1) * prev.cols);
+                order.push(...row);
+                if (side === 'right') {
+                    const id = makeId();
+                    order.push(id);
+                    solo[id] = { ...emptySetting };
+                    team[id] = { ...emptySetting };
+                }
+            }
+            return { ...prev, solo, team, order, cols: prev.cols + 1 };
+        });
+    }
+
+    function removeCol(side: 'left' | 'right') {
+        setSettings(prev => {
+            if (prev.cols <= 1) return prev;
+            const rows = Math.floor(prev.order.length / prev.cols);
+            const order: string[] = [];
+            const removed: string[] = [];
+            for (let r = 0; r < rows; r++) {
+                const row = prev.order.slice(r * prev.cols, (r + 1) * prev.cols);
+                if (side === 'left') {
+                    removed.push(row[0]);
+                    order.push(...row.slice(1));
+                } else {
+                    removed.push(row[row.length - 1]);
+                    order.push(...row.slice(0, row.length - 1));
+                }
+            }
+            const solo: SettingsMap = { ...prev.solo };
+            const team: SettingsMap = { ...prev.team };
+            removed.forEach(id => { delete solo[id]; delete team[id]; });
+            return { ...prev, solo, team, order, cols: prev.cols - 1 };
+        });
+    }
 
     function openConfig(setName: 'solo' | 'team', id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
@@ -99,7 +155,8 @@ function MobileButtons() {
     }
 
     function resetColor(setName: 'solo' | 'team', id: string) {
-        update(setName, "color", defaultSettings[id].color);
+        const def = defaultSettings[id]?.color || emptySetting.color;
+        update(setName, "color", def);
     }
 
     function save() {
@@ -110,7 +167,7 @@ function MobileButtons() {
         modal?.hide();
     }
 
-    const activeCfg = active ? (settings[active.set][active.id] || defaultSettings[active.id]) : null;
+    const activeCfg = active ? (settings[active.set][active.id] || defaultSettings[active.id] || emptySetting) : null;
 
     return (
         <div onClick={close} className="w-100 position-relative">
@@ -130,21 +187,35 @@ function MobileButtons() {
                     W drużynie
                 </Button>
             </div>
+            <div className="d-flex justify-content-between mb-2 flex-wrap gap-2">
+                <div className="btn-group">
+                    <Button size="sm" variant="secondary" onClick={() => addRow('top')}>+R↑</Button>
+                    <Button size="sm" variant="secondary" onClick={() => removeRow('top')}>-R↑</Button>
+                    <Button size="sm" variant="secondary" onClick={() => addRow('bottom')}>+R↓</Button>
+                    <Button size="sm" variant="secondary" onClick={() => removeRow('bottom')}>-R↓</Button>
+                </div>
+                <div className="btn-group">
+                    <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
+                    <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
+                    <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
+                    <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
+                </div>
+            </div>
             <div
                 ref={soloRef}
                 id="mobile-buttons-preview-solo"
                 className={`mobile-direction-buttons mb-2 ${view === 'solo' ? '' : 'd-none'}`}
+                style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
             >
-                {order.map(id => {
-                    const cfg = settings.solo[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
+                {settings.order.map(id => {
+                    const cfg = settings.solo[id] || defaultSettings[id] || emptySetting;
                     let classes = 'mobile-button';
-                    if (topButtons.includes(id)) {
-                        classes += ' mobile-button-text top-button';
-                    } else if (textDirButtons.includes(id)) {
-                        classes += ' mobile-button-text direction-button';
-                    } else {
+                    if (cfg.macro === 'kierunek') {
                         classes += ' direction-button';
+                    } else {
+                        classes += ' mobile-button-text';
                     }
+                    if (!cfg.label) classes += ' empty';
                     const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('solo', id, ev);
                     return (
                         <button
@@ -163,17 +234,17 @@ function MobileButtons() {
                 ref={teamRef}
                 id="mobile-buttons-preview-team"
                 className={`mobile-direction-buttons mb-2 ${view === 'team' ? '' : 'd-none'}`}
+                style={{ gridTemplateColumns: `repeat(${settings.cols}, auto)` }}
             >
-                {order.map(id => {
-                    const cfg = settings.team[id] || defaultSettings[id] || { label: '⇩', color: '#6EB4DC', macro: 'functional' };
+                {settings.order.map(id => {
+                    const cfg = settings.team[id] || defaultSettings[id] || emptySetting;
                     let classes = 'mobile-button';
-                    if (topButtons.includes(id)) {
-                        classes += ' mobile-button-text top-button';
-                    } else if (textDirButtons.includes(id)) {
-                        classes += ' mobile-button-text direction-button';
-                    } else {
+                    if (cfg.macro === 'kierunek') {
                         classes += ' direction-button';
+                    } else {
+                        classes += ' mobile-button-text';
                     }
+                    if (!cfg.label) classes += ' empty';
                     const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('team', id, ev);
                     return (
                         <button

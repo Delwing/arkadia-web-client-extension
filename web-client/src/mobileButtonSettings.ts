@@ -45,9 +45,36 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
+export const defaultOrder = [
+    'z-list-toggle',
+    'zas-list-toggle',
+    'go-button',
+    'buttons-toggle',
+    'bracket-right-button',
+    'button-1',
+    'button-2',
+    'button-3',
+    'nw-button',
+    'n-button',
+    'ne-button',
+    'u-button',
+    'w-button',
+    'c-button',
+    'e-button',
+    'd-button',
+    'sw-button',
+    's-button',
+    'se-button',
+    'special-exit-button',
+];
+
+export const defaultCols = 4;
+
 export interface Settings {
     solo: Record<string, ButtonSetting>;
     team: Record<string, ButtonSetting>;
+    order: string[];
+    cols: number;
 }
 
 export async function loadSettings(): Promise<Settings> {
@@ -55,19 +82,25 @@ export async function loadSettings(): Promise<Settings> {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
+            const order = Array.isArray(raw.order) ? raw.order : defaultOrder;
+            const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
             if (raw.solo || raw.team) {
                 return {
                     solo: { ...defaultSettings, ...(raw.solo || {}) },
                     team: { ...defaultSettings, ...(raw.team || raw.solo || {}) },
+                    order,
+                    cols,
                 };
             }
             return {
                 solo: { ...defaultSettings, ...(raw as any) },
                 team: { ...defaultSettings, ...(raw as any) },
+                order,
+                cols,
             };
         }
     } catch {}
-    return { solo: { ...defaultSettings }, team: { ...defaultSettings } };
+    return { solo: { ...defaultSettings }, team: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols };
 }
 
 export function saveSettings(settings: Settings) {
@@ -76,17 +109,34 @@ export function saveSettings(settings: Settings) {
 
 export function applySettings(settings: Settings, inTeam = false) {
     const set = inTeam ? settings.team : settings.solo;
-    Object.entries(set).forEach(([id, cfg]) => {
-        const el = document.getElementById(id) as HTMLButtonElement | null;
-        if (!el) return;
-        el.textContent = cfg.label;
-        el.style.backgroundColor = cfg.color;
-        if (cfg.direction) {
-            el.dataset.direction = cfg.direction;
-        } else {
-            el.removeAttribute('data-direction');
-        }
-    });
+    const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
+    if (container) {
+        container.style.gridTemplateColumns = `repeat(${settings.cols}, auto)`;
+        const z = document.getElementById('z-buttons-list');
+        const zas = document.getElementById('zas-buttons-list');
+        const idz = document.getElementById('idz-buttons-list');
+        container.querySelectorAll('button').forEach(b => b.remove());
+        const empty: ButtonSetting = { macro: 'command', label: '', color: 'transparent' };
+        const insertBefore = z || zas || idz || null;
+        settings.order.forEach(id => {
+            const cfg = set[id] || defaultSettings[id] || empty;
+            const btn = document.createElement('button');
+            btn.id = id;
+            btn.className = 'mobile-button';
+            if (cfg.macro === 'kierunek') {
+                btn.classList.add('direction-button');
+            } else {
+                btn.classList.add('mobile-button-text');
+            }
+            if (cfg.label) {
+                btn.textContent = cfg.label;
+                btn.style.backgroundColor = cfg.color;
+            } else {
+                btn.classList.add('empty');
+            }
+            container.insertBefore(btn, insertBefore);
+        });
+    }
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
             new CustomEvent('mobileButtonsSettings', { detail: set })
