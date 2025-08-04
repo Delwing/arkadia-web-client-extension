@@ -314,12 +314,45 @@
             </div>
         </div>
     </div>
+    <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tester triggerów</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex flex-column gap-2">
+                    <div>
+                        <label for="trigger-tester-filter" class="form-label mb-1">Filtr wzorca</label>
+                        <input id="trigger-tester-filter" class="form-control" />
+                    </div>
+                    <div>
+                        <label class="form-label mb-1">Wybierz trigger</label>
+                        <div id="trigger-tester-tree" class="border p-1" style="max-height:15rem;overflow:auto;"></div>
+                    </div>
+                    <div>
+                        <label for="trigger-tester-line" class="form-label mb-1">Linia</label>
+                        <input id="trigger-tester-line" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="trigger-tester-type" class="form-label mb-1">Typ GMCP</label>
+                        <input id="trigger-tester-type" class="form-control" />
+                    </div>
+                    <button class="btn btn-primary" id="trigger-tester-run">Testuj</button>
+                    <pre id="trigger-tester-output" class="mb-0"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="debug-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Debug Log</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                 </div>
                 <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
             </div>
