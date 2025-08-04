@@ -3825,7 +3825,7 @@
                               },
                               {
                                 "name": "mister 5",
-                                "script": "trigger_func_skrypty_ui_gags_misterny_innych(5)\n\n",
+                                "script": "trigger_func_skrypty_ui_gags_misterny_innych(5)",
                                 "patterns": [
                                   {
                                     "pattern": "^Przy akompaniamencie oszalamiajacego syku przecinanego powietrza krwawe ostrze dzierzonego przez .* misternego obosiecznego topora",

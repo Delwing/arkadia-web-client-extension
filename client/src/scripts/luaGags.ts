@@ -340,6 +340,9 @@ export default function registerLuaGagTriggers(client: Client) {
                 if (typeof callback == "function") {
                     setTimeout(callback, time * 1000)
                 }
+            },
+            getCurrentLine: () => {
+                return global.line
             }
         }
 
