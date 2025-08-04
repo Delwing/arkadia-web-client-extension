@@ -218,6 +218,9 @@
                     <button class="w-100 p-1" id="docs-button">Dokumentacja</button>
                 </li>
                 <li>
+                    <button class="w-100 p-1" id="trigger-tester-button">Tester triggerów</button>
+                </li>
+                <li>
                     <button class="w-100 p-1" id="debug-button">Debugowanie</button>
                 </li>
                 <li>
@@ -310,6 +313,32 @@
                 </div>
                 <div class="modal-body position-relative d-flex flex-column align-items-center gap-2">
                     <div id="mobile-buttons-options"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tester triggerów</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex flex-column gap-2">
+                    <div>
+                        <label for="trigger-tester-tag" class="form-label mb-1">Tag triggera</label>
+                        <input id="trigger-tester-tag" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="trigger-tester-line" class="form-label mb-1">Linia</label>
+                        <input id="trigger-tester-line" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="trigger-tester-type" class="form-label mb-1">Typ GMCP</label>
+                        <input id="trigger-tester-type" class="form-control" />
+                    </div>
+                    <button class="btn btn-primary" id="trigger-tester-run">Testuj</button>
+                    <pre id="trigger-tester-output" class="mb-0"></pre>
                 </div>
             </div>
         </div>
