@@ -65,6 +65,7 @@ type GagTrigger = {
     patterns: PatternObj[];
     calls?: { func: string; args: string[] }[];
     script?: string;
+    triggers?: GagTrigger[];
 };
 
 type GagGroup = {
@@ -147,8 +148,11 @@ export default function registerLuaGagTriggers(client: Client) {
                 }
                 return rawLine;
             }
-            container instanceof Trigger ? container.registerChild(pattern, callback, tr.name) : (parent as Triggers).registerTrigger(pattern, callback, tr.name);
+            container = container instanceof Trigger
+                ? container.registerChild(pattern, callback, tr.name)
+                : (container as Triggers).registerTrigger(pattern, callback, tr.name);
         });
+        tr.triggers?.forEach(child => registerTrigger(container, child));
     }
 
 
