@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
 import storage from "@client/src/storage";
@@ -6,6 +6,7 @@ import storage from "@client/src/storage";
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
     const [input, setInput] = useState("");
+    const fileInput = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         storage.getItem("scripts").then(res => {
@@ -33,6 +34,36 @@ function Scripts() {
     function remove(url: string) {
         const updated = scripts.filter(u => u !== url);
         save(updated);
+    }
+
+    function exportScripts() {
+        const json = JSON.stringify(scripts, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'arkadia-scripts.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importScripts(ev: ChangeEvent<HTMLInputElement>) {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        file.text().then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (Array.isArray(data) && data.every(d => typeof d === 'string')) {
+                    save(data);
+                } else {
+                    alert('Błędny plik');
+                }
+            } catch {
+                alert('Błędny plik');
+            } finally {
+                if (fileInput.current) fileInput.current.value = '';
+            }
+        });
     }
 
     return (
@@ -64,6 +95,17 @@ function Scripts() {
                     </li>
                 ))}
             </ul>
+            <div className="d-flex gap-2">
+                <Button size="sm" variant="secondary" onClick={exportScripts}>Eksport</Button>
+                <Button size="sm" variant="secondary" onClick={() => fileInput.current?.click()}>Importuj</Button>
+                <input
+                    ref={fileInput}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={importScripts}
+                />
+            </div>
         </div>
     );
 }

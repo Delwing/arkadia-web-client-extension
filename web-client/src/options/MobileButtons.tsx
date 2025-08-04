@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
 import {
     loadSettings,
@@ -42,6 +42,7 @@ function MobileButtons() {
     const [view, setView] = useState<'solo' | 'team'>('solo');
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
+    const fileInput = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -131,6 +132,38 @@ function MobileButtons() {
             removed.forEach(id => { delete buttons[id]; });
             return { ...prev, [view]: { ...set, buttons, order, cols: set.cols - 1 } };
         });
+    }
+
+    async function exportButtons() {
+        const cfg = await loadSettings();
+        const json = JSON.stringify(cfg, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'arkadia-mobile-buttons.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function importButtons(ev: ChangeEvent<HTMLInputElement>) {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (data && typeof data === 'object' && data.solo && data.team) {
+                saveSettings(data);
+                setSettings(data);
+                applySettings(data);
+            } else {
+                alert('Błędny plik');
+            }
+        } catch {
+            alert('Błędny plik');
+        } finally {
+            if (fileInput.current) fileInput.current.value = '';
+        }
     }
 
     function openConfig(setName: 'solo' | 'team', id: string, ev: React.MouseEvent<HTMLButtonElement>) {
@@ -398,8 +431,23 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-end mt-2">
+            <div className="d-flex justify-content-end gap-2 mt-2 flex-wrap">
+                <Button size="sm" variant="secondary" onClick={exportButtons}>Eksport</Button>
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => fileInput.current?.click()}
+                >
+                    Importuj
+                </Button>
                 <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
+                <input
+                    ref={fileInput}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={importButtons}
+                />
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@client/src/storage";
@@ -58,6 +58,7 @@ function UserTriggers() {
     const [editIndex, setEditIndex] = useState<number | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState('');
+    const fileInput = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         storage.getItem('triggers').then(res => {
@@ -94,7 +95,37 @@ function UserTriggers() {
     function remove(idx: number) {
         if (!confirm('Delete trigger?')) return;
         const updated = triggers.filter((_, i) => i !== idx);
-        saveList(updated);
+       saveList(updated);
+    }
+
+    function exportTriggers() {
+        const json = JSON.stringify(triggers, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'arkadia-triggers.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importTriggers(ev: ChangeEvent<HTMLInputElement>) {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        file.text().then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (Array.isArray(data) && data.every(d => typeof d.pattern === 'string' && Array.isArray(d.macros))) {
+                    saveList(data);
+                } else {
+                    alert('Błędny plik');
+                }
+            } catch {
+                alert('Błędny plik');
+            } finally {
+                if (fileInput.current) fileInput.current.value = '';
+            }
+        });
     }
 
     function addMacro() {
@@ -130,7 +161,7 @@ function UserTriggers() {
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <div className="d-flex gap-2 align-items-center">
+            <div className="d-flex gap-2 align-items-center flex-wrap">
                 <Form.Control
                     type="text"
                     size="sm"
@@ -140,6 +171,15 @@ function UserTriggers() {
                     style={{ width: '100%', maxWidth: '12rem' }}
                 />
                 <Button size="sm" onClick={openNew}>Add trigger</Button>
+                <Button size="sm" variant="secondary" onClick={exportTriggers}>Export</Button>
+                <Button size="sm" variant="secondary" onClick={() => fileInput.current?.click()}>Import</Button>
+                <input
+                    ref={fileInput}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={importTriggers}
+                />
             </div>
             
             {showCreateForm && (

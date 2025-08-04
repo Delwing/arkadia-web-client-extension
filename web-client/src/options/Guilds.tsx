@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, ChangeEvent, useRef } from "react";
 import { Button } from "react-bootstrap";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GuildSection from "./GuildSection";
@@ -10,6 +10,7 @@ function Guilds() {
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
     const [locked, setLocked] = useState(!getCurrentCharacter());
+    const fileInput = useRef<HTMLInputElement>(null);
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
         guilds.forEach(g => {
@@ -105,6 +106,41 @@ function Guilds() {
         });
     }
 
+    function exportGuilds() {
+        const data = { guilds: selected, enemyGuilds: enemySelected, guildColors: colors };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'arkadia-guilds.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function importGuilds(ev: ChangeEvent<HTMLInputElement>) {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (!data || !Array.isArray(data.guilds) || !Array.isArray(data.enemyGuilds) || typeof data.guildColors !== 'object') {
+                throw new Error();
+            }
+            const res = await storage.getItem('settings');
+            const base = res && res.settings ? { ...defaultSettings, ...res.settings } : { ...defaultSettings };
+            const settings = { ...base, guilds: data.guilds, enemyGuilds: data.enemyGuilds, guildColors: data.guildColors };
+            await storage.setItem('settings', settings);
+            setSelected(data.guilds);
+            setEnemySelected(data.enemyGuilds);
+            setColors(data.guildColors || {});
+        } catch {
+            alert('Błędny plik');
+        } finally {
+            if (fileInput.current) fileInput.current.value = '';
+        }
+    }
+
     const char = getCurrentCharacter();
 
     return (
@@ -130,7 +166,24 @@ function Guilds() {
                     onChangeAll={onChangeAll}
                     onChangeAllEnemy={onChangeAllEnemy}
                 />
-                <Button onClick={save}>Zapisz</Button>
+                <div className="d-flex gap-2 mt-2 flex-wrap">
+                    <Button size="sm" variant="secondary" onClick={exportGuilds}>Eksport</Button>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => fileInput.current?.click()}
+                    >
+                        Importuj
+                    </Button>
+                    <Button onClick={save}>Zapisz</Button>
+                    <input
+                        ref={fileInput}
+                        type="file"
+                        accept="application/json"
+                        style={{ display: 'none' }}
+                        onChange={importGuilds}
+                    />
+                </div>
             </fieldset>
         </div>
     );

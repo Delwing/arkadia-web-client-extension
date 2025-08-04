@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@client/src/storage";
@@ -15,6 +15,7 @@ function Aliases() {
     const [editIndex, setEditIndex] = useState<number | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState("");
+    const fileInput = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         storage.getItem("aliases").then(res => {
@@ -75,6 +76,36 @@ function Aliases() {
         saveList(updated);
     }
 
+    function exportAliases() {
+        const json = JSON.stringify(aliases, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'arkadia-aliases.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importAliases(ev: ChangeEvent<HTMLInputElement>) {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        file.text().then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (Array.isArray(data) && data.every(d => typeof d.pattern === 'string' && typeof d.command === 'string')) {
+                    saveList(data);
+                } else {
+                    alert('Błędny plik');
+                }
+            } catch {
+                alert('Błędny plik');
+            } finally {
+                if (fileInput.current) fileInput.current.value = '';
+            }
+        });
+    }
+
     const filteredAliases = aliases.filter(a =>
         a.pattern.toLowerCase().includes(filter.toLowerCase()) ||
         a.command.toLowerCase().includes(filter.toLowerCase())
@@ -82,7 +113,7 @@ function Aliases() {
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <div className="d-flex gap-2 align-items-center">
+            <div className="d-flex gap-2 align-items-center flex-wrap">
                 <Form.Control
                     type="text"
                     size="sm"
@@ -92,6 +123,15 @@ function Aliases() {
                     style={{width: '100%', maxWidth: '12rem'}}
                 />
                 <Button size="sm" onClick={openNew}>Dodaj alias</Button>
+                <Button size="sm" variant="secondary" onClick={exportAliases}>Eksport</Button>
+                <Button size="sm" variant="secondary" onClick={() => fileInput.current?.click()}>Importuj</Button>
+                <input
+                    ref={fileInput}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={importAliases}
+                />
             </div>
             
             {showCreateForm && (
