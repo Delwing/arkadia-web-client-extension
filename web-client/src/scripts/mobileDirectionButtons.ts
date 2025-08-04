@@ -39,7 +39,10 @@ export default class MobileDirectionButtons {
     private lastScrollTop = 0;
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
-    private allSettings: Settings = { solo: {}, team: {} };
+    private allSettings: Settings = {
+        solo: { buttons: {}, order: [], cols: 0 },
+        team: { buttons: {}, order: [], cols: 0 },
+    };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
 
@@ -175,6 +178,25 @@ export default class MobileDirectionButtons {
 
         this.client.addEventListener('mobileButtonsSettings', (ev: CustomEvent) => {
             this.buttonSettings = ev.detail || this.buttonSettings;
+            this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement | null;
+            this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
+            this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
+            this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement | null;
+            this.idzToggle = null;
+            this.directionButtons = {
+                nw: document.getElementById('nw-button') as HTMLButtonElement | null,
+                n: document.getElementById('n-button') as HTMLButtonElement | null,
+                ne: document.getElementById('ne-button') as HTMLButtonElement | null,
+                w: document.getElementById('w-button') as HTMLButtonElement | null,
+                e: document.getElementById('e-button') as HTMLButtonElement | null,
+                sw: document.getElementById('sw-button') as HTMLButtonElement | null,
+                s: document.getElementById('s-button') as HTMLButtonElement | null,
+                se: document.getElementById('se-button') as HTMLButtonElement | null,
+                u: document.getElementById('u-button') as HTMLButtonElement | null,
+                d: document.getElementById('d-button') as HTMLButtonElement | null,
+            };
+            this.updateToggleButton();
+            this.setupEventHandlers();
             Object.keys(this.buttonSettings).forEach(id => {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
                 if (b) this.applyConfigToButton(id, b);
@@ -217,9 +239,9 @@ export default class MobileDirectionButtons {
 
 
         if (this.toggleButton) {
-            this.toggleButton.addEventListener('click', () => {
+            this.toggleButton.onclick = () => {
                 this.toggleVisibility();
-            });
+            };
         }
 
         // Center and special exit buttons configured via settings
@@ -544,7 +566,7 @@ export default class MobileDirectionButtons {
     }
 
     private applyActiveSettings() {
-        this.buttonSettings = this.teamMode ? this.allSettings.team : this.allSettings.solo;
+        this.buttonSettings = (this.teamMode ? this.allSettings.team : this.allSettings.solo).buttons;
         Object.keys(this.buttonSettings).forEach(id => {
             const btn = document.getElementById(id) as HTMLButtonElement | null;
             if (btn) this.applyConfigToButton(id, btn);
@@ -554,13 +576,26 @@ export default class MobileDirectionButtons {
     private applyConfigToButton(id: string, btn: HTMLButtonElement) {
         const cfg = this.buttonSettings[id];
         if (!cfg) return;
-        btn.textContent = cfg.label;
-        btn.style.backgroundColor = cfg.color;
+        const isEmpty = cfg.macro === 'empty' || !cfg.label;
+        btn.textContent = isEmpty ? '' : cfg.label;
+        if (isEmpty) {
+            btn.classList.add('empty');
+            btn.style.backgroundColor = 'transparent';
+            btn.style.border = 'none';
+        } else {
+            btn.classList.remove('empty');
+            btn.style.backgroundColor = cfg.color;
+            btn.style.border = '';
+        }
         const clone = btn.cloneNode(true) as HTMLButtonElement;
         btn.replaceWith(clone);
         const newBtn = clone;
         this.applyButtonSize(newBtn);
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
+        if (id === 'buttons-toggle') {
+            this.toggleButton = newBtn;
+            this.updateToggleButton();
+        }
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
         if (cfg.macro === 'idzList') {
@@ -583,6 +618,8 @@ export default class MobileDirectionButtons {
 
         const handler = () => {
             switch (cfg.macro) {
+                case 'empty':
+                    break;
                 case 'functional':
                     const event = new KeyboardEvent('keydown', {
                         code: this.boundKey,
@@ -624,6 +661,9 @@ export default class MobileDirectionButtons {
                         if (this.idzList) this.idzList.style.display = 'grid';
                         newBtn.classList.add('active');
                     }
+                    break;
+                case 'toggleButtons':
+                    this.toggleVisibility();
                     break;
                 case 'command':
                     if (cfg.command) this.client.sendCommand(cfg.command);
