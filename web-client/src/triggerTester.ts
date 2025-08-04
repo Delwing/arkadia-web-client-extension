@@ -7,13 +7,59 @@ function initTriggerTester() {
     const modalEl = document.getElementById('trigger-tester-modal') as HTMLElement | null;
     if (!button || !modalEl) return;
     const modal = new Modal(modalEl);
-    button.addEventListener('click', () => modal.show());
-
     const runBtn = modalEl.querySelector('#trigger-tester-run') as HTMLButtonElement;
     const tagInput = modalEl.querySelector('#trigger-tester-tag') as HTMLInputElement;
     const lineInput = modalEl.querySelector('#trigger-tester-line') as HTMLInputElement;
     const typeInput = modalEl.querySelector('#trigger-tester-type') as HTMLInputElement;
     const outputEl = modalEl.querySelector('#trigger-tester-output') as HTMLElement;
+    const treeEl = modalEl.querySelector('#trigger-tester-tree') as HTMLElement;
+
+    let selectedPath: Trigger[] | null = null;
+    let selectedEl: HTMLElement | null = null;
+
+    button.addEventListener('click', () => {
+        buildTree();
+        modal.show();
+    });
+
+    function buildTree() {
+        selectedPath = null;
+        selectedEl = null;
+        treeEl.innerHTML = '';
+        // @ts-ignore
+        const manager = (window as any).clientExtension?.Triggers;
+        if (!manager) return;
+        const roots: Trigger[] = [
+            ...Array.from(manager.triggers.values()),
+            ...manager.tokenTriggers?.map((t: any) => t.trigger) || [],
+            ...Array.from(manager.multilineTriggers.values()),
+        ];
+        const rootUl = document.createElement('ul');
+        roots.forEach(t => rootUl.appendChild(createNode(t, [])));
+        treeEl.appendChild(rootUl);
+    }
+
+    function createNode(trigger: Trigger, path: Trigger[]): HTMLLIElement {
+        const li = document.createElement('li');
+        li.textContent = trigger.tag ? `[${trigger.tag}] ${patternToString(trigger.pattern)}` : patternToString(trigger.pattern);
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', ev => {
+            ev.stopPropagation();
+            selectedPath = [...path, trigger];
+            if (selectedEl) {
+                selectedEl.classList.remove('bg-primary', 'text-light');
+            }
+            selectedEl = li;
+            li.classList.add('bg-primary', 'text-light');
+        });
+        const children = Array.from(trigger.children.values());
+        if (children.length) {
+            const ul = document.createElement('ul');
+            children.forEach(ch => ul.appendChild(createNode(ch, [...path, trigger])));
+            li.appendChild(ul);
+        }
+        return li;
+    }
 
     runBtn.addEventListener('click', () => {
         const tag = tagInput.value.trim();
@@ -26,7 +72,10 @@ function initTriggerTester() {
             outputEl.textContent = 'No trigger manager.';
             return;
         }
-        const path = findTriggerPath(tag, triggers);
+        let path = selectedPath;
+        if (!path && tag) {
+            path = findTriggerPath(tag, triggers);
+        }
         if (!path) {
             outputEl.textContent = 'Trigger not found.';
             return;
