@@ -1,4 +1,3 @@
-import Modal from "bootstrap/js/dist/modal";
 import storage from "@client/src/storage";
 
 export type MacroType =
@@ -10,7 +9,8 @@ export type MacroType =
     | 'specialExit'
     | 'kierunek'
     | 'wesprzyj'
-    | 'moveMode';
+    | 'moveMode'
+    | 'empty';
 
 export interface ButtonSetting {
     macro: MacroType;
@@ -25,6 +25,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC' },
     'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', command: '/go' },
+    'buttons-toggle': { macro: 'functional', label: '⇩', color: '#6EB4DC' },
     'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC' },
     'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC' },
     'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', command: '/z' },
@@ -45,9 +46,44 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
+export const defaultOrder = [
+    'z-list-toggle',
+    'zas-list-toggle',
+    'go-button',
+    'buttons-toggle',
+    'bracket-right-button',
+    'button-1',
+    'button-2',
+    'button-3',
+    'nw-button',
+    'n-button',
+    'ne-button',
+    'u-button',
+    'w-button',
+    'c-button',
+    'e-button',
+    'd-button',
+    'sw-button',
+    's-button',
+    'se-button',
+    'special-exit-button',
+];
+
+export const defaultCols = 4;
+
+export interface LayoutSettings {
+    buttons: Record<string, ButtonSetting>;
+    order: string[];
+    cols: number;
+}
+
 export interface Settings {
-    solo: Record<string, ButtonSetting>;
-    team: Record<string, ButtonSetting>;
+    solo: LayoutSettings;
+    team: LayoutSettings;
+}
+
+export function createDefaultLayout(): LayoutSettings {
+    return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols };
 }
 
 export async function loadSettings(): Promise<Settings> {
@@ -55,19 +91,23 @@ export async function loadSettings(): Promise<Settings> {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
-            if (raw.solo || raw.team) {
-                return {
-                    solo: { ...defaultSettings, ...(raw.solo || {}) },
-                    team: { ...defaultSettings, ...(raw.team || raw.solo || {}) },
-                };
+            const parseSet = (set: any): LayoutSettings => ({
+                buttons: { ...defaultSettings, ...(set?.buttons || set || {}) },
+                order: Array.isArray(set?.order) ? set.order : [...defaultOrder],
+                cols: typeof set?.cols === 'number' && set.cols > 0 ? set.cols : defaultCols,
+            });
+            if (raw.solo && raw.team && (raw.solo.buttons || raw.team.buttons)) {
+                return { solo: parseSet(raw.solo), team: parseSet(raw.team) };
             }
+            const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
+            const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
             return {
-                solo: { ...defaultSettings, ...(raw as any) },
-                team: { ...defaultSettings, ...(raw as any) },
+                solo: { buttons: { ...defaultSettings, ...(raw.solo || {}) }, order: [...order], cols },
+                team: { buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) }, order: [...order], cols },
             };
         }
     } catch {}
-    return { solo: { ...defaultSettings }, team: { ...defaultSettings } };
+    return { solo: createDefaultLayout(), team: createDefaultLayout() };
 }
 
 export function saveSettings(settings: Settings) {
@@ -76,176 +116,40 @@ export function saveSettings(settings: Settings) {
 
 export function applySettings(settings: Settings, inTeam = false) {
     const set = inTeam ? settings.team : settings.solo;
-    Object.entries(set).forEach(([id, cfg]) => {
-        const el = document.getElementById(id) as HTMLButtonElement | null;
-        if (!el) return;
-        el.textContent = cfg.label;
-        el.style.backgroundColor = cfg.color;
-        if (cfg.direction) {
-            el.dataset.direction = cfg.direction;
-        } else {
-            el.removeAttribute('data-direction');
-        }
-    });
+    const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
+    if (container) {
+        container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
+        const z = document.getElementById('z-buttons-list');
+        const zas = document.getElementById('zas-buttons-list');
+        const idz = document.getElementById('idz-buttons-list');
+        container.querySelectorAll('button').forEach(b => b.remove());
+        const empty: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
+        const insertBefore = z || zas || idz || null;
+        set.order.forEach(id => {
+            const cfg = set.buttons[id] || defaultSettings[id] || empty;
+            const btn = document.createElement('button');
+            btn.id = id;
+            btn.className = 'mobile-button';
+            if (cfg.macro === 'kierunek') {
+                btn.classList.add('direction-button');
+            } else {
+                btn.classList.add('mobile-button-text');
+            }
+            const isEmpty = cfg.macro === 'empty' || !cfg.label;
+            if (!isEmpty) {
+                btn.textContent = cfg.label;
+                btn.style.backgroundColor = cfg.color;
+            } else {
+                btn.classList.add('empty');
+            }
+            container.insertBefore(btn, insertBefore);
+        });
+    }
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set })
+            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
         );
     }
-}
-
-export default async function initMobileButtonSettings() {
-    const button = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
-    const modalEl = document.getElementById('mobile-buttons-modal');
-    if (!button || !modalEl) return;
-
-    const modal = new Modal(modalEl);
-    const saveBtn = modalEl.querySelector('#mobile-buttons-save') as HTMLButtonElement;
-
-    const sections = Array.from(modalEl.querySelectorAll<HTMLElement>('.mobile-button-config'));
-    const previewButtons = Array.from(modalEl.querySelectorAll<HTMLButtonElement>(
-        '#mobile-buttons-preview-solo button[data-button-id], #mobile-buttons-preview-team button[data-button-id]'
-    ));
-    const previewMap: Record<string, HTMLButtonElement> = {};
-    const realMap: Record<string, HTMLButtonElement> = {};
-    previewButtons.forEach(btn => {
-        const id = btn.dataset.buttonId!;
-        previewMap[id] = btn;
-    });
-    Object.keys(defaultSettings).forEach(id => {
-        const el = document.getElementById(id) as HTMLButtonElement | null;
-        if (el) realMap[id] = el;
-    });
-    const modalBody = modalEl.querySelector('.modal-body') as HTMLElement;
-    let activeConfig: HTMLElement | null = null;
-
-    const hideConfig = () => {
-        if (activeConfig) {
-            activeConfig.classList.add('d-none');
-            activeConfig = null;
-        }
-    };
-
-    let current = (await loadSettings()).solo;
-    const applyLive = (id: string, labelVal: string, colorVal: string) => {
-        const btn = realMap[id];
-        if (btn) {
-            btn.textContent = labelVal;
-            btn.style.backgroundColor = colorVal;
-        }
-    };
-    sections.forEach(section => {
-        const id = section.dataset.buttonId!;
-        const cfg = current[id] || defaultSettings[id];
-        const preview = previewMap[id];
-        const macro = section.querySelector('.mobile-button-macro') as HTMLSelectElement;
-        const label = section.querySelector('.mobile-button-label') as HTMLInputElement;
-        const color = section.querySelector('.mobile-button-color') as HTMLInputElement;
-        const command = section.querySelector('.mobile-button-command') as HTMLTextAreaElement;
-        const cmdLabel = section.querySelector('.mobile-button-command-label') as HTMLElement;
-        const direction = section.querySelector('.mobile-button-direction') as HTMLSelectElement;
-        const dirLabel = section.querySelector('.mobile-button-direction-label') as HTMLElement;
-        const reset = section.querySelector('.mobile-button-color-reset') as HTMLButtonElement | null;
-
-        macro.value = cfg.macro;
-        label.value = cfg.label;
-        color.value = cfg.color;
-        if (command) command.value = cfg.command || '';
-        if (direction) direction.value = cfg.direction || '';
-        if (preview) {
-            preview.textContent = label.value;
-            preview.style.backgroundColor = color.value;
-        }
-        applyLive(id, label.value, color.value);
-        const update = () => {
-            if (macro.value === 'command') {
-                cmdLabel.style.display = '';
-            } else {
-                cmdLabel.style.display = 'none';
-            }
-            if (macro.value === 'kierunek') {
-                dirLabel.style.display = '';
-            } else {
-                dirLabel.style.display = 'none';
-            }
-        };
-        macro.addEventListener('change', update);
-        if (reset) {
-            reset.addEventListener('click', () => {
-                color.value = defaultSettings[id].color;
-                if (preview) preview.style.backgroundColor = color.value;
-                applyLive(id, label.value, color.value);
-            });
-        }
-        label.addEventListener('input', () => {
-            if (preview) preview.textContent = label.value;
-            applyLive(id, label.value, color.value);
-        });
-        color.addEventListener('input', () => {
-            if (preview) preview.style.backgroundColor = color.value;
-            applyLive(id, label.value, color.value);
-        });
-        update();
-    });
-
-    previewButtons.forEach(btn => {
-        const id = btn.dataset.buttonId!;
-        const config = sections.find(s => s.dataset.buttonId === id);
-        if (!config) return;
-        btn.addEventListener('click', ev => {
-            ev.stopPropagation();
-            if (activeConfig === config) {
-                hideConfig();
-                return;
-            }
-            hideConfig();
-            const rect = btn.getBoundingClientRect();
-            const bodyRect = modalBody.getBoundingClientRect();
-            config.style.left = rect.left - bodyRect.left + 'px';
-            config.style.top = rect.bottom - bodyRect.top + 4 + 'px';
-            config.classList.remove('d-none');
-            activeConfig = config;
-        });
-    });
-
-    modalEl.addEventListener('click', (ev) => {
-        if (activeConfig && !activeConfig.contains(ev.target as Node)) {
-            const isButton = (ev.target as HTMLElement).closest(
-                '#mobile-buttons-preview-solo button, #mobile-buttons-preview-team button'
-            );
-            if (!isButton) hideConfig();
-        }
-    });
-
-    modalEl.addEventListener('hide.bs.modal', hideConfig);
-
-    const read = (): Record<string, ButtonSetting> => {
-        const result: Record<string, ButtonSetting> = {};
-        sections.forEach(section => {
-            const id = section.dataset.buttonId!;
-            const macro = (section.querySelector('.mobile-button-macro') as HTMLSelectElement).value as MacroType;
-            const label = (section.querySelector('.mobile-button-label') as HTMLInputElement).value;
-            const color = (section.querySelector('.mobile-button-color') as HTMLInputElement).value;
-            const command = (section.querySelector('.mobile-button-command') as HTMLTextAreaElement).value;
-            const direction = (section.querySelector('.mobile-button-direction') as HTMLSelectElement).value;
-            result[id] = { macro, label, color, command, direction };
-        });
-        return result;
-    };
-
-    saveBtn.addEventListener('click', () => {
-        current = read();
-        const all = { solo: current, team: current } as Settings;
-        saveSettings(all);
-        applySettings(all);
-        modal.hide();
-    });
-
-    button.addEventListener('click', () => {
-        modal.show();
-    });
-
-    applySettings({ solo: current, team: current });
 }
 
 
