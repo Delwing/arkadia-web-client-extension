@@ -218,9 +218,6 @@
                     <button class="w-100 p-1" id="docs-button">Dokumentacja</button>
                 </li>
                 <li>
-                    <button class="w-100 p-1" id="trigger-tester-button">Tester triggerów</button>
-                </li>
-                <li>
                     <button class="w-100 p-1" id="debug-button">Debugowanie</button>
                 </li>
                 <li>
@@ -352,7 +349,10 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Debug Log</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                 </div>
                 <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
             </div>
