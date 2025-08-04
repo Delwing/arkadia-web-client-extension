@@ -32,6 +32,7 @@ import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
+import "./triggerTester"
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
