@@ -38,4 +38,4 @@ function initDebug() {
   });
 }
 
-//document.addEventListener("DOMContentLoaded", initDebug);
+document.addEventListener("DOMContentLoaded", initDebug);
