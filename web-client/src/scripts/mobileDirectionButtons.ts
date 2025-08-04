@@ -592,6 +592,10 @@ export default class MobileDirectionButtons {
         const newBtn = clone;
         this.applyButtonSize(newBtn);
         if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
+        if (id === 'buttons-toggle') {
+            this.toggleButton = newBtn;
+            this.updateToggleButton();
+        }
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
         if (cfg.macro === 'idzList') {
@@ -657,6 +661,9 @@ export default class MobileDirectionButtons {
                         if (this.idzList) this.idzList.style.display = 'grid';
                         newBtn.classList.add('active');
                     }
+                    break;
+                case 'toggleButtons':
+                    this.toggleVisibility();
                     break;
                 case 'command':
                     if (cfg.command) this.client.sendCommand(cfg.command);

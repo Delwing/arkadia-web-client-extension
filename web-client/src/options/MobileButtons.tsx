@@ -23,6 +23,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "specialExit", label: "Wyjście specjalne" },
     { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
     { value: "moveMode", label: "Tryb ruchu" },
+    { value: "toggleButtons", label: "Przełącz przyciski" },
     { value: "empty", label: "Puste" },
 ];
 
