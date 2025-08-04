@@ -89,14 +89,22 @@ function getCalls(script) {
 
 function processTrigger(tr) {
     const scriptNode = tr.script;
-    if (!scriptNode) return null;
-    const script = String(scriptNode).trim();
-    if (!script ||script.length === 0) return null;
-    return {
+    const script = scriptNode ? String(scriptNode).trim() : '';
+
+    const trigger = {
         name: tr.name || '',
         script: scriptNode,
         patterns: extractPatterns(tr),
+        triggers: [],
     };
+
+    toArray(tr.Trigger).forEach(t => {
+        const res = processTrigger(t);
+        if (res) trigger.triggers.push(res);
+    });
+
+    if (!script && trigger.triggers.length === 0 && trigger.patterns.length === 0) return null;
+    return trigger;
 }
 
 function processGroup(gr) {
