@@ -60,18 +60,12 @@ function gagsIsType(
 
 type PatternObj = { pattern: string; type?: number | null };
 
-type GagTrigger = {
+type GagNode = {
     name: string;
     patterns: PatternObj[];
     calls?: { func: string; args: string[] }[];
     script?: string;
-};
-
-type GagGroup = {
-    name: string;
-    patterns: PatternObj[];
-    triggers: GagTrigger[];
-    groups: GagGroup[];
+    triggers?: GagNode[];
 };
 
 
@@ -98,40 +92,23 @@ export default function registerLuaGagTriggers(client: Client) {
         return p.pattern;
     }
 
-    function registerGroup(parent: Triggers | Trigger, group: GagGroup) {
-        const patterns = Array.isArray(group.patterns) ? group.patterns : [];
-        const triggers = Array.isArray(group.triggers) ? group.triggers : [];
-        const groups = Array.isArray(group.groups) ? group.groups : [];
+    function registerNode(parent: Triggers | Trigger, node: GagNode) {
+        const patterns = Array.isArray(node.patterns) ? node.patterns : [];
+        const children = Array.isArray(node.triggers) ? node.triggers : [];
 
-        if (patterns.length === 0 && triggers.length === 0) {
-            groups.forEach(gr => registerGroup(parent, gr));
-            return;
-        }
+        if (patterns.length === 0 && children.length === 0) return;
 
         let container: Triggers | Trigger = parent;
-        patterns.forEach(pat => {
-            const pattern = toPattern(pat);
-            container = container instanceof Trigger
-                ? container.registerChild(pattern, undefined, group.name)
-                : (parent as Triggers).registerTrigger(pattern, undefined, group.name);
-        });
-        triggers.forEach(tr => registerTrigger(container, tr));
-        groups.forEach(gr => registerGroup(container, gr));
-    }
-
-    function registerTrigger(parent: Triggers | Trigger, tr: GagTrigger) {
-        if (!tr.patterns || tr.patterns.length === 0) return;
-        let container: Triggers | Trigger = parent;
-        tr.patterns.forEach((pat) => {
+        patterns.forEach((pat) => {
             const pattern = toPattern(pat);
             const callback = (rawLine: string, line: string, matches: RegExpMatchArray) => {
-                if (tr.script != undefined) {
+                if (node.script != undefined) {
                     global.line = rawLine
                     global.matches = matches
                     luaEnv.parse(`line = "${rawLine}"`).exec()
                     luaEnv.parse(createMatches(matches)).exec()
                     try {
-                        luaEnv.parse(tr.script).exec()
+                        luaEnv.parse(node.script).exec()
                     } catch (e) {
                         const warn = `Zglos blad w powyzszej lini: ${e.message}`
                         const clickable = client.OutputHandler.makeClickable(
@@ -147,8 +124,11 @@ export default function registerLuaGagTriggers(client: Client) {
                 }
                 return rawLine;
             }
-            container instanceof Trigger ? container.registerChild(pattern, callback, tr.name) : (parent as Triggers).registerTrigger(pattern, callback, tr.name);
+            container = container instanceof Trigger
+                ? container.registerChild(pattern, callback, node.name)
+                : (parent as Triggers).registerTrigger(pattern, callback, node.name);
         });
+        children.forEach(ch => registerNode(container, ch));
     }
 
 
@@ -365,7 +345,7 @@ export default function registerLuaGagTriggers(client: Client) {
     }
 
 
-    (gagsData as GagGroup[]).forEach(group => registerGroup(client.Triggers, group));
+    (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
     client.addEventListener("playBeep", () => {
         client.playSound("beep")
     })

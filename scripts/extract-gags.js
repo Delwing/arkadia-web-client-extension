@@ -87,34 +87,25 @@ function getCalls(script) {
     return [];
 }
 
-function processTrigger(tr) {
-    const scriptNode = tr.script;
-    if (!scriptNode) return null;
-    const script = String(scriptNode).trim();
-    if (!script ||script.length === 0) return null;
-    return {
-        name: tr.name || '',
-        script: scriptNode,
-        patterns: extractPatterns(tr),
-    };
-}
-
-function processGroup(gr) {
-    const group = {
-        name: gr.name || '',
-        patterns: extractPatterns(gr),
-        triggers: [],
-        groups: [],
-    };
-    toArray(gr.Trigger).forEach(t => {
-        const res = processTrigger(t);
-        if (res) group.triggers.push(res);
+function processNode(node) {
+    const name = node.name || '';
+    const patterns = extractPatterns(node);
+    const scriptNode = node.script;
+    const script = scriptNode ? String(scriptNode).trim() : '';
+    const children = [];
+    toArray(node.Trigger).forEach(t => {
+        const res = processNode(t);
+        if (res) children.push(res);
     });
-    toArray(gr.TriggerGroup).forEach(g => {
-        const sub = processGroup(g);
-        if (sub.triggers.length || sub.groups.length) group.groups.push(sub);
+    toArray(node.TriggerGroup).forEach(g => {
+        const res = processNode(g);
+        if (res) children.push(res);
     });
-    return group;
+    if (!patterns.length && !children.length && !script) return null;
+    const out = { name, patterns };
+    if (script) out.script = scriptNode;
+    if (children.length) out.triggers = children;
+    return out;
 }
 
 const xmlData = fs.readFileSync(xmlPath, 'utf8');
@@ -122,6 +113,6 @@ xml2js.parseString(xmlData, {explicitArray: false}, (err, result) => {
     if (err) throw err;
     const root = xpath.find(result, "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']")
     if (!root) return;
-    const groups = toArray(root).map(processGroup).filter(Boolean);
+    const groups = toArray(root).map(processNode).filter(Boolean);
     fs.writeFileSync("../client/src/scripts/gags_lua.json", JSON.stringify(groups));
 });
