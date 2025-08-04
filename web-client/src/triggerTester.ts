@@ -8,21 +8,26 @@ function initTriggerTester() {
     if (!button || !modalEl) return;
     const modal = new Modal(modalEl);
     const runBtn = modalEl.querySelector('#trigger-tester-run') as HTMLButtonElement;
-    const tagInput = modalEl.querySelector('#trigger-tester-tag') as HTMLInputElement;
     const lineInput = modalEl.querySelector('#trigger-tester-line') as HTMLInputElement;
     const typeInput = modalEl.querySelector('#trigger-tester-type') as HTMLInputElement;
     const outputEl = modalEl.querySelector('#trigger-tester-output') as HTMLElement;
     const treeEl = modalEl.querySelector('#trigger-tester-tree') as HTMLElement;
+    const filterInput = modalEl.querySelector('#trigger-tester-filter') as HTMLInputElement;
 
     let selectedPath: Trigger[] | null = null;
     let selectedEl: HTMLElement | null = null;
 
     button.addEventListener('click', () => {
-        buildTree();
+        filterInput.value = '';
+        buildTree('');
         modal.show();
     });
 
-    function buildTree() {
+    filterInput.addEventListener('input', () => {
+        buildTree(filterInput.value.trim().toLowerCase());
+    });
+
+    function buildTree(filter: string) {
         selectedPath = null;
         selectedEl = null;
         treeEl.innerHTML = '';
@@ -35,34 +40,40 @@ function initTriggerTester() {
             ...Array.from(manager.multilineTriggers.values()),
         ];
         const rootUl = document.createElement('ul');
-        roots.forEach(t => rootUl.appendChild(createNode(t, [])));
+        roots.forEach(t => {
+            const node = createNode(t, [], filter);
+            if (node) rootUl.appendChild(node);
+        });
         treeEl.appendChild(rootUl);
     }
 
-    function createNode(trigger: Trigger, path: Trigger[]): HTMLLIElement {
+    function createNode(trigger: Trigger, path: Trigger[], filter: string): HTMLLIElement | null {
+        const text = trigger.tag ? `[${trigger.tag}] ${patternToString(trigger.pattern)}` : patternToString(trigger.pattern);
+        const match = text.toLowerCase().includes(filter);
+        const childNodes = Array.from(trigger.children.values()).map(ch => createNode(ch, [...path, trigger], filter)).filter((n): n is HTMLLIElement => n !== null);
+        if (!match && childNodes.length === 0) return null;
         const li = document.createElement('li');
-        li.textContent = trigger.tag ? `[${trigger.tag}] ${patternToString(trigger.pattern)}` : patternToString(trigger.pattern);
+        li.textContent = text;
         li.style.cursor = 'pointer';
+        const currentPath = [...path, trigger];
         li.addEventListener('click', ev => {
             ev.stopPropagation();
-            selectedPath = [...path, trigger];
+            selectedPath = currentPath;
             if (selectedEl) {
                 selectedEl.classList.remove('bg-primary', 'text-light');
             }
             selectedEl = li;
             li.classList.add('bg-primary', 'text-light');
         });
-        const children = Array.from(trigger.children.values());
-        if (children.length) {
+        if (childNodes.length) {
             const ul = document.createElement('ul');
-            children.forEach(ch => ul.appendChild(createNode(ch, [...path, trigger])));
+            childNodes.forEach(ch => ul.appendChild(ch));
             li.appendChild(ul);
         }
         return li;
     }
 
     runBtn.addEventListener('click', () => {
-        const tag = tagInput.value.trim();
         const line = lineInput.value;
         const type = typeInput.value.trim();
         outputEl.textContent = '';
@@ -72,12 +83,9 @@ function initTriggerTester() {
             outputEl.textContent = 'No trigger manager.';
             return;
         }
-        let path = selectedPath;
-        if (!path && tag) {
-            path = findTriggerPath(tag, triggers);
-        }
+        const path = selectedPath;
         if (!path) {
-            outputEl.textContent = 'Trigger not found.';
+            outputEl.textContent = 'Trigger not selected.';
             return;
         }
         const results: string[] = [];
@@ -89,28 +97,6 @@ function initTriggerTester() {
         }
         outputEl.textContent = results.join('\n');
     });
-}
-
-function findTriggerPath(tag: string, manager: any): Trigger[] | null {
-    const collections: Trigger[] = [
-        ...Array.from(manager.triggers.values()),
-        ...manager.tokenTriggers?.map((t: any) => t.trigger) || [],
-        ...Array.from(manager.multilineTriggers.values()),
-    ];
-    for (const t of collections) {
-        const path = findInTree(t, tag);
-        if (path) return path;
-    }
-    return null;
-}
-
-function findInTree(trigger: Trigger, tag: string): Trigger[] | null {
-    if (trigger.tag === tag) return [trigger];
-    for (const child of trigger.children.values()) {
-        const path = findInTree(child, tag);
-        if (path) return [trigger, ...path];
-    }
-    return null;
 }
 
 function matchTrigger(trigger: Trigger, rawLine: string, type: string): boolean {
