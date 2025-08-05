@@ -10,7 +10,7 @@ export default async function initMagicKeys(client: Client) {
         keys.forEach((pattern: string) => {
             client.Triggers.registerTokenTrigger(pattern, (raw) => {
                 return colorStringInLine(raw, pattern, KEYS_COLOR);
-            }, tag);
+            }, tag, { caseInsensitive: true});
         });
     } catch (e) {
         console.error("Failed to load magic keys", e);

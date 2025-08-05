@@ -70,7 +70,7 @@ export function registerScripts(client: Client) {
     aliases.push({
         pattern: /\/fake (.*)/,
         callback: (matches: RegExpMatchArray) => {
-            client.clientAdapter.output(client.clientAdapter.parseAnsiPatterns(client.onLine(matches[1], 'other')))
+            client.clientAdapter.output(client.clientAdapter.parseAnsiPatterns(client.onLine(matches[1], 'combat.avatar')))
             // @ts-ignore
             client.clientAdapter.flushMessageBuffer() //TODO figure that one
         }
