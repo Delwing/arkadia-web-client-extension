@@ -14,6 +14,12 @@ function initTriggerTester() {
     const treeEl = modalEl.querySelector('#trigger-tester-tree') as HTMLElement;
     const filterInput = modalEl.querySelector('#trigger-tester-filter') as HTMLInputElement;
 
+    modalEl.addEventListener('shown.bs.modal', () => {
+        const rect = treeEl.getBoundingClientRect();
+        const available = window.innerHeight - rect.top - 40;
+        treeEl.style.maxHeight = `${available}px`;
+    });
+
     let selectedPath: Trigger[] | null = null;
     let selectedEl: HTMLElement | null = null;
 
@@ -53,23 +59,34 @@ function initTriggerTester() {
         const childNodes = Array.from(trigger.children.values()).map(ch => createNode(ch, [...path, trigger], filter)).filter((n): n is HTMLLIElement => n !== null);
         if (!match && childNodes.length === 0) return null;
         const li = document.createElement('li');
-        li.textContent = text;
-        li.style.cursor = 'pointer';
         const currentPath = [...path, trigger];
-        li.addEventListener('click', ev => {
+        let clickTarget: HTMLElement;
+        if (childNodes.length) {
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            summary.textContent = text;
+            summary.style.cursor = 'pointer';
+            details.appendChild(summary);
+            const ul = document.createElement('ul');
+            childNodes.forEach(ch => ul.appendChild(ch));
+            details.appendChild(ul);
+            if (filter) details.open = true;
+            li.appendChild(details);
+            clickTarget = summary;
+        } else {
+            li.textContent = text;
+            li.style.cursor = 'pointer';
+            clickTarget = li;
+        }
+        clickTarget.addEventListener('click', ev => {
             ev.stopPropagation();
             selectedPath = currentPath;
             if (selectedEl) {
                 selectedEl.classList.remove('bg-primary', 'text-light');
             }
-            selectedEl = li;
-            li.classList.add('bg-primary', 'text-light');
+            selectedEl = clickTarget;
+            clickTarget.classList.add('bg-primary', 'text-light');
         });
-        if (childNodes.length) {
-            const ul = document.createElement('ul');
-            childNodes.forEach(ch => ul.appendChild(ch));
-            li.appendChild(ul);
-        }
         return li;
     }
 
