@@ -260,6 +260,7 @@ export default class Client {
 
         let preparse = command
         command = this.Map.parseCommand(command)
+        command = this.expandObjectShortcuts(command)
         if (command.startsWith('echo ')) {
             this.print(mudletColorLine(command.substring(5)))
             return
@@ -297,6 +298,13 @@ export default class Client {
 
     sendGMCP(type: string, payload?: any) {
         this.clientAdapter.sendGmcp(type, payload)
+    }
+
+    private expandObjectShortcuts(command: string): string {
+        return command.replace(/@([A-Za-z0-9@]+)/g, (match, short) => {
+            const obj = this.ObjectManager.getObjectsOnLocation().find(o => o.shortcut?.toLowerCase() === short.toLowerCase())
+            return obj ? `ob_${obj.num}` : match
+        })
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {

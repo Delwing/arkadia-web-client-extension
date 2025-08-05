@@ -113,7 +113,8 @@ function Aliases() {
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
                         />
                         <small className="text-secondary">
-                            Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.
+                            Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.<br/>
+                            Możesz także korzystać ze skrótów obiektów (<code>@1</code>, <code>@A</code>, <code>@@</code>), które zostaną rozwinięte do identyfikatorów obiektów.
                         </small>
                         <div className="d-flex gap-2">
                             <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Anuluj</Button>
