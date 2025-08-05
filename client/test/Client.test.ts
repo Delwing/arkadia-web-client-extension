@@ -69,6 +69,16 @@ beforeEach(() => {
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
 });
 
+test('port messages trigger window events', () => {
+  new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
+  const detail = [{ name: 'Foo', loc: 1 }];
+  listener({ npc: detail });
+  expect((window as any).dispatchEvent).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'npc', detail })
+  );
+});
+
 test('createEvent returns object with type and data', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   expect(client.createEvent('t', 123)).toEqual({ type: 't', data: 123 });
