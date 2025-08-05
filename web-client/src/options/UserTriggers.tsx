@@ -124,6 +124,25 @@ function UserTriggers() {
         setShowCreateForm(false);
     }
 
+    function macrosToText(list: UserMacro[]): string {
+        return list
+            .map(m => {
+                switch (m.type) {
+                    case 'uppercase':
+                        return 'uppercase';
+                    case 'color':
+                        return m.color ? `color ${m.color}` : 'color';
+                    case 'replace':
+                        return m.to ? `replace ${m.to}` : 'replace';
+                    case 'beep':
+                        return 'beep';
+                    default:
+                        return m.type;
+                }
+            })
+            .join(', ');
+    }
+
     const filteredTriggers = triggers.filter(t =>
         t.pattern.toLowerCase().includes(filter.toLowerCase())
     );
@@ -170,13 +189,23 @@ function UserTriggers() {
                     </Form.Group>
                 </div>
             )}
-            
+
             <ul className="list-unstyled ms-3">
                 {filteredTriggers.map((t, i) => (
-                    <li key={i} className="d-flex align-items-center gap-2">
-                        <span>{t.pattern}</span>
-                        <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
-                        <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
+                        <span>
+                            <span>{t.pattern}</span>
+                            {t.macros?.length ? (
+                                <>
+                                    <span className="text-secondary mx-1">→</span>
+                                    <span>{macrosToText(t.macros)}</span>
+                                </>
+                            ) : null}
+                        </span>
+                        <span className="d-flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
+                        </span>
                     </li>
                 ))}
             </ul>
