@@ -13,6 +13,9 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
             `Nape\u0142nij lamp\u0119: ${lamp}`,
             `Wesprzyj: ${support}`,
         ];
+        (client.customBinds || []).forEach(cb => {
+            lines.push(`${cb.command}: ${formatLabel(cb)}`);
+        });
         client.println(lines.join("\n"));
     }
 

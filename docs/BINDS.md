@@ -10,4 +10,5 @@ Rozszerzenie umożliwia ustawienie kilku skrótów klawiaturowych. Domyślne bin
   przywódcy z GMCP.
 
 Bindy można modyfikować w zakładce **Bindowanie** na stronie opcji rozszerzenia.
+Możesz także dodać własne skróty, które wyślą dowolną komendę.
 Aktualnie ustawione skróty możesz też wypisać w grze komendą `/binds`.

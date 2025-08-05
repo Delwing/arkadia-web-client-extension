@@ -9,6 +9,10 @@ interface Bind {
     shift?: boolean;
 }
 
+interface CustomBind extends Bind {
+    command: string;
+}
+
 interface DirectionBinds {
     n: Bind;
     s: Bind;
@@ -29,6 +33,7 @@ interface BindSettings {
     attack: Bind;
     support: Bind;
     directions: DirectionBinds;
+    custom: CustomBind[];
 }
 
 const defaultBinds: BindSettings = {
@@ -49,6 +54,7 @@ const defaultBinds: BindSettings = {
         d: { key: 'NumpadSubtract' },
         special: { key: 'Numpad0' },
     },
+    custom: [],
 };
 
 function label(bind: Bind) {
@@ -80,6 +86,7 @@ function Binds() {
                     ...defaultBinds.directions,
                     ...res?.binds?.directions,
                 },
+                custom: res?.binds?.custom || [],
             });
         });
     }, []);
@@ -96,6 +103,33 @@ function Binds() {
         setBinds(prev => ({
             ...prev,
             directions: { ...prev.directions, [dir]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } },
+        }));
+    }
+
+    function handleCaptureCustom(idx: number, ev: React.KeyboardEvent) {
+        ev.preventDefault();
+        const { code, ctrlKey, altKey, shiftKey } = ev;
+        setBinds(prev => ({
+            ...prev,
+            custom: prev.custom.map((b, i) => i === idx ? { ...b, key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } : b),
+        }));
+    }
+
+    function handleCommandChange(idx: number, command: string) {
+        setBinds(prev => ({
+            ...prev,
+            custom: prev.custom.map((b, i) => i === idx ? { ...b, command } : b),
+        }));
+    }
+
+    function addCustomBind() {
+        setBinds(prev => ({ ...prev, custom: [...prev.custom, { key: '', command: '' }] }));
+    }
+
+    function removeCustomBind(idx: number) {
+        setBinds(prev => ({
+            ...prev,
+            custom: prev.custom.filter((_, i) => i !== idx),
         }));
     }
 
@@ -288,6 +322,35 @@ function Binds() {
                                     value={label(binds.directions.special)}
                                     onKeyDown={ev => handleCaptureDir('special', ev)}
                                 />
+                            </td>
+                        </tr>
+                        {binds.custom.map((b, idx) => (
+                            <tr key={idx}>
+                                <td>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        value={b.command}
+                                        onChange={ev => handleCommandChange(idx, ev.target.value)}
+                                    />
+                                </td>
+                                <td>
+                                    <div className="d-flex gap-2">
+                                        <Form.Control
+                                            type="text"
+                                            readOnly
+                                            size="sm"
+                                            value={label(b)}
+                                            onKeyDown={ev => handleCaptureCustom(idx, ev)}
+                                        />
+                                        <Button variant="danger" size="sm" onClick={() => removeCustomBind(idx)}>Usuń</Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        <tr>
+                            <td colSpan={2}>
+                                <Button size="sm" onClick={addCustomBind}>Dodaj skrót</Button>
                             </td>
                         </tr>
                     </tbody>
