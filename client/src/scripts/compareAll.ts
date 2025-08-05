@@ -41,13 +41,26 @@ function getTargets(client: Client): string[] {
 }
 
 export function formatComparisonTable(results: Record<string, ComparisonStats>): string {
-    const lines: string[] = [];
-    const header = `#   OSOBA                   SIL  ZRE  WYT  SUMA`;
-    const line = `--  ---------------------- ---- ---- ---- -----`;
-    lines.push(header);
-    lines.push(line);
-    let i = 1;
+    const NAME_WIDTH = 30;
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - str.length));
+    const header = [
+        pad("#", 3),
+        pad("OSOBA", NAME_WIDTH),
+        pad("SIL", 4),
+        pad("ZRE", 4),
+        pad("WYT", 4),
+        pad("SUMA", 5)
+    ].join(" ");
+    const line = [
+        pad("--", 3),
+        "-".repeat(NAME_WIDTH),
+        "----",
+        "----",
+        "----",
+        "-----"
+    ].join(" ");
+    const lines: string[] = [header, line];
+    let i = 1;
     const formatVal = (n: number | undefined) => {
         if (n === undefined) return "0";
         return n > 0 ? `+${n}` : String(n);
@@ -55,7 +68,14 @@ export function formatComparisonTable(results: Record<string, ComparisonStats>):
     Object.entries(results).forEach(([name, stats]) => {
         const total = (stats.sil || 0) + (stats.zre || 0) + (stats.wyt || 0);
         lines.push(
-            `${pad(String(i),3)} ${pad(name,22)} ${pad(formatVal(stats.sil),4)} ${pad(formatVal(stats.zre),4)} ${pad(formatVal(stats.wyt),4)} ${pad(formatVal(total),5)}`
+            [
+                pad(String(i), 3),
+                pad(name, NAME_WIDTH),
+                pad(formatVal(stats.sil), 4),
+                pad(formatVal(stats.zre), 4),
+                pad(formatVal(stats.wyt), 4),
+                pad(formatVal(total), 5)
+            ].join(" ")
         );
         i++;
     });

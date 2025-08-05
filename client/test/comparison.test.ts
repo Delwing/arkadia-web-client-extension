@@ -1,4 +1,4 @@
-import initCompareAll from '../src/scripts/compareAll';
+import initCompareAll, { formatComparisonTable } from '../src/scripts/compareAll';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 
 class FakeClient {
@@ -63,5 +63,14 @@ describe('compare all alias', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('porownaj sile z ob_6', false);
     expect(client.sendCommand).toHaveBeenCalledWith('porownaj zrecznosc z ob_6', false);
     expect(client.sendCommand).toHaveBeenCalledWith('porownaj wytrzymalosc z ob_6', false);
+  });
+
+  test('formats header wide enough for long descriptions', () => {
+    const longName = 'przygarbiony wyszczerzony ork';
+    const table = formatComparisonTable({ [longName]: { sil: -1, zre: -1, wyt: -2 } });
+    const [header, underline, row] = table.split('\n');
+    expect(row).toContain(longName);
+    expect(underline.length).toBe(header.length);
+    expect(row.length).toBe(header.length);
   });
 });
