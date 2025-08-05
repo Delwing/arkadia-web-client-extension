@@ -66,8 +66,15 @@ type GagNode = {
     calls?: { func: string; args: string[] }[];
     script?: string;
     triggers?: GagNode[];
+    multiline?: boolean;
 };
 
+
+function registerTrigger(container: Triggers | Trigger, triggerPatterns: (RegExp | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray) | string)[], callback: (rawLine: string, line: string, matches: RegExpMatchArray) => string, node: GagNode, parent: Triggers | Trigger) {
+    return container instanceof Trigger
+        ? container.registerChild(triggerPatterns, callback, node.name)
+        : (parent as Triggers).registerTrigger(triggerPatterns, callback, node.name);
+}
 
 export default function registerLuaGagTriggers(client: Client) {
 
@@ -98,37 +105,45 @@ export default function registerLuaGagTriggers(client: Client) {
 
         if (patterns.length === 0 && children.length === 0) return;
 
-        let container: Triggers | Trigger = parent;
-        patterns.forEach((pat) => {
-            const pattern = toPattern(pat);
-            const callback = (rawLine: string, line: string, matches: RegExpMatchArray) => {
-                if (node.script != undefined) {
-                    global.line = rawLine
-                    global.matches = matches
-                    luaEnv.parse(`line = "${rawLine}"`).exec()
-                    luaEnv.parse(createMatches(matches)).exec()
-                    try {
-                        luaEnv.parse(node.script).exec()
-                    } catch (e) {
-                        const warn = `Zglos blad w powyzszej lini: ${e.message}`
-                        const clickable = client.OutputHandler.makeClickable(
-                            warn,
-                            warn,
-                            () => navigator.clipboard.writeText(line),
-                            'Kopiuj linie'
-                        )
-                        global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR)
+        const container: Triggers | Trigger = parent;
+        const callback = (rawLine: string, line: string, matches: RegExpMatchArray) => {
+            if (node.script != undefined) {
+                global.line = rawLine
+                global.matches = matches
+                luaEnv.parse(`line = "${rawLine}"`).exec()
+                luaEnv.parse(createMatches(matches)).exec()
+                try {
+                    luaEnv.parse(node.script).exec()
+                } catch (e) {
+                    const warn = `Zglos blad w powyzszej lini: ${e.message}`
+                    const clickable = client.OutputHandler.makeClickable(
+                        warn,
+                        warn,
+                        () => navigator.clipboard.writeText(line),
+                        'Kopiuj linie'
+                    )
+                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR)
 
-                    }
-                    rawLine = global.line
                 }
-                return rawLine;
+                rawLine = global.line
             }
-            container = container instanceof Trigger
-                ? container.registerChild(pattern, callback, node.name)
-                : (parent as Triggers).registerTrigger(pattern, callback, node.name);
-        });
-        children.forEach(ch => registerNode(container, ch));
+            return rawLine;
+        }
+
+        const triggers: Trigger[] = []
+        const triggerPatterns = patterns.map(pat => toPattern(pat));
+        if (!node.multiline) {
+            triggers.push(registerTrigger(container, triggerPatterns, callback, node, parent))
+        } else {
+            let prev = container;
+            triggerPatterns.forEach(pattern => {
+                registerTrigger(prev, [pattern], callback, node, parent)
+            })
+        }
+        triggers.forEach(trigger => {
+            children.forEach(ch => registerNode(trigger, ch));
+        })
+
     }
 
 

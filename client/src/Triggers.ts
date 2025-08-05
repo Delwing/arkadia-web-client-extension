@@ -84,7 +84,7 @@ export class Trigger {
                 matches = line.match(pattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
-                const index = rawLine.toLowerCase().indexOf(patternStr.toLowerCase());
+                const index = rawLine.indexOf(patternStr);
                 if (index > -1) {
                     const end = index + patternStr.length;
                     matches = [rawLine.substring(index, end)];
@@ -97,7 +97,7 @@ export class Trigger {
                 break;
             }
         }
-        let matched = false;
+        let matched = patterns.length == 0;
         if (matches) {
             matched = true;
             if (this.options.stayOpenLines && this.options.stayOpenLines > 0) {

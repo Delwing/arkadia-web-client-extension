@@ -105,6 +105,9 @@ function processNode(node) {
     const out = { name, patterns };
     if (script) out.script = scriptNode;
     if (children.length) out.triggers = children;
+    if (node.$.isMultiline === "yes") {
+        out.multiline = true;
+    }
     return out;
 }
 
@@ -114,5 +117,5 @@ xml2js.parseString(xmlData, {explicitArray: false}, (err, result) => {
     const root = xpath.find(result, "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']")
     if (!root) return;
     const groups = toArray(root).map(processNode).filter(Boolean);
-    fs.writeFileSync("../client/src/scripts/gags_lua.json", JSON.stringify(groups));
+    fs.writeFileSync("./client/src/scripts/gags_lua.json", JSON.stringify(groups, null, 2));
 });
