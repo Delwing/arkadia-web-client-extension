@@ -71,6 +71,7 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
@@ -126,6 +127,17 @@ export default class Client {
                 this.support()
                 ev.preventDefault()
             }
+            this.customBinds.forEach(cb => {
+                if (
+                    (ev.code === cb.key || ev.key === cb.key) &&
+                    !!cb.ctrl === ev.ctrlKey &&
+                    !!cb.alt === ev.altKey &&
+                    !!cb.shift === ev.shiftKey
+                ) {
+                    this.sendCommand(cb.command)
+                    ev.preventDefault()
+                }
+            })
         })
 
         const applyBinds = (b: any) => {
@@ -150,6 +162,12 @@ export default class Client {
             const support = b?.support
             if (support) {
                 this.supportBind = { ...support }
+            }
+            const custom = b?.custom
+            if (custom) {
+                this.customBinds = [...custom]
+            } else {
+                this.customBinds = []
             }
         }
 
