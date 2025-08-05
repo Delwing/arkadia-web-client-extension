@@ -317,6 +317,7 @@ export default class MobileDirectionButtons {
                 const { x, y } = savedPosition as any;
                 this.container.style.right = `${x}px`;
                 this.container.style.top = `${y}px`;
+                requestAnimationFrame(() => this.clampToView());
             } catch (e) {
                 console.error('Error parsing saved position:', e);
             }
