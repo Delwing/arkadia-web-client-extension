@@ -1,7 +1,7 @@
 import people from './people.json'
 import Client from "./Client";
-import { color, RESET, findClosestColor } from './Colors';
-import { stripAnsiCodes } from './Triggers';
+import {color, RESET, findClosestColor} from './Colors';
+import {stripAnsiCodes} from './Triggers';
 
 export default class People {
 
@@ -63,7 +63,7 @@ export default class People {
                 return prefix + highlighted + suffixText + suffix
             }
 
-            this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag)
+            this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
 
             if (isEnemy || (inGuild && guildColor !== undefined)) {
                 const key = `${replacement.name}|${replacement.guild}`
@@ -77,7 +77,7 @@ export default class People {
                         const highlighted = color(chosenColor) + token + RESET
                         return prefix + highlighted + suffix
                     }
-                    this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag)
+                    this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
                 }
             }

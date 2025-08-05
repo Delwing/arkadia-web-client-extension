@@ -1,7 +1,7 @@
 import Client from "../Client";
 import loadHerbs from "./herbsLoader";
-import { color, RESET, findClosestColor } from "../Colors";
-import { stripAnsiCodes } from "../Triggers";
+import {color, RESET, findClosestColor} from "../Colors";
+import {stripAnsiCodes} from "../Triggers";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -36,7 +36,7 @@ export default async function initHerbDescriptions(client: Client) {
                     }
                     const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
                     return prefix + token + ` (${color(HERB_NAME_COLOR)}${clickable}${RESET})` + suffix;
-                }, tag);
+                }, tag, {caseInsensitive: true});
             });
         });
     } catch (e) {
