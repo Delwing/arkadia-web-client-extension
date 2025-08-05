@@ -262,3 +262,21 @@ test('support sends commands to support leader', () => {
   expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wesprzyj ob_5');
 });
 
+test('sendCommand expands object shortcuts', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+    { num: 5, shortcut: '1' },
+    { num: 7, shortcut: 'A' },
+    { num: 42, shortcut: '@' },
+  ] as any);
+
+  client.sendCommand('zabij @1');
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:zabij ob_5', true);
+
+  client.sendCommand('obejrzyj @A');
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:obejrzyj ob_7', true);
+
+  client.sendCommand('help @@');
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', true);
+});
+
