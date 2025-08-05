@@ -253,12 +253,31 @@ export default class MobileDirectionButtons {
         this.enabled = true;
         // Show buttons regardless of device type
         this.container.style.display = 'grid';
+        this.clampToView();
     }
 
     disable() {
         if (!this.enabled) return;
         this.enabled = false;
         this.container.style.display = 'none';
+    }
+
+    private clampToView() {
+        const rect = this.container.getBoundingClientRect();
+        let right = parseInt(this.container.style.right, 10);
+        let top = parseInt(this.container.style.top, 10);
+        if (isNaN(right)) {
+            right = window.innerWidth - rect.right;
+        }
+        if (isNaN(top)) {
+            top = rect.top;
+        }
+        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
+        const maxTop = window.innerHeight - this.container.offsetHeight - 5;
+        const clampedRight = Math.min(Math.max(5, right), maxRight);
+        const clampedTop = Math.min(Math.max(5, top), maxTop);
+        this.container.style.right = `${clampedRight}px`;
+        this.container.style.top = `${clampedTop}px`;
     }
 
     private setupKeyboardHandlers() {
@@ -298,6 +317,7 @@ export default class MobileDirectionButtons {
                 const { x, y } = savedPosition as any;
                 this.container.style.right = `${x}px`;
                 this.container.style.top = `${y}px`;
+                requestAnimationFrame(() => this.clampToView());
             } catch (e) {
                 console.error('Error parsing saved position:', e);
             }
