@@ -216,6 +216,7 @@ export default class CharState {
 
         const group = document.createElement("div");
         group.className = "char-state-bar";
+        group.title = key;
         const labelEl = document.createElement("span");
         labelEl.textContent = label + ":";
         if (highlight) labelEl.style.color = "tomato";
