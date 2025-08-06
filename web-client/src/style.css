@@ -542,7 +542,8 @@ button:focus-visible {
 
 .mobile-direction-buttons.collapsed button:not(#buttons-toggle),
 .mobile-direction-buttons.collapsed #z-buttons-list,
-.mobile-direction-buttons.collapsed #zas-buttons-list {
+.mobile-direction-buttons.collapsed #zas-buttons-list,
+.mobile-direction-buttons.collapsed #prze-buttons-list {
   display: none;
 }
 

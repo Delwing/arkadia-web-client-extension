@@ -13,9 +13,11 @@ export default class MobileDirectionButtons {
     private readonly contentArea: HTMLElement | null = null;
     private readonly zList: HTMLDivElement | null = null;
     private readonly zasList: HTMLDivElement | null = null;
+    private readonly przeList: HTMLDivElement | null = null;
     private readonly idzList: HTMLDivElement | null = null;
     private readonly zToggle: HTMLButtonElement | null = null;
     private readonly zasToggle: HTMLButtonElement | null = null;
+    private przeToggle: HTMLButtonElement | null = null;
     private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
     private readonly toggleButton: HTMLButtonElement | null = null;
@@ -85,6 +87,7 @@ export default class MobileDirectionButtons {
         this.contentArea = document.getElementById('main_text_output_msg_wrapper');
         this.zList = document.getElementById('z-buttons-list') as HTMLDivElement;
         this.zasList = document.getElementById('zas-buttons-list') as HTMLDivElement;
+        this.przeList = document.getElementById('prze-buttons-list') as HTMLDivElement;
         this.idzList = document.getElementById('idz-buttons-list') as HTMLDivElement;
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
@@ -139,6 +142,9 @@ export default class MobileDirectionButtons {
             if (this.zasList && this.zasList.style.display !== 'none') {
                 this.renderZasList();
             }
+            if (this.przeList && this.przeList.style.display !== 'none') {
+                this.renderPrzeList();
+            }
             if (this.idzList && this.idzList.style.display !== 'none') {
                 this.renderIdzList();
             }
@@ -182,6 +188,7 @@ export default class MobileDirectionButtons {
             this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
             this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
             this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement | null;
+            this.przeToggle = null;
             this.idzToggle = null;
             this.directionButtons = {
                 nw: document.getElementById('nw-button') as HTMLButtonElement | null,
@@ -472,9 +479,11 @@ export default class MobileDirectionButtons {
     private hideLists() {
         if (this.zList) this.zList.style.display = 'none';
         if (this.zasList) this.zasList.style.display = 'none';
+        if (this.przeList) this.przeList.style.display = 'none';
         if (this.idzList) this.idzList.style.display = 'none';
         if (this.zToggle) this.zToggle.classList.remove('active');
         if (this.zasToggle) this.zasToggle.classList.remove('active');
+        if (this.przeToggle) this.przeToggle.classList.remove('active');
         if (this.idzToggle) this.idzToggle.classList.remove('active');
     }
 
@@ -556,6 +565,10 @@ export default class MobileDirectionButtons {
         this.renderList(this.zasList, /^[A-Z]$/, 'zas');
     }
 
+    private renderPrzeList() {
+        this.renderList(this.przeList, /^[0-9]+$/, 'prze');
+    }
+
     private renderIdzList() {
         if (!this.idzList) return;
         this.idzList.innerHTML = '';
@@ -623,6 +636,11 @@ export default class MobileDirectionButtons {
         } else if (this.idzToggle === newBtn) {
             this.idzToggle = null;
         }
+        if (cfg.macro === 'przeList') {
+            this.przeToggle = newBtn;
+        } else if (this.przeToggle === newBtn) {
+            this.przeToggle = null;
+        }
         if (id.endsWith('-button')) {
             const dirKey = id.replace('-button', '');
             if (Object.prototype.hasOwnProperty.call(this.directionButtons, dirKey)) {
@@ -669,6 +687,16 @@ export default class MobileDirectionButtons {
                         this.hideLists();
                         this.renderZasList();
                         if (this.zasList) this.zasList.style.display = 'grid';
+                        newBtn.classList.add('active');
+                    }
+                    break;
+                case 'przeList':
+                    if (this.przeList && this.przeList.style.display === 'grid') {
+                        this.hideLists();
+                    } else {
+                        this.hideLists();
+                        this.renderPrzeList();
+                        if (this.przeList) this.przeList.style.display = 'grid';
                         newBtn.classList.add('active');
                     }
                     break;
