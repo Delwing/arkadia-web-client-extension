@@ -10,6 +10,7 @@ export default function initSelfEvaluation(
     let current = "";
     let summary: { name: string; state: string }[] = [];
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let fallback: ReturnType<typeof setTimeout> | undefined;
 
     const GREEN = findClosestColor("#00ff00");
     const YELLOW = findClosestColor("#ffff00");
@@ -59,6 +60,10 @@ export default function initSelfEvaluation(
         client.Triggers.registerTrigger(
             /^Oceniasz [^,]+? ([^.]+)\.$/,
             (_r, line, m) => {
+                if (fallback) {
+                    clearTimeout(fallback);
+                    fallback = undefined;
+                }
                 if (m) {
                     current = m[1].trim();
                 } else {
@@ -77,7 +82,13 @@ export default function initSelfEvaluation(
 
         client.sendCommand("ocen swoje bronie");
         client.sendCommand("ocen swoje zbroje");
-        resetTimer();
+
+        fallback = setTimeout(() => {
+            client.Triggers.removeByTag(tag);
+            client.suppressItemEvaluation = false;
+            summary = [];
+            current = "";
+        }, 5000);
     }
 
     if (aliases) {
