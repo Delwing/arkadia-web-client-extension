@@ -1,5 +1,6 @@
 import Client from "@client/src/Client";
 import { getItemSync, setItemSync } from "@client/src/storage";
+import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 
 export default class ObjectList {
     private client: Client;
@@ -150,7 +151,8 @@ export default class ObjectList {
             let bar = "";
             if (typeof obj.state === "number") {
                 const hp = Math.max(0, Math.min(6, obj.state)) + 1;
-                const color = hp <= 3 ? "tomato" : (hp <= 5 ? "yellow" : "springgreen");
+                const colorLevel = getColorLevel(hp, 7, false, true);
+                const color = COLOR_OBJECT[colorLevel];
                 const filled = "#".repeat(hp);
                 const empty = "-".repeat(7 - hp);
                 bar = `[<span style="color:${color}">${filled}${empty}</span>]`;
