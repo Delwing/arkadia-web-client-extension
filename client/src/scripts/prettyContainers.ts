@@ -460,10 +460,11 @@ export default function initContainers(client: Client) {
     });
 
     client.aliases.push({
-        pattern: /\/przejrzyj/, callback: () => {
-            filter = magicAndKeysFilter
-            plugLinks = true
-            client.send("ob skrzynie");
-        }
-    })
+        pattern: /^\/przejrzyj(?: (\w+))?$/,
+        callback: (m?: RegExpMatchArray) => {
+            filter = magicAndKeysFilter;
+            plugLinks = true;
+            client.send(`przejrzyj ${m?.[1] ?? 'skrzynie'}`);
+        },
+    });
 }
