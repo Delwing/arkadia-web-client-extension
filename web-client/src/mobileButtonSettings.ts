@@ -18,6 +18,7 @@ export interface ButtonSetting {
     macro: MacroType;
     label: string;
     color: string;
+    activeColor?: string;
     command?: string;
     direction?: string;
 }
@@ -34,17 +35,17 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     'button-3': { macro: 'command', label: '/za cel', color: '#6EB4DC', command: '/za' },
 
     // direction buttons in visual order
-    'nw-button': { macro: 'kierunek', label: '↖', color: '#6CA6CD', command: 'nw', direction: 'nw' },
-    'n-button': { macro: 'kierunek', label: '↑', color: '#6CA6CD', command: 'n', direction: 'n' },
-    'ne-button': { macro: 'kierunek', label: '↗', color: '#6CA6CD', command: 'ne', direction: 'ne' },
-    'u-button': { macro: 'kierunek', label: 'u', color: '#6CA6CD', command: 'u', direction: 'u' },
-    'w-button': { macro: 'kierunek', label: '←', color: '#6CA6CD', command: 'w', direction: 'w' },
+    'nw-button': { macro: 'kierunek', label: '↖', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'nw', direction: 'nw' },
+    'n-button': { macro: 'kierunek', label: '↑', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'n', direction: 'n' },
+    'ne-button': { macro: 'kierunek', label: '↗', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'ne', direction: 'ne' },
+    'u-button': { macro: 'kierunek', label: 'u', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'u', direction: 'u' },
+    'w-button': { macro: 'kierunek', label: '←', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'w', direction: 'w' },
     'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', command: 'zerknij' },
-    'e-button': { macro: 'kierunek', label: '→', color: '#6CA6CD', command: 'e', direction: 'e' },
-    'd-button': { macro: 'kierunek', label: 'd', color: '#6CA6CD', command: 'd', direction: 'd' },
-    'sw-button': { macro: 'kierunek', label: '↙', color: '#6CA6CD', command: 'sw', direction: 'sw' },
-    's-button': { macro: 'kierunek', label: '↓', color: '#6CA6CD', command: 's', direction: 's' },
-    'se-button': { macro: 'kierunek', label: '↘', color: '#6CA6CD', command: 'se', direction: 'se' },
+    'e-button': { macro: 'kierunek', label: '→', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'e', direction: 'e' },
+    'd-button': { macro: 'kierunek', label: 'd', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'd', direction: 'd' },
+    'sw-button': { macro: 'kierunek', label: '↙', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'sw', direction: 'sw' },
+    's-button': { macro: 'kierunek', label: '↓', color: '#6CA6CD', activeColor: '#2fa7c5', command: 's', direction: 's' },
+    'se-button': { macro: 'kierunek', label: '↘', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'se', direction: 'se' },
     'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
 };
 
@@ -141,7 +142,12 @@ export function applySettings(settings: Settings, inTeam = false) {
             const isEmpty = cfg.macro === 'empty' || !cfg.label;
             if (!isEmpty) {
                 btn.textContent = cfg.label;
-                btn.style.backgroundColor = cfg.color;
+                if (cfg.macro === 'kierunek') {
+                    btn.style.setProperty('--color', cfg.color);
+                    btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
+                } else {
+                    btn.style.backgroundColor = cfg.color;
+                }
             } else {
                 btn.classList.add('empty');
             }

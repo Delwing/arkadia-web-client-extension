@@ -582,11 +582,11 @@ button:focus-visible {
 }
 
 .direction-button {
-  background-color: #6CA6CD; /* Match 'zerknij' button color */
+  background-color: var(--color, #6CA6CD); /* Match 'zerknij' button color */
 }
 
 .direction-button.exit-available {
-  background-color: #2fa7c5 !important;
+  background-color: var(--active-color, #2fa7c5) !important;
 }
 
 .mobile-button-text {

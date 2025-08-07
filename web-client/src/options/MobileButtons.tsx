@@ -39,6 +39,7 @@ function MobileButtons() {
         solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
         team: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
     });
+    const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: 'solo' | 'team'; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const [view, setView] = useState<'solo' | 'team'>('solo');
@@ -142,6 +143,10 @@ function MobileButtons() {
             setPos({ left: rect.left - parent.left, top: rect.bottom - parent.top + 4 });
         }
         setActive({ set: setName, id });
+        const cfg = settings[setName].buttons[id] || defaultSettings[id] || emptySetting;
+        if (cfg.macro === 'kierunek') {
+            setSyncDirs(true);
+        }
         ev.stopPropagation();
     }
 
@@ -167,9 +172,41 @@ function MobileButtons() {
         }));
     }
 
+    function updateAllDirections(field: 'color' | 'activeColor', value: string) {
+        setSettings(prev => {
+            const updateSet = (set: Settings['solo']) => {
+                const buttons: SettingsMap = { ...set.buttons };
+                set.order.forEach(id => {
+                    const cfg = buttons[id] || defaultSettings[id] || emptySetting;
+                    if (cfg.macro === 'kierunek') {
+                        buttons[id] = { ...cfg, [field]: value };
+                    }
+                });
+                return { ...set, buttons };
+            };
+            return {
+                solo: updateSet(prev.solo),
+                team: updateSet(prev.team),
+            };
+        });
+    }
+
     function resetColor(setName: 'solo' | 'team', id: string) {
         const def = defaultSettings[id]?.color || emptySetting.color;
-        update(setName, id, 'color', def);
+        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+            updateAllDirections('color', def);
+        } else {
+            update(setName, id, 'color', def);
+        }
+    }
+
+    function resetActiveColor(setName: 'solo' | 'team', id: string) {
+        const def = defaultSettings[id]?.activeColor || '#2fa7c5';
+        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+            updateAllDirections('activeColor', def);
+        } else {
+            update(setName, id, 'activeColor', def);
+        }
     }
 
     function makeBlank(setName: 'solo' | 'team', id: string) {
@@ -356,35 +393,62 @@ function MobileButtons() {
                                 type="color"
                                 className="mobile-button-color flex-grow-1"
                                 value={activeCfg.color}
-                                onChange={e => update(active!.set, active!.id, 'color', e.target.value)}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (syncDirs && activeCfg.macro === 'kierunek') {
+                                        updateAllDirections('color', val);
+                                    } else {
+                                        update(active!.set, active!.id, 'color', val);
+                                    }
+                                }}
                             />
                             <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                         </Form.Group>
                     )}
-                    {activeCfg.macro !== 'empty' && (
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            className="mb-2"
-                            onClick={() => makeBlank(active!.set, active!.id)}
-                        >
-                            Pusty
-                        </Button>
+                    {activeCfg.macro === 'kierunek' && (
+                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
+                            <Form.Label>Kolor aktywny</Form.Label>
+                            <Form.Control
+                                size="sm"
+                                type="color"
+                                className="mobile-button-color flex-grow-1"
+                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (syncDirs) {
+                                        updateAllDirections('activeColor', val);
+                                    } else {
+                                        update(active!.set, active!.id, 'activeColor', val);
+                                    }
+                                }}
+                            />
+                            <Button size="sm" variant="secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
+                        </Form.Group>
                     )}
                     {activeCfg.macro === "kierunek" && (
-                        <Form.Group className="form-label mb-2">
-                            <Form.Label>Kierunek</Form.Label>
-                            <Form.Select
-                                size="sm"
-                                className="mobile-button-direction"
-                                value={activeCfg.direction || ""}
-                                onChange={e => update(active!.set, active!.id, "direction", e.target.value)}
-                            >
-                                {directionOptions.map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
+                        <>
+                            <Form.Group className="form-label mb-2">
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Synchronizuj kolory"
+                                    checked={syncDirs}
+                                    onChange={e => setSyncDirs(e.target.checked)}
+                                />
+                            </Form.Group>
+                            <Form.Group className="form-label mb-2">
+                                <Form.Label>Kierunek</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    className="mobile-button-direction"
+                                    value={activeCfg.direction || ""}
+                                    onChange={e => update(active!.set, active!.id, "direction", e.target.value)}
+                                >
+                                    {directionOptions.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </>
                     )}
                     {activeCfg.macro === "command" && (
                         <Form.Group className="form-label mb-2">
