@@ -42,6 +42,7 @@ import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
+import initSelfEvaluation from './scripts/selfEvaluation'
 import initCoinColors from './scripts/coinColors'
 import initWeaponColors from './scripts/weaponColors'
 import initNewMail from './scripts/newMail'
@@ -154,6 +155,7 @@ export function registerScripts(client: Client) {
     initMagics(client)
     initPriceEvaluation(client)
     initStoneValue(client, aliases)
+    initSelfEvaluation(client, aliases)
     initCoinColors(client)
     initWeaponColors(client)
     initLeaderAttackWarning(client)
