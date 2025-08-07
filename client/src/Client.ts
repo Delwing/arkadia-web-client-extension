@@ -3,6 +3,7 @@ import { stripAnsiCodes } from "./stripAnsiCodes";
 import PackageHelper from "./PackageHelper";
 import MapHelper from "./MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
+import Pausers from "./Pausers";
 import {Howl} from "howler";
 import {mudletColorLine, setXtermPalette} from "./Colors";
 import {
@@ -40,6 +41,7 @@ export default class Client {
     Triggers = new Triggers(this);
     packageHelper = new PackageHelper(this);
     Map = new MapHelper(this);
+    Pausers = new Pausers(this);
     OutputHandler = new OutputHandler(this);
     TeamManager = new TeamManager(this);
     ObjectManager = new ObjectManager(this);

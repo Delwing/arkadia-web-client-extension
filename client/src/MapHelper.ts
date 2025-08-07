@@ -71,6 +71,7 @@ export default class MapHelper {
     refreshPosition = true;
     hashes = {};
     gmcpPosition: Position;
+    paused = false;
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -98,6 +99,10 @@ export default class MapHelper {
         this.client.sendEvent('refreshPositionWhenAble');
     }
 
+    setPaused(paused: boolean) {
+        this.paused = paused;
+    }
+
     parseCommand(command) {
         if (command === "zerknij" || command === "spojrz" || command === "sp") {
             this.refreshPosition = true;
@@ -117,6 +122,9 @@ export default class MapHelper {
     }
 
     move(direction: string) {
+        if (this.paused) {
+            return {direction, moved: false}
+        }
         let actualDirection = direction
         if (this.currentRoom) {
             const allExits = Object.assign(
