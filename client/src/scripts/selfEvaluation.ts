@@ -57,27 +57,42 @@ export default function initSelfEvaluation(
         summary = [];
         current = "";
         client.suppressItemEvaluation = true;
-        client.Triggers.registerTrigger(
+
+        const parent = client.Triggers.registerTrigger(
             /^Oceniasz [^,]+? ([^.]+)\.$/,
-            (_r, line, m) => {
+            (_r, _line, m) => {
                 if (fallback) {
                     clearTimeout(fallback);
                     fallback = undefined;
                 }
-                if (m) {
-                    current = m[1].trim();
-                } else {
-                    const cond = line.match(/^Wyglada na to, ze .* \[(.+)\]$/);
-                    if (cond && current) {
-                        summary.push({ name: current, state: cond[1] });
-                        current = "";
-                    }
-                }
+                current = m[1].trim();
                 resetTimer();
                 return SKIP_LINE;
             },
             tag,
             { stayOpenLines: 50 }
+        );
+
+        parent.registerChild(
+            /^Wyglada na to, ze .* \[(.+)\]$/,
+            (_r, _line, m) => {
+                if (current) {
+                    summary.push({ name: current, state: m[1] });
+                    current = "";
+                }
+                resetTimer();
+                return SKIP_LINE;
+            },
+            tag
+        );
+
+        parent.registerChild(
+            /^.*$/,
+            () => {
+                resetTimer();
+                return SKIP_LINE;
+            },
+            tag
         );
 
         client.sendCommand("ocen swoje bronie");

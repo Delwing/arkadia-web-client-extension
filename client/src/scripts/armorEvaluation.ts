@@ -90,7 +90,7 @@ export default function initArmorEvaluation(client: Client) {
     mainRegex,
     (_r, _l, m) => {
       if (client.suppressItemEvaluation) {
-        return undefined;
+        return SKIP_LINE;
       }
       const equipmentType = m[2] ? m[2] : "tarcza";
       const desc = m[6].trim();

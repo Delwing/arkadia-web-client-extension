@@ -18,7 +18,7 @@ export default function initWeaponEvaluation(client: Client) {
     gripRegex,
     (_r, _l, m) => {
       if (client.suppressItemEvaluation) {
-        return undefined;
+        return SKIP_LINE;
       }
       const grip = m[2];
       let wound = "";

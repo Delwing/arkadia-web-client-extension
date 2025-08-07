@@ -13,7 +13,7 @@ export default function initParryShieldEvaluation(client: Client) {
     regex,
     (_r, _l, m) => {
       if (client.suppressItemEvaluation) {
-        return undefined;
+        return SKIP_LINE;
       }
       const parryText = m[1].trim();
       const key = Object.keys(EFFECTIVENESS).find((k) =>
