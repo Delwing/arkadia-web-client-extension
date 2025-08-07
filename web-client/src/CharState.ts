@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { gmcp } from "@client/src/gmcp";
+import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
 
 export interface CharStateData {
   hp: number;
@@ -196,26 +197,8 @@ export default class CharState {
         value = Math.max(0, Math.min(maxValue, value));
         const ratio = value / maxValue;
         const reverse = def === 0 || this.config[key].flip === true;
-        let colorClass = "bg-success";
-        if (key === "hp") {
-          if (value <= 3) {
-            colorClass = "bg-danger";
-          } else if (value <= 5) {
-            colorClass = "bg-warning";
-          }
-        } else if (reverse) {
-          if (ratio >= 2 / 3) {
-            colorClass = "bg-danger";
-          } else if (ratio >= 1 / 3) {
-            colorClass = "bg-warning";
-          }
-        } else {
-          if (ratio <= 1 / 3) {
-            colorClass = "bg-danger";
-          } else if (ratio <= 2 / 3) {
-            colorClass = "bg-warning";
-          }
-        }
+        const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+        const colorClass = COLOR_BAR_CLASS[colorLevel];
         const opposite =
           def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
@@ -263,26 +246,8 @@ export default class CharState {
           const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
           const ratio = value / maxValue;
           const reverse = def === 0 || this.config[key].flip === true;
-          let color = "green";
-          if (key === "hp") {
-            if (value <= 3) {
-              color = "red";
-            } else if (value <= 5) {
-              color = "yellow";
-            }
-          } else if (reverse) {
-            if (ratio >= 2 / 3) {
-              color = "red";
-            } else if (ratio >= 1 / 3) {
-              color = "yellow";
-            }
-          } else {
-            if (ratio <= 1 / 3) {
-              color = "red";
-            } else if (ratio <= 2 / 3) {
-              color = "yellow";
-            }
-          }
+          const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+          const color = COLOR_TEXT[colorLevel];
           text = `${label}: <span style="color:${color}">[${bar}]</span>`;
         } else {
           text = `${label}: [${value}/${maxValue}]`;
