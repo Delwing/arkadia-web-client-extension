@@ -172,24 +172,29 @@ function MobileButtons() {
         }));
     }
 
-    function updateAllDirections(setName: 'solo' | 'team', field: 'color' | 'activeColor', value: string) {
+    function updateAllDirections(field: 'color' | 'activeColor', value: string) {
         setSettings(prev => {
-            const set = prev[setName];
-            const buttons: SettingsMap = { ...set.buttons };
-            set.order.forEach(id => {
-                const cfg = buttons[id] || defaultSettings[id] || emptySetting;
-                if (cfg.macro === 'kierunek') {
-                    buttons[id] = { ...cfg, [field]: value };
-                }
-            });
-            return { ...prev, [setName]: { ...set, buttons } };
+            const updateSet = (set: Settings['solo']) => {
+                const buttons: SettingsMap = { ...set.buttons };
+                set.order.forEach(id => {
+                    const cfg = buttons[id] || defaultSettings[id] || emptySetting;
+                    if (cfg.macro === 'kierunek') {
+                        buttons[id] = { ...cfg, [field]: value };
+                    }
+                });
+                return { ...set, buttons };
+            };
+            return {
+                solo: updateSet(prev.solo),
+                team: updateSet(prev.team),
+            };
         });
     }
 
     function resetColor(setName: 'solo' | 'team', id: string) {
         const def = defaultSettings[id]?.color || emptySetting.color;
         if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
-            updateAllDirections(setName, 'color', def);
+            updateAllDirections('color', def);
         } else {
             update(setName, id, 'color', def);
         }
@@ -198,7 +203,7 @@ function MobileButtons() {
     function resetActiveColor(setName: 'solo' | 'team', id: string) {
         const def = defaultSettings[id]?.activeColor || '#2fa7c5';
         if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
-            updateAllDirections(setName, 'activeColor', def);
+            updateAllDirections('activeColor', def);
         } else {
             update(setName, id, 'activeColor', def);
         }
@@ -391,7 +396,7 @@ function MobileButtons() {
                                 onChange={e => {
                                     const val = e.target.value;
                                     if (syncDirs && activeCfg.macro === 'kierunek') {
-                                        updateAllDirections(active!.set, 'color', val);
+                                        updateAllDirections('color', val);
                                     } else {
                                         update(active!.set, active!.id, 'color', val);
                                     }
@@ -411,7 +416,7 @@ function MobileButtons() {
                                 onChange={e => {
                                     const val = e.target.value;
                                     if (syncDirs) {
-                                        updateAllDirections(active!.set, 'activeColor', val);
+                                        updateAllDirections('activeColor', val);
                                     } else {
                                         update(active!.set, active!.id, 'activeColor', val);
                                     }
