@@ -455,7 +455,6 @@ button:focus-visible {
 #pause-icon {
   margin-left: 0.25rem;
   color: #ff8800;
-  -webkit-text-stroke: 1px white;
 }
 
 /* Mobile-specific styles */
