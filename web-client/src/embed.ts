@@ -3,6 +3,9 @@ let limit = 35;
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
 import { getItemSync, setItemSync } from "@client/src/storage";
 
+const STORAGE_KEY = 'mapperRoomId';
+const VISITED_ROOMS_KEY = 'visitedRooms';
+
 export default class EmbeddedMap {
     private map: HTMLElement;
     private reader: any;
@@ -17,7 +20,7 @@ export default class EmbeddedMap {
     private explorationMode = false;
     private visited = new Set<number>();
 
-    constructor(mapData: any, colors: any, startId: number) {
+    constructor(mapData: any, colors: any, startId?: number) {
         this.map = document.querySelector<HTMLCanvasElement>("#map")!;
         this.map.style.touchAction = 'none';
         this._pinchZoom = this._pinchZoom.bind(this);
@@ -38,6 +41,7 @@ export default class EmbeddedMap {
         this.settings
         let zoom = 0.30;
         let explorationMode = false;
+        let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
             const parsed = data?.uiSettings as any;
@@ -55,14 +59,30 @@ export default class EmbeddedMap {
         } catch {
             // ignore malformed data
         }
+        try {
+            const saved = getItemSync(STORAGE_KEY);
+            const savedId = saved ? parseInt(saved[STORAGE_KEY]) : NaN;
+            if (!isNaN(savedId)) {
+                initialRoom = savedId;
+            }
+            const visitedData = getItemSync(VISITED_ROOMS_KEY);
+            const visited = visitedData ? visitedData[VISITED_ROOMS_KEY] : null;
+            if (visited && Array.isArray(visited)) {
+                this.visited = new Set<number>(visited);
+            }
+        } catch {}
         this.zoom = zoom;
         this.limit = limit;
         this.explorationMode = explorationMode;
         this.renderer = new Renderer(this.map, this.reader, this.settings);
-        this.renderRoomById(startId);
+        this.renderRoomById(initialRoom);
 
         window.addEventListener('enterLocation', (ev: any) => {
-            this.renderRoomById(ev.detail.id);
+            const id = ev.detail.id;
+            this.visited.add(id);
+            setItemSync(STORAGE_KEY, id.toString());
+            setItemSync(VISITED_ROOMS_KEY, Array.from(this.visited));
+            this.renderRoomById(id);
         });
 
         window.addEventListener('leadTo', (ev: any) => {
@@ -74,12 +94,6 @@ export default class EmbeddedMap {
             this.refresh();
         })
 
-        window.addEventListener('visitedRooms', (ev: any) => {
-            this.visited = new Set(ev.detail || []);
-            if (this.explorationMode) {
-                this.refresh();
-            }
-        })
     }
 
     private _onTouchStart(ev: TouchEvent) {
@@ -227,7 +241,7 @@ export default class EmbeddedMap {
 }
 
 export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId ?? 1);
+    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
 };
 
 window.addEventListener('map-ready-with-data', (e: Event) =>

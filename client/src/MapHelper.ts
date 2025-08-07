@@ -1,10 +1,6 @@
 import {MapReader} from "mudlet-map-renderer";
 import Client from "./Client";
-import { getItemSync, setItemSync } from "./storage";
 import Room = MapData.Room;
-
-const STORAGE_KEY = 'mapperRoomId';
-const VISITED_ROOMS_KEY = 'visitedRooms';
 
 export const polishToEnglish = {
     ["polnoc"]: "north",
@@ -75,29 +71,16 @@ export default class MapHelper {
     refreshPosition = true;
     hashes = {};
     gmcpPosition: Position;
-    savedRoomId: number | null = null;
-    visitedRooms = new Set<number>();
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        const savedData = getItemSync(STORAGE_KEY);
-        const saved = savedData ? savedData[STORAGE_KEY] : null;
-        if (saved) {
-            this.savedRoomId = parseInt(saved);
-        }
-        const visitedData = getItemSync(VISITED_ROOMS_KEY);
-        const visited = visitedData ? visitedData[VISITED_ROOMS_KEY] : null;
-        if (visited && Array.isArray(visited)) {
-            this.visitedRooms = new Set<number>(visited);
-        }
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
         window.addEventListener('map-ready', (event: CustomEvent) => {
             this.mapReader = new MapReader(event.detail.mapData, event.detail.colors)
             // @ts-ignore
             Object.values(this.mapReader.roomIndex).forEach(room => this.hashes[room.hash] = room);
-            const startId = this.savedRoomId ?? 1;
-            window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors, startId: startId}}))
-            this.renderRoomById(startId)
+            window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors}}))
+            this.renderRoomById(1)
         })
 
         this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
@@ -110,19 +93,6 @@ export default class MapHelper {
 
         this.client.addEventListener('refreshPositionWhenAble', () => {
             this.refreshPosition = true;
-        });
-
-        this.client.addEventListener('gmcp.char.info', () => {
-            const listener = (event: CustomEvent) => {
-                if (event.detail.key === STORAGE_KEY) {
-                    const value = parseInt(event.detail.value);
-                    if (!isNaN(value)) {
-                        this.savedRoomId = value;
-                        this.setMapRoomById(this.savedRoomId);
-                    }
-                }
-            };
-            this.client.addEventListener('storage', listener);
         });
 
         this.client.sendEvent('refreshPositionWhenAble');
@@ -267,10 +237,6 @@ export default class MapHelper {
 
     renderRoomById(id: number, sendEvent = true) {
         this.currentRoom = this.mapReader.getRoomById(id)
-        this.visitedRooms.add(id);
-        setItemSync(STORAGE_KEY, id.toString())
-        setItemSync(VISITED_ROOMS_KEY, Array.from(this.visitedRooms));
-        this.client.sendEvent('visitedRooms', Array.from(this.visitedRooms));
         if (sendEvent) {
             this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
         }
