@@ -8,6 +8,7 @@ class FakeClient {
   removeEventListener = jest.fn();
   port = { postMessage: jest.fn() } as any;
   playSound = jest.fn();
+  sendCommand = jest.fn();
 }
 
 describe('userTriggers', () => {
@@ -51,6 +52,17 @@ describe('userTriggers', () => {
     const result = client.Triggers.parseLine('foo', '');
     expect(result).toBe('foo');
     expect(client.playSound).toHaveBeenCalledWith('beep');
+  });
+
+  test('command sends command', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.addEventListener.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'command', command: 'bar' }] }];
+    apply({ detail: { key: 'triggers', value: list } } as any);
+    const result = client.Triggers.parseLine('foo', '');
+    expect(result).toBe('foo');
+    expect(client.sendCommand).toHaveBeenCalledWith('bar');
   });
 });
 

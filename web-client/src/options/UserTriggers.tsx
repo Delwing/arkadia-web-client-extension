@@ -4,9 +4,10 @@ import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@client/src/storage";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep';
+    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command';
     color?: string;
     to?: string;
+    command?: string;
 }
 
 export interface UserTrigger {
@@ -26,6 +27,7 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 <option value="color">Koloruj</option>
                 <option value="replace">Zamień</option>
                 <option value="beep">Dźwięk</option>
+                <option value="command">Komenda</option>
             </Form.Select>
             {macro.type === 'color' && (
             <Form.Control
@@ -43,6 +45,16 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                     placeholder="Replacement"
                     value={macro.to || ''}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
+                    style={{ width: '100%', maxWidth: '8rem' }}
+                />
+            )}
+            {macro.type === 'command' && (
+                <Form.Control
+                    type="text"
+                    size="sm"
+                    placeholder="Command"
+                    value={macro.command || ''}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
                     style={{ width: '100%', maxWidth: '8rem' }}
                 />
             )}
@@ -136,6 +148,8 @@ function UserTriggers() {
                         return m.to ? `replace ${m.to}` : 'replace';
                     case 'beep':
                         return 'beep';
+                    case 'command':
+                        return m.command ? `command ${m.command}` : 'command';
                     default:
                         return m.type;
                 }
