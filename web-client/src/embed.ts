@@ -145,8 +145,8 @@ export default class EmbeddedMap {
                 yMax: room.y + this.limit
             });
             if (this.explorationMode) {
-                const rooms: Record<number, any> = {};
-                Object.values(area.rooms).forEach((r: any) => {
+                const rooms: any[] = [];
+                area.rooms.forEach((r: any) => {
                     if (r && this.visited.has(r.id)) {
                         rooms[r.id] = r;
                     }
