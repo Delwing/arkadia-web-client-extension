@@ -421,27 +421,29 @@ function MobileButtons() {
                         </Form.Group>
                     )}
                     {activeCfg.macro === "kierunek" && (
-                        <Form.Group className="form-label mb-2">
-                            <Form.Check
-                                type="checkbox"
-                                label="Synchronizuj kolory"
-                                checked={syncDirs}
-                                onChange={e => setSyncDirs(e.target.checked)}
-                            />
-                        </Form.Group>
-                        <Form.Group className="form-label mb-2">
-                            <Form.Label>Kierunek</Form.Label>
-                            <Form.Select
-                                size="sm"
-                                className="mobile-button-direction"
-                                value={activeCfg.direction || ""}
-                                onChange={e => update(active!.set, active!.id, "direction", e.target.value)}
-                            >
-                                {directionOptions.map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
+                        <>
+                            <Form.Group className="form-label mb-2">
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Synchronizuj kolory"
+                                    checked={syncDirs}
+                                    onChange={e => setSyncDirs(e.target.checked)}
+                                />
+                            </Form.Group>
+                            <Form.Group className="form-label mb-2">
+                                <Form.Label>Kierunek</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    className="mobile-button-direction"
+                                    value={activeCfg.direction || ""}
+                                    onChange={e => update(active!.set, active!.id, "direction", e.target.value)}
+                                >
+                                    {directionOptions.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </>
                     )}
                     {activeCfg.macro === "command" && (
                         <Form.Group className="form-label mb-2">
