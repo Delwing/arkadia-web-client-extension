@@ -35,8 +35,8 @@ export default function initSelfEvaluation(
         return colorString(`[${state}]`, color);
     }
 
-    function resetTimer() {
-        if (timer) clearTimeout(timer);
+    function startTimer() {
+        if (timer) return;
         timer = setTimeout(() => {
             client.Triggers.removeByTag(tag);
             if (summary.length > 0) {
@@ -50,7 +50,8 @@ export default function initSelfEvaluation(
             summary = [];
             current = "";
             client.suppressItemEvaluation = false;
-        }, 1000);
+            timer = undefined;
+        }, 500);
     }
 
     function run() {
@@ -66,7 +67,7 @@ export default function initSelfEvaluation(
                     fallback = undefined;
                 }
                 current = m[1].trim();
-                resetTimer();
+                startTimer();
                 return SKIP_LINE;
             },
             tag,
@@ -80,7 +81,7 @@ export default function initSelfEvaluation(
                     summary.push({ name: current, state: m[1] });
                     current = "";
                 }
-                resetTimer();
+                startTimer();
                 return SKIP_LINE;
             },
             tag
@@ -89,7 +90,7 @@ export default function initSelfEvaluation(
         parent.registerChild(
             /^.*$/,
             () => {
-                resetTimer();
+                startTimer();
                 return SKIP_LINE;
             },
             tag
