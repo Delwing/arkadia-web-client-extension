@@ -89,6 +89,9 @@ export default function initArmorEvaluation(client: Client) {
   client.Triggers.registerTrigger(
     mainRegex,
     (_r, _l, m) => {
+      if (client.suppressItemEvaluation) {
+        return SKIP_LINE;
+      }
       const equipmentType = m[2] ? m[2] : "tarcza";
       const desc = m[6].trim();
       const extracted = extractProtection(desc);

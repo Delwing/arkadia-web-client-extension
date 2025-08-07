@@ -76,6 +76,7 @@ export default class Client {
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
     suppressMapMoveEvent = false;
+    suppressItemEvaluation = false;
     moveMode = 0;
     moveModeButton?: HTMLInputElement;
 

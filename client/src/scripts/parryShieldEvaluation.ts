@@ -12,6 +12,9 @@ export default function initParryShieldEvaluation(client: Client) {
   client.Triggers.registerTrigger(
     regex,
     (_r, _l, m) => {
+      if (client.suppressItemEvaluation) {
+        return SKIP_LINE;
+      }
       const parryText = m[1].trim();
       const key = Object.keys(EFFECTIVENESS).find((k) =>
         parryText.toLowerCase().startsWith(k),
