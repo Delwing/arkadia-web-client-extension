@@ -14,6 +14,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let timer: number | null = null;
     let paused = false;
     let target: number | null = null;
+    let pausedByPauser = false;
 
     const isWalking = () => !paused && path.length > 0;
 
@@ -120,6 +121,20 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
     client.addEventListener('stepBack', stopWalk);
     client.addEventListener('mapMove', stopWalk);
+    client.addEventListener('pauserStart', () => {
+        if (!paused && path.length > 0) {
+            paused = true;
+            pausedByPauser = true;
+            clearTimer();
+        }
+    });
+    client.addEventListener('pauserEnd', () => {
+        if (pausedByPauser) {
+            paused = false;
+            pausedByPauser = false;
+            scheduleStep();
+        }
+    });
 
     aliases.push({
         pattern: /\/idz$/,
