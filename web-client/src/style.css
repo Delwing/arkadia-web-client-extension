@@ -448,6 +448,10 @@ button:focus-visible {
 
 }
 
+#pause-icon {
+  margin-left: 0.25rem;
+}
+
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   body {
