@@ -455,6 +455,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
+    const enableNotificationsButton = document.getElementById('enable-notifications') as HTMLButtonElement | null;
+    const enableNotificationsItem = document.getElementById('enable-notifications-item') as HTMLElement | null;
+
+    if (enableNotificationsButton && enableNotificationsItem) {
+        const updateVisibility = () => {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                enableNotificationsItem.style.display = 'none';
+            }
+        };
+        enableNotificationsButton.addEventListener('click', () => {
+            client.enableNotifications();
+            updateVisibility();
+        });
+        updateVisibility();
+    }
 
     if (notificationCenter) {
         client.eventTarget.addEventListener('notify', (ev: CustomEvent<{ text: string; time?: number }>) => {
