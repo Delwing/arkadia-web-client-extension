@@ -51,7 +51,7 @@ export default function initSelfEvaluation(
             current = "";
             client.suppressItemEvaluation = false;
             timer = undefined;
-        }, 500);
+        }, 250);
     }
 
     function run() {
