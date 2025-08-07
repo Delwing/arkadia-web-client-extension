@@ -44,9 +44,11 @@ export default class MobileDirectionButtons {
     private allSettings: Settings = {
         solo: { buttons: {}, order: [], cols: 0 },
         team: { buttons: {}, order: [], cols: 0 },
+        leader: { buttons: {}, order: [], cols: 0 },
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
+    private leaderMode = false;
 
     private readonly polishToEnglish: Record<string, string> = {
         "polnoc": "north",
@@ -591,15 +593,18 @@ export default class MobileDirectionButtons {
     }
 
     private updateTeamMode() {
-        const team = !!this.client.TeamManager.isInAnyTeam?.();
-        if (team !== this.teamMode) {
+        const leader = !!this.client.TeamManager.isLeader?.();
+        const team = leader || !!this.client.TeamManager.isInAnyTeam?.();
+        if (team !== this.teamMode || leader !== this.leaderMode) {
             this.teamMode = team;
+            this.leaderMode = leader;
             this.applyActiveSettings();
         }
     }
 
     private applyActiveSettings() {
-        this.buttonSettings = (this.teamMode ? this.allSettings.team : this.allSettings.solo).buttons;
+        const set = this.leaderMode ? this.allSettings.leader : this.teamMode ? this.allSettings.team : this.allSettings.solo;
+        this.buttonSettings = set.buttons;
         Object.keys(this.buttonSettings).forEach(id => {
             const btn = document.getElementById(id) as HTMLButtonElement | null;
             if (btn) this.applyConfigToButton(id, btn);

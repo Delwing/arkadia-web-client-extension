@@ -842,7 +842,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadMobileButtonSettings().then(s => {
         const inTeam = !!client.TeamManager.isInAnyTeam?.();
-        applyMobileButtonSettings(s, inTeam);
+        const isLeader = !!client.TeamManager.isLeader?.();
+        applyMobileButtonSettings(s, inTeam, isLeader);
     });
 
     initUiSettings();
