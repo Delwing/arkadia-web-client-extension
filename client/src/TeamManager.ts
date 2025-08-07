@@ -201,6 +201,10 @@ export default class TeamManager {
         return this.leaderId;
     }
 
+    isLeader(): boolean {
+        return this.leaderId !== undefined && this.leaderId === this.playerNum;
+    }
+
     clearTeam() {
         const hadMembers = this.members.size > 0 || this.leader !== undefined;
         this.members.clear();

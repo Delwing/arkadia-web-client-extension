@@ -38,13 +38,18 @@ function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({
         solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
         team: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
+        leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
     });
     const [syncDirs, setSyncDirs] = useState(true);
-    const [active, setActive] = useState<{ set: 'solo' | 'team'; id: string } | null>(null);
+    const [active, setActive] = useState<{ set: 'solo' | 'team' | 'leader'; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
-    const [view, setView] = useState<'solo' | 'team'>('solo');
+    const [view, setView] = useState<'solo' | 'team' | 'leader'>('solo');
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
+    const leaderRef = useRef<HTMLDivElement>(null);
+    const modes = ['solo', 'team', 'leader'] as const;
+    type Mode = typeof modes[number];
+    const [copyFrom, setCopyFrom] = useState<Mode>('solo');
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -136,9 +141,9 @@ function MobileButtons() {
         });
     }
 
-    function openConfig(setName: 'solo' | 'team', id: string, ev: React.MouseEvent<HTMLButtonElement>) {
+    function openConfig(setName: 'solo' | 'team' | 'leader', id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
-        const parent = (setName === 'solo' ? soloRef.current : teamRef.current)?.getBoundingClientRect();
+        const parent = (setName === 'solo' ? soloRef.current : setName === 'team' ? teamRef.current : leaderRef.current)?.getBoundingClientRect();
         if (parent) {
             setPos({ left: rect.left - parent.left, top: rect.bottom - parent.top + 4 });
         }
@@ -150,7 +155,7 @@ function MobileButtons() {
         ev.stopPropagation();
     }
 
-    function changeView(v: 'solo' | 'team') {
+    function changeView(v: 'solo' | 'team' | 'leader') {
         setView(v);
         setActive(null);
     }
@@ -159,7 +164,7 @@ function MobileButtons() {
         setActive(null);
     }
 
-    function update(setName: 'solo' | 'team', id: string, field: keyof ButtonSetting, value: any) {
+    function update(setName: 'solo' | 'team' | 'leader', id: string, field: keyof ButtonSetting, value: any) {
         setSettings(prev => ({
             ...prev,
             [setName]: {
@@ -187,11 +192,12 @@ function MobileButtons() {
             return {
                 solo: updateSet(prev.solo),
                 team: updateSet(prev.team),
+                leader: updateSet(prev.leader),
             };
         });
     }
 
-    function resetColor(setName: 'solo' | 'team', id: string) {
+    function resetColor(setName: 'solo' | 'team' | 'leader', id: string) {
         const def = defaultSettings[id]?.color || emptySetting.color;
         if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
             updateAllDirections('color', def);
@@ -200,7 +206,7 @@ function MobileButtons() {
         }
     }
 
-    function resetActiveColor(setName: 'solo' | 'team', id: string) {
+    function resetActiveColor(setName: 'solo' | 'team' | 'leader', id: string) {
         const def = defaultSettings[id]?.activeColor || '#2fa7c5';
         if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
             updateAllDirections('activeColor', def);
@@ -209,7 +215,7 @@ function MobileButtons() {
         }
     }
 
-    function makeBlank(setName: 'solo' | 'team', id: string) {
+    function makeBlank(setName: 'solo' | 'team' | 'leader', id: string) {
         setSettings(prev => ({
             ...prev,
             [setName]: {
@@ -219,7 +225,7 @@ function MobileButtons() {
         }));
     }
 
-    function restoreDefaults(setName: 'solo' | 'team') {
+    function restoreDefaults(setName: 'solo' | 'team' | 'leader') {
         setSettings(prev => ({
             ...prev,
             [setName]: createDefaultLayout(),
@@ -227,10 +233,17 @@ function MobileButtons() {
         setActive(null);
     }
 
+    function copyLayout(from: Mode) {
+        const to = view;
+        if (from === to) return;
+        setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
+    }
+
     function save() {
         saveSettings(settings);
-        const teamActive = !!(window as any).clientExtension?.TeamManager?.getLeader?.();
-        applySettings(settings, teamActive);
+        const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
+        const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
+        applySettings(settings, teamActive, leaderActive);
         const modal = (window as any).bootstrap?.Modal.getInstance(document.getElementById('mobile-buttons-modal')!);
         modal?.hide();
     }
@@ -254,6 +267,13 @@ function MobileButtons() {
                         onClick={() => changeView('team')}
                     >
                         W drużynie
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant={view === 'leader' ? 'primary' : 'secondary'}
+                        onClick={() => changeView('leader')}
+                    >
+                        Prowadzący
                     </Button>
                 </div>
                 <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
@@ -318,6 +338,36 @@ function MobileButtons() {
                                 const isEmpty = cfg.macro === 'empty' || !cfg.label;
                                 if (isEmpty) classes += ' empty';
                                 const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('team', id, ev);
+                                return (
+                                    <button
+                                        key={id}
+                                        data-button-id={id}
+                                        className={classes}
+                                        style={{ backgroundColor: isEmpty ? 'transparent' : cfg.color }}
+                                        onClick={handle}
+                                    >
+                                        {isEmpty ? '' : cfg.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div
+                            ref={leaderRef}
+                            id="mobile-buttons-preview-leader"
+                            className={`mobile-direction-buttons preview mb-2 ${view === 'leader' ? '' : 'd-none'}`}
+                            style={{ gridTemplateColumns: `repeat(${settings.leader.cols}, auto)` }}
+                        >
+                            {settings.leader.order.map(id => {
+                                const cfg = settings.leader.buttons[id] || defaultSettings[id] || emptySetting;
+                                let classes = 'mobile-button';
+                                if (cfg.macro === 'kierunek') {
+                                    classes += ' direction-button';
+                                } else {
+                                    classes += ' mobile-button-text';
+                                }
+                                const isEmpty = cfg.macro === 'empty' || !cfg.label;
+                                if (isEmpty) classes += ' empty';
+                                const handle = notEditable.includes(id) ? undefined : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig('leader', id, ev);
                                 return (
                                     <button
                                         key={id}
@@ -464,7 +514,17 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-end mt-2">
+            <div className="d-flex justify-content-between mt-2">
+                <div className="d-flex align-items-center gap-2">
+                    <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
+                        <option value="solo">Bez drużyny</option>
+                        <option value="team">W drużynie</option>
+                        <option value="leader">Prowadzący</option>
+                    </Form.Select>
+                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                        Kopiuj
+                    </Button>
+                </div>
                 <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
             </div>
         </div>

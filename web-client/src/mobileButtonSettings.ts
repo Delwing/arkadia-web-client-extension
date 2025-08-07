@@ -83,6 +83,7 @@ export interface LayoutSettings {
 export interface Settings {
     solo: LayoutSettings;
     team: LayoutSettings;
+    leader: LayoutSettings;
 }
 
 export function createDefaultLayout(): LayoutSettings {
@@ -99,26 +100,27 @@ export async function loadSettings(): Promise<Settings> {
                 order: Array.isArray(set?.order) ? set.order : [...defaultOrder],
                 cols: typeof set?.cols === 'number' && set.cols > 0 ? set.cols : defaultCols,
             });
-            if (raw.solo && raw.team && (raw.solo.buttons || raw.team.buttons)) {
-                return { solo: parseSet(raw.solo), team: parseSet(raw.team) };
+            if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
+                return { solo: parseSet(raw.solo), team: parseSet(raw.team), leader: parseSet(raw.leader) };
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
             const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
             return {
                 solo: { buttons: { ...defaultSettings, ...(raw.solo || {}) }, order: [...order], cols },
                 team: { buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) }, order: [...order], cols },
+                leader: { buttons: { ...defaultSettings, ...(raw.leader || raw.team || raw.solo || {}) }, order: [...order], cols },
             };
         }
     } catch {}
-    return { solo: createDefaultLayout(), team: createDefaultLayout() };
+    return { solo: createDefaultLayout(), team: createDefaultLayout(), leader: createDefaultLayout() };
 }
 
 export function saveSettings(settings: Settings) {
     storage.setItem('mobileButtonSettings', settings);
 }
 
-export function applySettings(settings: Settings, inTeam = false) {
-    const set = inTeam ? settings.team : settings.solo;
+export function applySettings(settings: Settings, inTeam = false, isLeader = false) {
+    const set = isLeader ? settings.leader : inTeam ? settings.team : settings.solo;
     const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
     if (container) {
         container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
