@@ -115,6 +115,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
     client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 
+    let preUseCommands: string[] = [];
+    let postUseCommands: string[] = [];
+    client.addEventListener('settings', (ev: CustomEvent) => {
+        const st = ev.detail || {};
+        preUseCommands = typeof st.herbPreUseCommand === 'string'
+            ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+            : [];
+        postUseCommands = typeof st.herbPostUseCommand === 'string'
+            ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+            : [];
+    });
+
     async function ensureData() {
         if (!herbs) {
             if (!loading) {
@@ -153,7 +165,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const items = actions.flatMap(a =>
             amounts.map(n => ({
                 label: `${a.action} ${n}`,
-                action: () => client.sendCommand(`/z ${a.action} ${id} ${n}`)
+                action: () => {
+                    preUseCommands.forEach(cmd => client.sendCommand(cmd));
+                    client.sendCommand(`/z ${a.action} ${id} ${n}`);
+                    postUseCommands.forEach(cmd => client.sendCommand(cmd));
+                }
             }))
         );
         client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
@@ -337,7 +353,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 const herb = m[2].toLowerCase();
                 await take(herb, 1);
                 const biernik = herbs?.herb_id_to_odmiana[herb]?.biernik || herb;
+                preUseCommands.forEach(cmd => client.sendCommand(cmd));
                 client.sendCommand(`${action} ${biernik}`);
+                postUseCommands.forEach(cmd => client.sendCommand(cmd));
             }
         });
     }

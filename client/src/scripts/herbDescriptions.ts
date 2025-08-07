@@ -7,6 +7,17 @@ export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
 export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";
+    let preUseCommands: string[] = [];
+    let postUseCommands: string[] = [];
+    client.addEventListener('settings', (ev: CustomEvent) => {
+        const st = ev.detail || {};
+        preUseCommands = typeof st.herbPreUseCommand === 'string'
+            ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+            : [];
+        postUseCommands = typeof st.herbPostUseCommand === 'string'
+            ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+            : [];
+    });
     try {
         const herbs = await loadHerbs();
         if (!herbs) return;
@@ -18,7 +29,11 @@ export default async function initHerbDescriptions(client: Client) {
             const items = actions.flatMap(a =>
                 amounts.map(n => ({
                     label: `${a.action} ${n}`,
-                    action: () => client.sendCommand(`/z ${a.action} ${herbId} ${n}`)
+                    action: () => {
+                        preUseCommands.forEach(cmd => client.sendCommand(cmd));
+                        client.sendCommand(`/z ${a.action} ${herbId} ${n}`);
+                        postUseCommands.forEach(cmd => client.sendCommand(cmd));
+                    }
                 }))
             );
             client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);

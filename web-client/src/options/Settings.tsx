@@ -214,6 +214,33 @@ function SettingsForm() {
                     )}
                 </div>
             </div>
+            <div className="mb-4 border rounded p-3">
+                <h5 className="fw-bold mb-2">Zioła</h5>
+                <div className="d-flex flex-column gap-2">
+                    <Form.Group>
+                        <Form.Label className="me-1 mb-0">Komendy przed użyciem:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={settings.herbPreUseCommand}
+                            onChange={e => onChangeSetting(s => s.herbPreUseCommand = e.target.value)}
+                            style={{width: '100%', maxWidth: '20rem'}}
+                        />
+                        <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label className="me-1 mb-0">Komendy po użyciu:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={settings.herbPostUseCommand}
+                            onChange={e => onChangeSetting(s => s.herbPostUseCommand = e.target.value)}
+                            style={{width: '100%', maxWidth: '20rem'}}
+                        />
+                        <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
+                    </Form.Group>
+                </div>
+            </div>
             <Button onClick={handleSubmission}>Zapisz</Button>
             </fieldset>
         </div>

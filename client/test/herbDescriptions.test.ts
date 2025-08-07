@@ -1,6 +1,7 @@
 import initHerbDescriptions, { HERB_NAME_COLOR } from '../src/scripts/herbDescriptions';
 import Triggers from '../src/Triggers';
 import { color, RESET } from '../src/Colors';
+import { EventEmitter } from 'events';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -12,6 +13,11 @@ class FakeClient {
     }
   } as any;
   FunctionalBind = { set: jest.fn() } as any;
+  private emitter = new EventEmitter();
+  addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
+  removeEventListener(event: string, cb: any) { this.emitter.off(event, cb); }
+  dispatch(event: string, detail: any) { this.emitter.emit(event, { detail }); }
+  sendCommand = jest.fn();
 }
 
 describe('herb descriptions', () => {
