@@ -1,7 +1,61 @@
 let limit = 35;
 
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
-import { getItemSync, setItemSync } from "@client/src/storage";
+import { getCurrentCharacter, getItemSync, setItemSync } from "@client/src/storage";
+
+const STORAGE_KEY = 'mapperRoomId';
+const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
+const VISITED_STORE_NAME = 'visitedRooms';
+
+function getVisitedKey() {
+    const char = getCurrentCharacter();
+    return char ? `${char}:${VISITED_STORE_NAME}` : VISITED_STORE_NAME;
+}
+
+async function openVisitedDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(VISITED_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(VISITED_STORE_NAME)) {
+                db.createObjectStore(VISITED_STORE_NAME, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+    });
+}
+
+async function loadVisitedRooms(): Promise<number[]> {
+    try {
+        const db = await openVisitedDB();
+        return await new Promise<number[]>((resolve) => {
+            const tx = db.transaction([VISITED_STORE_NAME], 'readonly');
+            const store = tx.objectStore(VISITED_STORE_NAME);
+            const req = store.get(getVisitedKey());
+            req.onsuccess = () => {
+                const rooms = req.result?.rooms;
+                resolve(Array.isArray(rooms) ? rooms : []);
+            };
+            req.onerror = () => resolve([]);
+        });
+    } catch {
+        return [];
+    }
+}
+
+async function saveVisitedRooms(rooms: number[]): Promise<void> {
+    try {
+        const db = await openVisitedDB();
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction([VISITED_STORE_NAME], 'readwrite');
+            const store = tx.objectStore(VISITED_STORE_NAME);
+            const req = store.put({ id: getVisitedKey(), rooms });
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(new Error('Failed to store visited rooms'));
+        });
+    } catch {}
+}
 
 export default class EmbeddedMap {
     private map: HTMLElement;
@@ -14,8 +68,11 @@ export default class EmbeddedMap {
     private _touchStartDistance: number | null = null;
     private zoom: number;
     private limit: number;
+    private explorationMode = false;
+    private visited = new Set<number>();
+    private totalRooms: number;
 
-    constructor(mapData: any, colors: any, startId: number) {
+    constructor(mapData: any, colors: any, startId?: number) {
         this.map = document.querySelector<HTMLCanvasElement>("#map")!;
         this.map.style.touchAction = 'none';
         this._pinchZoom = this._pinchZoom.bind(this);
@@ -28,6 +85,7 @@ export default class EmbeddedMap {
         this.map.addEventListener('touchcancel', this._onTouchEnd);
         this.map.addEventListener('zoom', this._onZoom);
         this.reader = new MapReader(mapData, colors);
+        this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
         this.settings = new Settings();
         this.settings.areaName = false;
         this.settings.scale = 90;
@@ -35,6 +93,8 @@ export default class EmbeddedMap {
         this.settings.transparentLabels = true;
         this.settings
         let zoom = 0.30;
+        let explorationMode = false;
+        let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
             const parsed = data?.uiSettings as any;
@@ -45,17 +105,31 @@ export default class EmbeddedMap {
                 if (typeof parsed.mapLimit === 'number' && parsed.mapLimit > 0) {
                     limit = parsed.mapLimit;
                 }
+                if (typeof parsed.explorationMode === 'boolean') {
+                    explorationMode = parsed.explorationMode;
+                }
             }
         } catch {
             // ignore malformed data
         }
+        try {
+            const saved = getItemSync(STORAGE_KEY);
+            const savedId = saved ? parseInt(saved[STORAGE_KEY]) : NaN;
+            if (!isNaN(savedId)) {
+                initialRoom = savedId;
+            }
+        } catch {}
         this.zoom = zoom;
         this.limit = limit;
+        this.explorationMode = explorationMode;
         this.renderer = new Renderer(this.map, this.reader, this.settings);
-        this.renderRoomById(startId);
 
-        window.addEventListener('enterLocation', (ev: any) => {
-            this.renderRoomById(ev.detail.id);
+        window.addEventListener('enterLocation', async (ev: any) => {
+            const id = ev.detail.id;
+            this.visited.add(id);
+            setItemSync(STORAGE_KEY, id.toString());
+            await saveVisitedRooms(Array.from(this.visited));
+            this.renderRoomById(id);
         });
 
         window.addEventListener('leadTo', (ev: any) => {
@@ -66,6 +140,14 @@ export default class EmbeddedMap {
             this.highlights = ev.detail;
             this.refresh();
         })
+
+        this.initVisitedRooms(initialRoom);
+    }
+
+    private async initVisitedRooms(initialRoom: number) {
+        const visited = await loadVisitedRooms();
+        visited.forEach(id => this.visited.add(id));
+        this.renderRoomById(initialRoom);
     }
 
     private _onTouchStart(ev: TouchEvent) {
@@ -130,12 +212,21 @@ export default class EmbeddedMap {
                 yMin: room.y - this.limit,
                 yMax: room.y + this.limit
             });
+            if (this.explorationMode) {
+                const rooms: any[] = [];
+                area.rooms.forEach((r: any) => {
+                    if (r && this.visited.has(r.id)) {
+                        rooms[r.id] = r;
+                    }
+                });
+                area.rooms = rooms;
+            }
             this.renderer?.clear();
             this.renderer.renderArea(area);
             this.renderer.controls.centerRoom(room.id);
             this.renderer.controls.setZoom(this.zoom);
             this.renderer.backgroundLayer.remove();
-
+            
             this.currentRoom = room;
             const label = document.getElementById('location-label');
             if (label && area) {
@@ -175,6 +266,19 @@ export default class EmbeddedMap {
         this.renderRoom(this.currentRoom);
     }
 
+    getVisitedCount() {
+        return this.visited.size;
+    }
+
+    getRoomCount() {
+        return this.totalRooms;
+    }
+
+    setExplorationMode(on: boolean) {
+        this.explorationMode = on;
+        this.refresh();
+    }
+
     setZoom(zoom: number) {
         this.zoom = zoom;
         if (this.renderer?.controls) {
@@ -199,7 +303,7 @@ export default class EmbeddedMap {
 }
 
 export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId ?? 1);
+    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
 };
 
 window.addEventListener('map-ready-with-data', (e: Event) =>
