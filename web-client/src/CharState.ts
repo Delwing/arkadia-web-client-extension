@@ -197,7 +197,13 @@ export default class CharState {
         const ratio = value / maxValue;
         const reverse = def === 0 || this.config[key].flip === true;
         let colorClass = "bg-success";
-        if (reverse) {
+        if (key === "hp") {
+          if (value <= 3) {
+            colorClass = "bg-danger";
+          } else if (value <= 5) {
+            colorClass = "bg-warning";
+          }
+        } else if (reverse) {
           if (ratio >= 2 / 3) {
             colorClass = "bg-danger";
           } else if (ratio >= 1 / 3) {
@@ -258,7 +264,13 @@ export default class CharState {
           const ratio = value / maxValue;
           const reverse = def === 0 || this.config[key].flip === true;
           let color = "green";
-          if (reverse) {
+          if (key === "hp") {
+            if (value <= 3) {
+              color = "red";
+            } else if (value <= 5) {
+              color = "yellow";
+            }
+          } else if (reverse) {
             if (ratio >= 2 / 3) {
               color = "red";
             } else if (ratio >= 1 / 3) {
