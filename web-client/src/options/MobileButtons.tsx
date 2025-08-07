@@ -50,7 +50,6 @@ function MobileButtons() {
     const modes = ['solo', 'team', 'leader'] as const;
     type Mode = typeof modes[number];
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
-    const [copyTo, setCopyTo] = useState<Mode>('team');
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -234,7 +233,8 @@ function MobileButtons() {
         setActive(null);
     }
 
-    function copyLayout(from: 'solo' | 'team' | 'leader', to: 'solo' | 'team' | 'leader') {
+    function copyLayout(from: Mode) {
+        const to = view;
         if (from === to) return;
         setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
     }
@@ -278,21 +278,6 @@ function MobileButtons() {
                 </div>
                 <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
                     Domyślne
-                </Button>
-            </div>
-            <div className="d-flex align-items-center gap-2 mb-2">
-                <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
-                    <option value="solo">Bez drużyny</option>
-                    <option value="team">W drużynie</option>
-                    <option value="leader">Prowadzący</option>
-                </Form.Select>
-                <Form.Select size="sm" value={copyTo} onChange={e => setCopyTo(e.target.value as Mode)}>
-                    <option value="solo">Bez drużyny</option>
-                    <option value="team">W drużynie</option>
-                    <option value="leader">Prowadzący</option>
-                </Form.Select>
-                <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom, copyTo)}>
-                    Kopiuj
                 </Button>
             </div>
             <div className="d-flex flex-column align-items-center mb-2">
@@ -529,7 +514,17 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-end mt-2">
+            <div className="d-flex justify-content-between mt-2">
+                <div className="d-flex align-items-center gap-2">
+                    <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
+                        <option value="solo">Bez drużyny</option>
+                        <option value="team">W drużynie</option>
+                        <option value="leader">Prowadzący</option>
+                    </Form.Select>
+                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                        Kopiuj
+                    </Button>
+                </div>
                 <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
             </div>
         </div>
