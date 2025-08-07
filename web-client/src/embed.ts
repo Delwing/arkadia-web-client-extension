@@ -14,6 +14,8 @@ export default class EmbeddedMap {
     private _touchStartDistance: number | null = null;
     private zoom: number;
     private limit: number;
+    private explorationMode = false;
+    private visited = new Set<number>();
 
     constructor(mapData: any, colors: any, startId: number) {
         this.map = document.querySelector<HTMLCanvasElement>("#map")!;
@@ -35,6 +37,7 @@ export default class EmbeddedMap {
         this.settings.transparentLabels = true;
         this.settings
         let zoom = 0.30;
+        let explorationMode = false;
         try {
             const data = getItemSync('uiSettings');
             const parsed = data?.uiSettings as any;
@@ -45,12 +48,16 @@ export default class EmbeddedMap {
                 if (typeof parsed.mapLimit === 'number' && parsed.mapLimit > 0) {
                     limit = parsed.mapLimit;
                 }
+                if (typeof parsed.explorationMode === 'boolean') {
+                    explorationMode = parsed.explorationMode;
+                }
             }
         } catch {
             // ignore malformed data
         }
         this.zoom = zoom;
         this.limit = limit;
+        this.explorationMode = explorationMode;
         this.renderer = new Renderer(this.map, this.reader, this.settings);
         this.renderRoomById(startId);
 
@@ -65,6 +72,13 @@ export default class EmbeddedMap {
         window.addEventListener('highlights', (ev: any) => {
             this.highlights = ev.detail;
             this.refresh();
+        })
+
+        window.addEventListener('visitedRooms', (ev: any) => {
+            this.visited = new Set(ev.detail || []);
+            if (this.explorationMode) {
+                this.refresh();
+            }
         })
     }
 
@@ -130,12 +144,15 @@ export default class EmbeddedMap {
                 yMin: room.y - this.limit,
                 yMax: room.y + this.limit
             });
+            if (this.explorationMode) {
+                area.rooms = area.rooms.filter((r: any) => r && this.visited.has(r.id));
+            }
             this.renderer?.clear();
             this.renderer.renderArea(area);
             this.renderer.controls.centerRoom(room.id);
             this.renderer.controls.setZoom(this.zoom);
             this.renderer.backgroundLayer.remove();
-
+            
             this.currentRoom = room;
             const label = document.getElementById('location-label');
             if (label && area) {
@@ -173,6 +190,11 @@ export default class EmbeddedMap {
 
     refresh() {
         this.renderRoom(this.currentRoom);
+    }
+
+    setExplorationMode(on: boolean) {
+        this.explorationMode = on;
+        this.refresh();
     }
 
     setZoom(zoom: number) {

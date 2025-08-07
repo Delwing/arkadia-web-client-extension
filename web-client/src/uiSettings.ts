@@ -11,6 +11,7 @@ interface UiSettings {
     emojiLabels: boolean;
     xtermPalette: 'arkadia' | 'proper';
     footerMode: number;
+    explorationMode: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -24,6 +25,7 @@ const defaultSettings: UiSettings = {
     emojiLabels: false,
     xtermPalette: 'arkadia',
     footerMode: 0,
+    explorationMode: false,
 };
 
 function apply(settings: UiSettings) {
@@ -69,6 +71,7 @@ function apply(settings: UiSettings) {
     if ((window as any).embedded?.renderer?.controls) {
         (window as any).embedded.setZoom?.(settings.mapScale);
         (window as any).embedded.setLimit?.(settings.mapLimit);
+        (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
     if ((window as any).clientExtension?.eventTarget) {
@@ -106,7 +109,8 @@ async function load(): Promise<UiSettings> {
             })();
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode };
+            const explorationMode = !!parsed.explorationMode;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode };
         }
     } catch {
         // ignore malformed data
@@ -130,6 +134,7 @@ export default async function initUiSettings() {
     const mapInput = modalEl.querySelector('#ui-map-scale') as HTMLInputElement;
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
+    const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
@@ -143,6 +148,7 @@ export default async function initUiSettings() {
     mapInput.value = String(current.mapScale);
     mapHeightInput.value = String(current.mapHeight);
     mapLimitInput.value = String(current.mapLimit);
+    explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
     emojiLabelsInput.checked = current.emojiLabels;
     xtermPaletteInput.value = current.xtermPalette;
@@ -174,7 +180,8 @@ export default async function initUiSettings() {
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
-            footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode
+            footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
+            explorationMode: explorationInput.checked,
         };
     }
 
