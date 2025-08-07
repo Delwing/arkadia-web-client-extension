@@ -172,6 +172,11 @@ function MobileButtons() {
         update(setName, id, 'color', def);
     }
 
+    function resetActiveColor(setName: 'solo' | 'team', id: string) {
+        const def = defaultSettings[id]?.activeColor || '#2fa7c5';
+        update(setName, id, 'activeColor', def);
+    }
+
     function makeBlank(setName: 'solo' | 'team', id: string) {
         setSettings(prev => ({
             ...prev,
@@ -359,6 +364,19 @@ function MobileButtons() {
                                 onChange={e => update(active!.set, active!.id, 'color', e.target.value)}
                             />
                             <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
+                        </Form.Group>
+                    )}
+                    {activeCfg.macro === 'kierunek' && (
+                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
+                            <Form.Label>Kolor aktywny</Form.Label>
+                            <Form.Control
+                                size="sm"
+                                type="color"
+                                className="mobile-button-color flex-grow-1"
+                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
+                            />
+                            <Button size="sm" variant="secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
                         </Form.Group>
                     )}
                     {activeCfg.macro !== 'empty' && (
