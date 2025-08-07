@@ -10,7 +10,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zabici2** - wyświetla podsumowanie liczby zabitych istot.
 - **/cechy** - uruchamia licznik poziomowania i wyświetla postępy.
 - **/postepy** - wyświetla postępy ulepszeń.
-- **/przejrzyj** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami.
+- **/przejrzyj [_co_]** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami lub podanego pojemnika.
 - **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
 
 ## Menedżer pojemników
