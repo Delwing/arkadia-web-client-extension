@@ -1,10 +1,61 @@
 let limit = 35;
 
 import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
-import { getItemSync, setItemSync } from "@client/src/storage";
+import { getCurrentCharacter, getItemSync, setItemSync } from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
-const VISITED_ROOMS_KEY = 'visitedRooms';
+const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
+const VISITED_STORE_NAME = 'visitedRooms';
+
+function getVisitedKey() {
+    const char = getCurrentCharacter();
+    return char ? `${char}:${VISITED_STORE_NAME}` : VISITED_STORE_NAME;
+}
+
+async function openVisitedDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(VISITED_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(VISITED_STORE_NAME)) {
+                db.createObjectStore(VISITED_STORE_NAME, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+    });
+}
+
+async function loadVisitedRooms(): Promise<number[]> {
+    try {
+        const db = await openVisitedDB();
+        return await new Promise<number[]>((resolve) => {
+            const tx = db.transaction([VISITED_STORE_NAME], 'readonly');
+            const store = tx.objectStore(VISITED_STORE_NAME);
+            const req = store.get(getVisitedKey());
+            req.onsuccess = () => {
+                const rooms = req.result?.rooms;
+                resolve(Array.isArray(rooms) ? rooms : []);
+            };
+            req.onerror = () => resolve([]);
+        });
+    } catch {
+        return [];
+    }
+}
+
+async function saveVisitedRooms(rooms: number[]): Promise<void> {
+    try {
+        const db = await openVisitedDB();
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction([VISITED_STORE_NAME], 'readwrite');
+            const store = tx.objectStore(VISITED_STORE_NAME);
+            const req = store.put({ id: getVisitedKey(), rooms });
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(new Error('Failed to store visited rooms'));
+        });
+    } catch {}
+}
 
 export default class EmbeddedMap {
     private map: HTMLElement;
@@ -65,23 +116,17 @@ export default class EmbeddedMap {
             if (!isNaN(savedId)) {
                 initialRoom = savedId;
             }
-            const visitedData = getItemSync(VISITED_ROOMS_KEY);
-            const visited = visitedData ? visitedData[VISITED_ROOMS_KEY] : null;
-            if (visited && Array.isArray(visited)) {
-                this.visited = new Set<number>(visited);
-            }
         } catch {}
         this.zoom = zoom;
         this.limit = limit;
         this.explorationMode = explorationMode;
         this.renderer = new Renderer(this.map, this.reader, this.settings);
-        this.renderRoomById(initialRoom);
 
-        window.addEventListener('enterLocation', (ev: any) => {
+        window.addEventListener('enterLocation', async (ev: any) => {
             const id = ev.detail.id;
             this.visited.add(id);
             setItemSync(STORAGE_KEY, id.toString());
-            setItemSync(VISITED_ROOMS_KEY, Array.from(this.visited));
+            await saveVisitedRooms(Array.from(this.visited));
             this.renderRoomById(id);
         });
 
@@ -94,6 +139,13 @@ export default class EmbeddedMap {
             this.refresh();
         })
 
+        this.initVisitedRooms(initialRoom);
+    }
+
+    private async initVisitedRooms(initialRoom: number) {
+        const visited = await loadVisitedRooms();
+        visited.forEach(id => this.visited.add(id));
+        this.renderRoomById(initialRoom);
     }
 
     private _onTouchStart(ev: TouchEvent) {
