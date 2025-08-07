@@ -20,7 +20,7 @@ export default function initSelfEvaluation(
         if (state === "max") {
             color = GREEN;
         } else {
-            const m = state.match(/^(\d+)/(\d+)$/);
+            const m = state.match(/^(\d+)\/(\d+)$/);
             if (m) {
                 const num = parseInt(m[1], 10);
                 const den = parseInt(m[2], 10);
