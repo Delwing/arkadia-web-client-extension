@@ -457,17 +457,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
     const enableNotificationsButton = document.getElementById('enable-notifications') as HTMLButtonElement | null;
     const enableNotificationsItem = document.getElementById('enable-notifications-item') as HTMLElement | null;
+    const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
 
-    if (enableNotificationsButton && enableNotificationsItem) {
+    if (enableNotificationsButton || enableNotificationsItem || enableNotificationsConnection) {
         const updateVisibility = () => {
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                enableNotificationsItem.style.display = 'none';
+                if (enableNotificationsItem) {
+                    enableNotificationsItem.style.display = 'none';
+                }
+                if (enableNotificationsConnection) {
+                    enableNotificationsConnection.style.display = 'none';
+                }
             }
         };
-        enableNotificationsButton.addEventListener('click', () => {
+        const handleClick = () => {
             client.enableNotifications();
             updateVisibility();
-        });
+        };
+        if (enableNotificationsButton) {
+            enableNotificationsButton.addEventListener('click', handleClick);
+        }
+        if (enableNotificationsConnection) {
+            enableNotificationsConnection.addEventListener('click', handleClick);
+        }
         updateVisibility();
     }
 
