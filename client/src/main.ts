@@ -61,6 +61,7 @@ import initMapAliases from './scripts/mapAliases'
 import initShortcuts from './scripts/shortcuts'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
+import initMountain from './scripts/mountain'
 import Client from "./Client";
 
 
@@ -130,6 +131,7 @@ export function registerScripts(client: Client) {
     initLocalizers(client)
     initShipLocalizers(client)
     initFollowSpecialExits(client)
+    initMountain(client)
 
 
     const itemCollector = initItemCollector(client, aliases);
