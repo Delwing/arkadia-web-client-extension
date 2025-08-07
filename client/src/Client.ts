@@ -83,6 +83,10 @@ export default class Client {
     constructor(clientAdapter: ClientAdapter, port: any) {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
+
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
         window.addEventListener('extension-message', (ev: Event) => {
             const data: any = (ev as CustomEvent).detail;
             if (data && data.data !== undefined) {
@@ -412,6 +416,15 @@ export default class Client {
         } else {
             sound.once('load', play)
             sound.load()
+        }
+    }
+
+    notify(message: string) {
+        if (typeof Notification === 'undefined') {
+            return
+        }
+        if (Notification.permission === 'granted') {
+            new Notification(message)
         }
     }
 

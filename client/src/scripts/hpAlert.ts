@@ -19,9 +19,11 @@ export default function initHpAlert(client: Client) {
         if (typeof hp !== 'number') return;
         hp++;
         if (hp < prev && hp < 3) {
-            const msg = colorString(`Jestes ${CONDITIONS[hp] ?? ''}`, ORANGE);
+            const plain = `Jestes ${CONDITIONS[hp] ?? ''}`;
+            const msg = colorString(plain, ORANGE);
             client.playSound('beep');
             client.println(`\n\n${msg}\n\n`);
+            client.notify(plain);
         }
         prev = hp;
     });
