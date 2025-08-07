@@ -33,6 +33,7 @@ const characterScopedKeys = new Set([
     'herb_counts',
     'herbs_data',
     'mapperRoomId',
+    'visitedRooms',
 ]);
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');

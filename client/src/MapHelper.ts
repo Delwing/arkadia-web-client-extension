@@ -4,6 +4,7 @@ import { getItemSync, setItemSync } from "./storage";
 import Room = MapData.Room;
 
 const STORAGE_KEY = 'mapperRoomId';
+const VISITED_ROOMS_KEY = 'visitedRooms';
 
 export const polishToEnglish = {
     ["polnoc"]: "north",
@@ -75,6 +76,7 @@ export default class MapHelper {
     hashes = {};
     gmcpPosition: Position;
     savedRoomId: number | null = null;
+    visitedRooms = new Set<number>();
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -82,6 +84,11 @@ export default class MapHelper {
         const saved = savedData ? savedData[STORAGE_KEY] : null;
         if (saved) {
             this.savedRoomId = parseInt(saved);
+        }
+        const visitedData = getItemSync(VISITED_ROOMS_KEY);
+        const visited = visitedData ? visitedData[VISITED_ROOMS_KEY] : null;
+        if (visited && Array.isArray(visited)) {
+            this.visitedRooms = new Set<number>(visited);
         }
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
         window.addEventListener('map-ready', (event: CustomEvent) => {
@@ -260,7 +267,10 @@ export default class MapHelper {
 
     renderRoomById(id: number, sendEvent = true) {
         this.currentRoom = this.mapReader.getRoomById(id)
+        this.visitedRooms.add(id);
         setItemSync(STORAGE_KEY, id.toString())
+        setItemSync(VISITED_ROOMS_KEY, Array.from(this.visitedRooms));
+        this.client.sendEvent('visitedRooms', Array.from(this.visitedRooms));
         if (sendEvent) {
             this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
         }
