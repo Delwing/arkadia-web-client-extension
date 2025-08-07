@@ -17,21 +17,33 @@ export interface UserTrigger {
 
 function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange: (m: UserMacro) => void; onRemove: () => void }) {
     return (
-        <div className="d-flex align-items-center gap-2 mb-1">
-            <Form.Select
-                size="sm"
-                value={macro.type}
-                onChange={e => onChange({ ...macro, type: e.target.value as any })}
-            >
-                <option value="uppercase">Wielkie litery</option>
-                <option value="color">Koloruj</option>
-                <option value="replace">Zamień</option>
-                <option value="beep">Dźwięk</option>
-                <option value="command">Komenda</option>
-            </Form.Select>
+        <div className="d-flex align-items-start gap-2 mb-1">
+            <div className="flex-grow-1">
+                <Form.Select
+                    size="sm"
+                    value={macro.type}
+                    onChange={e => onChange({ ...macro, type: e.target.value as any })}
+                >
+                    <option value="uppercase">Wielkie litery</option>
+                    <option value="color">Koloruj</option>
+                    <option value="replace">Zamień</option>
+                    <option value="beep">Dźwięk</option>
+                    <option value="command">Komenda</option>
+                </Form.Select>
+                {macro.type === 'command' && (
+                    <Form.Control
+                        className="mt-1"
+                        type="text"
+                        size="sm"
+                        placeholder="Command"
+                        value={macro.command || ''}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
+                    />
+                )}
+            </div>
             {macro.type === 'color' && (
-            <Form.Control
-                type="color"
+                <Form.Control
+                    type="color"
                     size="sm"
                     style={{ width: '2.2rem' }}
                     value={macro.color || '#ffffff'}
@@ -45,16 +57,6 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                     placeholder="Replacement"
                     value={macro.to || ''}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
-                    style={{ width: '100%', maxWidth: '8rem' }}
-                />
-            )}
-            {macro.type === 'command' && (
-                <Form.Control
-                    type="text"
-                    size="sm"
-                    placeholder="Command"
-                    value={macro.command || ''}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
                     style={{ width: '100%', maxWidth: '8rem' }}
                 />
             )}
