@@ -69,6 +69,20 @@ beforeEach(() => {
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
 });
 
+test('requests notification permission on start', () => {
+  (global as any).Notification = { permission: 'default', requestPermission: jest.fn() };
+  new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  expect((global as any).Notification.requestPermission).toHaveBeenCalledTimes(1);
+  delete (global as any).Notification;
+});
+
+test('does not request notification permission when already decided', () => {
+  (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
+  new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  expect((global as any).Notification.requestPermission).not.toHaveBeenCalled();
+  delete (global as any).Notification;
+});
+
 test('port messages trigger window events', () => {
   new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
