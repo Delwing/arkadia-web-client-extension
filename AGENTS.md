@@ -3,6 +3,9 @@
 ## Testing
 
 Use `yarn --cwd client test` to run tests.
+Use `yarn --cwd web-client test` to run tests.
+
+Ensure that `yarn --cwd web-client build` doesn't end up with error.
 
 ## Coding guidelines
 
