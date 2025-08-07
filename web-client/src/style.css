@@ -430,26 +430,32 @@ button:focus-visible {
   background-color: transparent;
 }
 
-#location-label {
+#location-wrapper {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
+  z-index: 1011;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+#location-label {
   font-family: monospace;
   font-size: 0.75rem;
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 0.2rem 0.4rem;
-  z-index: 1011;
-  pointer-events: none;
   border: 1px solid;
   border-radius: 7px;
   backdrop-filter: blur(2px);
   opacity: 0.75;
-
 }
 
 #pause-icon {
   margin-left: 0.25rem;
+  color: #ff8800;
+  -webkit-text-stroke: 1px white;
 }
 
 /* Mobile-specific styles */
