@@ -88,6 +88,19 @@ export default class EmbeddedMap {
         this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
         this.settings = new Settings();
         this.settings.areaName = false;
+
+        window.addEventListener('pauserStart', () => {
+            const icon = document.getElementById('pause-icon');
+            if (icon) {
+                icon.hidden = false;
+            }
+        });
+        window.addEventListener('pauserEnd', () => {
+            const icon = document.getElementById('pause-icon');
+            if (icon) {
+                icon.hidden = true;
+            }
+        });
         this.settings.scale = 90;
         this.settings.borders = true;
         this.settings.transparentLabels = true;
@@ -228,7 +241,7 @@ export default class EmbeddedMap {
             this.renderer.backgroundLayer.remove();
             
             this.currentRoom = room;
-            const label = document.getElementById('location-label');
+            const label = document.getElementById('location-text');
             if (label && area) {
                 let text = `#${room.id} ${area.areaName}`;
                 if (this.destinations.length > 0) {
