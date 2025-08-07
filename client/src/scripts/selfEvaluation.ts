@@ -1,9 +1,6 @@
 import Client from "../Client";
 import { SKIP_LINE } from "../ControlConstants";
 import { colorString, findClosestColor } from "../Colors";
-import initWeaponEvaluation from "./weaponEvaluation";
-import initArmorEvaluation from "./armorEvaluation";
-import initParryShieldEvaluation from "./parryShieldEvaluation";
 
 export default function initSelfEvaluation(
     client: Client,
@@ -51,42 +48,32 @@ export default function initSelfEvaluation(
             }
             summary = [];
             current = "";
-            initWeaponEvaluation(client);
-            initArmorEvaluation(client);
-            initParryShieldEvaluation(client);
+            client.suppressItemEvaluation = false;
         }, 1000);
     }
 
     function run() {
         summary = [];
         current = "";
-        client.Triggers.removeByTag("weapon-evaluation");
-        client.Triggers.removeByTag("armor-evaluation");
-        client.Triggers.removeByTag("parry-shield-evaluation");
-        client.Triggers.registerTrigger(/^Oceniasz [^,]+? ([^.]+)\.$/, (_r, _l, m) => {
-            current = m[1].trim();
-            resetTimer();
-            return SKIP_LINE;
-        }, tag);
-
-        client.Triggers.registerTrigger(/^Wyglada na to, ze .* \[(.+)\]$/, (_r, _l, m) => {
-            if (current) {
-                summary.push({ name: current, state: m[1] });
-            }
-            current = "";
-            resetTimer();
-            return SKIP_LINE;
-        }, tag);
-
-        client.Triggers.registerTrigger(/^Oceniasz, ze .*$/, () => {
-            resetTimer();
-            return SKIP_LINE;
-        }, tag);
-
-        client.Triggers.registerTrigger(/^.*$/, () => {
-            resetTimer();
-            return SKIP_LINE;
-        }, tag);
+        client.suppressItemEvaluation = true;
+        client.Triggers.registerTrigger(
+            /^Oceniasz [^,]+? ([^.]+)\.$/,
+            (_r, line, m) => {
+                if (m) {
+                    current = m[1].trim();
+                } else {
+                    const cond = line.match(/^Wyglada na to, ze .* \[(.+)\]$/);
+                    if (cond && current) {
+                        summary.push({ name: current, state: cond[1] });
+                        current = "";
+                    }
+                }
+                resetTimer();
+                return SKIP_LINE;
+            },
+            tag,
+            { stayOpenLines: 50 }
+        );
 
         client.sendCommand("ocen swoje bronie");
         client.sendCommand("ocen swoje zbroje");
