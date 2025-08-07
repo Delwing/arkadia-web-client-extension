@@ -725,6 +725,12 @@ button:focus-visible {
   opacity: 1;
 }
 
+#enable-notifications-connection {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+}
+
 #login-form {
   display: flex;
   flex-direction: column;

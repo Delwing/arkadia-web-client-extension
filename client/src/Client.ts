@@ -85,9 +85,6 @@ export default class Client {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
-        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
         window.addEventListener('extension-message', (ev: Event) => {
             const data: any = (ev as CustomEvent).detail;
             if (data && data.data !== undefined) {
@@ -417,6 +414,15 @@ export default class Client {
         } else {
             sound.once('load', play)
             sound.load()
+        }
+    }
+
+    enableNotifications() {
+        if (typeof Notification === 'undefined') {
+            return
+        }
+        if (Notification.permission === 'default') {
+            Notification.requestPermission()
         }
     }
 

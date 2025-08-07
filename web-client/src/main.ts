@@ -455,6 +455,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
+    const enableNotificationsButton = document.getElementById('enable-notifications') as HTMLButtonElement | null;
+    const enableNotificationsItem = document.getElementById('enable-notifications-item') as HTMLElement | null;
+    const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
+
+    if (enableNotificationsButton || enableNotificationsItem || enableNotificationsConnection) {
+        const updateVisibility = () => {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                if (enableNotificationsItem) {
+                    enableNotificationsItem.style.display = 'none';
+                }
+                if (enableNotificationsConnection) {
+                    enableNotificationsConnection.style.display = 'none';
+                }
+            }
+        };
+        const handleClick = () => {
+            client.enableNotifications();
+            updateVisibility();
+        };
+        if (enableNotificationsButton) {
+            enableNotificationsButton.addEventListener('click', handleClick);
+        }
+        if (enableNotificationsConnection) {
+            enableNotificationsConnection.addEventListener('click', handleClick);
+        }
+        updateVisibility();
+    }
 
     if (notificationCenter) {
         client.eventTarget.addEventListener('notify', (ev: CustomEvent<{ text: string; time?: number }>) => {
