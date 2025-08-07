@@ -135,6 +135,7 @@ export default async function initUiSettings() {
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
+    const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
@@ -154,6 +155,15 @@ export default async function initUiSettings() {
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     apply(current);
+
+    function refreshExplorationStats() {
+        const map = (window as any).embedded;
+        if (map?.getVisitedCount && map?.getRoomCount && explorationStats) {
+            const visited = map.getVisitedCount();
+            const total = map.getRoomCount();
+            explorationStats.textContent = `(${visited}/${total})`;
+        }
+    }
 
     function read(): UiSettings {
         const mapScale = (() => {
@@ -193,6 +203,7 @@ export default async function initUiSettings() {
     });
 
     button.addEventListener('click', () => {
+        refreshExplorationStats();
         modal.show();
     });
 }

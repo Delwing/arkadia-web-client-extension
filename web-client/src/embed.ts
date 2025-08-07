@@ -70,6 +70,7 @@ export default class EmbeddedMap {
     private limit: number;
     private explorationMode = false;
     private visited = new Set<number>();
+    private totalRooms: number;
 
     constructor(mapData: any, colors: any, startId?: number) {
         this.map = document.querySelector<HTMLCanvasElement>("#map")!;
@@ -84,6 +85,7 @@ export default class EmbeddedMap {
         this.map.addEventListener('touchcancel', this._onTouchEnd);
         this.map.addEventListener('zoom', this._onZoom);
         this.reader = new MapReader(mapData, colors);
+        this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
         this.settings = new Settings();
         this.settings.areaName = false;
         this.settings.scale = 90;
@@ -262,6 +264,14 @@ export default class EmbeddedMap {
 
     refresh() {
         this.renderRoom(this.currentRoom);
+    }
+
+    getVisitedCount() {
+        return this.visited.size;
+    }
+
+    getRoomCount() {
+        return this.totalRooms;
     }
 
     setExplorationMode(on: boolean) {
