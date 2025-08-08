@@ -7,10 +7,23 @@ function escapeRegExp(str: string) {
 export default function initLanguage(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     if (!aliases) return;
 
+    const STORAGE_KEY = 'lastLang';
     let currentLang = 'potoczna';
     let adjective = '';
     let lastLang = '';
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
+
+    client.addEventListener('storage', (ev: CustomEvent) => {
+        if (ev.detail.key === STORAGE_KEY) {
+            lastLang = ev.detail.value || '';
+        }
+    });
+
+    client.addEventListener('port-connected', () => {
+        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    });
+
+    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 
     function setLanguage(lang: string) {
         if (lang !== lastLang && lang !== 'potoczna') {
@@ -36,6 +49,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         callback: (matches: RegExpMatchArray) => {
             client.send('justaw ' + matches[1]);
             lastLang = matches[1];
+            client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
         }
     })
 
