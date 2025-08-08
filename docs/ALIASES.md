@@ -85,4 +85,5 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/naprawa** - Alias do `/napraw`.
 - **/napraw_ubrania** - Naprawianie ubrania u krawca.
 - **/ocen** - ocenia swoje bronie i zbroje, wypisujac jedynie ich stan.
+- **/sprzet** - Alias do `/ocen`.
 - **/ocenkamienie** - oblicza łączną wartość kamieni.

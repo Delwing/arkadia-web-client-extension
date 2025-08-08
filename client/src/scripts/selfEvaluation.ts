@@ -109,5 +109,6 @@ export default function initSelfEvaluation(
 
     if (aliases) {
         aliases.push({ pattern: /^\/ocen$/, callback: run });
+        aliases.push({ pattern: /^\/sprzet$/, callback: run });
     }
 }
