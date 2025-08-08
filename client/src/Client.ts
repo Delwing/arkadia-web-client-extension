@@ -30,6 +30,8 @@ export interface ClientAdapter {
     sendGmcp(type: string, payload?: any): void
 
     parseAnsiPatterns(text: string): string;
+
+    flushMessageBuffer(): void
 }
 
 export default class Client {
@@ -193,7 +195,7 @@ export default class Client {
             if (ev.detail?.name) {
                 setCurrentCharacter(ev.detail.name);
                 if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds'].forEach(k => {
+                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
                     });
                 }

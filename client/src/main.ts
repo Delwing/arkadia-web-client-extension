@@ -63,6 +63,7 @@ import initShortcuts from './scripts/shortcuts'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
+import initLanguage from './scripts/language'
 import Client from "./Client";
 
 
@@ -170,6 +171,7 @@ export function registerScripts(client: Client) {
     initSeasonPrint(client)
     initDajeCiHighlight(client)
     initGuildPostfix(client)
+    initLanguage(client, aliases)
     initShortcuts(client, aliases)
     initShortExits(client)
     initExternalScripts(client)

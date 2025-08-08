@@ -19,6 +19,30 @@ const collectModeOptions = [
 
 const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
+const languageOptions = [
+    "bretonski",
+    "drukh-eltharin",
+    "estalijski",
+    "fan-eltharin",
+    "gnomi",
+    "grumbarth",
+    "halflinski",
+    "khazalid",
+    "kislevicki",
+    "krasnoludzki",
+    "mroczna mowa",
+    "nilfgaardzki",
+    "norski",
+    "reikspiel",
+    "skelliganski",
+    "starsza mowa",
+    "tar-eltharin",
+    "tileanski",
+    "zerrikanski",
+    "potoczna",
+    "ghassall",
+]
+
 function SettingsForm() {
 
     const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings })
@@ -36,6 +60,9 @@ function SettingsForm() {
     }, []);
 
     const [extraInput, setExtraInput] = useState<string>('')
+    const [aliasInput, setAliasInput] = useState<string>('')
+    const [aliasAdjInput, setAliasAdjInput] = useState<string>('')
+    const [aliasLangInput, setAliasLangInput] = useState<string>('potoczna')
 
     function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
@@ -240,6 +267,103 @@ function SettingsForm() {
                         <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                     </Form.Group>
                 </div>
+            </div>
+            <div className="mb-4 border rounded p-3">
+                <h5 className="fw-bold mb-2">Język</h5>
+                <div className="d-flex flex-wrap gap-3 align-items-center">
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={settings.languageAdjective}
+                            onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
+                            style={{width: '100%', maxWidth: '10rem'}}
+                        />
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
+                        <Form.Select
+                            size="sm"
+                            value={settings.language}
+                            onChange={e => onChangeSetting(s => s.language = e.target.value)}
+                            className="w-auto"
+                        >
+                            {languageOptions.map(lang => (
+                                <option key={lang} value={lang}>{lang}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                </div>
+                <table className="table table-sm mt-3 mb-0">
+                    <thead>
+                        <tr>
+                            <th>Alias</th>
+                            <th>Przymiotnik</th>
+                            <th>Język</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {settings.languageAliases.map(item => (
+                            <tr key={item.alias}>
+                                <td>{item.alias}</td>
+                                <td>{item.adjective}</td>
+                                <td>{item.language}</td>
+                                <td>
+                                    <Button size="sm" variant="secondary" onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}>Usuń</Button>
+                                </td>
+                            </tr>
+                        ))}
+                        <tr>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={aliasInput}
+                                    onChange={e => setAliasInput(e.target.value)}
+                                    style={{width: '100%', maxWidth: '6rem'}}
+                                />
+                            </td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={aliasAdjInput}
+                                    onChange={e => setAliasAdjInput(e.target.value)}
+                                    style={{width: '100%', maxWidth: '10rem'}}
+                                />
+                            </td>
+                            <td>
+                                <Form.Select
+                                    size="sm"
+                                    value={aliasLangInput}
+                                    onChange={e => setAliasLangInput(e.target.value)}
+                                    className="w-auto"
+                                >
+                                    {languageOptions.map(lang => (
+                                        <option key={lang} value={lang}>{lang}</option>
+                                    ))}
+                                </Form.Select>
+                            </td>
+                            <td>
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        if (aliasInput.trim()) {
+                                            onChangeSetting(s => s.languageAliases = [...s.languageAliases, { alias: aliasInput.trim(), adjective: aliasAdjInput.trim(), language: aliasLangInput }]);
+                                            setAliasInput('');
+                                            setAliasAdjInput('');
+                                            setAliasLangInput('potoczna');
+                                        }
+                                    }}
+                                >
+                                    Dodaj
+                                </Button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             <Button onClick={handleSubmission}>Zapisz</Button>
             </fieldset>
