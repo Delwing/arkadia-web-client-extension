@@ -30,6 +30,16 @@ describe('mountain triggers', () => {
     expect(result).toBe(prefix + 'Zaczynasz wspinac sie' + suffix);
   });
 
+  test('colors reaching top line yellow', () => {
+    const result = parse('Docierasz na gore.');
+    expect(result).toBe(prefix + 'Docierasz na gore.' + suffix);
+  });
+
+  test('colors safe descent line yellow', () => {
+    const result = parse('Bezpiecznie schodzisz na dol.');
+    expect(result).toBe(prefix + 'Bezpiecznie schodzisz na dol.' + suffix);
+  });
+
   test('colors falling line yellow and moves back when climbing up', () => {
     parse('Zaczynasz wspinac sie');
     const result = parse('Odpadasz od sciany i lecisz w dol');

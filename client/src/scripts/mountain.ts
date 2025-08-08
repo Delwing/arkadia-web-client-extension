@@ -16,6 +16,16 @@ export default function initMountain(client: Client) {
         return colorString(line, YELLOW);
     }, tag);
 
+    client.Triggers.registerTrigger(/Docierasz na gore\./, (_r, line) => {
+        mountainMovingDir = undefined;
+        return colorString(line, YELLOW);
+    }, tag);
+
+    client.Triggers.registerTrigger(/Bezpiecznie schodzisz na dol\./, (_r, line) => {
+        mountainMovingDir = undefined;
+        return colorString(line, YELLOW);
+    }, tag);
+
     client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (_r, line) => {
         if (mountainMovingDir === "up") {
             client.Map.moveBack();
