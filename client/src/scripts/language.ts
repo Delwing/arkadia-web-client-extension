@@ -47,7 +47,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     client.aliases.push({
         pattern: /^justaw (.*)$/,
         callback: (matches: RegExpMatchArray) => {
-            client.send('justaw ' + matches[1]);
+            client.send('justaw ' + matches[1], false);
             lastLang = matches[1];
             client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
         }
