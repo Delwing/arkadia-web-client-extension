@@ -64,4 +64,20 @@ describe('weapon colors trigger', () => {
     expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));
     expect(result).toBe(expected);
   });
+
+  test('colors weapon in scabbard', () => {
+    const line = 'Masz do pasa przypieta pochwe, zawierajaca stalowy miecz.';
+    const result = parse(line);
+    const expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR);
+    expect(stripAnsiCodes(result)).toBe(line);
+    expect(result).toBe(expected);
+  });
+
+  test('colors weapon stuck in scabbard', () => {
+    const line = 'Masz do pasa przypieta pochwe z tkwiacym w niej stalowym mieczem.';
+    const result = parse(line);
+    const expected = colorStringInLine(line, 'stalowym mieczem', WEAPON_COLOR);
+    expect(stripAnsiCodes(result)).toBe(line);
+    expect(result).toBe(expected);
+  });
 });
