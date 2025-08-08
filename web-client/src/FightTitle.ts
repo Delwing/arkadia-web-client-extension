@@ -6,7 +6,7 @@ export default class FightTitle {
   private playerNum?: string;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
-  private readonly idlePrefix = "  ";
+  private readonly idlePrefix = "\u00A0\u00A0"; // two non-breaking spaces
   private enabled = true;
 
   constructor(client: typeof ArkadiaClient) {
