@@ -32,7 +32,6 @@ const palette = (() => {
 colorCodes.xterm = palette === 'proper' ? colorCodes.xtermProper : colorCodes.xtermArkadia;
 
 export function setXtermPalette(p: 'arkadia' | 'proper') {
-    console.log('Setting xterm palette to', p);
     colorCodes.xterm = p === 'proper' ? colorCodes.xtermProper : colorCodes.xtermArkadia;
 }
 
