@@ -60,6 +60,9 @@ function SettingsForm() {
     }, []);
 
     const [extraInput, setExtraInput] = useState<string>('')
+    const [aliasInput, setAliasInput] = useState<string>('')
+    const [aliasAdjInput, setAliasAdjInput] = useState<string>('')
+    const [aliasLangInput, setAliasLangInput] = useState<string>('potoczna')
 
     function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
@@ -124,7 +127,7 @@ function SettingsForm() {
                         />
                     </Form.Group>
                     <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Język:</Form.Label>
+                        <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
                         <Form.Select
                             size="sm"
                             value={settings.language}
@@ -137,6 +140,64 @@ function SettingsForm() {
                         </Form.Select>
                     </Form.Group>
                 </div>
+                <div className="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Alias:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={aliasInput}
+                            onChange={e => setAliasInput(e.target.value)}
+                            style={{width: '100%', maxWidth: '6rem'}}
+                        />
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={aliasAdjInput}
+                            onChange={e => setAliasAdjInput(e.target.value)}
+                            style={{width: '100%', maxWidth: '10rem'}}
+                        />
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Język:</Form.Label>
+                        <Form.Select
+                            size="sm"
+                            value={aliasLangInput}
+                            onChange={e => setAliasLangInput(e.target.value)}
+                            className="w-auto"
+                        >
+                            {languageOptions.map(lang => (
+                                <option key={lang} value={lang}>{lang}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                    <Button
+                        size="sm"
+                        onClick={() => {
+                            if (aliasInput.trim()) {
+                                onChangeSetting(s => s.languageAliases = [...s.languageAliases, { alias: aliasInput.trim(), adjective: aliasAdjInput.trim(), language: aliasLangInput }]);
+                                setAliasInput('');
+                                setAliasAdjInput('');
+                                setAliasLangInput('potoczna');
+                            }
+                        }}
+                    >
+                        Dodaj
+                    </Button>
+                </div>
+                {settings.languageAliases.length > 0 && (
+                    <ul className="list-unstyled ms-3 mt-2">
+                        {settings.languageAliases.map(item => (
+                            <li key={item.alias} className="d-flex align-items-center gap-2">
+                                <span>{`${item.alias} ${item.adjective} ${item.language}`}</span>
+                                <Button size="sm" variant="secondary" onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}>Usuń</Button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>

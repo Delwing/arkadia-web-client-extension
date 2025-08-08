@@ -9,6 +9,7 @@ export interface Settings {
     collectExtra: string[];
     language: string;
     languageAdjective: string;
+    languageAliases: { alias: string; adjective: string; language: string }[];
     herbPreUseCommand: string;
     herbPostUseCommand: string;
 }
@@ -24,6 +25,7 @@ export const defaultSettings: Settings = {
     collectExtra: [],
     language: 'potoczna',
     languageAdjective: '',
+    languageAliases: [],
     herbPreUseCommand: '',
     herbPostUseCommand: '',
 };
