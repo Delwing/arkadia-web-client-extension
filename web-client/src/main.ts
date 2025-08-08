@@ -710,6 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!arkadiaClient.hasReceivedFirstGmcp()) return;
         if (commandHistory.length === 0) return;
 
+        const wasFocused = document.activeElement === messageInput;
+
         if (historyIndex === -1) {
             currentInput = messageInput.value;
             // Skip the just sent command if the input wasn't modified
@@ -720,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ) {
                 historyIndex = 1;
                 messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                messageInput.select();
+                if (wasFocused) messageInput.select();
                 return;
             }
         }
@@ -729,17 +731,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (historyIndex < commandHistory.length - 1) {
                 historyIndex++;
                 messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                messageInput.select();
+                if (wasFocused) messageInput.select();
             }
         } else {
             if (historyIndex > 0) {
                 historyIndex--;
                 messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                messageInput.select();
+                if (wasFocused) messageInput.select();
             } else if (historyIndex === 0) {
                 historyIndex = -1;
                 messageInput.value = currentInput;
-                messageInput.select();
+                if (wasFocused) messageInput.select();
             }
         }
     }
