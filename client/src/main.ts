@@ -40,6 +40,7 @@ import initHpAlert from './scripts/hpAlert'
 import initNoWeaponAlert from './scripts/noWeaponAlert'
 import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
+import initDajeCiHighlight from './scripts/dajeCiHighlight'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initSelfEvaluation from './scripts/selfEvaluation'
@@ -167,6 +168,7 @@ export function registerScripts(client: Client) {
     initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
+    initDajeCiHighlight(client)
     initGuildPostfix(client)
     initShortcuts(client, aliases)
     initShortExits(client)
