@@ -600,12 +600,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const lines = getAll.result as {timestamp: number, text: string}[];
                     const html = lines.map(line => {
                         const time = new Date(line.timestamp).toLocaleTimeString();
-                        return `<div><span class="text-muted me-1">${time}</span>${parseAnsiPatterns(line.text)}</div>`;
+                        const parsed = parseAnsiPatterns(line.text);
+                        return `<div style="white-space:pre;font-family:monospace"><span style="color:#6c757d;margin-right:0.25rem">${time}</span>${parsed}</div>`;
                     }).join('');
                     htmlLogPreview.innerHTML = html;
                     htmlLogDownload.disabled = false;
                     htmlLogDownload.onclick = () => {
-                        const blob = new Blob([`<html><body>${html}</body></html>`], {type: 'text/html'});
+                        const blob = new Blob([`<html><head><meta charset=\"UTF-8\"/></head><body>${html}</body></html>`], {type: 'text/html'});
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;

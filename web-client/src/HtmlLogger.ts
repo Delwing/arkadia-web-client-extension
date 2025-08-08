@@ -20,10 +20,10 @@ class HtmlLogger {
         }
     }
 
-    logLine(text: string, type?: string) {
+    logLine(text: string, type?: string, timestamp: number = Date.now()) {
         if (!this.db) return;
         const tx = this.db.transaction(this.storeName, 'readwrite');
-        tx.objectStore(this.storeName).add({ timestamp: Date.now(), text, type });
+        tx.objectStore(this.storeName).add({ timestamp, text, type });
     }
 }
 

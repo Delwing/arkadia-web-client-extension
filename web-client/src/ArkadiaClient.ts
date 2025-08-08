@@ -332,19 +332,25 @@ class ArkadiaClient implements ClientAdapter {
                 processed.push(message)
             }
         })
-        processed.forEach((message, i) => {
-            this.sendLine(message.text, message.type, i)
+        let lineCount = 0;
+        processed.forEach((message) => {
+            lineCount += this.sendLine(message.text, message.type);
         })
-        this.emit('output-sent', processed.length)
+        this.emit('output-sent', lineCount)
         this.messageBuffer = []
     }
 
-    private sendLine(text: string, type: string, i: number) {
+    private sendLine(text: string, type: string): number {
         text = window.clientExtension.onLine(text, type)
-        HtmlLogger.logLine(text, type);
-        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        Output.send(parseAnsiPatterns(text), type);
-        this.emit('line-sent')
+        const timestamp = Date.now();
+        const lines = text.split(/\r?\n/);
+        lines.forEach(line => {
+            HtmlLogger.logLine(line, type, timestamp);
+            eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, line), {once: true})
+            Output.send(parseAnsiPatterns(line), type);
+            this.emit('line-sent')
+        })
+        return lines.length;
     }
 
     startRecording(name: string) {
