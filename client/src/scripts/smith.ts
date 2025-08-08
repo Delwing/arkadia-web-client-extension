@@ -38,7 +38,7 @@ export default function initSmith(client: Client, aliases?: { pattern: RegExp; c
     };
 
     client.Triggers.registerTrigger(/konczy prace\.$/, endWork, tag);
-    client.Triggers.registerTrigger(/daje ci/, endWork, tag);
+    client.Triggers.registerTrigger(/\bdaje ci/, endWork, tag);
     client.Triggers.registerTrigger(/do ciebie: .+ nie (?:nadaj|wymaga).* (?:ostrzenia|naprawy)/, nothingToRepair, tag);
     client.Triggers.registerTrigger(/do ciebie: Zobacze co da sie zrobic\./, startWork, tag);
 
