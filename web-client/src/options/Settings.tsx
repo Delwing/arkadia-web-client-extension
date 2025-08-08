@@ -114,92 +114,6 @@ function SettingsForm() {
             )}
             <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
-                <h5 className="fw-bold mb-2">Język</h5>
-                <div className="d-flex flex-wrap gap-3 align-items-center">
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            value={settings.languageAdjective}
-                            onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
-                            style={{width: '100%', maxWidth: '10rem'}}
-                        />
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
-                        <Form.Select
-                            size="sm"
-                            value={settings.language}
-                            onChange={e => onChangeSetting(s => s.language = e.target.value)}
-                            className="w-auto"
-                        >
-                            {languageOptions.map(lang => (
-                                <option key={lang} value={lang}>{lang}</option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
-                </div>
-                <div className="mt-3 d-flex flex-wrap gap-2 align-items-center">
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Alias:</Form.Label>
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            value={aliasInput}
-                            onChange={e => setAliasInput(e.target.value)}
-                            style={{width: '100%', maxWidth: '6rem'}}
-                        />
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            value={aliasAdjInput}
-                            onChange={e => setAliasAdjInput(e.target.value)}
-                            style={{width: '100%', maxWidth: '10rem'}}
-                        />
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center">
-                        <Form.Label className="me-1 mb-0">Język:</Form.Label>
-                        <Form.Select
-                            size="sm"
-                            value={aliasLangInput}
-                            onChange={e => setAliasLangInput(e.target.value)}
-                            className="w-auto"
-                        >
-                            {languageOptions.map(lang => (
-                                <option key={lang} value={lang}>{lang}</option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
-                    <Button
-                        size="sm"
-                        onClick={() => {
-                            if (aliasInput.trim()) {
-                                onChangeSetting(s => s.languageAliases = [...s.languageAliases, { alias: aliasInput.trim(), adjective: aliasAdjInput.trim(), language: aliasLangInput }]);
-                                setAliasInput('');
-                                setAliasAdjInput('');
-                                setAliasLangInput('potoczna');
-                            }
-                        }}
-                    >
-                        Dodaj
-                    </Button>
-                </div>
-                {settings.languageAliases.length > 0 && (
-                    <ul className="list-unstyled ms-3 mt-2">
-                        {settings.languageAliases.map(item => (
-                            <li key={item.alias} className="d-flex align-items-center gap-2">
-                                <span>{`${item.alias} ${item.adjective} ${item.language}`}</span>
-                                <Button size="sm" variant="secondary" onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}>Usuń</Button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-            <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
                 <div className="d-flex flex-wrap gap-3 align-items-center">
                     <Form.Check
@@ -353,6 +267,103 @@ function SettingsForm() {
                         <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                     </Form.Group>
                 </div>
+            </div>
+            <div className="mb-4 border rounded p-3">
+                <h5 className="fw-bold mb-2">Język</h5>
+                <div className="d-flex flex-wrap gap-3 align-items-center">
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
+                        <Form.Control
+                            type="text"
+                            size="sm"
+                            value={settings.languageAdjective}
+                            onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
+                            style={{width: '100%', maxWidth: '10rem'}}
+                        />
+                    </Form.Group>
+                    <Form.Group className="d-flex align-items-center">
+                        <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
+                        <Form.Select
+                            size="sm"
+                            value={settings.language}
+                            onChange={e => onChangeSetting(s => s.language = e.target.value)}
+                            className="w-auto"
+                        >
+                            {languageOptions.map(lang => (
+                                <option key={lang} value={lang}>{lang}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                </div>
+                <table className="table table-sm mt-3 mb-0">
+                    <thead>
+                        <tr>
+                            <th>Alias</th>
+                            <th>Przymiotnik</th>
+                            <th>Język</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {settings.languageAliases.map(item => (
+                            <tr key={item.alias}>
+                                <td>{item.alias}</td>
+                                <td>{item.adjective}</td>
+                                <td>{item.language}</td>
+                                <td>
+                                    <Button size="sm" variant="secondary" onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}>Usuń</Button>
+                                </td>
+                            </tr>
+                        ))}
+                        <tr>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={aliasInput}
+                                    onChange={e => setAliasInput(e.target.value)}
+                                    style={{width: '100%', maxWidth: '6rem'}}
+                                />
+                            </td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={aliasAdjInput}
+                                    onChange={e => setAliasAdjInput(e.target.value)}
+                                    style={{width: '100%', maxWidth: '10rem'}}
+                                />
+                            </td>
+                            <td>
+                                <Form.Select
+                                    size="sm"
+                                    value={aliasLangInput}
+                                    onChange={e => setAliasLangInput(e.target.value)}
+                                    className="w-auto"
+                                >
+                                    {languageOptions.map(lang => (
+                                        <option key={lang} value={lang}>{lang}</option>
+                                    ))}
+                                </Form.Select>
+                            </td>
+                            <td>
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        if (aliasInput.trim()) {
+                                            onChangeSetting(s => s.languageAliases = [...s.languageAliases, { alias: aliasInput.trim(), adjective: aliasAdjInput.trim(), language: aliasLangInput }]);
+                                            setAliasInput('');
+                                            setAliasAdjInput('');
+                                            setAliasLangInput('potoczna');
+                                        }
+                                    }}
+                                >
+                                    Dodaj
+                                </Button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             <Button onClick={handleSubmission}>Zapisz</Button>
             </fieldset>
