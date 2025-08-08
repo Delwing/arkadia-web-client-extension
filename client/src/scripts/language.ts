@@ -19,10 +19,10 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
             const msg = matches[1];
             const lang = currentLang;
             const adj = adjective.trim();
-            if (lang !== lastLang) {
+            if (lang !== lastLang && lang !== 'potoczna') {
                 client.sendCommand(`justaw ${lang}`, false);
-                lastLang = lang;
             }
+            lastLang = lang;
             if (lang === 'potoczna' && adj === '') {
                 client.sendCommand("'" + msg);
                 return;
