@@ -30,6 +30,8 @@ export interface ClientAdapter {
     sendGmcp(type: string, payload?: any): void
 
     parseAnsiPatterns(text: string): string;
+
+    flushMessageBuffer(): void
 }
 
 export default class Client {

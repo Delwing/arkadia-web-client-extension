@@ -9,8 +9,35 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
 
     let currentLang = 'potoczna';
     let adjective = '';
-    let lastLang = 'potoczna';
+    let lastLang = '';
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
+
+    function setLanguage(lang: string) {
+        if (lang !== lastLang && lang !== 'potoczna') {
+            client.sendCommand(`justaw ${lang}`, false);
+        }
+    }
+
+    function say(lang: string, adj: string, msg: string) {
+       setLanguage(lang);
+        if (lang === 'potoczna' && adj === '') {
+            client.sendCommand("'" + msg);
+        } else {
+            const verb = lang === 'potoczna' ? 'ppowiedz' : 'jppowiedz';
+            const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
+            client.sendCommand(cmd, false);
+        }
+        client.clientAdapter.output("→ '" + msg, 'command');
+        client.clientAdapter.flushMessageBuffer();
+    }
+
+    client.aliases.push({
+        pattern: /^justaw (.*)$/,
+        callback: (matches: RegExpMatchArray) => {
+            client.send('justaw ' + matches[1]);
+            lastLang = matches[1];
+        }
+    })
 
     const applyAliases = (arr: { alias: string; adjective: string; language: string }[] = []) => {
         customAliases.forEach(a => {
@@ -18,32 +45,15 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
             if (idx !== -1) aliases.splice(idx, 1);
         });
         customAliases = arr.map(item => {
-            const pattern = new RegExp('^' + escapeRegExp(item.alias) + '(.*)$');
+            const pattern = new RegExp('^' + escapeRegExp(item.alias) + ' ?(.*)$');
             return {
                 pattern,
                 callback: (matches: RegExpMatchArray) => {
                     const msg = matches[1];
                     const lang = item.language;
                     const adj = item.adjective.trim();
-                    if (lang !== lastLang && lang !== 'potoczna') {
-                        client.sendCommand(`justaw ${lang}`, false);
-                    }
-                    lastLang = lang;
-                    if (lang === 'potoczna' && adj === '') {
-                        client.sendCommand("'" + msg);
-                    } else {
-                        const verb = lang === 'potoczna' ? 'ppowiedz' : 'jpowiedz';
-                        const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
-                        client.sendCommand(cmd, false);
-                    }
-                    client.clientAdapter.output("→ '" + msg, 'command');
-                    client.clientAdapter.flushMessageBuffer?.();
-                    if (currentLang !== lastLang) {
-                        if (currentLang !== 'potoczna') {
-                            client.sendCommand(`justaw ${currentLang}`, false);
-                        }
-                        lastLang = currentLang;
-                    }
+                    say(lang, adj, msg);
+                    setLanguage(currentLang);
                 }
             };
         });
@@ -58,24 +68,12 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     });
 
     aliases.push({
-        pattern: /^'(.*)$/,
+        pattern: /^' ?(.*)$/,
         callback: (matches: RegExpMatchArray) => {
             const msg = matches[1];
             const lang = currentLang;
             const adj = adjective.trim();
-            if (lang !== lastLang && lang !== 'potoczna') {
-                client.sendCommand(`justaw ${lang}`, false);
-            }
-            lastLang = lang;
-            if (lang === 'potoczna' && adj === '') {
-                client.sendCommand("'" + msg);
-            } else {
-                const verb = lang === 'potoczna' ? 'ppowiedz' : 'jpowiedz';
-                const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
-                client.sendCommand(cmd, false);
-            }
-            client.clientAdapter.output("→ '" + msg, 'command');
-            client.clientAdapter.flushMessageBuffer?.();
+            say(lang, adj, msg);
         }
     });
 }
