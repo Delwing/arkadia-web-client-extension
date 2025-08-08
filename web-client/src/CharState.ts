@@ -199,6 +199,7 @@ export default class CharState {
         const reverse = def === 0 || this.config[key].flip === true;
         const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
         const colorClass = COLOR_BAR_CLASS[colorLevel];
+        const color = COLOR_TEXT[colorLevel];
         const opposite =
           def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
@@ -217,6 +218,7 @@ export default class CharState {
         const valueSpan = document.createElement("span");
         valueSpan.className = "progress-value";
         valueSpan.textContent = `${value}/${maxValue}`;
+        valueSpan.style.color = color;
         progress.appendChild(bar);
         progress.appendChild(valueSpan);
         group.appendChild(labelEl);
@@ -238,19 +240,18 @@ export default class CharState {
         value = Math.max(0, Math.min(maxValue, value));
         const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
+        const reverse = def === 0 || this.config[key].flip === true;
+        const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+        const color = COLOR_TEXT[colorLevel];
         let text = "";
         if (this.mode === 1 || this.mode === 2) {
           const barMax = this.mode === 2 ? 10 : maxValue;
           const filledLen = Math.round((value / maxValue) * barMax);
           const emptyLen = barMax - filledLen;
           const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
-          const ratio = value / maxValue;
-          const reverse = def === 0 || this.config[key].flip === true;
-          const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
-          const color = COLOR_TEXT[colorLevel];
           text = `${label}: <span style="color:${color}">[${bar}]</span>`;
         } else {
-          text = `${label}: [${value}/${maxValue}]`;
+          text = `${label}: <span style="color:${color}">[${value}/${maxValue}]</span>`;
         }
         return highlight ? `<span style="color:tomato">${text}</span>` : text;
       })
