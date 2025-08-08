@@ -20,6 +20,7 @@ const collectModeOptions = [
 const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
 const languageOptions = [
+    "potoczna",
     "bretonski",
     "drukh-eltharin",
     "estalijski",
@@ -39,7 +40,6 @@ const languageOptions = [
     "tar-eltharin",
     "tileanski",
     "zerrikanski",
-    "potoczna",
     "ghassall",
 ]
 
