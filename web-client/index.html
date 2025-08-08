@@ -145,6 +145,21 @@
             </div>
         </div>
     </div>
+    <div id="html-logs-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Logi HTML</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex flex-column gap-2">
+                    <select id="html-logs-select" class="form-select"></select>
+                    <div id="html-log-preview" class="border p-2" style="max-height:50vh;overflow:auto;"></div>
+                    <button class="btn btn-primary" id="html-log-download" disabled>Pobierz</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="shortcuts-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -210,6 +225,9 @@
                 </li>
                 <li>
                     <button class="w-100 p-1" id="recordings-button">Nagrania</button>
+                </li>
+                <li>
+                    <button class="w-100 p-1" id="html-logs-button">Logi HTML</button>
                 </li>
                 <li>
                     <button class="w-100 p-1" id="shortcuts-button">Skróty</button>

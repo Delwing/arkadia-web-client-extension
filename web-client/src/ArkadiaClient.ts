@@ -4,6 +4,7 @@ import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
+import HtmlLogger from './HtmlLogger';
 
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
@@ -83,6 +84,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.stopPing();
+                HtmlLogger.endSession();
 
                 // @ts-ignore
                 this.readInflator = new pako.Inflate()
@@ -90,6 +92,7 @@ class ArkadiaClient implements ClientAdapter {
 
             this.socket.onopen = (event: Event) => {
                 this.emit('open', event);
+                HtmlLogger.startSession();
                 this.emit('client.connect');
                 this.mccp = false;
                 this.startPing();
@@ -338,6 +341,7 @@ class ArkadiaClient implements ClientAdapter {
 
     private sendLine(text: string, type: string, i: number) {
         text = window.clientExtension.onLine(text, type)
+        HtmlLogger.logLine(text, type);
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         Output.send(parseAnsiPatterns(text), type);
         this.emit('line-sent')

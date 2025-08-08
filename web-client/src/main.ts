@@ -34,6 +34,7 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
 import "./triggerTester"
+import {parseAnsiPatterns} from "./ansiParser"
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
@@ -417,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
+    const htmlLogsButton = document.getElementById('html-logs-button') as HTMLButtonElement | null;
     const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
@@ -447,6 +449,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggersModal = triggersModalElement ? new Modal(triggersModalElement) : null;
     const recordingsModalElement = document.getElementById('recordings-modal');
     const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
+    const htmlLogsModalElement = document.getElementById('html-logs-modal');
+    const htmlLogsModal = htmlLogsModalElement ? new Modal(htmlLogsModalElement) : null;
+    const htmlLogsSelect = document.getElementById('html-logs-select') as HTMLSelectElement | null;
+    const htmlLogPreview = document.getElementById('html-log-preview') as HTMLElement | null;
+    const htmlLogDownload = document.getElementById('html-log-download') as HTMLButtonElement | null;
     const shortcutsModalElement = document.getElementById('shortcuts-modal');
     const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
     const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
@@ -524,6 +531,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordingsModal) {
             recordingsModal.hide();
         }
+        if (htmlLogsModal) {
+            htmlLogsModal.hide();
+        }
         if (shortcutsModal) {
             shortcutsModal.hide();
         }
@@ -575,6 +585,66 @@ document.addEventListener('DOMContentLoaded', () => {
     if (recordingsButton && recordingsModal) {
         recordingsButton.addEventListener('click', () => {
             recordingsModal.show();
+        });
+    }
+
+    if (htmlLogsButton && htmlLogsModal && htmlLogsSelect && htmlLogPreview && htmlLogDownload) {
+        const loadLog = (name: string) => {
+            const req = indexedDB.open(name);
+            req.onsuccess = () => {
+                const db = req.result;
+                const tx = db.transaction('lines', 'readonly');
+                const store = tx.objectStore('lines');
+                const getAll = store.getAll();
+                getAll.onsuccess = () => {
+                    const lines = getAll.result as {timestamp: number, text: string}[];
+                    const html = lines.map(line => {
+                        const time = new Date(line.timestamp).toLocaleTimeString();
+                        return `<div><span class="text-muted me-1">${time}</span>${parseAnsiPatterns(line.text)}</div>`;
+                    }).join('');
+                    htmlLogPreview.innerHTML = html;
+                    htmlLogDownload.disabled = false;
+                    htmlLogDownload.onclick = () => {
+                        const blob = new Blob([`<html><body>${html}</body></html>`], {type: 'text/html'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${name}.html`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    };
+                    db.close();
+                };
+            };
+        };
+
+        const updateList = async () => {
+            htmlLogsSelect.innerHTML = '';
+            const dbs = await ((indexedDB as any).databases ? (indexedDB as any).databases() : []);
+            dbs.filter((d: any) => d.name && d.name.startsWith('html_logs_'))
+               .sort((a: any, b: any) => (b.name as string).localeCompare(a.name as string))
+               .forEach((d: any) => {
+                   const opt = document.createElement('option');
+                   const ts = Number((d.name as string).replace('html_logs_', ''));
+                   opt.value = d.name as string;
+                   opt.textContent = new Date(ts).toLocaleString();
+                   htmlLogsSelect.appendChild(opt);
+               });
+            if (htmlLogsSelect.value) {
+                loadLog(htmlLogsSelect.value);
+            } else {
+                htmlLogPreview.textContent = '';
+                htmlLogDownload.disabled = true;
+            }
+        };
+
+        htmlLogsButton.addEventListener('click', () => {
+            htmlLogsModal.show();
+            updateList();
+        });
+
+        htmlLogsSelect.addEventListener('change', () => {
+            loadLog(htmlLogsSelect.value);
         });
     }
 
