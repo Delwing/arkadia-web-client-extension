@@ -49,4 +49,26 @@ export default function initWeaponColors(client: Client) {
         },
         tag
     );
+    client.Triggers.registerTrigger(
+        /^.*przypiet(?:y|a|e).*?(?:pochwe|pochwy|uprzaz|temblak|temblaki).*, zawierajac(?:a|e|y) (?<weapon>[a-z ]+)\.$/,
+        (raw, _line, m) => {
+            const { weapon } = m.groups as { weapon: string };
+            if (isMagicColored(raw, weapon)) {
+                return raw;
+            }
+            return colorStringInLine(raw, weapon, WEAPON_COLOR);
+        },
+        tag
+    );
+    client.Triggers.registerTrigger(
+        /^.*przypiet(?:y|a|e).*?(?:pochwe|pochwy|uprzaz|temblak|temblaki).* z tkwiac.* w (?:niej|nim|nich) (?<weapon>[a-z ]+)\.$/,
+        (raw, _line, m) => {
+            const { weapon } = m.groups as { weapon: string };
+            if (isMagicColored(raw, weapon)) {
+                return raw;
+            }
+            return colorStringInLine(raw, weapon, WEAPON_COLOR);
+        },
+        tag
+    );
 }
