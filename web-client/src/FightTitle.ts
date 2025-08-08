@@ -7,6 +7,7 @@ export default class FightTitle {
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
   private readonly idlePrefix = "  ";
+  private enabled = true;
 
   constructor(client: typeof ArkadiaClient) {
     this.client = client;
@@ -15,6 +16,12 @@ export default class FightTitle {
     client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
     client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
     client.on("client.disconnect", () => this.reset());
+    (window as any).clientExtension?.eventTarget.addEventListener("uiSettings", (ev: CustomEvent) => {
+      if (typeof ev.detail?.fightTitleIcon === "boolean") {
+        this.enabled = ev.detail.fightTitleIcon;
+        this.updateTitle(this.isFighting, true);
+      }
+    });
   }
 
   private handleCharInfo(info: any) {
@@ -40,6 +47,10 @@ export default class FightTitle {
   private updateTitle(fighting: boolean, force = false) {
     if (!force && this.isFighting === fighting) return;
     this.isFighting = fighting;
+    if (!this.enabled) {
+      document.title = this.baseTitle;
+      return;
+    }
     const prefix = this.isFighting ? this.fightPrefix : this.idlePrefix;
     document.title = `${prefix}${this.baseTitle}`;
   }

@@ -9,6 +9,7 @@ interface UiSettings {
     showButtons: boolean;
     mapHeight: number;
     emojiLabels: boolean;
+    fightTitleIcon: boolean;
     xtermPalette: 'arkadia' | 'proper';
     footerMode: number;
     explorationMode: boolean;
@@ -23,6 +24,7 @@ const defaultSettings: UiSettings = {
     showButtons: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
+    fightTitleIcon: true,
     xtermPalette: 'arkadia',
     footerMode: 0,
     explorationMode: false,
@@ -82,6 +84,7 @@ function apply(settings: UiSettings) {
                     emojiLabels: settings.emojiLabels,
                     xtermPalette: settings.xtermPalette,
                     footerMode: settings.footerMode,
+                    fightTitleIcon: settings.fightTitleIcon,
                 },
             })
         );
@@ -110,7 +113,8 @@ async function load(): Promise<UiSettings> {
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
             const explorationMode = !!parsed.explorationMode;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode };
+            const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon };
         }
     } catch {
         // ignore malformed data
@@ -138,6 +142,7 @@ export default async function initUiSettings() {
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
+    const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
@@ -152,6 +157,7 @@ export default async function initUiSettings() {
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
     emojiLabelsInput.checked = current.emojiLabels;
+    fightTitleIconInput.checked = current.fightTitleIcon;
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     apply(current);
@@ -189,6 +195,7 @@ export default async function initUiSettings() {
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             showButtons: showButtonsInput.checked,
             emojiLabels: emojiLabelsInput.checked,
+            fightTitleIcon: fightTitleIconInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
             footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
             explorationMode: explorationInput.checked,
