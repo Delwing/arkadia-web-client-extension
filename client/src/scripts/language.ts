@@ -1,7 +1,5 @@
 import Client from "../Client";
 
-const STORAGE_KEY = 'lastLanguage';
-
 function escapeRegExp(str: string) {
     return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
@@ -27,12 +25,8 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
                     const msg = matches[1];
                     const lang = item.language;
                     const adj = item.adjective.trim();
-                    if (lang !== lastLang) {
-                        if (lang !== 'potoczna') {
-                            client.sendCommand(`justaw ${lang}`, false);
-                        } else if (lastLang !== 'potoczna') {
-                            client.sendCommand('justaw potoczna', false);
-                        }
+                    if (lang !== lastLang && lang !== 'potoczna') {
+                        client.sendCommand(`justaw ${lang}`, false);
                     }
                     lastLang = lang;
                     if (lang === 'potoczna' && adj === '') {
@@ -47,12 +41,9 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
                     if (currentLang !== lastLang) {
                         if (currentLang !== 'potoczna') {
                             client.sendCommand(`justaw ${currentLang}`, false);
-                        } else {
-                            client.sendCommand('justaw potoczna', false);
                         }
                         lastLang = currentLang;
                     }
-                    client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
                 }
             };
         });
@@ -66,32 +57,14 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         applyAliases(detail.languageAliases || []);
     });
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            lastLang = ev.detail.value || 'potoczna';
-            if (lastLang !== 'potoczna') {
-                client.sendCommand(`justaw ${lastLang}`, false);
-            }
-        }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-
     aliases.push({
         pattern: /^'(.*)$/,
         callback: (matches: RegExpMatchArray) => {
             const msg = matches[1];
             const lang = currentLang;
             const adj = adjective.trim();
-            if (lang !== lastLang) {
-                if (lang !== 'potoczna') {
-                    client.sendCommand(`justaw ${lang}`, false);
-                } else if (lastLang !== 'potoczna') {
-                    client.sendCommand('justaw potoczna', false);
-                }
+            if (lang !== lastLang && lang !== 'potoczna') {
+                client.sendCommand(`justaw ${lang}`, false);
             }
             lastLang = lang;
             if (lang === 'potoczna' && adj === '') {
@@ -103,7 +76,6 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
             }
             client.clientAdapter.output("→ '" + msg, 'command');
             client.clientAdapter.flushMessageBuffer?.();
-            client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
         }
     });
 }
