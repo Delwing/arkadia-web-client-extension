@@ -23,7 +23,8 @@ export default class FightTitle {
     if (!this.playerNum) return;
     const obj = data[this.playerNum];
     if (!obj) return;
-    const fighting = obj.attack_num !== false && obj.attack_num !== undefined;
+    if (obj.attack_num === undefined) return;
+    const fighting = obj.attack_num !== false;
     this.updateTitle(fighting);
   }
 
