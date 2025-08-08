@@ -11,6 +11,7 @@ import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
 import ReleaseGuard from "./ReleaseGuard";
+import FightTitle from "./FightTitle";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -861,6 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
     new PackageStatus(arkadiaClient);
+    new FightTitle(arkadiaClient);
     new ObjectList(client);
 
     // Initialize mobile direction buttons
