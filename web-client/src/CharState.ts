@@ -199,7 +199,6 @@ export default class CharState {
         const reverse = def === 0 || this.config[key].flip === true;
         const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
         const colorClass = COLOR_BAR_CLASS[colorLevel];
-        const color = COLOR_TEXT[colorLevel];
         const opposite =
           def !== undefined ? (def > 0 ? 0 : maxValue) : null;
         const highlight = opposite !== null && value === opposite;
@@ -218,7 +217,7 @@ export default class CharState {
         const valueSpan = document.createElement("span");
         valueSpan.className = "progress-value";
         valueSpan.textContent = `${value}/${maxValue}`;
-        valueSpan.style.color = color;
+        valueSpan.style.color = "white";
         progress.appendChild(bar);
         progress.appendChild(valueSpan);
         group.appendChild(labelEl);
