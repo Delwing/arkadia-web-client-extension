@@ -791,6 +791,10 @@ button:focus-visible {
     padding: 0;
 }
 
+.log-time {
+  margin-right: 0.4em;
+}
+
 .logo {
   width: auto;
   height: auto;
