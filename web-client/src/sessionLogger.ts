@@ -1,5 +1,6 @@
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
+const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?\}|\{clickClose\}/g;
 
 const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
   // First open the database to determine the current version
@@ -46,7 +47,7 @@ export default function initSessionLogger(client: any) {
       if (text === "\n") {
         text = "";
       }
-      save(text, type);
+      save(text.replace(CLICK_TAG_REG, ''), type);
     }
   });
 }
