@@ -76,6 +76,16 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
+#logs-preview .output_msg_text {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+}
+
+#logs-preview .log-time {
+  color: darkorange;
+  padding-right: 0.5rem;
+}
+
 #split-bottom {
   position: sticky;
   bottom: 0px;
