@@ -48,44 +48,24 @@ function initLogBrowser(): boolean {
     });
   }
 
-  async function removeEmptyStores(database: IDBDatabase): Promise<IDBDatabase> {
-    const empty: string[] = [];
-    for (let i = 0; i < database.objectStoreNames.length; i++) {
-      const name = database.objectStoreNames.item(i);
+
+  async function refreshSessions() {
+    db?.close();
+    db = await openDb();
+    select.innerHTML = "";
+    const names: string[] = [];
+    for (let i = 0; i < db.objectStoreNames.length; i++) {
+      const name = db.objectStoreNames.item(i);
       if (!name) continue;
-      const tx = database.transaction(name, "readonly");
+      const tx = db.transaction(name, "readonly");
       const req = tx.objectStore(name).count();
       const count = await new Promise<number>((resolve) => {
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => resolve(0);
       });
-      if (count === 0) empty.push(name);
-    }
-    if (empty.length === 0) return database;
-    database.close();
-    return new Promise((resolve, reject) => {
-      const upgrade = indexedDB.open("ArkadiaMessagesDB", database.version + 1);
-      upgrade.onupgradeneeded = () => {
-        for (const n of empty) {
-          if (upgrade.result.objectStoreNames.contains(n)) {
-            upgrade.result.deleteObjectStore(n);
-          }
-        }
-      };
-      upgrade.onsuccess = () => resolve(upgrade.result);
-      upgrade.onerror = () => reject(upgrade.error);
-    });
-  }
-
-  async function refreshSessions() {
-    db?.close();
-    db = await openDb();
-    db = await removeEmptyStores(db);
-    select.innerHTML = "";
-    const names: string[] = [];
-    for (let i = 0; i < db.objectStoreNames.length; i++) {
-      const name = db.objectStoreNames.item(i);
-      if (name) names.push(name);
+      if (count > 0) {
+        names.push(name);
+      }
     }
     names.sort();
     for (const name of names) {
