@@ -1,39 +1,10 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { getShortDir } from "../utils/directions";
 
 const ORANGE = findClosestColor('#ffa500');
 
-const polishToEnglish: Record<string, string> = {
-    polnoc: "north",
-    poludnie: "south",
-    wschod: "east",
-    zachod: "west",
-    "polnocny-wschod": "northeast",
-    "polnocny-zachod": "northwest",
-    "poludniowy-wschod": "southeast",
-    "poludniowy-zachod": "southwest",
-    dol: "down",
-    gora: "up",
-    gore: "up",
-};
-
-const longToShort: Record<string, string> = {
-    north: "n",
-    south: "s",
-    east: "e",
-    west: "w",
-    northeast: "ne",
-    northwest: "nw",
-    southeast: "se",
-    southwest: "sw",
-    up: "u",
-    down: "d",
-};
-
-export function toShort(dir: string): string {
-    const long = polishToEnglish[dir] ?? dir.toLowerCase();
-    return longToShort[long] ?? dir;
-}
+export { getShortDir as toShort };
 
 export function parseExitString(str: string): string[] {
     return str
@@ -84,7 +55,7 @@ export default function initShortExits(client: Client) {
 
     const callback = (_r: string, _l: string, m: RegExpMatchArray) => {
         if (!enabled) return undefined;
-        const dirs = parseExitString(m[1]).map(toShort);
+        const dirs = parseExitString(m[1]).map(getShortDir);
         if (dirs.length === 0) return undefined;
         const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
         return colorString(str, ORANGE);

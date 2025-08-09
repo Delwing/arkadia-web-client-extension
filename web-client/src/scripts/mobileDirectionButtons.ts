@@ -2,6 +2,7 @@ import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
 import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
+import { getShortDir } from "@client/src/utils/directions.ts";
 
 const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
@@ -50,37 +51,6 @@ export default class MobileDirectionButtons {
     private teamMode = false;
     private leaderMode = false;
 
-    private readonly polishToEnglish: Record<string, string> = {
-        "polnoc": "north",
-        "poludnie": "south",
-        "wschod": "east",
-        "zachod": "west",
-        "polnocny-wschod": "northeast",
-        "polnocny-zachod": "northwest",
-        "poludniowy-wschod": "southeast",
-        "poludniowy-zachod": "southwest",
-        "dol": "down",
-        "gora": "up",
-        "gore": "up",
-    };
-
-    private readonly longToShort: Record<string, string> = {
-        north: "n",
-        south: "s",
-        east: "e",
-        west: "w",
-        northeast: "ne",
-        northwest: "nw",
-        southeast: "se",
-        southwest: "sw",
-        up: "u",
-        down: "d",
-    };
-
-    private getShortDir(dir: string): string {
-        const long = this.polishToEnglish[dir] ?? dir;
-        return this.longToShort[long] ?? dir;
-    }
 
     constructor(client: Client) {
         this.client = client;
@@ -526,7 +496,7 @@ export default class MobileDirectionButtons {
     }
 
     private highlightExits(exits: string[]) {
-        const available = new Set(exits.map((e) => this.getShortDir(e)));
+        const available = new Set(exits.map((e) => getShortDir(e)));
         const buttons = this.container.querySelectorAll<HTMLButtonElement>(
             'button[data-direction]'
         );
@@ -654,7 +624,7 @@ export default class MobileDirectionButtons {
             }
         }
         if (cfg.macro === 'kierunek' && cfg.direction) {
-            newBtn.dataset.direction = this.getShortDir(cfg.direction);
+            newBtn.dataset.direction = getShortDir(cfg.direction);
         } else if (!newBtn.dataset.direction) {
             newBtn.removeAttribute('data-direction');
         }
