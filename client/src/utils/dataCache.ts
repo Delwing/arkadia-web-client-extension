@@ -8,71 +8,91 @@ function isIndexedDBSupported() {
     return typeof indexedDB !== "undefined";
 }
 
-async function openDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        if (!isIndexedDBSupported()) {
-            reject(new Error('IndexedDB is not supported'));
-            return;
-        }
+const dbCache: Record<string, Promise<IDBDatabase>> = {};
 
-        const request = indexedDB.open(config.dbName, 1);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(config.storeName)) {
-                db.createObjectStore(config.storeName, { keyPath: 'id' });
+async function getDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
+    if (!dbCache[config.dbName]) {
+        dbCache[config.dbName] = new Promise((resolve, reject) => {
+            if (!isIndexedDBSupported()) {
+                reject(new Error('IndexedDB is not supported'));
+                return;
             }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(new Error('Failed to open IndexedDB'));
-    });
+
+            const request = indexedDB.open(config.dbName, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(config.storeName)) {
+                    db.createObjectStore(config.storeName, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+        });
+    }
+    return dbCache[config.dbName];
+}
+
+async function getStore(config: IndexedDBConfig, mode: IDBTransactionMode) {
+    const db = await getDatabase(config);
+    return db.transaction([config.storeName], mode).objectStore(config.storeName);
 }
 
 async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
-    const db = await openDatabase(config);
-    return new Promise<void>((resolve, reject) => {
-        const tx = db.transaction([config.storeName], 'readwrite');
-        const store = tx.objectStore(config.storeName);
-        const req = store.put({ id: config.key, data, timestamp: Date.now() });
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(new Error('Failed to store data in IndexedDB'));
-    });
+    try {
+        const store = await getStore(config, 'readwrite');
+        await new Promise<void>((resolve, reject) => {
+            const req = store.put({ id: config.key, data, timestamp: Date.now() });
+            req.onsuccess = () => resolve(undefined);
+            req.onerror = () => reject(new Error('Failed to store data in IndexedDB'));
+        });
+    } catch {
+        throw new Error('Failed to store data in IndexedDB');
+    }
 }
 
 async function getFromIndexedDB(config: IndexedDBConfig, ttl?: number) {
-    const db = await openDatabase(config);
-    return new Promise<any>((resolve, reject) => {
-        const tx = db.transaction([config.storeName], 'readonly');
-        const store = tx.objectStore(config.storeName);
-        const req = store.get(config.key);
-        req.onsuccess = () => {
-            if (req.result) {
-                if (!ttl || (req.result.timestamp && req.result.timestamp + ttl > Date.now())) {
-                    resolve(req.result.data);
-                    return;
+    try {
+        const store = await getStore(config, 'readonly');
+        return await new Promise<any>((resolve, reject) => {
+            const req = store.get(config.key);
+            req.onsuccess = () => {
+                if (req.result) {
+                    if (!ttl || (req.result.timestamp && req.result.timestamp + ttl > Date.now())) {
+                        resolve(req.result.data);
+                        return;
+                    }
                 }
-            }
-            resolve(null);
-        };
-        req.onerror = () => reject(new Error('Failed to get data from IndexedDB'));
-    });
+                resolve(null);
+            };
+            req.onerror = () => reject(new Error('Failed to get data from IndexedDB'));
+        });
+    } catch {
+        throw new Error('Failed to get data from IndexedDB');
+    }
 }
 
 export async function clearIndexedDB(config: IndexedDBConfig): Promise<void> {
-    const db = await openDatabase(config);
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction([config.storeName], 'readwrite');
-        const store = tx.objectStore(config.storeName);
-        const req = store.delete(config.key);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(new Error('Failed to clear IndexedDB'));
-    });
+    try {
+        const store = await getStore(config, 'readwrite');
+        await new Promise<void>((resolve, reject) => {
+            const req = store.delete(config.key);
+            req.onsuccess = () => resolve(undefined);
+            req.onerror = () => reject(new Error('Failed to clear IndexedDB'));
+        });
+    } catch {
+        throw new Error('Failed to clear IndexedDB');
+    }
 }
 
 export async function updateIndexedDB<T>(config: IndexedDBConfig, url: string): Promise<T> {
-    const response = await fetch(url);
-    const data = await response.json();
-    await storeInIndexedDB(config, data);
-    return data as T;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        await storeInIndexedDB(config, data);
+        return data as T;
+    } catch {
+        throw new Error('Failed to update IndexedDB');
+    }
 }
 
 
