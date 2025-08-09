@@ -83,6 +83,35 @@ function initLogBrowser(): boolean {
     }
   }
 
+  function splitLines(html: string): string[] {
+    const lines: string[] = [];
+    const stack: { open: string; close: string }[] = [];
+    let line = "";
+    const regex = /(<[^>]+>|\r?\n)/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(html)) !== null) {
+      const token = match[0];
+      line += html.slice(last, match.index);
+      if (token === "\n" || token === "\r\n") {
+        lines.push(line + stack.map(s => s.close).reverse().join(""));
+        line = stack.map(s => s.open).join("");
+      } else {
+        line += token;
+        if (token.startsWith("<") && !token.startsWith("</") && !token.endsWith("/>") && !token.startsWith("<!")) {
+          const tag = token.match(/^<([a-zA-Z0-9:-]+)/);
+          if (tag) stack.push({ open: token, close: `</${tag[1]}>` });
+        } else if (token.startsWith("</")) {
+          stack.pop();
+        }
+      }
+      last = regex.lastIndex;
+    }
+    line += html.slice(last);
+    lines.push(line);
+    return lines;
+  }
+
   function loadPreview(storeName: string) {
     if (!db) return;
     preview.innerHTML = "";
@@ -91,7 +120,7 @@ function initLogBrowser(): boolean {
     req.onsuccess = () => {
       const logs = req.result as LogEntry[];
       for (const entry of logs) {
-        const lines = entry.text.split(/\r?\n/);
+        const lines = splitLines(entry.text);
         const time = formatTime(entry.timestamp);
         for (const line of lines) {
           const wrapper = document.createElement("div");
@@ -135,7 +164,7 @@ function initLogBrowser(): boolean {
       const entries: string[] = [];
       for (const l of logs) {
         const time = formatDateTime(l.timestamp);
-        const parts = l.text.split(/\r?\n/);
+        const parts = splitLines(l.text);
         for (const part of parts) {
           const classes = ["output_msg"];
           if (l.type) {
