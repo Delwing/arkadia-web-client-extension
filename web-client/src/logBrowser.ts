@@ -6,13 +6,16 @@ interface LogEntry {
   timestamp: number;
 }
 
-function initLogBrowser() {
+let initialized = false;
+
+function initLogBrowser(): boolean {
+  if (initialized) return true;
   const button = document.getElementById("logs-button") as HTMLButtonElement | null;
   const modalEl = document.getElementById("logs-modal") as HTMLElement | null;
   const select = document.getElementById("logs-session-select") as HTMLSelectElement | null;
   const preview = document.getElementById("logs-preview") as HTMLElement | null;
   const download = document.getElementById("logs-download") as HTMLButtonElement | null;
-  if (!button || !modalEl || !select || !preview || !download) return;
+  if (!button || !modalEl || !select || !preview || !download) return false;
 
   let db: IDBDatabase | null = null;
 
@@ -193,10 +196,23 @@ function initLogBrowser() {
     await refreshSessions();
     modal.show();
   });
+
+  initialized = true;
+  return true;
+}
+
+function ensureLogBrowser() {
+  if (initLogBrowser()) return;
+  const observer = new MutationObserver(() => {
+    if (initLogBrowser()) {
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initLogBrowser);
+  document.addEventListener("DOMContentLoaded", ensureLogBrowser);
 } else {
-  initLogBrowser();
+  ensureLogBrowser();
 }
