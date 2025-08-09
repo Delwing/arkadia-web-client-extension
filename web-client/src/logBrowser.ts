@@ -62,7 +62,12 @@ function initLogBrowser() {
       const logs = req.result as LogEntry[];
       for (const entry of logs) {
         const lines = entry.text.split(/\r?\n/);
-        const time = new Date(entry.timestamp).toLocaleTimeString();
+        const time = new Date(entry.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
         for (const line of lines) {
           const wrapper = document.createElement("div");
           wrapper.classList.add("output_msg");
@@ -73,7 +78,8 @@ function initLogBrowser() {
           msg.classList.add("output_msg_text");
           msg.style.whiteSpace = "pre-wrap";
           const timeSpan = document.createElement("span");
-          timeSpan.textContent = `[${time}] `;
+          timeSpan.classList.add("log-time");
+          timeSpan.textContent = `[${time}]`;
           const contentSpan = document.createElement("span");
           contentSpan.innerHTML = line;
           msg.appendChild(timeSpan);
@@ -103,33 +109,34 @@ function initLogBrowser() {
       const logs = req.result as LogEntry[];
       const entries: string[] = [];
       for (const l of logs) {
-        const time = new Date(l.timestamp).toLocaleString();
+        const time = new Date(l.timestamp).toLocaleString([], { hour12: false });
         const parts = l.text.split(/\r?\n/);
         for (const part of parts) {
           const classes = ["output_msg"];
           if (l.type) {
             classes.push(l.type);
           }
-            const lineHtml = `<div class="${classes.join(" ")}"><div class="output_msg_text" style="white-space:pre-wrap"><span>[${time}] </span><span>${part}</span></div></div>`;
+          const lineHtml = `<div class="${classes.join(" ")}"><div class="output_msg_text" style="white-space:pre-wrap"><span class="log-time">[${time}]</span><span>${part}</span></div></div>`;
           entries.push(lineHtml);
         }
       }
-        const inlineStyles: string[] = [];
-        const linkTags: string[] = [];
-        for (const sheet of Array.from(document.styleSheets)) {
-          try {
-            const rules = Array.from(sheet.cssRules);
-            inlineStyles.push(rules.map(r => r.cssText).join("\n"));
-          } catch {
-            const href = (sheet as CSSStyleSheet).href;
-            if (href) {
-              linkTags.push(`<link rel="stylesheet" href="${href}">`);
-            }
+      const inlineStyles: string[] = [];
+      const linkTags: string[] = [];
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          const rules = Array.from(sheet.cssRules);
+          inlineStyles.push(rules.map(r => r.cssText).join("\n"));
+        } catch {
+          const href = (sheet as CSSStyleSheet).href;
+          if (href) {
+            linkTags.push(`<link rel="stylesheet" href="${href}">`);
           }
         }
+      }
+      inlineStyles.push("html, body { overflow: auto; } #logs-preview { height: auto; }");
 
-        const head = `<meta charset="UTF-8">\n${linkTags.join("\n")}\n<style>${inlineStyles.join("\n")}</style>`;
-        const html = `<!doctype html><html lang="en"><head>${head}</head><body><div id="main_text_output_msg_wrapper">${entries.join("\n")}</div></body></html>`;
+      const head = `<meta charset=\"UTF-8\">\n${linkTags.join("\n")}\n<style>${inlineStyles.join("\n")}</style>`;
+      const html = `<!doctype html><html lang=\"en\"><head>${head}</head><body><div id=\"logs-preview\">${entries.join("\n")}</div></body></html>`;
         const blob = new Blob([html], { type: "text/html" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

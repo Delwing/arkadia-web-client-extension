@@ -76,6 +76,10 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
+.log-time {
+  margin-right: 0.25rem;
+}
+
 #split-bottom {
   position: sticky;
   bottom: 0px;
