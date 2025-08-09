@@ -78,6 +78,8 @@ export default class CharState {
   private state: Partial<CharStateData> = {};
   private useEmoji = false;
   private mode = 0;
+  private labelElements: Record<keyof CharStateData, HTMLSpanElement> =
+    {} as any;
 
   private applyMode(mode: number) {
     if (typeof mode === "number" && mode >= 0 && mode <= 3) {
@@ -104,6 +106,49 @@ export default class CharState {
     this.update({});
   }
 
+  private initDOM() {
+    this.container = document.getElementById("char-state");
+    this.text = document.getElementById("char-state-text");
+    this.bars = document.getElementById("char-state-bars");
+
+    if (this.container) {
+      const modeAttr = this.container.getAttribute("data-footer-mode");
+      if (modeAttr) {
+        this.applyMode(parseInt(modeAttr));
+      }
+      const emojiAttr = this.container.getAttribute("data-emoji-labels");
+      if (emojiAttr) {
+        this.applyLabelMode(emojiAttr === "true" || emojiAttr === "1");
+      }
+      (Object.keys(this.config) as (keyof CharStateData)[]).forEach((key) => {
+        const attr = this.container!.getAttribute(`data-label-${key}`);
+        if (attr) this.config[key].label = attr;
+      });
+    }
+
+    if (this.text) {
+      const keys = Object.keys(this.config) as (keyof CharStateData)[];
+      keys.forEach((key, idx) => {
+        const span = document.createElement("span");
+        span.style.display = "none";
+        this.labelElements[key] = span;
+        this.text!.appendChild(span);
+        if (idx < keys.length - 1) {
+          this.text!.appendChild(document.createTextNode(" "));
+        }
+      });
+    }
+  }
+
+  private applyOverrides(
+    overrides?: Partial<Record<keyof CharStateData, Partial<CharStateConfig>>>,
+  ) {
+    if (!overrides) return;
+    (Object.keys(overrides) as (keyof CharStateData)[]).forEach((key) => {
+      this.config[key] = { ...this.config[key], ...overrides[key]! };
+    });
+  }
+
   constructor(
     client: typeof ArkadiaClient,
     overrides?: Partial<
@@ -111,32 +156,9 @@ export default class CharState {
     >,
   ) {
     this.client = client;
-    this.container = document.getElementById("char-state");
-    this.text = document.getElementById("char-state-text");
-    this.bars = document.getElementById("char-state-bars");
-
     this.config = { ...DEFAULT_CONFIG };
-
-    if (overrides) {
-      (Object.keys(overrides) as (keyof CharStateData)[]).forEach((key) => {
-        this.config[key] = { ...this.config[key], ...overrides[key]! };
-      });
-    }
-
-    if (this.container) {
-      (Object.keys(this.config) as (keyof CharStateData)[]).forEach((key) => {
-        const attr = this.container!.getAttribute(`data-label-${key}`);
-        if (attr) this.config[key].label = attr;
-      });
-      const emojiAttr = this.container.getAttribute('data-emoji-labels');
-      if (emojiAttr) {
-        this.applyLabelMode(emojiAttr === 'true' || emojiAttr === '1');
-      }
-      const modeAttr = this.container.getAttribute('data-footer-mode');
-      if (modeAttr) {
-        this.applyMode(parseInt(modeAttr));
-      }
-    }
+    this.applyOverrides(overrides);
+    this.initDOM();
 
     this.client.on('settings', (ev: any) => {
       if (typeof ev.detail?.emojiLabels === 'boolean') {
@@ -185,75 +207,100 @@ export default class CharState {
             this.state[key] !== this.config[key].default)
         );
       });
+
     if (this.mode === 3 && this.bars) {
-      this.bars.innerHTML = "";
-      entries.forEach((key) => {
-        let value = this.state[key] as number;
-        const { max, label, transform, default: def } = this.config[key];
-        let maxValue = max;
-        if (transform && typeof value === "number") {
-          ({ value, max: maxValue } = transform(value, maxValue));
-        }
-        value = Math.max(0, Math.min(maxValue, value));
-        const ratio = value / maxValue;
-        const reverse = def === 0 || this.config[key].flip === true;
-        const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
-        const colorClass = COLOR_BAR_CLASS[colorLevel];
-        const opposite =
-          def !== undefined ? (def > 0 ? 0 : maxValue) : null;
-        const highlight = opposite !== null && value === opposite;
-
-        const group = document.createElement("div");
-        group.className = "char-state-bar";
-        group.title = key;
-        const labelEl = document.createElement("span");
-        labelEl.textContent = label + ":";
-        if (highlight) labelEl.style.color = "tomato";
-        const progress = document.createElement("div");
-        progress.className = "progress position-relative";
-        const bar = document.createElement("div");
-        bar.className = `progress-bar ${colorClass}`;
-        bar.style.width = `${Math.floor(ratio * 100)}%`;
-        const valueSpan = document.createElement("span");
-        valueSpan.className = "progress-value";
-        valueSpan.textContent = `${value}/${maxValue}`;
-        valueSpan.style.color = "white";
-        progress.appendChild(bar);
-        progress.appendChild(valueSpan);
-        group.appendChild(labelEl);
-        group.appendChild(progress);
-        this.bars!.appendChild(group);
-      });
-      this.text.innerHTML = "";
-      return;
+      this.renderBars(entries);
+    } else {
+      this.renderText(entries);
     }
+  }
 
-    this.text.innerHTML = entries
-      .map((key) => {
-        let value = this.state[key] as number;
-        const { max, label, transform, default: def } = this.config[key];
-        let maxValue = max;
-        if (transform && typeof value === "number") {
-          ({ value, max: maxValue } = transform(value, maxValue));
-        }
-        value = Math.max(0, Math.min(maxValue, value));
-        const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
-        const highlight = opposite !== null && value === opposite;
-        const reverse = def === 0 || this.config[key].flip === true;
-        const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
-        const color = COLOR_TEXT[colorLevel];
-        let text = "";
-        if (this.mode === 1 || this.mode === 2) {
-          const barMax = this.mode === 2 ? 10 : maxValue;
-          const filledLen = Math.round((value / maxValue) * barMax);
-          const emptyLen = barMax - filledLen;
-          const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
-          text = `${label}: <span style="color:${color}">[${bar}]</span>`;
-        } else {
-          text = `${label}: <span style="color:${color}">[${value}/${maxValue}]</span>`;
-        }
-        return highlight ? `<span style="color:tomato">${text}</span>` : text;
-      })
-      .join(' ');
+  private renderBars(entries: (keyof CharStateData)[]) {
+    if (!this.bars) return;
+    Object.values(this.labelElements).forEach((el) => {
+      el.style.display = "none";
+      el.innerHTML = "";
+    });
+    this.bars.innerHTML = "";
+    entries.forEach((key) => {
+      let value = this.state[key] as number;
+      const { max, label, transform, default: def } = this.config[key];
+      let maxValue = max;
+      if (transform && typeof value === "number") {
+        ({ value, max: maxValue } = transform(value, maxValue));
+      }
+      value = Math.max(0, Math.min(maxValue, value));
+      const ratio = value / maxValue;
+      const reverse = def === 0 || this.config[key].flip === true;
+      const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+      const colorClass = COLOR_BAR_CLASS[colorLevel];
+      const opposite =
+        def !== undefined ? (def > 0 ? 0 : maxValue) : null;
+      const highlight = opposite !== null && value === opposite;
+
+      const group = document.createElement("div");
+      group.className = "char-state-bar";
+      group.title = key;
+      const labelEl = document.createElement("span");
+      labelEl.textContent = label + ":";
+      if (highlight) labelEl.style.color = "tomato";
+      const progress = document.createElement("div");
+      progress.className = "progress position-relative";
+      const bar = document.createElement("div");
+      bar.className = `progress-bar ${colorClass}`;
+      bar.style.width = `${Math.floor(ratio * 100)}%`;
+      const valueSpan = document.createElement("span");
+      valueSpan.className = "progress-value";
+      valueSpan.textContent = `${value}/${maxValue}`;
+      valueSpan.style.color = "white";
+      progress.appendChild(bar);
+      progress.appendChild(valueSpan);
+      group.appendChild(labelEl);
+      group.appendChild(progress);
+      this.bars!.appendChild(group);
+    });
+  }
+
+  private renderText(entries: (keyof CharStateData)[]) {
+    if (!this.text) return;
+    if (this.bars) {
+      this.bars.innerHTML = "";
+    }
+    const keys = Object.keys(this.config) as (keyof CharStateData)[];
+    keys.forEach((key) => {
+      const el = this.labelElements[key];
+      if (!el) return;
+      if (!entries.includes(key)) {
+        el.style.display = "none";
+        el.innerHTML = "";
+        return;
+      }
+      let value = this.state[key] as number;
+      const { max, label, transform, default: def } = this.config[key];
+      let maxValue = max;
+      if (transform && typeof value === "number") {
+        ({ value, max: maxValue } = transform(value, maxValue));
+      }
+      value = Math.max(0, Math.min(maxValue, value));
+      const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
+      const highlight = opposite !== null && value === opposite;
+      const reverse = def === 0 || this.config[key].flip === true;
+      const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+      const color = COLOR_TEXT[colorLevel];
+      let text = "";
+      if (this.mode === 1 || this.mode === 2) {
+        const barMax = this.mode === 2 ? 10 : maxValue;
+        const filledLen = Math.round((value / maxValue) * barMax);
+        const emptyLen = barMax - filledLen;
+        const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
+        text = `${label}: <span style="color:${color}">[${bar}]</span>`;
+      } else {
+        text = `${label}: <span style="color:${color}">[${value}/${maxValue}]</span>`;
+      }
+      el.innerHTML = highlight
+        ? `<span style="color:tomato">${text}</span>`
+        : text;
+      el.style.display = "";
+    });
   }
 }
