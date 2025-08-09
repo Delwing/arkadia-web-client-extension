@@ -53,23 +53,26 @@ function initLogBrowser() {
     req.onsuccess = () => {
       const logs = req.result as LogEntry[];
       for (const entry of logs) {
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("output_msg");
-        if (entry.type) {
-          wrapper.classList.add(entry.type);
-        }
-        const msg = document.createElement("div");
-        msg.classList.add("output_msg_text");
-        msg.style.whiteSpace = "pre-wrap";
+        const lines = entry.text.split(/\r?\n/);
         const time = new Date(entry.timestamp).toLocaleTimeString();
-        const timeSpan = document.createElement("span");
-        timeSpan.textContent = `[${time}] `;
-        const contentSpan = document.createElement("span");
-        contentSpan.innerHTML = entry.text;
-        msg.appendChild(timeSpan);
-        msg.appendChild(contentSpan);
-        wrapper.appendChild(msg);
-        preview.appendChild(wrapper);
+        for (const line of lines) {
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("output_msg");
+          if (entry.type) {
+            wrapper.classList.add(entry.type);
+          }
+          const msg = document.createElement("div");
+          msg.classList.add("output_msg_text");
+          msg.style.whiteSpace = "pre-wrap";
+          const timeSpan = document.createElement("span");
+          timeSpan.textContent = `[${time}] `;
+          const contentSpan = document.createElement("span");
+          contentSpan.innerHTML = line;
+          msg.appendChild(timeSpan);
+          msg.appendChild(contentSpan);
+          wrapper.appendChild(msg);
+          preview.appendChild(wrapper);
+        }
       }
       preview.scrollTop = preview.scrollHeight;
     };
@@ -87,9 +90,15 @@ function initLogBrowser() {
     const req = tx.objectStore(select.value).getAll();
     req.onsuccess = () => {
       const logs = req.result as LogEntry[];
-      const content = logs
-        .map((l) => `${new Date(l.timestamp).toISOString()} ${l.text}`)
-        .join("\n");
+      const lines: string[] = [];
+      for (const l of logs) {
+        const time = new Date(l.timestamp).toISOString();
+        const parts = l.text.split(/\r?\n/);
+        for (const part of parts) {
+          lines.push(`${time} ${part}`);
+        }
+      }
+      const content = lines.join("\n");
       const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
