@@ -1,8 +1,4 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
-
 export default class TelnetOptionNegotiation {
-
-    client: typeof ArkadiaClient;
 
     IAC = String.fromCharCode(255);
     WILL = String.fromCharCode(251);
@@ -18,12 +14,10 @@ export default class TelnetOptionNegotiation {
         opt_mccp: false
     }
 
-    constructor(client: typeof ArkadiaClient) {
-        this.client = client;
-    }
+    constructor(private sendRaw: (data: string) => void) {}
 
     send(data: string) {
-        this.client.sendRaw(btoa(data));
+        this.sendRaw(btoa(data));
     }
 
     handleWillOption(option) {
