@@ -1,6 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
-import ArkadiaClient from "./ArkadiaClient.ts";
+import arkadiaClient from "./ArkadiaClient.ts";
 import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -12,6 +12,7 @@ import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
 import ReleaseGuard from "./ReleaseGuard";
 import FightTitle from "./FightTitle";
+import initSessionLogger from "./sessionLogger";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -19,8 +20,6 @@ import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
 import "./embed.ts"
-const arkadiaClient = ArkadiaClient
-
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import Binds from "./options/Binds.tsx"
@@ -34,6 +33,8 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
 import "./triggerTester"
+
+initSessionLogger(arkadiaClient);
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
