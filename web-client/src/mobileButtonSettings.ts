@@ -124,6 +124,18 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
     const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
     if (container) {
         container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
+
+        // Preserve current button size
+        const ref = container.querySelector('.mobile-button') as HTMLButtonElement | null;
+        let sizeRatio = 1;
+        if (ref) {
+            const styles = window.getComputedStyle(ref);
+            const width = parseFloat(styles.width);
+            if (!Number.isNaN(width) && width > 0) {
+                sizeRatio = width / 36;
+            }
+        }
+
         const z = document.getElementById('z-buttons-list');
         const zas = document.getElementById('zas-buttons-list');
         const prze = document.getElementById('prze-buttons-list');
@@ -154,6 +166,22 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
                 btn.classList.add('empty');
             }
             container.insertBefore(btn, insertBefore);
+        });
+
+        // Apply preserved size to new buttons
+        const buttons = container.querySelectorAll<HTMLButtonElement>('.mobile-button');
+        buttons.forEach(btn => {
+            const baseSize = 36;
+            const baseFont = btn.classList.contains('mobile-button-text') ? 9 : 14;
+            btn.style.width = baseSize * sizeRatio + 'px';
+            btn.style.height = baseSize * sizeRatio + 'px';
+            btn.style.fontSize = baseFont * sizeRatio + 'px';
+        });
+
+        const lists = document.querySelectorAll<HTMLDivElement>('.mobile-z-buttons, .mobile-idz-buttons');
+        lists.forEach(div => {
+            const baseRow = 36;
+            div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
     if ((window as any).clientExtension?.eventTarget) {
