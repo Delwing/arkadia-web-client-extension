@@ -16,6 +16,23 @@ function initLogBrowser() {
 
   let db: IDBDatabase | null = null;
 
+  function formatTime(ts: number): string {
+    const d = new Date(ts);
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    const s = String(d.getSeconds()).padStart(2, "0");
+    const ms = String(d.getMilliseconds()).padStart(3, "0");
+    return `${h}:${m}:${s}.${ms}`;
+  }
+
+  function formatDateTime(ts: number): string {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da} ${formatTime(ts)}`;
+  }
+
   const modal = new Modal(modalEl);
 
   function openDb(): Promise<IDBDatabase> {
@@ -62,12 +79,7 @@ function initLogBrowser() {
       const logs = req.result as LogEntry[];
       for (const entry of logs) {
         const lines = entry.text.split(/\r?\n/);
-        const time = new Date(entry.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        });
+        const time = formatTime(entry.timestamp);
         for (const line of lines) {
           const wrapper = document.createElement("div");
           wrapper.classList.add("output_msg");
@@ -109,7 +121,7 @@ function initLogBrowser() {
       const logs = req.result as LogEntry[];
       const entries: string[] = [];
       for (const l of logs) {
-        const time = new Date(l.timestamp).toLocaleString([], { hour12: false });
+        const time = formatDateTime(l.timestamp);
         const parts = l.text.split(/\r?\n/);
         for (const part of parts) {
           const classes = ["output_msg"];

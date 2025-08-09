@@ -76,8 +76,14 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
-.log-time {
-  margin-right: 0.25rem;
+#logs-preview .output_msg_text {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.25rem;
+}
+
+#logs-preview .log-time {
+  color: darkorange;
 }
 
 #split-bottom {
