@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import storage from "@client/src/storage";
 
 interface LogEntry {
   text: string;
@@ -15,7 +16,16 @@ function initLogBrowser(): boolean {
   const select = document.getElementById("logs-session-select") as HTMLSelectElement | null;
   const preview = document.getElementById("logs-preview") as HTMLElement | null;
   const download = document.getElementById("logs-download") as HTMLButtonElement | null;
-  if (!button || !modalEl || !select || !preview || !download) return false;
+  const enabled = document.getElementById("logs-enabled") as HTMLInputElement | null;
+  if (!button || !modalEl || !select || !preview || !download || !enabled) return false;
+
+  storage.getItem("loggingEnabled").then(res => {
+    enabled.checked = res?.loggingEnabled !== false;
+  });
+
+  enabled.addEventListener("change", () => {
+    storage.setItem("loggingEnabled", enabled.checked);
+  });
 
   let db: IDBDatabase | null = null;
 

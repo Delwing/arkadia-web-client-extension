@@ -1,6 +1,20 @@
+import storage, { getItemSync } from "@client/src/storage";
+
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?\}|\{clickClose\}/g;
+
+let loggingEnabled = true;
+const saved = getItemSync("loggingEnabled");
+if (saved && typeof saved.loggingEnabled === "boolean") {
+  loggingEnabled = saved.loggingEnabled;
+}
+
+storage.onChanged?.addListener(changes => {
+  if (changes.loggingEnabled) {
+    loggingEnabled = !!changes.loggingEnabled.newValue;
+  }
+});
 
 const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
   // First open the database to determine the current version
@@ -43,6 +57,7 @@ function save(text: string, type?: string) {
 
 export default function initSessionLogger(client: any) {
   client.on('message', (text?: string, type?: string) => {
+    if (!loggingEnabled) return;
     if (text) {
       if (text === "\n") {
         text = "";
