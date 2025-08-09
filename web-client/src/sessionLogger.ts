@@ -1,11 +1,24 @@
+import storage, { getItemSync } from "@client/src/storage";
+
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?\}|\{clickClose\}/g;
 
+let loggingEnabled = true;
+const saved = getItemSync("loggingEnabled");
+if (saved && typeof saved.loggingEnabled === "boolean") {
+  loggingEnabled = saved.loggingEnabled;
+}
+
+storage.onChanged?.addListener(changes => {
+  if (changes.loggingEnabled) {
+    loggingEnabled = !!changes.loggingEnabled.newValue;
+  }
+});
+
 async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('ArkadiaMessagesDB');
-
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(storeName)) {
@@ -60,6 +73,7 @@ export default async function initSessionLogger(client: Client) {
   }
 
   client.on('message', (text?: string, type?: string) => {
+    if (!loggingEnabled) return;
     if (text) {
       if (text === "\n") {
         text = "";

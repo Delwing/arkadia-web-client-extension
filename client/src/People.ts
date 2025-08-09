@@ -26,18 +26,14 @@ export default class People {
         const RED = findClosestColor('#ff0000')
         const addedNames = new Set<string>()
         people.forEach(replacement => {
-            const inGuild = this.guildFilter.includes(replacement.guild)
-            const isEnemy = this.enemyGuilds.includes(replacement.guild)
-            const guildColorHex = this.guildColors[replacement.guild]
-            const guildColor = guildColorHex ? findClosestColor(guildColorHex) : undefined
-            if (!inGuild && !isEnemy) {
+            const state = this.shouldHighlight(replacement)
+            if (!state) {
                 return
             }
 
             const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
                 const index = matches.index || 0
                 const token = matches[0]
-                const prefix = rawLine.substring(0, index)
                 const suffix = rawLine.substring(index + token.length)
                 const nextWord = stripAnsiCodes(suffix)
                     .toLowerCase()
@@ -45,43 +41,61 @@ export default class People {
                 if (nextWord.startsWith('chaosu')) {
                     return rawLine
                 }
-                let highlighted = token
-                if (isEnemy) {
-                    highlighted = color(RED) + token + RESET
-                } else if (inGuild && guildColor !== undefined) {
-                    // only color names, description remains uncolored
-                    highlighted = token
-                }
-
-                let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
-                if (isEnemy) {
-                    suffixText = ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
-                } else if (inGuild && guildColor !== undefined) {
-                    suffixText = ' ' + color(guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
-                }
-
-                return prefix + highlighted + suffixText + suffix
+                return this.buildDescHighlight(rawLine, token, index, replacement, state, RED)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
 
-            if (isEnemy || (inGuild && guildColor !== undefined)) {
+            if (state.isEnemy || (state.inGuild && state.guildColor !== undefined)) {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
+                    const chosenColor = state.isEnemy ? RED : state.guildColor!
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
                         const index = matches.index || 0
                         const token = matches[0]
-                        const prefix = rawLine.substring(0, index)
-                        const suffix = rawLine.substring(index + token.length)
-                        const chosenColor = isEnemy ? RED : guildColor!
-                        const highlighted = color(chosenColor) + token + RESET
-                        return prefix + highlighted + suffix
+                        return this.buildNameHighlight(rawLine, token, index, chosenColor)
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
                 }
             }
         })
+    }
+
+    private shouldHighlight(replacement: { guild: string }) {
+        const inGuild = this.guildFilter.includes(replacement.guild)
+        const isEnemy = this.enemyGuilds.includes(replacement.guild)
+        const guildColorHex = this.guildColors[replacement.guild]
+        const guildColor = guildColorHex ? findClosestColor(guildColorHex) : undefined
+        if (!inGuild && !isEnemy) {
+            return undefined
+        }
+        return { inGuild, isEnemy, guildColor }
+    }
+
+    private buildNameHighlight(rawLine: string, token: string, index: number, colorCode: number) {
+        const prefix = rawLine.substring(0, index)
+        const suffix = rawLine.substring(index + token.length)
+        const highlighted = color(colorCode) + token + RESET
+        return prefix + highlighted + suffix
+    }
+
+    private buildDescHighlight(rawLine: string, token: string, index: number, replacement: { name: string; guild: string }, state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }, RED: number) {
+        const prefix = rawLine.substring(0, index)
+        const suffix = rawLine.substring(index + token.length)
+        let highlighted = token
+        if (state.isEnemy) {
+            highlighted = color(RED) + token + RESET
+        }
+
+        let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
+        if (state.isEnemy) {
+            suffixText = ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
+        } else if (state.inGuild && state.guildColor !== undefined) {
+            suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
+        }
+
+        return prefix + highlighted + suffixText + suffix
     }
 
 }
