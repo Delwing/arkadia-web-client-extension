@@ -101,20 +101,36 @@ function initLogBrowser() {
     const req = tx.objectStore(select.value).getAll();
     req.onsuccess = () => {
       const logs = req.result as LogEntry[];
-      const lines: string[] = [];
+      const entries: string[] = [];
       for (const l of logs) {
-        const time = new Date(l.timestamp).toISOString();
+        const time = new Date(l.timestamp).toLocaleString();
         const parts = l.text.split(/\r?\n/);
         for (const part of parts) {
-          lines.push(`${time} ${part}`);
+          const classes = ["output_msg"];
+          if (l.type) {
+            classes.push(l.type);
+          }
+          const lineHtml = `<div class="${classes.join(" ")}"><div class="output_msg_text"><span>[${time}] </span><span>${part}</span></div></div>`;
+          entries.push(lineHtml);
         }
       }
-      const content = lines.join("\n");
-      const blob = new Blob([content], { type: "text/plain" });
+      const styleTags = Array.from(document.querySelectorAll("style"))
+        .map(s => s.outerHTML)
+        .join("\n");
+      const linkTags = Array.from(
+        document.querySelectorAll('link[rel="stylesheet"]')
+      )
+        .map(l => l.outerHTML)
+        .join("\n");
+      const head = `<meta charset="UTF-8">\n${linkTags}\n${styleTags}`;
+      const html = `<!doctype html><html lang="en"><head>${head}</head><body>${entries.join(
+        "\n"
+      )}</body></html>`;
+      const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${select.value}.txt`;
+      a.download = `${select.value}.html`;
       a.click();
       URL.revokeObjectURL(url);
     };
