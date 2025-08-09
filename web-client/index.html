@@ -218,6 +218,9 @@
                     <button class="w-100 p-1" id="docs-button">Dokumentacja</button>
                 </li>
                 <li>
+                    <button class="w-100 p-1" id="logs-button">Logi</button>
+                </li>
+                <li>
                     <button class="w-100 p-1" id="debug-button">Debugowanie</button>
                 </li>
                 <li>
@@ -369,6 +372,24 @@
         </div>
     </div>
 
+    <div id="logs-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Logi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex flex-column gap-2">
+                    <div class="d-flex gap-2">
+                        <select id="logs-session-select" class="form-select"></select>
+                        <button id="logs-download" class="btn btn-secondary">Pobierz</button>
+                    </div>
+                    <div id="logs-preview" class="border"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="mobile-direction-buttons" class="mobile-direction-buttons">
         <button class="mobile-button mobile-button-text top-button" id="z-list-toggle">/z</button>
         <button class="mobile-button mobile-button-text top-button" id="zas-list-toggle">/za</button>
@@ -402,5 +423,6 @@
 <script type="module" src="/src/main.ts"></script>
 <script type="module" src="/src/docs.ts"></script>
 <script type="module" src="/src/debug.ts"></script>
+<script type="module" src="/src/logBrowser.ts"></script>
 </body>
 </html>
