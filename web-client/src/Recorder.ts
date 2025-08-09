@@ -17,15 +17,8 @@ export default class Recorder {
     private pausedDelay = 0;
     private isPlaying = false;
     private paused = false;
-    private hooks: RecorderHooks;
 
-    constructor(hooks: RecorderHooks) {
-        this.hooks = hooks;
-    }
-
-    setHooks(hooks: RecorderHooks) {
-        this.hooks = hooks;
-    }
+    constructor(private hooks: RecorderHooks) {}
 
     handleIncoming(message: string) {
         if (this.isRecording) {
