@@ -1,6 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
-import ArkadiaClient from "./ArkadiaClient.ts";
+import arkadiaClient from "./ArkadiaClient.ts";
 import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -34,7 +34,6 @@ import MobileButtons from "./options/MobileButtons.tsx"
 import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
 import "./triggerTester"
 
-const arkadiaClient = new ArkadiaClient();
 initSessionLogger(arkadiaClient);
 
 const client = new Client(arkadiaClient, new MockPort())

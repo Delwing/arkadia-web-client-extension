@@ -1,7 +1,7 @@
-const storeName = `session_${Date.now()}`;
+const sessionId = Date.now();
+const storeName = `session_${sessionId}`;
 const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
-  const version = Date.now();
-  const request = indexedDB.open('ArkadiaMessagesDB', version);
+  const request = indexedDB.open('ArkadiaMessagesDB', sessionId);
   request.onupgradeneeded = () => {
     request.result.createObjectStore(storeName, { autoIncrement: true });
   };

@@ -50,7 +50,12 @@ function initLogBrowser() {
       for (const entry of logs) {
         const line = document.createElement("div");
         const time = new Date(entry.timestamp).toLocaleTimeString();
-        line.textContent = `[${time}] ${entry.text}`;
+        const timeSpan = document.createElement("span");
+        timeSpan.textContent = `[${time}] `;
+        const contentSpan = document.createElement("span");
+        contentSpan.innerHTML = entry.text;
+        line.appendChild(timeSpan);
+        line.appendChild(contentSpan);
         preview.appendChild(line);
       }
       preview.scrollTop = preview.scrollHeight;
