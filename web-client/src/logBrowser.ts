@@ -110,31 +110,35 @@ function initLogBrowser() {
           if (l.type) {
             classes.push(l.type);
           }
-          const lineHtml = `<div class="${classes.join(" ")}"><div class="output_msg_text"><span>[${time}] </span><span>${part}</span></div></div>`;
+            const lineHtml = `<div class="${classes.join(" ")}"><div class="output_msg_text" style="white-space:pre-wrap"><span>[${time}] </span><span>${part}</span></div></div>`;
           entries.push(lineHtml);
         }
       }
-      const styleTags = Array.from(document.querySelectorAll("style"))
-        .map(s => s.outerHTML)
-        .join("\n");
-      const linkTags = Array.from(
-        document.querySelectorAll('link[rel="stylesheet"]')
-      )
-        .map(l => l.outerHTML)
-        .join("\n");
-      const head = `<meta charset="UTF-8">\n${linkTags}\n${styleTags}`;
-      const html = `<!doctype html><html lang="en"><head>${head}</head><body>${entries.join(
-        "\n"
-      )}</body></html>`;
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${select.value}.html`;
-      a.click();
-      URL.revokeObjectURL(url);
-    };
-  });
+        const inlineStyles: string[] = [];
+        const linkTags: string[] = [];
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            const rules = Array.from(sheet.cssRules);
+            inlineStyles.push(rules.map(r => r.cssText).join("\n"));
+          } catch {
+            const href = (sheet as CSSStyleSheet).href;
+            if (href) {
+              linkTags.push(`<link rel="stylesheet" href="${href}">`);
+            }
+          }
+        }
+
+        const head = `<meta charset="UTF-8">\n${linkTags.join("\n")}\n<style>${inlineStyles.join("\n")}</style>`;
+        const html = `<!doctype html><html lang="en"><head>${head}</head><body><div id="main_text_output_msg_wrapper">${entries.join("\n")}</div></body></html>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${select.value}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+    });
 
   button.addEventListener("click", async () => {
     await refreshSessions();
