@@ -64,7 +64,7 @@ export default class ProtocolHandler {
                 this.receivedFirstGmcp = this.receivedFirstGmcp || type === "char.info";
                 if (type === "gmcp_msgs") {
                     let text = atob(gmcp.text);
-                    text = text.replace(/g/g, "\u001B");
+                    text = text.replace(//g, "\\u001B");
                     this.messageBuffer.push({ text, type: gmcp.type });
                 } else {
                     this.emit(`gmcp.${type}`, gmcp);
