@@ -195,4 +195,8 @@ function initLogBrowser() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", initLogBrowser);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initLogBrowser);
+} else {
+  initLogBrowser();
+}
