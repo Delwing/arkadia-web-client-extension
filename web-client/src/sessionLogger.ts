@@ -2,52 +2,69 @@ const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?\}|\{clickClose\}/g;
 
-const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
-  // First open the database to determine the current version
-  const initialRequest = indexedDB.open('ArkadiaMessagesDB');
+async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ArkadiaMessagesDB');
 
-  initialRequest.onsuccess = () => {
-    const db = initialRequest.result;
-
-    // If the store for this session already exists resolve immediately
-    if (db.objectStoreNames.contains(storeName)) {
-      resolve(db);
-      return;
-    }
-
-    // Otherwise upgrade the database to create a store for this session
-    const newVersion = db.version + 1;
-    db.close();
-    const upgradeRequest = indexedDB.open('ArkadiaMessagesDB', newVersion);
-    upgradeRequest.onupgradeneeded = () => {
-      upgradeRequest.result.createObjectStore(storeName, { autoIncrement: true });
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { autoIncrement: true });
+      }
     };
-    upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
-    upgradeRequest.onerror = () => reject(upgradeRequest.error);
-  };
 
-  // When the database does not yet exist this event will fire
-  initialRequest.onupgradeneeded = () => {
-    initialRequest.result.createObjectStore(storeName, { autoIncrement: true });
-  };
+    request.onsuccess = () => {
+      const db = request.result;
+      if (db.objectStoreNames.contains(storeName)) {
+        resolve(db);
+      } else {
+        const newVersion = db.version + 1;
+        db.close();
+        const upgradeRequest = indexedDB.open('ArkadiaMessagesDB', newVersion);
+        upgradeRequest.onupgradeneeded = () => {
+          upgradeRequest.result.createObjectStore(storeName, { autoIncrement: true });
+        };
+        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
+        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+      }
+    };
 
-  initialRequest.onerror = () => reject(initialRequest.error);
-});
-
-function save(text: string, type?: string) {
-  dbPromise.then(db => {
-    const tx = db.transaction(storeName, 'readwrite');
-    tx.objectStore(storeName).add({ text, type, timestamp: Date.now() });
-  }).catch(err => console.error('Failed to log message', err));
+    request.onerror = () => reject(request.error);
+  });
 }
 
-export default function initSessionLogger(client: any) {
+async function save(db: IDBDatabase, text: string, type?: string) {
+  try {
+    const tx = db.transaction(storeName, 'readwrite');
+    await new Promise<void>((resolve, reject) => {
+      const req = tx.objectStore(storeName).add({ text, type, timestamp: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    console.error('Failed to log message', err);
+  }
+}
+
+interface Client {
+  on(event: string, handler: (text?: string, type?: string) => void): void;
+}
+
+export default async function initSessionLogger(client: Client) {
+  let db: IDBDatabase;
+  try {
+    db = await openOrCreateStore(storeName);
+  } catch (err) {
+    console.error('Failed to open log database', err);
+    return;
+  }
+
   client.on('message', (text?: string, type?: string) => {
     if (text) {
       if (text === "\n") {
         text = "";
       }
-      save(text.replace(CLICK_TAG_REG, ''), type);
+      void save(db, text.replace(CLICK_TAG_REG, ''), type);
     }
   });
 }

@@ -34,7 +34,7 @@ import MobileButtons from "./options/MobileButtons.tsx"
 import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
 import "./triggerTester"
 
-initSessionLogger(arkadiaClient);
+initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
