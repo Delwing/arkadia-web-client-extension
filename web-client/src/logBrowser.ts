@@ -26,7 +26,11 @@ function initLogBrowser() {
   function refreshSessions() {
     if (!db) return;
     select.innerHTML = "";
-    const names = Array.from(db.objectStoreNames);
+    const names: string[] = [];
+    for (let i = 0; i < db.objectStoreNames.length; i++) {
+      const name = db.objectStoreNames.item(i);
+      if (name) names.push(name);
+    }
     names.sort();
     for (const name of names) {
       const option = document.createElement("option");
@@ -35,7 +39,8 @@ function initLogBrowser() {
       option.textContent = isNaN(ts) ? name : new Date(ts).toLocaleString();
       select.appendChild(option);
     }
-    if (select.value) {
+    if (names.length > 0) {
+      select.value = names[names.length - 1];
       loadPreview(select.value);
     }
   }
@@ -48,15 +53,23 @@ function initLogBrowser() {
     req.onsuccess = () => {
       const logs = req.result as LogEntry[];
       for (const entry of logs) {
-        const line = document.createElement("div");
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("output_msg");
+        if (entry.type) {
+          wrapper.classList.add(entry.type);
+        }
+        const msg = document.createElement("div");
+        msg.classList.add("output_msg_text");
+        msg.style.whiteSpace = "pre-wrap";
         const time = new Date(entry.timestamp).toLocaleTimeString();
         const timeSpan = document.createElement("span");
         timeSpan.textContent = `[${time}] `;
         const contentSpan = document.createElement("span");
         contentSpan.innerHTML = entry.text;
-        line.appendChild(timeSpan);
-        line.appendChild(contentSpan);
-        preview.appendChild(line);
+        msg.appendChild(timeSpan);
+        msg.appendChild(contentSpan);
+        wrapper.appendChild(msg);
+        preview.appendChild(wrapper);
       }
       preview.scrollTop = preview.scrollHeight;
     };
