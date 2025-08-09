@@ -382,7 +382,7 @@ export default class Client {
         }
         // @ts-ignore
         const text = Text.parse_patterns(printable)
-        this.buffer.push({out: text})
+        this.buffer.push({out: text, type: 'print'})
         if (!this.inLineProcess) {
             this.sendEvent('output-sent', 1)
         }

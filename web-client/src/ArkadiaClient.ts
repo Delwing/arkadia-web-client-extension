@@ -248,6 +248,12 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     output(text?: string, type?: string) {
+        if (typeof text === 'string') {
+            const timestamp = Date.now();
+            text.split(/\r?\n/).forEach(line => {
+                HtmlLogger.logLine(line, type, timestamp);
+            });
+        }
         this.emit('message', text, type)
     }
 

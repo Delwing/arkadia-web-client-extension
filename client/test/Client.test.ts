@@ -186,7 +186,7 @@ test('onLine sends printed messages after line and restores Output.send', () => 
   client.sendEvent('output-sent');
 
   expect(originalOutputSend).toHaveBeenNthCalledWith(1, expected);
-  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', undefined);
+  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', 'print');
 });
 
 test('onLine replaces reset sequences with preceding ANSI code', () => {
