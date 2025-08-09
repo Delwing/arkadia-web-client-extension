@@ -15,16 +15,22 @@ function initLogBrowser() {
   if (!button || !modalEl || !select || !preview || !download) return;
 
   let db: IDBDatabase | null = null;
-  const openRequest = indexedDB.open("ArkadiaMessagesDB");
-  openRequest.onsuccess = () => {
-    db = openRequest.result;
-    refreshSessions();
-  };
 
   const modal = new Modal(modalEl);
 
-  function refreshSessions() {
-    if (!db) return;
+  function openDb(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("ArkadiaMessagesDB");
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function refreshSessions() {
+    db?.close();
+    db = await openDb();
     select.innerHTML = "";
     const names: string[] = [];
     for (let i = 0; i < db.objectStoreNames.length; i++) {
@@ -42,6 +48,8 @@ function initLogBrowser() {
     if (names.length > 0) {
       select.value = names[names.length - 1];
       loadPreview(select.value);
+    } else {
+      preview.innerHTML = "";
     }
   }
 
@@ -84,8 +92,11 @@ function initLogBrowser() {
     }
   });
 
-  download.addEventListener("click", () => {
-    if (!db || !select.value) return;
+  download.addEventListener("click", async () => {
+    if (!select.value) return;
+    if (!db) {
+      db = await openDb();
+    }
     const tx = db.transaction(select.value, "readonly");
     const req = tx.objectStore(select.value).getAll();
     req.onsuccess = () => {
@@ -109,11 +120,8 @@ function initLogBrowser() {
     };
   });
 
-  button.addEventListener("click", () => {
-    refreshSessions();
-    if (select.value) {
-      loadPreview(select.value);
-    }
+  button.addEventListener("click", async () => {
+    await refreshSessions();
     modal.show();
   });
 }
