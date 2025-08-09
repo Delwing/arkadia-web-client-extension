@@ -259,7 +259,7 @@ class ArkadiaClient implements ClientAdapter {
     private processIncomingData(data: string) {
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
-        if (sanitized.length >= 0) {
+        if (sanitized.length > 0) {
             this.emit('message', sanitized)
         }
         this.flushMessageBuffer()

@@ -43,6 +43,9 @@ function save(text: string, type?: string) {
 export default function initSessionLogger(client: any) {
   client.on('message', (text?: string, type?: string) => {
     if (text) {
+      if (text === "\n") {
+        text = "";
+      }
       save(text, type);
     }
   });
