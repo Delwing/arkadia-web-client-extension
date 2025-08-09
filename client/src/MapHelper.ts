@@ -1,48 +1,13 @@
 import {MapReader} from "mudlet-map-renderer";
 import Client from "./Client";
 import { getItemSync, setItemSync } from "./storage";
+import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
 
 const STORAGE_KEY = 'mapperRoomId';
 
-export const polishToEnglish = {
-    ["polnoc"]: "north",
-    ["poludnie"]: "south",
-    ["wschod"]: "east",
-    ["zachod"]: "west",
-    ["polnocny-wschod"]: "northeast",
-    ["polnocny-zachod"]: "northwest",
-    ["poludniowy-wschod"]: "southeast",
-    ["poludniowy-zachod"]: "southwest",
-    ["dol"]: "down",
-    ["gora"]: "up",
-    ["gore"]: "up"
-};
-export const longToShort = {
-    north: "n",
-    south: "s",
-    east: "e",
-    west: "w",
-    northeast: "ne",
-    northwest: "nw",
-    southeast: "se",
-    southwest: "sw",
-    up: "u",
-    down: "d"
-};
+export { longToShort };
 
-const exits = {
-    "e": "east",
-    "w": "west",
-    "n": "north",
-    "s": "south",
-    "sw": "southwest",
-    "se": "southeast",
-    "nw": "northwest",
-    "ne": "northeast",
-    "u": "up",
-    "d": "down"
-};
 
 const directionDeltas = {
     north: {x: 0, y: 1, z: 0},
@@ -56,14 +21,6 @@ const directionDeltas = {
     up: {x: 0, y: 0, z: 1},
     down: {x: 0, y: 0, z: -1}
 };
-
-function getLongDir(dir: string): string {
-    return polishToEnglish[dir] ?? exits[dir] ?? dir;
-}
-
-function getShortDir(dir: string): string {
-    return longToShort[dir] ?? dir;
-}
 
 export default class MapHelper {
 
