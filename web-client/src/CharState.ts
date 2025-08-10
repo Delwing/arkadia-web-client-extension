@@ -1,5 +1,4 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import { gmcp } from "@client/src/gmcp";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
 
 export interface CharStateData {
@@ -76,6 +75,7 @@ export default class CharState {
   private bars: HTMLElement | null;
   private config: Record<keyof CharStateData, CharStateConfig>;
   private state: Partial<CharStateData> = {};
+  private options: { form?: number } = {};
   private useEmoji = false;
   private mode = 0;
   private labelElements: Record<keyof CharStateData, HTMLSpanElement> =
@@ -185,6 +185,11 @@ export default class CharState {
       "gmcp.char.state",
       (state: Partial<CharStateData>) => this.update(state),
     );
+
+    this.client.on('gmcp.char.options', (options: any) => {
+      this.options = { ...this.options, ...options };
+      this.update({});
+    });
   }
 
   private update(partialState: Partial<CharStateData>) {
@@ -197,7 +202,7 @@ export default class CharState {
         if (
           key === 'form' &&
           this.state[key] === 0 &&
-          gmcp.char?.options?.form === 0
+          this.options.form === 0
         ) {
           return false;
         }

@@ -25,4 +25,13 @@ describe('CharState', () => {
     expect(valueSpan).not.toBeNull();
     expect(valueSpan.style.color).toBe('white');
   });
+
+  test('form is hidden when gmcp option disables form', () => {
+    client.emit('gmcp.char.state', { form: 0 });
+    let formBar = document.querySelector('#char-state-bars .char-state-bar[title="form"]');
+    expect(formBar).not.toBeNull();
+    client.emit('gmcp.char.options', { form: 0 });
+    formBar = document.querySelector('#char-state-bars .char-state-bar[title="form"]');
+    expect(formBar).toBeNull();
+  });
 });
