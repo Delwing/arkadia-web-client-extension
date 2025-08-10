@@ -550,6 +550,7 @@ button:focus-visible {
   touch-action: none; /* Prevent scrolling when interacting with the buttons */
   user-select: none; /* Prevent text selection */
   -webkit-user-select: none;
+  -webkit-touch-callout: none; /* Disable long-press menu on iOS */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow by default */
   display: grid;
   grid-template-columns: repeat(4, auto);

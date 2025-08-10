@@ -288,6 +288,9 @@ export default class MobileDirectionButtons {
     private setupDraggable() {
         if (!this.container || !this.contentArea) return;
 
+        // Prevent native context menu on long press which breaks dragging
+        this.container.addEventListener('contextmenu', (e) => e.preventDefault());
+
         // Set initial position from storage if available
         const savedData = getItemSync('mobileButtonsPosition');
         const savedPosition = savedData?.mobileButtonsPosition;
