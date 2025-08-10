@@ -44,13 +44,18 @@ export default class ObjectManager {
         }
     }
 
+    private getOrCreateData(num: string): ObjectData {
+        if (!this.data[num]) {
+            this.data[num] = {};
+        }
+        return this.data[num];
+    }
+
     private handleData(detail: Record<string, ObjectData>) {
         if (detail && typeof detail === 'object') {
             Object.keys(detail).forEach(num => {
-                if (!this.data[num]) {
-                    this.data[num] = {};
-                }
-                Object.assign(this.data[num], detail[num]);
+                const data = this.getOrCreateData(num);
+                Object.assign(data, detail[num]);
             });
         }
     }
@@ -58,22 +63,18 @@ export default class ObjectManager {
     private handleCharInfo(detail: any) {
         if (detail && typeof detail.object_num !== 'undefined') {
             this.playerNum = String(detail.object_num);
-            if (!this.data[this.playerNum]) {
-                this.data[this.playerNum] = {};
-            }
+            const data = this.getOrCreateData(this.playerNum);
             if (detail.name) {
-                this.data[this.playerNum].desc = toTitleCase(detail.name);
+                data.desc = toTitleCase(detail.name);
             }
         }
     }
 
     private handleCharState(detail: any) {
         if (this.playerNum && detail && typeof detail.hp !== 'undefined') {
-            if (!this.data[this.playerNum]) {
-                this.data[this.playerNum] = {};
-            }
-            this.data[this.playerNum].hp = detail.hp;
-            this.data[this.playerNum].state = detail.hp;
+            const data = this.getOrCreateData(this.playerNum);
+            data.hp = detail.hp;
+            data.state = detail.hp;
         }
     }
 
