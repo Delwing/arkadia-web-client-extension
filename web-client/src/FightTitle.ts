@@ -2,6 +2,7 @@ import ArkadiaClient from "./ArkadiaClient.ts";
 
 export default class FightTitle {
   private baseTitle: string;
+  private readonly originalTitle: string;
   private client: typeof ArkadiaClient;
   private playerNum?: string;
   private isFighting = false;
@@ -12,6 +13,7 @@ export default class FightTitle {
   constructor(client: typeof ArkadiaClient) {
     this.client = client;
     this.baseTitle = document.title;
+    this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
     client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
     client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
@@ -53,6 +55,15 @@ export default class FightTitle {
     }
     const prefix = this.isFighting ? this.fightPrefix : this.idlePrefix;
     document.title = `${prefix}${this.baseTitle}`;
+  }
+
+  setBaseTitle(title: string) {
+    this.baseTitle = title;
+    this.updateTitle(this.isFighting, true);
+  }
+
+  getOriginalTitle() {
+    return this.originalTitle;
   }
 }
 

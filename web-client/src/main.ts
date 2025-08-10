@@ -12,6 +12,7 @@ import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
 import ReleaseGuard from "./ReleaseGuard";
 import FightTitle from "./FightTitle";
+import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 
 import "@client/src/main.ts"
@@ -865,7 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
     new PackageStatus(arkadiaClient);
-    new FightTitle(arkadiaClient);
+    const fightTitle = new FightTitle(arkadiaClient);
+    new HpTitle(arkadiaClient, fightTitle);
     new ObjectList(client);
 
     // Initialize mobile direction buttons
