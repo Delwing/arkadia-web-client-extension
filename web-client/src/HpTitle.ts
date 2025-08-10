@@ -22,6 +22,6 @@ export default class HpTitle {
     if (typeof state?.hp !== "number") return;
     const hpValue = state.hp + 1;
     const hpMax = 7;
-    this.fightTitle.setBaseTitle(`[${hpValue}/${hpMax}] ${this.originalTitle}`);
+    this.fightTitle.setBaseTitle(`${this.originalTitle} [${hpValue}/${hpMax}]`);
   }
 }
