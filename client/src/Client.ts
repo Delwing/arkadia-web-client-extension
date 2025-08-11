@@ -425,6 +425,9 @@ export default class Client {
         if (typeof Notification === 'undefined') {
             return
         }
+        if ('serviceWorker' in navigator && navigator.serviceWorker) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {})
+        }
         if (Notification.permission === 'default') {
             Notification.requestPermission()
         }
@@ -435,7 +438,13 @@ export default class Client {
             return
         }
         if (Notification.permission === 'granted') {
-            new Notification(message)
+            if ('serviceWorker' in navigator && navigator.serviceWorker) {
+                navigator.serviceWorker.ready
+                    .then((reg) => reg.showNotification(message))
+                    .catch(() => {})
+            } else {
+                new Notification(message)
+            }
         }
     }
 

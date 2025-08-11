@@ -85,6 +85,17 @@ test('does not request notification permission when already decided', () => {
   delete (global as any).Notification;
 });
 
+test('registers service worker if available', () => {
+  (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
+  const original = (navigator as any).serviceWorker;
+  (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  client.enableNotifications();
+  expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('/sw.js');
+  (navigator as any).serviceWorker = original;
+  delete (global as any).Notification;
+});
+
 test('port messages trigger window events', () => {
   new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
