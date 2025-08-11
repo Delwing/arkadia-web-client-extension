@@ -42,6 +42,7 @@ function initDebug() {
     scheduleButton.addEventListener("click", () => {
       const client = (window as any).clientExtension;
       if (!client) return;
+      client.enableNotifications?.();
       client.sendEvent?.("notify", { text: "Powiadomienie za 5s" });
       setTimeout(() => {
         client.notify?.("Test notification");
