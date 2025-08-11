@@ -91,8 +91,25 @@ test('registers service worker if available', () => {
   (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   client.enableNotifications();
-  expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('/sw.js');
+  expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
+  const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
+  expect(new URL(calledPath, document.baseURI).pathname).toBe('/sw.js');
   (navigator as any).serviceWorker = original;
+  delete (global as any).Notification;
+});
+
+test('registers service worker using base path', () => {
+  (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
+  document.head.innerHTML = '<base href="/test/">';
+  const original = (navigator as any).serviceWorker;
+  (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  client.enableNotifications();
+  expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
+  const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
+  expect(new URL(calledPath, document.baseURI).pathname).toBe('/test/sw.js');
+  (navigator as any).serviceWorker = original;
+  document.head.innerHTML = '';
   delete (global as any).Notification;
 });
 
