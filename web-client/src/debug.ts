@@ -7,6 +7,7 @@ function initDebug() {
 
   const modal = new Modal(modalEl);
   const content = modalEl.querySelector("#debug-content") as HTMLElement;
+  const scheduleButton = modalEl.querySelector("#notification-schedule-button") as HTMLButtonElement | null;
 
   const methods: Array<keyof Console> = ["log", "error", "warn", "info"];
   methods.forEach((m) => {
@@ -36,6 +37,18 @@ function initDebug() {
   debugButton.addEventListener("click", () => {
     modal.show();
   });
+
+  if (scheduleButton) {
+    scheduleButton.addEventListener("click", () => {
+      const client = (window as any).clientExtension;
+      if (!client) return;
+      client.sendEvent?.("notify", { text: "Powiadomienie za 5s" });
+      setTimeout(() => {
+        client.notify?.("Test notification");
+        client.sendEvent?.("notify", { text: "Test notification" });
+      }, 5000);
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initDebug);
