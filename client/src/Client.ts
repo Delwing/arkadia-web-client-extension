@@ -426,7 +426,7 @@ export default class Client {
             return
         }
         if ('serviceWorker' in navigator && navigator.serviceWorker) {
-            navigator.serviceWorker.register('/sw.js').catch(() => {})
+            navigator.serviceWorker.register('sw.js').catch(() => {})
         }
         if (Notification.permission === 'default') {
             Notification.requestPermission()
