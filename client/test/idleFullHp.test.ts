@@ -15,6 +15,7 @@ describe('idle full hp notification', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.setSystemTime(0);
   });
 
   afterEach(() => {
@@ -25,7 +26,7 @@ describe('idle full hp notification', () => {
     const client = new FakeClient();
     initIdleFullHp((client as unknown) as any);
     client.sendEvent('gmcp.char.state', { hp: 5 });
-    jest.advanceTimersByTime(120000);
+    jest.setSystemTime(120000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
     expect(client.notify).toHaveBeenCalledWith('Masz pelne zycie');
   });
@@ -34,7 +35,7 @@ describe('idle full hp notification', () => {
     const client = new FakeClient();
     initIdleFullHp((client as unknown) as any);
     client.sendEvent('gmcp.char.state', { hp: 5 });
-    jest.advanceTimersByTime(119000);
+    jest.setSystemTime(119000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
     expect(client.notify).not.toHaveBeenCalled();
   });
@@ -43,11 +44,11 @@ describe('idle full hp notification', () => {
     const client = new FakeClient();
     initIdleFullHp((client as unknown) as any);
     client.sendEvent('gmcp.char.state', { hp: 5 });
-    jest.advanceTimersByTime(90000);
+    jest.setSystemTime(90000);
     client.sendEvent('command', 'look');
-    jest.advanceTimersByTime(90000);
+    jest.setSystemTime(180000);
     client.sendEvent('gmcp.char.state', { hp: 5 });
-    jest.advanceTimersByTime(30000);
+    jest.setSystemTime(210000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
     expect(client.notify).toHaveBeenCalledWith('Masz pelne zycie');
   });

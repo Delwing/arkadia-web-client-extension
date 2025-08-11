@@ -14,6 +14,7 @@ describe('idle timer', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.setSystemTime(0);
   });
 
   afterEach(() => {
@@ -24,7 +25,7 @@ describe('idle timer', () => {
     const client = new FakeClient();
     const timer = createIdleTimer((client as unknown) as any, 1000);
     expect(timer.isIdle()).toBe(false);
-    jest.advanceTimersByTime(1000);
+    jest.setSystemTime(1000);
     expect(timer.isIdle()).toBe(true);
     client.sendEvent('command');
     expect(timer.isIdle()).toBe(false);
