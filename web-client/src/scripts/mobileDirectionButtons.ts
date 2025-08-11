@@ -634,8 +634,12 @@ export default class MobileDirectionButtons {
             newBtn.removeAttribute('data-direction');
         }
 
-        const handler = () => {
+        const handleVibration = () => {
             if (this.hapticEnabled) navigator.vibrate?.(20);
+        };
+        newBtn.addEventListener('pointerdown', handleVibration);
+
+        const handler = () => {
             switch (cfg.macro) {
                 case 'empty':
                     break;
