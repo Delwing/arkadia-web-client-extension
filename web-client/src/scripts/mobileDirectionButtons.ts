@@ -50,6 +50,7 @@ export default class MobileDirectionButtons {
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
     private leaderMode = false;
+    private hapticEnabled = true;
 
 
     constructor(client: Client) {
@@ -142,15 +143,16 @@ export default class MobileDirectionButtons {
         // Listen for UI settings changes
         this.client.addEventListener("uiSettings", (event: CustomEvent) => {
             const detail = event.detail || {};
-            if (!Object.prototype.hasOwnProperty.call(detail, "mobileDirectionButtons")) {
-                return;
+            if (Object.prototype.hasOwnProperty.call(detail, "hapticFeedback")) {
+                this.hapticEnabled = detail.hapticFeedback !== false;
             }
-            // Only disable if explicitly set to false
-            const disabled = detail.mobileDirectionButtons === false;
-            if (disabled) {
-                this.disable();
-            } else {
-                this.enable();
+            if (Object.prototype.hasOwnProperty.call(detail, "mobileDirectionButtons")) {
+                const disabled = detail.mobileDirectionButtons === false;
+                if (disabled) {
+                    this.disable();
+                } else {
+                    this.enable();
+                }
             }
         });
 
@@ -633,6 +635,7 @@ export default class MobileDirectionButtons {
         }
 
         const handler = () => {
+            if (this.hapticEnabled) navigator.vibrate?.(20);
             switch (cfg.macro) {
                 case 'empty':
                     break;
