@@ -7,6 +7,7 @@ interface UiSettings {
     mapScale: number;
     mapLimit: number;
     showButtons: boolean;
+    hapticFeedback: boolean;
     mapHeight: number;
     emojiLabels: boolean;
     fightTitleIcon: boolean;
@@ -22,6 +23,7 @@ const defaultSettings: UiSettings = {
     mapScale: 0.30,
     mapLimit: 35,
     showButtons: true,
+    hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     emojiLabels: false,
     fightTitleIcon: true,
@@ -81,6 +83,7 @@ function apply(settings: UiSettings) {
             new CustomEvent('uiSettings', {
                 detail: {
                     mobileDirectionButtons: settings.showButtons,
+                    hapticFeedback: settings.hapticFeedback,
                     emojiLabels: settings.emojiLabels,
                     xtermPalette: settings.xtermPalette,
                     footerMode: settings.footerMode,
@@ -114,7 +117,8 @@ async function load(): Promise<UiSettings> {
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
             const explorationMode = !!parsed.explorationMode;
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon };
+            const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
         }
     } catch {
         // ignore malformed data
@@ -141,6 +145,7 @@ export default async function initUiSettings() {
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
+    const hapticFeedbackInput = modalEl.querySelector('#ui-haptic-feedback') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
@@ -156,6 +161,7 @@ export default async function initUiSettings() {
     mapLimitInput.value = String(current.mapLimit);
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
+    hapticFeedbackInput.checked = current.hapticFeedback;
     emojiLabelsInput.checked = current.emojiLabels;
     fightTitleIconInput.checked = current.fightTitleIcon;
     xtermPaletteInput.value = current.xtermPalette;
@@ -194,6 +200,7 @@ export default async function initUiSettings() {
             mapLimit,
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             showButtons: showButtonsInput.checked,
+            hapticFeedback: hapticFeedbackInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
