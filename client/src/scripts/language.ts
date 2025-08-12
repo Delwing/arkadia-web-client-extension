@@ -34,7 +34,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     function say(lang: string, adj: string, msg: string) {
        setLanguage(lang);
         if (lang === 'potoczna' && adj === '') {
-            client.sendCommand("'" + msg);
+            client.send("'" + msg, false);
         } else {
             const verb = lang === 'potoczna' ? 'ppowiedz' : 'jppowiedz';
             const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
