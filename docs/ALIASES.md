@@ -8,8 +8,10 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/fake _tekst_** - wyświetla podany tekst jak zwykłą wiadomość klienta.
 - **/zabici** - pokazuje tabelę z liczbą twoich zabitych istot w bieżącej sesji.
 - **/zabici2** - wyświetla podsumowanie liczby zabitych istot.
+- **/zabici_reset** - zeruje licznik zabitych istot.
 - **/cechy** - uruchamia licznik poziomowania i wyświetla postępy.
 - **/postepy** - wyświetla postępy ulepszeń.
+- **/postepy_reset** - zeruje licznik postępów.
 - **/przejrzyj [_co_]** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami lub podanego pojemnika.
 - **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
 

@@ -34,15 +34,18 @@ describe('improve counter', () => {
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
+    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     const improveAliases: { pattern: RegExp; callback: () => void }[] = [];
     initImproveCounter((client as unknown) as any, killCounter, improveAliases);
+    client.dispatch('storage', { key: 'improve_counter', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     show = improveAliases[0].callback;
+    // reset state using alias
+    improveAliases[1].callback();
   });
 
   test('records state changes, prints notification and table', () => {
-    client.dispatch('gmcp.char.info', {});
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
     parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
@@ -61,5 +64,18 @@ describe('improve counter', () => {
       'Masz wrazenie, iz ostatnimi czasy poczyniles nieznaczne postepy w poznawaniu swiata.'
     );
     expect(client.println).not.toHaveBeenCalled();
+  });
+
+  test('reset event clears entries', () => {
+    parse('Zabiles smoka chaosu.');
+    jest.advanceTimersByTime(30000);
+    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    show();
+    client.print.mockClear();
+    client.dispatch('reset', undefined);
+    show();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/Dzisiaj: 0/);
+    expect(printed).not.toMatch(/1\. male/);
   });
 });

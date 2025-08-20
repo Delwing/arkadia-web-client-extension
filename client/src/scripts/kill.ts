@@ -11,6 +11,7 @@ type KillEntry = {
 type KillCounts = Record<string, KillEntry>;
 
 const STORAGE_KEY = "kill_counter";
+const SESSION_STORAGE_KEY = "kill_counter_session";
 
 const KILL_HEADER_COLOR = findClosestColor("#7cfc00");
 const KILL_MY_COLOR = findClosestColor("#ffff00");
@@ -231,9 +232,15 @@ class KillCounter {
             if (event.detail.key === STORAGE_KEY) {
                 this.loadTotals(event.detail.value ?? {});
             }
+            if (event.detail.key === SESSION_STORAGE_KEY) {
+                this.loadSession(event.detail.value ?? {});
+            }
         });
 
+        this.client.addEventListener("reset", () => this.resetSession());
+
         window.addEventListener("beforeunload", this.persistTotals);
+        window.addEventListener("beforeunload", this.persistSessions);
 
         const myKillRegex = /^[ >]*(Zabil(?:es|as) (?<name>[A-Za-z ()!,]+))\.$/;
         const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?:a)? (?<name>[a-zA-Z (),!]+)\.$/;
@@ -264,6 +271,7 @@ class KillCounter {
         );
 
         this.client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+        this.client.port?.postMessage({ type: "GET_STORAGE", key: SESSION_STORAGE_KEY });
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -290,6 +298,29 @@ class KillCounter {
         });
     };
 
+    private loadSession(session: Record<string, { mySession: number; teamSession: number }> = {}): void {
+        Object.entries(session).forEach(([name, data]) => {
+            const entry = this.kills[name] ?? { mySession: 0, myTotal: 0, teamSession: 0 };
+            entry.mySession = data.mySession ?? 0;
+            entry.teamSession = data.teamSession ?? 0;
+            this.kills[name] = entry;
+        });
+    }
+
+    private persistSessions = () => {
+        const sessions: Record<string, { mySession: number; teamSession: number }> = {};
+        Object.entries(this.kills).forEach(([name, entry]) => {
+            if (entry.mySession || entry.teamSession) {
+                sessions[name] = { mySession: entry.mySession, teamSession: entry.teamSession };
+            }
+        });
+        this.client.port?.postMessage({
+            type: "SET_STORAGE",
+            key: SESSION_STORAGE_KEY,
+            value: sessions,
+        });
+    };
+
     private ensureEntry(name: string): KillEntry {
         if (!this.kills[name]) {
             this.kills[name] = { mySession: 0, myTotal: 0, teamSession: 0 };
@@ -306,6 +337,7 @@ class KillCounter {
         } else {
             entry.teamSession += 1;
         }
+        this.persistSessions();
         return entry;
     }
 
@@ -316,6 +348,14 @@ class KillCounter {
             totals.team += e.teamSession;
         });
         return totals;
+    }
+
+    resetSession() {
+        Object.values(this.kills).forEach((e) => {
+            e.mySession = 0;
+            e.teamSession = 0;
+        });
+        this.persistSessions();
     }
 
     private formatPrefix(
@@ -354,6 +394,7 @@ export function initKillCounter(
     if (aliases) {
         aliases.push({ pattern: /\/zabici$/, callback: () => counter.showSession() });
         aliases.push({ pattern: /\/zabici2$/, callback: () => counter.showLifetime() });
+        aliases.push({ pattern: /\/zabici_reset$/, callback: () => counter.resetSession() });
     }
     return counter;
 }
