@@ -16,7 +16,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
 import {attachGmcpListener} from "./gmcp";
-import { setCurrentCharacter } from "./storage";
+import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
@@ -199,6 +199,14 @@ export default class Client {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
                     });
                 }
+            }
+            if (typeof ev.detail?.object_num !== 'undefined') {
+                const newNum = String(ev.detail.object_num);
+                const stored = getItemSync('object_num')?.object_num;
+                if (typeof stored !== 'undefined' && String(stored) !== newNum) {
+                    this.sendEvent('reset');
+                }
+                setItemSync('object_num', newNum);
             }
         })
 
