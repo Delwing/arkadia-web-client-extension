@@ -1,4 +1,7 @@
-import {parseContainer, categorizeItems, createRegexpFilter, formatTable} from '../src/scripts/prettyContainers';
+jest.mock('../src/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue([]));
+jest.mock('../src/scripts/magicsLoader', () => jest.fn().mockResolvedValue([]));
+
+import initContainers, {parseContainer, categorizeItems, createRegexpFilter, formatTable} from '../src/scripts/prettyContainers';
 
 describe('prettyContainers', () => {
   const input = 'Otwarty szary skorzany plecak zawiera zlocisty piryt, upiorny mglisty calun, skorzany buklak, gornicza lampe, oliwkowozielony serpentyn, zielonkawy awenturyn, zolty celestyn, bezbarwny gorski krysztal, mithrylowa monete, wiele zlotych monet, wiele srebrnych monet i wiele miedzianych monet.';
@@ -148,5 +151,23 @@ describe('prettyContainers', () => {
     const table = formatTable('POJEMNIK', cat, { columns: 2, maxWidth: 40 });
     const lines = table.split('\n').map(l => l.replace(/\x1b\[[0-9;]*m/g, ''));
     lines.forEach(l => expect(l.length).toBeLessThanOrEqual(40));
+  });
+
+  test('/przejrzyj alias sends ob command', () => {
+    class FakeClient {
+      aliases: { pattern: RegExp; callback: (m?: RegExpMatchArray) => void }[] = [];
+      send = jest.fn();
+      sendCommand = jest.fn();
+      OutputHandler = { makeStringClickable: (s: string) => s };
+      addEventListener = jest.fn();
+      Triggers = { removeByTag: jest.fn(), registerTrigger: jest.fn() };
+      print = jest.fn();
+      contentWidth = 80;
+    }
+    const client = new FakeClient();
+    initContainers((client as unknown) as any);
+    const alias = client.aliases[0];
+    alias.callback('/przejrzyj'.match(alias.pattern) as RegExpMatchArray);
+    expect(client.send).toHaveBeenCalledWith('ob skrzynie');
   });
 });
