@@ -9,6 +9,8 @@ const COUNT_COLOR = SECTION_COLOR;
 const POSTEP_COLOR = findClosestColor("#6a5acd");
 const TIME_COLOR = findClosestColor("#ffff00");
 
+const STORAGE_KEY = "improve_counter_daily";
+
 const STATES = [
     "minimalne",
     "nieznaczne",
@@ -80,12 +82,29 @@ export default class ImproveCounter {
     private entries: Entry[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
+    private daily: Record<string, Record<string, number>> = {};
+    private player?: string;
 
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
 
-        this.client.addEventListener("gmcp.char.info", () => this.reset());
+        this.client.addEventListener("gmcp.char.info", (e: CustomEvent) => {
+            if (e.detail?.name) {
+                this.player = e.detail.name;
+            }
+            this.reset();
+        });
+
+        this.client.addEventListener("storage", (event: CustomEvent) => {
+            if (event.detail.key === STORAGE_KEY) {
+                this.daily = event.detail.value ?? {};
+            }
+        });
+
+        window.addEventListener("beforeunload", this.persistDaily);
+
+        this.client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
         const states = STATES.join("|");
         const regex = new RegExp(
@@ -129,6 +148,13 @@ export default class ImproveCounter {
         this.entries.push(entry);
         this.lastTime = now;
         this.lastKills = kills;
+
+        const day = this.dayKey(new Date(now));
+        const value = STATES.indexOf(state) + 1;
+        if (!this.player) return;
+        const charDaily = (this.daily[this.player] ||= {});
+        charDaily[day] = (charDaily[day] || 0) + value;
+        this.persistDaily();
         const msg = colorString(
             `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
@@ -137,6 +163,52 @@ export default class ImproveCounter {
         );
         this.client.println(msg);
     }
+
+    private dayKey(date: Date): string {
+        return date.toISOString().slice(0, 10);
+    }
+
+    private formatDailyLevel(total: number): string {
+        const max = STATES.length;
+        const count = Math.floor(total / max);
+        const rem = total % max;
+        const parts: string[] = [];
+        if (count > 0) {
+            parts.push(count > 1 ? `niebotyczne x${count}` : "niebotyczne");
+        }
+        if (rem > 0) {
+            parts.push(STATES[rem - 1]);
+        }
+        return parts.join(" + ");
+    }
+
+    private formatDailyTable(): string {
+        const WIDTH = 40;
+        const INNER = WIDTH - 2;
+        const pad = createPad(INNER, 1, 1);
+        const header = createHeader(INNER, 2, HEADER_COLOR);
+        const lines: string[] = [];
+        const daily = this.player ? this.daily[this.player] || {} : {};
+        lines.push(header("Postepy dzienne"));
+        lines.push(pad());
+        Object.entries(daily)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([day, total]) => {
+                const label = this.formatDailyLevel(total);
+                lines.push(pad(`${day} : ${label}`));
+            });
+        lines.push(pad());
+        lines.push(`+${"-".repeat(INNER)}+`);
+        return lines.join("\n");
+    }
+
+    private persistDaily = () => {
+        this.client.port?.postMessage({
+            type: "SET_STORAGE",
+            key: STORAGE_KEY,
+            value: this.daily,
+        });
+    };
 
     private formatTable(): string {
         const WIDTH = 74;
@@ -207,6 +279,10 @@ export default class ImproveCounter {
     show() {
         this.client.print("\n\n" + this.formatTable() + "\n\n");
     }
+
+    showDaily() {
+        this.client.print("\n\n" + this.formatDailyTable() + "\n\n");
+    }
 }
 
 export function initImproveCounter(
@@ -217,6 +293,7 @@ export function initImproveCounter(
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
         aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
+        aliases.push({ pattern: /\/postepy2$/, callback: () => counter.showDaily() });
     }
     return counter;
 }

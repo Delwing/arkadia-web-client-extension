@@ -28,6 +28,7 @@ describe('improve counter', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
   let show: () => void;
+  let showDaily: () => void;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -39,10 +40,11 @@ describe('improve counter', () => {
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     show = improveAliases[0].callback;
+    showDaily = improveAliases[1].callback;
   });
 
   test('records state changes, prints notification and table', () => {
-    client.dispatch('gmcp.char.info', {});
+    client.dispatch('gmcp.char.info', { name: 'Hero' });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
     parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
@@ -57,9 +59,27 @@ describe('improve counter', () => {
   });
 
   test('ignores poznawanie swiata messages', () => {
+    client.dispatch('gmcp.char.info', { name: 'Hero' });
     parse(
       'Masz wrazenie, iz ostatnimi czasy poczyniles nieznaczne postepy w poznawaniu swiata.'
     );
     expect(client.println).not.toHaveBeenCalled();
+  });
+
+  test('shows daily totals per character and handles multiple niebotyczne', () => {
+    client.dispatch('gmcp.char.info', { name: 'Hero' });
+    parse('Poczyniles niebotyczne postepy, od momentu kiedy wszedles do gry.');
+    parse('Poczyniles niebotyczne postepy, od momentu kiedy wszedles do gry.');
+    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    showDaily();
+    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/niebotyczne x2 \+ male/);
+    client.print.mockClear();
+    client.dispatch('gmcp.char.info', { name: 'Other' });
+    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    showDaily();
+    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/male/);
+    expect(printed).not.toMatch(/niebotyczne/);
   });
 });
