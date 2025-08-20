@@ -92,6 +92,8 @@ export default class ImproveCounter {
             }
         });
 
+        this.client.addEventListener("reset", () => this.reset());
+
         window.addEventListener("beforeunload", this.persist);
 
         this.client.port?.postMessage({

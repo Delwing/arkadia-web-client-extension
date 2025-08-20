@@ -237,6 +237,8 @@ class KillCounter {
             }
         });
 
+        this.client.addEventListener("reset", () => this.resetSession());
+
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
 

@@ -113,6 +113,16 @@ describe('kill counter scenario', () => {
     printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
     expect(printed).not.toMatch(/smoka chaosu/);
   });
+
+  test('reset event clears session counts', () => {
+    parse('Zabiles smoka chaosu.');
+    printSessionTable();
+    client.print.mockClear();
+    client.dispatch('reset', undefined);
+    printSessionTable();
+    const printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    expect(printed).not.toMatch(/smoka chaosu/);
+  });
 });
 
 describe('parseName and formatTable', () => {

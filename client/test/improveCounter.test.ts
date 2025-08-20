@@ -65,4 +65,17 @@ describe('improve counter', () => {
     );
     expect(client.println).not.toHaveBeenCalled();
   });
+
+  test('reset event clears entries', () => {
+    parse('Zabiles smoka chaosu.');
+    jest.advanceTimersByTime(30000);
+    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    show();
+    client.print.mockClear();
+    client.dispatch('reset', undefined);
+    show();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/Dzisiaj: 0/);
+    expect(printed).not.toMatch(/1\. male/);
+  });
 });
