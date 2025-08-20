@@ -464,7 +464,7 @@ export default function initContainers(client: Client) {
         callback: (m?: RegExpMatchArray) => {
             filter = magicAndKeysFilter;
             plugLinks = true;
-            client.send(`przejrzyj ${m?.[1] ?? 'skrzynie'}`);
+            client.send(`ob ${m?.[1] ?? 'skrzynie'}`);
         },
     });
 }
