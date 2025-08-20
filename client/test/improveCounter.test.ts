@@ -46,9 +46,10 @@ describe('improve counter', () => {
   });
 
   test('records state changes, prints notification and table', () => {
+    client.dispatch('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    client.dispatch('gmcp.char.state', { improve: 3 });
     const orange = findClosestColor('#ffa500');
     const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
@@ -59,17 +60,17 @@ describe('improve counter', () => {
     expect(printed).toMatch(/zabici 1\/1/);
   });
 
-  test('ignores poznawanie swiata messages', () => {
-    parse(
-      'Masz wrazenie, iz ostatnimi czasy poczyniles nieznaczne postepy w poznawaniu swiata.'
-    );
+  test('does nothing when level does not change', () => {
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     expect(client.println).not.toHaveBeenCalled();
   });
 
   test('reset event clears entries', () => {
+    client.dispatch('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');
+    client.dispatch('gmcp.char.state', { improve: 3 });
     show();
     client.print.mockClear();
     client.dispatch('reset', undefined);

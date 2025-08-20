@@ -80,6 +80,7 @@ export default class ImproveCounter {
     private entries: Entry[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
+    private level: number = -1;
     private static readonly STORAGE_KEY = "improve_counter";
 
     constructor(client: Client, killCounter: any) {
@@ -101,20 +102,12 @@ export default class ImproveCounter {
             key: ImproveCounter.STORAGE_KEY,
         });
 
-        const states = STATES.join("|");
-        const regex = new RegExp(
-            `^(?:.*? )?(?<state>${states}) postepy(?! w poznawaniu)`,
-            "i",
-        );
-        this.client.Triggers.registerTrigger(
-            regex,
-            (_raw, _line, matches) => {
-                const state = (matches.groups?.state || "").toLowerCase();
-                this.record(state);
-                return undefined;
-            },
-            "improveCounter"
-        );
+        this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
+            const level = ev.detail?.improve;
+            if (typeof level === "number") {
+                this.handleLevel(level);
+            }
+        });
     }
 
     private getKills() {
@@ -128,7 +121,24 @@ export default class ImproveCounter {
         this.entries = [];
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
+        this.level = -1;
         this.persist();
+    }
+
+    private handleLevel(level: number) {
+        if (this.level < 0) {
+            this.level = level;
+            this.persist();
+            return;
+        }
+        if (level > this.level) {
+            this.level = level;
+            const state = STATES[level] ?? String(level);
+            this.record(state);
+        } else if (level < this.level) {
+            this.level = level;
+            this.persist();
+        }
     }
 
     private record(state: string) {
@@ -158,6 +168,7 @@ export default class ImproveCounter {
         this.entries = Array.isArray(data.entries) ? data.entries : [];
         this.lastTime = typeof data.lastTime === "number" && data.lastTime > 0 ? data.lastTime : Date.now();
         this.lastKills = data.lastKills || this.getKills();
+        this.level = typeof data.level === "number" ? data.level : -1;
     }
 
     private persist = () => {
@@ -168,6 +179,7 @@ export default class ImproveCounter {
                 entries: this.entries,
                 lastTime: this.lastTime,
                 lastKills: this.lastKills,
+                level: this.level,
             },
         });
     };
