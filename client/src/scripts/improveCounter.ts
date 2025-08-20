@@ -80,12 +80,24 @@ export default class ImproveCounter {
     private entries: Entry[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
+    private static readonly STORAGE_KEY = "improve_counter";
 
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
 
-        this.client.addEventListener("gmcp.char.info", () => this.reset());
+        this.client.addEventListener("storage", (event: CustomEvent) => {
+            if (event.detail.key === ImproveCounter.STORAGE_KEY) {
+                this.load(event.detail.value ?? {});
+            }
+        });
+
+        window.addEventListener("beforeunload", this.persist);
+
+        this.client.port?.postMessage({
+            type: "GET_STORAGE",
+            key: ImproveCounter.STORAGE_KEY,
+        });
 
         const states = STATES.join("|");
         const regex = new RegExp(
@@ -114,6 +126,7 @@ export default class ImproveCounter {
         this.entries = [];
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
+        this.persist();
     }
 
     private record(state: string) {
@@ -129,6 +142,7 @@ export default class ImproveCounter {
         this.entries.push(entry);
         this.lastTime = now;
         this.lastKills = kills;
+        this.persist();
         const msg = colorString(
             `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
@@ -137,6 +151,24 @@ export default class ImproveCounter {
         );
         this.client.println(msg);
     }
+
+    private load(data: any = {}) {
+        this.entries = Array.isArray(data.entries) ? data.entries : [];
+        this.lastTime = typeof data.lastTime === "number" && data.lastTime > 0 ? data.lastTime : Date.now();
+        this.lastKills = data.lastKills || this.getKills();
+    }
+
+    private persist = () => {
+        this.client.port?.postMessage({
+            type: "SET_STORAGE",
+            key: ImproveCounter.STORAGE_KEY,
+            value: {
+                entries: this.entries,
+                lastTime: this.lastTime,
+                lastKills: this.lastKills,
+            },
+        });
+    };
 
     private formatTable(): string {
         const WIDTH = 74;
@@ -217,6 +249,7 @@ export function initImproveCounter(
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
         aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
+        aliases.push({ pattern: /\/postepy_reset$/, callback: () => counter.reset() });
     }
     return counter;
 }

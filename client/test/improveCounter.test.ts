@@ -34,15 +34,18 @@ describe('improve counter', () => {
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
+    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     const improveAliases: { pattern: RegExp; callback: () => void }[] = [];
     initImproveCounter((client as unknown) as any, killCounter, improveAliases);
+    client.dispatch('storage', { key: 'improve_counter', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     show = improveAliases[0].callback;
+    // reset state using alias
+    improveAliases[1].callback();
   });
 
   test('records state changes, prints notification and table', () => {
-    client.dispatch('gmcp.char.info', {});
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
     parse('Poczyniles male postepy, od momentu kiedy wszedles do gry.');

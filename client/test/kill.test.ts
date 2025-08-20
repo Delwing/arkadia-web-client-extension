@@ -29,6 +29,7 @@ describe('kill counter team kills', () => {
     client = new FakeClient();
     initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
+    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
   });
 
   const parse = (line: string) => {
@@ -71,12 +72,14 @@ describe('kill counter scenario', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
   let printSessionTable: () => void;
+  let aliases: { pattern: RegExp; callback: () => void }[];
 
   beforeEach(() => {
-    const aliases: { pattern: RegExp; callback: () => void }[] = [];
+    aliases = [];
     client = new FakeClient();
     initKillCounter((client as unknown) as any, aliases);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
+    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     // alias[0] corresponds to the /zabici command which prints
@@ -97,6 +100,18 @@ describe('kill counter scenario', () => {
     expect(printed).toMatch(/smoka chaosu .* 2/);
     expect(printed).toMatch(/LACZNIE:.*2/);
     expect(printed).toMatch(/DRUZYNA LACZNIE:.*3/);
+  });
+
+  test('zabici_reset clears session counts', () => {
+    parse('Zabiles smoka chaosu.');
+    printSessionTable();
+    let printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    expect(printed).toMatch(/smoka chaosu/);
+    // alias[2] corresponds to /zabici_reset
+    aliases[2].callback();
+    printSessionTable();
+    printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    expect(printed).not.toMatch(/smoka chaosu/);
   });
 });
 
