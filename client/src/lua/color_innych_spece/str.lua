@@ -10,7 +10,7 @@ function trigger_func_skrypty_ui_gags_color_color_innych_spece_str_ktos_spec()
     elseif dmg == "pozostawiajac dluga, poszarpana rane" or dmg == "mocno raniac" then value = 3
     elseif dmg == "pozostawiajac gleboka rane z wystajacymi na wierzchu tkankami" or dmg == "bardzo mocno raniac" then value = 4
     elseif dmg == "zadajac smiertelne obrazenia" then value = 5
-    elseif dmg:find("lecz impet uderzenia", 1, true) then value = 0
+    elseif dmg:find("lecz impet uderzenia", 1, 1) then value = 0 -- 4th arg replaced with 1 instead of true, due to error in lua-in-js lib
     else end
     local target = scripts.gags:who_hits_attacker_target()
     scripts.gags:gag_spec("STR", value, 5, target)

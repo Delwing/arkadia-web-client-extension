@@ -290,6 +290,9 @@ export default function registerLuaGagTriggers(client: Client) {
         }
 
         const mudlet = {
+            debug: (line: string) => {
+                console.log(line)
+            },
             echo: (line: string) => {
                 global.line = global.line + line
             },
