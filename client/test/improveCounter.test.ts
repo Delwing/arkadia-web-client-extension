@@ -144,4 +144,25 @@ describe('improve counter', () => {
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
+
+  test('adds missed improvements on login before lifetime loads', () => {
+    jest.useFakeTimers();
+    const c = new FakeClient();
+    const kill = initKillCounter((c as unknown) as any, []);
+    c.dispatch('storage', { key: 'kill_counter', value: {} });
+    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    const als: { pattern: RegExp; callback: any }[] = [];
+    initImproveCounter((c as unknown) as any, kill, als);
+    c.dispatch('storage', {
+      key: 'improve_counter',
+      value: { level: 2, lastObjNum: 1 },
+    });
+    c.dispatch('gmcp.char.state', { improve: 4, object_num: 3 });
+    c.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
+    const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
+    showLife();
+    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+    expect(c.println).not.toHaveBeenCalled();
+  });
 });

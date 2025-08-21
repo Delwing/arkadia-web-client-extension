@@ -88,12 +88,15 @@ export default class ImproveCounter {
     private entries: Entry[] = [];
     private lifetime: { date: string; states: string[] }[] = [];
     private lifetimeEnabled = true;
+    private lifetimeLoaded = false;
+    private pendingLifetime: { state: string; time: number }[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
     private lastObjNum?: number;
     private loaded = false;
     private pendingLevel?: { level: number; objNum?: number };
+    private initialized = false;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
@@ -113,6 +116,13 @@ export default class ImproveCounter {
             }
             if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
                 this.loadLifetime(event.detail.value ?? {});
+                this.lifetimeLoaded = true;
+                if (this.pendingLifetime.length) {
+                    for (const p of this.pendingLifetime) {
+                        this.addToLifetime(p.state, p.time);
+                    }
+                    this.pendingLifetime = [];
+                }
             }
         });
 
@@ -157,17 +167,29 @@ export default class ImproveCounter {
             this.pendingLevel = { level, objNum };
             return;
         }
-        if (this.level < 0) {
-            if (this.lastObjNum !== objNum) {
-                this.level = level;
-                this.lastObjNum = objNum;
+        if (!this.initialized) {
+            if (this.level >= 0) {
+                if (level > this.level) {
+                    for (let l = this.level + 1; l <= level; l++) {
+                        const state = STATES[l] ?? String(l);
+                        this.recordInitial(state);
+                    }
+                } else if (
+                    objNum !== undefined &&
+                    this.lastObjNum !== undefined &&
+                    objNum !== this.lastObjNum
+                ) {
+                    const state = STATES[level] ?? String(level);
+                    this.recordInitial(state);
+                }
+            } else if (this.lastObjNum !== objNum) {
                 const state = STATES[level] ?? String(level);
                 this.recordInitial(state);
-            } else {
-                this.level = level;
-                this.lastObjNum = objNum;
-                this.persist();
             }
+            this.level = level;
+            this.lastObjNum = objNum;
+            this.persist();
+            this.initialized = true;
             return;
         }
         if (level > this.level) {
@@ -188,6 +210,10 @@ export default class ImproveCounter {
 
     private addToLifetime(state: string, time: number) {
         if (!this.lifetimeEnabled) return;
+        if (!this.lifetimeLoaded) {
+            this.pendingLifetime.push({ state, time });
+            return;
+        }
         const d = new Date(time);
         const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
         let day = this.lifetime[this.lifetime.length - 1];
