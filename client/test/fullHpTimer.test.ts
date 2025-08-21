@@ -1,12 +1,10 @@
 import initFullHpTimer from '../src/scripts/fullHpTimer';
 import { EventEmitter } from 'events';
-import Triggers from '../src/Triggers';
 import { colorString, findClosestColor } from '../src/Colors';
 
 describe('full hp timer', () => {
   class FakeClient {
     private emitter = new EventEmitter();
-    Triggers = new Triggers((this as unknown) as any);
     notify = jest.fn();
     println = jest.fn();
     addEventListener(event: string, cb: any) {
@@ -41,15 +39,16 @@ describe('full hp timer', () => {
     expect(client.notify).toHaveBeenCalledWith('Jestes w pelni zdrowia.');
   });
 
-  test('timer is cancelled on combat', () => {
-    const client = new FakeClient();
-    initFullHpTimer((client as unknown) as any);
-    enable(client);
-    client.sendEvent('gmcp.char.state', { hp: 6 });
-    client.Triggers.parseLine('hit', 'combat.avatar');
-    jest.advanceTimersByTime(180000);
-    expect(client.println).not.toHaveBeenCalled();
-    expect(client.notify).not.toHaveBeenCalled();
-  });
+    test('timer is cancelled on combat', () => {
+      const client = new FakeClient();
+      initFullHpTimer((client as unknown) as any);
+      enable(client);
+      client.sendEvent('gmcp.char.info', { object_num: 1 });
+      client.sendEvent('gmcp.char.state', { hp: 6 });
+      client.sendEvent('gmcp.objects.data', { 1: { attack_num: 2 } });
+      jest.advanceTimersByTime(180000);
+      expect(client.println).not.toHaveBeenCalled();
+      expect(client.notify).not.toHaveBeenCalled();
+    });
 });
 
