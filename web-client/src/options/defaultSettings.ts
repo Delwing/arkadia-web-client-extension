@@ -12,6 +12,7 @@ export interface Settings {
     languageAliases: { alias: string; adjective: string; language: string }[];
     herbPreUseCommand: string;
     herbPostUseCommand: string;
+    fullHpMessage: boolean;
 }
 
 export const defaultSettings: Settings = {
@@ -28,4 +29,5 @@ export const defaultSettings: Settings = {
     languageAliases: [],
     herbPreUseCommand: '',
     herbPostUseCommand: '',
+    fullHpMessage: false,
 };

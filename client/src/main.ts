@@ -66,6 +66,7 @@ import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
+import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import Client from "./Client";
 
@@ -171,6 +172,7 @@ export function registerScripts(client: Client) {
     initBreakItem(client)
     initHpAlert(client)
     initIdleFullHp(client)
+    initFullHpTimer(client)
     initNoWeaponAlert(client)
     initNewMail(client)
     initMagikZnika(client)
