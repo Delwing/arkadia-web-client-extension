@@ -1,13 +1,12 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
-import { isType } from "../Triggers";
 
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
     const SPRING_GREEN = findClosestColor("#00ff7f");
-    const tag = "fullHpTimer";
     let timer: number | null = null;
     let enabled = false;
+    let playerNum: string | undefined;
 
     function clearTimer() {
         if (timer !== null) {
@@ -46,11 +45,25 @@ export default function initFullHpTimer(client: Client) {
         }
     });
 
-    ["combat.avatar", "combat.team", "combat.others"].forEach(type => {
-        client.Triggers.registerTrigger(isType(type), () => {
+    client.addEventListener("gmcp.char.info", (ev: CustomEvent) => {
+        const info = ev.detail || {};
+        if (info && typeof info.object_num !== "undefined") {
+            playerNum = String(info.object_num);
+        }
+    });
+
+    client.addEventListener("gmcp.objects.data", (ev: CustomEvent) => {
+        if (!playerNum) return;
+        const obj = ev.detail?.[playerNum];
+        if (!obj || obj.attack_num === undefined) return;
+        if (obj.attack_num !== false) {
             clearTimer();
-            return undefined;
-        }, tag);
+        }
+    });
+
+    client.addEventListener("client.disconnect", () => {
+        playerNum = undefined;
+        clearTimer();
     });
 }
 
