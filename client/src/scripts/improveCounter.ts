@@ -217,9 +217,11 @@ export default class ImproveCounter {
         this.entries.forEach((e, idx) => {
             lines.push(
                 pad(
-                    `${(idx + 1).toString().padStart(2, " ")}. ${e.state.padEnd(15)} : ${formatDate(
+                    `${(idx + 1)
+                        .toString()
+                        .padStart(2, " ")}. ${e.state.padEnd(15)} : ${formatDate(
                         new Date(e.time)
-                    )}    : czas ${formatDuration(e.delta)}    :  zabici ${e.killsMy}/${
+                    )} : czas ${formatDuration(e.delta)} : zabici ${e.killsMy}/${
                         e.killsMy + e.killsTeam
                     }`
                 )
