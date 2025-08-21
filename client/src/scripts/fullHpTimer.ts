@@ -20,7 +20,7 @@ export default function initFullHpTimer(client: Client) {
         timer = window.setTimeout(() => {
             const plain = "Jestes w pelni zdrowia.";
             const msg = colorString(plain, SPRING_GREEN);
-            client.println(`\n\n${msg}\n\n`);
+            client.println(`\n${msg}\n`);
             client.notify(plain);
             client.sendEvent("notify", { text: plain });
             timer = null;
