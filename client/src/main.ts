@@ -1,3 +1,6 @@
+import People from "./People";
+import registerLuaGagTriggers from "./scripts/./luaGags";
+
 import blockers from './blockers.json'
 import initShips from './scripts/ships'
 import initTransportStops from './scripts/transportStops'
