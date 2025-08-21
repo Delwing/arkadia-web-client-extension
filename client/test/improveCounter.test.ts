@@ -77,7 +77,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
@@ -103,7 +103,7 @@ describe('improve counter', () => {
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
-    expect(printed).toMatch(/- 3/);
+    expect(printed).toMatch(/- male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
     client.print.mockClear();
     // reset should not clear lifetime
@@ -123,13 +123,13 @@ describe('improve counter', () => {
     add!.callback('/postepy2+ 2'.match(add!.pattern)!);
     showLifetime();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     removeCount!.callback('/postepy2- 1 1'.match(removeCount!.pattern)!);
     showLifetime();
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 1/);
+    expect(printed).toMatch(/- nieznaczne/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 
@@ -140,7 +140,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 3, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 3/);
+    expect(printed).toMatch(/- male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
 
@@ -149,7 +149,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 4, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 4/);
+    expect(printed).toMatch(/- nieduze/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
   });
 
@@ -158,7 +158,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // duplicate state should not add again
@@ -185,7 +185,7 @@ describe('improve counter', () => {
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
     const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     expect(c.println).not.toHaveBeenCalled();
   });

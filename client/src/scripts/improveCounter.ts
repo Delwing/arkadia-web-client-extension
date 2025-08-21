@@ -9,6 +9,9 @@ const LABEL_COLOR = HEADER_COLOR;
 const COUNT_COLOR = SECTION_COLOR;
 const POSTEP_COLOR = findClosestColor("#6a5acd");
 const TIME_COLOR = findClosestColor("#ffff00");
+const NAME_COLOR = findClosestColor("#ffff00");
+const DATE_COLOR = findClosestColor("#ffd700");
+const TOTAL_LABEL_COLOR = findClosestColor("#ffb6c1");
 
 const STATES = [
     "minimalne",
@@ -28,6 +31,26 @@ const STATES = [
     "gigantyczne",
     "niebotyczne",
 ];
+
+function titleCase(str: string): string {
+    return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatCount(count: number): string {
+    if (count <= 0) return String(count);
+    const whole = Math.floor(count / 15);
+    const rem = count % 15;
+    const parts: string[] = [];
+    if (whole > 0) {
+        parts.push(`${whole} niebotycznych`);
+    }
+    if (rem > 0) {
+        parts.push(STATES[rem] ?? String(rem));
+    } else if (!parts.length) {
+        parts.push(STATES[0]);
+    }
+    return parts.join(" + ");
+}
 
 function formatDate(date: Date): string {
     const d = String(date.getDate()).padStart(2, "0");
@@ -454,11 +477,13 @@ export default class ImproveCounter {
         const lines: string[] = [];
         lines.push(`+${"-".repeat(INNER)}+`);
         lines.push(pad());
-        const name = getCurrentCharacter() || "";
-        lines.push(pad(`POSTAC: ${name}`));
+        const name = titleCase(getCurrentCharacter() || "");
+        lines.push(pad(`POSTAC: ${colorString(name, NAME_COLOR)}`));
         lines.push(pad());
         this.lifetime.forEach((e, idx) => {
-            const line = `[${String(idx + 1).padStart(4, " ")}] ${e.date}    - ${e.count}`;
+            const date = colorString(e.date, DATE_COLOR);
+            const cnt = formatCount(e.count);
+            const line = `[${String(idx + 1).padStart(4, " ")}] ${date}    - ${cnt}`;
             lines.push(pad(line));
         });
         lines.push(pad());
@@ -466,8 +491,11 @@ export default class ImproveCounter {
         lines.push(pad());
         const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
         const approx = (total / 15).toFixed(2);
-        lines.push(pad(`WSZYSTKICH DO TEJ PORY: ${total} postepow`));
-        lines.push(pad(`                         ~${approx} niebotycznych`));
+        const label = colorString("WSZYSTKICH DO TEJ PORY:", TOTAL_LABEL_COLOR);
+        const totalStr = colorString(`${total} postepow`, HEADER_COLOR);
+        const approxStr = colorString(`~${approx} niebotycznych`, HEADER_COLOR);
+        lines.push(pad(`${label} ${totalStr}`));
+        lines.push(pad(`                         ${approxStr}`));
         lines.push(pad());
         lines.push(`+${"-".repeat(INNER)}+`);
         return lines.join("\n");
