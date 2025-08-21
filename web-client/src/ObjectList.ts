@@ -121,8 +121,9 @@ export default class ObjectList {
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
         });
-        const playerFighting = objects.some((o: any) => o.attack_target || o.defense_target);
-        const inCombat = teamAttacking || playerFighting;
+        const inCombat = objects.some(
+            (o: any) => o.attack_num !== false && o.attack_num !== undefined
+        );
 
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut)
