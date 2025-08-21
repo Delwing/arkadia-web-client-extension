@@ -380,32 +380,50 @@ export default class ImproveCounter {
             day.count += toAdd;
         }
         this.persistLifetime();
+        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
+        this.client.println(
+            colorString(`Dodano ${toAdd} postepow (lacznie: ${total})`, SECTION_COLOR)
+        );
     }
 
     removeLifetime(id: number, count?: number) {
         const idx = id - 1;
         if (idx < 0 || idx >= this.lifetime.length) return;
+        let removed = 0;
         if (typeof count === "number") {
             const day = this.lifetime[idx];
             const n = Math.min(Math.max(1, count), day.count);
             day.count -= n;
+            removed = n;
             if (day.count === 0) {
                 this.lifetime.splice(idx, 1);
             }
         } else {
+            removed = this.lifetime[idx].count;
             this.lifetime.splice(idx, 1);
         }
         this.persistLifetime();
+        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
+        this.client.println(
+            colorString(`Usunieto ${removed} postepow (lacznie: ${total})`, SECTION_COLOR)
+        );
     }
 
     resetLifetime() {
         this.lifetime = [];
         this.persistLifetime();
+        this.client.println(
+            colorString("Zresetowano globalny licznik postepow.", SECTION_COLOR)
+        );
     }
 
     setLifetimeEnabled(on: boolean) {
         this.lifetimeEnabled = on;
         this.persistLifetime();
+        const msg = on
+            ? "Wlaczono automatyczne dodawanie postepow."
+            : "Wylaczono automatyczne dodawanie postepow.";
+        this.client.println(colorString(msg, SECTION_COLOR));
     }
 
     private formatTable(): string {
