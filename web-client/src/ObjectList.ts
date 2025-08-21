@@ -136,7 +136,9 @@ export default class ObjectList {
             const numLabel = `${prefix}${num}`;
             const rawDesc = obj.desc || "";
             let coloredDesc = rawDesc;
-            if (obj.avatar_target) {
+            if (obj.shortcut === '@') {
+                // leave player's own character uncolored
+            } else if (obj.avatar_target) {
                 coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
             } else if (tm?.isInTeam?.(rawDesc)) {
                 const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
@@ -147,12 +149,7 @@ export default class ObjectList {
                 }
                 const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
                 coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
-            } else if (
-                inCombat &&
-                obj.shortcut !== '@' &&
-                (typeof obj.state === "number" ||
-                    (obj.attack_num !== false && obj.attack_num !== undefined))
-            ) {
+            } else if (inCombat && typeof obj.state === "number") {
                 coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
