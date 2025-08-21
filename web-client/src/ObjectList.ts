@@ -145,7 +145,7 @@ export default class ObjectList {
                 const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
                 coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
             } else {
-                coloredDesc = `<span style="color:lavender">${rawDesc}</span>`;
+                coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
             let bar = "";
