@@ -68,7 +68,7 @@ export default function initObjectAliases(
 
     if (aliases) {
         aliases.push({
-            pattern: /\/z ([A-Za-z0-9@]+)$/,
+            pattern: /\/z ([0-9]+)$/,
             callback: (m: RegExpMatchArray) => exec(m[1], "zabij")
         });
         aliases.push({
