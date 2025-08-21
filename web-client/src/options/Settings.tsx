@@ -140,6 +140,14 @@ function SettingsForm() {
                         onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
                         className="me-2"
                     />
+                    <Form.Check
+                        type="checkbox"
+                        id="fullHpMessage"
+                        label="Informacja o pelnym zdrowiu"
+                        checked={settings.fullHpMessage}
+                        onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
+                        className="me-2"
+                    />
                 </div>
             </div>
             <div className="mb-4 border rounded p-3">
