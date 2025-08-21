@@ -3,6 +3,7 @@ import { initKillCounter } from '../src/scripts/kill';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { colorString, findClosestColor } from '../src/Colors';
 import { EventEmitter } from 'events';
+import { setItemSync } from '../src/storage';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -34,6 +35,8 @@ describe('improve counter', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    localStorage.clear();
+    setItemSync('object_num', '1');
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
@@ -52,10 +55,10 @@ describe('improve counter', () => {
   });
 
   test('records state changes, prints notification and table', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 3 });
     const orange = findClosestColor('#ffa500');
     const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
@@ -67,14 +70,14 @@ describe('improve counter', () => {
   });
 
   test('does nothing when level does not change', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     client.println.mockClear();
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     expect(client.println).not.toHaveBeenCalled();
   });
 
   test('counts initial level above zero as multiple improvements', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- bardzo male/);
@@ -82,10 +85,10 @@ describe('improve counter', () => {
   });
 
   test('reset event clears entries', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 3 });
     show();
     client.print.mockClear();
     client.dispatch('reset', undefined);
@@ -96,10 +99,10 @@ describe('improve counter', () => {
   });
 
   test('lifetime list persists', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 3 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
@@ -134,9 +137,9 @@ describe('improve counter', () => {
   });
 
   test('ignores duplicate improvements for same level', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
-    client.dispatch('gmcp.char.state', { improve: 3, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.dispatch('gmcp.char.state', { improve: 3 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- male/);
@@ -144,8 +147,8 @@ describe('improve counter', () => {
   });
 
   test('handles improvement delta', () => {
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
-    client.dispatch('gmcp.char.state', { improve: 4, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.dispatch('gmcp.char.state', { improve: 4 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- nieduze/);
@@ -154,14 +157,14 @@ describe('improve counter', () => {
 
   test('adds initial improvement when not yet recorded', () => {
     client.dispatch('storage', { key: 'improve_counter', value: { level: 0 } });
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // duplicate state should not add again
-    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
@@ -179,7 +182,7 @@ describe('improve counter', () => {
       key: 'improve_counter',
       value: { level: 2, lastObjNum: 1 },
     });
-    c.dispatch('gmcp.char.state', { improve: 4, object_num: 1 });
+    c.dispatch('gmcp.char.state', { improve: 4 });
     c.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
@@ -209,13 +212,13 @@ describe('improve counter', () => {
       key: 'improve_counter_lifetime',
       value: { entries: [{ date: '1970/1/1', count: 2 }] },
     });
-    client.dispatch('gmcp.char.state', { improve: 4, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 4 });
     showLifetime();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
     client.print.mockClear();
-    client.dispatch('gmcp.char.state', { improve: 5, object_num: 1 });
-    client.dispatch('gmcp.char.state', { improve: 6, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 5 });
+    client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 6 postepow/);
@@ -230,7 +233,8 @@ describe('improve counter', () => {
       key: 'improve_counter_lifetime',
       value: { entries: [{ date: '1970/1/1', count: 3 }] },
     });
-    client.dispatch('gmcp.char.state', { improve: 6, object_num: 2 });
+    setItemSync('object_num', '2');
+    client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);

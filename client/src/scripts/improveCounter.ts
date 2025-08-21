@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
-import { getCurrentCharacter } from "../storage";
+import { getCurrentCharacter, getItemSync } from "../storage";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
 const SECTION_COLOR = findClosestColor("#ffa500");
@@ -118,7 +118,7 @@ export default class ImproveCounter {
     private level: number = -1;
     private lastObjNum?: number;
     private loaded = false;
-    private pendingLevel?: { level: number; objNum?: number };
+    private pendingLevel?: number;
     private initialized = false;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
@@ -131,10 +131,10 @@ export default class ImproveCounter {
             if (event.detail.key === ImproveCounter.STORAGE_KEY) {
                 this.load(event.detail.value ?? {});
                 this.loaded = true;
-                if (this.pendingLevel) {
-                    const { level, objNum } = this.pendingLevel;
+                if (this.pendingLevel !== undefined) {
+                    const level = this.pendingLevel;
                     this.pendingLevel = undefined;
-                    this.handleLevel(level, objNum);
+                    this.handleLevel(level);
                 }
             }
             if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
@@ -164,9 +164,8 @@ export default class ImproveCounter {
 
         this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
             const level = ev.detail?.improve;
-            const obj = ev.detail?.object_num;
             if (typeof level === "number") {
-                this.handleLevel(level, typeof obj === "number" ? obj : undefined);
+                this.handleLevel(level);
             }
         });
     }
@@ -185,11 +184,18 @@ export default class ImproveCounter {
         this.persist();
     }
 
-    private handleLevel(level: number, objNum?: number) {
+    private handleLevel(level: number) {
         if (!this.loaded) {
-            this.pendingLevel = { level, objNum };
+            this.pendingLevel = level;
             return;
         }
+        const objStored = getItemSync("object_num")?.object_num;
+        const objNum =
+            typeof objStored === "string"
+                ? parseInt(objStored, 10)
+                : typeof objStored === "number"
+                ? objStored
+                : undefined;
         const newObj =
             objNum !== undefined &&
             this.lastObjNum !== undefined &&
