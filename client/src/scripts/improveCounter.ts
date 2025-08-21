@@ -92,6 +92,8 @@ export default class ImproveCounter {
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
     private lastObjNum?: number;
+    private loaded = false;
+    private pendingLevel?: { level: number; objNum?: number };
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
@@ -102,6 +104,12 @@ export default class ImproveCounter {
         this.client.addEventListener("storage", (event: CustomEvent) => {
             if (event.detail.key === ImproveCounter.STORAGE_KEY) {
                 this.load(event.detail.value ?? {});
+                this.loaded = true;
+                if (this.pendingLevel) {
+                    const { level, objNum } = this.pendingLevel;
+                    this.pendingLevel = undefined;
+                    this.handleLevel(level, objNum);
+                }
             }
             if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
                 this.loadLifetime(event.detail.value ?? {});
@@ -141,16 +149,25 @@ export default class ImproveCounter {
         this.entries = [];
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
-        this.level = -1;
-        this.lastObjNum = undefined;
         this.persist();
     }
 
     private handleLevel(level: number, objNum?: number) {
+        if (!this.loaded) {
+            this.pendingLevel = { level, objNum };
+            return;
+        }
         if (this.level < 0) {
-            this.level = level;
-            this.lastObjNum = objNum;
-            this.persist();
+            if (this.lastObjNum !== objNum) {
+                this.level = level;
+                this.lastObjNum = objNum;
+                const state = STATES[level] ?? String(level);
+                this.recordInitial(state);
+            } else {
+                this.level = level;
+                this.lastObjNum = objNum;
+                this.persist();
+            }
             return;
         }
         if (level > this.level) {
@@ -169,6 +186,19 @@ export default class ImproveCounter {
         }
     }
 
+    private addToLifetime(state: string, time: number) {
+        if (!this.lifetimeEnabled) return;
+        const d = new Date(time);
+        const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+        let day = this.lifetime[this.lifetime.length - 1];
+        if (!day || day.date !== date) {
+            day = { date, states: [] };
+            this.lifetime.push(day);
+        }
+        day.states.push(state);
+        this.persistLifetime();
+    }
+
     private record(state: string) {
         const now = Date.now();
         const kills = this.getKills();
@@ -180,17 +210,7 @@ export default class ImproveCounter {
             killsTeam: kills.team - this.lastKills.team,
         };
         this.entries.push(entry);
-        if (this.lifetimeEnabled) {
-            const d = new Date(now);
-            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-            let day = this.lifetime[this.lifetime.length - 1];
-            if (!day || day.date !== date) {
-                day = { date, states: [] };
-                this.lifetime.push(day);
-            }
-            day.states.push(state);
-            this.persistLifetime();
-        }
+        this.addToLifetime(state, now);
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
@@ -201,6 +221,14 @@ export default class ImproveCounter {
             SECTION_COLOR,
         );
         this.client.println(msg);
+    }
+
+    private recordInitial(state: string) {
+        const now = Date.now();
+        this.addToLifetime(state, now);
+        this.lastTime = now;
+        this.lastKills = this.getKills();
+        this.persist();
     }
 
     private load(data: any = {}) {

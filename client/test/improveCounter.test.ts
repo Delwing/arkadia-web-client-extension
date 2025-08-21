@@ -94,14 +94,14 @@ describe('improve counter', () => {
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
-    expect(printed).toMatch(/male/);
-    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    expect(printed).toMatch(/bardzo male \+ male/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // reset should not clear lifetime
     reset();
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
   test('manual lifetime aliases modify list', () => {
@@ -129,6 +129,19 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 3, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+  });
+
+  test('adds initial improvement when not yet recorded', () => {
+    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    showLifetime();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    client.print.mockClear();
+    // duplicate state should not add again
+    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    showLifetime();
+    const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 });
