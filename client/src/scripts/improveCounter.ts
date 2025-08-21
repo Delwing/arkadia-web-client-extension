@@ -182,9 +182,9 @@ export default class ImproveCounter {
                     const state = STATES[level] ?? String(level);
                     this.recordInitial(state);
                 }
-            } else if (this.lastObjNum !== objNum) {
+            } else {
                 const state = STATES[level] ?? String(level);
-                this.recordInitial(state);
+                this.record(state);
             }
             this.level = level;
             this.lastObjNum = objNum;
@@ -193,7 +193,7 @@ export default class ImproveCounter {
             return;
         }
         if (level > this.level) {
-            if (this.lastObjNum === objNum) {
+            if (objNum !== undefined && this.lastObjNum === objNum) {
                 this.level = level;
                 this.persist();
                 return;

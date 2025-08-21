@@ -61,13 +61,14 @@ describe('improve counter', () => {
     expect(client.println).toHaveBeenCalledWith(message);
     show();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/1\. male/);
+    expect(printed).toMatch(/2\. male/);
     expect(printed).toMatch(/czas 0:30/);
     expect(printed).toMatch(/zabici 1\/1/);
   });
 
   test('does nothing when level does not change', () => {
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.println.mockClear();
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     expect(client.println).not.toHaveBeenCalled();
   });
@@ -164,5 +165,16 @@ describe('improve counter', () => {
     const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     expect(c.println).not.toHaveBeenCalled();
+  });
+
+  test('counts improvement without object number', () => {
+    client.dispatch('gmcp.char.state', { improve: 1 });
+    show();
+    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/Dzisiaj: 1/);
+    client.print.mockClear();
+    showLifetime();
+    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 });
