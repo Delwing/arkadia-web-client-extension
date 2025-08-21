@@ -91,6 +91,7 @@ export default class ImproveCounter {
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
+    private lastObjNum?: number;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
@@ -122,8 +123,9 @@ export default class ImproveCounter {
 
         this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
             const level = ev.detail?.improve;
+            const obj = ev.detail?.object_num;
             if (typeof level === "number") {
-                this.handleLevel(level);
+                this.handleLevel(level, typeof obj === "number" ? obj : undefined);
             }
         });
     }
@@ -140,17 +142,25 @@ export default class ImproveCounter {
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.level = -1;
+        this.lastObjNum = undefined;
         this.persist();
     }
 
-    private handleLevel(level: number) {
+    private handleLevel(level: number, objNum?: number) {
         if (this.level < 0) {
             this.level = level;
+            this.lastObjNum = objNum;
             this.persist();
             return;
         }
         if (level > this.level) {
+            if (this.lastObjNum === objNum) {
+                this.level = level;
+                this.persist();
+                return;
+            }
             this.level = level;
+            this.lastObjNum = objNum;
             const state = STATES[level] ?? String(level);
             this.record(state);
         } else if (level < this.level) {
@@ -198,6 +208,7 @@ export default class ImproveCounter {
         this.lastTime = typeof data.lastTime === "number" && data.lastTime > 0 ? data.lastTime : Date.now();
         this.lastKills = data.lastKills || this.getKills();
         this.level = typeof data.level === "number" ? data.level : -1;
+        this.lastObjNum = typeof data.lastObjNum === "number" ? data.lastObjNum : undefined;
     }
 
     private loadLifetime(data: any = {}) {
@@ -238,6 +249,7 @@ export default class ImproveCounter {
                 lastTime: this.lastTime,
                 lastKills: this.lastKills,
                 level: this.level,
+                lastObjNum: this.lastObjNum,
             },
         });
     };
