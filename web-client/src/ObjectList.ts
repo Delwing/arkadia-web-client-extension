@@ -146,7 +146,7 @@ export default class ObjectList {
                 coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
             } else if (
                 obj.shortcut !== '@' &&
-                (typeof obj.state === "number" || obj.attack_num !== undefined || obj.attack_target || obj.defense_target)
+                (typeof obj.state === "number" || obj.attack_num !== undefined)
             ) {
                 coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
