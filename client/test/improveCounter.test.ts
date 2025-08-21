@@ -30,6 +30,7 @@ describe('improve counter', () => {
   let show: () => void;
   let showLifetime: () => void;
   let reset: () => void;
+  let aliases: { pattern: RegExp; callback: any }[];
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -37,15 +38,15 @@ describe('improve counter', () => {
     const killCounter = initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
     client.dispatch('storage', { key: 'kill_counter_session', value: {} });
-    const improveAliases: { pattern: RegExp; callback: () => void }[] = [];
-    initImproveCounter((client as unknown) as any, killCounter, improveAliases);
+    aliases = [];
+    initImproveCounter((client as unknown) as any, killCounter, aliases);
     client.dispatch('storage', { key: 'improve_counter', value: {} });
-    client.dispatch('storage', { key: 'improve_counter_lifetime', value: [] });
+    client.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    show = improveAliases[0].callback;
-    reset = improveAliases[1].callback;
-    showLifetime = improveAliases[2].callback;
+    show = aliases[0].callback;
+    reset = aliases[1].callback;
+    showLifetime = aliases[2].callback;
     // reset state using alias
     reset();
   });
@@ -101,5 +102,21 @@ describe('improve counter', () => {
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+  });
+
+  test('manual lifetime aliases modify list', () => {
+    const add = aliases.find((a) => a.pattern.source === '\\/postepy2\\+ ([0-9]+)$');
+    const remove = aliases.find((a) => a.pattern.source === '\\/postepy2- ([0-9]+)$');
+    expect(add).toBeDefined();
+    expect(remove).toBeDefined();
+    add!.callback('/postepy2+ 2'.match(add!.pattern)!);
+    showLifetime();
+    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+    client.print.mockClear();
+    remove!.callback('/postepy2- 1'.match(remove!.pattern)!);
+    showLifetime();
+    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 });

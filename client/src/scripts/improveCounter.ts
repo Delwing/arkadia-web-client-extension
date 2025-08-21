@@ -87,6 +87,7 @@ export default class ImproveCounter {
     private killCounter: any;
     private entries: Entry[] = [];
     private lifetime: { state: string; time: number }[] = [];
+    private lifetimeEnabled = true;
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
@@ -102,7 +103,7 @@ export default class ImproveCounter {
                 this.load(event.detail.value ?? {});
             }
             if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
-                this.loadLifetime(event.detail.value ?? []);
+                this.loadLifetime(event.detail.value ?? {});
             }
         });
 
@@ -169,11 +170,13 @@ export default class ImproveCounter {
             killsTeam: kills.team - this.lastKills.team,
         };
         this.entries.push(entry);
-        this.lifetime.push({ state, time: now });
+        if (this.lifetimeEnabled) {
+            this.lifetime.push({ state, time: now });
+            this.persistLifetime();
+        }
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
-        this.persistLifetime();
         const msg = colorString(
             `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
@@ -190,8 +193,14 @@ export default class ImproveCounter {
         this.level = typeof data.level === "number" ? data.level : -1;
     }
 
-    private loadLifetime(data: any = []) {
-        this.lifetime = Array.isArray(data) ? data : [];
+    private loadLifetime(data: any = {}) {
+        if (Array.isArray(data)) {
+            this.lifetime = data;
+            this.lifetimeEnabled = true;
+        } else {
+            this.lifetime = Array.isArray(data.entries) ? data.entries : [];
+            this.lifetimeEnabled = data.enabled !== false;
+        }
     }
 
     private persist = () => {
@@ -206,14 +215,49 @@ export default class ImproveCounter {
             },
         });
     };
-
+    
     private persistLifetime = () => {
         this.client.port?.postMessage({
             type: "SET_STORAGE",
             key: ImproveCounter.LIFETIME_KEY,
-            value: this.lifetime,
+            value: { entries: this.lifetime, enabled: this.lifetimeEnabled },
         });
     };
+
+    addLifetime(count: number, id?: number) {
+        const toAdd = Math.min(Math.max(0, count), 15);
+        if (toAdd <= 0) return;
+        if (typeof id === "number") {
+            const idx = id - 1;
+            if (idx < 0 || idx >= this.lifetime.length) return;
+            const ref = this.lifetime[idx];
+            for (let i = 0; i < toAdd; i++) {
+                this.lifetime.splice(idx + 1, 0, { state: ref.state, time: ref.time });
+            }
+        } else {
+            for (let i = 0; i < toAdd; i++) {
+                this.lifetime.push({ state: "manual", time: Date.now() });
+            }
+        }
+        this.persistLifetime();
+    }
+
+    removeLifetime(id: number, count: number = 1) {
+        const idx = id - 1;
+        if (idx < 0 || idx >= this.lifetime.length) return;
+        this.lifetime.splice(idx, Math.max(1, count));
+        this.persistLifetime();
+    }
+
+    resetLifetime() {
+        this.lifetime = [];
+        this.persistLifetime();
+    }
+
+    setLifetimeEnabled(on: boolean) {
+        this.lifetimeEnabled = on;
+        this.persistLifetime();
+    }
 
     private formatTable(): string {
         const WIDTH = 74;
@@ -329,7 +373,15 @@ export function initImproveCounter(
     if (aliases) {
         aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
         aliases.push({ pattern: /\/postepy_reset$/, callback: () => counter.reset() });
-        aliases.push({ pattern: /\/postepy_all$/, callback: () => counter.showLifetime() });
+        aliases.push({ pattern: /\/postepy2$/, callback: () => counter.showLifetime() });
+        aliases.push({ pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime() });
+        aliases.push({ pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false) });
+        aliases.push({ pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true) });
+        aliases.push({ pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1) });
+        aliases.push({ pattern: /\/postepy2\+ ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[1], 10)) });
+        aliases.push({ pattern: /\/postepy2\+ ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[2], 10), parseInt(m[1], 10)) });
+        aliases.push({ pattern: /\/postepy2- ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10)) });
+        aliases.push({ pattern: /\/postepy2- ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10), parseInt(m[2], 10)) });
     }
     return counter;
 }
