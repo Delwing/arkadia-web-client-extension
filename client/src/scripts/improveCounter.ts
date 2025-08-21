@@ -190,22 +190,18 @@ export default class ImproveCounter {
             this.pendingLevel = { level, objNum };
             return;
         }
-        if (!this.initialized) {
-            if (this.level >= 0) {
-                if (level > this.level) {
-                    for (let l = this.level + 1; l <= level; l++) {
-                        const state = STATES[l] ?? String(l);
-                        this.recordInitial(state);
-                    }
-                } else if (
-                    objNum !== undefined &&
-                    this.lastObjNum !== undefined &&
-                    objNum !== this.lastObjNum
-                ) {
-                    const state = STATES[level] ?? String(level);
-                    this.recordInitial(state);
+        const newObj =
+            objNum !== undefined &&
+            this.lastObjNum !== undefined &&
+            objNum !== this.lastObjNum;
+
+        if (!this.initialized || newObj) {
+            if (newObj) {
+                for (let l = 1; l <= level; l++) {
+                    const s = STATES[l] ?? String(l);
+                    this.recordInitial(s);
                 }
-            } else {
+            } else if (this.level < 0) {
                 for (let l = 1; l < level; l++) {
                     const s = STATES[l] ?? String(l);
                     this.recordInitial(s);
@@ -213,6 +209,11 @@ export default class ImproveCounter {
                 if (level > 0) {
                     const state = STATES[level] ?? String(level);
                     this.record(state);
+                }
+            } else if (level > this.level) {
+                for (let l = this.level + 1; l <= level; l++) {
+                    const state = STATES[l] ?? String(l);
+                    this.recordInitial(state);
                 }
             }
             this.level = level;
@@ -222,22 +223,17 @@ export default class ImproveCounter {
             return;
         }
         if (level > this.level) {
-            if (objNum !== undefined && this.lastObjNum === objNum) {
-                this.level = level;
-                this.persist();
-                return;
-            }
             for (let l = this.level + 1; l <= level; l++) {
                 const state = STATES[l] ?? String(l);
                 this.record(state);
             }
             this.level = level;
-            this.lastObjNum = objNum;
             this.persist();
         } else if (level < this.level) {
             this.level = level;
             this.persist();
         }
+        this.lastObjNum = objNum;
     }
 
     private addToLifetime(count: number, time: number) {
