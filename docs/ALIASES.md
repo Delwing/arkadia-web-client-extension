@@ -12,6 +12,15 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/cechy** - uruchamia licznik poziomowania i wyświetla postępy.
 - **/postepy** - wyświetla postępy ulepszeń.
 - **/postepy_reset** - zeruje licznik postępów.
+- **/postepy2** - wyświetla globalny licznik postępów.
+- **/postepy2+** - dodaje jeden postęp do globalnego licznika.
+- **/postepy2+ _ile_** - dodaje _ile_ postępów (maksymalnie 15).
+- **/postepy2+ _id ile_** - kopiuje _ile_ postępów z wpisu o numerze _id_.
+- **/postepy2- _id_** - usuwa wpis o numerze _id_ z globalnego licznika.
+- **/postepy2- _id ile_** - usuwa _ile_ wpisów zaczynając od _id_.
+- **/postepy2_reset** - resetuje globalny licznik postępów.
+- **/postepy2_off** - wyłącza automatyczne dodawanie do globalnego licznika.
+- **/postepy2_on** - włącza automatyczne dodawanie do globalnego licznika.
 - **/przejrzyj [_co_]** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami lub podanego pojemnika (wykorzystuje komendę `ob`).
 - **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
 
