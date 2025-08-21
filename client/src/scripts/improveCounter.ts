@@ -198,10 +198,13 @@ export default class ImproveCounter {
                 this.persist();
                 return;
             }
+            for (let l = this.level + 1; l <= level; l++) {
+                const state = STATES[l] ?? String(l);
+                this.record(state);
+            }
             this.level = level;
             this.lastObjNum = objNum;
-            const state = STATES[level] ?? String(level);
-            this.record(state);
+            this.persist();
         } else if (level < this.level) {
             this.level = level;
             this.persist();

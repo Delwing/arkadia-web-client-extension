@@ -133,6 +133,15 @@ describe('improve counter', () => {
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
+  test('handles improvement delta', () => {
+    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    client.dispatch('gmcp.char.state', { improve: 4, object_num: 2 });
+    showLifetime();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/bardzo male \+ male \+ nieduze/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
+  });
+
   test('adds initial improvement when not yet recorded', () => {
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     showLifetime();
