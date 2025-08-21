@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
+import { colorString, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
@@ -50,10 +50,17 @@ function visibleLength(str: string): number {
 
 function createPad(width: number, left: number, right: number) {
     const contentWidth = width - left - right;
-    return (content = "") =>
-        `|${" ".repeat(left)}${content}${" ".repeat(
+    return (content = "") => {
+        if (visibleLength(content) > contentWidth) {
+            const plain = stripAnsiCodes(content);
+            const prefix = content.match(/^\x1b\[[0-9;]*m/)?.[0] || "";
+            const suffix = prefix ? RESET : "";
+            content = prefix + plain.slice(0, contentWidth) + suffix;
+        }
+        return `|${" ".repeat(left)}${content}${" ".repeat(
             Math.max(0, contentWidth - visibleLength(content))
         )}${" ".repeat(right)}|`;
+    };
 }
 
 function createHeader(width: number, offset: number, color: number) {
