@@ -29,6 +29,7 @@ const characterScopedKeys = new Set([
     'settings',
     'kill_counter',
     'improve_counter',
+    'improve_counter_lifetime',
     'deposits',
     'containers',
     'herb_counts',

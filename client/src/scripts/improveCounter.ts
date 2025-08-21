@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
+import { getCurrentCharacter } from "../storage";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
 const SECTION_COLOR = findClosestColor("#ffa500");
@@ -85,10 +86,12 @@ export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
     private entries: Entry[] = [];
+    private lifetime: { state: string; time: number }[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
     private static readonly STORAGE_KEY = "improve_counter";
+    private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
     constructor(client: Client, killCounter: any) {
         this.client = client;
@@ -97,6 +100,9 @@ export default class ImproveCounter {
         this.client.addEventListener("storage", (event: CustomEvent) => {
             if (event.detail.key === ImproveCounter.STORAGE_KEY) {
                 this.load(event.detail.value ?? {});
+            }
+            if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
+                this.loadLifetime(event.detail.value ?? []);
             }
         });
 
@@ -107,6 +113,10 @@ export default class ImproveCounter {
         this.client.port?.postMessage({
             type: "GET_STORAGE",
             key: ImproveCounter.STORAGE_KEY,
+        });
+        this.client.port?.postMessage({
+            type: "GET_STORAGE",
+            key: ImproveCounter.LIFETIME_KEY,
         });
 
         this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
@@ -159,9 +169,11 @@ export default class ImproveCounter {
             killsTeam: kills.team - this.lastKills.team,
         };
         this.entries.push(entry);
+        this.lifetime.push({ state, time: now });
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
+        this.persistLifetime();
         const msg = colorString(
             `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
@@ -178,6 +190,10 @@ export default class ImproveCounter {
         this.level = typeof data.level === "number" ? data.level : -1;
     }
 
+    private loadLifetime(data: any = []) {
+        this.lifetime = Array.isArray(data) ? data : [];
+    }
+
     private persist = () => {
         this.client.port?.postMessage({
             type: "SET_STORAGE",
@@ -188,6 +204,14 @@ export default class ImproveCounter {
                 lastKills: this.lastKills,
                 level: this.level,
             },
+        });
+    };
+
+    private persistLifetime = () => {
+        this.client.port?.postMessage({
+            type: "SET_STORAGE",
+            key: ImproveCounter.LIFETIME_KEY,
+            value: this.lifetime,
         });
     };
 
@@ -262,6 +286,38 @@ export default class ImproveCounter {
     show() {
         this.client.print("\n\n" + this.formatTable() + "\n\n");
     }
+
+    private formatLifetimeTable(): string {
+        const WIDTH = 57;
+        const INNER = WIDTH - 2;
+        const pad = createPad(INNER, 1, 1);
+        const lines: string[] = [];
+        lines.push(`+${"-".repeat(INNER)}+`);
+        lines.push(pad());
+        const name = getCurrentCharacter() || "";
+        lines.push(pad(`POSTAC: ${name}`));
+        lines.push(pad());
+        this.lifetime.forEach((e, idx) => {
+            const d = new Date(e.time);
+            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+            const line = `[${String(idx + 1).padStart(4, " ")}] ${date}    - ${e.state}`;
+            lines.push(pad(line));
+        });
+        lines.push(pad());
+        lines.push(pad("      ------------------------------------"));
+        lines.push(pad());
+        const total = this.lifetime.length;
+        const approx = (total / 15).toFixed(2);
+        lines.push(pad(`WSZYSTKICH DO TEJ PORY: ${total} postepow`));
+        lines.push(pad(`                         ~${approx} niebotycznych`));
+        lines.push(pad());
+        lines.push(`+${"-".repeat(INNER)}+`);
+        return lines.join("\n");
+    }
+
+    showLifetime() {
+        this.client.print("\n" + this.formatLifetimeTable() + "\n");
+    }
 }
 
 export function initImproveCounter(
@@ -273,6 +329,7 @@ export function initImproveCounter(
     if (aliases) {
         aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
         aliases.push({ pattern: /\/postepy_reset$/, callback: () => counter.reset() });
+        aliases.push({ pattern: /\/postepy_all$/, callback: () => counter.showLifetime() });
     }
     return counter;
 }

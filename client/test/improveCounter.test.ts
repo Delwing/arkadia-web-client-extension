@@ -28,6 +28,8 @@ describe('improve counter', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
   let show: () => void;
+  let showLifetime: () => void;
+  let reset: () => void;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -38,11 +40,14 @@ describe('improve counter', () => {
     const improveAliases: { pattern: RegExp; callback: () => void }[] = [];
     initImproveCounter((client as unknown) as any, killCounter, improveAliases);
     client.dispatch('storage', { key: 'improve_counter', value: {} });
+    client.dispatch('storage', { key: 'improve_counter_lifetime', value: [] });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     show = improveAliases[0].callback;
+    reset = improveAliases[1].callback;
+    showLifetime = improveAliases[2].callback;
     // reset state using alias
-    improveAliases[1].callback();
+    reset();
   });
 
   test('records state changes, prints notification and table', () => {
@@ -78,5 +83,23 @@ describe('improve counter', () => {
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/Dzisiaj: 0/);
     expect(printed).not.toMatch(/1\. male/);
+  });
+
+  test('lifetime list persists', () => {
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    parse('Zabiles smoka chaosu.');
+    jest.advanceTimersByTime(30000);
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    showLifetime();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/\[\s*1\]/);
+    expect(printed).toMatch(/male/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    client.print.mockClear();
+    // reset should not clear lifetime
+    reset();
+    showLifetime();
+    const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 });
