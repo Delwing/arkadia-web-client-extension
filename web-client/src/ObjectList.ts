@@ -121,6 +121,8 @@ export default class ObjectList {
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
         });
+        const playerFighting = objects.some((o: any) => o.attack_target || o.defense_target);
+        const inCombat = teamAttacking || playerFighting;
 
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut)
@@ -145,8 +147,10 @@ export default class ObjectList {
                 const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
                 coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
             } else if (
+                inCombat &&
                 obj.shortcut !== '@' &&
-                (typeof obj.state === "number" || obj.attack_num !== undefined)
+                (typeof obj.state === "number" ||
+                    (obj.attack_num !== false && obj.attack_num !== undefined))
             ) {
                 coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
