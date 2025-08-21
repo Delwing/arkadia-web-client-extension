@@ -66,6 +66,7 @@ import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
+import initNoExitHighlight from './scripts/noExitHighlight'
 import Client from "./Client";
 
 
@@ -89,6 +90,8 @@ export function registerScripts(client: Client) {
             client.Map.moveBack()
         }, 'blocker')
     })
+
+    initNoExitHighlight(client)
 
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
