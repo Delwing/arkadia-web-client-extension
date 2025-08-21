@@ -73,6 +73,14 @@ describe('improve counter', () => {
     expect(client.println).not.toHaveBeenCalled();
   });
 
+  test('counts initial level above zero as multiple improvements', () => {
+    client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
+    showLifetime();
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+  });
+
   test('reset event clears entries', () => {
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     parse('Zabiles smoka chaosu.');
@@ -95,14 +103,14 @@ describe('improve counter', () => {
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
-    expect(printed).toMatch(/- 2/);
-    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+    expect(printed).toMatch(/- 3/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
     client.print.mockClear();
     // reset should not clear lifetime
     reset();
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
 
   test('manual lifetime aliases modify list', () => {
@@ -132,8 +140,8 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 3, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 2/);
-    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+    expect(printed).toMatch(/- 3/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
 
   test('handles improvement delta', () => {
@@ -141,8 +149,8 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 4, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/- 3/);
-    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
+    expect(printed).toMatch(/- 4/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
   });
 
   test('adds initial improvement when not yet recorded', () => {

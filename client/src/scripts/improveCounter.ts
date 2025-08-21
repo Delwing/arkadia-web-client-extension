@@ -183,8 +183,14 @@ export default class ImproveCounter {
                     this.recordInitial(state);
                 }
             } else {
-                const state = STATES[level] ?? String(level);
-                this.record(state);
+                for (let l = 1; l < level; l++) {
+                    const s = STATES[l] ?? String(l);
+                    this.recordInitial(s);
+                }
+                if (level > 0) {
+                    const state = STATES[level] ?? String(level);
+                    this.record(state);
+                }
             }
             this.level = level;
             this.lastObjNum = objNum;
