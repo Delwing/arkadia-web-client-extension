@@ -144,7 +144,10 @@ export default class ObjectList {
                 }
                 const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
                 coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
-            } else {
+            } else if (
+                obj.shortcut !== '@' &&
+                (typeof obj.state === "number" || obj.attack_num !== undefined || obj.attack_target || obj.defense_target)
+            ) {
                 coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
