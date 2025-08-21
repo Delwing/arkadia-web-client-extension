@@ -135,17 +135,17 @@ export default class ObjectList {
             let coloredDesc = rawDesc;
             if (obj.avatar_target) {
                 coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
-            } else {
-                if (tm?.isInTeam?.(rawDesc)) {
-                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-                    let style = "color:springgreen";
-                    const classes = [] as string[];
-                    if (teamAttacking && !isAttacking) {
-                        classes.push("team-not-attacking");
-                    }
-                    const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
-                    coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
+            } else if (tm?.isInTeam?.(rawDesc)) {
+                const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+                let style = "color:springgreen";
+                const classes = [] as string[];
+                if (teamAttacking && !isAttacking) {
+                    classes.push("team-not-attacking");
                 }
+                const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
+                coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
+            } else {
+                coloredDesc = `<span style="color:lavender">${rawDesc}</span>`;
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
             let bar = "";
