@@ -200,4 +200,47 @@ describe('improve counter', () => {
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
+
+  test('counts offline improvements and new gains after login', () => {
+    client.dispatch('storage', {
+      key: 'improve_counter',
+      value: { level: 2, lastObjNum: 1 },
+    });
+    client.dispatch('storage', {
+      key: 'improve_counter_lifetime',
+      value: { entries: [{ date: '1970/1/1', count: 2 }] },
+    });
+    client.dispatch('gmcp.char.state', { improve: 4, object_num: 2 });
+    showLifetime();
+    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
+    client.print.mockClear();
+    client.dispatch('gmcp.char.state', { improve: 5, object_num: 3 });
+    client.dispatch('gmcp.char.state', { improve: 6, object_num: 4 });
+    showLifetime();
+    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 6 postepow/);
+  });
+
+  test('accumulates improvements across sessions with object numbers', () => {
+    client.dispatch('storage', {
+      key: 'improve_counter',
+      value: { level: 3, lastObjNum: 1 },
+    });
+    client.dispatch('storage', {
+      key: 'improve_counter_lifetime',
+      value: { entries: [{ date: '1970/1/1', count: 3 }] },
+    });
+    client.dispatch('gmcp.char.state', { improve: 6, object_num: 2 });
+    showLifetime();
+    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 6 postepow/);
+    client.print.mockClear();
+    client.dispatch('gmcp.char.state', { improve: 7, object_num: 3 });
+    client.dispatch('gmcp.char.state', { improve: 8, object_num: 4 });
+    client.dispatch('gmcp.char.state', { improve: 9, object_num: 5 });
+    showLifetime();
+    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
+  });
 });
