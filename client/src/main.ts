@@ -1,6 +1,3 @@
-import People from "./People";
-import registerLuaGagTriggers from "./scripts/./luaGags";
-
 import blockers from './blockers.json'
 import initShips from './scripts/ships'
 import initTransportStops from './scripts/transportStops'
@@ -102,6 +99,10 @@ export function registerScripts(client: Client) {
             return;
         }
         client.Map.followMove(matches[2])
+    }, 'follow')
+
+    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
+        client.Map.followMove(matches.direction)
     }, 'follow')
 
     client.Triggers.registerTrigger([
