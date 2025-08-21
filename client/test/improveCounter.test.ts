@@ -107,14 +107,16 @@ describe('improve counter', () => {
   test('manual lifetime aliases modify list', () => {
     const add = aliases.find((a) => a.pattern.source === '\\/postepy2\\+ ([0-9]+)$');
     const remove = aliases.find((a) => a.pattern.source === '\\/postepy2- ([0-9]+)$');
+    const removeCount = aliases.find((a) => a.pattern.source === '\\/postepy2- ([0-9]+) ([0-9]+)$');
     expect(add).toBeDefined();
     expect(remove).toBeDefined();
+    expect(removeCount).toBeDefined();
     add!.callback('/postepy2+ 2'.match(add!.pattern)!);
     showLifetime();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
-    remove!.callback('/postepy2- 1'.match(remove!.pattern)!);
+    removeCount!.callback('/postepy2- 1 1'.match(removeCount!.pattern)!);
     showLifetime();
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);

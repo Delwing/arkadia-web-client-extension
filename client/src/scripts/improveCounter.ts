@@ -86,7 +86,7 @@ export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
     private entries: Entry[] = [];
-    private lifetime: { state: string; time: number }[] = [];
+    private lifetime: { date: string; states: string[] }[] = [];
     private lifetimeEnabled = true;
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
@@ -171,7 +171,14 @@ export default class ImproveCounter {
         };
         this.entries.push(entry);
         if (this.lifetimeEnabled) {
-            this.lifetime.push({ state, time: now });
+            const d = new Date(now);
+            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+            let day = this.lifetime[this.lifetime.length - 1];
+            if (!day || day.date !== date) {
+                day = { date, states: [] };
+                this.lifetime.push(day);
+            }
+            day.states.push(state);
             this.persistLifetime();
         }
         this.lastTime = now;
@@ -194,11 +201,30 @@ export default class ImproveCounter {
     }
 
     private loadLifetime(data: any = {}) {
+        const convertOld = (arr: any[]) => {
+            const result: { date: string; states: string[] }[] = [];
+            arr.forEach((e) => {
+                const d = new Date(e.time);
+                const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+                let day = result.find((x) => x.date === date);
+                if (!day) {
+                    day = { date, states: [] };
+                    result.push(day);
+                }
+                day.states.push(e.state);
+            });
+            return result;
+        };
         if (Array.isArray(data)) {
-            this.lifetime = data;
+            this.lifetime = convertOld(data);
             this.lifetimeEnabled = true;
         } else {
-            this.lifetime = Array.isArray(data.entries) ? data.entries : [];
+            const entries = Array.isArray(data.entries) ? data.entries : [];
+            if (entries.length && entries[0] && (entries[0] as any).state !== undefined) {
+                this.lifetime = convertOld(entries);
+            } else {
+                this.lifetime = entries as { date: string; states: string[] }[];
+            }
             this.lifetimeEnabled = data.enabled !== false;
         }
     }
@@ -230,22 +256,38 @@ export default class ImproveCounter {
         if (typeof id === "number") {
             const idx = id - 1;
             if (idx < 0 || idx >= this.lifetime.length) return;
-            const ref = this.lifetime[idx];
+            const day = this.lifetime[idx];
             for (let i = 0; i < toAdd; i++) {
-                this.lifetime.splice(idx + 1, 0, { state: ref.state, time: ref.time });
+                day.states.push("manual");
             }
         } else {
+            const d = new Date();
+            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+            let day = this.lifetime[this.lifetime.length - 1];
+            if (!day || day.date !== date) {
+                day = { date, states: [] };
+                this.lifetime.push(day);
+            }
             for (let i = 0; i < toAdd; i++) {
-                this.lifetime.push({ state: "manual", time: Date.now() });
+                day.states.push("manual");
             }
         }
         this.persistLifetime();
     }
 
-    removeLifetime(id: number, count: number = 1) {
+    removeLifetime(id: number, count?: number) {
         const idx = id - 1;
         if (idx < 0 || idx >= this.lifetime.length) return;
-        this.lifetime.splice(idx, Math.max(1, count));
+        if (typeof count === "number") {
+            const day = this.lifetime[idx];
+            const n = Math.min(Math.max(1, count), day.states.length);
+            day.states.splice(0, n);
+            if (day.states.length === 0) {
+                this.lifetime.splice(idx, 1);
+            }
+        } else {
+            this.lifetime.splice(idx, 1);
+        }
         this.persistLifetime();
     }
 
@@ -342,15 +384,20 @@ export default class ImproveCounter {
         lines.push(pad(`POSTAC: ${name}`));
         lines.push(pad());
         this.lifetime.forEach((e, idx) => {
-            const d = new Date(e.time);
-            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-            const line = `[${String(idx + 1).padStart(4, " ")}] ${date}    - ${e.state}`;
+            const summary: Record<string, number> = {};
+            e.states.forEach((s) => {
+                summary[s] = (summary[s] || 0) + 1;
+            });
+            const parts = Object.entries(summary).map(([s, c]) =>
+                c > 1 ? `${c} ${s}` : s
+            );
+            const line = `[${String(idx + 1).padStart(4, " ")}] ${e.date}    - ${parts.join(" + ")}`;
             lines.push(pad(line));
         });
         lines.push(pad());
         lines.push(pad("      ------------------------------------"));
         lines.push(pad());
-        const total = this.lifetime.length;
+        const total = this.lifetime.reduce((sum, e) => sum + e.states.length, 0);
         const approx = (total / 15).toFixed(2);
         lines.push(pad(`WSZYSTKICH DO TEJ PORY: ${total} postepow`));
         lines.push(pad(`                         ~${approx} niebotycznych`));
