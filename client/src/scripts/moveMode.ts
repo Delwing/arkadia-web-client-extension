@@ -14,6 +14,7 @@ export default function initMoveMode(client: Client) {
     }
 
     function toggle() {
+        if (client.carriageMode) return;
         client.moveMode = (client.moveMode + 1) % LABELS.length;
         update();
     }

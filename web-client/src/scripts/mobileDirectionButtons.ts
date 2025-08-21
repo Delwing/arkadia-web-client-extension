@@ -708,6 +708,7 @@ export default class MobileDirectionButtons {
                     this.client.support();
                     break;
                 case 'moveMode':
+                    if (this.client.carriageMode) break;
                     this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
                     newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
                     newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
@@ -727,6 +728,7 @@ export default class MobileDirectionButtons {
             this.client.moveModeButton = newBtn;
             newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
             newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+            newBtn.disabled = this.client.carriageMode;
         } else if (cfg.macro === 'specialExit') {
             const updateLabel = () => {
                 const specialExits = this.client.Map.currentRoom?.specialExits ?? {};

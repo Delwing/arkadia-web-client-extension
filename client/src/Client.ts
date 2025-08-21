@@ -82,7 +82,8 @@ export default class Client {
     suppressMapMoveEvent = false;
     suppressItemEvaluation = false;
     moveMode = 0;
-    moveModeButton?: HTMLInputElement;
+    carriageMode = false;
+    moveModeButton?: HTMLInputElement | HTMLButtonElement;
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {
@@ -323,6 +324,7 @@ export default class Client {
 
     private applyMoveMode(cmd: string, moved?: boolean): string {
         if (!moved) return cmd
+        if (this.carriageMode) return `jedz na ${cmd}`
         if (this.moveMode === 1) return `przemknij ${cmd}`
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
         return cmd
