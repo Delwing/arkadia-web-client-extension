@@ -86,10 +86,10 @@ export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
     private entries: Entry[] = [];
-    private lifetime: { date: string; states: string[] }[] = [];
+    private lifetime: { date: string; count: number }[] = [];
     private lifetimeEnabled = true;
     private lifetimeLoaded = false;
-    private pendingLifetime: { state: string; time: number }[] = [];
+    private pendingLifetime: { count: number; time: number }[] = [];
     private lastTime: number = 0;
     private lastKills = { my: 0, team: 0 };
     private level: number = -1;
@@ -119,7 +119,7 @@ export default class ImproveCounter {
                 this.lifetimeLoaded = true;
                 if (this.pendingLifetime.length) {
                     for (const p of this.pendingLifetime) {
-                        this.addToLifetime(p.state, p.time);
+                        this.addToLifetime(p.count, p.time);
                     }
                     this.pendingLifetime = [];
                 }
@@ -211,20 +211,20 @@ export default class ImproveCounter {
         }
     }
 
-    private addToLifetime(state: string, time: number) {
+    private addToLifetime(count: number, time: number) {
         if (!this.lifetimeEnabled) return;
         if (!this.lifetimeLoaded) {
-            this.pendingLifetime.push({ state, time });
+            this.pendingLifetime.push({ count, time });
             return;
         }
         const d = new Date(time);
         const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
         let day = this.lifetime[this.lifetime.length - 1];
         if (!day || day.date !== date) {
-            day = { date, states: [] };
+            day = { date, count: 0 };
             this.lifetime.push(day);
         }
-        day.states.push(state);
+        day.count += count;
         this.persistLifetime();
     }
 
@@ -239,7 +239,7 @@ export default class ImproveCounter {
             killsTeam: kills.team - this.lastKills.team,
         };
         this.entries.push(entry);
-        this.addToLifetime(state, now);
+        this.addToLifetime(1, now);
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
@@ -252,9 +252,9 @@ export default class ImproveCounter {
         this.client.println(msg);
     }
 
-    private recordInitial(state: string) {
+    private recordInitial(_state: string) {
         const now = Date.now();
-        this.addToLifetime(state, now);
+        this.addToLifetime(1, now);
         this.lastTime = now;
         this.lastKills = this.getKills();
         this.persist();
@@ -269,29 +269,33 @@ export default class ImproveCounter {
     }
 
     private loadLifetime(data: any = {}) {
-        const convertOld = (arr: any[]) => {
-            const result: { date: string; states: string[] }[] = [];
+        const convertLegacy = (arr: any[]) => {
+            const result: { date: string; count: number }[] = [];
             arr.forEach((e) => {
                 const d = new Date(e.time);
                 const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
                 let day = result.find((x) => x.date === date);
                 if (!day) {
-                    day = { date, states: [] };
+                    day = { date, count: 0 };
                     result.push(day);
                 }
-                day.states.push(e.state);
+                day.count += 1;
             });
             return result;
         };
+        const convertStates = (arr: any[]) =>
+            arr.map((e) => ({ date: e.date, count: Array.isArray(e.states) ? e.states.length : 0 }));
         if (Array.isArray(data)) {
-            this.lifetime = convertOld(data);
+            this.lifetime = convertLegacy(data);
             this.lifetimeEnabled = true;
         } else {
             const entries = Array.isArray(data.entries) ? data.entries : [];
             if (entries.length && entries[0] && (entries[0] as any).state !== undefined) {
-                this.lifetime = convertOld(entries);
+                this.lifetime = convertLegacy(entries);
+            } else if (entries.length && (entries[0] as any).states !== undefined) {
+                this.lifetime = convertStates(entries);
             } else {
-                this.lifetime = entries as { date: string; states: string[] }[];
+                this.lifetime = entries as { date: string; count: number }[];
             }
             this.lifetimeEnabled = data.enabled !== false;
         }
@@ -325,21 +329,16 @@ export default class ImproveCounter {
         if (typeof id === "number") {
             const idx = id - 1;
             if (idx < 0 || idx >= this.lifetime.length) return;
-            const day = this.lifetime[idx];
-            for (let i = 0; i < toAdd; i++) {
-                day.states.push("manual");
-            }
+            this.lifetime[idx].count += toAdd;
         } else {
             const d = new Date();
             const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
             let day = this.lifetime[this.lifetime.length - 1];
             if (!day || day.date !== date) {
-                day = { date, states: [] };
+                day = { date, count: 0 };
                 this.lifetime.push(day);
             }
-            for (let i = 0; i < toAdd; i++) {
-                day.states.push("manual");
-            }
+            day.count += toAdd;
         }
         this.persistLifetime();
     }
@@ -349,9 +348,9 @@ export default class ImproveCounter {
         if (idx < 0 || idx >= this.lifetime.length) return;
         if (typeof count === "number") {
             const day = this.lifetime[idx];
-            const n = Math.min(Math.max(1, count), day.states.length);
-            day.states.splice(0, n);
-            if (day.states.length === 0) {
+            const n = Math.min(Math.max(1, count), day.count);
+            day.count -= n;
+            if (day.count === 0) {
                 this.lifetime.splice(idx, 1);
             }
         } else {
@@ -453,20 +452,13 @@ export default class ImproveCounter {
         lines.push(pad(`POSTAC: ${name}`));
         lines.push(pad());
         this.lifetime.forEach((e, idx) => {
-            const summary: Record<string, number> = {};
-            e.states.forEach((s) => {
-                summary[s] = (summary[s] || 0) + 1;
-            });
-            const parts = Object.entries(summary).map(([s, c]) =>
-                c > 1 ? `${c} ${s}` : s
-            );
-            const line = `[${String(idx + 1).padStart(4, " ")}] ${e.date}    - ${parts.join(" + ")}`;
+            const line = `[${String(idx + 1).padStart(4, " ")}] ${e.date}    - ${e.count}`;
             lines.push(pad(line));
         });
         lines.push(pad());
         lines.push(pad("      ------------------------------------"));
         lines.push(pad());
-        const total = this.lifetime.reduce((sum, e) => sum + e.states.length, 0);
+        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
         const approx = (total / 15).toFixed(2);
         lines.push(pad(`WSZYSTKICH DO TEJ PORY: ${total} postepow`));
         lines.push(pad(`                         ~${approx} niebotycznych`));

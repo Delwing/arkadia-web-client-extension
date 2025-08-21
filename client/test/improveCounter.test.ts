@@ -95,7 +95,7 @@ describe('improve counter', () => {
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
-    expect(printed).toMatch(/bardzo male \+ male/);
+    expect(printed).toMatch(/- 2/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // reset should not clear lifetime
@@ -115,11 +115,13 @@ describe('improve counter', () => {
     add!.callback('/postepy2+ 2'.match(add!.pattern)!);
     showLifetime();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/- 2/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     removeCount!.callback('/postepy2- 1 1'.match(removeCount!.pattern)!);
     showLifetime();
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/- 1/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 
@@ -130,6 +132,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 3, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    expect(printed).toMatch(/- 2/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
@@ -138,21 +141,23 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 4, object_num: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/bardzo male \+ male \+ nieduze/);
+    expect(printed).toMatch(/- 3/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
 
   test('adds initial improvement when not yet recorded', () => {
+    client.dispatch('storage', { key: 'improve_counter', value: { level: 0 } });
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    expect(printed).toMatch(/- 2/);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // duplicate state should not add again
     client.dispatch('gmcp.char.state', { improve: 2, object_num: 1 });
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
+    expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
   test('adds missed improvements on login before lifetime loads', () => {
@@ -172,6 +177,7 @@ describe('improve counter', () => {
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
     const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    expect(printed).toMatch(/- 2/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     expect(c.println).not.toHaveBeenCalled();
   });
