@@ -121,6 +121,9 @@ export default class ObjectList {
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
         });
+        const inCombat = objects.some(
+            (o: any) => o.attack_num !== false && o.attack_num !== undefined
+        );
 
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut)
@@ -133,19 +136,21 @@ export default class ObjectList {
             const numLabel = `${prefix}${num}`;
             const rawDesc = obj.desc || "";
             let coloredDesc = rawDesc;
-            if (obj.avatar_target) {
+            if (obj.shortcut === '@') {
+                // leave player's own character uncolored
+            } else if (obj.avatar_target) {
                 coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
-            } else {
-                if (tm?.isInTeam?.(rawDesc)) {
-                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-                    let style = "color:springgreen";
-                    const classes = [] as string[];
-                    if (teamAttacking && !isAttacking) {
-                        classes.push("team-not-attacking");
-                    }
-                    const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
-                    coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
+            } else if (tm?.isInTeam?.(rawDesc)) {
+                const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+                let style = "color:springgreen";
+                const classes = [] as string[];
+                if (teamAttacking && !isAttacking) {
+                    classes.push("team-not-attacking");
                 }
+                const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
+                coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
+            } else if (inCombat && typeof obj.state === "number") {
+                coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
             const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
             let bar = "";
