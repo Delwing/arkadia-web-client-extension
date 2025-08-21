@@ -9,6 +9,7 @@ import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initBinds from './scripts/binds'
 import initMoveMode from './scripts/moveMode'
+import initCarriage from './scripts/carriage'
 import initIdz from './scripts/idz'
 import { initKillCounter } from './scripts/kill'
 import { initImproveCounter } from './scripts/improveCounter'
@@ -132,6 +133,7 @@ export function registerScripts(client: Client) {
     initCoverTimer(client)
     initBinds(client, aliases)
     initMoveMode(client)
+    initCarriage(client)
     initIdz(client, aliases)
     const killCounter = initKillCounter(client, aliases)
     ;(client as any).killCounter = killCounter
