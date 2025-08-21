@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
-import { gmcp } from "../gmcp";
+import {colorString, findClosestColor} from "../Colors";
+import {gmcp} from "../gmcp";
 
 export default function initObjectAliases(
     client: Client,
@@ -57,6 +57,7 @@ export default function initObjectAliases(
             client.sendCommand(`przelam obrone ob_${id}`);
         }
     }
+
     let releaseGuard = true;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -136,9 +137,9 @@ export default function initObjectAliases(
             pattern: /^\/za([234]) ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
                 const original = gmcp?.char?.options?.group_cover;
-                client.sendGMCP('char.options.group_cover', parseInt(m[1], 10));
+                client.sendGMCP('char.options', {group_cover: parseInt(m[1], 10)});
                 shield(m[2]);
-                client.sendGMCP('char.options.group_cover', original);
+                client.sendGMCP('char.options', {group_cover: original});
             }
         });
         aliases.push({
