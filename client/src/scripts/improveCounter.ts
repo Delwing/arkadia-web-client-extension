@@ -207,6 +207,7 @@ export default class ImproveCounter {
                     const s = STATES[l] ?? String(l);
                     this.recordInitial(s);
                 }
+                this.level = level;
             } else if (this.level < 0) {
                 for (let l = 1; l < level; l++) {
                     const s = STATES[l] ?? String(l);
@@ -216,14 +217,17 @@ export default class ImproveCounter {
                     const state = STATES[level] ?? String(level);
                     this.record(state);
                 }
+                this.level = level;
             } else if (level > this.level) {
                 for (let l = this.level + 1; l <= level; l++) {
                     const state = STATES[l] ?? String(l);
                     this.recordInitial(state);
                 }
+                this.level = level;
             }
-            this.level = level;
-            this.lastObjNum = objNum;
+            if (objNum !== undefined) {
+                this.lastObjNum = objNum;
+            }
             this.persist();
             this.initialized = true;
             return;
@@ -234,12 +238,16 @@ export default class ImproveCounter {
                 this.record(state);
             }
             this.level = level;
+            if (objNum !== undefined) {
+                this.lastObjNum = objNum;
+            }
             this.persist();
-        } else if (level < this.level) {
-            this.level = level;
-            this.persist();
+        } else {
+            if (objNum !== undefined) {
+                this.lastObjNum = objNum;
+                this.persist();
+            }
         }
-        this.lastObjNum = objNum;
     }
 
     private addToLifetime(count: number, time: number) {

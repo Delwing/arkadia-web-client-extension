@@ -239,4 +239,31 @@ describe('improve counter', () => {
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
   });
+
+  test('does not re-add improvements when reconnecting with same object number', () => {
+    // simulate existing data: level 2 already recorded for object 1
+    const c = new FakeClient();
+    const kill = initKillCounter((c as unknown) as any, []);
+    c.dispatch('storage', { key: 'kill_counter', value: {} });
+    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    const als: { pattern: RegExp; callback: any }[] = [];
+    initImproveCounter((c as unknown) as any, kill, als);
+    c.dispatch('storage', {
+      key: 'improve_counter',
+      value: { level: 2, lastObjNum: 1 },
+    });
+    c.dispatch('storage', {
+      key: 'improve_counter_lifetime',
+      value: { entries: [{ date: '1970/1/1', count: 2 }] },
+    });
+    // same object number reports same level again
+    setItemSync('object_num', '1');
+    // server replays improvements from 1 to 2 on reconnect
+    c.dispatch('gmcp.char.state', { improve: 1 });
+    c.dispatch('gmcp.char.state', { improve: 2 });
+    const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
+    showLife();
+    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
+  });
 });
