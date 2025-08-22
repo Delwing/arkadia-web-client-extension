@@ -105,9 +105,17 @@ describe('object aliases', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 11, shortcut: 'C' }]);
     client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 11: { team: true } });
     shieldGroup(['', '2', 'C'] as unknown as RegExpMatchArray);
-    expect(client.sendGMCP).toHaveBeenNthCalledWith(1, 'char.options.group_cover', 2);
+    expect(client.sendGMCP).toHaveBeenNthCalledWith(
+      1,
+      'char.options',
+      { group_cover: 2 }
+    );
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_11');
-    expect(client.sendGMCP).toHaveBeenNthCalledWith(2, 'char.options.group_cover', 1);
+    expect(client.sendGMCP).toHaveBeenNthCalledWith(
+      2,
+      'char.options',
+      { group_cover: 1 }
+    );
   });
 
   test('/w alias withdraws behind object', () => {
