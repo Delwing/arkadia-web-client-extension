@@ -67,7 +67,6 @@ export default class MobileDirectionButtons {
         this.idzList = document.getElementById('idz-buttons-list') as HTMLDivElement;
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
-        this.wToggle = document.getElementById('w-list-toggle') as HTMLButtonElement;
         this.idzToggle = null;
         this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;

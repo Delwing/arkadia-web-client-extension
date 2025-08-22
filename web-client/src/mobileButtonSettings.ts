@@ -28,7 +28,6 @@ export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
     'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC' },
-    'w-list-toggle': { macro: 'wList', label: '/w', color: '#6EB4DC' },
     'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', command: '/go' },
     'buttons-toggle': { macro: 'toggleButtons', label: '⇩', color: '#6EB4DC' },
     'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC' },
@@ -54,7 +53,6 @@ export const defaultSettings: Record<string, ButtonSetting> = {
 export const defaultOrder = [
     'z-list-toggle',
     'zas-list-toggle',
-    'w-list-toggle',
     'go-button',
     'buttons-toggle',
     'bracket-right-button',
