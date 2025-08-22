@@ -1,0 +1,52 @@
+import { RefObject, MouseEvent } from "react";
+import { ButtonSetting, Settings, defaultSettings } from "../mobileButtonSettings";
+
+export type Mode = 'solo' | 'team' | 'leader';
+
+interface Props {
+    mode: Mode;
+    view: Mode;
+    settings: Settings;
+    notEditable: string[];
+    emptySetting: ButtonSetting;
+    openConfig: (setName: Mode, id: string, ev: MouseEvent<HTMLButtonElement>) => void;
+    gridRef: RefObject<HTMLDivElement>;
+}
+
+export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef }: Props) {
+    const set = settings[mode];
+    return (
+        <div
+            ref={gridRef}
+            id={`mobile-buttons-preview-${mode}`}
+            className={`mobile-direction-buttons preview mb-2 ${view === mode ? '' : 'd-none'}`}
+            style={{ gridTemplateColumns: `repeat(${set.cols}, auto)` }}
+        >
+            {set.order.map(id => {
+                const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
+                let classes = 'mobile-button';
+                if (cfg.macro === 'kierunek') {
+                    classes += ' direction-button';
+                } else {
+                    classes += ' mobile-button-text';
+                }
+                const isEmpty = cfg.macro === 'empty' || !cfg.label;
+                if (isEmpty) classes += ' empty';
+                const handle = notEditable.includes(id)
+                    ? undefined
+                    : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);
+                return (
+                    <button
+                        key={id}
+                        data-button-id={id}
+                        className={classes}
+                        style={{ backgroundColor: isEmpty ? 'transparent' : cfg.color }}
+                        onClick={handle}
+                    >
+                        {isEmpty ? '' : cfg.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
