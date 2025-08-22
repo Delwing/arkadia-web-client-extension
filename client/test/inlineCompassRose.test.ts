@@ -10,7 +10,6 @@ describe('InlineCompassRose parsing', () => {
   const client = new FakeClient();
   const rose = new InlineCompassRose((client as unknown) as any);
   const parse = (detail: any) => (rose as any).parseExits(detail);
-  const toShort = (exit: string) => (rose as any).toShort(exit);
 
   test('parseExits accepts various formats', () => {
     expect(parse(['north', 'south'])).toEqual(['n', 's']);
@@ -19,10 +18,7 @@ describe('InlineCompassRose parsing', () => {
     expect(parse({ room: { exits: { up: 3 } } })).toEqual(['u']);
   });
 
-  test('toShort converts directions', () => {
-    expect(toShort('polnoc')).toBe('n');
-    expect(toShort('south')).toBe('s');
-    expect(toShort('north')).toBe('n');
-    expect(toShort('unknown')).toBe('');
+  test('parseExits converts directions', () => {
+    expect(parse(['polnoc', 'south', 'north', 'unknown'])).toEqual(['n', 's', 'n']);
   });
 });
