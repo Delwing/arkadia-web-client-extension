@@ -1,6 +1,6 @@
 import Triggers, {stripAnsiCodes, Trigger} from "../Triggers";
 import gagsData from "./gags_lua.json";
-import {colorString, findClosestColor, color, RESET} from "../Colors";
+import {colorString, findClosestColor, mudletColorLine} from "../Colors";
 
 import * as luainjs from 'lua-in-js'
 import {gmcp} from "../gmcp";
@@ -152,17 +152,6 @@ export default function registerLuaGagTriggers(client: Client) {
             return stringColor;
         }
         return findClosestColor(mudletColors[stringColor]);
-    }
-
-    function mudletColorLine(line: string) {
-        return line.replace(/<(.+)>/g, (substring => {
-            const stringColor = substring.substring(1, substring.length - 1)
-            if (stringColor === "reset") {
-                return RESET
-            } else {
-                return color(findClosestColor(mudletColors[stringColor] ?? stringColor.split(",")))
-            }
-        }));
     }
 
     function createLuaEnv() {
