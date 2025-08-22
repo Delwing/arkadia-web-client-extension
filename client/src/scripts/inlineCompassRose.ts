@@ -1,37 +1,13 @@
 import Client from "../Client";
 import { color, findClosestColor } from "../Colors";
-import {gmcp} from "../gmcp";
+import { gmcp } from "../gmcp";
+import { getShortDir, longToShort } from "../utils/directions";
 
 const SPRING_GREEN = findClosestColor("#00ff7f");
 const DIM_GRAY = findClosestColor("#696969");
 const RESET = "\x1B[0m";
 
-const shortToLong: Record<string, string> = {
-    n: "north",
-    s: "south",
-    e: "east",
-    w: "west",
-    ne: "northeast",
-    nw: "northwest",
-    se: "southeast",
-    sw: "southwest",
-    u: "up",
-    d: "down",
-};
-
-const polishToShort: Record<string, string> = {
-    polnoc: "n",
-    poludnie: "s",
-    wschod: "e",
-    zachod: "w",
-    "polnocny-wschod": "ne",
-    "polnocny-zachod": "nw",
-    "poludniowy-wschod": "se",
-    "poludniowy-zachod": "sw",
-    dol: "d",
-    gora: "u",
-    gore: "u",
-};
+const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
 export default class InlineCompassRose {
     private client: Client;
@@ -80,16 +56,9 @@ export default class InlineCompassRose {
             const e = detail.room.exits;
             list = Array.isArray(e) ? e : Object.keys(e);
         }
-        return list.map((e) => this.toShort(e)).filter(Boolean);
-    }
-
-    private toShort(exit: string): string {
-        if (polishToShort[exit]) return polishToShort[exit];
-        if (shortToLong[exit]) return exit;
-        const long = exit.toLowerCase();
-        const short = Object.entries(shortToLong).find(([_, l]) => l === long);
-        if (short) return short[0];
-        return "";
+        return list
+            .map((e) => getShortDir(e))
+            .filter((dir) => VALID_SHORT_DIRS.has(dir));
     }
 
     private hasExit(short: string): boolean {
