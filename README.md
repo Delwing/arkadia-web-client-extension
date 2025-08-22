@@ -1,43 +1,55 @@
-# Rozszerzenie Arkadia Web Client
+# Arkadia Web Client
 
-Rozszerzenie przeglądarki, które rozbudowuje klienta webowego [Arkadia](https://arkadia.rpg.pl/) o takie funkcje jak wbudowana mapa, dodatkowe triggery oraz konfigurowalna strona opcji. Projekt jest zorganizowany jako monorepo Yarn workspaces zarządzane przez Lerna.
+Przeglądarkowy klient Arkadii z wbudowaną mapą, własnymi triggerami oraz konfigurowalną stroną ustawień. Repozytorium jest zorganizowane jako monorepo Yarn workspaces.
 
 ## Pakiety
 
-| Pakiet      | Opis |
-|-------------|------------------------------------------------------------|
-| `client`    | Content script, zawiera modyfikacje klienta i skrypty |
-| `web-client` | Aplikacja React wykorzystywana do rozwoju oraz strona opcji |
-| `scripts`   | Skrypty pomocnicze do generowania plików danych |
+| Pakiet | Opis |
+|--------|------|
+| `client` | Skrypt uruchamiany w kliencie Arkadii; zawiera poprawki, triggery i towarzyszące skrypty. |
+| `web-client` | Aplikacja React używana podczas rozwoju oraz jako strona ustawień. |
+| `scripts` | Skrypty pomocnicze do generowania danych dla projektu. |
 
-## Instalowanie zależności
+## Instalacja
+
+Zainstaluj zależności dla wszystkich przestrzeni roboczych:
 
 ```bash
 yarn install
 ```
 
-## Uruchamianie testów
+## Rozwój
+
+- Uruchom serwer deweloperski web-clienta:
+
+  ```bash
+  yarn --cwd web-client dev
+  ```
+
+- Przebuduj skrypt klienta przy zmianie plików:
+
+  ```bash
+  yarn --cwd client watch
+  ```
+
+## Testy
+
+Uruchom testy jednostkowe dla każdego pakietu:
 
 ```bash
 yarn --cwd client test
+yarn --cwd web-client test
 ```
 
-## Uruchamianie web-client
+## Budowanie
 
-Aplikacja `web-client` służy do rozwoju i zawiera stronę opcji.
-Uruchom ją poleceniem:
+Zbuduj aplikację React web-client:
 
 ```bash
-cd web-client
-yarn dev
+yarn --cwd web-client build
 ```
-
-## Zarządzanie pamięcią podręczną
-
-Funkcja `loadCachedJSON` zapisuje pobrane dane w IndexedDB. Dodatkowe funkcje
-`clearIndexedDB` oraz `updateIndexedDB` pozwalają odpowiednio usuwać i odświeżać
-zapisane wpisy.
 
 ## Licencja
 
 MIT
+
