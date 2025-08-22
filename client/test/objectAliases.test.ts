@@ -28,6 +28,12 @@ describe('object aliases', () => {
   let shieldGroup: (m: RegExpMatchArray) => void;
   let withdraw: (m: RegExpMatchArray) => void;
   let breakDefense: (m?: RegExpMatchArray) => void;
+  let orderAttack: (m: RegExpMatchArray) => void;
+  let orderAttackTarget: () => void;
+  let orderShield: (m: RegExpMatchArray) => void;
+  let orderShieldTarget: () => void;
+  let markAttack: (m: RegExpMatchArray) => void;
+  let markDefense: (m: RegExpMatchArray) => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -42,6 +48,12 @@ describe('object aliases', () => {
     shieldGroup = aliases[8].callback as any;
     withdraw = aliases[9].callback as any;
     breakDefense = aliases[10].callback as any;
+    orderAttack = aliases[11].callback as any;
+    orderAttackTarget = aliases[12].callback as any;
+    orderShield = aliases[13].callback as any;
+    orderShieldTarget = aliases[14].callback as any;
+    markAttack = aliases[15].callback as any;
+    markDefense = aliases[16].callback as any;
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
@@ -143,5 +155,43 @@ describe('object aliases', () => {
     breakDefense(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_30');
+  });
+
+  test('/ra alias orders attack on object', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 25, shortcut: '3' }]);
+    orderAttack(['', '3'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaatakowac ob_25');
+  });
+
+  test('/ra alias orders attack on attack target', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('40');
+    orderAttackTarget();
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaatakowac ob_40');
+  });
+
+  test('/rz alias orders shield with object number', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 35, shortcut: 'A' }]);
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 35: { team: true } });
+    orderShield(['', 'A'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslon ob_35');
+  });
+
+  test('/rz alias orders shield of defense target', () => {
+    client.TeamManager.getDefenseTargetId.mockReturnValue('44');
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 44: { team: true } });
+    orderShieldTarget();
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslon ob_44');
+  });
+
+  test('/wa alias marks object as attack target', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 50, shortcut: '5' }]);
+    markAttack(['', '5'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('wskaz ob_50 jako cel ataku');
+  });
+
+  test('/wz alias marks object as defense target', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 60, shortcut: 'B' }]);
+    markDefense(['', 'B'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('wskaz ob_60 jako cel obrony');
   });
 });

@@ -150,5 +150,60 @@ export default function initObjectAliases(
             pattern: /\/prze(?: ([A-Za-z0-9@]+))?$/,
             callback: (m?: RegExpMatchArray) => breakDefenseTarget(m?.[1])
         });
+        aliases.push({
+            pattern: /\/ra ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => exec(m[1], "rozkaz zaatakowac")
+        });
+        aliases.push({
+            pattern: /^\/ra$/,
+            callback: () => {
+                const id = client.TeamManager.getAttackTargetId();
+                if (id) {
+                    client.sendCommand(`rozkaz zaatakowac ob_${id}`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/rz ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    const data = client.TeamManager.getAccumulatedObjectsData?.();
+                    const isTeam = data && data[obj.num]?.team;
+                    const cmd = isTeam ? `rozkaz zaslon ob_${obj.num}` : `rozkaz zaslon przed ob_${obj.num}`;
+                    client.sendCommand(cmd);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /^\/rz$/,
+            callback: () => {
+                const id = client.TeamManager.getDefenseTargetId();
+                if (id) {
+                    const data = client.TeamManager.getAccumulatedObjectsData?.();
+                    const isTeam = data && data[id]?.team;
+                    const cmd = isTeam ? `rozkaz zaslon ob_${id}` : `rozkaz zaslon przed ob_${id}`;
+                    client.sendCommand(cmd);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/wa ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel ataku`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/wz ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
+                }
+            }
+        });
     }
 }
