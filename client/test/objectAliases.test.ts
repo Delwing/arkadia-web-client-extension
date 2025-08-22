@@ -171,16 +171,14 @@ describe('object aliases', () => {
 
   test('/rz alias orders shield with object number', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 35, shortcut: 'A' }]);
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 35: { team: true } });
     orderShield(['', 'A'] as unknown as RegExpMatchArray);
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslon ob_35');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslonic ob_35');
   });
 
   test('/rz alias orders shield of defense target', () => {
     client.TeamManager.getDefenseTargetId.mockReturnValue('44');
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 44: { team: true } });
     orderShieldTarget();
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslon ob_44');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslonic ob_44');
   });
 
   test('/wa alias marks object as attack target', () => {

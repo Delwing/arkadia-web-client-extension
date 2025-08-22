@@ -168,10 +168,7 @@ export default function initObjectAliases(
             callback: (m: RegExpMatchArray) => {
                 const obj = findByShortcut(m[1]);
                 if (obj) {
-                    const data = client.TeamManager.getAccumulatedObjectsData?.();
-                    const isTeam = data && data[obj.num]?.team;
-                    const cmd = isTeam ? `rozkaz zaslon ob_${obj.num}` : `rozkaz zaslon przed ob_${obj.num}`;
-                    client.sendCommand(cmd);
+                    client.sendCommand(`rozkaz zaslonic ob_${obj.num}`);
                 }
             }
         });
@@ -180,10 +177,7 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
                 if (id) {
-                    const data = client.TeamManager.getAccumulatedObjectsData?.();
-                    const isTeam = data && data[id]?.team;
-                    const cmd = isTeam ? `rozkaz zaslon ob_${id}` : `rozkaz zaslon przed ob_${id}`;
-                    client.sendCommand(cmd);
+                    client.sendCommand(`rozkaz zaslonic ob_${id}`);
                 }
             }
         });
