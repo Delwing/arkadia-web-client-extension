@@ -34,6 +34,14 @@ class ArkadiaClient implements ClientAdapter {
         emit: (ev, ...args) => this.emit(ev, ...args)
     });
 
+    constructor() {
+        addEventListener("beforeunload", (event) => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                event.preventDefault();
+            }
+        })
+    }
+
 
     /**
      * Register an event listener
