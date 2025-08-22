@@ -539,7 +539,7 @@ button:focus-visible {
 .mobile-direction-buttons {
   display: none; /* Hidden by default */
   position: fixed;
-  right: 5px;
+  left: 5px;
   top: 160px; /* Position relative to top */
   z-index: 1000;
   gap: 10px;
@@ -657,9 +657,9 @@ button:focus-visible {
 
 .mobile-z-buttons {
   position: absolute;
-  right: 100%;
+  left: 100%;
   top: 4px;
-  margin-right: 5px;
+  margin-left: 5px;
   display: none;
   grid-template-columns: 1fr;
   grid-auto-rows: 36px;
@@ -668,9 +668,9 @@ button:focus-visible {
 
 .mobile-idz-buttons {
   position: absolute;
-  right: 100%;
+  left: 100%;
   top: 4px;
-  margin-right: 5px;
+  margin-left: 5px;
   display: none;
   grid-template-columns: 1fr;
   grid-auto-rows: 36px;

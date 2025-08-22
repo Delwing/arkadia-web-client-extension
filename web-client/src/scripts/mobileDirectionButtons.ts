@@ -249,19 +249,19 @@ export default class MobileDirectionButtons {
 
     private clampToView() {
         const rect = this.container.getBoundingClientRect();
-        let right = parseInt(this.container.style.right, 10);
+        let left = parseInt(this.container.style.left, 10);
         let top = parseInt(this.container.style.top, 10);
-        if (isNaN(right)) {
-            right = window.innerWidth - rect.right;
+        if (isNaN(left)) {
+            left = rect.left;
         }
         if (isNaN(top)) {
             top = rect.top;
         }
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
+        const maxLeft = window.innerWidth - this.container.offsetWidth - 5;
         const maxTop = window.innerHeight - this.container.offsetHeight - 5;
-        const clampedRight = Math.min(Math.max(5, right), maxRight);
+        const clampedLeft = Math.min(Math.max(5, left), maxLeft);
         const clampedTop = Math.min(Math.max(5, top), maxTop);
-        this.container.style.right = `${clampedRight}px`;
+        this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     }
 
@@ -302,9 +302,21 @@ export default class MobileDirectionButtons {
         const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
-                const { x, y } = savedPosition as any;
-                this.container.style.right = `${x}px`;
-                this.container.style.top = `${y}px`;
+                const rect = this.container.getBoundingClientRect();
+                const storedLeft = (savedPosition as any).left;
+                const storedTop = (savedPosition as any).top;
+                const storedRight = (savedPosition as any).x;
+                const storedY = (savedPosition as any).y;
+                if (typeof storedLeft === 'number') {
+                    this.container.style.left = `${storedLeft}px`;
+                } else if (typeof storedRight === 'number') {
+                    const left = window.innerWidth - rect.width - storedRight;
+                    this.container.style.left = `${left}px`;
+                }
+                const top = typeof storedTop === 'number' ? storedTop : storedY;
+                if (typeof top === 'number') {
+                    this.container.style.top = `${top}px`;
+                }
                 requestAnimationFrame(() => this.clampToView());
             } catch (e) {
                 console.error('Error parsing saved position:', e);
@@ -359,7 +371,7 @@ export default class MobileDirectionButtons {
             this.container.classList.add('dragging');
 
             const rect = this.container.getBoundingClientRect();
-            this.offsetX = window.innerWidth - rect.right;
+            this.offsetX = rect.left;
             this.offsetY = rect.top;
 
             this.container.style.opacity = '0.8';
@@ -377,17 +389,17 @@ export default class MobileDirectionButtons {
         this.currentX = x;
         this.currentY = y;
 
-        const deltaX = this.initialX - this.currentX;
+        const deltaX = this.currentX - this.initialX;
         const deltaY = this.currentY - this.initialY;
 
-        const newRight = this.offsetX + deltaX;
+        const newLeft = this.offsetX + deltaX;
         const newTop = this.offsetY + deltaY;
 
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
-        const clampedRight = Math.min(maxRight, Math.max(5, newRight));
+        const maxLeft = window.innerWidth - this.container.offsetWidth - 5;
+        const clampedLeft = Math.min(maxLeft, Math.max(5, newLeft));
         const clampedTop = Math.max(5, newTop);
 
-        this.container.style.right = `${clampedRight}px`;
+        this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     }
 
@@ -400,8 +412,8 @@ export default class MobileDirectionButtons {
         if (this.isDragging && this.container) {
             const rect = this.container.getBoundingClientRect();
             const position = {
-                x: window.innerWidth - rect.right,
-                y: rect.top,
+                left: rect.left,
+                top: rect.top,
             };
             setItemSync('mobileButtonsPosition', position);
 
