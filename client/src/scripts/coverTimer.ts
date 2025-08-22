@@ -18,8 +18,6 @@ export default function initCoverTimer(client: Client) {
         /^[ >]*Probujesz zaslonic ([a-zA-Z (),!]+) przed ciosami ([a-zA-Z (),!]+), jednak nie jestes w stanie tego uczynic\.$/,
         /^Na rozkaz .* probujesz zaslonic (.*) przed ciosami (.*), jednak nie jestes w stanie tego uczynic\.$/,
         /[ >]*Unosisz swoja .+? i przesuwasz sie w strone .+?, bezskutecznie probujac/,
-        /^[ >]*([a-zA-Z (),!]+) probuje zaslonic ([a-zA-Z (),!]+) przed ciosami ([a-zA-Z (),!]+), jednak nie jest w stanie tego uczynic\.$/,
-        /^[ >]*([a-zA-Z (),!]+) probuje zaslonic .* przed twoimi ciosami, jednak nie jest w stanie tego uczynic\.$/,
         /(\w+(?: \w+){0,4}?) unosi swoja .+? i szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac skryc sie za toba przed atakami .+\.$/,
         /(\w+(?: \w+){0,4}?) unosi swoja .+? i szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac skryc sie za (nia|nim|toba) przed atakami .+\.$/
     ];
