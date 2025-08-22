@@ -187,7 +187,7 @@ function UserTriggers() {
                             placeholder="Pattern"
                             value={pattern}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                            style={{ maxWidth: '10rem' }}
+                            style={{ width: '100%' }}
                         />
                         {macros.map((m, i) => (
                             <MacroEditor
