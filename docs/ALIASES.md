@@ -90,6 +90,12 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zap** - wykonuje polecenie `zapal lampe`.
 - **/zap _numer_** - zaprasza do drużyny obiekt o podanym numerze.
 - **/zg** - wykonuje polecenie `zgas lampe`.
+- **/ra _id_** - rozkazuje drużynie zaatakować osobę o podanym numerze.
+- **/ra** - rozkazuje drużynie zaatakować aktualny cel ataku; działa również na przełamywanie celów.
+- **/rz _skrot_** - rozkazuje drużynie zasłonić obiekt o podanym skrócie.
+- **/rz** - rozkazuje drużynie zasłonić aktualny cel obrony.
+- **/wa _id_** - oznacza obiekt jako cel ataku.
+- **/wz _skrot_** - oznacza obiekt z drużyny jako cel obrony.
 
 ## Naprawy i ocena
 - **/napraw** - Naprawianie sprzetu u kowala.

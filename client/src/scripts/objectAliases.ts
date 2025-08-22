@@ -150,5 +150,54 @@ export default function initObjectAliases(
             pattern: /\/prze(?: ([A-Za-z0-9@]+))?$/,
             callback: (m?: RegExpMatchArray) => breakDefenseTarget(m?.[1])
         });
+        aliases.push({
+            pattern: /\/ra ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => exec(m[1], "rozkaz zaatakowac")
+        });
+        aliases.push({
+            pattern: /^\/ra$/,
+            callback: () => {
+                const id = client.TeamManager.getAttackTargetId();
+                if (id) {
+                    client.sendCommand(`rozkaz zaatakowac ob_${id}`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/rz ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`rozkaz zaslonic ob_${obj.num}`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /^\/rz$/,
+            callback: () => {
+                const id = client.TeamManager.getDefenseTargetId();
+                if (id) {
+                    client.sendCommand(`rozkaz zaslonic ob_${id}`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/wa ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel ataku`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /\/wz ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
+                }
+            }
+        });
     }
 }
