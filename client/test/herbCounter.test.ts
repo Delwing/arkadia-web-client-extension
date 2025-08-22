@@ -1,6 +1,6 @@
-import initHerbCounter from '../src/scripts/herbCounter';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { EventEmitter } from 'events';
+import { initHerbClient, defaultHerbData } from './helpers/herbClient';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -29,24 +29,7 @@ describe('herb counter', () => {
   beforeEach(() => {
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
-    (global as any).fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        herb_id_to_odmiana: {
-          deliona: {
-            mianownik: 'zolty jasny kwiat',
-            dopelniacz: 'zoltego jasnego kwiata',
-            biernik: 'zolty jasny kwiat',
-            mnoga_mianownik: 'zolte jasne kwiaty',
-            mnoga_dopelniacz: 'zoltych jasnych kwiatow',
-            mnoga_biernik: 'zolte jasne kwiaty'
-          }
-        },
-        version: 1,
-        herb_id_to_use: {}
-      })
-    });
-    initHerbCounter((client as unknown) as any, aliases);
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
     start = aliases[0].callback as any;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
   });
@@ -69,31 +52,31 @@ describe('herb counter', () => {
   test('splits summary when width is limited', async () => {
     client.contentWidth = 40;
     client.dispatch('contentWidth', 40);
-    (global as any).fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          herb_id_to_odmiana: {
-            deliona: {
-              mianownik: 'zolty jasny kwiat',
-              dopelniacz: 'zoltego jasnego kwiata',
-              biernik: 'zolty jasny kwiat',
-              mnoga_mianownik: 'zolte jasne kwiaty',
-              mnoga_dopelniacz: 'zoltych jasnych kwiatow',
-              mnoga_biernik: 'zolte jasne kwiaty'
-            }
-          },
-          version: 1,
-          herb_id_to_use: {
-            deliona: [
-              { action: 'eat', effect: '+hp' },
-              { action: 'rub', effect: '+mana' }
-            ]
-          }
-        })
-    });
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
-    initHerbCounter((client as unknown) as any, aliases);
+    initHerbClient(
+      (client as unknown) as any,
+      {},
+      {
+        herb_id_to_odmiana: {
+          deliona: {
+            mianownik: 'zolty jasny kwiat',
+            dopelniacz: 'zoltego jasnego kwiata',
+            biernik: 'zolty jasny kwiat',
+            mnoga_mianownik: 'zolte jasne kwiaty',
+            mnoga_dopelniacz: 'zoltych jasnych kwiatow',
+            mnoga_biernik: 'zolte jasne kwiaty'
+          }
+        },
+        version: 1,
+        herb_id_to_use: {
+          deliona: [
+            { action: 'eat', effect: '+hp' },
+            { action: 'rub', effect: '+mana' }
+          ]
+        }
+      },
+      aliases
+    );
     const start2 = aliases[0].callback as any;
     const parse2 = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
@@ -111,7 +94,7 @@ describe('herb counter', () => {
 
   test('prints summary from storage', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
-    initHerbCounter((client as unknown) as any, aliases);
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
     const show = aliases[1].callback as any;
     show();
     client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
