@@ -4,6 +4,7 @@ export type MacroType =
     | 'functional'
     | 'zList'
     | 'zaList'
+    | 'wList'
     | 'przeList'
     | 'idzList'
     | 'command'
@@ -138,11 +139,12 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
 
         const z = document.getElementById('z-buttons-list');
         const zas = document.getElementById('zas-buttons-list');
+        const w = document.getElementById('w-buttons-list');
         const prze = document.getElementById('prze-buttons-list');
         const idz = document.getElementById('idz-buttons-list');
         container.querySelectorAll('button').forEach(b => b.remove());
         const empty: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
-        const insertBefore = z || zas || prze || idz || null;
+        const insertBefore = z || zas || w || prze || idz || null;
         set.order.forEach(id => {
             const cfg = set.buttons[id] || defaultSettings[id] || empty;
             const btn = document.createElement('button');
