@@ -8,7 +8,7 @@ export default class ObjectList {
     private isDragging = false;
     private startX = 0;
     private startY = 0;
-    private offsetRight = 0;
+    private offsetLeft = 0;
     private offsetTop = 0;
     private pointerId = 0;
 
@@ -30,9 +30,18 @@ export default class ObjectList {
         const saved = savedData?.objectsListPosition;
         if (saved) {
             try {
-                const { x, y } = saved as any;
-                this.container.style.right = `${x}px`;
-                this.container.style.top = `${y}px`;
+                let { left, top, right, x, y } = saved as any;
+                if (left === undefined && (right !== undefined || x !== undefined)) {
+                    const oldRight = right ?? x ?? 0;
+                    left = window.innerWidth - this.container.offsetWidth - oldRight;
+                }
+                top = top ?? y;
+                if (typeof left === "number") {
+                    this.container.style.left = `${left}px`;
+                }
+                if (typeof top === "number") {
+                    this.container.style.top = `${top}px`;
+                }
             } catch (e) {
                 console.error("Error parsing saved objects list position", e);
             }
@@ -51,7 +60,7 @@ export default class ObjectList {
         this.startX = e.clientX;
         this.startY = e.clientY;
         const rect = this.container.getBoundingClientRect();
-        this.offsetRight = window.innerWidth - rect.right;
+        this.offsetLeft = rect.left;
         this.offsetTop = rect.top;
         this.container.setPointerCapture(this.pointerId);
         e.preventDefault();
@@ -60,14 +69,14 @@ export default class ObjectList {
     private onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || !this.container || e.pointerId !== this.pointerId) return;
 
-        const deltaX = this.startX - e.clientX;
+        const deltaX = e.clientX - this.startX;
         const deltaY = e.clientY - this.startY;
-        const newRight = this.offsetRight + deltaX;
+        const newLeft = this.offsetLeft + deltaX;
         const newTop = this.offsetTop + deltaY;
-        const maxRight = window.innerWidth - this.container.offsetWidth;
-        const clampedRight = Math.min(maxRight, Math.max(0, newRight));
+        const maxLeft = window.innerWidth - this.container.offsetWidth;
+        const clampedLeft = Math.min(maxLeft, Math.max(0, newLeft));
         const clampedTop = Math.max(0, newTop);
-        this.container.style.right = `${clampedRight}px`;
+        this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     };
 
@@ -77,8 +86,8 @@ export default class ObjectList {
         this.container.releasePointerCapture(this.pointerId);
         const rect = this.container.getBoundingClientRect();
         const position = {
-            x: window.innerWidth - rect.right,
-            y: rect.top,
+            left: rect.left,
+            top: rect.top,
         };
         setItemSync("objectsListPosition", position);
         this.clampToViewport();
@@ -88,15 +97,15 @@ export default class ObjectList {
         if (!this.container) return;
         const rect = this.container.getBoundingClientRect();
         const styles = window.getComputedStyle(this.container);
-        let newRight = parseFloat(styles.right || "0");
+        let newLeft = parseFloat(styles.left || "0");
         let newTop = parseFloat(styles.top || "0");
 
-        const maxRight = window.innerWidth - this.container.offsetWidth;
+        const maxLeft = window.innerWidth - this.container.offsetWidth;
 
         if (rect.right > window.innerWidth) {
-            newRight = 0;
+            newLeft = maxLeft;
         } else if (rect.left < 0) {
-            newRight = maxRight;
+            newLeft = 0;
         }
 
         if (rect.bottom > window.innerHeight) {
@@ -105,9 +114,9 @@ export default class ObjectList {
             newTop = 0;
         }
 
-        newRight = Math.min(maxRight, Math.max(0, newRight));
+        newLeft = Math.min(maxLeft, Math.max(0, newLeft));
         newTop = Math.max(0, newTop);
-        this.container.style.right = `${newRight}px`;
+        this.container.style.left = `${newLeft}px`;
         this.container.style.top = `${newTop}px`;
     };
 
