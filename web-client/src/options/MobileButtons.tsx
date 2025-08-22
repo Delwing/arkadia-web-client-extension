@@ -17,6 +17,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "functional", label: "Bind funkcyjny" },
     { value: "zList", label: "Lista /z" },
     { value: "zaList", label: "Lista /za" },
+    { value: "wList", label: "Lista /w" },
     { value: "przeList", label: "Lista /prze" },
     { value: "idzList", label: "Lista idz" },
     { value: "command", label: "Wyślij komendę" },
