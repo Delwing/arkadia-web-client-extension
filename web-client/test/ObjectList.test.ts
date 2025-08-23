@@ -1,5 +1,7 @@
 import ObjectList from '../src/ObjectList';
 import { getItemSync, setItemSync } from '@client/src/storage';
+import ObjectManager from '@client/src/ObjectManager';
+import { EventEmitter } from 'events';
 
 jest.mock('@client/src/storage', () => ({
   getItemSync: jest.fn(),
@@ -170,5 +172,33 @@ describe('ObjectList', () => {
     const textNode = container.firstChild as ChildNode;
     textNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(client.sendCommand).not.toHaveBeenCalled();
+  });
+
+  test('moves non-combat objects to the end with shortcuts starting at 50', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    class TestClient {
+      private emitter = new EventEmitter();
+      ObjectManager = new ObjectManager(this as any);
+      TeamManager = { isInTeam: (_d: string) => false };
+      sendCommand = jest.fn();
+      addEventListener(event: string, cb: any) {
+        this.emitter.on(event, cb);
+      }
+      sendEvent(type: string, detail?: any) {
+        this.emitter.emit(type, { detail });
+      }
+    }
+    const client = new TestClient();
+    new ObjectList(client as any);
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Fighter', attack_num: true },
+      '2': { desc: 'Rock' },
+      '3': { desc: 'Tree' },
+    });
+    client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    const html = (document.getElementById('objects-list') as HTMLElement).innerHTML.split('<br>');
+    expect(html[0]).toContain('data-object-num="1"');
+    expect(html[1]).toContain('data-object-num="50"');
+    expect(html[2]).toContain('data-object-num="51"');
   });
 });
