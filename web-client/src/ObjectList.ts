@@ -60,6 +60,10 @@ export default class ObjectList {
 
     private onPointerDown = (e: PointerEvent) => {
         if (!this.container) return;
+        const target = e.target as HTMLElement | null;
+        if (target?.closest(".object-num, .object-desc")) {
+            return;
+        }
         this.isDragging = true;
         this.pointerId = e.pointerId;
         this.startX = e.clientX;
