@@ -44,6 +44,13 @@ export default function initObjectAliases(
         }
     }
 
+    function passLeadership(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            client.sendCommand(`przekaz prowadzenie ob_${obj.num}`);
+        }
+    }
+
     function breakDefenseTarget(short?: string) {
         let id: string | undefined;
         if (short) {
@@ -145,6 +152,10 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /\/w ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => withdraw(m[1])
+        });
+        aliases.push({
+            pattern: /\/pro ([A-Za-z0-9@]+)$/,
+            callback: (m: RegExpMatchArray) => passLeadership(m[1])
         });
         aliases.push({
             pattern: /\/prze(?: ([A-Za-z0-9@]+))?$/,

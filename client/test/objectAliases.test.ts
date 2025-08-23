@@ -28,6 +28,7 @@ describe('object aliases', () => {
   let toggle: () => void;
   let shieldGroup: (m: RegExpMatchArray) => void;
   let withdraw: (m: RegExpMatchArray) => void;
+  let passLeadership: (m: RegExpMatchArray) => void;
   let breakDefense: (m?: RegExpMatchArray) => void;
   let orderAttack: (m: RegExpMatchArray) => void;
   let orderAttackTarget: () => void;
@@ -48,13 +49,14 @@ describe('object aliases', () => {
     toggle = aliases[7].callback as any;
     shieldGroup = aliases[8].callback as any;
     withdraw = aliases[9].callback as any;
-    breakDefense = aliases[10].callback as any;
-    orderAttack = aliases[11].callback as any;
-    orderAttackTarget = aliases[12].callback as any;
-    orderShield = aliases[13].callback as any;
-    orderShieldTarget = aliases[14].callback as any;
-    markAttack = aliases[15].callback as any;
-    markDefense = aliases[16].callback as any;
+    passLeadership = aliases[10].callback as any;
+    breakDefense = aliases[11].callback as any;
+    orderAttack = aliases[12].callback as any;
+    orderAttackTarget = aliases[13].callback as any;
+    orderShield = aliases[14].callback as any;
+    orderShieldTarget = aliases[15].callback as any;
+    markAttack = aliases[16].callback as any;
+    markDefense = aliases[17].callback as any;
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
@@ -142,6 +144,12 @@ describe('object aliases', () => {
     withdraw(['', 'Y'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_18');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
+  });
+
+  test('/pro alias passes leadership to object', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 31, shortcut: 'A' }]);
+    passLeadership(['', 'A'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('przekaz prowadzenie ob_31');
   });
 
   test('/prze alias breaks defense of attack target', () => {
