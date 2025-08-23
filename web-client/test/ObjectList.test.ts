@@ -8,8 +8,9 @@ jest.mock('@client/src/storage', () => ({
 
 class MockClient {
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: () => false };
+  TeamManager = { isInTeam: (_d: string) => false };
   addEventListener() {}
+  sendCommand = jest.fn();
 }
 
 describe('ObjectList', () => {
@@ -79,5 +80,42 @@ describe('ObjectList', () => {
     ol.onPointerDown(downEvent);
     ol.onPointerUp({ pointerId: 1 } as unknown as PointerEvent);
     expect(setItemSync).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
+  });
+
+  test('clicking number attacks that target', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const num = document.querySelector('.object-num[data-object-id="123"]') as HTMLElement;
+    num.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_123');
+  });
+
+    test('clicking teammate shields them', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    client.TeamManager.isInTeam = (d: string) => d === 'Ally';
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Ally', num: 42 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const desc = document.querySelector('.object-desc[data-object-id="42"]') as HTMLElement;
+    desc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_42');
+  });
+
+    test('clicking enemy shields against them', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Goblin', num: 77 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const desc = document.querySelector('.object-desc[data-object-id="77"]') as HTMLElement;
+    desc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_77');
   });
 });
