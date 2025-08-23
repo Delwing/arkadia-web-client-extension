@@ -34,6 +34,7 @@ import initInvite from './scripts/invite'
 import initObjectAliases from './scripts/objectAliases'
 import initMagicKeys from './scripts/magicKeys'
 import initMagics from './scripts/magics'
+import initOdlozMagie from './scripts/odlozMagie'
 import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
@@ -170,6 +171,7 @@ export function registerScripts(client: Client) {
     initObjectAliases(client, aliases)
     initMagicKeys(client)
     initMagics(client)
+    initOdlozMagie(client, aliases)
     initPriceEvaluation(client)
     initStoneValue(client, aliases)
     initSelfEvaluation(client, aliases)
