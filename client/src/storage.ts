@@ -1,3 +1,5 @@
+import { defaultSettings } from './defaultSettings';
+
 interface Storage {
     getItem(key: string): Promise<any>;
 
@@ -147,6 +149,9 @@ class LocalStorage implements Storage {
                 return Promise.resolve({[key]: value})
             }
         }
+        if (key === 'settings') {
+            return Promise.resolve({ [key]: { ...defaultSettings } });
+        }
         return Promise.resolve();
     }
 
@@ -182,11 +187,14 @@ class LocalStorage implements Storage {
 const storage: Storage = new LocalStorage();
 export default storage;
 
-export function getItemSync(key: string) {
+export function getItemSync(key: string): any {
     const realKey = applyCharacterScope(key);
     const value = localStorage.getItem(realKey);
     if (value !== null) {
         try { return { [key]: JSON.parse(value) }; } catch { return { [key]: value }; }
+    }
+    if (key === 'settings') {
+        return { [key]: { ...defaultSettings } };
     }
     return undefined;
 }
