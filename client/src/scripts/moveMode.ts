@@ -17,6 +17,7 @@ export default function initMoveMode(client: Client) {
         if (client.carriageMode) return;
         client.moveMode = (client.moveMode + 1) % LABELS.length;
         update();
+        client.println(`Tryb ruchu: ${TITLES[client.moveMode]}`);
     }
 
     window.addEventListener('keydown', (ev) => {

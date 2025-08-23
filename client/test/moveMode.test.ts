@@ -5,6 +5,7 @@ class FakeClient {
   carriageMode = false;
   moveModeButton?: HTMLInputElement;
   moveModeBind = { key: 'Backquote' } as { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean };
+  println = jest.fn();
   createButton(_name: string, callback: () => void) {
     const btn = document.createElement('input');
     btn.type = 'button';
@@ -25,11 +26,14 @@ describe('move mode default bind', () => {
     const result = window.dispatchEvent(ev);
     expect(result).toBe(false);
     expect(client.moveMode).toBe(1);
+    expect(client.println).toHaveBeenCalledWith('Tryb ruchu: przemknij');
+    client.println.mockClear();
 
     client.carriageMode = true;
     const ev2 = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
     window.dispatchEvent(ev2);
     expect(client.moveMode).toBe(1);
+    expect(client.println).not.toHaveBeenCalled();
   });
 
   test('custom bind cycles move mode', () => {
@@ -40,5 +44,6 @@ describe('move mode default bind', () => {
     const result = window.dispatchEvent(ev);
     expect(result).toBe(false);
     expect(client.moveMode).toBe(1);
+    expect(client.println).toHaveBeenCalledWith('Tryb ruchu: przemknij');
   });
 });
