@@ -142,21 +142,23 @@ export default class ObjectList {
         if (this.isMobile) return;
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
-        const numEl = target.closest(".object-num[data-object-id]") as HTMLElement | null;
+        const numEl = target.closest(
+            ".object-num[data-object-num]"
+        ) as HTMLElement | null;
         if (numEl) {
-            const id = numEl.getAttribute("data-object-id");
-            if (id) {
-                this.client.sendCommand(`zabij ob_${id}`);
+            const num = numEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/z ${num}`);
             }
             return;
         }
-        const descEl = target.closest(".object-desc[data-object-id]") as HTMLElement | null;
+        const descEl = target.closest(
+            ".object-desc[data-object-num]"
+        ) as HTMLElement | null;
         if (descEl) {
-            const id = descEl.getAttribute("data-object-id");
-            const teammate = descEl.getAttribute("data-teammate") === "true";
-            if (id) {
-                const cmd = teammate ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
-                this.client.sendCommand(cmd);
+            const num = descEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/za ${num}`);
             }
         }
     };
@@ -213,7 +215,7 @@ export default class ObjectList {
             const isTeammate = tm?.isInTeam?.(rawDesc) ? "true" : "false";
             const desc = isPlayer
                 ? `${rawDesc}${padding}`
-                : `<span class="object-desc" data-object-id="${obj.num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
+                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
             let bar = "";
             if (typeof obj.state === "number") {
                 const hp = Math.max(0, Math.min(6, obj.state)) + 1;

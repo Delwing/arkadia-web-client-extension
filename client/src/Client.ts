@@ -277,6 +277,10 @@ export default class Client {
         }
     }
 
+    releaseGuard() {
+        this.sendCommand('przestan zaslaniac')
+    }
+
     sendCommand(command: string, echo: boolean = true) {
         if (command) {
             command = stripPolishCharacters(command)

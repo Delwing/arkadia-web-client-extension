@@ -11,6 +11,7 @@ class FakeClient {
     getAccumulatedObjectsData: jest.fn(() => ({})),
   };
   sendCommand = jest.fn();
+  releaseGuard = jest.fn(() => this.sendCommand('przestan zaslaniac'));
   sendGMCP = jest.fn();
   print = jest.fn();
   sendEvent = jest.fn();

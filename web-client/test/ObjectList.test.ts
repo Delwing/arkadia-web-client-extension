@@ -127,12 +127,12 @@ describe('ObjectList', () => {
     const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
-    const num = document.querySelector('.object-num[data-object-id="123"]') as HTMLElement;
+    const num = document.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     num.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_123');
+    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
   });
 
-    test('clicking teammate shields them', () => {
+  test('clicking teammate shields them', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const client = new MockClient();
     client.TeamManager.isInTeam = (d: string) => d === 'Ally';
@@ -140,9 +140,9 @@ describe('ObjectList', () => {
     const objects = [ { shortcut: '1', desc: 'Ally', num: 42 } ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
-    const desc = document.querySelector('.object-desc[data-object-id="42"]') as HTMLElement;
+    const desc = document.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     desc.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_42');
+    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
   });
 
   test('clicking enemy shields against them', () => {
@@ -152,9 +152,9 @@ describe('ObjectList', () => {
     const objects = [ { shortcut: '1', desc: 'Goblin', num: 77 } ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
-    const desc = document.querySelector('.object-desc[data-object-id="77"]') as HTMLElement;
+    const desc = document.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     desc.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_77');
+    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
   });
 
   test('player object is not clickable', () => {

@@ -29,7 +29,7 @@ export default function initObjectAliases(
             const cmd = isTeam ? `zaslon ob_${obj.num}` : `zaslon przed ob_${obj.num}`;
             client.sendCommand(cmd);
             if (releaseGuard) {
-                client.sendCommand("przestan zaslaniac");
+                client.releaseGuard();
             }
         }
     }
@@ -39,7 +39,7 @@ export default function initObjectAliases(
         if (obj) {
             client.sendCommand(`gzwycofaj sie za ob_${obj.num}`);
             if (releaseGuard) {
-                client.sendCommand("przestan zaslaniac");
+                client.releaseGuard();
             }
         }
     }
@@ -95,7 +95,7 @@ export default function initObjectAliases(
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
                     if (releaseGuard) {
-                        client.sendCommand("przestan zaslaniac");
+                        client.releaseGuard();
                     }
                 }
             }
@@ -118,7 +118,7 @@ export default function initObjectAliases(
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
                     if (releaseGuard) {
-                        client.sendCommand("przestan zaslaniac");
+                        client.releaseGuard();
                     }
                 }
             }
