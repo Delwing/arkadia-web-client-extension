@@ -35,7 +35,7 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
 
     if (aliases) {
         aliases.push({
-            pattern: /^\/odloz_magie(?: do (\w+))?$/,
+            pattern: /^\/odloz_magie(?: (\w+))?$/,
             callback: (m: RegExpMatchArray) => {
                 const container = m[1] || 'skrzyni';
                 run(container);
