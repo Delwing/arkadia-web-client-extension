@@ -21,6 +21,8 @@ export function formatLabel(options: FunctionalBindOptions) {
         key = ']';
     } else if (key === 'BracketLeft') {
         key = '[';
+    } else if (key === 'Backquote') {
+        key = '`';
     }
     const parts = [] as string[];
     if (options.ctrl) parts.push('CTRL');

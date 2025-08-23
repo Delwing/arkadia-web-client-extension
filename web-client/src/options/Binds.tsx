@@ -32,6 +32,7 @@ interface BindSettings {
     lamp: Bind;
     attack: Bind;
     support: Bind;
+    moveMode: Bind;
     directions: DirectionBinds;
     custom: CustomBind[];
 }
@@ -41,6 +42,7 @@ const defaultBinds: BindSettings = {
     lamp: { key: 'Digit4', ctrl: true },
     attack: { key: 'Digit1', ctrl: true },
     support: { key: 'KeyQ', ctrl: true },
+    moveMode: { key: 'Backquote' },
     directions: {
         n: { key: 'Numpad8' },
         s: { key: 'Numpad2' },
@@ -63,6 +65,7 @@ function label(bind: Bind) {
     else if (key.startsWith('Key')) key = key.substring(3);
     else if (key === 'BracketRight') key = ']';
     else if (key === 'BracketLeft') key = '[';
+    else if (key === 'Backquote') key = '`';
     const parts: string[] = [];
     if (bind.ctrl) parts.push('CTRL');
     if (bind.alt) parts.push('ALT');
@@ -82,6 +85,7 @@ function Binds() {
                 lamp: res?.binds?.lamp || defaultBinds.lamp,
                 attack: res?.binds?.attack || defaultBinds.attack,
                 support: res?.binds?.support || defaultBinds.support,
+                moveMode: res?.binds?.moveMode || defaultBinds.moveMode,
                 directions: {
                     ...defaultBinds.directions,
                     ...res?.binds?.directions,
@@ -189,6 +193,18 @@ function Binds() {
                                     size="sm"
                                     value={label(binds.support)}
                                     onKeyDown={ev => handleCapture('support', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Tryb ruchu</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.moveMode)}
+                                    onKeyDown={ev => handleCapture('moveMode', ev)}
                                 />
                             </td>
                         </tr>

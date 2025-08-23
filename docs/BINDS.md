@@ -8,6 +8,7 @@ Rozszerzenie umożliwia ustawienie kilku skrótów klawiaturowych. Domyślne bin
 - **Wesprzyj** – `CTRL+Q`. Skrót wysyła komendę `wesprzyj`. Jeśli drużyna ma
   przywódcę, wysyła dodatkowo `wesprzyj ob_ID`, gdzie `ID` to identyfikator
   przywódcy z GMCP.
+- **Tryb ruchu** – `` ` `` (domyślnie). Skrót zmienia tryb ruchu.
 
 Bindy można modyfikować w zakładce **Bindowanie** na stronie opcji rozszerzenia.
 Możesz także dodać własne skróty, które wyślą dowolną komendę.

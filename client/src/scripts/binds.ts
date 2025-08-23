@@ -7,11 +7,13 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
         const lamp = formatLabel(client.lampBind);
         const attack = formatLabel(client.attackBind);
         const support = formatLabel(client.supportBind);
+        const moveMode = formatLabel(client.moveModeBind);
         const lines = [
             `Domy\u015Blny: ${main}`,
             `Atakuj: ${attack}`,
             `Nape\u0142nij lamp\u0119: ${lamp}`,
             `Wesprzyj: ${support}`,
+            `Tryb ruchu: ${moveMode}`,
         ];
         (client.customBinds || []).forEach(cb => {
             lines.push(`${cb.command}: ${formatLabel(cb)}`);
