@@ -88,4 +88,18 @@ describe('ObjectManager', () => {
       { num: 4, desc: 'Ogre', state: 20, attack_num: undefined, avatar_target: undefined, shortcut: '2' },
     ]);
   });
+
+  test('places non-combat objects last with shortcuts starting at 50', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Fighter', attack_num: true },
+      '2': { desc: 'Rock' },
+      '3': { desc: 'Tree' },
+    });
+    client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    expect(manager.getObjectsOnLocation()).toEqual([
+      { num: 1, desc: 'Fighter', state: undefined, attack_num: true, avatar_target: undefined, shortcut: '1' },
+      { num: 2, desc: 'Rock', state: undefined, attack_num: undefined, avatar_target: undefined, shortcut: '50' },
+      { num: 3, desc: 'Tree', state: undefined, attack_num: undefined, avatar_target: undefined, shortcut: '51' },
+    ]);
+  });
 });

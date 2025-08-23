@@ -86,7 +86,7 @@ export default class ObjectManager {
             attack_num: boolean | number | undefined,
             avatar_target: boolean | undefined,
             shortcut?: string,
-            __category?: 'player' | 'team' | 'rest',
+            __category?: 'player' | 'team' | 'rest' | 'rest-noncombat',
         };
 
         const makeObj = (numStr: string): Obj => {
@@ -118,6 +118,17 @@ export default class ObjectManager {
             }
         });
 
+        const inCombat = [playerObj, ...team, ...rest].some(
+            o => o && o.attack_num !== false && o.attack_num !== undefined
+        );
+
+        const combatRest = inCombat
+            ? rest.filter(o => o.attack_num !== false && o.attack_num !== undefined)
+            : rest;
+        const nonCombatRest = inCombat
+            ? rest.filter(o => o.attack_num === false || o.attack_num === undefined)
+            : [];
+
         const ordered: Obj[] = [];
         if (playerObj) {
             playerObj.__category = 'player';
@@ -127,18 +138,27 @@ export default class ObjectManager {
             o.__category = 'team';
             ordered.push(o);
         });
-        rest.forEach(o => {
+        combatRest.forEach(o => {
             o.__category = 'rest';
             ordered.push(o);
         });
+        if (inCombat) {
+            nonCombatRest.forEach(o => {
+                o.__category = 'rest-noncombat';
+                ordered.push(o);
+            });
+        }
 
         let teamIndex = 0;
         let restIndex = 1;
+        let nonCombatIndex = 50;
         ordered.forEach(o => {
             if (o.__category === 'player') {
                 o.shortcut = '@';
             } else if (o.__category === 'team') {
                 o.shortcut = String.fromCharCode('A'.charCodeAt(0) + teamIndex++);
+            } else if (o.__category === 'rest-noncombat') {
+                o.shortcut = String(nonCombatIndex++);
             } else {
                 o.shortcut = String(restIndex++);
             }
