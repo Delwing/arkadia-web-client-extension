@@ -5,6 +5,7 @@ class FakeClient {
   lampBind = { key: 'Digit4', ctrl: true };
   attackBind = { key: 'Digit1', ctrl: true };
   supportBind = { key: 'KeyQ', ctrl: true };
+  moveModeBind = { key: 'Backquote' };
   println = jest.fn();
 }
 
@@ -21,5 +22,6 @@ describe('binds alias', () => {
     expect(printed).toContain('Atakuj: CTRL+1');
     expect(printed).toContain('Nape\u0142nij lamp\u0119: CTRL+4');
     expect(printed).toContain('Wesprzyj: CTRL+Q');
+    expect(printed).toContain('Tryb ruchu: `');
   });
 });

@@ -18,4 +18,17 @@ export default function initMoveMode(client: Client) {
         client.moveMode = (client.moveMode + 1) % LABELS.length;
         update();
     }
+
+    window.addEventListener('keydown', (ev) => {
+        const bind = client.moveModeBind;
+        if (
+            (ev.code === bind.key || ev.key === bind.key) &&
+            !!bind.ctrl === ev.ctrlKey &&
+            !!bind.alt === ev.altKey &&
+            !!bind.shift === ev.shiftKey
+        ) {
+            toggle();
+            ev.preventDefault();
+        }
+    });
 }

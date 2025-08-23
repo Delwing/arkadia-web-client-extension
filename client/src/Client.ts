@@ -75,6 +75,12 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    moveModeBind = {key: "Backquote"} as {
+        key: string;
+        ctrl?: boolean;
+        alt?: boolean;
+        shift?: boolean;
+    };
     customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
@@ -169,6 +175,10 @@ export default class Client {
             const support = b?.support
             if (support) {
                 this.supportBind = { ...support }
+            }
+            const moveMode = b?.moveMode
+            if (moveMode) {
+                this.moveModeBind = { ...moveMode }
             }
             const custom = b?.custom
             if (custom) {
