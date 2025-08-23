@@ -85,6 +85,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/za3 _skrot_** - zasłania obiekt z poziomem krycia 3.
 - **/za4 _skrot_** - zasłania obiekt z poziomem krycia 4.
 - **/w _skrot_** - wycofuje postać za wskazany obiekt.
+- **/pro _skrot_** - przekazuje prowadzenie obiektowi o podanym skrócie.
 - **/prze** - przełamuje obronę oznaczonego celu.
 - **/puszczaj** - przełącza automatyczne zwalnianie zasłony przy użyciu `/za` lub `/zas`.
 - **/zap** - wykonuje polecenie `zapal lampe`.
