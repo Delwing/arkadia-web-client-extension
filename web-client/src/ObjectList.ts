@@ -11,11 +11,16 @@ export default class ObjectList {
     private offsetLeft = 0;
     private offsetTop = 0;
     private pointerId = 0;
+    private isMobile = false;
 
     constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
+        this.isMobile = this.isMobileBrowser();
         this.setupDraggable();
+        if (!this.isMobile) {
+            this.container?.addEventListener("click", this.onClick);
+        }
         window.addEventListener("resize", this.clampToViewport);
         this.client.addEventListener("gmcp.objects.nums", () => this.render());
         this.client.addEventListener("gmcp.objects.data", () => this.render());
@@ -55,6 +60,10 @@ export default class ObjectList {
 
     private onPointerDown = (e: PointerEvent) => {
         if (!this.container) return;
+        const target = e.target as HTMLElement | null;
+        if (target?.closest(".object-num, .object-desc")) {
+            return;
+        }
         this.isDragging = true;
         this.pointerId = e.pointerId;
         this.startX = e.clientX;
@@ -120,6 +129,38 @@ export default class ObjectList {
         this.container.style.top = `${newTop}px`;
     };
 
+    private isMobileBrowser() {
+        return (
+            typeof navigator !== "undefined" &&
+            /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                navigator.userAgent
+            )
+        );
+    }
+
+    private onClick = (e: MouseEvent) => {
+        if (this.isMobile) return;
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+        const numEl = target.closest(".object-num[data-object-id]") as HTMLElement | null;
+        if (numEl) {
+            const id = numEl.getAttribute("data-object-id");
+            if (id) {
+                this.client.sendCommand(`zabij ob_${id}`);
+            }
+            return;
+        }
+        const descEl = target.closest(".object-desc[data-object-id]") as HTMLElement | null;
+        if (descEl) {
+            const id = descEl.getAttribute("data-object-id");
+            const teammate = descEl.getAttribute("data-teammate") === "true";
+            if (id) {
+                const cmd = teammate ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
+                this.client.sendCommand(cmd);
+            }
+        }
+    };
+
     private render() {
         if (!this.container) return;
         const manager = this.client.ObjectManager;
@@ -135,37 +176,44 @@ export default class ObjectList {
         );
 
         const lines = objects.map((obj: any) => {
-            const num = String(obj.shortcut)
+            const num = String(obj.shortcut);
+            const isPlayer = obj.shortcut === '@';
             let prefix = "  ";
             if (obj.attack_target) {
                 prefix = `<span style="color:orangered">>></span>`;
             } else if (obj.defense_target) {
                 prefix = `<span style="color:greenyellow">>></span>`;
             }
-            const numLabel = `${prefix}${num}`;
+            const numLabel = isPlayer
+                ? `${prefix}${num}`
+                : `${prefix}<span class="object-num" data-object-id="${obj.num}" data-object-num="${num}">${num}</span>`;
             const rawDesc = obj.desc || "";
             let coloredDesc = rawDesc;
-            if (obj.shortcut === '@') {
-                // leave player's own character uncolored
-            } else if (obj.avatar_target) {
-                coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
-            } else if (tm?.isInTeam?.(rawDesc)) {
-                const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-                let style = "color:springgreen";
-                const classes = [] as string[];
-                if (teamAttacking && !isAttacking) {
-                    classes.push("team-not-attacking");
+            if (!isPlayer) {
+                if (obj.avatar_target) {
+                    coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
+                } else if (tm?.isInTeam?.(rawDesc)) {
+                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+                    let style = "color:springgreen";
+                    const classes = [] as string[];
+                    if (teamAttacking && !isAttacking) {
+                        classes.push("team-not-attacking");
+                    }
+                    const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
+                    coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
+                } else if (
+                    typeof obj.state === "number" &&
+                    obj.attack_num !== false &&
+                    obj.attack_num !== undefined
+                ) {
+                    coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
                 }
-                const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
-                coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
-            } else if (
-                typeof obj.state === "number" &&
-                obj.attack_num !== false &&
-                obj.attack_num !== undefined
-            ) {
-                coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
             }
-            const desc = coloredDesc + " ".repeat(Math.max(0, descWidth - rawDesc.length));
+            const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
+            const isTeammate = tm?.isInTeam?.(rawDesc) ? "true" : "false";
+            const desc = isPlayer
+                ? `${rawDesc}${padding}`
+                : `<span class="object-desc" data-object-id="${obj.num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
             let bar = "";
             if (typeof obj.state === "number") {
                 const hp = Math.max(0, Math.min(6, obj.state)) + 1;

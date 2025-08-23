@@ -227,6 +227,11 @@ h1 {
   min-width: 350px
 }
 
+#objects-list .object-num,
+#objects-list .object-desc {
+  cursor: pointer;
+}
+
 #objects-list .team-not-attacking {
   font-style: italic;
 }

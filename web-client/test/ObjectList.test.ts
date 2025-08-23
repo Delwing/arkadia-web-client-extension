@@ -8,8 +8,9 @@ jest.mock('@client/src/storage', () => ({
 
 class MockClient {
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: () => false };
+  TeamManager = { isInTeam: (_d: string) => false };
   addEventListener() {}
+  sendCommand = jest.fn();
 }
 
 describe('ObjectList', () => {
@@ -75,9 +76,99 @@ describe('ObjectList', () => {
     container.releasePointerCapture = jest.fn();
     const client = new MockClient();
     const ol: any = new ObjectList(client as any);
-    const downEvent = { clientX: 0, clientY: 0, pointerId: 1, preventDefault: jest.fn() } as unknown as PointerEvent;
+    const downEvent = {
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1,
+      preventDefault: jest.fn(),
+      target: container,
+    } as unknown as PointerEvent;
     ol.onPointerDown(downEvent);
     ol.onPointerUp({ pointerId: 1 } as unknown as PointerEvent);
     expect(setItemSync).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
+  });
+
+  test('pointer down on object item does not start drag', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const container = document.getElementById('objects-list') as any;
+    container.setPointerCapture = jest.fn();
+    const client = new MockClient();
+    const ol: any = new ObjectList(client as any);
+    const objects = [{ shortcut: '1', desc: 'Goblin', num: 1 }];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (ol as any).render();
+    const num = document.querySelector('.object-num') as HTMLElement;
+    const downEventNum = {
+      pointerId: 1,
+      clientX: 0,
+      clientY: 0,
+      target: num,
+      preventDefault: jest.fn(),
+    } as unknown as PointerEvent;
+    ol.onPointerDown(downEventNum);
+    expect((ol as any).isDragging).toBeFalsy();
+    expect(container.setPointerCapture).not.toHaveBeenCalled();
+    const desc = document.querySelector('.object-desc') as HTMLElement;
+    const downEventDesc = {
+      pointerId: 2,
+      clientX: 0,
+      clientY: 0,
+      target: desc,
+      preventDefault: jest.fn(),
+    } as unknown as PointerEvent;
+    ol.onPointerDown(downEventDesc);
+    expect((ol as any).isDragging).toBeFalsy();
+  });
+
+  test('clicking number attacks that target', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const num = document.querySelector('.object-num[data-object-id="123"]') as HTMLElement;
+    num.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_123');
+  });
+
+    test('clicking teammate shields them', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    client.TeamManager.isInTeam = (d: string) => d === 'Ally';
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Ally', num: 42 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const desc = document.querySelector('.object-desc[data-object-id="42"]') as HTMLElement;
+    desc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_42');
+  });
+
+  test('clicking enemy shields against them', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '1', desc: 'Goblin', num: 77 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const desc = document.querySelector('.object-desc[data-object-id="77"]') as HTMLElement;
+    desc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_77');
+  });
+
+  test('player object is not clickable', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '@', desc: 'Hero', num: 99 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    expect(document.querySelector('.object-num[data-object-id="99"]')).toBeNull();
+    expect(document.querySelector('.object-desc[data-object-id="99"]')).toBeNull();
+    const container = document.getElementById('objects-list') as HTMLElement;
+    const textNode = container.firstChild as ChildNode;
+    textNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(client.sendCommand).not.toHaveBeenCalled();
   });
 });
