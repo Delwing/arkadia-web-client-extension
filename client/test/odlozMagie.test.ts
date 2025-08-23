@@ -21,8 +21,7 @@ describe('/odloz_magie alias', () => {
     alias.callback(m);
     expect(client.sendCommand).toHaveBeenCalledWith('i');
     const cb = client.Triggers.registerTrigger.mock.calls[0][1];
-    cb('magiczny miecz', 'magiczny miecz');
-    cb('Masz przy sobie 10 monet', 'Masz przy sobie 10 monet');
+    cb('Masz przy sobie magiczny miecz', 'Masz przy sobie magiczny miecz');
     expect(client.FunctionalBind.set).toHaveBeenCalledWith('wloz magiczny miecz do skrzyni');
     expect(client.Triggers.removeTrigger).toHaveBeenCalled();
   });

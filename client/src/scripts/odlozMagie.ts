@@ -10,6 +10,14 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
     function run(container: string) {
         const found: string[] = [];
         const trigger = client.Triggers.registerTrigger(/^.*$/, (_raw, line) => {
+            regexps.forEach((re, idx) => {
+                if (re.test(line)) {
+                    const item = patterns[idx];
+                    if (!found.includes(item)) {
+                        found.push(item);
+                    }
+                }
+            });
             if (finalPattern.test(line)) {
                 client.Triggers.removeTrigger(trigger);
                 if (found.length > 0) {
@@ -20,14 +28,6 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
                 }
                 return undefined;
             }
-            regexps.forEach((re, idx) => {
-                if (re.test(line)) {
-                    const item = patterns[idx];
-                    if (!found.includes(item)) {
-                        found.push(item);
-                    }
-                }
-            });
             return undefined;
         }, tag);
         client.sendCommand('i');
