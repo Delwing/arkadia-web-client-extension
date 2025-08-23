@@ -46,4 +46,12 @@ describe('move mode default bind', () => {
     expect(client.moveMode).toBe(1);
     expect(client.println).toHaveBeenCalledWith('Tryb ruchu: przemknij');
   });
+
+  test('button toggles move mode without printing', () => {
+    const client = new FakeClient();
+    initMoveMode((client as unknown) as any);
+    client.moveModeButton!.click();
+    expect(client.moveMode).toBe(1);
+    expect(client.println).not.toHaveBeenCalled();
+  });
 });

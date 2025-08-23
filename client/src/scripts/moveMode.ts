@@ -4,7 +4,7 @@ const LABELS = ["zwykly", "prz", "prz dr"];
 const TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
 export default function initMoveMode(client: Client) {
-    const button = client.createButton(`Ruch: ${LABELS[0]}`, toggle);
+    const button = client.createButton(`Ruch: ${LABELS[0]}`, () => toggle(false));
     button.title = `Ruch: ${TITLES[0]}`;
     client.moveModeButton = button;
 
@@ -13,11 +13,13 @@ export default function initMoveMode(client: Client) {
         button.title = `Ruch: ${TITLES[client.moveMode]}`;
     }
 
-    function toggle() {
+    function toggle(notify = false) {
         if (client.carriageMode) return;
         client.moveMode = (client.moveMode + 1) % LABELS.length;
         update();
-        client.println(`Tryb ruchu: ${TITLES[client.moveMode]}`);
+        if (notify) {
+            client.println(`Tryb ruchu: ${TITLES[client.moveMode]}`);
+        }
     }
 
     window.addEventListener('keydown', (ev) => {
@@ -28,7 +30,7 @@ export default function initMoveMode(client: Client) {
             !!bind.alt === ev.altKey &&
             !!bind.shift === ev.shiftKey
         ) {
-            toggle();
+            toggle(true);
             ev.preventDefault();
         }
     });
