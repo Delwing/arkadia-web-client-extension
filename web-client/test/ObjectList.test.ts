@@ -145,7 +145,7 @@ describe('ObjectList', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_42');
   });
 
-    test('clicking enemy shields against them', () => {
+  test('clicking enemy shields against them', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
@@ -155,5 +155,20 @@ describe('ObjectList', () => {
     const desc = document.querySelector('.object-desc[data-object-id="77"]') as HTMLElement;
     desc.click();
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_77');
+  });
+
+  test('player object is not clickable', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const objects = [ { shortcut: '@', desc: 'Hero', num: 99 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    expect(document.querySelector('.object-num[data-object-id="99"]')).toBeNull();
+    expect(document.querySelector('.object-desc[data-object-id="99"]')).toBeNull();
+    const container = document.getElementById('objects-list') as HTMLElement;
+    const textNode = container.firstChild as ChildNode;
+    textNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(client.sendCommand).not.toHaveBeenCalled();
   });
 });
