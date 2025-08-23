@@ -43,6 +43,16 @@ registerScripts(client)
 client.connect(client.port, true)
 
 
+const locationParam = new URLSearchParams(window.location.search).get('locationId');
+const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
+if (!isNaN(initialLocationId)) {
+    const handleInitialLocation = () => {
+        client.Map.setMapRoomById(initialLocationId);
+        client.removeEventListener('gmcp.room.info', handleInitialLocation);
+    };
+    client.addEventListener('gmcp.room.info', handleInitialLocation);
+}
+
 // Prevent tab sleep on mobile when switching tabs
 let noSleepInstance: NoSleep | null = null;
 let tabSleepPreventionActive = false;
@@ -460,6 +470,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
     const enableNotificationsSettings = document.getElementById('ui-enable-notifications') as HTMLButtonElement | null;
     const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
+    const shareLocationButton = document.getElementById('share-location-button') as HTMLButtonElement | null;
+    const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
+    const locationShareModalElement = document.getElementById('location-share-modal');
+    const locationShareModal = locationShareModalElement ? new Modal(locationShareModalElement) : null;
 
     if (enableNotificationsSettings || enableNotificationsConnection) {
         const updateVisibility = () => {
@@ -589,6 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileButtonsButton && mobileButtonsModal) {
         mobileButtonsButton.addEventListener('click', () => {
             mobileButtonsModal.show();
+        });
+    }
+
+    if (shareLocationButton && locationQrImage && locationShareModal) {
+        shareLocationButton.addEventListener('click', () => {
+            const roomId = (window as any).clientExtension?.Map?.currentRoom?.id;
+            if (!roomId) {
+                return;
+            }
+            const url = new URL(window.location.origin + window.location.pathname);
+            url.searchParams.set('locationId', roomId.toString());
+            locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
+            locationShareModal.show();
         });
     }
 

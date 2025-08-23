@@ -19,7 +19,13 @@
 <div id="main-container">
     <div id="iframe-container">
         <canvas id="map" resize="true"></canvas>
-        <div id="location-wrapper"><div id="location-label"><span id="location-text"></span></div><span id="pause-icon" hidden>⏸</span></div>
+        <div id="location-wrapper">
+            <div id="location-label">
+                <span id="location-text"></span>
+                <button id="share-location-button" class="btn btn-sm btn-secondary ms-1">QR</button>
+            </div>
+            <span id="pause-icon" hidden>⏸</span>
+        </div>
         <div id="notification-center"></div>
         <div id="map-progress-container" class="position-absolute top-50 start-50 translate-middle w-75">
             <div class="progress">
@@ -394,6 +400,20 @@
                         <button id="logs-download" class="btn btn-secondary">Pobierz</button>
                     </div>
                     <div id="logs-preview" class="border"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="location-share-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kod QR lokacji</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex justify-content-center">
+                    <img id="location-qr-image" alt="QR code">
                 </div>
             </div>
         </div>
