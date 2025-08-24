@@ -219,6 +219,14 @@ export default class EmbeddedMap {
                 {
                     label: 'Ustaw lokację',
                     action: () => (window as any).clientExtension?.Map.setMapRoomById(room.id)
+                },
+                {
+                    label: 'Prowadź do lokacji',
+                    action: () => (window as any).clientExtension?.sendEvent('leadTo', room.id)
+                },
+                {
+                    label: 'Idź do lokacji',
+                    action: () => (window as any).clientExtension?.sendCommand(`/idz ${room.id}`)
                 }
             ], ev.pageX, ev.pageY);
         }
