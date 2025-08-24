@@ -208,7 +208,7 @@ export default class EmbeddedMap {
 
     private _onContextMenu(ev: MouseEvent) {
         ev.preventDefault();
-        const point = this.renderer.paper.view.viewToProject(new this.renderer.paper.Point(ev.offsetX, ev.offsetY));
+        const point = this.renderer.paper.view.getEventPoint(ev);
         const room = this.renderer.area?.rooms.find((r: any) => r.render?.contains(point));
         if (room) {
             const handler: any = (window as any).clientExtension?.OutputHandler;
