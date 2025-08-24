@@ -48,6 +48,13 @@ const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
 if (!isNaN(initialLocationId)) {
     const handleInitialLocation = () => {
         client.Map.setMapRoomById(initialLocationId);
+
+        const params = new URLSearchParams(window.location.search);
+        params.delete('locationId');
+        const base = window.location.origin + window.location.pathname;
+        const rest = params.toString();
+        window.history.replaceState({}, '', rest ? `${base}?${rest}` : base);
+
         client.removeEventListener('gmcp.room.info', handleInitialLocation);
     };
     client.addEventListener('gmcp.room.info', handleInitialLocation);
