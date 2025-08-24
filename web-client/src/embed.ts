@@ -210,6 +210,7 @@ export default class EmbeddedMap {
         ev.preventDefault();
         const point = this.renderer.paper.view.getEventPoint(ev);
         const room = this.renderer.area?.rooms.find((r: any) => r.render?.contains(point));
+        console.log('Context menu', { x: point.x, y: point.y, roomId: room?.id });
         if (room) {
             const handler: any = (window as any).clientExtension?.OutputHandler;
             handler?.showContextMenu([
