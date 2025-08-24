@@ -66,6 +66,7 @@ export default class EmbeddedMap {
     private destinations: number[] = [];
     private highlights: number[] = []
     private _touchStartDistance: number | null = null;
+    private _longPressTimer: number | null = null;
     private zoom: number;
     private limit: number;
     private explorationMode = false;
@@ -166,9 +167,28 @@ export default class EmbeddedMap {
     }
 
     private _onTouchStart(ev: TouchEvent) {
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
         if (ev.touches.length === 2) {
             const [t1, t2] = ev.touches;
             this._touchStartDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        } else if (ev.touches.length === 1) {
+            const touch = ev.touches[0];
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            const pageX = touch.pageX;
+            const pageY = touch.pageY;
+            this._longPressTimer = window.setTimeout(() => {
+                this._onContextMenu({
+                    clientX,
+                    clientY,
+                    pageX,
+                    pageY,
+                    preventDefault() {}
+                } as any);
+            }, 500);
         }
     }
 
@@ -176,9 +196,17 @@ export default class EmbeddedMap {
         if (ev.touches.length < 2) {
             this._touchStartDistance = null;
         }
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
     }
 
     private _pinchZoom(ev: TouchEvent) {
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
         if (ev.touches.length === 2 && this._touchStartDistance !== null) {
             ev.preventDefault();
             const [t1, t2] = ev.touches;
@@ -206,10 +234,9 @@ export default class EmbeddedMap {
         }
     }
 
-    private _onContextMenu(ev: MouseEvent) {
+    private _onContextMenu(ev: MouseEvent | { clientX: number; clientY: number; pageX: number; pageY: number; preventDefault: () => void }) {
         ev.preventDefault();
-        const viewPoint = new this.renderer.paper.Point(ev.offsetX, ev.offsetY);
-        const point = this.renderer.paper.view.viewToProject(viewPoint);
+        const point = this.renderer.paper.view.getEventPoint(ev as any);
         const hit = this.renderer.roomLayer.hitTest(point, { fill: true, tolerance: 0 });
         const room = hit ? this.renderer.area?.rooms?.find((r: any) => r?.render === hit.item) : undefined;
         console.log('Context menu', { x: point.x, y: point.y, roomId: room?.id });
@@ -228,7 +255,7 @@ export default class EmbeddedMap {
                     label: 'Idź do lokacji',
                     action: () => (window as any).clientExtension?.sendCommand(`/idz ${room.id}`)
                 }
-            ], ev.pageX, ev.pageY);
+            ], (ev as any).pageX, (ev as any).pageY);
         }
     }
 
