@@ -79,11 +79,13 @@ export default class EmbeddedMap {
         this._onTouchStart = this._onTouchStart.bind(this);
         this._onTouchEnd = this._onTouchEnd.bind(this);
         this._onZoom = this._onZoom.bind(this);
+        this._onContextMenu = this._onContextMenu.bind(this);
         this.map.addEventListener('touchstart', this._onTouchStart, { passive: false });
         this.map.addEventListener('touchmove', this._pinchZoom, { passive: false });
         this.map.addEventListener('touchend', this._onTouchEnd);
         this.map.addEventListener('touchcancel', this._onTouchEnd);
         this.map.addEventListener('zoom', this._onZoom);
+        this.map.addEventListener('contextmenu', this._onContextMenu);
         this.reader = new MapReader(mapData, colors);
         this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
         this.settings = new Settings();
@@ -201,6 +203,21 @@ export default class EmbeddedMap {
         this.zoom = this.renderer.paper.view.zoom;
         if (shouldSave) {
             this._saveZoom();
+        }
+    }
+
+    private _onContextMenu(ev: MouseEvent) {
+        ev.preventDefault();
+        const point = this.renderer.paper.view.viewToProject(new this.renderer.paper.Point(ev.offsetX, ev.offsetY));
+        const room = this.renderer.area?.rooms.find((r: any) => r.render?.contains(point));
+        if (room) {
+            const handler: any = (window as any).clientExtension?.OutputHandler;
+            handler?.showContextMenu([
+                {
+                    label: 'Ustaw lokację',
+                    action: () => (window as any).clientExtension?.Map.setMapRoomById(room.id)
+                }
+            ], ev.pageX, ev.pageY);
         }
     }
 
