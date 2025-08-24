@@ -66,6 +66,7 @@ export default class EmbeddedMap {
     private destinations: number[] = [];
     private highlights: number[] = []
     private _touchStartDistance: number | null = null;
+    private _longPressTimer: number | null = null;
     private zoom: number;
     private limit: number;
     private explorationMode = false;
@@ -79,11 +80,13 @@ export default class EmbeddedMap {
         this._onTouchStart = this._onTouchStart.bind(this);
         this._onTouchEnd = this._onTouchEnd.bind(this);
         this._onZoom = this._onZoom.bind(this);
+        this._onContextMenu = this._onContextMenu.bind(this);
         this.map.addEventListener('touchstart', this._onTouchStart, { passive: false });
         this.map.addEventListener('touchmove', this._pinchZoom, { passive: false });
         this.map.addEventListener('touchend', this._onTouchEnd);
         this.map.addEventListener('touchcancel', this._onTouchEnd);
         this.map.addEventListener('zoom', this._onZoom);
+        this.map.addEventListener('contextmenu', this._onContextMenu);
         this.reader = new MapReader(mapData, colors);
         this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
         this.settings = new Settings();
@@ -164,9 +167,28 @@ export default class EmbeddedMap {
     }
 
     private _onTouchStart(ev: TouchEvent) {
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
         if (ev.touches.length === 2) {
             const [t1, t2] = ev.touches;
             this._touchStartDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        } else if (ev.touches.length === 1) {
+            const touch = ev.touches[0];
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            const pageX = touch.pageX;
+            const pageY = touch.pageY;
+            this._longPressTimer = window.setTimeout(() => {
+                this._onContextMenu({
+                    clientX,
+                    clientY,
+                    pageX,
+                    pageY,
+                    preventDefault() {}
+                } as any);
+            }, 500);
         }
     }
 
@@ -174,9 +196,17 @@ export default class EmbeddedMap {
         if (ev.touches.length < 2) {
             this._touchStartDistance = null;
         }
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
     }
 
     private _pinchZoom(ev: TouchEvent) {
+        if (this._longPressTimer !== null) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
         if (ev.touches.length === 2 && this._touchStartDistance !== null) {
             ev.preventDefault();
             const [t1, t2] = ev.touches;
@@ -201,6 +231,31 @@ export default class EmbeddedMap {
         this.zoom = this.renderer.paper.view.zoom;
         if (shouldSave) {
             this._saveZoom();
+        }
+    }
+
+    private _onContextMenu(ev: MouseEvent | { clientX: number; clientY: number; pageX: number; pageY: number; preventDefault: () => void }) {
+        ev.preventDefault();
+        const point = this.renderer.paper.view.getEventPoint(ev as any);
+        const hit = this.renderer.roomLayer.hitTest(point, { fill: true, tolerance: 0 });
+        const room = hit ? this.renderer.area?.rooms?.find((r: any) => r?.render === hit.item) : undefined;
+        console.log('Context menu', { x: point.x, y: point.y, roomId: room?.id });
+        if (room) {
+            const handler: any = (window as any).clientExtension?.OutputHandler;
+            handler?.showContextMenu([
+                {
+                    label: 'Ustaw lokację',
+                    action: () => (window as any).clientExtension?.Map.setMapRoomById(room.id)
+                },
+                {
+                    label: 'Prowadź do lokacji',
+                    action: () => (window as any).clientExtension?.sendEvent('leadTo', room.id)
+                },
+                {
+                    label: 'Idź do lokacji',
+                    action: () => (window as any).clientExtension?.sendCommand(`/idz ${room.id}`)
+                }
+            ], (ev as any).pageX, (ev as any).pageY);
         }
     }
 
