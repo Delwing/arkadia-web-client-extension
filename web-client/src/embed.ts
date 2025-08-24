@@ -208,8 +208,10 @@ export default class EmbeddedMap {
 
     private _onContextMenu(ev: MouseEvent) {
         ev.preventDefault();
-        const point = this.renderer.paper.view.getEventPoint(ev);
-        const room = this.renderer.area?.rooms?.find((r: any) => r?.render?.contains(point));
+        const viewPoint = new this.renderer.paper.Point(ev.offsetX, ev.offsetY);
+        const point = this.renderer.paper.view.viewToProject(viewPoint);
+        const hit = this.renderer.roomLayer.hitTest(point, { fill: true, tolerance: 0 });
+        const room = hit ? this.renderer.area?.rooms?.find((r: any) => r?.render === hit.item) : undefined;
         console.log('Context menu', { x: point.x, y: point.y, roomId: room?.id });
         if (room) {
             const handler: any = (window as any).clientExtension?.OutputHandler;
