@@ -45,7 +45,7 @@ function Aliases() {
         setPattern(a.pattern);
         setCommand(a.command);
         setEditIndex(idx);
-        setShowCreateForm(true);
+        setShowCreateForm(false);
     }
 
     function save() {
@@ -75,10 +75,12 @@ function Aliases() {
         saveList(updated);
     }
 
-    const filteredAliases = aliases.filter(a =>
-        a.pattern.toLowerCase().includes(filter.toLowerCase()) ||
-        a.command.toLowerCase().includes(filter.toLowerCase())
-    );
+    const filteredAliases = aliases
+        .map((a, idx) => ({ ...a, idx }))
+        .filter(a =>
+            a.pattern.toLowerCase().includes(filter.toLowerCase()) ||
+            a.command.toLowerCase().includes(filter.toLowerCase())
+        );
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
@@ -125,18 +127,43 @@ function Aliases() {
             )}
             
             <ul className="list-unstyled ms-3">
-                {filteredAliases.map((a, i) => (
-                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
-                        <span>
-                            <span>{a.pattern}</span>
-                            <span className="text-secondary mx-1">→</span>
-                            <span>{a.command}</span>
-                        </span>
-                        <span className="d-flex gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => openEdit(i)}><TiEdit /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
-                        </span>
-                    </li>
+                {filteredAliases.map(a => (
+                    editIndex === a.idx ? (
+                        <li key={a.idx} className="alias-list-item d-flex flex-column gap-2">
+                            <Form.Group className="d-flex flex-column gap-2">
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    placeholder="Pattern"
+                                    value={pattern}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    placeholder="Komenda"
+                                    value={command}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                                />
+                                <div className="d-flex gap-2">
+                                    <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
+                                    <Button size="sm" onClick={save}>Zapisz</Button>
+                                </div>
+                            </Form.Group>
+                        </li>
+                    ) : (
+                        <li key={a.idx} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
+                            <span>
+                                <span>{a.pattern}</span>
+                                <span className="text-secondary mx-1">→</span>
+                                <span>{a.command}</span>
+                            </span>
+                            <span className="d-flex gap-2">
+                                <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
+                                <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
+                            </span>
+                        </li>
+                    )
                 ))}
             </ul>
         </div>
