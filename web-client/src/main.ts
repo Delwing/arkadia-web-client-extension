@@ -804,6 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             client.sendCommand('');
+            if (focus) messageInput.select();
         }
     }
 
