@@ -2,7 +2,8 @@ import '../style.css'
 import {useEffect, useState} from "react";
 import {Form, Button} from 'react-bootstrap';
 import storage, { getCurrentCharacter } from "@client/src/storage";
-import { Settings as BaseSettings, defaultSettings } from './defaultSettings';
+import { defaultSettings } from './defaultSettings';
+import type { Settings as BaseSettings } from './defaultSettings';
 
 interface FormSettings extends BaseSettings {
 }
