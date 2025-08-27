@@ -71,6 +71,7 @@ import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
+import initSkills from './scripts/skills'
 import Client from "./Client";
 
 
@@ -199,6 +200,7 @@ export function registerScripts(client: Client) {
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
+    initSkills(client)
 
     new People(client)
     registerGagTriggers(client)
