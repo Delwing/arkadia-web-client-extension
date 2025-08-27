@@ -37,12 +37,15 @@ function formatLine(line: string) {
             const color = getColor(level);
             const leading = skillPart.match(/^\s*/)?.[0] ?? "";
             const skill = skillPart.trim();
-            const coloredSkill = colorString(`${skill}:`, color);
 
             const paddedLevel = `[${String(level).padStart(2, " ")}/10]`;
             const coloredLevel = colorString(paddedLevel, color);
+            const totalAfter = desc.length + trailing.length;
+            const newTrailing = trailing
+                ? " ".repeat(Math.max(0, totalAfter - paddedLevel.length))
+                : "";
 
-            return `${leading}${coloredSkill}${afterColon}${coloredLevel}${trailing}`;
+            return `${leading}${skill}:${afterColon}${coloredLevel}${newTrailing}`;
         }
     );
 }

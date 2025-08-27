@@ -16,11 +16,11 @@ describe('skills trigger', () => {
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
   });
 
-  test('replaces descriptor with padded level and colors skill', () => {
+  test('replaces descriptor with padded, colored level', () => {
     const line = 'akrobatyka: pobieznie';
     const colorCode = findClosestColor('#ffa500');
     const expected =
-      colorString('akrobatyka:', colorCode) +
+      'akrobatyka:' +
       ' ' +
       colorString('[ 3/10]', colorCode);
     const result = parse(line);
@@ -41,7 +41,7 @@ describe('skills trigger', () => {
       const line = `${skill}: ${desc}`;
       const colorCode = findClosestColor(hex);
       const expected =
-        colorString(`${skill}:`, colorCode) +
+        `${skill}:` +
         ' ' +
         colorString(bracket, colorCode);
       const result = parse(line);
@@ -55,15 +55,15 @@ describe('skills trigger', () => {
     const orange = findClosestColor('#ffa500');
     const green = findClosestColor('#00ff00');
     const expected =
-      colorString('akrobatyka:', orange) +
+      'akrobatyka:' +
       ' ' +
       colorString('[ 3/10]', orange) +
-      '   ' +
-      colorString('miecze:', green) +
+      '     ' +
+      'miecze:' +
       ' ' +
       colorString('[ 8/10]', green);
     const result = parse(line);
     expect(result).toBe(expected);
-    expect(stripAnsiCodes(result)).toBe('akrobatyka: [ 3/10]   miecze: [ 8/10]');
+    expect(stripAnsiCodes(result)).toBe('akrobatyka: [ 3/10]     miecze: [ 8/10]');
   });
 });
