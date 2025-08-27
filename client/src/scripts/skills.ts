@@ -3,7 +3,6 @@ import { colorString, findClosestColor } from "../Colors";
 
 const COLORS = [
     findClosestColor("#ff0000"),
-    findClosestColor("#ffa500"),
     findClosestColor("#ffff00"),
     findClosestColor("#00ff00"),
     findClosestColor("#87ceeb"),
@@ -23,14 +22,16 @@ const skillsDesc: Record<string, number> = {
 };
 
 function getColor(level: number) {
-    if (level === 10) {
-        return COLORS[COLORS.length - 1];
+    if (level <= 3) {
+        return COLORS[0];
     }
-    return COLORS[Math.min(COLORS.length - 2, Math.floor((level - 1) / 2))];
-}
-
-function padLevel(level: number) {
-    return level.toString().padStart(2, " ");
+    if (level <= 6) {
+        return COLORS[1];
+    }
+    if (level <= 9) {
+        return COLORS[2];
+    }
+    return COLORS[3];
 }
 
 function formatLine(line: string) {
@@ -44,15 +45,18 @@ function formatLine(line: string) {
             const color = getColor(level);
             const leading = skillPart.match(/^\s*/)?.[0] ?? "";
             const skill = skillPart.trim();
-            const coloredSkill = colorString(skill, color);
-            const coloredLevel = colorString(`[${padLevel(level)}/10]`, color);
+            const coloredSkill = colorString(`${skill}:`, color);
+
+            const levelStr = `[${level}/10]`;
+            const paddedLevel = `${level < 10 ? " " : ""}${levelStr}`;
+            const coloredLevel = colorString(paddedLevel, color);
 
             const beforeLevelSpacesCount = Math.max(1, trailing.length - 3);
             const afterLevelSpacesCount = Math.min(3, trailing.length);
             const beforeLevelSpaces = " ".repeat(beforeLevelSpacesCount);
             const afterLevelSpaces = " ".repeat(afterLevelSpacesCount);
 
-            return `${leading}${coloredSkill}:${afterColon}${desc}${beforeLevelSpaces}${coloredLevel}${afterLevelSpaces}`;
+            return `${leading}${coloredSkill}${afterColon}${desc}${beforeLevelSpaces}${coloredLevel}${afterLevelSpaces}`;
         }
     );
 }

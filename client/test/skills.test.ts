@@ -16,33 +16,51 @@ describe('skills trigger', () => {
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
   });
 
-  test('appends padded level and colors skill and level', () => {
+  test('colors skill name and level with padding before bracket', () => {
     const line = 'akrobatyka: ledwo';
     const colorCode = findClosestColor('#ff0000');
     const expected =
-      colorString('akrobatyka', colorCode) + ': ledwo ' + colorString('[ 1/10]', colorCode);
+      colorString('akrobatyka:', colorCode) +
+      ' ledwo ' +
+      colorString(' [1/10]', colorCode);
     const result = parse(line);
     expect(result).toBe(expected);
-    expect(stripAnsiCodes(result)).toBe('akrobatyka: ledwo [ 1/10]');
+    expect(stripAnsiCodes(result)).toBe('akrobatyka: ledwo  [1/10]');
   });
 
-  test('uses SkyBlue only for max level', () => {
-    const line = 'miecze: mistrzowsko';
-    const colorCode = findClosestColor('#87ceeb');
+  test('uses yellow for mid levels', () => {
+    const line = 'ocena przeciwnika: dobrze';
+    const colorCode = findClosestColor('#ffff00');
     const expected =
-      colorString('miecze', colorCode) + ': mistrzowsko ' + colorString('[10/10]', colorCode);
+      colorString('ocena przeciwnika:', colorCode) +
+      ' dobrze ' +
+      colorString(' [6/10]', colorCode);
     const result = parse(line);
     expect(result).toBe(expected);
-    expect(stripAnsiCodes(result)).toBe('miecze: mistrzowsko [10/10]');
+    expect(stripAnsiCodes(result)).toBe('ocena przeciwnika: dobrze  [6/10]');
   });
 
   test('keeps green for level nine', () => {
     const line = 'plywanie: perfekcyjnie';
     const colorCode = findClosestColor('#00ff00');
     const expected =
-      colorString('plywanie', colorCode) + ': perfekcyjnie ' + colorString('[ 9/10]', colorCode);
+      colorString('plywanie:', colorCode) +
+      ' perfekcyjnie ' +
+      colorString(' [9/10]', colorCode);
     const result = parse(line);
     expect(result).toBe(expected);
-    expect(stripAnsiCodes(result)).toBe('plywanie: perfekcyjnie [ 9/10]');
+    expect(stripAnsiCodes(result)).toBe('plywanie: perfekcyjnie  [9/10]');
+  });
+
+  test('uses SkyBlue only for max level', () => {
+    const line = 'miecze: mistrzowsko';
+    const colorCode = findClosestColor('#87ceeb');
+    const expected =
+      colorString('miecze:', colorCode) +
+      ' mistrzowsko ' +
+      colorString('[10/10]', colorCode);
+    const result = parse(line);
+    expect(result).toBe(expected);
+    expect(stripAnsiCodes(result)).toBe('miecze: mistrzowsko [10/10]');
   });
 });
