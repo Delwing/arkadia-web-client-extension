@@ -23,26 +23,38 @@ const skillsDesc: Record<string, number> = {
 };
 
 function getColor(level: number) {
-    return COLORS[Math.min(COLORS.length - 1, Math.floor((level - 1) / 2))];
+    if (level === 10) {
+        return COLORS[COLORS.length - 1];
+    }
+    return COLORS[Math.min(COLORS.length - 2, Math.floor((level - 1) / 2))];
 }
 
 function padLevel(level: number) {
-    return level < 10 ? ` ${level}` : `${level}`;
+    return level.toString().padStart(2, " ");
 }
 
 function formatLine(line: string) {
-    return line.replace(/([^:]+):\s+([a-z]+)/g, (substring, skillPart: string, desc: string) => {
-        const level = skillsDesc[desc as keyof typeof skillsDesc];
-        if (!level) {
-            return substring;
+    return line.replace(
+        /([^:]+):(\s+)([a-z]+)(\s*)/g,
+        (substring, skillPart: string, afterColon: string, desc: string, trailing: string) => {
+            const level = skillsDesc[desc as keyof typeof skillsDesc];
+            if (!level) {
+                return substring;
+            }
+            const color = getColor(level);
+            const leading = skillPart.match(/^\s*/)?.[0] ?? "";
+            const skill = skillPart.trim();
+            const coloredSkill = colorString(skill, color);
+            const coloredLevel = colorString(`[${padLevel(level)}/10]`, color);
+
+            const beforeLevelSpacesCount = Math.max(1, trailing.length - 3);
+            const afterLevelSpacesCount = Math.min(3, trailing.length);
+            const beforeLevelSpaces = " ".repeat(beforeLevelSpacesCount);
+            const afterLevelSpaces = " ".repeat(afterLevelSpacesCount);
+
+            return `${leading}${coloredSkill}:${afterColon}${desc}${beforeLevelSpaces}${coloredLevel}${afterLevelSpaces}`;
         }
-        const color = getColor(level);
-        const leading = skillPart.match(/^\s*/)?.[0] ?? "";
-        const skill = skillPart.trim();
-        const coloredSkill = colorString(skill, color);
-        const coloredLevel = colorString(`[${padLevel(level)}/10]`, color);
-        return `${leading}${coloredSkill}: ${coloredLevel}`;
-    });
+    );
 }
 
 export default function initSkills(client: Client) {
