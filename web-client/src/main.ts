@@ -808,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    sendButton.addEventListener('click', () => sendMessage());
+    sendButton.addEventListener('click', () => sendMessage(false));
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
