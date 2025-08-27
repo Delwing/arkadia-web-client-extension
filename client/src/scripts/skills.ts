@@ -23,7 +23,19 @@ const skillsDesc: Record<string, number> = {
 };
 
 function getColor(level: number) {
-    return COLORS[Math.min(COLORS.length - 1, Math.floor((level - 1) / 2))];
+    if (level === 10) {
+        return COLORS[4];
+    }
+    if (level >= 7) {
+        return COLORS[3];
+    }
+    if (level >= 5) {
+        return COLORS[2];
+    }
+    if (level >= 3) {
+        return COLORS[1];
+    }
+    return COLORS[0];
 }
 
 function formatLine(line: string) {
@@ -34,18 +46,24 @@ function formatLine(line: string) {
             if (!level) {
                 return substring;
             }
+
             const color = getColor(level);
             const leading = skillPart.match(/^\s*/)?.[0] ?? "";
             const skill = skillPart.trim();
 
-            const paddedLevel = `[${String(level).padStart(2, " ")}/10]`;
-            const coloredLevel = colorString(paddedLevel, color);
-            const totalAfter = desc.length + trailing.length;
-            const newTrailing = trailing
-                ? " ".repeat(Math.max(0, totalAfter - paddedLevel.length))
-                : "";
+            const bracket = level === 10 ? "[10/10]" : `[${level}/10]`;
+            const coloredSkill = colorString(`${skill}:`, color);
+            const coloredBracket = colorString(bracket, color);
 
-            return `${leading}${skill}:${afterColon}${coloredLevel}${newTrailing}`;
+            const trailingLen = trailing.length;
+            let spacesAfter = trailingLen >= 3 ? 3 : 0;
+            let spacesBefore = trailingLen - spacesAfter;
+            if (spacesBefore < 1) {
+                spacesBefore = 1;
+                spacesAfter = Math.max(0, trailingLen - spacesBefore);
+            }
+
+            return `${leading}${coloredSkill}${afterColon}${desc}${" ".repeat(spacesBefore)}${coloredBracket}${" ".repeat(spacesAfter)}`;
         }
     );
 }
