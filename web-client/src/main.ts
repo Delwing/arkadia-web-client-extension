@@ -807,10 +807,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    sendButton.addEventListener('click', () => sendMessage(false));
+    sendButton.addEventListener('click', () => sendMessage());
 
-    messageInput.addEventListener('keypress', (e) => {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+            const active = document.activeElement as HTMLElement | null;
+            const modalOpen = document.querySelector('.modal.show');
+            if (modalOpen && (!active || active.id !== 'message-input')) {
+                return;
+            }
+            if (active && active.id !== 'message-input' &&
+                (active.matches('input, textarea') || active.isContentEditable)) {
+                return;
+            }
+            e.preventDefault();
             sendMessage();
         }
     });
