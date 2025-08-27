@@ -66,6 +66,8 @@ export default class EmbeddedMap {
     private destinations: number[] = [];
     private highlights: number[] = []
     private _touchStartDistance: number | null = null;
+    private _touchStartX: number | null = null;
+    private _touchStartY: number | null = null;
     private _longPressTimer: number | null = null;
     private zoom: number;
     private limit: number;
@@ -180,6 +182,8 @@ export default class EmbeddedMap {
             const clientY = touch.clientY;
             const pageX = touch.pageX;
             const pageY = touch.pageY;
+            this._touchStartX = clientX;
+            this._touchStartY = clientY;
             this._longPressTimer = window.setTimeout(() => {
                 this._onContextMenu({
                     clientX,
@@ -196,6 +200,10 @@ export default class EmbeddedMap {
         if (ev.touches.length < 2) {
             this._touchStartDistance = null;
         }
+        if (ev.touches.length === 0) {
+            this._touchStartX = null;
+            this._touchStartY = null;
+        }
         if (this._longPressTimer !== null) {
             clearTimeout(this._longPressTimer);
             this._longPressTimer = null;
@@ -203,17 +211,30 @@ export default class EmbeddedMap {
     }
 
     private _pinchZoom(ev: TouchEvent) {
-        if (this._longPressTimer !== null) {
-            clearTimeout(this._longPressTimer);
-            this._longPressTimer = null;
-        }
         if (ev.touches.length === 2 && this._touchStartDistance !== null) {
+            if (this._longPressTimer !== null) {
+                clearTimeout(this._longPressTimer);
+                this._longPressTimer = null;
+            }
             ev.preventDefault();
             const [t1, t2] = ev.touches;
             const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
             const delta = dist / this._touchStartDistance;
             this._touchStartDistance = dist;
             this.setZoom(this.zoom * delta);
+        } else if (
+            ev.touches.length === 1 &&
+            this._longPressTimer !== null &&
+            this._touchStartX !== null &&
+            this._touchStartY !== null
+        ) {
+            const touch = ev.touches[0];
+            const dx = touch.clientX - this._touchStartX;
+            const dy = touch.clientY - this._touchStartY;
+            if (Math.hypot(dx, dy) > 10) {
+                clearTimeout(this._longPressTimer);
+                this._longPressTimer = null;
+            }
         }
     }
 
