@@ -33,7 +33,7 @@ export default function initGps(client: Client) {
                     const gpsId = `${room.id}_${idx}`;
                     let current = 1;
                     const checkContext = () => {
-                        if (entry.area_name && client.Map.currentRoom?.areaId !== entry.area_name) {
+                        if (entry.area_name && client.Map.getAreaName(client.Map.currentRoom?.areaId) !== entry.area_name) {
                             return false;
                         }
                         if (entry.within_room_ids && entry.within_room_ids.length > 0) {

@@ -33,6 +33,7 @@ export default class MapHelper {
     gmcpPosition: Position;
     paused = false;
     savedRoomId: number | null = null;
+    areas: Record<string, string> = {}
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -49,6 +50,9 @@ export default class MapHelper {
             window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors}}))
             const startId = this.savedRoomId ?? 1;
             this.renderRoomById(startId)
+            this.mapReader.getAreas().forEach(area => {
+                this.areas[area.areaId] = area.areaName
+            })
         })
 
         this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
@@ -258,6 +262,10 @@ export default class MapHelper {
                 this.client.FunctionalBind.set("napij sie do syta wody", () => this.client.sendCommand("napij sie do syta wody"))
             }
         }, {once: true})
+    }
+
+    getAreaName(id: string) {
+        return this.areas[id]
     }
 
 }
