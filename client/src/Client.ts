@@ -281,6 +281,10 @@ export default class Client {
         this.sendCommand('przestan zaslaniac')
     }
 
+    goOutOfGuard() {
+        this.sendCommand('przestan kryc sie za zaslona')
+    }
+
     sendCommand(command: string, echo: boolean = true) {
         if (command) {
             command = stripPolishCharacters(command)

@@ -39,7 +39,7 @@ export default function initObjectAliases(
         if (obj) {
             client.sendCommand(`gzwycofaj sie za ob_${obj.num}`);
             if (releaseGuard) {
-                client.releaseGuard();
+                client.goOutOfGuard();
             }
         }
     }
