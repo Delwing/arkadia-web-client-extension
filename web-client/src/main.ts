@@ -28,7 +28,7 @@ import Npc from "./options/Npc.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
-import Guilds from "./options/Guilds.tsx"
+import CharacterSettings from "./options/CharacterSettings.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
@@ -456,8 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
     const npcModalElement = document.getElementById('npc-modal');
     const npcModal = npcModalElement ? new Modal(npcModalElement) : null;
-    const guildsModalElement = document.getElementById('guilds-modal');
-    const guildsModal = guildsModalElement ? new Modal(guildsModalElement) : null;
     const scriptsModalElement = document.getElementById('scripts-modal');
     const scriptsModal = scriptsModalElement ? new Modal(scriptsModalElement) : null;
     const aliasesModalElement = document.getElementById('aliases-modal');
@@ -532,9 +530,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (npcModal) {
             npcModal.hide();
         }
-        if (guildsModal) {
-            guildsModal.hide();
-        }
         if (scriptsModal) {
             scriptsModal.hide();
         }
@@ -555,6 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener to options button
     if (optionsButton && optionsModal) {
         optionsButton.addEventListener('click', () => {
+            window.dispatchEvent(new Event('show-general-settings'));
             optionsModal.show();
         });
     }
@@ -571,9 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (guildsButton && guildsModal) {
+    if (guildsButton && optionsModal) {
         guildsButton.addEventListener('click', () => {
-            guildsModal.show();
+            window.dispatchEvent(new Event('show-guild-settings'));
+            optionsModal.show();
         });
     }
 
@@ -939,7 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rootElement = document.getElementById('options');
     if (rootElement) {
-        createRoot(rootElement).render(createElement(Settings));
+        createRoot(rootElement).render(createElement(CharacterSettings));
     }
 
     const bindsRoot = document.getElementById('binds-options');
@@ -952,10 +949,6 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoot(npcRoot).render(createElement(Npc));
     }
 
-    const guildsRoot = document.getElementById('guilds-options');
-    if (guildsRoot) {
-        createRoot(guildsRoot).render(createElement(Guilds));
-    }
 
     const scriptsRoot = document.getElementById('scripts-options');
     if (scriptsRoot) {
@@ -1003,7 +996,6 @@ window.client = arkadiaClient
 // background communication disabled
 
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
-import Settings from "./options/Settings.tsx";
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
