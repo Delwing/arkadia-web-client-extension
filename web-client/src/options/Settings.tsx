@@ -72,10 +72,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
         })
     }
     useEffect(() => {
-        registerSave(() => {
-            storage.setItem("settings", settings);
-            window.dispatchEvent(new Event("close-options"));
-        });
+        registerSave(() => storage.setItem("settings", settings));
     }, [registerSave, settings]);
 
     useEffect(() => {

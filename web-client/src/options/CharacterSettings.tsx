@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GeneralSettings from "./Settings";
 import Guilds from "./Guilds";
@@ -7,15 +7,19 @@ type Tab = "general" | "guild";
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const scrollRefs = {
+        general: useRef<HTMLDivElement>(null),
+        guild: useRef<HTMLDivElement>(null),
+    } as const;
     const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0 });
-    const saveRef = useRef<() => void>(() => {});
+    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {} });
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
     function changeTab(next: Tab) {
-        if (scrollRef.current) {
-            scrollPos.current[tab] = scrollRef.current.scrollTop;
+        const current = scrollRefs[tab].current;
+        if (current) {
+            scrollPos.current[tab] = current.scrollTop;
         }
         setTab(next);
     }
@@ -45,19 +49,32 @@ function CharacterSettings() {
         };
     }, []);
 
-    function registerSave(fn: () => void) {
-        saveRef.current = fn;
-    }
+    const registerGeneralSave = useCallback((fn: () => void) => {
+        saveRefs.current.general = fn;
+    }, []);
+
+    const registerGuildSave = useCallback((fn: () => void) => {
+        saveRefs.current.guild = fn;
+    }, []);
 
     useEffect(() => {
-        const handler = () => saveRef.current();
+        const handler = () => {
+            const saves = [
+                Promise.resolve(saveRefs.current.general()),
+                Promise.resolve(saveRefs.current.guild()),
+            ];
+            Promise.all(saves).then(() => {
+                window.dispatchEvent(new Event("close-options"));
+            });
+        };
         window.addEventListener("save-options", handler);
         return () => window.removeEventListener("save-options", handler);
     }, []);
 
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollPos.current[tab];
+        const current = scrollRefs[tab].current;
+        if (current) {
+            current.scrollTop = scrollPos.current[tab];
         }
     }, [tab]);
 
@@ -90,12 +107,21 @@ function CharacterSettings() {
                     </button>
                 </div>
             </div>
-            <div ref={scrollRef} className="flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
-                {tab === "general" ? (
-                    <GeneralSettings registerSave={registerSave} />
-                ) : (
-                    <Guilds registerSave={registerSave} />
-                )}
+            <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
+                <div
+                    ref={scrollRefs.general}
+                    className={`h-100 overflow-auto${tab === "general" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <GeneralSettings registerSave={registerGeneralSave} />
+                </div>
+                <div
+                    ref={scrollRefs.guild}
+                    className={`h-100 overflow-auto${tab === "guild" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <Guilds registerSave={registerGuildSave} />
+                </div>
             </div>
         </div>
     );

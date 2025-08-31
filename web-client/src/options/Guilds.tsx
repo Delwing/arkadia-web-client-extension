@@ -88,7 +88,7 @@ function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
     }
 
     useEffect(() => {
-        registerSave(() => {
+        registerSave(() =>
             storage.getItem("settings").then(res => {
                 const base = res && res.settings
                     ? { ...defaultSettings, ...res.settings }
@@ -99,11 +99,9 @@ function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
                     enemyGuilds: enemySelected,
                     guildColors: colors,
                 };
-                storage.setItem("settings", settings).then(() => {
-                    window.dispatchEvent(new Event("close-options"));
-                });
-            });
-        });
+                return storage.setItem("settings", settings);
+            })
+        );
     }, [registerSave, selected, enemySelected, colors]);
 
     return (
