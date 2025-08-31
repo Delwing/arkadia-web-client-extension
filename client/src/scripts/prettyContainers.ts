@@ -320,7 +320,7 @@ export function prettyPrintContainer(
 const defaultContainerPatterns: RegExp[] = [
     /^Otwart(?:y|a|e) (?<container>.+? (?:plecak|torba|sakwa|sakiewka|szkatulka|wor|worek))(?: z .*?)? zawiera (?<content>.*)\.$/i,
     /^Otwarty .+? (?<container>kosz(?:|yk)) zawiera (?<content>.*)\.$/i,
-    /^Otwierasz na chwile (?<container>.+? (?:plecak|torba|sakwa|sakiewka|szkatulka|wor|worek)), sprawdzajac zawartosc\. W srodku dostrzegasz (?<content>.*)\.$/i,
+    /^Otwierasz na chwile (?<container>.+? (?:plecak|torbe|sakwe|sakiewke|szkatulke|wor|worek)), sprawdzajac zawartosc\. W srodku dostrzegasz (?<content>.*)\.$/i,
     /^Uwaznie ogladasz zawartosc (?<container>.+?)\. W srodku dostrzegasz (?<content>.*)\.$/,
     /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojej (?<container>.+? sakiewki).+?\. W srodku dostrzegasz (?<content>.*)\.$/,
     /^W (?<container>skrzyniach) zauwazasz miedzy innymi (?<content>.*)\.$/,
