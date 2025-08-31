@@ -1,7 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
-import { SKIP_LINE } from "../ControlConstants";
 
 const COLORS = [
     findClosestColor("#ff0000"),
@@ -47,13 +46,28 @@ export default function initSkills(
 ) {
     const tag = "skills";
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let lines: string[] = [];
 
-    function finish() {
+    function disable() {
         client.Triggers.removeByTag(tag);
-        timer = undefined;
-        if (!lines.length) return;
+        if (timer) {
+            clearTimeout(timer);
+            timer = undefined;
+        }
+    }
 
+    function formatSkill(
+        { name, level }: { name: string; level: string },
+        maxName: number,
+        maxLevel: number
+    ) {
+        const colored = colorLevel(level);
+        const n = pad(name, maxName);
+        const l = pad(colored, maxLevel);
+        return `${n}: ${l}`;
+    }
+
+    function process(raw: string) {
+        const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(stripAnsiCodes(l)));
         const skills: { name: string; level: string }[] = [];
         lines.forEach((l) => {
             const pairs = l.match(/[^:]+:\s+\S+/g);
@@ -62,8 +76,7 @@ export default function initSkills(
                 if (m) skills.push({ name: m[1].trim(), level: m[2].trim() });
             });
         });
-        lines = [];
-        if (!skills.length) return;
+        if (!skills.length) return raw;
 
         const maxName = Math.max(...skills.map((s) => s.name.length));
         const maxLevel = Math.max(...skills.map((s) => s.level.length));
@@ -85,41 +98,22 @@ export default function initSkills(
                 result.push(col1);
             }
         }
-        client.println(result.join("\n"));
-    }
-
-    function formatSkill(
-        { name, level }: { name: string; level: string },
-        maxName: number,
-        maxLevel: number
-    ) {
-        const colored = colorLevel(level);
-        const n = pad(name, maxName);
-        const l = pad(colored, maxLevel);
-        return `${n}: ${l}`;
-    }
-
-    function startTimer() {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(finish, 1000);
+        return result.join("\n");
     }
 
     function run() {
-        lines = [];
-        client.Triggers.removeByTag(tag);
-        client.Triggers.registerTrigger(
-            /.*/,
-            (_raw, line) => {
-                if (!/[^:]+:\s+\S+/.test(line)) return undefined;
-                lines.push(line);
-                startTimer();
-                return SKIP_LINE;
+        disable();
+        client.Triggers.registerMultilineTrigger(
+            /[^:]+:\s+\S+/,
+            (raw) => {
+                const out = process(raw);
+                disable();
+                return out;
             },
-            tag,
-            { stayOpenLines: 50 }
+            tag
         );
+        timer = setTimeout(disable, 1000);
         client.sendCommand("um");
-        startTimer();
     }
 
     if (aliases) {
