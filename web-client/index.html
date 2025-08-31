@@ -60,14 +60,17 @@
     </div>
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
     <div id="options-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable h-100">
+            <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Opcje</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div id="options"></div>
+                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
+                    <div id="options" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="options-save">Zapisz</button>
                 </div>
             </div>
         </div>
@@ -159,19 +162,6 @@
                 </div>
                 <div class="modal-body">
                     <div id="shortcuts-options"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="guilds-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Gildie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="guilds-options"></div>
                 </div>
             </div>
         </div>
