@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arkadia Sandbox</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+</head>
+<body>
+<div id="sandbox-controls" style="position:fixed;right:0;top:0;width:200px;height:100vh;background:#222;padding:1rem;overflow:auto;">
+  <button id="add-member" class="btn btn-primary btn-sm w-100 mb-2">Add Team Member</button>
+  <button id="clear-team" class="btn btn-secondary btn-sm w-100">Clear Team</button>
+  <pre id="team-members" class="mt-3 text-light"></pre>
+</div>
+<div id="sandbox-output" style="margin-right:200px;padding:1rem;">
+  <p>Sandbox mode. No connection.</p>
+</div>
+<script type="module" src="/src/sandbox.ts"></script>
+</body>
+</html>
