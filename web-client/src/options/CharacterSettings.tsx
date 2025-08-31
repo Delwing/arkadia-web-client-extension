@@ -29,7 +29,7 @@ function CharacterSettings() {
 
     return (
         <div className="p-2 d-flex flex-column h-100">
-            <div className="mb-3 pb-2">
+            <div className="mb-3 pb-2 flex-shrink-0">
                 <div className="d-flex gap-2">
                     <button
                         className={`btn btn-sm ${tab === "general" ? "btn-primary" : "btn-secondary"}`}
@@ -52,7 +52,7 @@ function CharacterSettings() {
                     <Guilds registerSave={registerSave} />
                 )}
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex-shrink-0">
                 <button className="btn btn-primary" onClick={save}>
                     Zapisz
                 </button>
