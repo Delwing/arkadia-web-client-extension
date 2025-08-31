@@ -23,9 +23,11 @@ function CharacterSettings() {
         saveRef.current = fn;
     }
 
-    function save() {
-        saveRef.current();
-    }
+    useEffect(() => {
+        const handler = () => saveRef.current();
+        window.addEventListener("save-options", handler);
+        return () => window.removeEventListener("save-options", handler);
+    }, []);
 
     return (
         <div className="p-2 d-flex flex-column h-100">
@@ -51,11 +53,6 @@ function CharacterSettings() {
                 ) : (
                     <Guilds registerSave={registerSave} />
                 )}
-            </div>
-            <div className="pt-2 flex-shrink-0">
-                <button className="btn btn-primary" onClick={save}>
-                    Zapisz
-                </button>
             </div>
         </div>
     );

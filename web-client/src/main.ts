@@ -429,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
+    const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
     const guildsButton = document.getElementById('guilds-button') as HTMLButtonElement | null;
@@ -552,6 +553,12 @@ document.addEventListener('DOMContentLoaded', () => {
         optionsButton.addEventListener('click', () => {
             window.dispatchEvent(new Event('show-general-settings'));
             optionsModal.show();
+        });
+    }
+
+    if (optionsSave) {
+        optionsSave.addEventListener('click', () => {
+            window.dispatchEvent(new Event('save-options'));
         });
     }
 
