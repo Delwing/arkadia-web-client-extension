@@ -868,3 +868,18 @@ button:focus-visible {
   background-color: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.3);
 }
+
+.sandbox-panel {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 16rem;
+  z-index: 2000;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.sandbox-panel input {
+  width: 100%;
+}
