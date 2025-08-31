@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
-import { Button } from "react-bootstrap";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { defaultSettings } from "./defaultSettings";
 
-function Guilds() {
+function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
@@ -88,22 +87,24 @@ function Guilds() {
         setEnemySelected(checked ? [...guilds] : []);
     }
 
-    function save() {
-        storage.getItem("settings").then(res => {
-            const base = res && res.settings
-                ? { ...defaultSettings, ...res.settings }
-                : { ...defaultSettings };
-            const settings = {
-                ...base,
-                guilds: selected,
-                enemyGuilds: enemySelected,
-                guildColors: colors,
-            };
-            storage.setItem("settings", settings).then(() => {
-                window.dispatchEvent(new Event('close-options'));
+    useEffect(() => {
+        registerSave(() => {
+            storage.getItem("settings").then(res => {
+                const base = res && res.settings
+                    ? { ...defaultSettings, ...res.settings }
+                    : { ...defaultSettings };
+                const settings = {
+                    ...base,
+                    guilds: selected,
+                    enemyGuilds: enemySelected,
+                    guildColors: colors,
+                };
+                storage.setItem("settings", settings).then(() => {
+                    window.dispatchEvent(new Event("close-options"));
+                });
             });
         });
-    }
+    }, [registerSave, selected, enemySelected, colors]);
 
     const char = getCurrentCharacter();
 
@@ -130,7 +131,6 @@ function Guilds() {
                     onChangeAll={onChangeAll}
                     onChangeAllEnemy={onChangeAllEnemy}
                 />
-                <Button onClick={save}>Zapisz</Button>
             </fieldset>
         </div>
     );
