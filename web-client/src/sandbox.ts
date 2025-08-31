@@ -12,8 +12,6 @@ window.addEventListener('load', () => {
     const client: any = (window as any).clientExtension;
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
-    const leaderInput = document.getElementById('sandbox-leader-name') as HTMLInputElement | null;
-    const setLeaderButton = document.getElementById('sandbox-set-leader') as HTMLButtonElement | null;
     const preview = document.getElementById('sandbox-team-preview');
 
     let id = 1;
@@ -97,11 +95,4 @@ window.addEventListener('load', () => {
         }
     });
 
-    setLeaderButton?.addEventListener('click', () => {
-        const name = leaderInput?.value.trim();
-        if (name) {
-            setLeader(name);
-            leaderInput!.value = '';
-        }
-    });
 });
