@@ -1,12 +1,8 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@client/src/storage";
-
-interface Alias {
-    pattern: string;
-    command: string;
-}
+import { parseBlowtorch, Alias } from "./importBlowtorch";
 
 function Aliases() {
     const [aliases, setAliases] = useState<Alias[]>([]);
@@ -15,6 +11,7 @@ function Aliases() {
     const [editIndex, setEditIndex] = useState<number | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         storage.getItem("aliases").then(res => {
@@ -38,6 +35,30 @@ function Aliases() {
     function openNew() {
         resetForm();
         setShowCreateForm(true);
+    }
+
+    function openImport() {
+        fileInputRef.current?.click();
+    }
+
+    async function handleImport(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const imported = parseBlowtorch(text);
+            const filtered = imported.filter(a => !aliases.some(b => b.pattern === a.pattern));
+            if (filtered.length) {
+                saveList([...aliases, ...filtered]);
+                alert(`Zaimportowano ${filtered.length} aliasów`);
+            } else {
+                alert("Brak nowych aliasów");
+            }
+        } catch {
+            alert("Nie udało się zaimportować pliku");
+        } finally {
+            e.target.value = "";
+        }
     }
 
     function openEdit(idx: number) {
@@ -92,6 +113,14 @@ function Aliases() {
                     style={{width: '100%', maxWidth: '12rem'}}
                 />
                 <Button size="sm" onClick={openNew}>Dodaj alias</Button>
+                <Button size="sm" onClick={openImport}>Importuj z Blowtorch</Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xml"
+                    style={{ display: 'none' }}
+                    onChange={handleImport}
+                />
             </div>
             
             {showCreateForm && (
