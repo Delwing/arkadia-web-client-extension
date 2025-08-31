@@ -869,15 +869,23 @@ button:focus-visible {
   border-color: rgba(0, 0, 0, 0.3);
 }
 
+.sandbox-layout {
+  display: flex;
+  height: 100svh;
+  height: 100dvh;
+}
+
+.sandbox-layout #main-container {
+  flex: 1;
+  width: auto;
+}
+
 .sandbox-panel {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 16rem;
-  z-index: 2000;
+  flex: 0 0 16rem;
   background-color: rgba(0, 0, 0, 0.6);
   padding: 0.5rem;
   border-radius: 0.25rem;
+  overflow-y: auto;
 }
 
 .sandbox-panel input {
