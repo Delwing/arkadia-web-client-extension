@@ -1,3 +1,4 @@
+import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
 
 // Disable connection to the remote server in sandbox mode
