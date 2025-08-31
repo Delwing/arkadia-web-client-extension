@@ -5,6 +5,7 @@ import initSkills from '../src/scripts/skills';
 class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
+  send = jest.fn();
   sendCommand = jest.fn();
   contentWidth = 120;
   addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
@@ -27,8 +28,8 @@ describe('skills alias', () => {
       run();
       const raw = `${LINE1}\n${LINE2}\n${LINE3}`;
       const processed = client.Triggers.parseMultiline(raw, '');
-
-      expect(client.sendCommand).toHaveBeenCalledWith('um');
+      expect(client.send).toHaveBeenCalledWith('um');
+      expect(client.sendCommand).not.toHaveBeenCalled();
       const printed = stripAnsiCodes(processed).split('\n');
       expect(printed.length).toBe(3);
       expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10\]\s+alchemia:\s+troche\s+\[2\/10\]/);

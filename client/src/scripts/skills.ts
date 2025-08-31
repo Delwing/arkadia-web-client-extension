@@ -117,10 +117,10 @@ export default function initSkills(
             tag
         );
         timer = setTimeout(disable, 1000);
-        client.sendCommand("um");
+        client.send("um");
     }
 
     if (aliases) {
-        aliases.push({ pattern: /^\/um$/, callback: run });
+        aliases.push({ pattern: /^um$/, callback: run });
     }
 }
