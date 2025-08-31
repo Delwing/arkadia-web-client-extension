@@ -24,6 +24,7 @@ export default defineConfig({
             input: {
                 plugin: resolve('src/plugin.ts'),
                 client: resolve('index.html'),
+                sandbox: resolve('sandbox.html'),
             }
         }
     }
