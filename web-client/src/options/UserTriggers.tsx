@@ -102,7 +102,7 @@ function UserTriggers() {
         setPattern(t.pattern);
         setMacros(t.macros ? [...t.macros] : []);
         setEditIndex(idx);
-        setShowCreateForm(true);
+        setShowCreateForm(false);
     }
 
     function remove(idx: number) {
@@ -159,9 +159,9 @@ function UserTriggers() {
             .join(', ');
     }
 
-    const filteredTriggers = triggers.filter(t =>
-        t.pattern.toLowerCase().includes(filter.toLowerCase())
-    );
+    const filteredTriggers = triggers
+        .map((t, idx) => ({ ...t, idx }))
+        .filter(t => t.pattern.toLowerCase().includes(filter.toLowerCase()));
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
@@ -207,22 +207,53 @@ function UserTriggers() {
             )}
 
             <ul className="list-unstyled ms-3">
-                {filteredTriggers.map((t, i) => (
-                    <li key={i} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
-                        <span>
-                            <span>{t.pattern}</span>
-                            {t.macros?.length ? (
-                                <>
-                                    <span className="text-secondary mx-1">→</span>
-                                    <span>{macrosToText(t.macros)}</span>
-                                </>
-                            ) : null}
-                        </span>
-                        <span className="d-flex gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => edit(i)}><TiEdit /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(i)}><TiDelete /></Button>
-                        </span>
-                    </li>
+                {filteredTriggers.map(t => (
+                    editIndex === t.idx ? (
+                        <li key={t.idx} className="alias-list-item">
+                            <div className="border rounded p-3 mb-3">
+                                <h6 className="mb-3">Edit trigger</h6>
+                                <Form.Group className="d-flex flex-column gap-2">
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="Pattern"
+                                        value={pattern}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                        style={{ width: '100%' }}
+                                    />
+                                    {macros.map((m, i) => (
+                                        <MacroEditor
+                                            key={i}
+                                            macro={m}
+                                            onChange={macro => updateMacro(i, macro)}
+                                            onRemove={() => removeMacro(i)}
+                                        />
+                                    ))}
+                                    <Button size="sm" onClick={addMacro}>Add action</Button>
+                                    <div className="d-flex gap-2 mt-2">
+                                        <Button size="sm" variant="secondary" onClick={resetForm}>Cancel</Button>
+                                        <Button size="sm" onClick={save}>Save</Button>
+                                    </div>
+                                </Form.Group>
+                            </div>
+                        </li>
+                    ) : (
+                        <li key={t.idx} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
+                            <span>
+                                <span>{t.pattern}</span>
+                                {t.macros?.length ? (
+                                    <>
+                                        <span className="text-secondary mx-1">→</span>
+                                        <span>{macrosToText(t.macros)}</span>
+                                    </>
+                                ) : null}
+                            </span>
+                            <span className="d-flex gap-2">
+                                <Button size="sm" variant="secondary" onClick={() => edit(t.idx)}><TiEdit /></Button>
+                                <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
+                            </span>
+                        </li>
+                    )
                 ))}
             </ul>
         </div>
