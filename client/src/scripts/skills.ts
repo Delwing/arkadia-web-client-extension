@@ -33,11 +33,16 @@ function pad(str: string, len: number) {
     return str + " ".repeat(Math.max(0, len - plain.length));
 }
 
-function colorLevel(level: string) {
+function colorLevel(level: string, maxLevel: number) {
     const num = skillsDesc[level.toLowerCase()];
-    if (!num) return level;
+    const bracketWidth = "[10/10]".length;
+    if (!num) {
+        return pad(level, maxLevel + 1 + bracketWidth);
+    }
     const color = COLORS[num - 1];
-    return colorString(level, color);
+    const word = pad(level, maxLevel);
+    const bracket = `[${num}/10]`.padStart(bracketWidth);
+    return colorString(`${word} ${bracket}`, color);
 }
 
 export default function initSkills(
@@ -60,10 +65,9 @@ export default function initSkills(
         maxName: number,
         maxLevel: number
     ) {
-        const colored = colorLevel(level);
-        const n = pad(name, maxName);
-        const l = pad(colored, maxLevel);
-        return `${n}: ${l}`;
+        const n = pad(`${name}:`, maxName + 1);
+        const l = colorLevel(level, maxLevel);
+        return `${n} ${l}`;
     }
 
     function process(raw: string) {

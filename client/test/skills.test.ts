@@ -31,6 +31,9 @@ describe('skills alias', () => {
       expect(client.sendCommand).toHaveBeenCalledWith('um');
       const printed = stripAnsiCodes(processed).split('\n');
       expect(printed.length).toBe(3);
+      expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10\]\s+alchemia:\s+troche\s+\[2\/10\]/);
+      expect(printed[1]).toMatch(/gornictwo:\s+ledwo\s+\[1\/10\]\s+lowiectwo:\s+pobieznie\s+\[3\/10\]/);
+      expect(printed[2]).toMatch(/zielarstwo:\s+troche\s+\[2\/10\]/);
     });
 
     test('splits columns when width is small', () => {
