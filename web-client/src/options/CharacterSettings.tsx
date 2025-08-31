@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import storage, { getCurrentCharacter } from "@client/src/storage";
 import GeneralSettings from "./Settings";
 import Guilds from "./Guilds";
 
@@ -7,6 +8,8 @@ type Tab = "general" | "guild";
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
     const saveRef = useRef<() => void>(() => {});
+    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
     useEffect(() => {
         const showGeneral = () => setTab("general");
@@ -16,6 +19,20 @@ function CharacterSettings() {
         return () => {
             window.removeEventListener("show-general-settings", showGeneral);
             window.removeEventListener("show-guild-settings", showGuild);
+        };
+    }, []);
+
+    useEffect(() => {
+        const update = () => {
+            const current = getCurrentCharacter();
+            setLocked(!current);
+            setChar(current);
+        };
+        storage.onChanged?.addListener(update);
+        window.addEventListener("storage", update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener("storage", update);
         };
     }, []);
 
@@ -30,7 +47,18 @@ function CharacterSettings() {
     }, []);
 
     return (
-        <div className="p-2 d-flex flex-column h-100">
+        <div className="p-2 d-flex flex-column h-100" style={{ minHeight: 0 }}>
+            {locked ? (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            ) : (
+                char && (
+                    <div className="alert alert-info" role="alert">
+                        Ustawienia dotyczą postaci: <strong>{char}</strong>
+                    </div>
+                )
+            )}
             <div className="mb-3 pb-2 flex-shrink-0">
                 <div className="d-flex gap-2">
                     <button
@@ -47,7 +75,7 @@ function CharacterSettings() {
                     </button>
                 </div>
             </div>
-            <div className="flex-grow-1 overflow-auto">
+            <div className="flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
                 {tab === "general" ? (
                     <GeneralSettings registerSave={registerSave} />
                 ) : (

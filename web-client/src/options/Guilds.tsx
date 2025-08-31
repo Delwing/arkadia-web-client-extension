@@ -106,19 +106,8 @@ function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
         });
     }, [registerSave, selected, enemySelected, colors]);
 
-    const char = getCurrentCharacter();
-
     return (
-        <div className="m-2">
-            {locked ? (
-                <div className="alert alert-info" role="alert">
-                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
-                </div>
-            ) : char && (
-                <div className="alert alert-info" role="alert">
-                    Ustawienia dotyczą postaci: <strong>{char}</strong>
-                </div>
-            )}
+        <div className="p-2">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <GuildSection
                     selected={selected}

@@ -99,20 +99,8 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
         };
     }, []);
 
-    const char = getCurrentCharacter();
-
     return (
-        <div className="my-4 p-2">
-            {locked ? (
-                <div className="alert alert-info" role="alert">
-                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
-                </div>
-            ) :
-                char && (
-                    <div className="alert alert-info" role="alert">
-                        Ustawienia dotyczą postaci: <strong>{char}</strong>
-                    </div>
-                )}
+        <div className="p-2">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
