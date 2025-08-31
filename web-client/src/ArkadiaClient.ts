@@ -4,7 +4,8 @@ import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
-
+import {md5} from 'js-md5';
+import {uncompress} from "./compression.ts";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
@@ -130,6 +131,8 @@ class ArkadiaClient implements ClientAdapter {
                 for (let i = 0; i < length; i++) {
                     decodedData += String.fromCharCode(decompressed[i]);
                 }
+                this.readInflator.chunks = []
+                this.readInflator.ended = false;
             } catch (error) {
                 console.log("MCCP decompression error: " + error.message);
             }
@@ -232,6 +235,17 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
+    setConfig(payload: any, filename: string) {
+        const serialized = JSON.stringify(payload)
+        const data = {
+            data: payload,
+            md5: md5(serialized),
+            compressed: false,
+            filename: filename,
+        }
+        this.sendGmcp('client.conf.set', data)
+    }
+
     private startPing() {
         this.stopPing();
         this.sendGmcp('core.ping');
@@ -278,7 +292,7 @@ class ArkadiaClient implements ClientAdapter {
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-            //this.telnetNegotiator.parseOptionNegotiation(optionData)
+            this.telnetNegotiator.parseOptionNegotiation(optionData)
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
@@ -318,6 +332,9 @@ class ArkadiaClient implements ClientAdapter {
                 if (type === "gmcp_msgs") {
                     let text = atob(gmcp.text)
                     this.messageBuffer.push({text, type: gmcp.type})
+                } else if (type === "client.conf.get") {
+                    const data = JSON.parse(uncompress(gmcp.data))
+                    const filename = gmcp.filename
                 } else {
                     this.emit(`gmcp.${type}`, gmcp);
                     this.emit('gmcp', {path: type, value: gmcp});
