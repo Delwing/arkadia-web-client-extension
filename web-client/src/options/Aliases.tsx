@@ -3,6 +3,7 @@ import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@client/src/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
+import { parseArkadia } from "./importArkadia";
 
 function Aliases() {
     const [aliases, setAliases] = useState<Alias[]>([]);
@@ -12,6 +13,7 @@ function Aliases() {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const arkadiaInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         storage.getItem("aliases").then(res => {
@@ -37,8 +39,36 @@ function Aliases() {
         setShowCreateForm(true);
     }
 
+    function openArkadiaImport() {
+        arkadiaInputRef.current?.click();
+    }
+
     function openImport() {
         fileInputRef.current?.click();
+    }
+
+    async function handleArkadiaImport(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const { imported, skipped } = parseArkadia(text);
+            const filtered = imported.filter(a => !aliases.some(b => b.pattern === a.pattern));
+            if (filtered.length) {
+                saveList([...aliases, ...filtered]);
+            }
+            let message = `Zaimportowano ${filtered.length} aliasów`;
+            if (skipped.length) {
+                message += `\nPominięto: ${skipped.join(", ")}`;
+            } else if (!filtered.length) {
+                message = "Brak nowych aliasów";
+            }
+            alert(message);
+        } catch {
+            alert("Nie udało się zaimportować pliku");
+        } finally {
+            e.target.value = "";
+        }
     }
 
     async function handleImport(e: ChangeEvent<HTMLInputElement>) {
@@ -115,7 +145,15 @@ function Aliases() {
                     style={{width: '100%', maxWidth: '12rem'}}
                 />
                 <Button size="sm" onClick={openNew}>Dodaj alias</Button>
+                <Button size="sm" onClick={openArkadiaImport}>Importuj z klienta Arkadii</Button>
                 <Button size="sm" onClick={openImport}>Importuj z Blowtorch</Button>
+                <input
+                    ref={arkadiaInputRef}
+                    type="file"
+                    accept=".json"
+                    style={{ display: 'none' }}
+                    onChange={handleArkadiaImport}
+                />
                 <input
                     ref={fileInputRef}
                     type="file"
