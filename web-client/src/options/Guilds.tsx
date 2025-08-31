@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
-import { Button } from "react-bootstrap";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { defaultSettings } from "./defaultSettings";
 
-function Guilds() {
+function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
@@ -88,36 +87,25 @@ function Guilds() {
         setEnemySelected(checked ? [...guilds] : []);
     }
 
-    function save() {
-        storage.getItem("settings").then(res => {
-            const base = res && res.settings
-                ? { ...defaultSettings, ...res.settings }
-                : { ...defaultSettings };
-            const settings = {
-                ...base,
-                guilds: selected,
-                enemyGuilds: enemySelected,
-                guildColors: colors,
-            };
-            storage.setItem("settings", settings).then(() => {
-                window.dispatchEvent(new Event('close-options'));
-            });
-        });
-    }
-
-    const char = getCurrentCharacter();
+    useEffect(() => {
+        registerSave(() =>
+            storage.getItem("settings").then(res => {
+                const base = res && res.settings
+                    ? { ...defaultSettings, ...res.settings }
+                    : { ...defaultSettings };
+                const settings = {
+                    ...base,
+                    guilds: selected,
+                    enemyGuilds: enemySelected,
+                    guildColors: colors,
+                };
+                return storage.setItem("settings", settings);
+            })
+        );
+    }, [registerSave, selected, enemySelected, colors]);
 
     return (
-        <div className="m-2">
-            {locked ? (
-                <div className="alert alert-info" role="alert">
-                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
-                </div>
-            ) : char && (
-                <div className="alert alert-info" role="alert">
-                    Ustawienia dotyczą postaci: <strong>{char}</strong>
-                </div>
-            )}
+        <div className="p-2">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <GuildSection
                     selected={selected}
@@ -130,7 +118,6 @@ function Guilds() {
                     onChangeAll={onChangeAll}
                     onChangeAllEnemy={onChangeAllEnemy}
                 />
-                <Button onClick={save}>Zapisz</Button>
             </fieldset>
         </div>
     );

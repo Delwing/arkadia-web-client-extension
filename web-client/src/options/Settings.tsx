@@ -1,9 +1,9 @@
-import '../style.css'
-import {useEffect, useState} from "react";
-import {Form, Button} from 'react-bootstrap';
+import "../style.css";
+import { useEffect, useState } from "react";
+import { Form, Button } from "react-bootstrap";
 import storage, { getCurrentCharacter } from "@client/src/storage";
-import { defaultSettings } from './defaultSettings';
-import type { Settings as BaseSettings } from './defaultSettings';
+import { defaultSettings } from "./defaultSettings";
+import type { Settings as BaseSettings } from "./defaultSettings";
 
 interface FormSettings extends BaseSettings {
 }
@@ -44,19 +44,18 @@ const languageOptions = [
     "ghassall",
 ]
 
-function SettingsForm() {
+function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
+    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
 
-    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings })
-
-    const [locked, setLocked] = useState(!getCurrentCharacter())
+    const [locked, setLocked] = useState(!getCurrentCharacter());
 
     useEffect(() => {
         const update = () => setLocked(!getCurrentCharacter());
         storage.onChanged?.addListener(update);
-        window.addEventListener('storage', update);
+        window.addEventListener("storage", update);
         return () => {
             storage.onChanged?.removeListener?.(update);
-            window.removeEventListener('storage', update);
+            window.removeEventListener("storage", update);
         };
     }, []);
 
@@ -72,12 +71,9 @@ function SettingsForm() {
             return updated
         })
     }
-
-
-    function handleSubmission() {
-        storage.setItem("settings", settings);
-        window.dispatchEvent(new Event('close-options'));
-    }
+    useEffect(() => {
+        registerSave(() => storage.setItem("settings", settings));
+    }, [registerSave, settings]);
 
     useEffect(() => {
         const load = () => {
@@ -100,19 +96,8 @@ function SettingsForm() {
         };
     }, []);
 
-    const char = getCurrentCharacter();
-
     return (
-        <div className="my-4 p-2">
-            {locked ? (
-                <div className="alert alert-info" role="alert">
-                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
-                </div>
-            ) : char && (
-                <div className="alert alert-info" role="alert">
-                    Ustawienia dotyczą postaci: <strong>{char}</strong>
-                </div>
-            )}
+        <div className="p-2">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
             <div className="mb-4 border rounded p-3">
                 <h5 className="fw-bold mb-2">Pozostałe opcje</h5>
@@ -374,10 +359,9 @@ function SettingsForm() {
                     </tbody>
                 </table>
             </div>
-            <Button onClick={handleSubmission}>Zapisz</Button>
             </fieldset>
         </div>
-    )
+    );
 }
 
-export default SettingsForm
+export default SettingsForm;
