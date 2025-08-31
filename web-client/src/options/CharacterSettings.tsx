@@ -28,11 +28,8 @@ function CharacterSettings() {
     }
 
     return (
-        <div className="p-2">
-            <div
-                className="sticky-top bg-body mb-3 pb-2"
-                style={{ zIndex: 1 }}
-            >
+        <div className="p-2 d-flex flex-column h-100">
+            <div className="mb-3 pb-2">
                 <div className="d-flex gap-2">
                     <button
                         className={`btn btn-sm ${tab === "general" ? "btn-primary" : "btn-secondary"}`}
@@ -48,15 +45,14 @@ function CharacterSettings() {
                     </button>
                 </div>
             </div>
-            {tab === "general" ? (
-                <GeneralSettings registerSave={registerSave} />
-            ) : (
-                <Guilds registerSave={registerSave} />
-            )}
-            <div
-                className="bg-body pt-2"
-                style={{ position: "sticky", bottom: 0 }}
-            >
+            <div className="flex-grow-1 overflow-auto">
+                {tab === "general" ? (
+                    <GeneralSettings registerSave={registerSave} />
+                ) : (
+                    <Guilds registerSave={registerSave} />
+                )}
+            </div>
+            <div className="pt-2">
                 <button className="btn btn-primary" onClick={save}>
                     Zapisz
                 </button>
