@@ -48,6 +48,7 @@ import initPrzybywajaCount from './scripts/przybywajaCount'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initSelfEvaluation from './scripts/selfEvaluation'
+import initSkills from './scripts/skills'
 import initCoinColors from './scripts/coinColors'
 import initWeaponColors from './scripts/weaponColors'
 import initNewMail from './scripts/newMail'
@@ -175,6 +176,7 @@ export function registerScripts(client: Client) {
     initPriceEvaluation(client)
     initStoneValue(client, aliases)
     initSelfEvaluation(client, aliases)
+    initSkills(client, aliases)
     initCoinColors(client)
     initWeaponColors(client)
     initLeaderAttackWarning(client)
