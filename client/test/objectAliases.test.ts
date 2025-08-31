@@ -12,6 +12,7 @@ class FakeClient {
   };
   sendCommand = jest.fn();
   releaseGuard = jest.fn(() => this.sendCommand('przestan zaslaniac'));
+  goOutOfGuard = jest.fn(() => this.sendCommand('przestan kryc sie za zaslona'));
   sendGMCP = jest.fn();
   print = jest.fn();
   sendEvent = jest.fn();
@@ -143,7 +144,7 @@ describe('object aliases', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 18, shortcut: 'Y' }]);
     withdraw(['', 'Y'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_18');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan kryc sie za zaslona');
   });
 
   test('/pro alias passes leadership to object', () => {
