@@ -425,8 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
     const historyDownButton = document.getElementById('history-down-button') as HTMLButtonElement | null;
-    const connectButton = document.getElementById('connect-button') as HTMLButtonElement;
-    const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement;
+    const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
+    const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
@@ -889,8 +889,8 @@ document.addEventListener('DOMContentLoaded', () => {
             arkadiaClient.connect();
         }
     };
-    connectButton.addEventListener('click', handleConnect);
-    connectButtonFloat.addEventListener('click', handleConnect);
+    connectButton?.addEventListener('click', handleConnect);
+    connectButtonFloat?.addEventListener('click', handleConnect);
 
     if (authClose) {
         authClose.addEventListener('click', () => {
