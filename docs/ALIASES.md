@@ -2,7 +2,7 @@
 
 Poniższa lista opisuje dostępne aliasy w rozszerzeniu:
 
-Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorzec jest wyrażeniem regularnym, a w komendzie można używać `$1`, `$2` itd. aby odwołać się do odpowiednich grup z dopasowania. Można też korzystać ze skrótów obiektów (np. `@1`, `@A`, `@@`), które zostaną zamienione na identyfikatory obiektów.
+Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorzec jest wyrażeniem regularnym, a w komendzie można używać `$1`, `$2` itd. aby odwołać się do odpowiednich grup z dopasowania. Można też korzystać ze skrótów obiektów (np. `@1`, `@A`, `@@`), które zostaną zamienione na identyfikatory obiektów. Dodatkowo dostępne są znaczniki `%`, gdzie `%%` wstawi cały tekst z pola komend, `%0`, `%1` itd. kolejne wyrazy polecenia (z `%0` oznaczającym użyty alias), a `%-1`, `%-2` itd. tekst z pominięciem odpowiednio pierwszego, drugiego itd. wyrazu.
 
 ## Ogólne
 - **/fake _tekst_** - wyświetla podany tekst jak zwykłą wiadomość klienta.

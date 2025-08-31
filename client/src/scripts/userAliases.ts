@@ -27,7 +27,18 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
             return {
                 pattern: regexp,
                 callback: (m: RegExpMatchArray) => {
-                    const cmd = item.command.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
+                    const input = m.input ?? '';
+                    const words = input.trim().split(/\s+/).filter(Boolean);
+                    const cmd = item.command
+                        .replace(/%%/g, input)
+                        .replace(/%(-?\d+)/g, (_, n) => {
+                            const idx = parseInt(n, 10);
+                            if (idx >= 0) {
+                                return words[idx] ?? '';
+                            }
+                            return words.slice(-idx).join(' ');
+                        })
+                        .replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
                     client.sendCommand(cmd);
                 }
             };
