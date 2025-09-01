@@ -11,7 +11,7 @@ function parseRebirthTime(rebirth: string): number | undefined {
     if (month <= 0) {
         return undefined;
     }
-    return new Date(
+    const ms = new Date(
         Number(m[3]),
         month - 1,
         Number(m[1]),
@@ -19,6 +19,7 @@ function parseRebirthTime(rebirth: string): number | undefined {
         Number(m[5]),
         Number(m[6])
     ).getTime();
+    return Math.floor(ms / 1000);
 }
 
 export default function initWorldRebirth(client: Client) {
@@ -26,7 +27,7 @@ export default function initWorldRebirth(client: Client) {
     const pattern = /Swiat odrodzil sie\s*:\s*(.+)\s[\s\S]*Ciemnosc\.$/m;
     client.Triggers.registerMultilineTrigger(pattern, (_raw, _line, matches) => {
         const ts = parseRebirthTime(matches[1]);
-        if (ts) {
+        if (ts !== undefined) {
             setItemSync("last_world_rebirth", ts);
             client.sendEvent("systemRebirth", ts);
         }
