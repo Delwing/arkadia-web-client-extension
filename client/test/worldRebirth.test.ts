@@ -30,7 +30,7 @@ describe('world rebirth trigger', () => {
     expect(client.events).toHaveLength(1);
     expect(client.events[0].type).toBe('systemRebirth');
     expect(client.events[0].payload).toBe(saved);
-    const d = new Date(saved);
+    const d = new Date(saved * 1000);
     expect(d.getFullYear()).toBe(2020);
     expect(d.getMonth()).toBe(0);
     expect(d.getDate()).toBe(1);
