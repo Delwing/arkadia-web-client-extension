@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { containerAction, getContainer, ContainerType } from "./bagManager";
+import {containerAction, getContainer, ContainerType} from "./bagManager";
 
 export default class ItemCollector {
     private client: Client;
@@ -90,10 +90,9 @@ export default class ItemCollector {
         }
     }
 
-    teamKilledAction(name: string) {
+    teamKilledAction() {
         if (
-            (this.currentMode === 4 || this.currentMode === 5 || this.currentMode === 6 || this.extra.length > 0) &&
-            this.client.TeamManager.isInTeam(name)
+            (this.currentMode === 4 || this.currentMode === 5 || this.currentMode === 6 || this.extra.length > 0)
         ) {
             this.client.FunctionalBind.set("wez z ciala", () => this.keyPressed(true));
             this.checkBody = true;
@@ -122,7 +121,7 @@ export default class ItemCollector {
             const bag = getContainer(type);
             if (!bag) return;
             if (!bagItems[bag]) {
-                bagItems[bag] = { type, items: [] };
+                bagItems[bag] = {type, items: []};
             }
             bagItems[bag].items.push(item);
         };
@@ -131,7 +130,7 @@ export default class ItemCollector {
         if (gems) add("gems", "kamienie");
         extras.forEach((it) => add("other", it));
 
-        Object.values(bagItems).forEach(({ type, items }) => {
+        Object.values(bagItems).forEach(({type, items}) => {
             containerAction(this.client, type, "put", items.join(","));
         });
     }

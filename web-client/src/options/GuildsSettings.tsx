@@ -4,7 +4,7 @@ import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { defaultSettings } from "./defaultSettings";
 
-function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
+function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
@@ -123,4 +123,4 @@ function Guilds({ registerSave }: { registerSave: (cb: () => void) => void }) {
     );
 }
 
-export default Guilds;
+export default GuildsSettings;

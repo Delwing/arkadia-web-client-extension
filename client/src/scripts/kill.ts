@@ -264,7 +264,7 @@ class KillCounter {
                     ? this.recordKill(mob, false)
                     : null;
                 if (entry) {
-                    (this.client as any).ItemCollector?.teamKilledAction(mob);
+                    (this.client as any).ItemCollector?.teamKilledAction();
                 }
                 return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
             }

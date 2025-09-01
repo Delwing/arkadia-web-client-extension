@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GeneralSettings from "./Settings";
-import Guilds from "./Guilds";
+import GuildsSettings from "./GuildsSettings";
 
 type Tab = "general" | "guild";
 
@@ -120,7 +120,7 @@ function CharacterSettings() {
                     className={`h-100 overflow-auto${tab === "guild" ? "" : " d-none"}`}
                     style={{ minHeight: 0 }}
                 >
-                    <Guilds registerSave={registerGuildSave} />
+                    <GuildsSettings registerSave={registerGuildSave} />
                 </div>
             </div>
         </div>
