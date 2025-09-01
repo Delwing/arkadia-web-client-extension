@@ -42,6 +42,7 @@ import initHpAlert from './scripts/hpAlert'
 import initNoWeaponAlert from './scripts/noWeaponAlert'
 import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
+import initWorldRebirth from './scripts/worldRebirth'
 import initDajeCiHighlight from './scripts/dajeCiHighlight'
 import initPrzybywajaHighlight from './scripts/przybywajaHighlight'
 import initPrzybywajaCount from './scripts/przybywajaCount'
@@ -188,6 +189,7 @@ export function registerScripts(client: Client) {
     initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
+    initWorldRebirth(client)
     initDajeCiHighlight(client)
     initPrzybywajaHighlight(client)
     initPrzybywajaCount(client)
