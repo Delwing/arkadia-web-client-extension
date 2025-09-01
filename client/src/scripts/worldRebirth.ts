@@ -28,6 +28,7 @@ export default function initWorldRebirth(client: Client) {
         const ts = parseRebirthTime(matches[1]);
         if (ts) {
             setItemSync("last_world_rebirth", ts);
+            client.sendEvent("systemRebirth", ts);
         }
         return undefined;
     }, tag);
