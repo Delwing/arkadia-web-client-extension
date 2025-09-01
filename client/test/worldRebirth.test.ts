@@ -4,6 +4,10 @@ import { getItemSync } from '../src/storage';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
+  events: { type: string; payload: any }[] = [];
+  sendEvent(type: string, payload: any) {
+    this.events.push({ type, payload });
+  }
 }
 
 describe('world rebirth trigger', () => {
@@ -23,6 +27,9 @@ describe('world rebirth trigger', () => {
     parse(text);
     const saved = getItemSync('last_world_rebirth')?.['last_world_rebirth'];
     expect(typeof saved).toBe('number');
+    expect(client.events).toHaveLength(1);
+    expect(client.events[0].type).toBe('systemRebirth');
+    expect(client.events[0].payload).toBe(saved);
     const d = new Date(saved);
     expect(d.getFullYear()).toBe(2020);
     expect(d.getMonth()).toBe(0);
