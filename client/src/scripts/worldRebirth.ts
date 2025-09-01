@@ -23,7 +23,7 @@ function parseRebirthTime(rebirth: string): number | undefined {
 
 export default function initWorldRebirth(client: Client) {
     const tag = "world-rebirth";
-    const pattern = /^Swiat odrodzil sie  : (.*)\nCiemnosc\.$/;
+    const pattern = /Swiat odrodzil sie\s*:\s*(.+)\s[\s\S]*Ciemnosc\.$/m;
     client.Triggers.registerMultilineTrigger(pattern, (_raw, _line, matches) => {
         const ts = parseRebirthTime(matches[1]);
         if (ts) {
