@@ -8,8 +8,13 @@ arkadiaClient.connect = () => {
 arkadiaClient.sendGmcp = () => {};
 arkadiaClient.send = (message: string, echo: boolean = true) => {
     arkadiaClient.recorder?.handleOutgoing?.(message);
-    if (echo && (arkadiaClient as any).receivedFirstGmcp && message) {
-        arkadiaClient.output("→ " + message, 'command');
+    if ((arkadiaClient as any).receivedFirstGmcp && message) {
+        const formatted = `→ ${message}`;
+        if (echo) {
+            arkadiaClient.output(formatted, 'command');
+        } else {
+            arkadiaClient.output(`<i>${formatted}</i>`, 'command');
+        }
     }
 };
 (arkadiaClient as any).receivedFirstGmcp = true;
