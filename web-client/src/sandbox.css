@@ -50,3 +50,17 @@
   cursor: pointer;
   padding: 0 0.25rem;
 }
+
+.sandbox-gmcp-events {
+  border: 1px dashed #ccc;
+  padding: 0.25rem;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  font-family: monospace;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+
+.sandbox-gmcp-event {
+  margin-bottom: 0.5rem;
+}

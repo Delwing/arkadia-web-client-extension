@@ -26,11 +26,22 @@ window.addEventListener('load', () => {
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
     const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
     const preview = document.getElementById('sandbox-team-preview');
+    const gmcpLog = document.getElementById('sandbox-gmcp-events');
 
     let id = 1;
     const ids = new Map<string, number>();
     const objectNums = new Set<number>();
     const hps = new Map<number, number>();
+
+    client.addEventListener?.('gmcp', (ev: CustomEvent<{ path: string; value: any }>) => {
+        if (!gmcpLog) return;
+        const pre = document.createElement('pre');
+        pre.className = 'sandbox-gmcp-event';
+        const { path, value } = ev.detail || {};
+        pre.textContent = `${path}\n${JSON.stringify(value, null, 2)}`;
+        gmcpLog.appendChild(pre);
+        (gmcpLog as HTMLElement).scrollTop = (gmcpLog as HTMLElement).scrollHeight;
+    });
 
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
