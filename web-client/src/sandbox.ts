@@ -1,15 +1,22 @@
 import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
 
-// Disable connection to the remote server in sandbox mode
+// Disable real network and echo commands locally
 arkadiaClient.connect = () => {
     console.log('Sandbox mode: connection disabled');
 };
-arkadiaClient.send = () => {};
 arkadiaClient.sendGmcp = () => {};
+arkadiaClient.send = (message: string, echo: boolean = true) => {
+    arkadiaClient.recorder?.handleOutgoing?.(message);
+    if (echo && (arkadiaClient as any).receivedFirstGmcp && message) {
+        arkadiaClient.output("→ " + message, 'command');
+    }
+};
+(arkadiaClient as any).receivedFirstGmcp = true;
 
 window.addEventListener('load', () => {
     const client: any = (window as any).clientExtension;
+    arkadiaClient.emit('client.connect');
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
     const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
