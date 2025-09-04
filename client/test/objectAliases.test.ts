@@ -37,6 +37,7 @@ describe('object aliases', () => {
   let orderShieldTarget: () => void;
   let markAttack: (m: RegExpMatchArray) => void;
   let markDefense: (m: RegExpMatchArray) => void;
+  let setAttackMode: (ev: { detail: 'A' | 'AW' | 'AWR' }) => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -61,12 +62,32 @@ describe('object aliases', () => {
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
+
+    const attackModeCall = client.addEventListener.mock.calls.find(c => c[0] === 'attackMode');
+    setAttackMode = attackModeCall && attackModeCall[1];
   });
 
   test('kill alias sends zabij with object number', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
+  });
+
+  test('kill alias in AW mode marks target', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    setAttackMode({ detail: 'AW' });
+    kill(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
+  });
+
+  test('kill alias in AWR mode orders attack', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    setAttackMode({ detail: 'AWR' });
+    kill(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac');
   });
 
   test('zaslon alias sends zaslon with object number when target is in team', () => {

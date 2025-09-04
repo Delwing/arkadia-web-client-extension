@@ -209,6 +209,22 @@ h1 {
   color: tomato;
 }
 
+#attack-mode {
+  display: none;
+}
+
+#attack-mode.A {
+  color: springgreen;
+}
+
+#attack-mode.AW {
+  color: gold;
+}
+
+#attack-mode.AWR {
+  color: deepskyblue;
+}
+
 #objects-list {
   position: absolute;
   top: 0;
