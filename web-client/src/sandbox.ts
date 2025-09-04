@@ -18,6 +18,7 @@ window.addEventListener('load', () => {
     let id = 1;
     const ids = new Map<string, number>();
     const objectNums = new Set<number>();
+    const hps = new Map<number, number>();
 
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
@@ -25,8 +26,13 @@ window.addEventListener('load', () => {
             memberId = id++;
             ids.set(name, memberId);
         }
+        let hp = hps.get(memberId);
+        if (hp === undefined) {
+            hp = Math.floor(Math.random() * 7);
+            hps.set(memberId, hp);
+        }
         const obj: any = {};
-        obj[memberId] = { desc: name, team: true, team_leader: leaderFlag };
+        obj[memberId] = { desc: name, team: true, team_leader: leaderFlag, state: hp, hp };
         objectNums.add(memberId);
         client.sendEvent('gmcp.objects.data', obj);
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
@@ -80,6 +86,7 @@ window.addEventListener('load', () => {
         const memberId = ids.get(name);
         if (memberId) {
             objectNums.delete(memberId);
+            hps.delete(memberId);
             client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
         }
         client.TeamManager?.removeMember?.(name);
