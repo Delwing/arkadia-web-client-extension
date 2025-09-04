@@ -15,14 +15,13 @@ window.addEventListener('load', () => {
     const preview = document.getElementById('sandbox-team-preview');
 
     let id = 1;
-    const members = new Map<string, number>();
-    let leader: string | undefined;
+    const ids = new Map<string, number>();
 
     function sendTeam(name: string, leaderFlag: boolean) {
-        let memberId = members.get(name);
+        let memberId = ids.get(name);
         if (!memberId) {
             memberId = id++;
-            members.set(name, memberId);
+            ids.set(name, memberId);
         }
         const obj: any = {};
         obj[memberId] = { desc: name, team: true, team_leader: leaderFlag };
@@ -32,7 +31,9 @@ window.addEventListener('load', () => {
     function renderTeam() {
         if (!preview) return;
         preview.innerHTML = '';
-        members.forEach((_id, name) => {
+        const members: string[] = client.TeamManager?.getTeamMembers?.() ?? [];
+        const leader = client.TeamManager?.getLeader?.();
+        members.forEach((name) => {
             const li = document.createElement('li');
             li.className = 'sandbox-team-member';
             li.addEventListener('click', () => setLeader(name));
@@ -60,32 +61,27 @@ window.addEventListener('load', () => {
     }
 
     function addMember(name: string) {
-        if (members.has(name)) return;
         sendTeam(name, false);
-        renderTeam();
     }
 
     function setLeader(name: string) {
-        if (!members.has(name)) {
-            addMember(name);
+        const currentLeader = client.TeamManager?.getLeader?.();
+        if (currentLeader && currentLeader !== name) {
+            sendTeam(currentLeader, false);
         }
-        if (leader && leader !== name) {
-            sendTeam(leader, false);
-        }
-        leader = name;
         sendTeam(name, true);
-        renderTeam();
     }
 
     function removeMember(name: string) {
-        if (!members.has(name)) return;
         client.TeamManager?.removeMember?.(name);
-        members.delete(name);
-        if (leader === name) {
-            leader = undefined;
-        }
-        renderTeam();
     }
+
+    client.addEventListener?.('teamChange', renderTeam);
+
+    const playerName = 'Player';
+    client.sendEvent('gmcp.char.info', { name: playerName, object_num: id });
+    ids.set(playerName, id++);
+    addMember(playerName);
 
     addMemberButton?.addEventListener('click', () => {
         const name = memberInput?.value.trim();
