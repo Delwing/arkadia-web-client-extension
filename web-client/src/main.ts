@@ -11,6 +11,7 @@ import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
 import ReleaseGuard from "./ReleaseGuard";
+import AttackMode from "./AttackMode";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
@@ -914,6 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new CoverTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
+    new AttackMode(arkadiaClient);
     new PackageStatus(arkadiaClient);
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {gmcp} from "../gmcp";
+import { getItemSync, setItemSync } from "../storage";
 
 export default function initObjectAliases(
     client: Client,
@@ -65,6 +66,23 @@ export default function initObjectAliases(
         }
     }
 
+    function attackById(id: string) {
+        client.sendCommand(`zabij ob_${id}`);
+        if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
+            client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);
+            if (attackMode === 'AWR') {
+                client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`, false);
+            }
+        }
+    }
+
+    function attack(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            attackById(obj.num.toString());
+        }
+    }
+
     let releaseGuard = true;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
@@ -73,11 +91,18 @@ export default function initObjectAliases(
         releaseGuard = event.detail;
     });
 
+    let attackMode: 'A' | 'AW' | 'AWR' = getItemSync('attack_mode')?.attack_mode ?? 'A';
+    client.addEventListener('attackMode', (event: CustomEvent<'A' | 'AW' | 'AWR'>) => {
+        attackMode = event.detail;
+        setItemSync('attack_mode', attackMode);
+    });
+    client.sendEvent('attackMode', attackMode);
+
 
     if (aliases) {
         aliases.push({
             pattern: /\/z ([0-9]+)$/,
-            callback: (m: RegExpMatchArray) => exec(m[1], "zabij")
+            callback: (m: RegExpMatchArray) => attack(m[1])
         });
         aliases.push({
             pattern: /\/zas ([A-Za-z0-9@]+)$/,
@@ -88,7 +113,7 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
                 if (id) {
-                    client.sendCommand(`zabij ob_${id}`);
+                    attackById(id);
                 }
             }
         });
