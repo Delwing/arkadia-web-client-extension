@@ -70,7 +70,7 @@ export default function initObjectAliases(
         if (attackMode !== 'A') {
             client.sendCommand(`wskaz ob_${id} jako cel ataku`);
             if (attackMode === 'AWR') {
-                client.sendCommand('rozkaz zaatakowac');
+                client.sendCommand(`rozkaz zaatakowac ob_${id}`);
             }
         }
     }

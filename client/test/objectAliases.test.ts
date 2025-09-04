@@ -87,7 +87,7 @@ describe('object aliases', () => {
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac ob_5');
   });
 
   test('zaslon alias sends zaslon with object number when target is in team', () => {
