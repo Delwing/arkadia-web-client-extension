@@ -1,38 +1,61 @@
 import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
 
-// Disable connection to the remote server in sandbox mode
+// Disable real network and echo commands locally
 arkadiaClient.connect = () => {
     console.log('Sandbox mode: connection disabled');
 };
-arkadiaClient.send = () => {};
 arkadiaClient.sendGmcp = () => {};
+arkadiaClient.send = (message: string, echo: boolean = true) => {
+    arkadiaClient.recorder?.handleOutgoing?.(message);
+    if ((arkadiaClient as any).receivedFirstGmcp && message) {
+        const formatted = `→ ${message}`;
+        if (echo) {
+            arkadiaClient.output(formatted, 'command');
+        } else {
+            arkadiaClient.output(`<i>${formatted}</i>`, 'command');
+        }
+    }
+};
+(arkadiaClient as any).receivedFirstGmcp = true;
 
 window.addEventListener('load', () => {
     const client: any = (window as any).clientExtension;
+    arkadiaClient.emit('client.connect');
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
+    const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
     const preview = document.getElementById('sandbox-team-preview');
 
     let id = 1;
-    const members = new Map<string, number>();
-    let leader: string | undefined;
+    const ids = new Map<string, number>();
+    const objectNums = new Set<number>();
+    const hps = new Map<number, number>();
 
     function sendTeam(name: string, leaderFlag: boolean) {
-        let memberId = members.get(name);
+        let memberId = ids.get(name);
         if (!memberId) {
             memberId = id++;
-            members.set(name, memberId);
+            ids.set(name, memberId);
+        }
+        let hp = hps.get(memberId);
+        if (hp === undefined) {
+            hp = Math.floor(Math.random() * 7);
+            hps.set(memberId, hp);
         }
         const obj: any = {};
-        obj[memberId] = { desc: name, team: true, team_leader: leaderFlag };
+        obj[memberId] = { desc: name, team: true, team_leader: leaderFlag, state: hp, hp };
+        objectNums.add(memberId);
         client.sendEvent('gmcp.objects.data', obj);
+        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
     }
 
     function renderTeam() {
         if (!preview) return;
         preview.innerHTML = '';
-        members.forEach((_id, name) => {
+        const members: string[] = client.TeamManager?.getTeamMembers?.() ?? [];
+        const leader = client.TeamManager?.getLeader?.();
+        members.forEach((name) => {
             const li = document.createElement('li');
             li.className = 'sandbox-team-member';
             li.addEventListener('click', () => setLeader(name));
@@ -60,32 +83,47 @@ window.addEventListener('load', () => {
     }
 
     function addMember(name: string) {
-        if (members.has(name)) return;
         sendTeam(name, false);
-        renderTeam();
     }
 
     function setLeader(name: string) {
-        if (!members.has(name)) {
-            addMember(name);
+        const currentLeader = client.TeamManager?.getLeader?.();
+        if (currentLeader && currentLeader !== name) {
+            sendTeam(currentLeader, false);
         }
-        if (leader && leader !== name) {
-            sendTeam(leader, false);
-        }
-        leader = name;
         sendTeam(name, true);
-        renderTeam();
     }
 
     function removeMember(name: string) {
-        if (!members.has(name)) return;
-        client.TeamManager?.removeMember?.(name);
-        members.delete(name);
-        if (leader === name) {
-            leader = undefined;
+        const memberId = ids.get(name);
+        if (memberId) {
+            objectNums.delete(memberId);
+            hps.delete(memberId);
+            client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
         }
-        renderTeam();
+        client.TeamManager?.removeMember?.(name);
     }
+
+    function addEnemy() {
+        const names = ['Goblin', 'Orc', 'Troll', 'Bandit', 'Wolf'];
+        const base = names[Math.floor(Math.random() * names.length)];
+        const enemyName = `${base} ${id}`;
+        const enemyId = id++;
+        ids.set(enemyName, enemyId);
+        objectNums.add(enemyId);
+        const hp = Math.floor(Math.random() * 7);
+        const obj: any = {};
+        obj[enemyId] = { desc: enemyName, state: hp, hp };
+        client.sendEvent('gmcp.objects.data', obj);
+        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+    }
+
+    client.addEventListener?.('teamChange', renderTeam);
+
+    const playerName = 'Player';
+    client.sendEvent('gmcp.char.info', { name: playerName, object_num: id });
+    ids.set(playerName, id++);
+    addMember(playerName);
 
     addMemberButton?.addEventListener('click', () => {
         const name = memberInput?.value.trim();
@@ -93,6 +131,10 @@ window.addEventListener('load', () => {
             addMember(name);
             memberInput!.value = '';
         }
+    });
+
+    addEnemyButton?.addEventListener('click', () => {
+        addEnemy();
     });
 
 });
