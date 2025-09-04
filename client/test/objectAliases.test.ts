@@ -88,7 +88,7 @@ describe('object aliases', () => {
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AW');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku', false);
   });
 
   test('kill alias in AWR mode orders attack', () => {
@@ -97,8 +97,8 @@ describe('object aliases', () => {
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AWR');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac ob_5');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku', false);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz druzynie zaatakowac ob_5', false);
   });
 
   test('kill alias in AW mode without leadership only sends zabij', () => {
@@ -121,8 +121,8 @@ describe('object aliases', () => {
     client.TeamManager.isLeader.mockReturnValue(true);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac ob_5');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku', false);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz druzynie zaatakowac ob_5', false);
   });
 
   test('zaslon alias sends zaslon with object number when target is in team', () => {

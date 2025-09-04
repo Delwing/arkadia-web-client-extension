@@ -69,9 +69,9 @@ export default function initObjectAliases(
     function attackById(id: string) {
         client.sendCommand(`zabij ob_${id}`);
         if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
-            client.sendCommand(`wskaz ob_${id} jako cel ataku`);
+            client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);
             if (attackMode === 'AWR') {
-                client.sendCommand(`rozkaz zaatakowac ob_${id}`);
+                client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`, false);
             }
         }
     }
