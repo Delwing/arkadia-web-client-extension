@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {gmcp} from "../gmcp";
+import { getItemSync, setItemSync } from "../storage";
 
 export default function initObjectAliases(
     client: Client,
@@ -67,7 +68,7 @@ export default function initObjectAliases(
 
     function attackById(id: string) {
         client.sendCommand(`zabij ob_${id}`);
-        if (attackMode !== 'A') {
+        if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
             client.sendCommand(`wskaz ob_${id} jako cel ataku`);
             if (attackMode === 'AWR') {
                 client.sendCommand(`rozkaz zaatakowac ob_${id}`);
@@ -90,11 +91,12 @@ export default function initObjectAliases(
         releaseGuard = event.detail;
     });
 
-    let attackMode: 'A' | 'AW' | 'AWR' = 'A';
-    client.sendEvent('attackMode', attackMode);
+    let attackMode: 'A' | 'AW' | 'AWR' = getItemSync('attack_mode')?.attack_mode ?? 'A';
     client.addEventListener('attackMode', (event: CustomEvent<'A' | 'AW' | 'AWR'>) => {
         attackMode = event.detail;
+        setItemSync('attack_mode', attackMode);
     });
+    client.sendEvent('attackMode', attackMode);
 
 
     if (aliases) {

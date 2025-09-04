@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import { getItemSync } from "@client/src/storage.ts";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];
@@ -17,15 +18,28 @@ export default class AttackMode {
     client.on("attackMode", (mode: Mode) => {
       this.index = MODES.indexOf(mode);
       this.update();
+      this.updateVisibility();
     });
+    client.on("teamChange", () => this.updateVisibility());
+    const stored = getItemSync('attack_mode')?.attack_mode as Mode | undefined;
+    if (stored && MODES.includes(stored)) {
+      this.index = MODES.indexOf(stored);
+    }
+    client.emit("attackMode", MODES[this.index]);
     this.update();
+    this.updateVisibility();
   }
 
   private update() {
     if (!this.container) return;
     const mode = MODES[this.index];
     this.container.textContent = `Atk: ${mode}`;
-    this.container.style.display = 'block';
     this.container.className = mode;
+  }
+
+  private updateVisibility() {
+    if (!this.container) return;
+    const leader = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
+    this.container.style.display = leader ? 'block' : 'none';
   }
 }

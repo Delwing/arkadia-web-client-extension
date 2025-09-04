@@ -1,6 +1,12 @@
 import initObjectAliases from '../src/scripts/objectAliases';
 import { gmcp } from '../src/gmcp';
 
+jest.mock('../src/storage', () => ({
+  getItemSync: jest.fn(() => ({})),
+  setItemSync: jest.fn(),
+}));
+import { setItemSync } from '../src/storage';
+
 class FakeClient {
   ObjectManager = {
     getObjectsOnLocation: jest.fn(() => []),
@@ -9,6 +15,7 @@ class FakeClient {
     getAttackTargetId: jest.fn(() => undefined),
     getDefenseTargetId: jest.fn(() => undefined),
     getAccumulatedObjectsData: jest.fn(() => ({})),
+    isLeader: jest.fn(() => true),
   };
   sendCommand = jest.fn();
   releaseGuard = jest.fn(() => this.sendCommand('przestan zaslaniac'));
@@ -63,6 +70,8 @@ describe('object aliases', () => {
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
 
+    (setItemSync as jest.Mock).mockClear();
+
     const attackModeCall = client.addEventListener.mock.calls.find(c => c[0] === 'attackMode');
     setAttackMode = attackModeCall && attackModeCall[1];
   });
@@ -76,6 +85,7 @@ describe('object aliases', () => {
   test('kill alias in AW mode marks target', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     setAttackMode({ detail: 'AW' });
+    expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AW');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
@@ -84,6 +94,31 @@ describe('object aliases', () => {
   test('kill alias in AWR mode orders attack', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     setAttackMode({ detail: 'AWR' });
+    expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AWR');
+    kill(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz zaatakowac ob_5');
+  });
+
+  test('kill alias in AW mode without leadership only sends zabij', () => {
+    client.TeamManager.isLeader.mockReturnValue(false);
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    setAttackMode({ detail: 'AW' });
+    client.sendCommand.mockClear();
+    kill(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledTimes(1);
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
+  });
+
+  test('kill alias resumes extra commands when becoming leader again', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    setAttackMode({ detail: 'AWR' });
+    client.TeamManager.isLeader.mockReturnValue(false);
+    kill(['', '1'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledTimes(1);
+    client.sendCommand.mockClear();
+    client.TeamManager.isLeader.mockReturnValue(true);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku');

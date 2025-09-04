@@ -1,5 +1,10 @@
 import AttackMode from '../src/AttackMode';
 
+jest.mock('@client/src/storage.ts', () => ({
+  getItemSync: jest.fn(() => ({})),
+}));
+import { getItemSync } from '@client/src/storage.ts';
+
 class MockClient {
   private events: Record<string, Function[]> = {};
   on(event: string, listener: Function) {
@@ -18,6 +23,8 @@ describe('AttackMode', () => {
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
+    (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
+    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => true) } };
     new AttackMode(client as any);
   });
 
@@ -43,5 +50,17 @@ describe('AttackMode', () => {
     container.click();
     expect(client.emit).toHaveBeenLastCalledWith('attackMode', 'A');
     expect(container.textContent).toBe('Atk: A');
+  });
+
+  test('hides when not leader', () => {
+    document.body.innerHTML = '<span id="attack-mode"></span>';
+    container = document.getElementById('attack-mode')!;
+    client = new MockClient();
+    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => false) } };
+    new AttackMode(client as any);
+    expect(container.style.display).toBe('none');
+    (window as any).clientExtension.TeamManager.isLeader.mockReturnValue(true);
+    client.emit('teamChange');
+    expect(container.style.display).toBe('block');
   });
 });
