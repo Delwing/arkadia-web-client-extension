@@ -12,10 +12,12 @@ window.addEventListener('load', () => {
     const client: any = (window as any).clientExtension;
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
+    const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
     const preview = document.getElementById('sandbox-team-preview');
 
     let id = 1;
     const ids = new Map<string, number>();
+    const objectNums = new Set<number>();
 
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
@@ -25,7 +27,9 @@ window.addEventListener('load', () => {
         }
         const obj: any = {};
         obj[memberId] = { desc: name, team: true, team_leader: leaderFlag };
+        objectNums.add(memberId);
         client.sendEvent('gmcp.objects.data', obj);
+        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
     }
 
     function renderTeam() {
@@ -73,7 +77,26 @@ window.addEventListener('load', () => {
     }
 
     function removeMember(name: string) {
+        const memberId = ids.get(name);
+        if (memberId) {
+            objectNums.delete(memberId);
+            client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+        }
         client.TeamManager?.removeMember?.(name);
+    }
+
+    function addEnemy() {
+        const names = ['Goblin', 'Orc', 'Troll', 'Bandit', 'Wolf'];
+        const base = names[Math.floor(Math.random() * names.length)];
+        const enemyName = `${base} ${id}`;
+        const enemyId = id++;
+        ids.set(enemyName, enemyId);
+        objectNums.add(enemyId);
+        const hp = Math.floor(Math.random() * 7);
+        const obj: any = {};
+        obj[enemyId] = { desc: enemyName, state: hp, hp };
+        client.sendEvent('gmcp.objects.data', obj);
+        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
     }
 
     client.addEventListener?.('teamChange', renderTeam);
@@ -89,6 +112,10 @@ window.addEventListener('load', () => {
             addMember(name);
             memberInput!.value = '';
         }
+    });
+
+    addEnemyButton?.addEventListener('click', () => {
+        addEnemy();
     });
 
 });
