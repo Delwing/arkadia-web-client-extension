@@ -91,11 +91,11 @@ export function parseAnsiPatterns(input: string): string {
         } else if (ansiSequence.startsWith("22;")) {
             // Standard color mode
             const colorIndex = parseInt(ansiSequence.slice(3), 10) - 30;
-            handleColorChange(colorCodes.ansi.bright, activeColors, spanStartIndices, spanEndIndices, currentSpanCount, matchPos, colorIndex);
+            handleColorChange(colorCodes.ansi.dark, activeColors, spanStartIndices, spanEndIndices, currentSpanCount, matchPos, colorIndex);
         } else if (ansiSequence.endsWith(";1")) {
             // Bold color mode
             const colorIndex = parseInt(ansiSequence.slice(0, -2), 10) - 30;
-            handleColorChange(colorCodes.ansi.dark, activeColors, spanStartIndices, spanEndIndices, currentSpanCount, matchPos, colorIndex);
+            handleColorChange(colorCodes.ansi.bright, activeColors, spanStartIndices, spanEndIndices, currentSpanCount, matchPos, colorIndex);
         }
 
         // Remove the ANSI sequence from the string
