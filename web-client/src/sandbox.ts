@@ -32,6 +32,14 @@ window.addEventListener('load', () => {
     const objectNums = new Set<number>();
     const hps = new Map<number, number>();
 
+    client.addEventListener?.('gmcp', (ev: CustomEvent<{ path: string; value: any }>) => {
+        const pre = document.createElement('pre');
+        pre.className = 'sandbox-gmcp-event';
+        const { path, value } = ev.detail || {};
+        pre.textContent = `${path}\n${JSON.stringify(value, null, 2)}`;
+        arkadiaClient.output(pre.outerHTML, 'command');
+    });
+
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
         if (!memberId) {

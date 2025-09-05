@@ -50,3 +50,11 @@
   cursor: pointer;
   padding: 0 0.25rem;
 }
+
+.sandbox-gmcp-event {
+  border: 1px dashed #ccc;
+  padding: 0.25rem;
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  font-family: monospace;
+}
