@@ -473,6 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
+    const loginError = document.getElementById('login-error') as HTMLElement | null;
     const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
     const enableNotificationsSettings = document.getElementById('ui-enable-notifications') as HTMLButtonElement | null;
@@ -481,6 +482,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
     const locationShareModalElement = document.getElementById('location-share-modal');
     const locationShareModal = locationShareModalElement ? new Modal(locationShareModalElement) : null;
+
+    const hideLoginError = () => {
+        if (loginError) {
+            loginError.classList.add('d-none');
+            loginError.textContent = '';
+        }
+    };
+
+    arkadiaClient.on('gmcp_msg.system.login', (text: string) => {
+        if (!loginError) return;
+        const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
+        if (authOverlay && authOverlay.style.display !== 'none') {
+            const msg = text.split('Podaj swe haslo:')[1]?.trim();
+            if (msg) {
+                loginError.textContent = msg;
+                loginError.classList.remove('d-none');
+            }
+        }
+    });
 
     if (enableNotificationsSettings || enableNotificationsConnection) {
         const updateVisibility = () => {
@@ -717,6 +737,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            hideLoginError();
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
@@ -886,6 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle connect/disconnect button click
     const handleConnect = () => {
+        hideLoginError();
         if (isConnected) {
             arkadiaClient.disconnect();
         } else {
