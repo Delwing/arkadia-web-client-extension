@@ -5,7 +5,7 @@ const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];
 
 export default class AttackMode {
-  private container: HTMLElement | null;
+  private readonly container: HTMLElement | null;
   private index = 0;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("attack-mode");
@@ -26,8 +26,6 @@ export default class AttackMode {
       this.index = MODES.indexOf(stored);
     }
     client.emit("attackMode", MODES[this.index]);
-    this.update();
-    this.updateVisibility();
   }
 
   private update() {

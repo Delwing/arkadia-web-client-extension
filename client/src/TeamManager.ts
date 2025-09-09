@@ -79,6 +79,7 @@ export default class TeamManager {
             }
 
             this.checkTeam(obj, id);
+            this.checkTeamLeader(obj, id);
             if (id === this.leaderId && obj.attack_num !== undefined) {
                 this.leaderAttackTargetId = typeof obj.attack_num == "boolean" ? undefined : String(obj.attack_num)
             }
@@ -103,14 +104,24 @@ export default class TeamManager {
         }
 
         this.addMember(name);
+        this.checkTeamLeader(obj, id);
+    }
 
+    private checkTeamLeader(obj: AccumulatedObjectData, id: string) {
         if (obj.team_leader) {
-            const changed = this.leader !== name || this.leaderId !== id;
-            this.leader = name;
+            const changed = this.leaderId !== id;
+            this.leader = obj.desc;
             this.leaderId = id;
             if (changed) {
                 this.client.sendEvent('teamChange');
             }
+        }
+
+        if (id === this.playerNum && !obj.team) {
+            this.leader = undefined;
+            this.leaderId = undefined;
+            this.joined = false;
+            this.client.sendEvent('teamChange');
         }
     }
 
