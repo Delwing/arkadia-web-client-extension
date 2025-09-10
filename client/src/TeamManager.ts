@@ -117,7 +117,7 @@ export default class TeamManager {
             }
         }
 
-        if (id === this.playerNum && !obj.team) {
+        if (id === this.playerNum && obj.team === false) {
             this.leader = undefined;
             this.leaderId = undefined;
             this.joined = false;
