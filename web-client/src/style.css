@@ -199,6 +199,7 @@ h1 {
 
 #release-guard {
   display: none;
+  cursor: pointer;
 }
 
 #release-guard.on {
@@ -211,6 +212,7 @@ h1 {
 
 #attack-mode {
   display: none;
+  cursor: pointer;
 }
 
 #attack-mode.A {
