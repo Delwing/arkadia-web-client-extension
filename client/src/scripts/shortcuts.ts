@@ -51,7 +51,7 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
             const lead = client.OutputHandler.makeClickable("prowadz", "prowadz " + sc.key, () => {
                 client.sendCommand("/prowadz " + sc.key);
             });
-            lines.push(`${colorString(sc.key, HEADER_COLOR)} -> ${sc.id} ${colorString(sc.label, NAME_COLOR)} [ ${lead} ]`);
+            lines.push(`${colorString(sc.key, HEADER_COLOR)} → ${sc.id} ${colorString(sc.label, NAME_COLOR)} [ ${lead} ]`);
         });
         client.println(lines.length ? lines.join("\n") : "Brak skrotow.");
     }

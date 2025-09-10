@@ -89,7 +89,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         target = targetId;
         client.sendEvent('leadTo', targetId);
         clearTimer();
-        client.sendEvent('notify', { text: `[WALK] ${info} -> ${targetId} (${delay.toFixed(2)}s)` });
+        client.sendEvent('notify', { text: `[WALK] ${info} → ${targetId} (${delay.toFixed(2)}s)` });
         scheduleStep();
     };
 

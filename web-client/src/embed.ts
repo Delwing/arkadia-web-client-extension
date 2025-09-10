@@ -326,7 +326,7 @@ export default class EmbeddedMap {
                     const distance = path ? path.length - 1 : 0;
                     const destArea = this.reader.getAreaByRoomId(destId);
                     const destName = destArea ? destArea.areaName : destId;
-                    text += ` -> #${destId} ${destName} (${distance})`;
+                    text += ` → #${destId} ${destName} (${distance})`;
                 }
                 label.textContent = text;
             }

@@ -16,6 +16,6 @@ describe('Recorder playback', () => {
     jest.useFakeTimers();
     recorder.replayRecordedMessagesTimed();
     jest.runAllTimers();
-    expect((window as any).Output.send).toHaveBeenCalledWith('-> look');
+    expect((window as any).Output.send).toHaveBeenCalledWith('→ look');
   });
 });
