@@ -170,8 +170,9 @@ export default class Recorder {
         if (ev.direction === 'in') {
             this.hooks.processIncomingData(ev.message);
         } else {
-            window.clientExtension.sendCommand(ev.message)
-            this.hooks.sendCommand(ev.message);
+            Output.send('-> ' + ev.message);
+            window.clientExtension.sendCommand(ev.message, false);
+            this.hooks.sendCommand(ev.message, false);
         }
     }
 
