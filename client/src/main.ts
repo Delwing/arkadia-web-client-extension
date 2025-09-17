@@ -10,6 +10,7 @@ import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
+import initZaskTimer from './scripts/zaskTimer'
 import initBinds from './scripts/binds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
@@ -137,6 +138,7 @@ export function registerScripts(client: Client) {
     initAttackBeep(client)
     initLamp(client)
     initCoverTimer(client)
+    initZaskTimer(client)
     initBinds(client, aliases)
     initMoveMode(client)
     initCarriage(client)

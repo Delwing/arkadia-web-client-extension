@@ -6,6 +6,7 @@ class FakeClient {
   moveModeButton?: HTMLInputElement;
   moveModeBind = { key: 'Backquote' } as { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean };
   println = jest.fn();
+  sendEvent = jest.fn();
   createButton(_name: string, callback: () => void) {
     const btn = document.createElement('input');
     btn.type = 'button';

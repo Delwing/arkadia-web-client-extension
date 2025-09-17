@@ -737,6 +737,7 @@ export default class MobileDirectionButtons {
                     this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
                     newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
                     newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+                    this.client.sendEvent('moveModeChanged', this.client.moveMode);
                     break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
