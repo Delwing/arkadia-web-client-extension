@@ -16,6 +16,8 @@ export interface KnownEvents {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'npc': any;
+    'zaskTimer': { seconds: number; ok: boolean } | null;
+    'moveModeChanged': number;
 }
 
 export type ClientEvents = KnownEvents & {

@@ -13,10 +13,15 @@ export default function initMoveMode(client: Client) {
         button.title = `Ruch: ${TITLES[client.moveMode]}`;
     }
 
+    function emitChange() {
+        client.sendEvent('moveModeChanged', client.moveMode);
+    }
+
     function toggle(notify = false) {
         if (client.carriageMode) return;
         client.moveMode = (client.moveMode + 1) % LABELS.length;
         update();
+        emitChange();
         if (notify) {
             client.println(`Tryb ruchu: ${TITLES[client.moveMode]}`);
         }
@@ -34,4 +39,6 @@ export default function initMoveMode(client: Client) {
             ev.preventDefault();
         }
     });
+
+    emitChange();
 }

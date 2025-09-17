@@ -187,6 +187,22 @@ h1 {
   color: yellow;
 }
 
+#zask-timer {
+  display: none;
+}
+
+#zask-timer.green {
+  color: springgreen;
+}
+
+#zask-timer.yellow {
+  color: yellow;
+}
+
+#zask-timer.red {
+  color: tomato;
+}
+
 #state-info {
   display: none;
 }
