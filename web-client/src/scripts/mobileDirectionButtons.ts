@@ -48,11 +48,13 @@ export default class MobileDirectionButtons {
         solo: { buttons: {}, order: [], cols: 0 },
         team: { buttons: {}, order: [], cols: 0 },
         leader: { buttons: {}, order: [], cols: 0 },
+        locked: false,
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
     private leaderMode = false;
     private hapticEnabled = true;
+    private dragLocked = false;
 
 
     constructor(client: Client) {
@@ -94,6 +96,8 @@ export default class MobileDirectionButtons {
 
         loadMobileButtonSettings().then(settings => {
             this.allSettings = settings;
+            this.dragLocked = !!settings.locked;
+            this.updateDragLock();
             this.updateTeamMode();
             this.setupEventHandlers();
             this.applyActiveSettings();
@@ -188,6 +192,8 @@ export default class MobileDirectionButtons {
             });
             loadMobileButtonSettings().then(s => {
                 this.allSettings = s;
+                this.dragLocked = !!s.locked;
+                this.updateDragLock();
                 this.updateTeamMode();
             });
         });
@@ -344,8 +350,19 @@ export default class MobileDirectionButtons {
         });
     }
 
-    private dragStart(x: number, y: number, preventDefault?: () => void) {
+    private updateDragLock() {
         if (!this.container) return;
+        if (this.dragLocked) {
+            this.container.classList.add('drag-locked');
+            this.container.setAttribute('data-drag-locked', 'true');
+        } else {
+            this.container.classList.remove('drag-locked');
+            this.container.removeAttribute('data-drag-locked');
+        }
+    }
+
+    private dragStart(x: number, y: number, preventDefault?: () => void) {
+        if (!this.container || this.dragLocked) return;
 
         if (this.isScrolling) return;
 
@@ -419,30 +436,36 @@ export default class MobileDirectionButtons {
     }
 
     private handleTouchStart(e: TouchEvent) {
+        if (this.dragLocked) return;
         const touch = e.touches[0];
         this.dragStart(touch.clientX, touch.clientY, () => e.preventDefault());
     }
 
     private handleTouchMove(e: TouchEvent) {
+        if (this.dragLocked) return;
         e.preventDefault();
         const touch = e.touches[0];
         this.dragMove(touch.clientX, touch.clientY);
     }
 
     private handleTouchEnd(e: TouchEvent) {
+        if (this.dragLocked) return;
         this.dragEnd(() => e.preventDefault());
     }
 
     private handleMouseDown(e: MouseEvent) {
+        if (this.dragLocked) return;
         if (e.button !== 0) return;
         this.dragStart(e.clientX, e.clientY);
     }
 
     private handleMouseMove(e: MouseEvent) {
+        if (this.dragLocked) return;
         this.dragMove(e.clientX, e.clientY);
     }
 
     private handleMouseUp(e: MouseEvent) {
+        if (this.dragLocked) return;
         this.dragEnd(() => e.preventDefault());
     }
 
@@ -589,6 +612,8 @@ export default class MobileDirectionButtons {
 
     private applyActiveSettings() {
         const set = this.leaderMode ? this.allSettings.leader : this.teamMode ? this.allSettings.team : this.allSettings.solo;
+        this.dragLocked = !!this.allSettings.locked;
+        this.updateDragLock();
         this.buttonSettings = set.buttons;
         Object.keys(this.buttonSettings).forEach(id => {
             const btn = document.getElementById(id) as HTMLButtonElement | null;

@@ -85,6 +85,7 @@ export interface Settings {
     solo: LayoutSettings;
     team: LayoutSettings;
     leader: LayoutSettings;
+    locked: boolean;
 }
 
 export function createDefaultLayout(): LayoutSettings {
@@ -101,8 +102,9 @@ export async function loadSettings(): Promise<Settings> {
                 order: Array.isArray(set?.order) ? set.order : [...defaultOrder],
                 cols: typeof set?.cols === 'number' && set.cols > 0 ? set.cols : defaultCols,
             });
+            const locked = !!raw.locked;
             if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
-                return { solo: parseSet(raw.solo), team: parseSet(raw.team), leader: parseSet(raw.leader) };
+                return { solo: parseSet(raw.solo), team: parseSet(raw.team), leader: parseSet(raw.leader), locked };
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
             const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
@@ -110,10 +112,11 @@ export async function loadSettings(): Promise<Settings> {
                 solo: { buttons: { ...defaultSettings, ...(raw.solo || {}) }, order: [...order], cols },
                 team: { buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) }, order: [...order], cols },
                 leader: { buttons: { ...defaultSettings, ...(raw.leader || raw.team || raw.solo || {}) }, order: [...order], cols },
+                locked,
             };
         }
     } catch {}
-    return { solo: createDefaultLayout(), team: createDefaultLayout(), leader: createDefaultLayout() };
+    return { solo: createDefaultLayout(), team: createDefaultLayout(), leader: createDefaultLayout(), locked: false };
 }
 
 export function saveSettings(settings: Settings) {
@@ -124,6 +127,12 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
     const set = isLeader ? settings.leader : inTeam ? settings.team : settings.solo;
     const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
     if (container) {
+        container.classList.toggle('drag-locked', settings.locked);
+        if (settings.locked) {
+            container.setAttribute('data-drag-locked', 'true');
+        } else {
+            container.removeAttribute('data-drag-locked');
+        }
         container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
 
         // Preserve current button size

@@ -44,6 +44,7 @@ function MobileButtons() {
         solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
         team: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
         leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
+        locked: false,
     });
     const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
@@ -287,6 +288,14 @@ function MobileButtons() {
                 <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
                     Domyślne
                 </Button>
+                <Form.Check
+                    id="mobile-buttons-lock"
+                    type="checkbox"
+                    className="ms-auto user-select-none"
+                    label="Zablokuj przyciski"
+                    checked={settings.locked}
+                    onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
+                />
             </div>
             <div className="d-flex flex-column align-items-center mb-2">
                 <div className="d-flex gap-1 mb-2">
