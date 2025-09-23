@@ -1,5 +1,15 @@
 import Modal from "bootstrap/js/dist/modal";
 
+type MapPosition =
+    | 'top-overlay'
+    | 'bottom-overlay'
+    | 'left-overlay'
+    | 'right-overlay'
+    | 'top-no-overlay'
+    | 'bottom-no-overlay'
+    | 'left-no-overlay'
+    | 'right-no-overlay';
+
 interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
@@ -14,7 +24,20 @@ interface UiSettings {
     xtermPalette: 'arkadia' | 'proper';
     footerMode: number;
     explorationMode: boolean;
+    mapPosition: MapPosition;
 }
+
+const MAP_POSITIONS: readonly MapPosition[] = [
+    'top-overlay',
+    'bottom-overlay',
+    'left-overlay',
+    'right-overlay',
+    'top-no-overlay',
+    'bottom-no-overlay',
+    'left-no-overlay',
+    'right-no-overlay',
+];
+const MAP_POSITION_SET = new Set<MapPosition>(MAP_POSITIONS);
 
 const defaultSettings: UiSettings = {
     contentFontSize: 0.775,
@@ -30,9 +53,20 @@ const defaultSettings: UiSettings = {
     xtermPalette: 'arkadia',
     footerMode: 0,
     explorationMode: false,
+    mapPosition: 'top-overlay',
 };
 
 function apply(settings: UiSettings) {
+    const mainContainer = document.getElementById('main-container');
+    if (mainContainer) {
+        mainContainer.setAttribute('data-map-position', settings.mapPosition);
+        mainContainer.style.setProperty('--map-size', settings.mapHeight + 'vh');
+    }
+    const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
+    if (iframeContainer) {
+        iframeContainer.style.removeProperty('height');
+        iframeContainer.style.removeProperty('max-height');
+    }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
         content.style.fontSize = settings.contentFontSize + 'rem';
@@ -45,12 +79,6 @@ function apply(settings: UiSettings) {
     const objects = document.getElementById('objects-list');
     if (objects) {
         objects.style.fontSize = settings.objectsFontSize + 'rem';
-    }
-    const iframeContainer = document.getElementById('iframe-container');
-    if (iframeContainer) {
-        const height = settings.mapHeight + 'vh';
-        (iframeContainer as HTMLElement).style.height = height;
-        (iframeContainer as HTMLElement).style.maxHeight = height;
     }
     document.querySelectorAll<HTMLButtonElement>('.mobile-button').forEach(btn => {
         const baseSize = 36; // default width/height in px
@@ -92,6 +120,7 @@ function apply(settings: UiSettings) {
             })
         );
     }
+    window.dispatchEvent(new CustomEvent('mapPositionChange', { detail: settings.mapPosition }));
 }
 
 import storage from "@client/src/storage";
@@ -118,7 +147,8 @@ async function load(): Promise<UiSettings> {
             const explorationMode = !!parsed.explorationMode;
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
             const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
+            const mapPosition = MAP_POSITION_SET.has(parsed.mapPosition) ? parsed.mapPosition as MapPosition : defaultSettings.mapPosition;
+            return { ...defaultSettings, ...parsed, mapScale, mapLimit, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, mapPosition };
         }
     } catch {
         // ignore malformed data
@@ -141,6 +171,7 @@ export default async function initUiSettings() {
     const buttonInput = modalEl.querySelector('#ui-button-size') as HTMLInputElement;
     const mapInput = modalEl.querySelector('#ui-map-scale') as HTMLInputElement;
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
+    const mapPositionInput = modalEl.querySelector('#ui-map-position') as HTMLSelectElement;
     const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
@@ -158,6 +189,11 @@ export default async function initUiSettings() {
     buttonInput.value = String(current.buttonSize);
     mapInput.value = String(current.mapScale);
     mapHeightInput.value = String(current.mapHeight);
+    if (MAP_POSITION_SET.has(current.mapPosition)) {
+        mapPositionInput.value = current.mapPosition;
+    } else {
+        mapPositionInput.value = defaultSettings.mapPosition;
+    }
     mapLimitInput.value = String(current.mapLimit);
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
@@ -192,6 +228,12 @@ export default async function initUiSettings() {
             return limit;
         })();
 
+        const mapPositionValue = mapPositionInput.value as MapPosition;
+        const mapPosition = MAP_POSITION_SET.has(mapPositionValue) ? mapPositionValue : defaultSettings.mapPosition;
+        if (!MAP_POSITION_SET.has(mapPositionValue)) {
+            mapPositionInput.value = mapPosition;
+        }
+
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
@@ -199,6 +241,7 @@ export default async function initUiSettings() {
             mapScale,
             mapLimit,
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
+            mapPosition,
             showButtons: showButtonsInput.checked,
             hapticFeedback: hapticFeedbackInput.checked,
             emojiLabels: emojiLabelsInput.checked,

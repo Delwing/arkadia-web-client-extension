@@ -17,7 +17,7 @@
 </head>
 <body>
 <div id="sandbox-layout" class="sandbox-layout">
-<div id="main-container">
+<div id="main-container" data-map-position="top-overlay">
     <div id="iframe-container">
         <canvas id="map" resize="true"></canvas>
         <div id="location-wrapper">
@@ -34,23 +34,25 @@
             </div>
         </div>
     </div>
-    <div id="main_text_output_msg_wrapper">
-        <div id="split-bottom" class="split-hidden">
-            <div id="sticky-area"></div>
+    <div id="app-content">
+        <div id="main_text_output_msg_wrapper">
+            <div id="split-bottom" class="split-hidden">
+                <div id="sticky-area"></div>
+            </div>
         </div>
+        <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
+            <span id="char-state-text"></span>
+            <span id="state-info"></span>
+            <div id="char-state-bars"></div>
+            <span id="lamp-timer"></span>
+            <span id="break-item-warning"></span>
+            <span id="package-status"></span>
+            <span id="attack-mode"></span>
+            <span id="release-guard"></span>
+            <span id="cover-timer"></span>
+        </div>
+        <div id="objects-list"></div>
     </div>
-    <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
-        <span id="char-state-text"></span>
-        <span id="state-info"></span>
-        <div id="char-state-bars"></div>
-        <span id="lamp-timer"></span>
-        <span id="break-item-warning"></span>
-        <span id="package-status"></span>
-        <span id="attack-mode"></span>
-        <span id="release-guard"></span>
-        <span id="cover-timer"></span>
-    </div>
-    <div id="objects-list"></div>
     <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
     <div id="playback-controls" class="btn-group btn-group-sm" style="position:absolute;top:2.5rem;right:0.5rem;z-index:1013;display:none;">
         <button id="playback-pause" class="btn btn-secondary">Pauza</button>
@@ -292,6 +294,18 @@
                     </label>
                     <label class="form-label">Wysokość mapy (vh)
                         <input id="ui-map-height" type="number" step="1" class="form-control" />
+                    </label>
+                    <label class="form-label">Pozycja mapy
+                        <select id="ui-map-position" class="form-select">
+                            <option value="top-overlay">Góra (nakładka)</option>
+                            <option value="bottom-overlay">Dół (nakładka)</option>
+                            <option value="left-overlay">Lewa (nakładka)</option>
+                            <option value="right-overlay">Prawa (nakładka)</option>
+                            <option value="top-no-overlay">Góra (bez nakładki)</option>
+                            <option value="bottom-no-overlay">Dół (bez nakładki)</option>
+                            <option value="left-no-overlay">Lewa (bez nakładki)</option>
+                            <option value="right-no-overlay">Prawa (bez nakładki)</option>
+                        </select>
                     </label>
                     <label class="form-label">Zasięg renderowania mapy
                         <input id="ui-map-limit" type="number" step="1" min="1" value="35" class="form-control" />

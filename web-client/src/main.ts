@@ -122,12 +122,26 @@ client.addEventListener('binds', (ev: CustomEvent) => {
 });
 
 if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('iPod')) {
-    const baseOffset = window.outerHeight - window.visualViewport.height
-    window.visualViewport.addEventListener("resize", () => {
-        const offset = window.outerHeight - window.visualViewport.height - baseOffset
-        document.getElementById("iframe-container").style.top = offset + 'px'
-        document.getElementById("main-container").style.paddingTop = offset + 2 + 'px'
-    })
+    const visualViewport = window.visualViewport;
+    const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
+    const mainContainer = document.getElementById('main-container') as HTMLElement | null;
+    if (visualViewport && iframeContainer && mainContainer) {
+        const baseOffset = window.outerHeight - visualViewport.height;
+        const updateOffsets = () => {
+            const position = mainContainer.getAttribute('data-map-position') ?? 'top-overlay';
+            if (position === 'top-overlay') {
+                const offset = window.outerHeight - visualViewport.height - baseOffset;
+                iframeContainer.style.top = offset + 'px';
+                mainContainer.style.paddingTop = offset + 2 + 'px';
+            } else {
+                iframeContainer.style.removeProperty('top');
+                mainContainer.style.removeProperty('padding-top');
+            }
+        };
+        visualViewport.addEventListener('resize', updateOffsets);
+        window.addEventListener('mapPositionChange', updateOffsets);
+        updateOffsets();
+    }
 }
 
 const progressContainer = document.getElementById('map-progress-container')!;
