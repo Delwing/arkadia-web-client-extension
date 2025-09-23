@@ -121,14 +121,34 @@ client.addEventListener('binds', (ev: CustomEvent) => {
     }
 });
 
+const iframeContainerEl = document.getElementById("iframe-container") as HTMLElement | null;
+const mainContainerEl = document.getElementById("main-container") as HTMLElement | null;
+let iosKeyboardOffset = 0;
+
+const updateMapLayoutOffsets = () => {
+    if (!iframeContainerEl || !mainContainerEl) {
+        return;
+    }
+    if (document.body?.dataset.mapPosition === 'top-overlay') {
+        iframeContainerEl.style.top = iosKeyboardOffset + 'px';
+        mainContainerEl.style.paddingTop = iosKeyboardOffset + 2 + 'px';
+    } else {
+        iframeContainerEl.style.top = '';
+        mainContainerEl.style.paddingTop = '';
+    }
+};
+
+window.addEventListener('map-position-change', updateMapLayoutOffsets);
+
 if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('iPod')) {
     const baseOffset = window.outerHeight - window.visualViewport.height
     window.visualViewport.addEventListener("resize", () => {
-        const offset = window.outerHeight - window.visualViewport.height - baseOffset
-        document.getElementById("iframe-container").style.top = offset + 'px'
-        document.getElementById("main-container").style.paddingTop = offset + 2 + 'px'
+        iosKeyboardOffset = window.outerHeight - window.visualViewport.height - baseOffset
+        updateMapLayoutOffsets()
     })
 }
+
+updateMapLayoutOffsets()
 
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;

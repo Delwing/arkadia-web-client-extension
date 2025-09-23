@@ -15,28 +15,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <title>Arkadia</title>
 </head>
-<body>
+<body data-map-position="top-overlay">
 <div id="sandbox-layout" class="sandbox-layout">
 <div id="main-container">
-    <div id="iframe-container">
-        <canvas id="map" resize="true"></canvas>
-        <div id="location-wrapper">
-            <div id="location-label">
-                <span id="location-text"></span>
+    <div id="content-area">
+        <div id="iframe-container">
+            <canvas id="map" resize="true"></canvas>
+            <div id="location-wrapper">
+                <div id="location-label">
+                    <span id="location-text"></span>
+                </div>
+                <span id="pause-icon" hidden>⏸</span>
             </div>
-            <span id="pause-icon" hidden>⏸</span>
-        </div>
-        <div id="notification-center"></div>
-        <div id="map-progress-container" class="position-absolute top-50 start-50 translate-middle w-75">
-            <div class="progress">
-                <div id="map-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
-                     style="width: 0"></div>
+            <div id="notification-center"></div>
+            <div id="map-progress-container" class="position-absolute top-50 start-50 translate-middle w-75">
+                <div class="progress">
+                    <div id="map-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         style="width: 0"></div>
+                </div>
             </div>
         </div>
-    </div>
-    <div id="main_text_output_msg_wrapper">
-        <div id="split-bottom" class="split-hidden">
-            <div id="sticky-area"></div>
+        <div id="main_text_output_msg_wrapper">
+            <div id="split-bottom" class="split-hidden">
+                <div id="sticky-area"></div>
+            </div>
         </div>
     </div>
     <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
@@ -292,6 +294,18 @@
                     </label>
                     <label class="form-label">Wysokość mapy (vh)
                         <input id="ui-map-height" type="number" step="1" class="form-control" />
+                    </label>
+                    <label class="form-label">Położenie mapy
+                        <select id="ui-map-position" class="form-select">
+                            <option value="top-overlay">Góra (nakładka)</option>
+                            <option value="bottom-overlay">Dół (nakładka)</option>
+                            <option value="right-overlay">Prawa (nakładka)</option>
+                            <option value="left-overlay">Lewa (nakładka)</option>
+                            <option value="top">Góra</option>
+                            <option value="bottom">Dół</option>
+                            <option value="right">Prawa</option>
+                            <option value="left">Lewa</option>
+                        </select>
                     </label>
                     <label class="form-label">Zasięg renderowania mapy
                         <input id="ui-map-limit" type="number" step="1" min="1" value="35" class="form-control" />
