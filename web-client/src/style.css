@@ -55,6 +55,15 @@ h1 {
   width: 100vw;
 }
 
+#content-area {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  --map-size: 30vh;
+}
+
 #main_text_output_msg_wrapper {
   flex: 1;
   overflow-y: auto;
@@ -63,6 +72,8 @@ h1 {
   font-size: 0.775rem;
   overflow-wrap: break-word;
   position: relative;
+  min-height: 0;
+  min-width: 0;
 }
 
 #logs-preview {
@@ -472,15 +483,102 @@ button:focus-visible {
   }
 }
 
-#iframe-container {
+#content-area #iframe-container {
+  background-color: rgba(0, 0, 0, 0.50);
+  overflow: hidden;
+  z-index: 5;
+}
+
+body[data-map-position="top-overlay"] #content-area #iframe-container {
   position: absolute;
   top: 0;
+  left: 0;
   width: 100%;
-  height: 30vh;
-  max-height: 30vh;
-  overflow: hidden;
-  background-color: rgba(0, 0, 0, 0.50);
-  z-index: 5
+  height: var(--map-size);
+  max-height: var(--map-size);
+}
+
+body[data-map-position="bottom-overlay"] #content-area #iframe-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--map-size);
+  max-height: var(--map-size);
+}
+
+body[data-map-position="left-overlay"] #content-area #iframe-container,
+body[data-map-position="right-overlay"] #content-area #iframe-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--map-size);
+  height: 100%;
+  max-height: none;
+}
+
+body[data-map-position="left-overlay"] #content-area #iframe-container {
+  left: 0;
+}
+
+body[data-map-position="right-overlay"] #content-area #iframe-container {
+  right: 0;
+}
+
+body[data-map-position="top"] #content-area {
+  flex-direction: column;
+}
+
+body[data-map-position="top"] #content-area #iframe-container {
+  position: relative;
+  width: 100%;
+  height: var(--map-size);
+  max-height: var(--map-size);
+  order: 0;
+}
+
+body[data-map-position="top"] #content-area #main_text_output_msg_wrapper {
+  order: 1;
+}
+
+body[data-map-position="bottom"] #content-area {
+  flex-direction: column;
+}
+
+body[data-map-position="bottom"] #content-area #iframe-container {
+  position: relative;
+  width: 100%;
+  height: var(--map-size);
+  max-height: var(--map-size);
+  order: 2;
+}
+
+body[data-map-position="bottom"] #content-area #main_text_output_msg_wrapper {
+  order: 1;
+}
+
+body[data-map-position="left"] #content-area,
+body[data-map-position="right"] #content-area {
+  flex-direction: row;
+}
+
+body[data-map-position="right"] #content-area {
+  flex-direction: row-reverse;
+}
+
+body[data-map-position="left"] #content-area #iframe-container,
+body[data-map-position="right"] #content-area #iframe-container {
+  position: relative;
+  flex: 0 0 var(--map-size);
+  width: var(--map-size);
+  height: auto;
+  max-height: none;
+  align-self: stretch;
+}
+
+body[data-map-position="left"] #content-area #main_text_output_msg_wrapper,
+body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
+  flex: 1;
 }
 
 #map {
@@ -524,9 +622,8 @@ button:focus-visible {
   width: 100%;
   }
 
-  #iframe-container {
-  height: 25vh;
-  max-height: 25vh;
+  #content-area {
+  --map-size: 25vh;
   }
 
   #main_text_output_msg_wrapper {

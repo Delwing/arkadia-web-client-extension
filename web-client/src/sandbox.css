@@ -10,10 +10,6 @@
   position: relative;
 }
 
-.sandbox-layout #iframe-container {
-  position: relative;
-}
-
 .sandbox-panel {
   flex: 0 0 16rem;
   background-color: rgba(0, 0, 0, 0.6);
