@@ -136,6 +136,7 @@ function UserTriggers() {
         saveList(list);
         resetForm();
         setShowCreateForm(false);
+        window.dispatchEvent(new Event('close-options'));
     }
 
     function macrosToText(list: UserMacro[]): string {
