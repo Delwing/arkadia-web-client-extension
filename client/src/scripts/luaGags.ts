@@ -115,7 +115,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 try {
                     luaEnv.parse(node.script).exec()
                 } catch (e) {
-                    const warn = `Zglos blad w powyzszej lini: ${e.message}`
+                    const warn = `Zgłoś błąd w powyższej linii (kliknij w komunikat aby skopiować): ${e.message}`
                     const clickable = client.OutputHandler.makeClickable(
                         warn,
                         warn,
