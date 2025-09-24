@@ -316,7 +316,7 @@ function updateConnectButtons() {
             connectButton.style.display = 'none';
         } else {
             connectButton.style.display = '';
-            connectButton.textContent = 'Connect';
+            connectButton.textContent = 'Połącz';
             connectButton.classList.add('disconnected');
             connectButton.classList.remove('connected');
         }
