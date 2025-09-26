@@ -117,7 +117,6 @@ function Aliases() {
         saveList(updated);
         resetForm();
         setShowCreateForm(false);
-        window.dispatchEvent(new Event('close-options'));
     }
 
 
