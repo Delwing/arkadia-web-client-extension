@@ -568,6 +568,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (shortcutsModal) {
             shortcutsModal.hide();
         }
+        if (mobileButtonsModal) {
+            mobileButtonsModal.hide();
+        }
     });
 
     // Add event listener to options button

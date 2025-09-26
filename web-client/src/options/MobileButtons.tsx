@@ -253,8 +253,7 @@ function MobileButtons() {
         const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
         const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
         applySettings(settings, teamActive, leaderActive);
-        const modal = (window as any).bootstrap?.Modal.getInstance(document.getElementById('mobile-buttons-modal')!);
-        modal?.hide();
+        window.dispatchEvent(new Event('close-options'));
     }
 
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;

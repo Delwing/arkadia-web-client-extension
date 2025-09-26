@@ -42,6 +42,7 @@ function Shortcuts() {
         setKey('');
         setLoc('');
         setLabel('');
+        window.dispatchEvent(new Event('close-options'));
     }
 
     function remove(k: string) {
