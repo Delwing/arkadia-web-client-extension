@@ -11,6 +11,7 @@ import ZaskTimer from "./ZaskTimer";
 import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
+import MultiBinds from "./MultiBinds";
 import ReleaseGuard from "./ReleaseGuard";
 import AttackMode from "./AttackMode";
 import FightTitle from "./FightTitle";
@@ -933,6 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateConnectButtons();
 
     // Display character state and lamp timer
+    new MultiBinds(arkadiaClient);
     new CharState(arkadiaClient);
     new CharStateInfo(arkadiaClient);
     new LampTimer(arkadiaClient);

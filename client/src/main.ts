@@ -68,6 +68,7 @@ import initLocalizers from './scripts/localizers'
 import initShipLocalizers from './scripts/shipLocalizers'
 import initMapAliases from './scripts/mapAliases'
 import initShortcuts from './scripts/shortcuts'
+import initMultibinds from './scripts/multibinds'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
@@ -154,6 +155,7 @@ export function registerScripts(client: Client) {
     initShipLocalizers(client)
     initFollowSpecialExits(client)
     initMountain(client)
+    initMultibinds(client, aliases)
 
 
     const itemCollector = initItemCollector(client, aliases);

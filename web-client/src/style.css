@@ -119,6 +119,41 @@ h1 {
   width: 100%;
 }
 
+#multi-binds {
+  display: none;
+  gap: 1vw;
+  padding: 0.5vh 1vh;
+  font-family: monospace;
+  font-size: 0.8rem;
+  background-color: var(--bs-body-bg);
+  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#multi-binds.active {
+  display: flex;
+}
+
+#multi-binds .multi-bind {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+#multi-binds .multi-bind-key {
+  font-weight: 700;
+}
+
+#multi-binds .multi-bind-action {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#multi-binds.active + #char-state {
+  border-top: none;
+}
+
 #char-state {
   display: flex;
   gap: 1vw;
