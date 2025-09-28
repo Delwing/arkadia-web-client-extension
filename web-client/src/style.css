@@ -274,13 +274,24 @@ h1 {
 
 #objects-list .objects-list-controls {
   display: none;
-  justify-content: flex-end;
   gap: 0.25rem;
-  pointer-events: auto;
 }
 
 #objects-list.objects-list-pip-supported .objects-list-controls {
   display: flex;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+#objects-list.objects-list-pip-supported:hover .objects-list-controls,
+#objects-list.objects-list-pip-supported .objects-list-controls:focus-within {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #objects-list .objects-list-button {
