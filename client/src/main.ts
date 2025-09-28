@@ -20,6 +20,7 @@ import { initImproveCounter } from './scripts/improveCounter'
 import initEscape from './scripts/escape'
 import { initItemCollector } from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
+import initChatHistory from './scripts/chatHistory'
 import initBagManager from './scripts/bagManager'
 import initDeposits from './scripts/deposits'
 import initHerbShop from './scripts/herbShop'
@@ -140,6 +141,7 @@ export function registerScripts(client: Client) {
     initCoverTimer(client)
     initZaskTimer(client)
     initBinds(client, aliases)
+    initChatHistory(client, aliases)
     initMoveMode(client)
     initCarriage(client)
     initIdz(client, aliases)
