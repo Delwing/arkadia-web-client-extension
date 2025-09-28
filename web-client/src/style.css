@@ -265,9 +265,48 @@ h1 {
   -webkit-backdrop-filter: blur(2px);
   cursor: move;
   touch-action: none;
-  white-space: pre;
   z-index: 10;
-  min-width: 350px
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#objects-list .objects-list-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  pointer-events: auto;
+}
+
+#objects-list .objects-list-button {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#objects-list .objects-list-button span {
+  display: inline-block;
+  transform: scale(1.1, 1);
+}
+
+#objects-list .objects-list-button:hover,
+#objects-list .objects-list-button:focus {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+#objects-list .objects-list-button-active {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+#objects-list .objects-list-content {
+  white-space: pre;
 }
 
 #objects-list .object-num,

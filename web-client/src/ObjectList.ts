@@ -5,6 +5,7 @@ import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 export default class ObjectList {
     private client: Client;
     private readonly container: HTMLElement | null;
+    private readonly content: HTMLElement | null;
     private isDragging = false;
     private startX = 0;
     private startY = 0;
@@ -12,10 +13,15 @@ export default class ObjectList {
     private offsetTop = 0;
     private pointerId = 0;
     private isMobile = false;
+    private pipWindow: DocumentPictureInPictureWindow | null = null;
+    private pipDocument: Document | null = null;
+    private pipContent: HTMLElement | null = null;
+    private pipButton: HTMLButtonElement | null = null;
 
     constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
+        this.content = this.setupContainer();
         this.isMobile = this.isMobileBrowser();
         this.setupDraggable();
         if (!this.isMobile) {
@@ -26,6 +32,16 @@ export default class ObjectList {
         this.client.addEventListener("gmcp.objects.data", () => this.render());
         this.client.addEventListener("gmcp.char.state", () => this.render());
         this.render();
+    }
+
+    private setupContainer() {
+        if (!this.container) return null;
+        this.container.innerHTML = "";
+        const content = document.createElement("div");
+        content.className = "objects-list-content";
+        this.container.appendChild(content);
+        this.setupPictureInPictureControls(content);
+        return content;
     }
 
     private setupDraggable() {
@@ -61,7 +77,7 @@ export default class ObjectList {
     private onPointerDown = (e: PointerEvent) => {
         if (!this.container) return;
         const target = e.target as HTMLElement | null;
-        if (target?.closest(".object-num, .object-desc")) {
+        if (target?.closest(".object-num, .object-desc, .objects-list-controls")) {
             return;
         }
         this.isDragging = true;
@@ -142,6 +158,9 @@ export default class ObjectList {
         if (this.isMobile) return;
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
+        if (target.closest(".objects-list-controls")) {
+            return;
+        }
         const numEl = target.closest(
             ".object-num[data-object-num]"
         ) as HTMLElement | null;
@@ -164,7 +183,7 @@ export default class ObjectList {
     };
 
     private render() {
-        if (!this.container) return;
+        if (!this.container || !this.content) return;
         const manager = this.client.ObjectManager;
         if (!manager) return;
         const objects = manager.getObjectsOnLocation();
@@ -231,6 +250,145 @@ export default class ObjectList {
             const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
             return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
         });
-        this.container.innerHTML = lines.join("<br>");
+        const html = lines.join("<br>");
+        this.content.innerHTML = html;
+        if (this.pipContent) {
+            this.pipContent.innerHTML = html;
+        }
+    }
+
+    private setupPictureInPictureControls(content: HTMLElement) {
+        if (!this.container) return;
+        if (this.container.querySelector("#objects-list-pip-button")) {
+            return;
+        }
+        const pip = window.documentPictureInPicture;
+        if (!pip) {
+            return;
+        }
+        const controls = document.createElement("div");
+        controls.className = "objects-list-controls";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.id = "objects-list-pip-button";
+        button.className = "objects-list-button";
+        button.setAttribute("aria-pressed", "false");
+        button.setAttribute("aria-label", "Otwórz listę obiektów w trybie Picture-in-Picture");
+        button.title = "Picture-in-Picture";
+        button.innerHTML = `<span aria-hidden="true">⤢</span>`;
+        button.addEventListener("click", this.togglePictureInPicture);
+        controls.appendChild(button);
+        this.container.insertBefore(controls, content);
+        this.pipButton = button;
+    }
+
+    private togglePictureInPicture = async (event: MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.pipWindow) {
+            this.closePictureInPicture();
+            return;
+        }
+        await this.openPictureInPicture();
+    };
+
+    private async openPictureInPicture() {
+        if (!this.container || !this.content) return;
+        const pip = window.documentPictureInPicture;
+        if (!pip) {
+            return;
+        }
+        try {
+            const pipWindow = await pip.requestWindow({
+                width: Math.max(320, this.container.offsetWidth || 0),
+                height: Math.max(240, this.container.offsetHeight || 0),
+            });
+            this.pipWindow = pipWindow;
+            this.pipDocument = pipWindow.document;
+            this.pipWindow.addEventListener("pagehide", this.handlePictureInPictureClose);
+            if (!this.isMobile) {
+                this.pipDocument.addEventListener("click", this.onClick);
+            }
+            this.injectPictureInPictureStyles();
+            const pipContent = this.pipDocument.createElement("div");
+            pipContent.id = "objects-list-pip";
+            pipContent.className = "objects-list-content";
+            this.pipDocument.body.appendChild(pipContent);
+            this.pipContent = pipContent;
+            this.pipContent.innerHTML = this.content.innerHTML;
+            this.updatePictureInPictureButton(true);
+        } catch (err) {
+            console.error("Failed to open objects list Picture-in-Picture", err);
+        }
+    }
+
+    private closePictureInPicture() {
+        if (!this.pipWindow) return;
+        const pipWindow = this.pipWindow;
+        this.cleanupPictureInPicture();
+        try {
+            pipWindow.close();
+        } catch (err) {
+            console.error("Failed to close objects list Picture-in-Picture", err);
+        }
+    }
+
+    private handlePictureInPictureClose = () => {
+        this.cleanupPictureInPicture();
+    };
+
+    private cleanupPictureInPicture() {
+        const pipWindow = this.pipWindow;
+        const pipDocument = this.pipDocument;
+        if (pipWindow) {
+            pipWindow.removeEventListener("pagehide", this.handlePictureInPictureClose);
+        }
+        if (pipDocument && !this.isMobile) {
+            pipDocument.removeEventListener("click", this.onClick);
+        }
+        this.pipWindow = null;
+        this.pipDocument = null;
+        this.pipContent = null;
+        this.updatePictureInPictureButton(false);
+    }
+
+    private updatePictureInPictureButton(active: boolean) {
+        if (!this.pipButton) return;
+        this.pipButton.setAttribute("aria-pressed", active ? "true" : "false");
+        if (active) {
+            this.pipButton.classList.add("objects-list-button-active");
+        } else {
+            this.pipButton.classList.remove("objects-list-button-active");
+        }
+    }
+
+    private injectPictureInPictureStyles() {
+        if (!this.pipDocument || !this.container) return;
+        const styles = window.getComputedStyle(this.container);
+        const styleEl = this.pipDocument.createElement("style");
+        const fontFamily = styles.fontFamily || "monospace";
+        const fontSize = styles.fontSize || "0.6rem";
+        const color = styles.color || "#ffffff";
+        const background = styles.backgroundColor || "rgba(0, 0, 0, 0.85)";
+        styleEl.textContent = `:root { color-scheme: dark; }
+body {
+    margin: 0;
+    background: ${background};
+    color: ${color};
+    font-family: ${fontFamily};
+    font-size: ${fontSize};
+    padding: 0.5rem 1rem;
+}
+#objects-list-pip {
+    white-space: pre;
+}
+#objects-list-pip .object-num,
+#objects-list-pip .object-desc {
+    cursor: pointer;
+}
+#objects-list-pip .team-not-attacking {
+    font-style: italic;
+}`;
+        this.pipDocument.head.appendChild(styleEl);
     }
 }
