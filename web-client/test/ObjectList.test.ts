@@ -205,8 +205,18 @@ describe('ObjectList', () => {
     expect(html[2]).toContain('data-object-num="51"');
   });
 
+  test('hides picture-in-picture control when unsupported', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    new ObjectList(client as any);
+    expect(document.getElementById('objects-list-pip-button')).toBeNull();
+    const container = document.getElementById('objects-list') as HTMLElement;
+    expect(container.classList.contains('objects-list-pip-supported')).toBe(false);
+  });
+
   test('opens picture-in-picture window when supported', async () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
+    document.title = 'Arkadia';
     const pipDoc = document.implementation.createHTMLDocument('pip');
     const handlers: Record<string, (ev?: any) => void> = {};
     const pipWindow = {
@@ -224,6 +234,8 @@ describe('ObjectList', () => {
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
+    const container = document.getElementById('objects-list') as HTMLElement;
+    expect(container.classList.contains('objects-list-pip-supported')).toBe(true);
     const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
     expect(button).toBeTruthy();
 
@@ -236,6 +248,12 @@ describe('ObjectList', () => {
     expect(requestWindow).toHaveBeenCalled();
     expect(pipDoc.body.querySelector('#objects-list-pip')?.innerHTML).toContain('object-num');
     expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(pipDoc.title).toBe('Arkadia');
+
+    document.title = 'Arkadia - Battle';
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pipDoc.title).toBe('Arkadia - Battle');
 
     handlers.pagehide?.call(pipWindow, undefined);
     expect(button.getAttribute('aria-pressed')).toBe('false');
@@ -300,6 +318,7 @@ describe('ObjectList', () => {
 
     expect(pipDoc.body.style.fontSize).toBe('0.9rem');
     expect(pipDoc.body.style.fontFamily).toContain('Courier');
+    expect(pipDoc.body.style.border).toBe('');
 
     container.style.fontSize = '1.5rem';
     container.style.fontFamily = 'serif';

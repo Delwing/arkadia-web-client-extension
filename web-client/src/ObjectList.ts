@@ -18,6 +18,7 @@ export default class ObjectList {
     private pipContent: HTMLElement | null = null;
     private pipButton: HTMLButtonElement | null = null;
     private pipStyleObserver: MutationObserver | null = null;
+    private pipTitleObserver: MutationObserver | null = null;
 
     constructor(client: Client) {
         this.client = client;
@@ -268,6 +269,7 @@ export default class ObjectList {
         if (!pip) {
             return;
         }
+        this.container.classList.add("objects-list-pip-supported");
         const controls = document.createElement("div");
         controls.className = "objects-list-controls";
         const button = document.createElement("button");
@@ -311,6 +313,7 @@ export default class ObjectList {
             if (!this.isMobile) {
                 this.pipDocument.addEventListener("click", this.onClick);
             }
+            this.observePictureInPictureTitle();
             const pipContent = this.pipDocument.createElement("div");
             pipContent.id = "objects-list-pip";
             pipContent.className = "objects-list-content";
@@ -350,10 +353,10 @@ export default class ObjectList {
         if (pipDocument && !this.isMobile) {
             pipDocument.removeEventListener("click", this.onClick);
         }
-        if (this.pipStyleObserver) {
-            this.pipStyleObserver.disconnect();
-            this.pipStyleObserver = null;
-        }
+        this.pipStyleObserver?.disconnect();
+        this.pipStyleObserver = null;
+        this.pipTitleObserver?.disconnect();
+        this.pipTitleObserver = null;
         this.pipWindow = null;
         this.pipDocument = null;
         this.pipContent = null;
@@ -400,8 +403,6 @@ export default class ObjectList {
         body.style.fontSize = containerStyles.fontSize;
         body.style.lineHeight = containerStyles.lineHeight;
         body.style.padding = containerStyles.padding;
-        body.style.border = containerStyles.border;
-        body.style.borderRadius = containerStyles.borderRadius;
         body.style.boxShadow = containerStyles.boxShadow;
         body.style.display = containerStyles.display === "flex" ? "flex" : containerStyles.display;
         body.style.flexDirection = containerStyles.flexDirection;
@@ -433,6 +434,28 @@ export default class ObjectList {
             this.pipContent.style.color = contentStyles.color;
         }
     };
+
+    private observePictureInPictureTitle() {
+        if (!this.pipDocument) return;
+        this.pipTitleObserver?.disconnect();
+        const updateTitle = () => {
+            if (this.pipDocument) {
+                this.pipDocument.title = document.title;
+            }
+        };
+        const titleElement = document.querySelector("title");
+        if (titleElement) {
+            this.pipTitleObserver = new MutationObserver(updateTitle);
+            this.pipTitleObserver.observe(titleElement, {
+                childList: true,
+                characterData: true,
+                subtree: true,
+            });
+        } else {
+            this.pipTitleObserver = null;
+        }
+        updateTitle();
+    }
 
     private injectPictureInPictureStyles() {
         if (!this.pipDocument) return;

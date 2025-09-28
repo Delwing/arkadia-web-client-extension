@@ -273,10 +273,14 @@ h1 {
 }
 
 #objects-list .objects-list-controls {
-  display: flex;
+  display: none;
   justify-content: flex-end;
   gap: 0.25rem;
   pointer-events: auto;
+}
+
+#objects-list.objects-list-pip-supported .objects-list-controls {
+  display: flex;
 }
 
 #objects-list .objects-list-button {
