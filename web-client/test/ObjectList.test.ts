@@ -294,6 +294,30 @@ describe('ObjectList', () => {
     pipDesc.click();
     expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
 
+    const foreignTarget = {
+      nodeType: Node.ELEMENT_NODE,
+      closest: (selector: string) => {
+        if (selector === '.objects-list-controls') {
+          return null;
+        }
+        if (selector === '.object-num[data-object-num]') {
+          return foreignTarget;
+        }
+        if (selector === '.object-desc[data-object-num]') {
+          return null;
+        }
+        return null;
+      },
+      getAttribute: (name: string) => {
+        if (name === 'data-object-num') {
+          return '1';
+        }
+        return null;
+      },
+    } as unknown as HTMLElement;
+    (objectList as any).onClick({ target: foreignTarget } as unknown as MouseEvent);
+    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+
     delete (window as any).documentPictureInPicture;
   });
 

@@ -156,10 +156,29 @@ export default class ObjectList {
         );
     }
 
+    private getEventTargetElement(target: EventTarget | null): Element | null {
+        if (!target) return null;
+        if (target instanceof Element) {
+            return target;
+        }
+        const pipElementCtor = this.pipDocument?.defaultView?.Element;
+        if (pipElementCtor && target instanceof pipElementCtor) {
+            return target as Element;
+        }
+        if (
+            typeof (target as Element).closest === "function" &&
+            typeof (target as Node).nodeType === "number" &&
+            (target as Node).nodeType === Node.ELEMENT_NODE
+        ) {
+            return target as Element;
+        }
+        return null;
+    }
+
     private onClick = (e: MouseEvent) => {
         if (this.isMobile) return;
-        const target = e.target;
-        if (!(target instanceof HTMLElement)) return;
+        const target = this.getEventTargetElement(e.target);
+        if (!target) return;
         if (target.closest(".objects-list-controls")) {
             return;
         }
