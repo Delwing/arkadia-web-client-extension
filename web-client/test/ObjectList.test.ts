@@ -34,7 +34,9 @@ describe('ObjectList', () => {
     ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
-    const html = (document.getElementById('objects-list') as HTMLElement).innerHTML.split('<br>');
+    const html = (
+      document.querySelector('#objects-list .objects-list-content') as HTMLElement
+    ).innerHTML.split('<br>');
     expect(html[0]).not.toContain('#b19cd9');
     expect(html[1]).toContain('#b19cd9');
   });
@@ -168,9 +170,8 @@ describe('ObjectList', () => {
     (objectList as any).render();
     expect(document.querySelector('.object-num[data-object-id="99"]')).toBeNull();
     expect(document.querySelector('.object-desc[data-object-id="99"]')).toBeNull();
-    const container = document.getElementById('objects-list') as HTMLElement;
-    const textNode = container.firstChild as ChildNode;
-    textNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const content = document.querySelector('#objects-list .objects-list-content') as HTMLElement;
+    content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(client.sendCommand).not.toHaveBeenCalled();
   });
 
@@ -196,9 +197,161 @@ describe('ObjectList', () => {
       '3': { desc: 'Tree' },
     });
     client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
-    const html = (document.getElementById('objects-list') as HTMLElement).innerHTML.split('<br>');
+    const html = (
+      document.querySelector('#objects-list .objects-list-content') as HTMLElement
+    ).innerHTML.split('<br>');
     expect(html[0]).toContain('data-object-num="1"');
     expect(html[1]).toContain('data-object-num="50"');
     expect(html[2]).toContain('data-object-num="51"');
+  });
+
+  test('hides picture-in-picture control when unsupported', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    new ObjectList(client as any);
+    expect(document.getElementById('objects-list-pip-button')).toBeNull();
+    const container = document.getElementById('objects-list') as HTMLElement;
+    expect(container.classList.contains('objects-list-pip-supported')).toBe(false);
+  });
+
+  test('opens picture-in-picture window when supported', async () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    document.title = 'Arkadia';
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const handlers: Record<string, (ev?: any) => void> = {};
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn((type: string, handler: (ev?: any) => void) => {
+        handlers[type] = handler;
+      }),
+      removeEventListener: jest.fn((type: string) => {
+        delete handlers[type];
+      }),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const container = document.getElementById('objects-list') as HTMLElement;
+    expect(container.classList.contains('objects-list-pip-supported')).toBe(true);
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    expect(button).toBeTruthy();
+
+    const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+
+    button.click();
+    await Promise.resolve();
+    expect(requestWindow).toHaveBeenCalled();
+    expect(pipDoc.body.querySelector('#objects-list-pip')?.innerHTML).toContain('object-num');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(pipDoc.title).toBe('Arkadia');
+
+    document.title = 'Arkadia - Battle';
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pipDoc.title).toBe('Arkadia - Battle');
+
+    handlers.pagehide?.call(pipWindow, undefined);
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    delete (window as any).documentPictureInPicture;
+  });
+
+  test('picture-in-picture entries remain clickable', async () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    client.ObjectManager.getObjectsOnLocation = () => [
+      { shortcut: '1', desc: 'Goblin', num: 7 },
+    ];
+    (objectList as any).render();
+
+    button.click();
+    await Promise.resolve();
+
+    const pipNum = pipDoc.body.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
+    expect(pipNum).toBeTruthy();
+    pipNum.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+
+    const pipDesc = pipDoc.body.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
+    expect(pipDesc).toBeTruthy();
+    pipDesc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+
+    const foreignTarget = {
+      nodeType: Node.ELEMENT_NODE,
+      closest: (selector: string) => {
+        if (selector === '.objects-list-controls') {
+          return null;
+        }
+        if (selector === '.object-num[data-object-num]') {
+          return foreignTarget;
+        }
+        if (selector === '.object-desc[data-object-num]') {
+          return null;
+        }
+        return null;
+      },
+      getAttribute: (name: string) => {
+        if (name === 'data-object-num') {
+          return '1';
+        }
+        return null;
+      },
+    } as unknown as HTMLElement;
+    (objectList as any).onClick({ target: foreignTarget } as unknown as MouseEvent);
+    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+
+    delete (window as any).documentPictureInPicture;
+  });
+
+  test('picture-in-picture inherits objects list styling changes', async () => {
+    document.body.innerHTML = '<div id="objects-list" style="font-size: 0.9rem; font-family: Courier, monospace;"></div>';
+    const container = document.getElementById('objects-list') as HTMLElement;
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    new ObjectList(client as any);
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    button.click();
+    await Promise.resolve();
+
+    expect(pipDoc.body.style.fontSize).toBe('0.9rem');
+    expect(pipDoc.body.style.fontFamily).toContain('Courier');
+    expect(pipDoc.body.style.border).toBe('');
+
+    container.style.fontSize = '1.5rem';
+    container.style.fontFamily = 'serif';
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(pipDoc.body.style.fontSize).toBe('1.5rem');
+    expect(pipDoc.body.style.fontFamily).toContain('serif');
+
+    delete (window as any).documentPictureInPicture;
   });
 });
