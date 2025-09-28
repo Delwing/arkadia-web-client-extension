@@ -93,6 +93,22 @@ export default class MapHelper {
         }
         if (command.trim() === "idz") {
             this.refreshPosition = true;
+            if (this.currentRoom) {
+                const allExits = Object.assign(
+                    {},
+                    this.currentRoom.exits ?? {},
+                    this.currentRoom.specialExits ?? {}
+                );
+                const exitDirs = Object.keys(allExits);
+                if (exitDirs.length === 2 && this.locationHistory.length >= 2) {
+                    const prevId = this.locationHistory[this.locationHistory.length - 2];
+                    const cameFrom = exitDirs.find(d => allExits[d] === prevId);
+                    const alt = exitDirs.find(d => d !== cameFrom);
+                    if (alt) {
+                        return longToShort[alt] ?? alt;
+                    }
+                }
+            }
         }
         if (this.currentRoom) {
             if (this.currentRoom.userData.dir_bind) {
