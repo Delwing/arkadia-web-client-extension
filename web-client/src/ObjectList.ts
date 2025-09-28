@@ -310,15 +310,15 @@ export default class ObjectList {
             this.pipWindow = pipWindow;
             this.pipDocument = pipWindow.document;
             this.pipWindow.addEventListener("pagehide", this.handlePictureInPictureClose);
-            if (!this.isMobile) {
-                this.pipDocument.addEventListener("click", this.onClick);
-            }
             this.observePictureInPictureTitle();
             const pipContent = this.pipDocument.createElement("div");
             pipContent.id = "objects-list-pip";
             pipContent.className = "objects-list-content";
             this.pipDocument.body.appendChild(pipContent);
             this.pipContent = pipContent;
+            if (!this.isMobile) {
+                this.pipContent.addEventListener("click", this.onClick);
+            }
             this.injectPictureInPictureStyles();
             this.pipContent.innerHTML = this.content.innerHTML;
             this.syncPictureInPictureStyles();
@@ -346,12 +346,11 @@ export default class ObjectList {
 
     private cleanupPictureInPicture() {
         const pipWindow = this.pipWindow;
-        const pipDocument = this.pipDocument;
         if (pipWindow) {
             pipWindow.removeEventListener("pagehide", this.handlePictureInPictureClose);
         }
-        if (pipDocument && !this.isMobile) {
-            pipDocument.removeEventListener("click", this.onClick);
+        if (this.pipContent && !this.isMobile) {
+            this.pipContent.removeEventListener("click", this.onClick);
         }
         this.pipStyleObserver?.disconnect();
         this.pipStyleObserver = null;
