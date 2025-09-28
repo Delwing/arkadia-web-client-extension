@@ -242,4 +242,73 @@ describe('ObjectList', () => {
 
     delete (window as any).documentPictureInPicture;
   });
+
+  test('picture-in-picture entries remain clickable', async () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    client.ObjectManager.getObjectsOnLocation = () => [
+      { shortcut: '1', desc: 'Goblin', num: 7 },
+    ];
+    (objectList as any).render();
+
+    button.click();
+    await Promise.resolve();
+
+    const pipNum = pipDoc.body.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
+    expect(pipNum).toBeTruthy();
+    pipNum.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+
+    const pipDesc = pipDoc.body.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
+    expect(pipDesc).toBeTruthy();
+    pipDesc.click();
+    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+
+    delete (window as any).documentPictureInPicture;
+  });
+
+  test('picture-in-picture inherits objects list styling changes', async () => {
+    document.body.innerHTML = '<div id="objects-list" style="font-size: 0.9rem; font-family: Courier, monospace;"></div>';
+    const container = document.getElementById('objects-list') as HTMLElement;
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    new ObjectList(client as any);
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    button.click();
+    await Promise.resolve();
+
+    expect(pipDoc.body.style.fontSize).toBe('0.9rem');
+    expect(pipDoc.body.style.fontFamily).toContain('Courier');
+
+    container.style.fontSize = '1.5rem';
+    container.style.fontFamily = 'serif';
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(pipDoc.body.style.fontSize).toBe('1.5rem');
+    expect(pipDoc.body.style.fontFamily).toContain('serif');
+
+    delete (window as any).documentPictureInPicture;
+  });
 });

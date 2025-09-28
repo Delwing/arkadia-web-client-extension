@@ -17,6 +17,7 @@ export default class ObjectList {
     private pipDocument: Document | null = null;
     private pipContent: HTMLElement | null = null;
     private pipButton: HTMLButtonElement | null = null;
+    private pipStyleObserver: MutationObserver | null = null;
 
     constructor(client: Client) {
         this.client = client;
@@ -254,6 +255,7 @@ export default class ObjectList {
         this.content.innerHTML = html;
         if (this.pipContent) {
             this.pipContent.innerHTML = html;
+            this.syncPictureInPictureStyles();
         }
     }
 
@@ -309,13 +311,15 @@ export default class ObjectList {
             if (!this.isMobile) {
                 this.pipDocument.addEventListener("click", this.onClick);
             }
-            this.injectPictureInPictureStyles();
             const pipContent = this.pipDocument.createElement("div");
             pipContent.id = "objects-list-pip";
             pipContent.className = "objects-list-content";
             this.pipDocument.body.appendChild(pipContent);
             this.pipContent = pipContent;
+            this.injectPictureInPictureStyles();
             this.pipContent.innerHTML = this.content.innerHTML;
+            this.syncPictureInPictureStyles();
+            this.observePictureInPictureStyles();
             this.updatePictureInPictureButton(true);
         } catch (err) {
             console.error("Failed to open objects list Picture-in-Picture", err);
@@ -346,6 +350,10 @@ export default class ObjectList {
         if (pipDocument && !this.isMobile) {
             pipDocument.removeEventListener("click", this.onClick);
         }
+        if (this.pipStyleObserver) {
+            this.pipStyleObserver.disconnect();
+            this.pipStyleObserver = null;
+        }
         this.pipWindow = null;
         this.pipDocument = null;
         this.pipContent = null;
@@ -362,22 +370,83 @@ export default class ObjectList {
         }
     }
 
+    private observePictureInPictureStyles() {
+        if (!this.container || !this.pipDocument) return;
+        this.pipStyleObserver?.disconnect();
+        this.pipStyleObserver = new MutationObserver(() => {
+            this.syncPictureInPictureStyles();
+        });
+        this.pipStyleObserver.observe(this.container, {
+            attributes: true,
+            attributeFilter: ["style", "class"],
+        });
+        if (document.body) {
+            this.pipStyleObserver.observe(document.body, {
+                attributes: true,
+                attributeFilter: ["style", "class"],
+            });
+        }
+        this.syncPictureInPictureStyles();
+    }
+
+    private syncPictureInPictureStyles = () => {
+        if (!this.container || !this.pipDocument) return;
+        const containerStyles = window.getComputedStyle(this.container);
+        const body = this.pipDocument.body;
+        body.style.margin = "0";
+        body.style.backgroundColor = containerStyles.backgroundColor;
+        body.style.color = containerStyles.color;
+        body.style.fontFamily = containerStyles.fontFamily;
+        body.style.fontSize = containerStyles.fontSize;
+        body.style.lineHeight = containerStyles.lineHeight;
+        body.style.padding = containerStyles.padding;
+        body.style.border = containerStyles.border;
+        body.style.borderRadius = containerStyles.borderRadius;
+        body.style.boxShadow = containerStyles.boxShadow;
+        body.style.display = containerStyles.display === "flex" ? "flex" : containerStyles.display;
+        body.style.flexDirection = containerStyles.flexDirection;
+        body.style.justifyContent = containerStyles.justifyContent;
+        body.style.alignItems = containerStyles.alignItems;
+        body.style.setProperty("gap", containerStyles.getPropertyValue("gap"));
+        body.style.minWidth = containerStyles.minWidth;
+        body.style.pointerEvents = "auto";
+        body.style.cursor = containerStyles.cursor || "auto";
+        const backdrop = containerStyles.getPropertyValue("backdrop-filter");
+        if (backdrop) {
+            body.style.setProperty("backdrop-filter", backdrop);
+        } else {
+            body.style.removeProperty("backdrop-filter");
+        }
+        const webkitBackdrop = containerStyles.getPropertyValue("-webkit-backdrop-filter");
+        if (webkitBackdrop) {
+            body.style.setProperty("-webkit-backdrop-filter", webkitBackdrop);
+        } else {
+            body.style.removeProperty("-webkit-backdrop-filter");
+        }
+        body.style.touchAction = containerStyles.touchAction;
+        body.style.boxSizing = containerStyles.boxSizing;
+        if (this.pipContent) {
+            const contentStyles = this.content ? window.getComputedStyle(this.content) : containerStyles;
+            this.pipContent.style.whiteSpace = contentStyles.whiteSpace;
+            this.pipContent.style.fontFamily = contentStyles.fontFamily;
+            this.pipContent.style.fontSize = contentStyles.fontSize;
+            this.pipContent.style.color = contentStyles.color;
+        }
+    };
+
     private injectPictureInPictureStyles() {
-        if (!this.pipDocument || !this.container) return;
-        const styles = window.getComputedStyle(this.container);
+        if (!this.pipDocument) return;
+        const existing = this.pipDocument.head.querySelector<HTMLStyleElement>(
+            "style[data-objects-list-pip]"
+        );
+        if (existing) {
+            return;
+        }
         const styleEl = this.pipDocument.createElement("style");
-        const fontFamily = styles.fontFamily || "monospace";
-        const fontSize = styles.fontSize || "0.6rem";
-        const color = styles.color || "#ffffff";
-        const background = styles.backgroundColor || "rgba(0, 0, 0, 0.85)";
+        styleEl.setAttribute("data-objects-list-pip", "true");
         styleEl.textContent = `:root { color-scheme: dark; }
 body {
     margin: 0;
-    background: ${background};
-    color: ${color};
-    font-family: ${fontFamily};
-    font-size: ${fontSize};
-    padding: 0.5rem 1rem;
 }
 #objects-list-pip {
     white-space: pre;
