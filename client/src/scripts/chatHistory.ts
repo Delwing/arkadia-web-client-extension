@@ -34,7 +34,13 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
             client.print("Brak zapisanych wiadomosci czatu.");
             return;
         }
-        const lines = history.map((entry) => `[${entry.timestamp}] ${entry.text}`);
+        const lines: string[] = [];
+        history.forEach((entry) => {
+            const messageLines = entry.text.split(/\r?\n/);
+            messageLines.forEach((line) => {
+                lines.push(`[${entry.timestamp}] ${line}`);
+            });
+        });
         client.print(lines.join("\n"));
     }
 
