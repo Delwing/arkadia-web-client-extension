@@ -82,6 +82,10 @@ export default class Client {
         shift?: boolean;
     };
     customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
+    tempBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string | null }[] = [
+        { key: 'F4', command: null },
+        { key: 'F5', command: null },
+    ];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
@@ -148,6 +152,20 @@ export default class Client {
                     !!cb.shift === ev.shiftKey
                 ) {
                     this.sendCommand(cb.command)
+                    ev.preventDefault()
+                }
+            })
+            this.tempBinds.forEach(tb => {
+                if (!tb.command) {
+                    return
+                }
+                if (
+                    (ev.code === tb.key || ev.key === tb.key) &&
+                    !!tb.ctrl === ev.ctrlKey &&
+                    !!tb.alt === ev.altKey &&
+                    !!tb.shift === ev.shiftKey
+                ) {
+                    this.sendCommand(tb.command)
                     ev.preventDefault()
                 }
             })
@@ -244,6 +262,20 @@ export default class Client {
                 })
             }
         })
+    }
+
+    setTempBind(index: number, command: string) {
+        const bind = this.tempBinds[index]
+        if (!bind) {
+            return
+        }
+        const trimmed = command.trim()
+        bind.command = trimmed ? trimmed : null
+        if (bind.command) {
+            this.println(`Tymczasowe przypisanie ${index + 1} (${bind.key}) ustawione na: ${bind.command}`)
+        } else {
+            this.println(`Tymczasowe przypisanie ${index + 1} (${bind.key}) zostalo wyczyszczone.`)
+        }
     }
 
     connect(port: any, initial: boolean) {
