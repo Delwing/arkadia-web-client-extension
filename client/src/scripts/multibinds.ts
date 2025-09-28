@@ -84,12 +84,8 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     }
 
     function sendUpdate(roomId: number | null) {
-        if (roomId === null) {
-            client.sendEvent('multibinds', []);
-            return;
-        }
-        const display = toDisplay(roomId);
-        client.sendEvent('multibinds', display);
+        const payload = roomId === null ? [] : toDisplay(roomId);
+        client.sendEvent('multibinds', { list: payload });
     }
 
     function log(message: string) {

@@ -11,9 +11,13 @@ export default class MultiBinds {
 
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("multi-binds");
-    client.on("multibinds", (list: DisplayMultibind[] = []) => {
-      this.render(Array.isArray(list) ? list : []);
-    });
+    client.on(
+      "multibinds",
+      (payload: { list?: DisplayMultibind[] } = { list: [] }) => {
+        const list = Array.isArray(payload.list) ? payload.list : [];
+        this.render(list);
+      },
+    );
   }
 
   private render(list: DisplayMultibind[]) {

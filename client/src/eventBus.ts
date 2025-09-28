@@ -15,7 +15,7 @@ export interface KnownEvents {
     'attackMode': string;
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
-    'multibinds': { index: number; action: string; label: string }[];
+    'multibinds': { list: { index: number; action: string; label: string }[] };
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
