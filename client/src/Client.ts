@@ -198,6 +198,32 @@ export default class Client {
             if (moveMode) {
                 this.moveModeBind = { ...moveMode }
             }
+            const temp = b?.temp
+            if (Array.isArray(temp)) {
+                temp.forEach((tempBind: any, index: number) => {
+                    if (!tempBind || typeof tempBind !== 'object') {
+                        return
+                    }
+                    if (typeof tempBind.key !== 'string' || tempBind.key === '') {
+                        return
+                    }
+                    const current = this.tempBinds[index]
+                    if (current) {
+                        current.key = tempBind.key
+                        current.ctrl = tempBind.ctrl ? true : undefined
+                        current.alt = tempBind.alt ? true : undefined
+                        current.shift = tempBind.shift ? true : undefined
+                    } else {
+                        this.tempBinds[index] = {
+                            key: tempBind.key,
+                            ctrl: tempBind.ctrl ? true : undefined,
+                            alt: tempBind.alt ? true : undefined,
+                            shift: tempBind.shift ? true : undefined,
+                            command: null,
+                        }
+                    }
+                })
+            }
             const custom = b?.custom
             if (custom) {
                 this.customBinds = [...custom]
@@ -277,118 +303,6 @@ export default class Client {
         } else {
             this.println(`Tymczasowe przypisanie ${index + 1} (${label}) zostalo wyczyszczone.`)
         }
-    }
-
-    setTempBindKey(index: number, description: string) {
-        const bind = this.tempBinds[index]
-        if (!bind) {
-            return
-        }
-        const parsed = this.parseTempBindKey(description)
-        if (!parsed) {
-            const trimmed = description.trim()
-            if (trimmed) {
-                this.println(`Nieznany klawisz: ${trimmed}`)
-            } else {
-                this.println('Podaj klawisz do przypisania (np. ctrl+f4).')
-            }
-            return
-        }
-        bind.key = parsed.key
-        bind.ctrl = parsed.ctrl ? true : undefined
-        bind.alt = parsed.alt ? true : undefined
-        bind.shift = parsed.shift ? true : undefined
-        this.println(`Tymczasowe przypisanie ${index + 1} ustawione na klawisz: ${formatLabel(bind)}`)
-    }
-
-    private parseTempBindKey(description: string): { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean } | null {
-        const tokens = description
-            .split(/[+\s]+/)
-            .map(token => token.trim())
-            .filter(Boolean)
-        if (tokens.length === 0) {
-            return null
-        }
-
-        let ctrl = false
-        let alt = false
-        let shift = false
-        let key: string | null = null
-
-        const normalizeKey = (token: string): string | null => {
-            const upper = token.toUpperCase()
-            if (/^F([1-9]|1[0-9]|2[0-4])$/.test(upper)) {
-                return upper
-            }
-            if (/^KEY[A-Z]$/.test(upper)) {
-                return `Key${upper.substring(3)}`
-            }
-            if (/^[A-Z]$/.test(upper)) {
-                return `Key${upper}`
-            }
-            if (/^DIGIT[0-9]$/.test(upper)) {
-                return `Digit${upper.substring(5)}`
-            }
-            if (/^[0-9]$/.test(upper)) {
-                return `Digit${upper}`
-            }
-            const specialMap: Record<string, string> = {
-                '[': 'BracketLeft',
-                ']': 'BracketRight',
-                'BRACKETLEFT': 'BracketLeft',
-                'BRACKETRIGHT': 'BracketRight',
-                '`': 'Backquote',
-                'BACKQUOTE': 'Backquote',
-                "'": 'Quote',
-                'QUOTE': 'Quote',
-                ';': 'Semicolon',
-                'SEMICOLON': 'Semicolon',
-                ',': 'Comma',
-                'COMMA': 'Comma',
-                '.': 'Period',
-                'PERIOD': 'Period',
-                '/': 'Slash',
-                'SLASH': 'Slash',
-                "\\": 'Backslash',
-                'BACKSLASH': 'Backslash',
-                'SPACE': 'Space',
-                'TAB': 'Tab',
-                'ENTER': 'Enter',
-                'RETURN': 'Enter',
-            }
-            const direct = specialMap[upper] ?? specialMap[token]
-            return direct ?? null
-        }
-
-        for (const token of tokens) {
-            const upper = token.toUpperCase()
-            if (upper === 'CTRL' || upper === 'CONTROL') {
-                ctrl = true
-                continue
-            }
-            if (upper === 'ALT') {
-                alt = true
-                continue
-            }
-            if (upper === 'SHIFT') {
-                shift = true
-                continue
-            }
-            if (key) {
-                return null
-            }
-            const resolved = normalizeKey(token)
-            if (!resolved) {
-                return null
-            }
-            key = resolved
-        }
-
-        if (!key) {
-            return null
-        }
-
-        return { key, ctrl, alt, shift }
     }
 
     connect(port: any, initial: boolean) {
