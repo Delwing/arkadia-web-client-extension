@@ -7,6 +7,8 @@ Use `yarn --cwd web-client test` to run tests.
 
 Ensure that `yarn --cwd web-client build` doesn't end up with error.
 
+Always run tests!
+
 ## Coding guidelines
 
 In Regexps don't add ever polish letters.
