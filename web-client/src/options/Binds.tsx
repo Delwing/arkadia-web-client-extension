@@ -462,7 +462,7 @@ function Binds() {
             />
             <Modal show={showImportModal} onHide={closeImportModal} backdrop={isRunningImport ? 'static' : true} keyboard={!isRunningImport}>
                 <Modal.Header closeButton={!isRunningImport}>
-                    <Modal.Title>Import bazy</Modal.Title>
+                    <Modal.Title>Importuj bazę multibindów</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {importError && (
@@ -491,7 +491,7 @@ function Binds() {
                             <Form.Check
                                 className="mt-3"
                                 type="checkbox"
-                                label="Nadpisuj wpisy o tej samej uniqness"
+                                label="Nadpisz wpisy o tej samej uniqness"
                                 checked={overwriteExisting}
                                 disabled={isRunningImport}
                                 onChange={ev => setOverwriteExisting(ev.target.checked)}
@@ -551,7 +551,7 @@ function Binds() {
                 </Modal.Footer>
             </Modal>
             <div className="d-flex align-items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={handleImportClick} disabled={isParsingDb}>Importuj bazę…</Button>
+                <Button size="sm" variant="secondary" onClick={handleImportClick} disabled={isParsingDb}>Importuj bazę multibindów…</Button>
                 {isParsingDb && <Spinner animation="border" size="sm" role="status" />}
             </div>
             {importError && !showImportModal && (
