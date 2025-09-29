@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table, Toast, ToastContainer} from 'react-bootstrap';
+import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
@@ -80,9 +80,9 @@ interface ImportPlan {
 }
 
 const CONFLICT_POLICIES: { value: ConflictPolicy; label: string }[] = [
-    { value: 'keep-last', label: 'Use last entry' },
-    { value: 'keep-first', label: 'Keep first entry' },
-    { value: 'skip-conflicts', label: 'Skip conflicting entries' },
+    { value: 'keep-last', label: 'Zachowaj ostatni wpis' },
+    { value: 'keep-first', label: 'Zachowaj pierwszy wpis' },
+    { value: 'skip-conflicts', label: 'Pomiń konflikty' },
 ];
 
 function toKey(roomId: number, index: number) {
@@ -165,7 +165,7 @@ function Binds() {
     const [overwriteExisting, setOverwriteExisting] = useState(true);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
-    const [importToast, setImportToast] = useState<{ newCount: number; updatedCount: number; skippedCount: number } | null>(null);
+    const [importResult, setImportResult] = useState<{ newCount: number; updatedCount: number; skippedCount: number } | null>(null);
     const [isParsingDb, setIsParsingDb] = useState(false);
     const [isRunningImport, setIsRunningImport] = useState(false);
     const [importProgress, setImportProgress] = useState<{ processed: number; total: number; eta: number | null } | null>(null);
@@ -258,6 +258,7 @@ function Binds() {
     function handleImportClick() {
         setImportError(null);
         setImportCancelled(false);
+        setImportResult(null);
         fileInputRef.current?.click();
     }
 
@@ -269,7 +270,7 @@ function Binds() {
         setIsParsingDb(true);
         setImportError(null);
         setImportCancelled(false);
-        setImportToast(null);
+        setImportResult(null);
         try {
             const buffer = await file.arrayBuffer();
             const parsed = await parseMultibindsDatabase(buffer);
@@ -301,6 +302,7 @@ function Binds() {
         setIsRunningImport(true);
         setImportCancelled(false);
         setImportError(null);
+        setImportResult(null);
         cancelImportRef.current = false;
         const total = importPlan.rows.length;
         setImportProgress({ processed: 0, total, eta: null });
@@ -369,13 +371,11 @@ function Binds() {
                 window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: finalList }));
             }
             setMultibinds(finalList);
-            setImportToast({
+            setImportResult({
                 newCount,
                 updatedCount: overwriteExisting ? updateCount : 0,
                 skippedCount,
             });
-            setShowImportModal(false);
-            setImportData(null);
         } catch (err) {
             setImportError(err instanceof Error ? err.message : 'Nie udało się zapisać multibindów.');
         } finally {
@@ -392,12 +392,6 @@ function Binds() {
         cancelImportRef.current = true;
     }
 
-    function handleViewImported(ev: React.MouseEvent<HTMLButtonElement>) {
-        ev.preventDefault();
-        setImportToast(null);
-        window.dispatchEvent(new Event('close-options'));
-    }
-
     function closeImportModal() {
         if (isRunningImport) {
             return;
@@ -406,6 +400,7 @@ function Binds() {
         setImportData(null);
         setImportError(null);
         setImportCancelled(false);
+        setImportResult(null);
     }
 
     function handleCapture(name: keyof BindSettings, ev: React.KeyboardEvent) {
@@ -465,33 +460,9 @@ function Binds() {
                 style={{ display: 'none' }}
                 onChange={handleFileSelected}
             />
-            <ToastContainer position="bottom-end" className="p-3">
-                <Toast bg="dark" show={!!importToast} onClose={() => setImportToast(null)} delay={8000} autohide>
-                    <Toast.Header closeButton>
-                        <strong className="me-auto">Import completed</strong>
-                    </Toast.Header>
-                    <Toast.Body>
-                        {importToast && (
-                            <div className="d-flex flex-column gap-1">
-                                <div>New: {importToast.newCount}</div>
-                                <div>Updated: {importToast.updatedCount}</div>
-                                <div>Skipped: {importToast.skippedCount}</div>
-                                <Button
-                                    variant="link"
-                                    size="sm"
-                                    className="p-0 align-self-start"
-                                    onClick={handleViewImported}
-                                >
-                                    View imported bindings
-                                </Button>
-                            </div>
-                        )}
-                    </Toast.Body>
-                </Toast>
-            </ToastContainer>
             <Modal show={showImportModal} onHide={closeImportModal} backdrop={isRunningImport ? 'static' : true} keyboard={!isRunningImport}>
                 <Modal.Header closeButton={!isRunningImport}>
-                    <Modal.Title>Import database</Modal.Title>
+                    <Modal.Title>Import bazy</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {importError && (
@@ -499,34 +470,34 @@ function Binds() {
                     )}
                     {importSummary ? (
                         <div className="d-flex flex-column gap-1">
-                            <div><strong>File:</strong> {importData?.fileName || '—'}</div>
-                            <div>Total rows: {importSummary.totalRows}</div>
-                            <div>Rows to import: {importSummary.toImport}</div>
-                            <div>New entries: {importSummary.newEntries}</div>
-                            <div>Updates: {importSummary.updates}</div>
-                            <div>Skipped: {importSummary.skipped}</div>
+                            <div><strong>Plik:</strong> {importData?.fileName || '—'}</div>
+                            <div>Łącznie wierszy: {importSummary.totalRows}</div>
+                            <div>Wiersze do importu: {importSummary.toImport}</div>
+                            <div>Nowe wpisy: {importSummary.newEntries}</div>
+                            <div>Aktualizacje: {importSummary.updates}</div>
+                            <div>Pominięte: {importSummary.skipped}</div>
                             {importSummary.invalidRows > 0 && (
-                                <div className="text-muted small">Invalid rows: {importSummary.invalidRows}</div>
+                                <div className="text-muted small">Nieprawidłowe wiersze: {importSummary.invalidRows}</div>
                             )}
                             {importSummary.duplicates > 0 && (
-                                <div className="text-muted small">Conflicts removed: {importSummary.duplicates}</div>
+                                <div className="text-muted small">Usunięte konflikty: {importSummary.duplicates}</div>
                             )}
                         </div>
                     ) : (
-                        !importError && <div>No data to import.</div>
+                        !importError && <div>Brak danych do importu.</div>
                     )}
                     {importPlan && (
                         <>
                             <Form.Check
                                 className="mt-3"
                                 type="checkbox"
-                                label="Overwrite existing entries with same uniqness"
+                                label="Nadpisuj wpisy o tej samej uniqness"
                                 checked={overwriteExisting}
                                 disabled={isRunningImport}
                                 onChange={ev => setOverwriteExisting(ev.target.checked)}
                             />
                             <Form.Group className="mt-3">
-                                <Form.Label>Conflict policy</Form.Label>
+                                <Form.Label>Polityka konfliktów</Form.Label>
                                 <Form.Select
                                     value={conflictPolicy}
                                     onChange={ev => setConflictPolicy(ev.target.value as ConflictPolicy)}
@@ -543,34 +514,44 @@ function Binds() {
                         <div className="mt-4">
                             <ProgressBar now={importProgress.total ? (importProgress.processed / importProgress.total) * 100 : 0} />
                             <div className="d-flex justify-content-between mt-2 small">
-                                <span>Rows processed: {importProgress.processed}/{importProgress.total}</span>
-                                <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s remaining` : 'Estimating…'}</span>
+                                <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
+                                <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
                             </div>
                         </div>
                     )}
                     {isRunningImport && (
                         <div className="mt-3 d-flex align-items-center gap-2">
                             <Spinner animation="border" size="sm" role="status" />
-                            <span>Importing…</span>
+                            <span>Importowanie…</span>
                         </div>
                     )}
                     {importCancelled && (
-                        <Alert variant="warning" className="mt-3 mb-0">Import cancelled.</Alert>
+                        <Alert variant="warning" className="mt-3 mb-0">Import przerwany.</Alert>
+                    )}
+                    {importResult && !isRunningImport && (
+                        <Alert variant="success" className="mt-3 mb-0">
+                            <div className="d-flex flex-column gap-1">
+                                <div><strong>Import zakończony.</strong></div>
+                                <div>Nowe wpisy: {importResult.newCount}</div>
+                                <div>Zaktualizowane: {importResult.updatedCount}</div>
+                                <div>Pominięte: {importResult.skippedCount}</div>
+                            </div>
+                        </Alert>
                     )}
                 </Modal.Body>
                 <Modal.Footer>
                     {isRunningImport ? (
-                        <Button variant="secondary" onClick={handleCancelImport}>Cancel</Button>
+                        <Button variant="secondary" onClick={handleCancelImport}>Anuluj</Button>
                     ) : (
                         <>
-                            <Button variant="secondary" onClick={closeImportModal}>Close</Button>
-                            <Button onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0}>Import</Button>
+                            <Button variant="secondary" onClick={closeImportModal}>Zamknij</Button>
+                            <Button onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
                         </>
                     )}
                 </Modal.Footer>
             </Modal>
             <div className="d-flex align-items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={handleImportClick} disabled={isParsingDb}>Import database…</Button>
+                <Button size="sm" variant="secondary" onClick={handleImportClick} disabled={isParsingDb}>Importuj bazę…</Button>
                 {isParsingDb && <Spinner animation="border" size="sm" role="status" />}
             </div>
             {importError && !showImportModal && (

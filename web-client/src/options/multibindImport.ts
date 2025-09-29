@@ -1,4 +1,5 @@
-import initSqlJs, { type SqlJsStatic } from 'sql.js';
+import type { SqlJsStatic } from 'sql.js';
+import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 export interface MultibindImportRow {
