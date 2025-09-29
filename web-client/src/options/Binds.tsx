@@ -491,7 +491,7 @@ function Binds() {
                             <Form.Check
                                 className="mt-3"
                                 type="checkbox"
-                                label="Nadpisz wpisy o tej samej uniqness"
+                                label="Nadpisz wpisy"
                                 checked={overwriteExisting}
                                 disabled={isRunningImport}
                                 onChange={ev => setOverwriteExisting(ev.target.checked)}
