@@ -12,6 +12,7 @@ import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initZaskTimer from './scripts/zaskTimer'
 import initBinds from './scripts/binds'
+import initTempBinds from './scripts/tempBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
 import initIdz from './scripts/idz'
@@ -142,6 +143,7 @@ export function registerScripts(client: Client) {
     initCoverTimer(client)
     initZaskTimer(client)
     initBinds(client, aliases)
+    initTempBinds(client, aliases)
     initChatHistory(client, aliases)
     initMoveMode(client)
     initCarriage(client)

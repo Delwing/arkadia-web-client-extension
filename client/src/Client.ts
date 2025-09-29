@@ -82,6 +82,10 @@ export default class Client {
         shift?: boolean;
     };
     customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
+    tempBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string | null }[] = [
+        { key: 'F4', command: null },
+        { key: 'F5', command: null },
+    ];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: string, type?: string }[] = [];
@@ -151,6 +155,20 @@ export default class Client {
                     ev.preventDefault()
                 }
             })
+            this.tempBinds.forEach(tb => {
+                if (!tb.command) {
+                    return
+                }
+                if (
+                    (ev.code === tb.key || ev.key === tb.key) &&
+                    !!tb.ctrl === ev.ctrlKey &&
+                    !!tb.alt === ev.altKey &&
+                    !!tb.shift === ev.shiftKey
+                ) {
+                    this.sendCommand(tb.command)
+                    ev.preventDefault()
+                }
+            })
         })
 
         const applyBinds = (b: any) => {
@@ -179,6 +197,32 @@ export default class Client {
             const moveMode = b?.moveMode
             if (moveMode) {
                 this.moveModeBind = { ...moveMode }
+            }
+            const temp = b?.temp
+            if (Array.isArray(temp)) {
+                temp.forEach((tempBind: any, index: number) => {
+                    if (!tempBind || typeof tempBind !== 'object') {
+                        return
+                    }
+                    if (typeof tempBind.key !== 'string' || tempBind.key === '') {
+                        return
+                    }
+                    const current = this.tempBinds[index]
+                    if (current) {
+                        current.key = tempBind.key
+                        current.ctrl = tempBind.ctrl ? true : undefined
+                        current.alt = tempBind.alt ? true : undefined
+                        current.shift = tempBind.shift ? true : undefined
+                    } else {
+                        this.tempBinds[index] = {
+                            key: tempBind.key,
+                            ctrl: tempBind.ctrl ? true : undefined,
+                            alt: tempBind.alt ? true : undefined,
+                            shift: tempBind.shift ? true : undefined,
+                            command: null,
+                        }
+                    }
+                })
             }
             const custom = b?.custom
             if (custom) {
@@ -244,6 +288,21 @@ export default class Client {
                 })
             }
         })
+    }
+
+    setTempBind(index: number, command: string) {
+        const bind = this.tempBinds[index]
+        if (!bind) {
+            return
+        }
+        const trimmed = command.trim()
+        bind.command = trimmed ? trimmed : null
+        const label = formatLabel(bind)
+        if (bind.command) {
+            this.println(`Tymczasowe przypisanie ${index + 1} (${label}) ustawione na: ${bind.command}`)
+        } else {
+            this.println(`Tymczasowe przypisanie ${index + 1} (${label}) zostalo wyczyszczone.`)
+        }
     }
 
     connect(port: any, initial: boolean) {

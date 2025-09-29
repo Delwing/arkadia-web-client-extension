@@ -35,6 +35,7 @@ interface BindSettings {
     moveMode: Bind;
     directions: DirectionBinds;
     custom: CustomBind[];
+    temp: Bind[];
 }
 
 const defaultBinds: BindSettings = {
@@ -43,6 +44,10 @@ const defaultBinds: BindSettings = {
     attack: { key: 'Digit1', ctrl: true },
     support: { key: 'KeyQ', ctrl: true },
     moveMode: { key: 'Backquote' },
+    temp: [
+        { key: 'F4' },
+        { key: 'F5' },
+    ],
     directions: {
         n: { key: 'Numpad8' },
         s: { key: 'Numpad2' },
@@ -86,6 +91,10 @@ function Binds() {
                 attack: res?.binds?.attack || defaultBinds.attack,
                 support: res?.binds?.support || defaultBinds.support,
                 moveMode: res?.binds?.moveMode || defaultBinds.moveMode,
+                temp: [
+                    { ...defaultBinds.temp[0], ...(res?.binds?.temp?.[0] || {}) },
+                    { ...defaultBinds.temp[1], ...(res?.binds?.temp?.[1] || {}) },
+                ],
                 directions: {
                     ...defaultBinds.directions,
                     ...res?.binds?.directions,
@@ -116,6 +125,15 @@ function Binds() {
         setBinds(prev => ({
             ...prev,
             custom: prev.custom.map((b, i) => i === idx ? { ...b, key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } : b),
+        }));
+    }
+
+    function handleCaptureTemp(idx: number, ev: React.KeyboardEvent) {
+        ev.preventDefault();
+        const { code, ctrlKey, altKey, shiftKey } = ev;
+        setBinds(prev => ({
+            ...prev,
+            temp: prev.temp.map((b, i) => i === idx ? { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } : b),
         }));
     }
 
@@ -205,6 +223,30 @@ function Binds() {
                                     size="sm"
                                     value={label(binds.moveMode)}
                                     onKeyDown={ev => handleCapture('moveMode', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Tymczasowe 1</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.temp[0])}
+                                    onKeyDown={ev => handleCaptureTemp(0, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Tymczasowe 2</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.temp[1])}
+                                    onKeyDown={ev => handleCaptureTemp(1, ev)}
                                 />
                             </td>
                         </tr>
