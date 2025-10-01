@@ -803,6 +803,11 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   border-radius: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   z-index: 1050;
+  width: min(320px, calc(100% - 1rem));
+  max-width: min(320px, calc(100% - 1rem));
+  min-width: min(240px, calc(100% - 1rem));
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 
 .mobile-direction-buttons.collapsed button:not(#buttons-toggle),

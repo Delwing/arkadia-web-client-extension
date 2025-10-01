@@ -1,4 +1,12 @@
-import { useEffect, useState, useRef, RefObject } from "react";
+import {
+    useEffect,
+    useState,
+    useRef,
+    RefObject,
+    useMemo,
+    useCallback,
+    useLayoutEffect,
+} from "react";
 import { Button, Form } from "react-bootstrap";
 import {
     loadSettings,
@@ -97,11 +105,17 @@ function MobileButtons() {
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
     const leaderRef = useRef<HTMLDivElement>(null);
-    const refs: Record<Mode, RefObject<HTMLDivElement>> = {
-        solo: soloRef,
-        team: teamRef,
-        leader: leaderRef,
-    };
+    const configRef = useRef<HTMLDivElement>(null);
+    const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+    const refs: Record<Mode, RefObject<HTMLDivElement>> = useMemo(
+        () => ({
+            solo: soloRef,
+            team: teamRef,
+            leader: leaderRef,
+        }),
+        [],
+    );
+    const POPUP_MARGIN = 8;
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
 
     useEffect(() => {
@@ -196,9 +210,19 @@ function MobileButtons() {
 
     function openConfig(setName: Mode, id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
+        activeButtonRef.current = ev.currentTarget;
         const parent = refs[setName].current?.getBoundingClientRect();
         if (parent) {
-            setPos({ left: rect.left - parent.left, top: rect.bottom - parent.top + 4 });
+            const geometry = {
+                left: rect.left - parent.left,
+                top: rect.top - parent.top,
+                width: rect.width,
+                height: rect.height,
+            };
+            setPos({
+                left: Math.max(POPUP_MARGIN, geometry.left),
+                top: geometry.top + geometry.height + POPUP_MARGIN,
+            });
         }
         setActive({ set: setName, id });
         const cfg = settings[setName].buttons[id] || defaultSettings[id] || emptySetting;
@@ -211,10 +235,12 @@ function MobileButtons() {
     function changeView(v: Mode) {
         setView(v);
         setActive(null);
+        activeButtonRef.current = null;
     }
 
     function close() {
         setActive(null);
+        activeButtonRef.current = null;
     }
 
     function update(setName: Mode, id: string, field: keyof ButtonSetting, value: any) {
@@ -304,6 +330,60 @@ function MobileButtons() {
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;
     const currentBackground = settings[view].background || defaultBackground;
     const { hex: backgroundHex, alpha: backgroundAlpha } = parseBackgroundColor(currentBackground);
+
+    const updatePopupPosition = useCallback(() => {
+        if (!active) return;
+        const parentEl = refs[active.set].current;
+        const popupEl = configRef.current;
+        const buttonEl = activeButtonRef.current;
+        if (!parentEl || !popupEl || !buttonEl) return;
+        const parentRect = parentEl.getBoundingClientRect();
+        const buttonRect = buttonEl.getBoundingClientRect();
+        const popupRect = popupEl.getBoundingClientRect();
+        const geometry = {
+            left: buttonRect.left - parentRect.left,
+            top: buttonRect.top - parentRect.top,
+            width: buttonRect.width,
+            height: buttonRect.height,
+        };
+        let left = geometry.left;
+        let top = geometry.top + geometry.height + POPUP_MARGIN;
+
+        if (left + popupRect.width + POPUP_MARGIN > parentRect.width) {
+            left = parentRect.width - popupRect.width - POPUP_MARGIN;
+        }
+        left = Math.max(POPUP_MARGIN, left);
+
+        if (top + popupRect.height + POPUP_MARGIN > parentRect.height) {
+            const above = geometry.top - popupRect.height - POPUP_MARGIN;
+            if (above >= POPUP_MARGIN) {
+                top = above;
+            } else {
+                top = Math.max(POPUP_MARGIN, parentRect.height - popupRect.height - POPUP_MARGIN);
+            }
+        }
+
+        setPos(prev => {
+            if (Math.abs(prev.left - left) > 0.5 || Math.abs(prev.top - top) > 0.5) {
+                return { left, top };
+            }
+            return prev;
+        });
+    }, [POPUP_MARGIN, active, refs]);
+
+    useLayoutEffect(() => {
+        if (!active) return;
+        updatePopupPosition();
+    }, [active, updatePopupPosition, settings, view]);
+
+    useEffect(() => {
+        if (!active) return;
+        const handleResize = () => updatePopupPosition();
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [active, updatePopupPosition]);
 
     return (
         <div onClick={close} className="w-100 position-relative">
@@ -442,6 +522,7 @@ function MobileButtons() {
             </Form.Group>
             {active && activeCfg && (
                 <div
+                    ref={configRef}
                     className="mobile-button-config"
                     style={{ left: pos.left, top: pos.top }}
                     onClick={ev => ev.stopPropagation()}
