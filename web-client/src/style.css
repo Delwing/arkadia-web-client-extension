@@ -810,6 +810,70 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   overflow-wrap: anywhere;
 }
 
+.mobile-button-config .mobile-background-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mobile-button-config .mobile-background-color {
+  flex: 0 0 auto;
+}
+
+.mobile-button-config .mobile-background-opacity {
+  display: flex;
+  flex: 1 1 160px;
+  min-width: 0;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mobile-button-config .mobile-background-range {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.mobile-button-config .mobile-background-opacity-value {
+  flex: 0 0 auto;
+}
+
+.mobile-button-config .mobile-background-reset {
+  flex: 0 0 auto;
+}
+
+.mobile-button-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.mobile-button-actions__copy {
+  display: flex;
+  flex: 1 1 200px;
+  min-width: 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mobile-button-actions__select {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.mobile-button-actions__copy-btn {
+  flex: 0 0 auto;
+}
+
+.mobile-button-actions__save {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .mobile-direction-buttons.collapsed button:not(#buttons-toggle),
 .mobile-direction-buttons.collapsed #z-buttons-list,
 .mobile-direction-buttons.collapsed #zas-buttons-list,

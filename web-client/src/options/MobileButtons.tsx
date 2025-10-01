@@ -464,10 +464,11 @@ function MobileButtons() {
                 onTouchStart={ev => ev.stopPropagation()}
             >
                 <Form.Label>Tło przycisków</Form.Label>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
+                <div className="mobile-background-controls">
                     <Form.Control
                         size="sm"
                         type="color"
+                        className="mobile-background-color"
                         value={backgroundHex}
                         onChange={e => {
                             const hex = e.target.value;
@@ -484,10 +485,11 @@ function MobileButtons() {
                             });
                         }}
                     />
-                    <div className="d-flex align-items-center gap-2 flex-grow-1">
+                    <div className="mobile-background-opacity">
                         <Form.Range
                             min={0}
                             max={100}
+                            className="flex-grow-1 mobile-background-range"
                             value={Math.round(backgroundAlpha * 100)}
                             onChange={e => {
                                 const alphaValue = Number(e.target.value) / 100;
@@ -504,11 +506,14 @@ function MobileButtons() {
                                 });
                             }}
                         />
-                        <span className="small text-nowrap">{Math.round(backgroundAlpha * 100)}%</span>
+                        <span className="mobile-background-opacity-value small text-nowrap">
+                            {Math.round(backgroundAlpha * 100)}%
+                        </span>
                     </div>
                     <Button
                         size="sm"
                         variant="secondary"
+                        className="mobile-background-reset"
                         onClick={() => {
                             setSettings(prev => ({
                                 ...prev,
@@ -643,18 +648,34 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-between mt-2">
-                <div className="d-flex align-items-center gap-2">
-                    <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
+            <div className="mobile-button-actions mt-2">
+                <div className="mobile-button-actions__copy">
+                    <Form.Select
+                        size="sm"
+                        className="mobile-button-actions__select"
+                        value={copyFrom}
+                        onChange={e => setCopyFrom(e.target.value as Mode)}
+                    >
                         <option value="solo">Bez drużyny</option>
                         <option value="team">W drużynie</option>
                         <option value="leader">Prowadzący</option>
                     </Form.Select>
-                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mobile-button-actions__copy-btn"
+                        onClick={() => copyLayout(copyFrom)}
+                    >
                         Kopiuj
                     </Button>
                 </div>
-                <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
+                <Button
+                    id="mobile-buttons-save"
+                    className="mobile-button-actions__save"
+                    onClick={save}
+                >
+                    Zapisz
+                </Button>
             </div>
         </div>
     );
