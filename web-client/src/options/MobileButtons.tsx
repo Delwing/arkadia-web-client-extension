@@ -11,6 +11,7 @@ import {
     defaultOrder,
     defaultCols,
     createDefaultLayout,
+    defaultBackground,
 } from "../mobileButtonSettings";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
@@ -35,15 +36,58 @@ const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
 const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
 
+function clampAlpha(value: number) {
+    if (Number.isNaN(value)) return 0;
+    return Math.min(1, Math.max(0, value));
+}
+
+function toHex(value: number) {
+    const clamped = Math.min(255, Math.max(0, Math.round(value)));
+    return clamped.toString(16).padStart(2, '0');
+}
+
+function parseBackgroundColor(value: string) {
+    const fallback = { hex: '#87ceeb', alpha: 0.7 };
+    if (!value) {
+        return fallback;
+    }
+    const trimmed = value.trim();
+    const hexMatch = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(trimmed);
+    if (hexMatch) {
+        const rgb = hexMatch[1];
+        const alphaHex = hexMatch[2];
+        const alpha = alphaHex ? parseInt(alphaHex, 16) / 255 : 1;
+        return { hex: `#${rgb.toLowerCase()}`, alpha: clampAlpha(alpha) };
+    }
+    const rgbaMatch = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d*\.?\d+))?\s*\)$/i.exec(trimmed);
+    if (rgbaMatch) {
+        const [, r, g, b, a] = rgbaMatch;
+        const hex = `#${toHex(parseInt(r, 10))}${toHex(parseInt(g, 10))}${toHex(parseInt(b, 10))}`;
+        const alpha = a !== undefined ? clampAlpha(parseFloat(a)) : 1;
+        return { hex, alpha };
+    }
+    return fallback;
+}
+
+function rgbaFromHexAlpha(hex: string, alpha: number) {
+    const normalized = clampAlpha(alpha);
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.slice(0, 2), 16);
+    const g = parseInt(cleanHex.slice(2, 4), 16);
+    const b = parseInt(cleanHex.slice(4, 6), 16);
+    const alphaRounded = Math.round(normalized * 100) / 100;
+    return `rgba(${r}, ${g}, ${b}, ${alphaRounded})`;
+}
+
 type SettingsMap = Record<string, ButtonSetting>;
 
 const modes: Mode[] = ['solo', 'team', 'leader'];
 
 function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({
-        solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
-        team: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
-        leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols },
+        solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
+        team: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
+        leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
         locked: false,
     });
     const [syncDirs, setSyncDirs] = useState(true);
@@ -199,6 +243,7 @@ function MobileButtons() {
                 return { ...set, buttons };
             };
             return {
+                ...prev,
                 solo: updateSet(prev.solo),
                 team: updateSet(prev.team),
                 leader: updateSet(prev.leader),
@@ -257,6 +302,8 @@ function MobileButtons() {
     }
 
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;
+    const currentBackground = settings[view].background || defaultBackground;
+    const { hex: backgroundHex, alpha: backgroundAlpha } = parseBackgroundColor(currentBackground);
 
     return (
         <div onClick={close} className="w-100 position-relative">
@@ -330,6 +377,69 @@ function MobileButtons() {
                     <Button size="sm" variant="secondary" onClick={() => removeRow('bottom')}>-R↓</Button>
                 </div>
             </div>
+            <Form.Group
+                className="form-label mb-3"
+                onClick={ev => ev.stopPropagation()}
+                onMouseDown={ev => ev.stopPropagation()}
+                onTouchStart={ev => ev.stopPropagation()}
+            >
+                <Form.Label>Tło przycisków</Form.Label>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <Form.Control
+                        size="sm"
+                        type="color"
+                        value={backgroundHex}
+                        onChange={e => {
+                            const hex = e.target.value;
+                            setSettings(prev => {
+                                const bg = prev[view].background || defaultBackground;
+                                const { alpha } = parseBackgroundColor(bg);
+                                return {
+                                    ...prev,
+                                    [view]: {
+                                        ...prev[view],
+                                        background: rgbaFromHexAlpha(hex, alpha),
+                                    },
+                                };
+                            });
+                        }}
+                    />
+                    <div className="d-flex align-items-center gap-2 flex-grow-1">
+                        <Form.Range
+                            min={0}
+                            max={100}
+                            value={Math.round(backgroundAlpha * 100)}
+                            onChange={e => {
+                                const alphaValue = Number(e.target.value) / 100;
+                                setSettings(prev => {
+                                    const bg = prev[view].background || defaultBackground;
+                                    const { hex } = parseBackgroundColor(bg);
+                                    return {
+                                        ...prev,
+                                        [view]: {
+                                            ...prev[view],
+                                            background: rgbaFromHexAlpha(hex, alphaValue),
+                                        },
+                                    };
+                                });
+                            }}
+                        />
+                        <span className="small text-nowrap">{Math.round(backgroundAlpha * 100)}%</span>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                            setSettings(prev => ({
+                                ...prev,
+                                [view]: { ...prev[view], background: defaultBackground },
+                            }));
+                        }}
+                    >
+                        ↺
+                    </Button>
+                </div>
+            </Form.Group>
             {active && activeCfg && (
                 <div
                     className="mobile-button-config"

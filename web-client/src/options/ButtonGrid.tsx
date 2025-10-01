@@ -1,5 +1,5 @@
 import { RefObject, MouseEvent } from "react";
-import { ButtonSetting, Settings, defaultSettings } from "../mobileButtonSettings";
+import { ButtonSetting, Settings, defaultSettings, defaultBackground } from "../mobileButtonSettings";
 
 export type Mode = 'solo' | 'team' | 'leader';
 
@@ -20,7 +20,10 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
             ref={gridRef}
             id={`mobile-buttons-preview-${mode}`}
             className={`mobile-direction-buttons preview mb-2 ${view === mode ? '' : 'd-none'}`}
-            style={{ gridTemplateColumns: `repeat(${set.cols}, auto)` }}
+            style={{
+                gridTemplateColumns: `repeat(${set.cols}, auto)`,
+                backgroundColor: set.background || defaultBackground,
+            }}
         >
             {set.order.map(id => {
                 const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
