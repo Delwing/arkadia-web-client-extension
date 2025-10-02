@@ -13,6 +13,7 @@ export interface Settings {
     herbPreUseCommand: string;
     herbPostUseCommand: string;
     fullHpMessage: boolean;
+    lowHpAlert: number;
 }
 
 export const defaultSettings: Settings = {
@@ -30,4 +31,5 @@ export const defaultSettings: Settings = {
     herbPreUseCommand: '',
     herbPostUseCommand: '',
     fullHpMessage: false,
+    lowHpAlert: 2,
 };
