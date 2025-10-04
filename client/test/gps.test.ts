@@ -3,7 +3,7 @@ import Triggers from '../src/Triggers';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
-  Map = { setMapRoomById: jest.fn(), currentRoom: { id: 10, areaId: 'Area' } } as any;
+  Map = { setMapRoomById: jest.fn(), currentRoom: { id: 10, areaId: 'Area' }, onMapReady: (_cb: any) => {} } as any;
   sendEvent = jest.fn();
 }
 
@@ -13,9 +13,6 @@ describe('gps triggers', () => {
 
   beforeEach(() => {
     client = new FakeClient();
-    initGps(client as unknown as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    client.Map.currentRoom.id = 1;
     const mapData = [
       {
         areaName: 'Area',
@@ -42,7 +39,10 @@ describe('gps triggers', () => {
         labels: []
       }
     ];
-    window.dispatchEvent(new CustomEvent('map-ready', { detail: { mapData, colors: [] } }));
+    client.Map.onMapReady = (cb: any) => cb(mapData);
+    initGps(client as unknown as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    client.Map.currentRoom.id = 1;
   });
 
   test('gps lines set map location when different from current', () => {

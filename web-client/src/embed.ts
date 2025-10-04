@@ -1,4 +1,4 @@
-import {MapReader, Renderer, PathFinder, RoomContextMenuEventDetail} from "mudlet-map-renderer";
+import {MapReader, Renderer, RoomContextMenuEventDetail} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
@@ -56,11 +56,10 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
     }
 }
 
-class EmbeddedMap {
+export class EmbeddedMap {
     private map: HTMLDivElement;
     private reader: MapReader;
     private renderer: Renderer;
-    private pathFinder: PathFinder;
     private currentRoom: any;
     private destinations: number[] = [];
     private highlights: number[] = []
@@ -69,13 +68,12 @@ class EmbeddedMap {
     private visited = new Set<number>();
     private totalRooms: number;
 
-    constructor(mapData: any, colors: any, startId?: number) {
+    constructor(reader: MapReader, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
-        this.reader = new MapReader(mapData, colors);
-        this.pathFinder = new PathFinder(this.reader)
+        this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
         window.addEventListener('pauserStart', () => {
@@ -209,7 +207,7 @@ class EmbeddedMap {
             let text = `#${roomId} ${area.getAreaName()}`;
             if (this.destinations.length > 0) {
                 const destId = this.destinations[0];
-                const path = this.pathFinder.findPath(roomId, destId);
+                const path = this.reader.getPath(roomId, destId);
                 console.log('path', path);
                 const distance = path ? path.length - 1 : 0;
                 const room = this.reader.getRoom(roomId)
@@ -263,11 +261,3 @@ class EmbeddedMap {
         this.refresh();
     }
 }
-
-export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
-};
-
-window.addEventListener('map-ready-with-data', (e: Event) =>
-    createMap((e as CustomEvent).detail)
-);
