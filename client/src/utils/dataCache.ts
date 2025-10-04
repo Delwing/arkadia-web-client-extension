@@ -37,7 +37,7 @@ async function getStore(config: IndexedDBConfig, mode: IDBTransactionMode) {
     return db.transaction([config.storeName], mode).objectStore(config.storeName);
 }
 
-async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
+export async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
     try {
         const store = await getStore(config, 'readwrite');
         await new Promise<void>((resolve, reject) => {
@@ -50,7 +50,7 @@ async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
     }
 }
 
-async function getFromIndexedDB(config: IndexedDBConfig, ttl?: number) {
+export async function getFromIndexedDB<T = any>(config: IndexedDBConfig, ttl?: number): Promise<T | null> {
     try {
         const store = await getStore(config, 'readonly');
         return await new Promise<any>((resolve, reject) => {
@@ -58,7 +58,7 @@ async function getFromIndexedDB(config: IndexedDBConfig, ttl?: number) {
             req.onsuccess = () => {
                 if (req.result) {
                     if (!ttl || (req.result.timestamp && req.result.timestamp + ttl > Date.now())) {
-                        resolve(req.result.data);
+                        resolve(req.result.data as T);
                         return;
                     }
                 }

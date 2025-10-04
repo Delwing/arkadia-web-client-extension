@@ -18,6 +18,10 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: "ts-loader"
+            },
+            {
+                test: /\.wasm$/i,
+                type: "asset/resource"
             }
         ]
     }

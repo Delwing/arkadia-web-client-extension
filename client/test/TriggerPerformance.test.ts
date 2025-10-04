@@ -1,12 +1,11 @@
 import { performance } from 'perf_hooks';
 import Triggers from '../src/Triggers';
-import people from '../src/people.json';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 describe('Trigger performance', () => {
   test('token triggers are faster than regex triggers', () => {
-    const entries = (people as Array<{ description: string }>).slice(0, 200);
+    const entries = Array.from({ length: 200 }, (_, index) => ({ description: `osoba ${index}` }));
     const lines: string[] = [];
 
     const tokenT = new Triggers({} as any);

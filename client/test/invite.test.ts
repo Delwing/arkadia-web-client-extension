@@ -1,13 +1,19 @@
 import initInvite from '../src/scripts/invite';
 import Client from '../src/Client';
+import { loadPeople } from '../src/peopleLoader';
 
-// Mock the people.json import
-jest.mock('../src/people.json', () => [
-    { name: 'Mordimer', guild: 'Templariusze' },
-    { name: 'Vesper', guild: 'Magowie' },
-    { name: 'Pablo', guild: 'Rycerze' },
-    { name: 'Gandalf', guild: 'Czarodzieje' }
-], { virtual: true });
+jest.mock('../src/peopleLoader', () => ({
+    loadPeople: jest.fn(),
+}));
+
+const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+
+const MOCK_PEOPLE = [
+    { name: 'Mordimer', description: 'templariusz', guild: 'Templariusze' },
+    { name: 'Vesper', description: 'mag', guild: 'Magowie' },
+    { name: 'Pablo', description: 'rycerz', guild: 'Rycerze' },
+    { name: 'Gandalf', description: 'czarodziej', guild: 'Czarodzieje' },
+];
 
 describe('Invite functionality', () => {
     let client: Client;
@@ -18,7 +24,8 @@ describe('Invite functionality', () => {
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
         mockTriggers = {
             registerTrigger: jest.fn()
         };
@@ -49,9 +56,12 @@ describe('Invite functionality', () => {
         } as any;
 
         initInvite(client);
+        await loadPeopleMock.mock.results[0]?.value;
     });
 
-    test('should register invite trigger', () => {
+    test('should register invite trigger', async () => {
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
         expect(mockTriggers.registerTrigger).toHaveBeenCalledWith(
             expect.any(RegExp),
             expect.any(Function),
@@ -59,12 +69,14 @@ describe('Invite functionality', () => {
         );
     });
 
-    test('should block invite from enemy guild member', () => {
+    test('should block invite from enemy guild member', async () => {
         // Set up enemy guilds
         const settingsHandler = mockAddEventListener.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -79,12 +91,14 @@ describe('Invite functionality', () => {
         expect(result).toBe('');
     });
 
-    test('should allow invite from non-enemy guild member and execute two commands', () => {
+    test('should allow invite from non-enemy guild member and execute two commands', async () => {
         // Set up enemy guilds
         const settingsHandler = mockAddEventListener.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -111,12 +125,14 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).toHaveBeenCalledTimes(2);
     });
 
-    test('should allow invite from unknown person and fallback to old command', () => {
+    test('should allow invite from unknown person and fallback to old command', async () => {
         // Set up enemy guilds
         const settingsHandler = mockAddEventListener.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -133,12 +149,14 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
-    test('should allow all invites when no enemy guilds are set and fallback to old command', () => {
+    test('should allow all invites when no enemy guilds are set and fallback to old command', async () => {
         // Set up empty enemy guilds
         const settingsHandler = mockAddEventListener.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: [] } });
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -155,12 +173,14 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
-    test('should handle invite pattern without brackets', () => {
+    test('should handle invite pattern without brackets', async () => {
         // Set up enemy guilds
         const settingsHandler = mockAddEventListener.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Czarodzieje'] } });
+        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        await lastCall?.value;
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
