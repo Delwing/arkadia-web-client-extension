@@ -392,9 +392,7 @@ export default class EmbeddedMap {
 }
 
 export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
+    const map = new EmbeddedMap(data.mapData, data.colors, data.startId);
+    (window as any).embedded = map;
+    return map;
 };
-
-window.addEventListener('map-ready-with-data', (e: Event) =>
-    createMap((e as CustomEvent).detail)
-);

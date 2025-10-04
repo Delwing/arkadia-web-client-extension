@@ -23,7 +23,7 @@ import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
-import "./embed.ts"
+import { createMap } from "./embed.ts";
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import Binds from "./options/Binds.tsx"
@@ -233,11 +233,9 @@ Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
-        window.dispatchEvent(new CustomEvent("map-ready", {
-            detail: {
-                mapData, colors
-            }
-        }));
+        const startId = client.Map.initialize(mapData, colors);
+        createMap({ mapData, colors, startId });
+        client.Map.renderRoomById(startId);
     })
     .catch(error => {
         progressContainer.style.display = 'none';

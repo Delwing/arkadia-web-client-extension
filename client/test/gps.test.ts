@@ -1,9 +1,23 @@
 import initGps from '../src/scripts/gps';
 import Triggers from '../src/Triggers';
 
+class FakeMap {
+  setMapRoomById = jest.fn();
+  currentRoom = { id: 10, areaId: 'Area' } as any;
+  private readyCallback: ((payload: { mapData: MapData.Map; colors: any }) => void) | null = null;
+
+  onReady(callback: (payload: { mapData: MapData.Map; colors: any }) => void) {
+    this.readyCallback = callback;
+  }
+
+  triggerReady(mapData: MapData.Map, colors: any = []) {
+    this.readyCallback?.({ mapData, colors });
+  }
+}
+
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
-  Map = { setMapRoomById: jest.fn(), currentRoom: { id: 10, areaId: 'Area' } } as any;
+  Map = new FakeMap();
   sendEvent = jest.fn();
 }
 
@@ -42,7 +56,7 @@ describe('gps triggers', () => {
         labels: []
       }
     ];
-    window.dispatchEvent(new CustomEvent('map-ready', { detail: { mapData, colors: [] } }));
+    client.Map.triggerReady(mapData as any);
   });
 
   test('gps lines set map location when different from current', () => {
