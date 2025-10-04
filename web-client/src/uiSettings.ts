@@ -18,7 +18,6 @@ interface UiSettings {
     objectsFontSize: number;
     buttonSize: number;
     mapScale: number;
-    mapLimit: number;
     showButtons: boolean;
     hapticFeedback: boolean;
     mapHeight: number;
@@ -35,7 +34,6 @@ const defaultSettings: UiSettings = {
     objectsFontSize: 0.6,
     buttonSize: 1,
     mapScale: 0.30,
-    mapLimit: 35,
     showButtons: true,
     hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
@@ -105,7 +103,6 @@ function apply(settings: UiSettings) {
     });
     if ((window as any).embedded?.renderer?.controls) {
         (window as any).embedded.setZoom?.(settings.mapScale);
-        (window as any).embedded.setLimit?.(settings.mapLimit);
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
@@ -143,10 +140,6 @@ async function load(): Promise<UiSettings> {
                 const value = Math.abs(parseFloat(parsed.mapScale));
                 return value > 0 ? value : defaultSettings.mapScale;
             })();
-            const mapLimit = (() => {
-                const value = parseInt(parsed.mapLimit);
-                return value > 0 ? value : defaultSettings.mapLimit;
-            })();
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
@@ -155,7 +148,7 @@ async function load(): Promise<UiSettings> {
             const explorationMode = !!parsed.explorationMode;
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
             const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
+            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
         }
     } catch {
         // ignore malformed data
@@ -179,7 +172,6 @@ export default async function initUiSettings() {
     const mapInput = modalEl.querySelector('#ui-map-scale') as HTMLInputElement;
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
     const mapPositionInput = modalEl.querySelector('#ui-map-position') as HTMLSelectElement;
-    const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
@@ -197,7 +189,6 @@ export default async function initUiSettings() {
     mapInput.value = String(current.mapScale);
     mapHeightInput.value = String(current.mapHeight);
     mapPositionInput.value = current.mapPosition;
-    mapLimitInput.value = String(current.mapLimit);
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
     hapticFeedbackInput.checked = current.hapticFeedback;
@@ -224,19 +215,11 @@ export default async function initUiSettings() {
             return scale;
         })();
 
-        const mapLimit = (() => {
-            const value = parseInt(mapLimitInput.value);
-            const limit = value > 0 ? value : defaultSettings.mapLimit;
-            mapLimitInput.value = String(limit);
-            return limit;
-        })();
-
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
             buttonSize: parseFloat(buttonInput.value) || defaultSettings.buttonSize,
             mapScale,
-            mapLimit,
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             mapPosition: (mapPositionInput.value as MapPosition) || defaultSettings.mapPosition,
             showButtons: showButtonsInput.checked,

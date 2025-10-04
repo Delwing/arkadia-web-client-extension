@@ -67,7 +67,6 @@ class EmbeddedMap {
     private _touchStartY: number | null = null;
     private _longPressTimer: number | null = null;
     private zoom: number;
-    private limit: number;
     private explorationMode = false;
     private visited = new Set<number>();
     private totalRooms: number;
@@ -243,15 +242,6 @@ class EmbeddedMap {
     //         ], (ev as any).pageX, (ev as any).pageY);
     //     }
     // }
-
-    private _saveLimit() {
-        try {
-            const data = getItemSync('uiSettings');
-            const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
-            parsed.mapLimit = this.limit;
-            setItemSync('uiSettings', parsed);
-        } catch {}
-    }
 
     renderRoomById(id: number) {
         this.renderRoom(id);
