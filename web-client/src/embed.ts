@@ -249,6 +249,7 @@ class EmbeddedMap {
 
     renderRoom(roomId: number) {
             this.renderer.setPosition(roomId)
+            this.renderer.setZoom(this.zoom);
             const area = this.renderer.getCurrentArea()
             this.currentRoom = roomId;
             const label = document.getElementById('location-text');
