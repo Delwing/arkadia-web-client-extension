@@ -1,7 +1,5 @@
 import type { PersonEntry } from './types/people';
 import { loadPeopleFromIndexedDB, storePeopleInIndexedDB } from './peopleCache';
-
-const PEOPLE_DB_URL = 'https://arkadia-people.delwing.workers.dev/download';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 let memoryCache: { data: PersonEntry[]; timestamp: number } | null = null;
@@ -21,19 +19,6 @@ const supportsWorker = typeof Worker !== 'undefined';
 type WorkerSuccessMessage = { id: number; status: 'success'; people: PersonEntry[] };
 type WorkerErrorMessage = { id: number; status: 'error'; error: string };
 type WorkerMessage = WorkerSuccessMessage | WorkerErrorMessage;
-
-async function downloadDatabase(): Promise<ArrayBuffer> {
-    const response = await fetch(PEOPLE_DB_URL, {
-        cache: 'no-cache',
-        headers: {
-            'Cache-Control': 'no-cache',
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`Failed to download people database (${response.status})`);
-    }
-    return await response.arrayBuffer();
-}
 
 async function loadFromCache(): Promise<PersonEntry[] | null> {
     try {
@@ -91,22 +76,11 @@ async function fetchFromWorker(): Promise<PersonEntry[]> {
     });
 }
 
-async function fetchInMainThread(): Promise<PersonEntry[]> {
-    const buffer = await downloadDatabase();
-    const { parsePeopleDatabase } = await import('./peopleParser');
-    return parsePeopleDatabase(buffer);
-}
-
 async function fetchPeople(): Promise<PersonEntry[]> {
-    if (supportsWorker) {
-        try {
-            return await fetchFromWorker();
-        } catch (error) {
-            // fall through to main thread parsing if the worker fails
-            console.warn('Falling back to main thread people parsing', error);
-        }
+    if (!supportsWorker) {
+        throw new Error('Web Workers are not supported in this environment');
     }
-    return fetchInMainThread();
+    return fetchFromWorker();
 }
 
 async function fetchAndStore(): Promise<PersonEntry[]> {
