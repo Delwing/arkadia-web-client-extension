@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "howler": "^2.2.4",
-    "lua-in-js": "^2.2.5",
-    "mudlet-map-renderer": "github:Delwing/js-mudlet-map-renderer#memory-leak-issues"
+    "lua-in-js": "^2.2.5"
+
   },
   "devDependencies": {
     "@types/chrome": "^0.0.326",

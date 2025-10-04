@@ -1,8 +1,8 @@
-import {MapReader} from "mudlet-map-renderer";
 import Client from "./Client";
 import { getItemSync, setItemSync } from "./storage";
 import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
+import { MapReader } from "mudlet-map-renderer"
 
 const STORAGE_KEY = 'mapperRoomId';
 
@@ -10,8 +10,8 @@ export { longToShort };
 
 
 const directionDeltas = {
-    north: {x: 0, y: 1, z: 0},
-    south: {x: 0, y: -1, z: 0},
+    north: {x: 0, y: -1, z: 0},
+    south: {x: 0, y: 1, z: 0},
     east: {x: 1, y: 0, z: 0},
     west: {x: -1, y: 0, z: 0},
     northwest: {x: -1, y: 1, z: 0},
@@ -44,14 +44,13 @@ export default class MapHelper {
         }
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
         window.addEventListener('map-ready', (event: CustomEvent) => {
-            this.mapReader = new MapReader(event.detail.mapData, event.detail.colors)
-            // @ts-ignore
-            Object.values(this.mapReader.roomIndex).forEach(room => this.hashes[room.hash] = room);
+            this.mapReader = new MapReader(JSON.parse(JSON.stringify(event.detail.mapData)), event.detail.colors)
+            this.mapReader.getRooms().forEach(room => this.hashes[room.hash] = room.id)
             window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors}}))
             const startId = this.savedRoomId ?? 1;
             this.renderRoomById(startId)
             this.mapReader.getAreas().forEach(area => {
-                this.areas[area.areaId] = area.areaName
+                this.areas[area.getAreaId()] = area.getAreaName()
             })
         })
 
@@ -87,7 +86,7 @@ export default class MapHelper {
         this.paused = paused;
     }
 
-    parseCommand(command) {
+    parseCommand(command: string): string | null {
         if (command === "zerknij" || command === "spojrz" || command === "sp") {
             this.refreshPosition = true;
         }
@@ -135,7 +134,7 @@ export default class MapHelper {
             const potentialExit = getLongDir(direction);
             if (!this.currentRoom.exits || !this.currentRoom.exits[potentialExit]) {
                 const exits = Object.entries(allExits).filter(([_, id]) => {
-                    const target = this.mapReader.getRoomById(id);
+                    const target = this.mapReader.getRoom(id);
                     return this.findRoomByExit(this.currentRoom, target, getLongDir(direction));
                 }).map(([exit]) => exit);
                 if (exits.length > 0) {
@@ -211,12 +210,12 @@ export default class MapHelper {
         if (this.currentRoom?.id === id) {
             return;
         }
-        this.setMapRoom(this.mapReader.getRoomById(id))
+        this.renderRoomById(id)
     }
 
-    setMapRoom(room: Room) {
-        this.locationHistory = [room.id]
-        this.renderRoom(room);
+    setMapRoom(room: number) {
+        this.locationHistory = [room]
+        this.renderRoomById(room);
         if (!this.client.suppressMapMoveEvent) {
             this.client.sendEvent('mapMove')
         } else {
@@ -239,12 +238,8 @@ export default class MapHelper {
         }
     }
 
-    renderRoom(room: Room) {
-        this.renderRoomById(room.id)
-    }
-
     renderRoomById(id: number, sendEvent = true) {
-        this.currentRoom = this.mapReader.getRoomById(id)
+        this.currentRoom = this.mapReader.getRoom(id)
         setItemSync(STORAGE_KEY, id.toString())
         if (sendEvent) {
             this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
