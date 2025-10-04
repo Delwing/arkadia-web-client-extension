@@ -1,4 +1,4 @@
-import people from './people.json'
+import { loadPeople, type PersonEntry } from './peopleLoader';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
 import {stripAnsiCodes} from './Triggers';
@@ -10,6 +10,8 @@ export default class People {
     guildFilter: string[] = []
     enemyGuilds: string[] = []
     guildColors: Record<string, string | undefined> = {}
+    people: PersonEntry[] = []
+    private loadErrorLogged = false
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -17,15 +19,36 @@ export default class People {
             this.guildFilter = event.detail.guilds || []
             this.enemyGuilds = event.detail.enemyGuilds || []
             this.guildColors = event.detail.guildColors || {}
-            this.registerPeopleTriggers()
+            this.ensurePeopleTriggers()
         })
+        this.ensurePeopleTriggers()
     }
 
-    registerPeopleTriggers() {
+    private ensurePeopleTriggers() {
+        loadPeople()
+            .then(people => {
+                this.people = people
+                this.loadErrorLogged = false
+                this.registerPeopleTriggers()
+            })
+            .catch(error => {
+                this.handleLoadError(error)
+            })
+    }
+
+    private handleLoadError(error: unknown) {
+        if (!this.loadErrorLogged) {
+            console.warn('Failed to load people database', error)
+            this.loadErrorLogged = true
+        }
+        this.client.Triggers.removeByTag(this.tag)
+    }
+
+    private registerPeopleTriggers() {
         this.client.Triggers.removeByTag(this.tag)
         const RED = findClosestColor('#ff0000')
         const addedNames = new Set<string>()
-        people.forEach(replacement => {
+        this.people.forEach(replacement => {
             const state = this.shouldHighlight(replacement)
             if (!state) {
                 return
