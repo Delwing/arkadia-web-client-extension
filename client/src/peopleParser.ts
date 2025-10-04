@@ -2,6 +2,7 @@ import type { SqlJsStatic } from 'sql.js';
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import type { PersonEntry } from './types/people';
+import { resolveGuild } from './peopleGuilds';
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
@@ -31,7 +32,7 @@ export async function parsePeopleDatabase(buffer: ArrayBuffer): Promise<PersonEn
             const row = stmt.getAsObject() as Record<string, unknown>;
             const name = normalizeText(row.name);
             const description = normalizeText(row.short);
-            const guild = normalizeText(row.guild);
+            const guild = resolveGuild(row.guild);
             if (!name || !description) {
                 continue;
             }
