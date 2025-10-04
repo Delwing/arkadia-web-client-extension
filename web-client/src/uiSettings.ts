@@ -51,6 +51,10 @@ function apply(settings: UiSettings) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
         contentArea.setAttribute('data-map-position', settings.mapPosition);
     }
+    const map = document.getElementById('map')
+    if (map) {
+        map.dispatchEvent(new CustomEvent('resize'));
+    }
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
@@ -101,7 +105,7 @@ function apply(settings: UiSettings) {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
-    if ((window as any).embedded?.renderer?.controls) {
+    if ((window as any).embedded?.renderer) {
         (window as any).embedded.setZoom?.(settings.mapScale);
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();

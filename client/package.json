@@ -11,7 +11,7 @@
   "dependencies": {
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
-    "mudlet-map-renderer": "^0.1.1-konva"
+    "mudlet-map-renderer": "^0.2.0-konva"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.326",

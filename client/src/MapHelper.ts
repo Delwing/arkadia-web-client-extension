@@ -2,7 +2,7 @@ import Client from "./Client";
 import { getItemSync, setItemSync } from "./storage";
 import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
-import { MapReader } from "mudlet-map-renderer"
+import { MapReader, PathFinder } from "mudlet-map-renderer"
 
 const STORAGE_KEY = 'mapperRoomId';
 
@@ -28,6 +28,7 @@ export default class MapHelper {
     locationHistory: number[] = []
     client: Client
     mapReader: MapReader
+    pathFinder: PathFinder;
     refreshPosition = true;
     hashes = {};
     gmcpPosition: Position;
@@ -45,6 +46,7 @@ export default class MapHelper {
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
         window.addEventListener('map-ready', (event: CustomEvent) => {
             this.mapReader = new MapReader(JSON.parse(JSON.stringify(event.detail.mapData)), event.detail.colors)
+            this.pathFinder = new PathFinder(this.mapReader)
             this.mapReader.getRooms().forEach(room => this.hashes[room.hash] = room.id)
             window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors}}))
             const startId = this.savedRoomId ?? 1;
@@ -277,6 +279,10 @@ export default class MapHelper {
 
     getAreaName(id: string) {
         return this.areas[id]
+    }
+
+    findPath(fromId: number, targetId: number) {
+        return this.pathFinder.findPath(fromId, targetId)
     }
 
 }

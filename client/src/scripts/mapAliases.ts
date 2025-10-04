@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { longToShort } from "../MapHelper";
-import { getShortcut } from "./shortcuts";
+import {longToShort} from "../MapHelper";
+import {getShortcut} from "./shortcuts";
 
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
@@ -42,9 +42,9 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const room: any = client.Map.currentRoom;
                 if (!embedded?.destinations?.length || !room) return;
                 const target = parseInt(embedded.destinations[0]);
-                const path = client.Map.mapReader.getPath(room.id, target);
+                const path = client.Map.findPath(room.id, target);
                 if (!path || path.length < 2) return;
-                const next = parseInt(path[1]);
+                const next = path[1];
                 const allExits = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
                 const entry = Object.entries(allExits).find(([_, id]) => id === next);
                 if (!entry) return;
@@ -66,14 +66,13 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const current = client.Map.currentRoom;
                 if (!reader || !current) return;
                 const matches: { id: number, name: string; area: string; dist: number }[] = [];
-                for (const area of reader.getAreas()) {
-                    for (const room of area.rooms) {
-                        const name = room.name;
-                        if (name && name.toLowerCase().includes(term)) {
-                            const path = reader.getPath(current.id, room.id);
-                            const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
-                            matches.push({ id: room.id, name: room.name, area: area.areaName, dist });
-                        }
+                for (const room of reader.getRooms()) {
+                    const name = room.name;
+                    if (name && name.toLowerCase().includes(term)) {
+                        const path = client.Map.findPath(current.id, room.id);
+                        const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
+                        const area = client.Map.mapReader.getArea(room.area)
+                        matches.push({id: room.id, name: room.name, area: area.getAreaName(), dist});
                     }
                 }
                 matches.sort((a, b) => a.dist - b.dist);
