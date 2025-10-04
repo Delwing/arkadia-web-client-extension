@@ -2,7 +2,7 @@
 import type { PersonEntry } from './types/people';
 import { parsePeopleDatabase } from './peopleParser';
 
-const PEOPLE_DB_URL = 'https://arkadia.kamerdyner.net/master3/Database_people.db';
+const PEOPLE_DB_URL = 'https://arkadia-people.delwing.workers.dev/download';
 
 interface LoadRequest {
     id: number;
