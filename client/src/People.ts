@@ -12,6 +12,7 @@ export default class People {
     guildColors: Record<string, string | undefined> = {}
     people: PersonEntry[] = []
     private loadErrorLogged = false
+    private peopleLoadPromise: Promise<void> | null = null
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -24,8 +25,16 @@ export default class People {
         this.ensurePeopleTriggers()
     }
 
-    private ensurePeopleTriggers() {
-        loadPeople()
+    private ensurePeopleTriggers(forceRefresh = false) {
+        if (!forceRefresh && this.people.length > 0) {
+            this.registerPeopleTriggers()
+        }
+
+        if (this.peopleLoadPromise && !forceRefresh) {
+            return
+        }
+
+        this.peopleLoadPromise = loadPeople(forceRefresh)
             .then(people => {
                 this.people = people
                 this.loadErrorLogged = false
@@ -34,6 +43,9 @@ export default class People {
             .catch(error => {
                 this.handleLoadError(error)
             })
+            .finally(() => {
+                this.peopleLoadPromise = null
+            })
     }
 
     private handleLoadError(error: unknown) {
@@ -41,7 +53,9 @@ export default class People {
             console.warn('Failed to load people database', error)
             this.loadErrorLogged = true
         }
-        this.client.Triggers.removeByTag(this.tag)
+        if (this.people.length === 0) {
+            this.client.Triggers.removeByTag(this.tag)
+        }
     }
 
     private registerPeopleTriggers() {
