@@ -4,7 +4,7 @@ import { createWriteStream, promises as fs } from 'fs';
 import { get } from 'http';
 import { spawnSync } from 'child_process';
 
-const DB_URL = 'http://arkadia.kamerdyner.net/master3/Database_people.db';
+const DB_URL = 'https://arkadia.kamerdyner.net/master3/Database_people.db';
 const OUT_FILE = new URL('../client/src/people.json', import.meta.url);
 
 const guildMap = {

@@ -1,7 +1,7 @@
 import type { PersonEntry } from './types/people';
 import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from './utils/dataCache';
 
-const PEOPLE_DB_URL = 'http://arkadia.kamerdyner.net/master3/Database_people.db';
+const PEOPLE_DB_URL = 'https://arkadia.kamerdyner.net/master3/Database_people.db';
 const CACHE_CONFIG: IndexedDBConfig = {
     dbName: 'ArkadiaPeopleDB',
     storeName: 'people',
