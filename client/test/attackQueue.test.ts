@@ -48,7 +48,37 @@ describe('attack queue aliases', () => {
     execAlias(alias, '/q 1');
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('123');
-    expect(client.println).toHaveBeenCalledWith('Dodano ob_123 do kolejki ataku.');
+    expect(client.println).toHaveBeenCalledWith(
+      'Dodano ob_123 (grozny orczy wojownik) do kolejki ataku.',
+    );
+  });
+
+  test('prints confirmation without description when not available', () => {
+    const alias = aliases.find(a => a.pattern.test('/q 2'))!;
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { shortcut: '2', num: 456 },
+    ]);
+    client.TeamManager.addEnemyToQueue.mockReturnValue(true);
+
+    execAlias(alias, '/q 2');
+
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('456');
+    expect(client.println).toHaveBeenCalledWith('Dodano ob_456 do kolejki ataku.');
+  });
+
+  test('uses object descriptions when adding by direct id', () => {
+    const alias = aliases.find(a => a.pattern.test('/q ob_789'))!;
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { shortcut: '1', num: 789, desc: 'tajemniczy szpieg' },
+    ]);
+    client.TeamManager.addEnemyToQueue.mockReturnValue(true);
+
+    execAlias(alias, '/q ob_789');
+
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('789');
+    expect(client.println).toHaveBeenCalledWith(
+      'Dodano ob_789 (tajemniczy szpieg) do kolejki ataku.',
+    );
   });
 
   test('allows direct id via ob_ prefix and warns on duplicates', () => {
