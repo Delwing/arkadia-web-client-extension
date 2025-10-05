@@ -56,9 +56,16 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
     }
 }
 
+type ReaderWithOptionalPathFinder = MapReader & {
+    pathFinder?: {
+        path(from: number, to: number): number[] | null;
+    };
+};
+
 export class EmbeddedMap {
     private map: HTMLDivElement;
-    private reader: MapReader;
+    private reader: ReaderWithOptionalPathFinder;
+    private pathFinder?: ReaderWithOptionalPathFinder["pathFinder"];
     private renderer: Renderer;
     private currentRoom: any;
     private destinations: number[] = [];
@@ -73,7 +80,8 @@ export class EmbeddedMap {
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
-        this.reader = reader;
+        this.reader = reader as ReaderWithOptionalPathFinder;
+        this.pathFinder = this.reader.pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
         window.addEventListener('pauserStart', () => {
@@ -207,14 +215,16 @@ export class EmbeddedMap {
             let text = `#${roomId} ${area.getAreaName()}`;
             if (this.destinations.length > 0) {
                 const destId = this.destinations[0];
-                const path = this.reader.getPath(roomId, destId);
+                const path = this.getPath(roomId, destId);
                 console.log('path', path);
                 const distance = path ? path.length - 1 : 0;
                 const room = this.reader.getRoom(roomId)
                 const destArea = this.reader.getArea(room.area);
                 const destName = destArea ? destArea.getAreaName() : destId;
                 text += ` → #${destId} ${destName} (${distance})`;
-                this.renderer.renderPath(path);
+                if (path) {
+                    this.renderer.renderPath(path);
+                }
             }
             label.textContent = text;
         }
@@ -223,6 +233,13 @@ export class EmbeddedMap {
         this.highlights.forEach((highlight) => {
             this.renderer.renderHighlight(highlight, 'green');
         });
+    }
+
+    private getPath(from: number, to: number): number[] | null {
+        if (typeof this.reader.getPath === 'function') {
+            return this.reader.getPath(from, to);
+        }
+        return this.pathFinder?.path(from, to) ?? null;
     }
 
     refresh() {
