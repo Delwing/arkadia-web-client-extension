@@ -51,10 +51,6 @@ function apply(settings: UiSettings) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
         contentArea.setAttribute('data-map-position', settings.mapPosition);
     }
-    const map = document.getElementById('map')
-    if (map) {
-        map.dispatchEvent(new CustomEvent('resize'));
-    }
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
@@ -84,6 +80,10 @@ function apply(settings: UiSettings) {
     const mainContainer = document.getElementById('main-container') as HTMLElement | null;
     if (mainContainer && settings.mapPosition !== 'top-overlay') {
         mainContainer.style.paddingTop = '';
+    }
+    const map = document.getElementById('map')
+    if (map) {
+        map.dispatchEvent(new CustomEvent('resize'));
     }
     document.querySelectorAll<HTMLButtonElement>('.mobile-button').forEach(btn => {
         const baseSize = 36; // default width/height in px
