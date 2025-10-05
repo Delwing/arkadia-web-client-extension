@@ -940,6 +940,52 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   margin-bottom: 5vh;
 }
 
+.ui-settings-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 992px) {
+  .ui-settings-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ui-settings-section {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ui-settings-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ui-settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ui-settings-section .form-check {
+  margin: 0;
+}
+
+.ui-settings-section .form-check-input {
+  margin-right: 0.5rem;
+}
+
+.ui-settings-section .form-check-label {
+  cursor: pointer;
+}
+
 .modal-dialog {
   max-height: 85%;
   pointer-events: auto;
