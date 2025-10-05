@@ -61,7 +61,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
 
         client.sendCommand("napisz list");
         client.sendCommand(recipient);
-        client.sendCommand(carbonCopy);
         client.sendCommand(subjectLine);
+        client.sendCommand(carbonCopy);
     });
 }
