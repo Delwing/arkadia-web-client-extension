@@ -70,7 +70,10 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
         return;
     }
 
-    client.OutputHandler.showContextMenu(items, x, y);
+    client.OutputHandler.showContextMenu(items, x, y, {
+        header: `Ziolo: ${herbId}`,
+        smallHeader: true,
+    });
 }
 
 export function openMapContextMenu(client: Client, roomId: number, x: number, y: number) {
@@ -89,5 +92,8 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
         },
     ];
 
-    client.OutputHandler.showContextMenu(items, x, y);
+    client.OutputHandler.showContextMenu(items, x, y, {
+        header: `Lokacja: ${roomId}`,
+        smallHeader: true,
+    });
 }
