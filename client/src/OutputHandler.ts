@@ -23,6 +23,7 @@ export default class OutputHandler {
         if (this.contextMenu) {
             this.contextMenu.classList.remove('show')
             this.contextMenu.innerHTML = ''
+            this.contextMenu.style.visibility = ''
         }
     }
 
@@ -53,9 +54,30 @@ export default class OutputHandler {
             }
             this.contextMenu!.appendChild(btn)
         })
-        this.contextMenu.style.left = `${x}px`
-        this.contextMenu.style.top = `${y}px`
-        this.contextMenu.classList.add('show')
+        const menu = this.contextMenu
+        menu.style.left = `0px`
+        menu.style.top = `0px`
+        menu.style.visibility = 'hidden'
+        menu.classList.add('show')
+
+        const rect = menu.getBoundingClientRect()
+        const viewportWidth = document.documentElement?.clientWidth ?? window.innerWidth ?? 0
+        const viewportHeight = document.documentElement?.clientHeight ?? window.innerHeight ?? 0
+
+        let left = x
+        let top = y
+
+        if (left + rect.width > viewportWidth) {
+            left = Math.max(0, viewportWidth - rect.width)
+        }
+
+        if (top + rect.height > viewportHeight) {
+            top = Math.max(0, viewportHeight - rect.height)
+        }
+
+        menu.style.left = `${left}px`
+        menu.style.top = `${top}px`
+        menu.style.visibility = ''
     }
 
     private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
