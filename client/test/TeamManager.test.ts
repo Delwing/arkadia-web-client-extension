@@ -188,11 +188,21 @@ describe('TeamManager', () => {
     expect(manager.shiftEnemyFromQueue()).toBeUndefined();
   });
 
-  test('removes enemies missing from gmcp objects nums', () => {
+  test('removes enemies missing from gmcp objects nums after repeated updates', () => {
     manager.addEnemyToQueue('5');
     manager.addEnemyToQueue('6');
     client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
+    expect(manager.getEnemyQueue()).toEqual(['5', '6']);
+    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
     expect(manager.getEnemyQueue()).toEqual(['6']);
+  });
+
+  test('restores pending removal when enemy reappears in gmcp objects nums', () => {
+    manager.addEnemyToQueue('5');
+    manager.addEnemyToQueue('6');
+    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
+    client.sendEvent('gmcp.objects.nums', { nums: ['5', '6'] });
+    expect(manager.getEnemyQueue()).toEqual(['5', '6']);
   });
 
   test('clears attack queue on new location', () => {

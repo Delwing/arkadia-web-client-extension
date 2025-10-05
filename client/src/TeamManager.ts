@@ -45,6 +45,7 @@ export default class TeamManager {
     private attackTargetId?: string
     private defenseTargetId?: string
     private enemies: string[] = [];
+    private missingEnemyCounts: Map<string, number> = new Map();
     private currentLocationSignature?: string;
 
     constructor(client: Client) {
@@ -121,9 +122,26 @@ export default class TeamManager {
             return;
         }
         const allowed = new Set(nums);
-        if (this.enemies.some(id => !allowed.has(id))) {
-            this.enemies = this.enemies.filter(id => allowed.has(id));
-        }
+        const remaining: string[] = [];
+
+        this.enemies.forEach(id => {
+            if (allowed.has(id)) {
+                this.missingEnemyCounts.delete(id);
+                remaining.push(id);
+                return;
+            }
+
+            const misses = (this.missingEnemyCounts.get(id) ?? 0) + 1;
+            if (misses >= 2) {
+                this.missingEnemyCounts.delete(id);
+                return;
+            }
+
+            this.missingEnemyCounts.set(id, misses);
+            remaining.push(id);
+        });
+
+        this.enemies = remaining;
     }
 
     private handleRoomInfo(detail: any) {
@@ -294,6 +312,7 @@ export default class TeamManager {
             return false;
         }
         this.enemies.push(normalized);
+        this.missingEnemyCounts.delete(normalized);
         return true;
     }
 
@@ -304,11 +323,16 @@ export default class TeamManager {
             return false;
         }
         this.enemies.splice(index, 1);
+        this.missingEnemyCounts.delete(normalized);
         return true;
     }
 
     shiftEnemyFromQueue(): string | undefined {
-        return this.enemies.shift();
+        const next = this.enemies.shift();
+        if (next) {
+            this.missingEnemyCounts.delete(next);
+        }
+        return next;
     }
 
     getEnemyQueue(): string[] {
@@ -316,9 +340,10 @@ export default class TeamManager {
     }
 
     private clearEnemyQueue() {
-        if (this.enemies.length === 0) {
+        if (this.enemies.length === 0 && this.missingEnemyCounts.size === 0) {
             return;
         }
         this.enemies = [];
+        this.missingEnemyCounts.clear();
     }
 }
