@@ -270,7 +270,7 @@ export class EmbeddedMap {
 
     leadTo(id?: string) {
         if (id) {
-            this.destinations.push(parseInt(id));
+            this.destinations = [parseInt(id)];
         } else {
             this.destinations = [];
         }
