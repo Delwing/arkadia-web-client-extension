@@ -67,6 +67,7 @@ export class EmbeddedMap {
     private highlights: number[] = []
     private zoom: number;
     private explorationMode = false;
+    private highlightCurrentRoom = true;
     private visited = new Set<number>();
     private totalRooms: number;
 
@@ -94,6 +95,7 @@ export class EmbeddedMap {
         let zoom = 0.30;
         let explorationMode = false;
         let instantMove = false;
+        let highlightCurrentRoom = true;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -107,6 +109,9 @@ export class EmbeddedMap {
                 }
                 if (typeof parsed.instantMove === 'boolean') {
                     instantMove = parsed.instantMove;
+                }
+                if (typeof parsed.highlightCurrentRoom === 'boolean') {
+                    highlightCurrentRoom = parsed.highlightCurrentRoom;
                 }
             }
         } catch {
@@ -124,6 +129,7 @@ export class EmbeddedMap {
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
+        this.setHighlightCurrentRoom(highlightCurrentRoom);
 
         window.addEventListener('enterLocation', async (ev: any) => {
             const id = ev.detail.id;
@@ -194,6 +200,9 @@ export class EmbeddedMap {
 
     renderRoom(roomId: number) {
         this.renderer.setPosition(roomId)
+        if (!this.highlightCurrentRoom) {
+            this.renderer.clearPosition();
+        }
         this.renderer.setZoom(this.zoom);
         const area = this.renderer.getCurrentArea()
         this.currentRoom = roomId;
@@ -262,6 +271,22 @@ export class EmbeddedMap {
 
     setInstantMove(on: boolean) {
         Settings.instantMapMove = on;
+    }
+
+    setHighlightCurrentRoom(on: boolean) {
+        this.highlightCurrentRoom = on;
+        Settings.highlightCurrentRoom = on;
+        if (!on) {
+            this.renderer.clearPosition();
+            return;
+        }
+        if (typeof this.currentRoom === 'number') {
+            try {
+                this.renderer.renderPosition(this.currentRoom);
+            } catch {
+                // ignore rendering errors when room is not ready yet
+            }
+        }
     }
 
     leadTo(id?: string) {
