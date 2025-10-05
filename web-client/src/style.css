@@ -950,6 +950,11 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   .ui-settings-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  #ui-settings-modal .modal-dialog {
+    width: min(960px, 90vw);
+    max-width: none;
+  }
 }
 
 .ui-settings-section {
