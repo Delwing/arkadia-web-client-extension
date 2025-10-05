@@ -35,7 +35,10 @@ import CharacterSettings from "./options/CharacterSettings.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
-import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
+import {
+    loadSettings as loadMobileButtonSettings,
+    applySettings as applyMobileButtonSettings
+} from "./mobileButtonSettings"
 import "./triggerTester"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
@@ -233,8 +236,8 @@ Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
-        const { startId, reader } = client.Map.initialize(mapData, colors);
-        (window as any).embedded = new EmbeddedMap(reader, startId);
+        const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
+        (window as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
     })
     .catch(error => {
         progressContainer.style.display = 'none';
@@ -873,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             swipeStartX = e.touches[0].clientX;
             swipeStartY = e.touches[0].clientY;
         }
-    });
+    }, {passive: true});
 
     messageInput.addEventListener('touchend', (e) => {
         if (swipeStartX === null || swipeStartY === null) return;

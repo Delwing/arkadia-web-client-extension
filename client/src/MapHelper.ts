@@ -2,7 +2,7 @@ import Client from "./Client";
 import { getItemSync, setItemSync } from "./storage";
 import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
-import { MapReader } from "mudlet-map-renderer"
+import { MapReader, PathFinder } from "mudlet-map-renderer"
 
 const STORAGE_KEY = 'mapperRoomId';
 
@@ -28,6 +28,7 @@ export default class MapHelper {
     locationHistory: number[] = []
     client: Client
     mapReader!: MapReader
+    pathFinder!: PathFinder
     refreshPosition = true;
     hashes = {};
     gmcpPosition: Position;
@@ -76,10 +77,11 @@ export default class MapHelper {
         this.client.sendEvent('refreshPositionWhenAble');
     }
 
-    initialize(mapData: MapData.Map, colors: any): { startId: number; reader: MapReader } {
+    initialize(mapData: MapData.Map, colors: any): { startId: number; reader: MapReader, pathFinder: PathFinder } {
         this.mapData = mapData;
         this.colors = colors;
         this.mapReader = new MapReader(mapData, colors)
+        this.pathFinder = new PathFinder(this.mapReader)
         this.hashes = {}
         this.areas = {}
         this.mapReader.getRooms().forEach(room => this.hashes[room.hash] = room.id)
@@ -91,7 +93,7 @@ export default class MapHelper {
         this.mapReady = true;
         this.mapReadyCallbacks.forEach(cb => cb(mapData, colors));
         this.mapReadyCallbacks = [];
-        return { startId, reader: this.mapReader };
+        return { startId, reader: this.mapReader, pathFinder: this.pathFinder };
     }
 
     onMapReady(callback: (mapData: MapData.Map, colors: any) => void) {
@@ -331,10 +333,8 @@ export default class MapHelper {
     }
 
     findPath(fromId: number, targetId: number) {
-        if (!this.mapReader) {
-            return null
-        }
-        return this.mapReader.getPath(fromId, targetId)
+        console.log("findPath", fromId, targetId)
+        return this.pathFinder.findPath(fromId, targetId)
     }
 
 }

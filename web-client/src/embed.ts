@@ -1,4 +1,4 @@
-import {MapReader, Renderer, RoomContextMenuEventDetail} from "mudlet-map-renderer";
+import {MapReader, Renderer, PathFinder, RoomContextMenuEventDetail} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
@@ -56,16 +56,10 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
     }
 }
 
-type ReaderWithOptionalPathFinder = MapReader & {
-    pathFinder?: {
-        path(from: number, to: number): number[] | null;
-    };
-};
-
 export class EmbeddedMap {
     private map: HTMLDivElement;
-    private reader: ReaderWithOptionalPathFinder;
-    private pathFinder?: ReaderWithOptionalPathFinder["pathFinder"];
+    private reader: MapReader;
+    private pathFinder: PathFinder;
     private renderer: Renderer;
     private currentRoom: any;
     private destinations: number[] = [];
@@ -75,13 +69,13 @@ export class EmbeddedMap {
     private visited = new Set<number>();
     private totalRooms: number;
 
-    constructor(reader: MapReader, startId?: number) {
+    constructor(reader: MapReader, pathFinder: PathFinder, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
-        this.reader = reader as ReaderWithOptionalPathFinder;
-        this.pathFinder = this.reader.pathFinder;
+        this.reader = reader
+        this.pathFinder = pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
         window.addEventListener('pauserStart', () => {
@@ -216,7 +210,6 @@ export class EmbeddedMap {
             if (this.destinations.length > 0) {
                 const destId = this.destinations[0];
                 const path = this.getPath(roomId, destId);
-                console.log('path', path);
                 const distance = path ? path.length - 1 : 0;
                 const room = this.reader.getRoom(roomId)
                 const destArea = this.reader.getArea(room.area);
@@ -236,10 +229,7 @@ export class EmbeddedMap {
     }
 
     private getPath(from: number, to: number): number[] | null {
-        if (typeof this.reader.getPath === 'function') {
-            return this.reader.getPath(from, to);
-        }
-        return this.pathFinder?.path(from, to) ?? null;
+        return this.pathFinder?.findPath(from, to) ?? null;
     }
 
     refresh() {
