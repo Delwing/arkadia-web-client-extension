@@ -115,7 +115,7 @@ function apply(settings: UiSettings) {
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
-    Settings.instantMove = settings.instantMove;
+    Settings.instantMapMove = settings.instantMove;
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
