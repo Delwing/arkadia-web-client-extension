@@ -21,6 +21,7 @@ import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
+import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -454,6 +455,10 @@ export default class Client {
     sendEvent(type: string, payload?: any) {
         this.eventTarget.dispatchEvent(new CustomEvent(type, {detail: payload}))
         window.dispatchEvent(new CustomEvent(type, {detail: payload}))
+    }
+
+    openMapContextMenu(roomId: number, x: number, y: number) {
+        openMapContextMenu(this, roomId, x, y);
     }
 
     createEvent(type, payload) {
