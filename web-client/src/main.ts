@@ -23,7 +23,7 @@ import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
-import "./embed.ts"
+import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import Binds from "./options/Binds.tsx"
@@ -35,7 +35,10 @@ import CharacterSettings from "./options/CharacterSettings.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
-import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "./mobileButtonSettings"
+import {
+    loadSettings as loadMobileButtonSettings,
+    applySettings as applyMobileButtonSettings
+} from "./mobileButtonSettings"
 import "./triggerTester"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
@@ -233,11 +236,8 @@ Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
-        window.dispatchEvent(new CustomEvent("map-ready", {
-            detail: {
-                mapData, colors
-            }
-        }));
+        const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
+        (window as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
     })
     .catch(error => {
         progressContainer.style.display = 'none';
@@ -876,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             swipeStartX = e.touches[0].clientX;
             swipeStartY = e.touches[0].clientY;
         }
-    });
+    }, {passive: true});
 
     messageInput.addEventListener('touchend', (e) => {
         if (swipeStartX === null || swipeStartY === null) return;

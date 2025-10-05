@@ -2,6 +2,7 @@ import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {color, RESET, findClosestColor} from "../Colors";
 import {stripAnsiCodes} from "../Triggers";
+import { openHerbContextMenu } from "../contextMenus";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -23,20 +24,15 @@ export default async function initHerbDescriptions(client: Client) {
         if (!herbs) return;
 
         const showHerbActions = (herbId: string, ev: MouseEvent) => {
-            const actions = herbs.herb_id_to_use[herbId];
-            if (!actions || actions.length === 0) return;
-            const amounts = [1, 3, 5];
-            const items = actions.flatMap(a =>
-                amounts.map(n => ({
-                    label: `${a.action} ${n}`,
-                    action: () => {
-                        preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                        client.sendCommand(`/zi ${a.action} ${herbId} ${n}`);
-                        postUseCommands.forEach(cmd => client.sendCommand(cmd));
-                    }
-                }))
-            );
-            client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
+            openHerbContextMenu(client, {
+                herbId,
+                actions: herbs.herb_id_to_use[herbId],
+                x: ev.pageX,
+                y: ev.pageY,
+                commandPrefix: '/zi',
+                preUseCommands,
+                postUseCommands,
+            });
         };
         Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {
             Object.values(forms).forEach(desc => {

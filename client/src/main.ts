@@ -81,8 +81,6 @@ import Client from "./Client";
 
 
 export function registerScripts(client: Client) {
-
-
     const aliases = client.aliases
     aliases.push({
         pattern: /\/fake (.*)/,

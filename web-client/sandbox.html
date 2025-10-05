@@ -249,72 +249,109 @@
                     <h5 class="modal-title">Ustawienia UI</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body d-flex flex-column gap-2">
-                    <label class="form-label">Rozmiar czcionki treści (rem)
-                        <input id="ui-content-font" type="number" step="0.1" class="form-control" />
-                    </label>
-                    <label class="form-label">Rozmiar czcionki listy obiektów (rem)
-                        <input id="ui-objects-font" type="number" step="0.1" class="form-control" />
-                    </label>
-                    <label class="form-label">Rozmiar przycisków mobilnych (%)
-                        <input id="ui-button-size" type="number" step="0.1" class="form-control" />
-                    </label>
-                    <label class="form-label">
-                        <input id="ui-show-buttons" type="checkbox" class="form-check-input me-2" />
-                        Pokaż przyciski na ekranie
-                    </label>
-                    <label class="form-label">
-                        <input id="ui-haptic-feedback" type="checkbox" class="form-check-input me-2" />
-                        Wibracje przycisków mobilnych
-                    </label>
-                    <label class="form-label">
-                        <input id="ui-emoji-labels" type="checkbox" class="form-check-input me-2" />
-                        Etykiety emoji w stanie postaci
-                    </label>
-                    <label class="form-label">
-                        <input id="ui-fight-title-icon" type="checkbox" class="form-check-input me-2" />
-                        Ikona walki w tytule
-                    </label>
-                    <label class="form-label">Paleta kolorów
-                        <select id="ui-xterm-palette" class="form-select">
-                            <option value="arkadia">Arkadia</option>
-                            <option value="proper">XTerm</option>
-                        </select>
-                    </label>
-                    <label class="form-label">Tryb stopki
-                        <select id="ui-footer-mode" class="form-select">
-                            <option value="0">Liczbowy</option>
-                            <option value="1">Pasek</option>
-                            <option value="2">Pasek jednolity</option>
-                            <option value="3">Pasek graficzny</option>
-                        </select>
-                    </label>
-                    <label class="form-label">Powiększenie mapy
-                        <input id="ui-map-scale" type="number" step="0.05" min="0.05" class="form-control" />
-                    </label>
-                    <label class="form-label">Wysokość mapy (vh)
-                        <input id="ui-map-height" type="number" step="1" class="form-control" />
-                    </label>
-                    <label class="form-label">Położenie mapy
-                        <select id="ui-map-position" class="form-select">
-                            <option value="top-overlay">Góra (nakładka)</option>
-                            <option value="bottom-overlay">Dół (nakładka)</option>
-                            <option value="right-overlay">Prawa (nakładka)</option>
-                            <option value="left-overlay">Lewa (nakładka)</option>
-                            <option value="top">Góra</option>
-                            <option value="bottom">Dół</option>
-                            <option value="right">Prawa</option>
-                            <option value="left">Lewa</option>
-                        </select>
-                    </label>
-                    <label class="form-label">Zasięg renderowania mapy
-                        <input id="ui-map-limit" type="number" step="1" min="1" value="35" class="form-control" />
-                    </label>
-                    <label class="form-label d-flex align-items-center">
-                        <input id="ui-exploration-mode" type="checkbox" class="form-check-input me-2" />
-                        Tryb eksploracji mapy <span id="ui-exploration-stats" class="ms-1 text-muted"></span>
-                    </label>
-                    <button type="button" class="btn btn-warning" id="ui-enable-notifications">Włącz powiadomienia</button>
+                <div class="modal-body">
+                    <div class="ui-settings-layout">
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Mapa</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-map-scale">Powiększenie mapy</label>
+                                    <input id="ui-map-scale" type="number" step="0.05" min="0.05" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-height">Wysokość mapy (vh)</label>
+                                    <input id="ui-map-height" type="number" step="1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-position">Położenie mapy</label>
+                                    <select id="ui-map-position" class="form-select">
+                                        <option value="top-overlay">Góra (nakładka)</option>
+                                        <option value="bottom-overlay">Dół (nakładka)</option>
+                                        <option value="right-overlay">Prawa (nakładka)</option>
+                                        <option value="left-overlay">Lewa (nakładka)</option>
+                                        <option value="top">Góra</option>
+                                        <option value="bottom">Dół</option>
+                                        <option value="right">Prawa</option>
+                                        <option value="left">Lewa</option>
+                                    </select>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-instant-move" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-instant-move">Natychmiastowe przechodzenie po mapie</label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-highlight-current-room" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-highlight-current-room">Podświetl bieżące pomieszczenie</label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-exploration-mode" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-exploration-mode">
+                                        Tryb eksploracji mapy <span id="ui-exploration-stats" class="ms-1 text-muted"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Przyciski mobilne</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-button-size">Rozmiar przycisków mobilnych (%)</label>
+                                    <input id="ui-button-size" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-show-buttons" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-show-buttons">Pokaż przyciski na ekranie</label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-haptic-feedback" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-haptic-feedback">Wibracje przycisków mobilnych</label>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Wygląd</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-content-font">Rozmiar czcionki treści (rem)</label>
+                                    <input id="ui-content-font" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-objects-font">Rozmiar czcionki listy obiektów (rem)</label>
+                                    <input id="ui-objects-font" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-footer-mode">Tryb stopki</label>
+                                    <select id="ui-footer-mode" class="form-select">
+                                        <option value="0">Liczbowy</option>
+                                        <option value="1">Pasek</option>
+                                        <option value="2">Pasek jednolity</option>
+                                        <option value="3">Pasek graficzny</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-xterm-palette">Paleta kolorów</label>
+                                    <select id="ui-xterm-palette" class="form-select">
+                                        <option value="arkadia">Arkadia</option>
+                                        <option value="proper">XTerm</option>
+                                    </select>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-emoji-labels" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-emoji-labels">Etykiety emoji w stanie postaci</label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-fight-title-icon" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-fight-title-icon">Ikona walki w tytule</label>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Powiadomienia</h6>
+                            <div class="ui-settings-stack">
+                                <button type="button" class="btn btn-warning align-self-start" id="ui-enable-notifications">Włącz powiadomienia</button>
+                            </div>
+                        </section>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="ui-settings-save">Zapisz</button>

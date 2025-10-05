@@ -131,3 +131,76 @@ describe('OutputHandler clickable text', () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('OutputHandler context menu positioning', () => {
+  test('repositions context menu to stay within viewport', () => {
+    document.body.innerHTML =
+      '<div id="main_text_output_msg_wrapper"><div id="split-bottom"></div></div><div id="context-menu"></div>';
+    const client = new FakeClient();
+    const handler = new OutputHandler((client as unknown) as any);
+    const menu = document.getElementById('context-menu') as HTMLElement;
+
+    const originalWidthDescriptor = Object.getOwnPropertyDescriptor(
+      document.documentElement,
+      'clientWidth'
+    );
+    const originalHeightDescriptor = Object.getOwnPropertyDescriptor(
+      document.documentElement,
+      'clientHeight'
+    );
+
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 1000,
+    });
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      configurable: true,
+      value: 800,
+    });
+
+    const rect = {
+      width: 250,
+      height: 150,
+      top: 0,
+      left: 0,
+      right: 250,
+      bottom: 150,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
+    const getBoundingClientRectSpy = jest
+      .spyOn(menu, 'getBoundingClientRect')
+      .mockReturnValue(rect);
+
+    handler.showContextMenu(
+      [
+        {
+          label: 'Action',
+          action: jest.fn(),
+        },
+      ],
+      900,
+      700
+    );
+
+    expect(menu.style.left).toBe('750px');
+    expect(menu.style.top).toBe('650px');
+    expect(menu.classList.contains('show')).toBe(true);
+    expect(menu.style.visibility).toBe('');
+
+    if (originalWidthDescriptor) {
+      Object.defineProperty(document.documentElement, 'clientWidth', originalWidthDescriptor);
+    } else {
+      delete (document.documentElement as any).clientWidth;
+    }
+
+    if (originalHeightDescriptor) {
+      Object.defineProperty(document.documentElement, 'clientHeight', originalHeightDescriptor);
+    } else {
+      delete (document.documentElement as any).clientHeight;
+    }
+
+    getBoundingClientRectSpy.mockRestore();
+  });
+});

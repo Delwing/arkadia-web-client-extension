@@ -1,7 +1,5 @@
-let limit = 35;
-
-import { MapReader, Renderer, Settings } from "mudlet-map-renderer";
-import { getCurrentCharacter, getItemSync, setItemSync } from "@client/src/storage";
+import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail} from "mudlet-map-renderer";
+import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -18,7 +16,7 @@ async function openVisitedDB(): Promise<IDBDatabase> {
         request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains(VISITED_STORE_NAME)) {
-                db.createObjectStore(VISITED_STORE_NAME, { keyPath: 'id' });
+                db.createObjectStore(VISITED_STORE_NAME, {keyPath: 'id'});
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -50,49 +48,36 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
         await new Promise<void>((resolve, reject) => {
             const tx = db.transaction([VISITED_STORE_NAME], 'readwrite');
             const store = tx.objectStore(VISITED_STORE_NAME);
-            const req = store.put({ id: getVisitedKey(), rooms });
+            const req = store.put({id: getVisitedKey(), rooms});
             req.onsuccess = () => resolve();
             req.onerror = () => reject(new Error('Failed to store visited rooms'));
         });
-    } catch {}
+    } catch {
+    }
 }
 
-export default class EmbeddedMap {
-    private map: HTMLElement;
-    private reader: any;
-    private renderer: any;
-    private settings: any;
+export class EmbeddedMap {
+    private map: HTMLDivElement;
+    private reader: MapReader;
+    private pathFinder: PathFinder;
+    private renderer: Renderer;
     private currentRoom: any;
     private destinations: number[] = [];
     private highlights: number[] = []
-    private _touchStartDistance: number | null = null;
-    private _touchStartX: number | null = null;
-    private _touchStartY: number | null = null;
-    private _longPressTimer: number | null = null;
     private zoom: number;
-    private limit: number;
     private explorationMode = false;
+    private highlightCurrentRoom = true;
     private visited = new Set<number>();
     private totalRooms: number;
 
-    constructor(mapData: any, colors: any, startId?: number) {
-        this.map = document.querySelector<HTMLCanvasElement>("#map")!;
+    constructor(reader: MapReader, pathFinder: PathFinder, startId?: number) {
+        this.map = document.querySelector<HTMLDivElement>("#map")!;
         this.map.style.touchAction = 'none';
-        this._pinchZoom = this._pinchZoom.bind(this);
-        this._onTouchStart = this._onTouchStart.bind(this);
-        this._onTouchEnd = this._onTouchEnd.bind(this);
-        this._onZoom = this._onZoom.bind(this);
-        this._onContextMenu = this._onContextMenu.bind(this);
-        this.map.addEventListener('touchstart', this._onTouchStart, { passive: false });
-        this.map.addEventListener('touchmove', this._pinchZoom, { passive: false });
-        this.map.addEventListener('touchend', this._onTouchEnd);
-        this.map.addEventListener('touchcancel', this._onTouchEnd);
-        this.map.addEventListener('zoom', this._onZoom);
-        this.map.addEventListener('contextmenu', this._onContextMenu);
-        this.reader = new MapReader(mapData, colors);
-        this.totalRooms = this.reader.getAreas().reduce((sum: number, area: any) => sum + area.rooms.length, 0);
-        this.settings = new Settings();
-        this.settings.areaName = false;
+        this.map.addEventListener('zoom', () => this.onZoom());
+        this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
+        this.reader = reader
+        this.pathFinder = pathFinder;
+        this.totalRooms = this.reader.getRooms().length;
 
         window.addEventListener('pauserStart', () => {
             const icon = document.getElementById('pause-icon');
@@ -106,12 +91,10 @@ export default class EmbeddedMap {
                 icon.hidden = true;
             }
         });
-        this.settings.scale = 90;
-        this.settings.borders = true;
-        this.settings.transparentLabels = true;
-        this.settings
         let zoom = 0.30;
         let explorationMode = false;
+        let instantMove = false;
+        let highlightCurrentRoom = true;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -120,11 +103,14 @@ export default class EmbeddedMap {
                 if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
                     zoom = parsed.mapScale;
                 }
-                if (typeof parsed.mapLimit === 'number' && parsed.mapLimit > 0) {
-                    limit = parsed.mapLimit;
-                }
                 if (typeof parsed.explorationMode === 'boolean') {
                     explorationMode = parsed.explorationMode;
+                }
+                if (typeof parsed.instantMove === 'boolean') {
+                    instantMove = parsed.instantMove;
+                }
+                if (typeof parsed.highlightCurrentRoom === 'boolean') {
+                    highlightCurrentRoom = parsed.highlightCurrentRoom;
                 }
             }
         } catch {
@@ -136,18 +122,21 @@ export default class EmbeddedMap {
             if (!isNaN(savedId)) {
                 initialRoom = savedId;
             }
-        } catch {}
+        } catch {
+        }
         this.zoom = zoom;
-        this.limit = limit;
-        this.explorationMode = explorationMode;
-        this.renderer = new Renderer(this.map, this.reader, this.settings);
+        this.renderer = new Renderer(this.map, this.reader);
+        this.setExplorationMode(explorationMode);
+        this.setInstantMove(instantMove);
+        this.setHighlightCurrentRoom(highlightCurrentRoom);
 
         window.addEventListener('enterLocation', async (ev: any) => {
             const id = ev.detail.id;
             this.visited.add(id);
+            this.reader.addVisitedRoom(id);
             setItemSync(STORAGE_KEY, id.toString());
-            await saveVisitedRooms(Array.from(this.visited));
-            this.renderRoomById(id);
+            saveVisitedRooms(Array.from(this.visited));
+            this.renderRoomById(parseInt(id));
         });
 
         window.addEventListener('leadTo', (ev: any) => {
@@ -165,190 +154,80 @@ export default class EmbeddedMap {
     private async initVisitedRooms(initialRoom: number) {
         const visited = await loadVisitedRooms();
         visited.forEach(id => this.visited.add(id));
+        this.reader.addVisitedRooms(visited);
         this.renderRoomById(initialRoom);
     }
 
-    private _onTouchStart(ev: TouchEvent) {
-        if (this._longPressTimer !== null) {
-            clearTimeout(this._longPressTimer);
-            this._longPressTimer = null;
-        }
-        if (ev.touches.length === 2) {
-            const [t1, t2] = ev.touches;
-            this._touchStartDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        } else if (ev.touches.length === 1) {
-            const touch = ev.touches[0];
-            const clientX = touch.clientX;
-            const clientY = touch.clientY;
-            const pageX = touch.pageX;
-            const pageY = touch.pageY;
-            this._touchStartX = clientX;
-            this._touchStartY = clientY;
-            this._longPressTimer = window.setTimeout(() => {
-                this._onContextMenu({
-                    clientX,
-                    clientY,
-                    pageX,
-                    pageY,
-                    preventDefault() {}
-                } as any);
-            }, 500);
-        }
-    }
-
-    private _onTouchEnd(ev: TouchEvent) {
-        if (ev.touches.length < 2) {
-            this._touchStartDistance = null;
-        }
-        if (ev.touches.length === 0) {
-            this._touchStartX = null;
-            this._touchStartY = null;
-        }
-        if (this._longPressTimer !== null) {
-            clearTimeout(this._longPressTimer);
-            this._longPressTimer = null;
-        }
-    }
-
-    private _pinchZoom(ev: TouchEvent) {
-        if (ev.touches.length === 2 && this._touchStartDistance !== null) {
-            if (this._longPressTimer !== null) {
-                clearTimeout(this._longPressTimer);
-                this._longPressTimer = null;
-            }
-            ev.preventDefault();
-            const [t1, t2] = ev.touches;
-            const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-            const delta = dist / this._touchStartDistance;
-            this._touchStartDistance = dist;
-            this.setZoom(this.zoom * delta);
-        } else if (
-            ev.touches.length === 1 &&
-            this._longPressTimer !== null &&
-            this._touchStartX !== null &&
-            this._touchStartY !== null
-        ) {
-            const touch = ev.touches[0];
-            const dx = touch.clientX - this._touchStartX;
-            const dy = touch.clientY - this._touchStartY;
-            if (Math.hypot(dx, dy) > 10) {
-                clearTimeout(this._longPressTimer);
-                this._longPressTimer = null;
-            }
-        }
-    }
-
-    private _saveZoom() {
+    private saveZoom() {
         try {
             const data = getItemSync('uiSettings');
-            const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
+            const parsed: any = data?.uiSettings ? {...data.uiSettings} : {};
             parsed.mapScale = this.zoom;
             setItemSync('uiSettings', parsed);
-        } catch {}
+        } catch {
+        }
     }
 
-    private _onZoom() {
-        let shouldSave = this.renderer.paper.view.zoom !== this.zoom;
-        this.zoom = this.renderer.paper.view.zoom;
+    private onZoom() {
+        let shouldSave = this.renderer.getZoom() !== this.zoom;
+        this.zoom = this.renderer.getZoom();
         if (shouldSave) {
-            this._saveZoom();
+            this.saveZoom();
         }
     }
 
-    private _onContextMenu(ev: MouseEvent | { clientX: number; clientY: number; pageX: number; pageY: number; preventDefault: () => void }) {
+    private onContextMenu(ev: CustomEvent<RoomContextMenuEventDetail>) {
         ev.preventDefault();
-        const point = this.renderer.paper.view.getEventPoint(ev as any);
-        const hit = this.renderer.roomLayer.hitTest(point, { fill: true, tolerance: 0 });
-        const room = hit ? this.renderer.area?.rooms?.find((r: any) => r?.render === hit.item) : undefined;
-        console.log('Context menu', { x: point.x, y: point.y, roomId: room?.id });
-        if (room) {
-            const handler: any = (window as any).clientExtension?.OutputHandler;
-            handler?.showContextMenu([
-                {
-                    label: 'Ustaw lokację',
-                    action: () => (window as any).clientExtension?.Map.setMapRoomById(room.id)
-                },
-                {
-                    label: 'Prowadź do lokacji',
-                    action: () => (window as any).clientExtension?.sendEvent('leadTo', room.id)
-                },
-                {
-                    label: 'Idź do lokacji',
-                    action: () => (window as any).clientExtension?.sendCommand(`/idz ${room.id}`)
-                }
-            ], (ev as any).pageX, (ev as any).pageY);
-        }
-    }
 
-    private _saveLimit() {
-        try {
-            const data = getItemSync('uiSettings');
-            const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
-            parsed.mapLimit = this.limit;
-            setItemSync('uiSettings', parsed);
-        } catch {}
+        const room = ev.detail.roomId
+        if (room) {
+            const client: any = (window as any).clientExtension;
+            client?.openMapContextMenu?.(room, ev.detail.position.x, ev.detail.position.y);
+        }
     }
 
     renderRoomById(id: number) {
-        this.renderRoom(this.reader.getRoomById(id));
+        this.renderRoom(id);
     }
 
-    renderRoom(room: any) {
-        if (room) {
-            const area = this.reader.getAreaByRoomId(room.id, {
-                xMin: room.x - this.limit,
-                xMax: room.x + this.limit,
-                yMin: room.y - this.limit,
-                yMax: room.y + this.limit
-            });
-            if (this.explorationMode) {
-                const rooms: any[] = [];
-                area.rooms.forEach((r: any) => {
-                    if (r && this.visited.has(r.id)) {
-                        rooms[r.id] = r;
-                    }
-                });
-                area.rooms = rooms;
-            }
-            this.renderer?.clear();
-            this.renderer.renderArea(area);
-            this.renderer.controls.centerRoom(room.id);
-            this.renderer.controls.setZoom(this.zoom);
-            this.renderer.backgroundLayer.remove();
-            
-            this.currentRoom = room;
-            const label = document.getElementById('location-text');
-            if (label && area) {
-                let text = `#${room.id} ${area.areaName}`;
-                if (this.destinations.length > 0) {
-                    const destId = this.destinations[0];
-                    const path = this.reader.getPath(room.id, destId);
-                    const distance = path ? path.length - 1 : 0;
-                    const destArea = this.reader.getAreaByRoomId(destId);
-                    const destName = destArea ? destArea.areaName : destId;
-                    text += ` → #${destId} ${destName} (${distance})`;
-                }
-                label.textContent = text;
-            }
+    renderRoom(roomId: number) {
+        this.renderer.setPosition(roomId)
+        this.renderer.setZoom(this.zoom);
+        const area = this.renderer.getCurrentArea()
+        this.currentRoom = roomId;
+        const label = document.getElementById('location-text');
 
-            if (this.destinations.indexOf(room.id) > -1) {
-                this.destinations.splice(this.destinations.indexOf(room.id), 1);
-            }
-
-            this.destinations.forEach(destination => {
-                this.renderer.controls.renderPath(room.id, destination);
-            });
-
-            this.highlights.forEach((highlight) => {
-                const room = this.reader.getRoomById(highlight);
-                if (
-                    room.z === this.currentRoom.z &&
-                    this.renderer.area.getRoomById(highlight) !== undefined
-                ) {
-                    this.renderer.renderHighlight(highlight);
-                }
-            });
+        if (this.destinations.indexOf(roomId) > -1) {
+            this.destinations.splice(this.destinations.indexOf(roomId), 1);
         }
+
+        this.renderer.clearPaths()
+
+        if (label && area) {
+            let text = `#${roomId} ${area.getAreaName()}`;
+            if (this.destinations.length > 0) {
+                const destId = this.destinations[0];
+                const path = this.getPath(roomId, destId);
+                const distance = path ? path.length - 1 : 0;
+                const room = this.reader.getRoom(roomId)
+                const destArea = this.reader.getArea(room.area);
+                const destName = destArea ? destArea.getAreaName() : destId;
+                text += ` → #${destId} ${destName} (${distance})`;
+                if (path) {
+                    this.renderer.renderPath(path, '#66E64D');
+                }
+            }
+            label.textContent = text;
+        }
+
+        this.renderer.clearHighlights()
+        this.highlights.forEach((highlight) => {
+            this.renderer.renderHighlight(highlight, 'green');
+        });
+    }
+
+    private getPath(from: number, to: number): number[] | null {
+        return this.pathFinder?.findPath(from, to) ?? null;
     }
 
     refresh() {
@@ -365,36 +244,36 @@ export default class EmbeddedMap {
 
     setExplorationMode(on: boolean) {
         this.explorationMode = on;
+        if (this.explorationMode) {
+            this.reader.decorateWithExploration()
+        } else {
+            this.reader.clearExplorationDecoration()
+        }
         this.refresh();
     }
 
     setZoom(zoom: number) {
         this.zoom = zoom;
-        if (this.renderer?.controls) {
-            this.renderer.controls.setZoom(this.zoom);
-        }
+        this.renderer.setZoom(zoom);
     }
 
-    setLimit(newLimit: number) {
-        this.limit = newLimit;
-        this.refresh();
-        this._saveLimit();
+    setInstantMove(on: boolean) {
+        Settings.instantMapMove = on;
+    }
+
+    setHighlightCurrentRoom(on: boolean) {
+        this.highlightCurrentRoom = on;
+        Settings.highlightCurrentRoom = on;
+        this.renderer.setPosition(this.currentRoom);
+
     }
 
     leadTo(id?: string) {
         if (id) {
-            this.destinations.push(parseInt(id));
+            this.destinations = [parseInt(id)];
         } else {
-            this.destinations = [];
+            this.destinations = [];6
         }
         this.refresh();
     }
 }
-
-export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
-};
-
-window.addEventListener('map-ready-with-data', (e: Event) =>
-    createMap((e as CustomEvent).detail)
-);

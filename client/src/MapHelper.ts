@@ -1,8 +1,8 @@
-import {MapReader} from "mudlet-map-renderer";
 import Client from "./Client";
 import { getItemSync, setItemSync } from "./storage";
 import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
+import { MapReader, PathFinder } from "mudlet-map-renderer"
 
 const STORAGE_KEY = 'mapperRoomId';
 
@@ -10,8 +10,8 @@ export { longToShort };
 
 
 const directionDeltas = {
-    north: {x: 0, y: 1, z: 0},
-    south: {x: 0, y: -1, z: 0},
+    north: {x: 0, y: -1, z: 0},
+    south: {x: 0, y: 1, z: 0},
     east: {x: 1, y: 0, z: 0},
     west: {x: -1, y: 0, z: 0},
     northwest: {x: -1, y: 1, z: 0},
@@ -27,13 +27,18 @@ export default class MapHelper {
     currentRoom: Room;
     locationHistory: number[] = []
     client: Client
-    mapReader: MapReader
+    mapReader!: MapReader
+    pathFinder!: PathFinder
     refreshPosition = true;
     hashes = {};
     gmcpPosition: Position;
     paused = false;
     savedRoomId: number | null = null;
     areas: Record<string, string> = {}
+    private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];
+    private mapData?: MapData.Map;
+    private colors?: any;
+    private mapReady = false;
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
@@ -43,17 +48,6 @@ export default class MapHelper {
             this.savedRoomId = parseInt(saved);
         }
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
-        window.addEventListener('map-ready', (event: CustomEvent) => {
-            this.mapReader = new MapReader(event.detail.mapData, event.detail.colors)
-            // @ts-ignore
-            Object.values(this.mapReader.roomIndex).forEach(room => this.hashes[room.hash] = room);
-            window.dispatchEvent(new CustomEvent('map-ready-with-data', {detail: {mapData: event.detail.mapData, colors: event.detail.colors}}))
-            const startId = this.savedRoomId ?? 1;
-            this.renderRoomById(startId)
-            this.mapReader.getAreas().forEach(area => {
-                this.areas[area.areaId] = area.areaName
-            })
-        })
 
         this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
             this.gmcpPosition = event.detail.map;
@@ -83,11 +77,61 @@ export default class MapHelper {
         this.client.sendEvent('refreshPositionWhenAble');
     }
 
+    initialize(mapData: MapData.Map, colors: any): { startId: number; reader: MapReader, pathFinder: PathFinder } {
+        this.mapData = mapData;
+        this.colors = colors;
+        this.mapReader = new MapReader(mapData, colors)
+        this.pathFinder = new PathFinder(this.mapReader)
+        this.hashes = {}
+        this.areas = {}
+        this.mapReader.getRooms().forEach(room => this.hashes[room.hash] = room.id)
+        const startId = this.savedRoomId ?? 1;
+        this.renderRoomById(startId)
+        this.mapReader.getAreas().forEach(area => {
+            this.areas[area.getAreaId()] = area.getAreaName()
+        })
+        this.mapReady = true;
+        this.mapReadyCallbacks.forEach(cb => cb(mapData, colors));
+        this.mapReadyCallbacks = [];
+        return { startId, reader: this.mapReader, pathFinder: this.pathFinder };
+    }
+
+    onMapReady(callback: (mapData: MapData.Map, colors: any) => void) {
+        if (this.mapReady && this.mapData && this.colors) {
+            callback(this.mapData, this.colors)
+            return;
+        }
+        this.mapReadyCallbacks.push(callback)
+    }
+
+    getMapReader(): MapReader {
+        if (!this.mapReader) {
+            throw new Error("Map reader not initialized");
+        }
+        return this.mapReader
+    }
+
+    tryGetMapReader(): MapReader | null {
+        return this.mapReader ?? null;
+    }
+
+    getRoomById(id: number): Room | null {
+        if (!this.mapReader) {
+            return null;
+        }
+        const reader: any = this.mapReader as any;
+        if (typeof reader.getRoomById === "function") {
+            return reader.getRoomById(id) ?? null;
+        }
+        const room = this.mapReader.getRoom(id);
+        return room ?? null;
+    }
+
     setPaused(paused: boolean) {
         this.paused = paused;
     }
 
-    parseCommand(command) {
+    parseCommand(command: string): string | null {
         if (command === "zerknij" || command === "spojrz" || command === "sp") {
             this.refreshPosition = true;
         }
@@ -122,6 +166,9 @@ export default class MapHelper {
     }
 
     move(direction: string) {
+        if (!this.mapReader) {
+            return {direction, moved: false}
+        }
         if (this.paused) {
             return {direction, moved: false}
         }
@@ -135,7 +182,7 @@ export default class MapHelper {
             const potentialExit = getLongDir(direction);
             if (!this.currentRoom.exits || !this.currentRoom.exits[potentialExit]) {
                 const exits = Object.entries(allExits).filter(([_, id]) => {
-                    const target = this.mapReader.getRoomById(id);
+                    const target = this.mapReader.getRoom(id);
                     return this.findRoomByExit(this.currentRoom, target, getLongDir(direction));
                 }).map(([exit]) => exit);
                 if (exits.length > 0) {
@@ -211,12 +258,12 @@ export default class MapHelper {
         if (this.currentRoom?.id === id) {
             return;
         }
-        this.setMapRoom(this.mapReader.getRoomById(id))
+        this.renderRoomById(id)
     }
 
-    setMapRoom(room: Room) {
-        this.locationHistory = [room.id]
-        this.renderRoom(room);
+    setMapRoom(room: number) {
+        this.locationHistory = [room]
+        this.renderRoomById(room);
         if (!this.client.suppressMapMoveEvent) {
             this.client.sendEvent('mapMove')
         } else {
@@ -239,12 +286,13 @@ export default class MapHelper {
         }
     }
 
-    renderRoom(room: Room) {
-        this.renderRoomById(room.id)
-    }
-
     renderRoomById(id: number, sendEvent = true) {
-        this.currentRoom = this.mapReader.getRoomById(id)
+        if (!this.mapReader) {
+            this.savedRoomId = id;
+            return;
+        }
+        this.currentRoom = this.mapReader.getRoom(id)
+        this.savedRoomId = id;
         setItemSync(STORAGE_KEY, id.toString())
         if (sendEvent) {
             this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
@@ -282,6 +330,11 @@ export default class MapHelper {
 
     getAreaName(id: string) {
         return this.areas[id]
+    }
+
+    findPath(fromId: number, targetId: number) {
+        console.log("findPath", fromId, targetId)
+        return this.pathFinder.findPath(fromId, targetId)
     }
 
 }

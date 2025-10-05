@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { longToShort } from "../MapHelper";
-import { getShortcut } from "./shortcuts";
+import {longToShort} from "../MapHelper";
+import {getShortcut} from "./shortcuts";
 
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
@@ -42,9 +42,9 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const room: any = client.Map.currentRoom;
                 if (!embedded?.destinations?.length || !room) return;
                 const target = parseInt(embedded.destinations[0]);
-                const path = client.Map.mapReader.getPath(room.id, target);
+                const path = client.Map.findPath(room.id, target);
                 if (!path || path.length < 2) return;
-                const next = parseInt(path[1]);
+                const next = path[1];
                 const allExits = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
                 const entry = Object.entries(allExits).find(([_, id]) => id === next);
                 if (!entry) return;
@@ -61,29 +61,37 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /^\/przeszukaj (.+)$/,
             callback: async (m: RegExpMatchArray) => {
-                const term = m[1].toLowerCase();
-                const reader = client.Map.mapReader;
+                const termRaw = m[1];
+                const term = termRaw.toLowerCase();
+                const reader = client.Map.tryGetMapReader();
                 const current = client.Map.currentRoom;
                 if (!reader || !current) return;
                 const matches: { id: number, name: string; area: string; dist: number }[] = [];
-                for (const area of reader.getAreas()) {
-                    for (const room of area.rooms) {
-                        const name = room.name;
-                        if (name && name.toLowerCase().includes(term)) {
-                            const path = reader.getPath(current.id, room.id);
-                            const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
-                            matches.push({ id: room.id, name: room.name, area: area.areaName, dist });
-                        }
+                for (const room of reader.getRooms()) {
+                    const name = room.name;
+                    if (name && name.toLowerCase().includes(term)) {
+                        const path = client.Map.findPath(current.id, room.id);
+                        const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
+                        const area = typeof (reader as any).getArea === 'function' ? (reader as any).getArea(room.area) : null;
+                        const areaName = area?.getAreaName?.() ?? client.Map.getAreaName(String(room.area)) ?? '';
+                        matches.push({id: room.id, name: room.name, area: areaName, dist});
                     }
                 }
                 matches.sort((a, b) => a.dist - b.dist);
-                const lines = matches.slice(0, 10).map(m => client.OutputHandler.makeStringClickable(`${m.name} (${m.area})`, () => {
-                    client.sendEvent('leadTo', m.id);
-                }));
-                if (lines.length) {
-                    client.println(lines.join('\n'));
+                const topMatches = matches.slice(0, 10);
+                const header = `Wyniki przeszukiwania '${termRaw}'`;
+                if (topMatches.length) {
+                    const maxIdLength = Math.max(...topMatches.map(match => String(match.id).length));
+                    const lines = topMatches.map(match => {
+                        const paddedId = String(match.id).padStart(maxIdLength, ' ');
+                        const clickable = client.OutputHandler.makeStringClickable(`${match.name} (${match.area})`, () => {
+                            client.sendEvent('leadTo', match.id);
+                        });
+                        return `${paddedId} ${clickable}`;
+                    });
+                    client.println(`${header}\n${lines.join('\n')}`);
                 } else {
-                    client.println('Nie znaleziono.');
+                    client.println(`${header}\nNie znaleziono.`);
                 }
             }
         }

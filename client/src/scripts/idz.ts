@@ -48,7 +48,13 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             return;
         }
 
-        const current = client.Map.mapReader.getRoomById(path[index]);
+        const current = client.Map.getRoomById(path[index]);
+        if (!current) {
+            clearTimer();
+            path = [];
+            client.sendEvent('leadTo');
+            return;
+        }
         const nextId = path[index + 1];
         const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
         const dir = Object.keys(exits).find(d => exits[d] === nextId);
@@ -73,9 +79,13 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     const startWalk = (targetId: number, d?: number, info: string = 'start') => {
         const room: any = client.Map.currentRoom;
         if (!room) return;
-        const p = client.Map.mapReader.getPath(room.id, targetId);
+        const p = client.Map.findPath(room.id, targetId);
         if (!p || p.length < 2) return;
-        path = p.map(n => parseInt(n));
+        path = p.map(n => parseInt(n as any, 10)).filter(n => !isNaN(n));
+        if (path.length < 2) {
+            path = [];
+            return;
+        }
         index = 0;
         if (d !== undefined) {
             delay = Math.max(0.5, d);
@@ -108,9 +118,13 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             const current: any = client.Map.currentRoom;
             const dest = (window as any).embedded?.destinations?.[0];
             if (!current || !dest) return;
-            const p = client.Map.mapReader.getPath(current.id, parseInt(dest));
+            const p = client.Map.findPath(current.id, parseInt(dest));
             if (!p || p.length < 2) return;
-            path = p.map((n) => parseInt(n));
+            path = p.map((n) => parseInt(n as any, 10)).filter(n => !isNaN(n));
+            if (path.length < 2) {
+                path = [];
+                return;
+            }
             index = 0;
             target = parseInt(dest);
         }

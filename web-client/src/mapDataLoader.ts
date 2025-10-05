@@ -3,7 +3,7 @@ import { loadCachedJSON } from "@client/src/utils/dataCache.ts";
 
 const TTL = 24 * 60 * 60 * 1000; // 24h
 
-export function loadMapData(onProgress?: (progress: number, loaded?: number, total?: number) => void) {
+export function loadMapData(onProgress?: (progress: number, loaded?: number, total?: number) => void): Promise<MapData.Map> {
     return loadCachedJSON({
         url: 'https://delwing.github.io/arkadia-mapa/data/mapExport.json',
         localStorageKey: 'cachedMapData',
@@ -13,7 +13,7 @@ export function loadMapData(onProgress?: (progress: number, loaded?: number, tot
     });
 }
 
-export function loadColors() {
+export function loadColors(): Promise<MapData.Env[]> {
     return loadCachedJSON({
         url: 'https://delwing.github.io/arkadia-mapa/data/colors.json',
         localStorageKey: 'cachedColors',

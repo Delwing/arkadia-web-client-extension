@@ -2897,13 +2897,6 @@ ms@^2.1.3:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-"mudlet-map-renderer@github:Delwing/js-mudlet-map-renderer#memory-leak-issues":
-  version "0.0.25"
-  resolved "https://codeload.github.com/Delwing/js-mudlet-map-renderer/tar.gz/663bc6a49f3944b9b9e3311ad6c92552dab68766"
-  dependencies:
-    node-dijkstra "^2.5.0"
-    paper-jsdom "^0.12.17"
-
 napi-postinstall@^0.3.0:
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/napi-postinstall/-/napi-postinstall-0.3.2.tgz#03c62080e88b311c4d7423b0f15f0c920bbcc626"

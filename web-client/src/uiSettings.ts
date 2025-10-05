@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import {Settings} from "mudlet-map-renderer";
 
 const mapPositions = [
     'top-overlay',
@@ -18,7 +19,6 @@ interface UiSettings {
     objectsFontSize: number;
     buttonSize: number;
     mapScale: number;
-    mapLimit: number;
     showButtons: boolean;
     hapticFeedback: boolean;
     mapHeight: number;
@@ -28,6 +28,8 @@ interface UiSettings {
     xtermPalette: 'arkadia' | 'proper';
     footerMode: number;
     explorationMode: boolean;
+    instantMove: boolean;
+    highlightCurrentRoom: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -35,7 +37,6 @@ const defaultSettings: UiSettings = {
     objectsFontSize: 0.6,
     buttonSize: 1,
     mapScale: 0.30,
-    mapLimit: 35,
     showButtons: true,
     hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
@@ -45,6 +46,8 @@ const defaultSettings: UiSettings = {
     xtermPalette: 'arkadia',
     footerMode: 0,
     explorationMode: false,
+    instantMove: false,
+    highlightCurrentRoom: true,
 };
 
 function apply(settings: UiSettings) {
@@ -83,6 +86,10 @@ function apply(settings: UiSettings) {
     if (mainContainer && settings.mapPosition !== 'top-overlay') {
         mainContainer.style.paddingTop = '';
     }
+    const map = document.getElementById('map')
+    if (map) {
+        map.dispatchEvent(new CustomEvent('resize'));
+    }
     document.querySelectorAll<HTMLButtonElement>('.mobile-button').forEach(btn => {
         const baseSize = 36; // default width/height in px
         const baseFont = btn.classList.contains('mobile-button-text') ? 9 : 14;
@@ -103,12 +110,15 @@ function apply(settings: UiSettings) {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
-    if ((window as any).embedded?.renderer?.controls) {
+    if ((window as any).embedded?.renderer) {
         (window as any).embedded.setZoom?.(settings.mapScale);
-        (window as any).embedded.setLimit?.(settings.mapLimit);
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
+    Settings.instantMapMove = settings.instantMove;
+    (window as any).embedded?.setInstantMove?.(settings.instantMove);
+    Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
+    (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
             new CustomEvent('uiSettings', {
@@ -143,10 +153,6 @@ async function load(): Promise<UiSettings> {
                 const value = Math.abs(parseFloat(parsed.mapScale));
                 return value > 0 ? value : defaultSettings.mapScale;
             })();
-            const mapLimit = (() => {
-                const value = parseInt(parsed.mapLimit);
-                return value > 0 ? value : defaultSettings.mapLimit;
-            })();
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
@@ -155,7 +161,11 @@ async function load(): Promise<UiSettings> {
             const explorationMode = !!parsed.explorationMode;
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
             const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            return { ...defaultSettings, ...parsed, mapScale, mapLimit, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
+            const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultSettings.instantMove;
+            const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
+                ? parsed.highlightCurrentRoom
+                : defaultSettings.highlightCurrentRoom;
+            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom };
         }
     } catch {
         // ignore malformed data
@@ -179,7 +189,6 @@ export default async function initUiSettings() {
     const mapInput = modalEl.querySelector('#ui-map-scale') as HTMLInputElement;
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
     const mapPositionInput = modalEl.querySelector('#ui-map-position') as HTMLSelectElement;
-    const mapLimitInput = modalEl.querySelector('#ui-map-limit') as HTMLInputElement;
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
@@ -188,6 +197,8 @@ export default async function initUiSettings() {
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
+    const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
+    const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -197,7 +208,6 @@ export default async function initUiSettings() {
     mapInput.value = String(current.mapScale);
     mapHeightInput.value = String(current.mapHeight);
     mapPositionInput.value = current.mapPosition;
-    mapLimitInput.value = String(current.mapLimit);
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
     hapticFeedbackInput.checked = current.hapticFeedback;
@@ -205,7 +215,32 @@ export default async function initUiSettings() {
     fightTitleIconInput.checked = current.fightTitleIcon;
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
+    instantMoveInput.checked = current.instantMove;
+    highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
     apply(current);
+
+    const updateMapScale = (scale: number) => {
+        const rounded = roundMapZoom(scale);
+        mapInput.value = String(rounded);
+        current = { ...current, mapScale: rounded };
+    };
+
+    const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+        const uiSettingsChange = changes.uiSettings;
+        if (!uiSettingsChange || !uiSettingsChange.newValue) {
+            return;
+        }
+        const newValue = uiSettingsChange.newValue;
+        const scaleValue = typeof newValue.mapScale === 'number'
+            ? newValue.mapScale
+            : parseFloat(newValue.mapScale);
+        const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0
+            ? scaleValue
+            : defaultSettings.mapScale;
+        updateMapScale(normalizedScale);
+    };
+
+    storage.onChanged?.addListener(handleStorageChange);
 
     function refreshExplorationStats() {
         const map = (window as any).embedded;
@@ -224,19 +259,11 @@ export default async function initUiSettings() {
             return scale;
         })();
 
-        const mapLimit = (() => {
-            const value = parseInt(mapLimitInput.value);
-            const limit = value > 0 ? value : defaultSettings.mapLimit;
-            mapLimitInput.value = String(limit);
-            return limit;
-        })();
-
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
             buttonSize: parseFloat(buttonInput.value) || defaultSettings.buttonSize,
             mapScale,
-            mapLimit,
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             mapPosition: (mapPositionInput.value as MapPosition) || defaultSettings.mapPosition,
             showButtons: showButtonsInput.checked,
@@ -246,6 +273,8 @@ export default async function initUiSettings() {
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
             footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
             explorationMode: explorationInput.checked,
+            instantMove: instantMoveInput.checked,
+            highlightCurrentRoom: highlightCurrentRoomInput.checked,
         };
     }
 
