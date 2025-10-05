@@ -944,6 +944,24 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   font-weight: 600;
 }
 
+.letter-composer .btn-close {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  padding: 0;
+  filter: invert(1);
+  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.08);
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.letter-composer .btn-close:hover,
+.letter-composer .btn-close:focus-visible {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
 .letter-composer-form {
   display: flex;
   flex-direction: column;

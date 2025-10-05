@@ -99,6 +99,10 @@ export default class LetterComposer {
         if (event.button !== 0 && event.pointerType !== "touch" && event.pointerType !== "pen") {
             return;
         }
+        const target = event.target as HTMLElement | null;
+        if (target?.closest("[data-letter-close]")) {
+            return;
+        }
         this.dragPointerId = event.pointerId;
         const rect = this.container.getBoundingClientRect();
         this.dragOffsetX = event.clientX - rect.left;
