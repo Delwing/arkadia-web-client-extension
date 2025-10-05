@@ -10,6 +10,7 @@ class FakeClient {
   };
   println = jest.fn();
   sendCommand = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('attack queue aliases', () => {

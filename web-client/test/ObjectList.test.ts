@@ -10,7 +10,7 @@ jest.mock('@client/src/storage', () => ({
 
 class MockClient {
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: (_d: string) => false };
+  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
   addEventListener() {}
   sendCommand = jest.fn();
 }
@@ -159,6 +159,25 @@ describe('ObjectList', () => {
     const desc = document.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     desc.click();
     expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+  });
+
+  test('highlights next queued enemy number in gold', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    client.TeamManager.getEnemyQueue = () => ['123'];
+    const objectList = new ObjectList(client as any);
+    const objects = [
+      { shortcut: '1', desc: 'Ork', num: 123 },
+      { shortcut: '2', desc: 'Goblin', num: 456 },
+    ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+    const highlighted = document.querySelector(
+      '.object-num[data-object-id="123"]',
+    ) as HTMLElement;
+    expect(highlighted).toBeTruthy();
+    expect(highlighted.outerHTML).toContain('color:#ffd700');
+    expect(highlighted.classList.contains('object-num-next-target')).toBe(true);
   });
 
   test('player object is not clickable', () => {

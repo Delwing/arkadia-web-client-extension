@@ -110,6 +110,7 @@ export default class TeamManager {
         if (this.enemies.length === 0) {
             return;
         }
+        const previousQueue = this.enemies.join(",");
         let nums: string[] | null = null;
         if (Array.isArray(detail)) {
             nums = detail.map(String);
@@ -142,6 +143,9 @@ export default class TeamManager {
         });
 
         this.enemies = remaining;
+        if (previousQueue !== this.enemies.join(",")) {
+            this.notifyAttackQueueChange();
+        }
     }
 
     private handleRoomInfo(detail: any) {
@@ -313,6 +317,7 @@ export default class TeamManager {
         }
         this.enemies.push(normalized);
         this.missingEnemyCounts.delete(normalized);
+        this.notifyAttackQueueChange();
         return true;
     }
 
@@ -322,8 +327,20 @@ export default class TeamManager {
         if (index === -1) {
             return false;
         }
+        const wasFirst = index === 0;
         this.enemies.splice(index, 1);
         this.missingEnemyCounts.delete(normalized);
+        if (wasFirst) {
+            const nextId = this.enemies[0];
+            if (nextId) {
+                const description = this.accumulatedObjectsData[nextId]?.desc;
+                const displayName = description ?? `ob_${nextId}`;
+                this.client.println(
+                    `<span style="color:orange">/nn zeby zaatakowac nastepny cel: ${displayName}</span>`
+                );
+            }
+        }
+        this.notifyAttackQueueChange();
         return true;
     }
 
@@ -331,6 +348,7 @@ export default class TeamManager {
         const next = this.enemies.shift();
         if (next) {
             this.missingEnemyCounts.delete(next);
+            this.notifyAttackQueueChange();
         }
         return next;
     }
@@ -345,5 +363,12 @@ export default class TeamManager {
         }
         this.enemies = [];
         this.missingEnemyCounts.clear();
+        this.notifyAttackQueueChange();
+    }
+
+    private notifyAttackQueueChange() {
+        if (typeof this.client?.sendEvent === "function") {
+            this.client.sendEvent("attackQueueChange", this.getEnemyQueue());
+        }
     }
 }

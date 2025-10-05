@@ -30,6 +30,7 @@ export default class ObjectList {
             this.container?.addEventListener("click", this.onClick);
         }
         window.addEventListener("resize", this.clampToViewport);
+        this.client.addEventListener("attackQueueChange", () => this.render());
         this.client.addEventListener("gmcp.objects.nums", () => this.render());
         this.client.addEventListener("gmcp.objects.data", () => this.render());
         this.client.addEventListener("gmcp.char.state", () => this.render());
@@ -210,6 +211,8 @@ export default class ObjectList {
         const objects = manager.getObjectsOnLocation();
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
         const tm = this.client.TeamManager;
+        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+        const nextQueuedIdString = typeof nextQueuedId === "undefined" ? undefined : String(nextQueuedId);
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
         });
@@ -226,9 +229,19 @@ export default class ObjectList {
             } else if (obj.defense_target) {
                 prefix = `<span style="color:greenyellow">>></span>`;
             }
+            const isNextQueued =
+                !isPlayer &&
+                nextQueuedIdString !== undefined &&
+                typeof obj.num !== "undefined" &&
+                nextQueuedIdString === String(obj.num);
+            const numClasses = ["object-num"];
+            if (isNextQueued) {
+                numClasses.push("object-num-next-target");
+            }
+            const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
             const numLabel = isPlayer
                 ? `${prefix}${num}`
-                : `${prefix}<span class="object-num" data-object-id="${obj.num}" data-object-num="${num}">${num}</span>`;
+                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle}>${num}</span>`;
             const rawDesc = obj.desc || "";
             let coloredDesc = rawDesc;
             if (!isPlayer) {
