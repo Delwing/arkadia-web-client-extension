@@ -44,14 +44,22 @@ export default class TeamManager {
     private avatarAttackTargetId?: string
     private attackTargetId?: string
     private defenseTargetId?: string
+    private enemies: string[] = [];
+    private currentLocationSignature?: string;
 
     constructor(client: Client) {
         this.client = client;
         this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
             this.handleObjectsData(e.detail);
         });
+        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
+            this.handleObjectsNums(e.detail);
+        });
         this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
             this.playerNum = String(e.detail.object_num);
+        });
+        this.client.addEventListener('gmcp.room.info', (e: CustomEvent) => {
+            this.handleRoomInfo(e.detail);
         });
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
@@ -86,11 +94,45 @@ export default class TeamManager {
             if (id === this.playerNum && obj.attack_num !== undefined) {
                 this.avatarAttackTargetId = typeof obj.attack_num == "boolean" ? undefined : String(obj.attack_num)
             }
+            if (obj?.living === false) {
+                this.removeEnemyFromQueue(id);
+            }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
             this.client.sendEvent('teamLeaderTargetNoAvatar', this.leaderAttackTargetId);
         } else  {
             this.client.sendEvent('teamLeaderTargetAvatar');
+        }
+    }
+
+    private handleObjectsNums(detail: any) {
+        if (this.enemies.length === 0) {
+            return;
+        }
+        let nums: string[] | null = null;
+        if (Array.isArray(detail)) {
+            nums = detail.map(String);
+        } else if (detail && Array.isArray(detail.nums)) {
+            nums = detail.nums.map(String);
+        } else if (detail && Array.isArray(detail.objects)) {
+            nums = detail.objects.map(String);
+        }
+        if (!nums) {
+            return;
+        }
+        const allowed = new Set(nums);
+        if (this.enemies.some(id => !allowed.has(id))) {
+            this.enemies = this.enemies.filter(id => allowed.has(id));
+        }
+    }
+
+    private handleRoomInfo(detail: any) {
+        const signature = typeof detail === 'object' && detail !== null
+            ? String(detail?.num ?? detail?.id ?? detail?.hash ?? JSON.stringify(detail))
+            : String(detail ?? '');
+        if (this.currentLocationSignature !== signature) {
+            this.currentLocationSignature = signature;
+            this.clearEnemyQueue();
         }
     }
 
@@ -224,6 +266,7 @@ export default class TeamManager {
         if (hadMembers) {
             this.client.sendEvent('teamChange');
         }
+        this.clearEnemyQueue();
     }
 
     getAccumulatedObjectsData() {
@@ -242,6 +285,40 @@ export default class TeamManager {
         return this.avatarAttackTargetId;
     }
 
+    addEnemyToQueue(id: string): boolean {
+        const normalized = String(id);
+        if (!normalized) {
+            return false;
+        }
+        if (this.enemies.includes(normalized)) {
+            return false;
+        }
+        this.enemies.push(normalized);
+        return true;
+    }
 
+    removeEnemyFromQueue(id: string): boolean {
+        const normalized = String(id);
+        const index = this.enemies.indexOf(normalized);
+        if (index === -1) {
+            return false;
+        }
+        this.enemies.splice(index, 1);
+        return true;
+    }
 
+    shiftEnemyFromQueue(): string | undefined {
+        return this.enemies.shift();
+    }
+
+    getEnemyQueue(): string[] {
+        return [...this.enemies];
+    }
+
+    private clearEnemyQueue() {
+        if (this.enemies.length === 0) {
+            return;
+        }
+        this.enemies = [];
+    }
 }

@@ -8,6 +8,7 @@ import initBuses from './scripts/buses'
 import initGates from './scripts/gates'
 import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
+import initAttackQueue from './scripts/attackQueue'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initZaskTimer from './scripts/zaskTimer'
@@ -137,6 +138,7 @@ export function registerScripts(client: Client) {
     initGates(client)
     initSeat(client)
     initAttackBeep(client)
+    initAttackQueue(client, aliases)
     initLamp(client)
     initCoverTimer(client)
     initZaskTimer(client)
