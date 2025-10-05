@@ -1,41 +1,6 @@
 import Client from "../Client";
 
-interface ResolvedEnemy {
-    id: string;
-    description?: string;
-}
-
-function normalizeDescription(value: unknown): string | undefined {
-    if (typeof value !== "string") {
-        return undefined;
-    }
-    const trimmed = value.trim();
-    return trimmed === "" ? undefined : trimmed;
-}
-
-function resolveDescriptionFromObject(client: Client, predicate: (obj: any) => boolean): string | undefined {
-    const objectManager: Client["ObjectManager"] | undefined = (client as any).ObjectManager;
-    const objects = objectManager?.getObjectsOnLocation?.();
-    if (!objects) {
-        return undefined;
-    }
-    const match = objects.find(predicate);
-    if (!match) {
-        return undefined;
-    }
-    const anyMatch = match as any;
-    return normalizeDescription(anyMatch?.desc ?? anyMatch?.name ?? anyMatch?.title);
-}
-
-function resolveDescriptionFromTeamManager(client: Client, id: string): string | undefined {
-    const data = client.TeamManager?.getAccumulatedObjectsData?.();
-    if (!data) {
-        return undefined;
-    }
-    return normalizeDescription(data[id]?.desc);
-}
-
-function resolveFromObjectList(client: Client, shortcut: string): ResolvedEnemy | null {
+function resolveFromObjectList(client: Client, shortcut: string): string | null {
     const objectManager: Client["ObjectManager"] | undefined = (client as any).ObjectManager;
     const objects = objectManager?.getObjectsOnLocation?.();
     if (!objects) {
@@ -45,27 +10,10 @@ function resolveFromObjectList(client: Client, shortcut: string): ResolvedEnemy 
     if (!found || typeof found.num === "undefined" || found.num === null) {
         return null;
     }
-    const id = String(found.num);
-    const anyFound = found as any;
-    const description = normalizeDescription(anyFound?.desc ?? anyFound?.name ?? anyFound?.title);
-    return { id, description };
+    return String(found.num);
 }
 
-function resolveDescription(client: Client, id: string, fallbackShortcut?: string): string | undefined {
-    const fromId = resolveDescriptionFromObject(client, obj => String(obj?.num ?? "") === id);
-    if (fromId) {
-        return fromId;
-    }
-    if (fallbackShortcut) {
-        const fromShortcut = resolveDescriptionFromObject(client, obj => String(obj?.shortcut ?? "") === fallbackShortcut);
-        if (fromShortcut) {
-            return fromShortcut;
-        }
-    }
-    return resolveDescriptionFromTeamManager(client, id);
-}
-
-function resolveEnemy(client: Client, input: string): ResolvedEnemy | null {
+function resolveEnemyId(client: Client, input: string): string | null {
     if (!input) {
         return null;
     }
@@ -76,22 +24,11 @@ function resolveEnemy(client: Client, input: string): ResolvedEnemy | null {
 
     const withPrefixMatch = trimmed.match(/^ob_(\d+)$/);
     if (withPrefixMatch) {
-        const id = withPrefixMatch[1];
-        return {
-            id,
-            description: resolveDescription(client, id),
-        };
+        return withPrefixMatch[1];
     }
 
     if (/^\d+$/.test(trimmed)) {
-        const resolved = resolveFromObjectList(client, trimmed);
-        if (!resolved) {
-            return null;
-        }
-        return {
-            ...resolved,
-            description: resolveDescription(client, resolved.id, trimmed) ?? resolved.description,
-        };
+        return resolveFromObjectList(client, trimmed);
     }
 
     return null;
@@ -104,18 +41,16 @@ export default function initAttackQueue(
     const list = aliases ?? client.aliases;
 
     const add = (matches: RegExpMatchArray) => {
-        const enemy = resolveEnemy(client, matches[1] ?? matches[0]);
-        if (!enemy) {
+        const id = resolveEnemyId(client, matches[1] ?? matches[0]);
+        if (!id) {
             client.println("Niepoprawne id przeciwnika.");
             return;
         }
-        const { id, description } = enemy;
         const added = client.TeamManager.addEnemyToQueue(id);
-        const suffix = description ? ` (${description})` : "";
         if (added) {
-            client.println(`Dodano ob_${id}${suffix} do kolejki ataku.`);
+            client.println(`Dodano ob_${id} do kolejki ataku.`);
         } else {
-            client.println(`ob_${id}${suffix} jest juz w kolejce ataku.`);
+            client.println(`ob_${id} jest juz w kolejce ataku.`);
         }
     };
 
