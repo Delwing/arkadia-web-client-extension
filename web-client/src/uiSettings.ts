@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import { Settings } from "mudlet-map-renderer";
 
 const mapPositions = [
     'top-overlay',
@@ -184,6 +185,7 @@ export default async function initUiSettings() {
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
+    const mapInstantMoveButton = modalEl.querySelector('#ui-map-instant-move') as HTMLButtonElement | null;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -201,6 +203,23 @@ export default async function initUiSettings() {
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     apply(current);
+
+    function updateInstantMoveButton() {
+        if (!mapInstantMoveButton) return;
+        if (Settings.instantMove) {
+            mapInstantMoveButton.disabled = true;
+            mapInstantMoveButton.textContent = 'Natychmiastowe przesuwanie mapy włączone';
+            mapInstantMoveButton.classList.remove('btn-secondary');
+            mapInstantMoveButton.classList.add('btn-success');
+        } else {
+            mapInstantMoveButton.disabled = false;
+            mapInstantMoveButton.textContent = 'Włącz natychmiastowe przesuwanie mapy';
+            mapInstantMoveButton.classList.remove('btn-success');
+            mapInstantMoveButton.classList.add('btn-secondary');
+        }
+    }
+
+    updateInstantMoveButton();
 
     function refreshExplorationStats() {
         const map = (window as any).embedded;
@@ -243,8 +262,16 @@ export default async function initUiSettings() {
         modal.hide();
     });
 
+    if (mapInstantMoveButton) {
+        mapInstantMoveButton.addEventListener('click', () => {
+            Settings.instantMove = true;
+            updateInstantMoveButton();
+        });
+    }
+
     button.addEventListener('click', () => {
         refreshExplorationStats();
+        updateInstantMoveButton();
         modal.show();
     });
 }
