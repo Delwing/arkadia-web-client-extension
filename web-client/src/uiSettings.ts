@@ -30,6 +30,7 @@ interface UiSettings {
     footerMode: number;
     explorationMode: boolean;
     instantMove: boolean;
+    highlightCurrentRoom: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -47,6 +48,7 @@ const defaultSettings: UiSettings = {
     footerMode: 0,
     explorationMode: false,
     instantMove: false,
+    highlightCurrentRoom: true,
 };
 
 function apply(settings: UiSettings) {
@@ -116,6 +118,8 @@ function apply(settings: UiSettings) {
     }
     Settings.instantMove = settings.instantMove;
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
+    Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
+    (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
     if ((window as any).clientExtension?.eventTarget) {
         (window as any).clientExtension.eventTarget.dispatchEvent(
             new CustomEvent('uiSettings', {
@@ -159,7 +163,10 @@ async function load(): Promise<UiSettings> {
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
             const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
             const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultSettings.instantMove;
-            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove };
+            const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
+                ? parsed.highlightCurrentRoom
+                : defaultSettings.highlightCurrentRoom;
+            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom };
         }
     } catch {
         // ignore malformed data
@@ -192,6 +199,7 @@ export default async function initUiSettings() {
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
+    const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -209,6 +217,7 @@ export default async function initUiSettings() {
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     instantMoveInput.checked = current.instantMove;
+    highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
     apply(current);
 
     function refreshExplorationStats() {
@@ -243,6 +252,7 @@ export default async function initUiSettings() {
             footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
+            highlightCurrentRoom: highlightCurrentRoomInput.checked,
         };
     }
 
