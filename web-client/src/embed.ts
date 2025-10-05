@@ -265,7 +265,7 @@ export class EmbeddedMap {
     }
 
     setInstantMove(on: boolean) {
-        Settings.instantMove = on;
+        Settings.instantMapMove = on;
     }
 
     leadTo(id?: string) {
