@@ -3,6 +3,7 @@ import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
+import { openHerbContextMenu } from "../contextMenus";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -159,20 +160,15 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let currentBag = 0;
 
     const showHerbActions = (id: string, ev: MouseEvent) => {
-        const actions = herbs?.herb_id_to_use[id];
-        if (!actions || actions.length === 0) return;
-        const amounts = [1, 3, 5];
-        const items = actions.flatMap(a =>
-            amounts.map(n => ({
-                label: `${a.action} ${n}`,
-                action: () => {
-                    preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                    client.sendCommand(`/z ${a.action} ${id} ${n}`);
-                    postUseCommands.forEach(cmd => client.sendCommand(cmd));
-                }
-            }))
-        );
-        client.OutputHandler.showContextMenu(items, ev.pageX, ev.pageY);
+        openHerbContextMenu(client, {
+            herbId: id,
+            actions: herbs?.herb_id_to_use[id],
+            x: ev.pageX,
+            y: ev.pageY,
+            commandPrefix: '/z',
+            preUseCommands,
+            postUseCommands,
+        });
     };
 
     function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {

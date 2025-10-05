@@ -183,21 +183,8 @@ export class EmbeddedMap {
 
         const room = ev.detail.roomId
         if (room) {
-            const handler: any = (window as any).clientExtension?.OutputHandler;
-            handler?.showContextMenu([
-                {
-                    label: 'Ustaw lokację',
-                    action: () => (window as any).clientExtension?.Map.setMapRoomById(room)
-                },
-                {
-                    label: 'Prowadź do lokacji',
-                    action: () => (window as any).clientExtension?.sendEvent('leadTo', room)
-                },
-                {
-                    label: 'Idź do lokacji',
-                    action: () => (window as any).clientExtension?.sendCommand(`/idz ${room}`)
-                }
-            ], ev.detail.position.x, ev.detail.position.y);
+            const client: any = (window as any).clientExtension;
+            client?.openMapContextMenu?.(room, ev.detail.position.x, ev.detail.position.y);
         }
     }
 
