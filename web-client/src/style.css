@@ -910,6 +910,94 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   pointer-events: none;
 }
 
+.letter-composer {
+  position: fixed;
+  top: 4rem;
+  left: 4rem;
+  width: min(32rem, 90vw);
+  min-height: 22rem;
+  max-height: min(40rem, 90vh);
+  background-color: rgba(17, 19, 23, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
+  color: #f8f9fa;
+  z-index: 1100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.letter-composer[hidden] {
+  display: none !important;
+}
+
+.letter-composer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: move;
+}
+
+.letter-composer-header span {
+  font-weight: 600;
+}
+
+.letter-composer .btn-close {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  padding: 0;
+  --letter-composer-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
+  background-image: var(--letter-composer-close-icon);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.9rem;
+  filter: none;
+  opacity: 0.9;
+  background-color: rgba(255, 255, 255, 0.08);
+  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.letter-composer .btn-close:hover,
+.letter-composer .btn-close:focus-visible {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.letter-composer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.letter-composer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.letter-composer textarea {
+  resize: vertical;
+  min-height: 10rem;
+}
+
+.letter-composer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
 .docs-content {
   flex: 1;
   overflow-y: auto;

@@ -78,6 +78,7 @@ import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
+import initLetter from './scripts/letter'
 import Client from "./Client";
 
 
@@ -204,6 +205,7 @@ export function registerScripts(client: Client) {
     initGuildPostfix(client)
     initLanguage(client, aliases)
     initShortcuts(client, aliases)
+    initLetter(client, aliases)
     initShortExits(client)
     initExternalScripts(client)
     initUserAliases(client, aliases)
