@@ -1,6 +1,5 @@
 import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
-import {roundMapZoom} from "./utils/roundMapZoom";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -102,7 +101,7 @@ export class EmbeddedMap {
             const parsed = data?.uiSettings as any;
             if (parsed) {
                 if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
-                    zoom = roundMapZoom(parsed.mapScale);
+                    zoom = parsed.mapScale;
                 }
                 if (typeof parsed.explorationMode === 'boolean') {
                     explorationMode = parsed.explorationMode;
@@ -125,7 +124,7 @@ export class EmbeddedMap {
             }
         } catch {
         }
-        this.zoom = roundMapZoom(zoom);
+        this.zoom = zoom;
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
@@ -163,22 +162,15 @@ export class EmbeddedMap {
         try {
             const data = getItemSync('uiSettings');
             const parsed: any = data?.uiSettings ? {...data.uiSettings} : {};
-            const roundedZoom = roundMapZoom(this.zoom);
-            this.zoom = roundedZoom;
-            parsed.mapScale = roundedZoom;
+            parsed.mapScale = this.zoom;
             setItemSync('uiSettings', parsed);
         } catch {
         }
     }
 
     private onZoom() {
-        const rendererZoom = this.renderer.getZoom();
-        const roundedZoom = roundMapZoom(rendererZoom);
-        let shouldSave = roundedZoom !== this.zoom;
-        if (rendererZoom !== roundedZoom) {
-            this.renderer.setZoom(roundedZoom);
-        }
-        this.zoom = roundedZoom;
+        let shouldSave = this.renderer.getZoom() !== this.zoom;
+        this.zoom = this.renderer.getZoom();
         if (shouldSave) {
             this.saveZoom();
         }
@@ -261,9 +253,8 @@ export class EmbeddedMap {
     }
 
     setZoom(zoom: number) {
-        const rounded = roundMapZoom(zoom);
-        this.zoom = rounded;
-        this.renderer.setZoom(rounded);
+        this.zoom = zoom;
+        this.renderer.setZoom(zoom);
     }
 
     setInstantMove(on: boolean) {
