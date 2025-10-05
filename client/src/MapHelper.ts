@@ -109,6 +109,22 @@ export default class MapHelper {
         return this.mapReader
     }
 
+    tryGetMapReader(): MapReader | null {
+        return this.mapReader ?? null;
+    }
+
+    getRoomById(id: number): Room | null {
+        if (!this.mapReader) {
+            return null;
+        }
+        const reader: any = this.mapReader as any;
+        if (typeof reader.getRoomById === "function") {
+            return reader.getRoomById(id) ?? null;
+        }
+        const room = this.mapReader.getRoom(id);
+        return room ?? null;
+    }
+
     setPaused(paused: boolean) {
         this.paused = paused;
     }
