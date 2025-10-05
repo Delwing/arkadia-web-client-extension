@@ -93,7 +93,7 @@ export class EmbeddedMap {
         });
         let zoom = 0.30;
         let explorationMode = false;
-        let instantMove = false;
+        let instantMove = true;
         let highlightCurrentRoom = true;
         let initialRoom = startId ?? 1;
         try {

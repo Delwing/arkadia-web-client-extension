@@ -46,7 +46,7 @@ const defaultSettings: UiSettings = {
     xtermPalette: 'arkadia',
     footerMode: 0,
     explorationMode: false,
-    instantMove: false,
+    instantMove: true,
     highlightCurrentRoom: true,
 };
 
