@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers({} as any);
+  println = jest.fn();
   addEventListener(event: string, cb: any, _options?: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
@@ -215,6 +216,29 @@ describe('TeamManager', () => {
     manager.addEnemyToQueue('8');
     client.sendEvent('gmcp.objects.data', { '8': { living: false } });
     expect(manager.getEnemyQueue()).toEqual([]);
+  });
+
+  test('notifies about next enemy in queue when the current one dies', () => {
+    manager.addEnemyToQueue('8');
+    manager.addEnemyToQueue('9');
+    client.sendEvent('gmcp.objects.data', {
+      '9': { desc: 'Drugi przeciwnik', living: true },
+    });
+    client.println.mockClear();
+    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
+    expect(client.println).toHaveBeenCalledWith(
+      '<span style="color:orange">/nn zeby zaatakowac nastepny cel: Drugi przeciwnik</span>',
+    );
+  });
+
+  test('falls back to object id when description is missing', () => {
+    manager.addEnemyToQueue('8');
+    manager.addEnemyToQueue('10');
+    client.println.mockClear();
+    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
+    expect(client.println).toHaveBeenCalledWith(
+      '<span style="color:orange">/nn zeby zaatakowac nastepny cel: ob_10</span>',
+    );
   });
 
 });
