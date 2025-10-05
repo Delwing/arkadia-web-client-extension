@@ -5,6 +5,9 @@ class FakeClient {
     addEnemyToQueue: jest.fn(),
     shiftEnemyFromQueue: jest.fn(),
   };
+  ObjectManager = {
+    getObjectsOnLocation: jest.fn(),
+  };
   println = jest.fn();
   sendCommand = jest.fn();
 }
@@ -19,6 +22,7 @@ describe('attack queue aliases', () => {
     initAttackQueue((client as unknown) as any, aliases);
     client.TeamManager.addEnemyToQueue.mockReset();
     client.TeamManager.shiftEnemyFromQueue.mockReset();
+    client.ObjectManager.getObjectsOnLocation.mockReset();
     client.println.mockClear();
     client.sendCommand.mockClear();
   });
@@ -34,17 +38,20 @@ describe('attack queue aliases', () => {
     alias.callback(matches);
   };
 
-  test('adds enemy to queue and prints confirmation', () => {
-    const alias = aliases.find(a => a.pattern.test('/q 123'))!;
+  test('resolves shortcut to object id and prints confirmation', () => {
+    const alias = aliases.find(a => a.pattern.test('/q 1'))!;
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { shortcut: '1', num: 123 },
+    ]);
     client.TeamManager.addEnemyToQueue.mockReturnValue(true);
 
-    execAlias(alias, '/q 123');
+    execAlias(alias, '/q 1');
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('123');
     expect(client.println).toHaveBeenCalledWith('Dodano ob_123 do kolejki ataku.');
   });
 
-  test('normalizes ob_ prefix and warns on duplicates', () => {
+  test('allows direct id via ob_ prefix and warns on duplicates', () => {
     const alias = aliases.find(a => a.pattern.test('/q ob_321'))!;
     client.TeamManager.addEnemyToQueue.mockReturnValue(false);
 
@@ -52,6 +59,19 @@ describe('attack queue aliases', () => {
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('321');
     expect(client.println).toHaveBeenCalledWith('ob_321 jest juz w kolejce ataku.');
+  });
+
+  test('prints warning when shortcut cannot be resolved', () => {
+    const alias = aliases.find(a => a.pattern.test('/q 3'))!;
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { shortcut: '1', num: 111 },
+      { shortcut: '2', num: 222 },
+    ]);
+
+    execAlias(alias, '/q 3');
+
+    expect(client.TeamManager.addEnemyToQueue).not.toHaveBeenCalled();
+    expect(client.println).toHaveBeenCalledWith('Niepoprawne id przeciwnika.');
   });
 
   test('kills next enemy from queue', () => {

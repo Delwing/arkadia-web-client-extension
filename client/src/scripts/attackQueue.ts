@@ -1,6 +1,19 @@
 import Client from "../Client";
 
-function normalizeId(input: string): string | null {
+function resolveIdFromObjectList(client: Client, shortcut: string): string | null {
+    const objectManager: Client["ObjectManager"] | undefined = (client as any).ObjectManager;
+    const objects = objectManager?.getObjectsOnLocation?.();
+    if (!objects) {
+        return null;
+    }
+    const found = objects.find(obj => String(obj?.shortcut ?? "") === shortcut);
+    if (!found || typeof found.num === "undefined" || found.num === null) {
+        return null;
+    }
+    return String(found.num);
+}
+
+function normalizeId(client: Client, input: string): string | null {
     if (!input) {
         return null;
     }
@@ -8,11 +21,17 @@ function normalizeId(input: string): string | null {
     if (trimmed === "") {
         return null;
     }
-    const withoutPrefix = trimmed.startsWith("ob_") ? trimmed.slice(3) : trimmed;
-    if (!/^[0-9]+$/.test(withoutPrefix)) {
-        return null;
+
+    const withPrefixMatch = trimmed.match(/^ob_(\d+)$/);
+    if (withPrefixMatch) {
+        return withPrefixMatch[1];
     }
-    return withoutPrefix;
+
+    if (/^\d+$/.test(trimmed)) {
+        return resolveIdFromObjectList(client, trimmed);
+    }
+
+    return null;
 }
 
 export default function initAttackQueue(
@@ -22,7 +41,7 @@ export default function initAttackQueue(
     const list = aliases ?? client.aliases;
 
     const add = (matches: RegExpMatchArray) => {
-        const id = normalizeId(matches[1] ?? matches[0]);
+        const id = normalizeId(client, matches[1] ?? matches[0]);
         if (!id) {
             client.println("Niepoprawne id przeciwnika.");
             return;
@@ -45,7 +64,7 @@ export default function initAttackQueue(
     };
 
     list.push({
-        pattern: /^\/q\s+(?:ob_)?([0-9]+)$/,
+        pattern: /^\/q\s+((?:ob_)?[0-9]+)$/,
         callback: (matches: RegExpMatchArray) => add(matches),
     });
 
