@@ -68,8 +68,8 @@ export default function initAttackQueue(
         const { id, description } = resolved;
         const added = client.TeamManager.addEnemyToQueue(id);
         if (added) {
-            const suffix = description ? ` (${description})` : "";
-            client.println(`Dodano ob_${id}${suffix} do kolejki ataku.`);
+            const displayName = description ?? id;
+            client.println(`Dodano ${displayName} do kolejki ataku.`);
         } else {
             client.println(`ob_${id} jest juz w kolejce ataku.`);
         }

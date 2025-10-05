@@ -49,7 +49,7 @@ describe('attack queue aliases', () => {
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('123');
     expect(client.println).toHaveBeenCalledWith(
-      'Dodano ob_123 (grozny orczy wojownik) do kolejki ataku.',
+      'Dodano grozny orczy wojownik do kolejki ataku.',
     );
   });
 
@@ -63,7 +63,7 @@ describe('attack queue aliases', () => {
     execAlias(alias, '/q 2');
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('456');
-    expect(client.println).toHaveBeenCalledWith('Dodano ob_456 do kolejki ataku.');
+    expect(client.println).toHaveBeenCalledWith('Dodano 456 do kolejki ataku.');
   });
 
   test('uses object descriptions when adding by direct id', () => {
@@ -77,7 +77,7 @@ describe('attack queue aliases', () => {
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('789');
     expect(client.println).toHaveBeenCalledWith(
-      'Dodano ob_789 (tajemniczy szpieg) do kolejki ataku.',
+      'Dodano tajemniczy szpieg do kolejki ataku.',
     );
   });
 
