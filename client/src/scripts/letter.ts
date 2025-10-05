@@ -59,15 +59,9 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
             TRIGGER_TAG
         );
 
-        if (recipient) {
-            client.sendCommand(`do ${recipient}`);
-        }
-        if (carbonCopy) {
-            client.sendCommand(`cc ${carbonCopy}`);
-        }
-        if (subjectLine) {
-            client.sendCommand(`temat ${subjectLine}`);
-        }
         client.sendCommand("napisz list");
+        client.sendCommand(recipient);
+        client.sendCommand(carbonCopy);
+        client.sendCommand(subjectLine);
     });
 }

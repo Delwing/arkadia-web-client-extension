@@ -914,8 +914,9 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   position: fixed;
   top: 4rem;
   left: 4rem;
-  width: min(28rem, 90vw);
-  max-height: min(32rem, 90vh);
+  width: min(32rem, 90vw);
+  min-height: 22rem;
+  max-height: min(40rem, 90vh);
   background-color: rgba(17, 19, 23, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
@@ -923,6 +924,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   color: #f8f9fa;
   z-index: 1100;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .letter-composer[hidden] {
@@ -972,6 +975,9 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .letter-composer-field {
@@ -982,12 +988,14 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer textarea {
   resize: vertical;
-  min-height: 8rem;
+  min-height: 12rem;
 }
 
 .letter-composer-actions {
   display: flex;
   justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 .docs-content {
