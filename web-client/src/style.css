@@ -1124,15 +1124,16 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .context-menu button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-width: 0;
-  background: transparent;
+  background: #1f1f1f;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 9999px;
   padding: 0.125rem 0.5rem;
@@ -1146,6 +1147,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .context-menu button:hover {
   border-color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.1);
+  background: #2a2a2a;
 }
 
