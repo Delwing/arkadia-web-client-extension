@@ -66,6 +66,7 @@ export class EmbeddedMap {
     private highlights: number[] = []
     private zoom: number;
     private explorationMode = false;
+    private instantMapMove = false;
     private visited = new Set<number>();
     private totalRooms: number;
 
@@ -92,6 +93,7 @@ export class EmbeddedMap {
         });
         let zoom = 0.30;
         let explorationMode = false;
+        let instantMapMove = false;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -102,6 +104,9 @@ export class EmbeddedMap {
                 }
                 if (typeof parsed.explorationMode === 'boolean') {
                     explorationMode = parsed.explorationMode;
+                }
+                if (typeof parsed.instantMapMove === 'boolean') {
+                    instantMapMove = parsed.instantMapMove;
                 }
             }
         } catch {
@@ -116,6 +121,7 @@ export class EmbeddedMap {
         } catch {
         }
         this.zoom = zoom;
+        this.instantMapMove = instantMapMove;
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
 
@@ -193,7 +199,7 @@ export class EmbeddedMap {
     }
 
     renderRoom(roomId: number) {
-        this.renderer.setPosition(roomId)
+        this.setRendererPosition(roomId);
         this.renderer.setZoom(this.zoom);
         const area = this.renderer.getCurrentArea()
         this.currentRoom = roomId;
@@ -228,6 +234,25 @@ export class EmbeddedMap {
         });
     }
 
+    private setRendererPosition(roomId: number) {
+        const renderer: any = this.renderer as any;
+        const controls = renderer?.controls;
+
+        if (this.instantMapMove && typeof controls?.centerRoom === 'function') {
+            controls.centerRoom(roomId);
+            return;
+        }
+
+        if (typeof renderer?.setPosition === 'function') {
+            renderer.setPosition(roomId);
+            return;
+        }
+
+        if (typeof controls?.centerRoom === 'function') {
+            controls.centerRoom(roomId);
+        }
+    }
+
     private getPath(from: number, to: number): number[] | null {
         return this.pathFinder?.findPath(from, to) ?? null;
     }
@@ -257,6 +282,13 @@ export class EmbeddedMap {
     setZoom(zoom: number) {
         this.zoom = zoom;
         this.renderer.setZoom(zoom);
+    }
+
+    setInstantMapMove(on: boolean) {
+        this.instantMapMove = on;
+        if (typeof this.currentRoom === 'number') {
+            this.setRendererPosition(this.currentRoom);
+        }
     }
 
     leadTo(id?: string) {

@@ -27,6 +27,7 @@ interface UiSettings {
     xtermPalette: 'arkadia' | 'proper';
     footerMode: number;
     explorationMode: boolean;
+    instantMapMove: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -43,6 +44,7 @@ const defaultSettings: UiSettings = {
     xtermPalette: 'arkadia',
     footerMode: 0,
     explorationMode: false,
+    instantMapMove: false,
 };
 
 function apply(settings: UiSettings) {
@@ -108,6 +110,7 @@ function apply(settings: UiSettings) {
     if ((window as any).embedded?.renderer) {
         (window as any).embedded.setZoom?.(settings.mapScale);
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
+        (window as any).embedded.setInstantMapMove?.(settings.instantMapMove);
         (window as any).embedded.refresh();
     }
     if ((window as any).clientExtension?.eventTarget) {
@@ -120,6 +123,7 @@ function apply(settings: UiSettings) {
                     xtermPalette: settings.xtermPalette,
                     footerMode: settings.footerMode,
                     fightTitleIcon: settings.fightTitleIcon,
+                    instantMapMove: settings.instantMapMove,
                 },
             })
         );
@@ -152,7 +156,8 @@ async function load(): Promise<UiSettings> {
             const explorationMode = !!parsed.explorationMode;
             const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
             const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback };
+            const instantMapMove = typeof parsed.instantMapMove === 'boolean' ? parsed.instantMapMove : defaultSettings.instantMapMove;
+            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMapMove };
         }
     } catch {
         // ignore malformed data
@@ -182,6 +187,7 @@ export default async function initUiSettings() {
     const hapticFeedbackInput = modalEl.querySelector('#ui-haptic-feedback') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
+    const instantMapMoveInput = modalEl.querySelector('#ui-instant-map-move') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
@@ -198,6 +204,7 @@ export default async function initUiSettings() {
     hapticFeedbackInput.checked = current.hapticFeedback;
     emojiLabelsInput.checked = current.emojiLabels;
     fightTitleIconInput.checked = current.fightTitleIcon;
+    instantMapMoveInput.checked = current.instantMapMove;
     xtermPaletteInput.value = current.xtermPalette;
     footerModeInput.value = String(current.footerMode);
     apply(current);
@@ -230,6 +237,7 @@ export default async function initUiSettings() {
             hapticFeedback: hapticFeedbackInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
+            instantMapMove: instantMapMoveInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
             footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
             explorationMode: explorationInput.checked,
