@@ -24,6 +24,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/przejrzyj [_co_]** - pokazuje zawartość skrzyń z kluczami i magicznymi przedmiotami lub podanego pojemnika (wykorzystuje komendę `ob`).
 - **/por [_skrot_]** - porównuje siłę, zręczność i wytrzymałość z podanym obiektem lub wszystkimi w pomieszczeniu.
 - **/chat** - wyświetla ostatnie 20 wiadomości z czatu GMCP.
+- **/list** - otwiera edytor pisania listów w kliencie.
 
 ## Menedżer pojemników
 - **/pojemnik** - uruchamia konfigurację menedżera pojemników.
