@@ -7,6 +7,7 @@ interface LetterComposerState {
 interface SubmitPayload {
     to: string;
     cc: string;
+    subject: string;
     content: string;
 }
 
@@ -16,6 +17,7 @@ export default class LetterComposer {
     private form: HTMLFormElement | null;
     private toInput: HTMLInputElement | null;
     private ccInput: HTMLInputElement | null;
+    private subjectInput: HTMLInputElement | null;
     private contentInput: HTMLTextAreaElement | null;
     private closeButton: HTMLButtonElement | null;
     private dragPointerId: number | null = null;
@@ -29,6 +31,7 @@ export default class LetterComposer {
         this.form = this.container?.querySelector<HTMLFormElement>("form");
         this.toInput = this.container?.querySelector<HTMLInputElement>("[name='letter-to']");
         this.ccInput = this.container?.querySelector<HTMLInputElement>("[name='letter-cc']");
+        this.subjectInput = this.container?.querySelector<HTMLInputElement>("[name='letter-subject']");
         this.contentInput = this.container?.querySelector<HTMLTextAreaElement>("[name='letter-content']");
         this.closeButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-close]");
 
@@ -43,6 +46,7 @@ export default class LetterComposer {
                 const payload: SubmitPayload = {
                     to: this.toInput?.value ?? "",
                     cc: this.ccInput?.value ?? "",
+                    subject: this.subjectInput?.value ?? "",
                     content: this.contentInput?.value ?? "",
                 };
                 this.client.emit("letterComposer.submit", payload);

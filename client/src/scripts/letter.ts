@@ -6,6 +6,7 @@ const TRIGGER_TAG = "letter-composer";
 interface LetterSubmitPayload {
     to: string;
     cc: string;
+    subject: string;
     content: string;
 }
 
@@ -26,9 +27,10 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     }
 
     client.addEventListener("letterComposer.submit", (event: CustomEvent<LetterSubmitPayload>) => {
-        const { to, cc, content } = event.detail;
+        const { to, cc, subject, content } = event.detail;
         const recipient = to.trim();
         const carbonCopy = cc.trim();
+        const subjectLine = subject.trim();
         const lines = content
             .split(/\r?\n/)
             .map(line => justifyLine(line))
@@ -46,12 +48,6 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         client.Triggers.registerOneTimeTrigger(
             PROMPT_PATTERN,
             () => {
-                if (recipient) {
-                    client.sendCommand(`do ${recipient}`);
-                }
-                if (carbonCopy) {
-                    client.sendCommand(`cc ${carbonCopy}`);
-                }
                 lines.forEach(line => {
                     if (line.length > 0) {
                         client.sendCommand(line);
@@ -63,6 +59,15 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
             TRIGGER_TAG
         );
 
+        if (recipient) {
+            client.sendCommand(`do ${recipient}`);
+        }
+        if (carbonCopy) {
+            client.sendCommand(`cc ${carbonCopy}`);
+        }
+        if (subjectLine) {
+            client.sendCommand(`temat ${subjectLine}`);
+        }
         client.sendCommand("napisz list");
     });
 }
