@@ -61,7 +61,8 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /^\/przeszukaj (.+)$/,
             callback: async (m: RegExpMatchArray) => {
-                const term = m[1].toLowerCase();
+                const termRaw = m[1];
+                const term = termRaw.toLowerCase();
                 const reader = client.Map.tryGetMapReader();
                 const current = client.Map.currentRoom;
                 if (!reader || !current) return;
@@ -77,13 +78,20 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     }
                 }
                 matches.sort((a, b) => a.dist - b.dist);
-                const lines = matches.slice(0, 10).map(m => client.OutputHandler.makeStringClickable(`${m.name} (${m.area})`, () => {
-                    client.sendEvent('leadTo', m.id);
-                }));
-                if (lines.length) {
-                    client.println(lines.join('\n'));
+                const topMatches = matches.slice(0, 10);
+                const header = `Wyniki przeszukiwania '${termRaw}'`;
+                if (topMatches.length) {
+                    const maxIdLength = Math.max(...topMatches.map(match => String(match.id).length));
+                    const lines = topMatches.map(match => {
+                        const paddedId = String(match.id).padStart(maxIdLength, ' ');
+                        const clickable = client.OutputHandler.makeStringClickable(`${match.name} (${match.area})`, () => {
+                            client.sendEvent('leadTo', match.id);
+                        });
+                        return `${paddedId} ${clickable}`;
+                    });
+                    client.println(`${header}\n${lines.join('\n')}`);
                 } else {
-                    client.println('Nie znaleziono.');
+                    client.println(`${header}\nNie znaleziono.`);
                 }
             }
         }
