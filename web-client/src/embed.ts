@@ -1,4 +1,4 @@
-import {MapReader, Renderer, PathFinder, RoomContextMenuEventDetail} from "mudlet-map-renderer";
+import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
