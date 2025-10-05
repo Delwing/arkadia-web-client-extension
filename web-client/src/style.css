@@ -988,7 +988,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer textarea {
   resize: vertical;
-  min-height: 12rem;
+  min-height: 10rem;
 }
 
 .letter-composer-actions {
