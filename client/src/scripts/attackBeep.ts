@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
-import people from '../people.json';
+import {loadPeople, type PersonEntry} from '../peopleLoader';
 
 const RED = findClosestColor("#ff0000");
 
@@ -20,10 +20,33 @@ function highlightPhrase(line: string) {
 export default function initAttackBeep(client: Client) {
     const tag = "attackBeep";
     let enemyGuilds: string[] = [];
+    let peopleCache: PersonEntry[] = [];
+    let loadPromise: Promise<PersonEntry[]> | null = null;
+
+    function ensurePeopleLoaded() {
+        if (!loadPromise) {
+            loadPromise = loadPeople()
+                .then(people => {
+                    peopleCache = people;
+                    return people;
+                })
+                .catch(error => {
+                    console.warn('Failed to load people database', error);
+                    peopleCache = [];
+                    return [] as PersonEntry[];
+                })
+                .finally(() => {
+                    loadPromise = null;
+                });
+        }
+        return loadPromise;
+    }
+
+    ensurePeopleLoaded().catch(() => undefined);
 
     // Function to find a person's guild by their name
     function findPersonGuild(name: string): string | null {
-        const person = people.find(p => p.name === name);
+        const person = peopleCache.find(p => p.name === name);
         return person ? person.guild : null;
     }
 
@@ -57,6 +80,7 @@ export default function initAttackBeep(client: Client) {
         if (Array.isArray(settings.enemyGuilds)) {
             enemyGuilds = [...settings.enemyGuilds];
         }
+        ensurePeopleLoaded().catch(() => undefined);
     });
 
     [

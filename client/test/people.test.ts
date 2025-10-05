@@ -1,14 +1,21 @@
 import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { color, RESET, findClosestColor } from '../src/Colors';
+import { loadPeople } from '../src/peopleLoader';
 
-jest.mock('../src/people.json', () => [
+jest.mock('../src/peopleLoader', () => ({
+  loadPeople: jest.fn(),
+}));
+
+const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+
+const MOCK_PEOPLE = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
   { name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
   { name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
   { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
   { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
-], { virtual: true });
+];
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -19,14 +26,18 @@ describe('people triggers enemy highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
     client = new FakeClient();
     new People((client as unknown) as any);
+    await loadPeopleMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     const handler = client.addEventListener.mock.calls[0]?.[1];
     if (handler) {
       handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
     }
+    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    await lastCall?.value;
   });
 
   test('colors enemy description red', () => {
@@ -71,14 +82,18 @@ describe('people triggers guild highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
     client = new FakeClient();
     new People((client as unknown) as any);
+    await loadPeopleMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     const handler = client.addEventListener.mock.calls[0]?.[1];
     if (handler) {
       handler({ detail: { guilds: ['CKN'], enemyGuilds: [] } } as any);
     }
+    const lastGuildCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    await lastGuildCall?.value;
   });
 
   test('adds name after description without red color', () => {
