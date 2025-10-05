@@ -4,6 +4,7 @@ class FakeClient {
   TeamManager = {
     addEnemyToQueue: jest.fn(),
     shiftEnemyFromQueue: jest.fn(),
+    getAccumulatedObjectsData: jest.fn(),
   };
   ObjectManager = {
     getObjectsOnLocation: jest.fn(),
@@ -22,6 +23,7 @@ describe('attack queue aliases', () => {
     initAttackQueue((client as unknown) as any, aliases);
     client.TeamManager.addEnemyToQueue.mockReset();
     client.TeamManager.shiftEnemyFromQueue.mockReset();
+    client.TeamManager.getAccumulatedObjectsData.mockReset();
     client.ObjectManager.getObjectsOnLocation.mockReset();
     client.println.mockClear();
     client.sendCommand.mockClear();
@@ -41,24 +43,27 @@ describe('attack queue aliases', () => {
   test('resolves shortcut to object id and prints confirmation', () => {
     const alias = aliases.find(a => a.pattern.test('/q 1'))!;
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([
-      { shortcut: '1', num: 123 },
+      { shortcut: '1', num: 123, desc: 'grozny orczy wojownik' },
     ]);
     client.TeamManager.addEnemyToQueue.mockReturnValue(true);
 
     execAlias(alias, '/q 1');
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('123');
-    expect(client.println).toHaveBeenCalledWith('Dodano ob_123 do kolejki ataku.');
+    expect(client.println).toHaveBeenCalledWith('Dodano ob_123 (grozny orczy wojownik) do kolejki ataku.');
   });
 
   test('allows direct id via ob_ prefix and warns on duplicates', () => {
     const alias = aliases.find(a => a.pattern.test('/q ob_321'))!;
     client.TeamManager.addEnemyToQueue.mockReturnValue(false);
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({
+      '321': { desc: 'Bandyta' },
+    });
 
     execAlias(alias, '/q ob_321');
 
     expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('321');
-    expect(client.println).toHaveBeenCalledWith('ob_321 jest juz w kolejce ataku.');
+    expect(client.println).toHaveBeenCalledWith('ob_321 (Bandyta) jest juz w kolejce ataku.');
   });
 
   test('prints warning when shortcut cannot be resolved', () => {
