@@ -216,7 +216,7 @@ export class EmbeddedMap {
                 const destName = destArea ? destArea.getAreaName() : destId;
                 text += ` → #${destId} ${destName} (${distance})`;
                 if (path) {
-                    this.renderer.renderPath(path);
+                    this.renderer.renderPath(path, '#66E64D');
                 }
             }
             label.textContent = text;
