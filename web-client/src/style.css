@@ -949,16 +949,19 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   height: 1.75rem;
   border-radius: 999px;
   padding: 0;
-  filter: invert(1) brightness(1.6);
-  opacity: 0.85;
+  --letter-composer-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
+  background-image: var(--letter-composer-close-icon);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.9rem;
+  opacity: 0.9;
   background-color: rgba(255, 255, 255, 0.08);
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .letter-composer .btn-close:hover,
 .letter-composer .btn-close:focus-visible {
   opacity: 1;
-  filter: invert(1) brightness(2);
   background-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
