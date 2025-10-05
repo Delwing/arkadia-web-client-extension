@@ -56,11 +56,11 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
     }
 }
 
-class EmbeddedMap {
+export class EmbeddedMap {
     private map: HTMLDivElement;
     private reader: MapReader;
-    private renderer: Renderer;
     private pathFinder: PathFinder;
+    private renderer: Renderer;
     private currentRoom: any;
     private destinations: number[] = [];
     private highlights: number[] = []
@@ -69,13 +69,13 @@ class EmbeddedMap {
     private visited = new Set<number>();
     private totalRooms: number;
 
-    constructor(mapData: any, colors: any, startId?: number) {
+    constructor(reader: MapReader, pathFinder: PathFinder, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
-        this.reader = new MapReader(mapData, colors);
-        this.pathFinder = new PathFinder(this.reader)
+        this.reader = reader
+        this.pathFinder = pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
         window.addEventListener('pauserStart', () => {
@@ -209,14 +209,15 @@ class EmbeddedMap {
             let text = `#${roomId} ${area.getAreaName()}`;
             if (this.destinations.length > 0) {
                 const destId = this.destinations[0];
-                const path = this.pathFinder.findPath(roomId, destId);
-                console.log('path', path);
+                const path = this.getPath(roomId, destId);
                 const distance = path ? path.length - 1 : 0;
                 const room = this.reader.getRoom(roomId)
                 const destArea = this.reader.getArea(room.area);
                 const destName = destArea ? destArea.getAreaName() : destId;
                 text += ` → #${destId} ${destName} (${distance})`;
-                this.renderer.renderPath(path);
+                if (path) {
+                    this.renderer.renderPath(path);
+                }
             }
             label.textContent = text;
         }
@@ -225,6 +226,10 @@ class EmbeddedMap {
         this.highlights.forEach((highlight) => {
             this.renderer.renderHighlight(highlight, 'green');
         });
+    }
+
+    private getPath(from: number, to: number): number[] | null {
+        return this.pathFinder?.findPath(from, to) ?? null;
     }
 
     refresh() {
@@ -263,11 +268,3 @@ class EmbeddedMap {
         this.refresh();
     }
 }
-
-export const createMap = (data: { mapData: any; colors: any; startId?: number }) => {
-    (window as any).embedded = new EmbeddedMap(data.mapData, data.colors, data.startId);
-};
-
-window.addEventListener('map-ready-with-data', (e: Event) =>
-    createMap((e as CustomEvent).detail)
-);

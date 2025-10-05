@@ -62,7 +62,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             pattern: /^\/przeszukaj (.+)$/,
             callback: async (m: RegExpMatchArray) => {
                 const term = m[1].toLowerCase();
-                const reader = client.Map.mapReader;
+                const reader = client.Map.tryGetMapReader();
                 const current = client.Map.currentRoom;
                 if (!reader || !current) return;
                 const matches: { id: number, name: string; area: string; dist: number }[] = [];
@@ -71,8 +71,9 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     if (name && name.toLowerCase().includes(term)) {
                         const path = client.Map.findPath(current.id, room.id);
                         const dist = path ? path.length - 1 : Number.MAX_SAFE_INTEGER;
-                        const area = client.Map.mapReader.getArea(room.area)
-                        matches.push({id: room.id, name: room.name, area: area.getAreaName(), dist});
+                        const area = typeof (reader as any).getArea === 'function' ? (reader as any).getArea(room.area) : null;
+                        const areaName = area?.getAreaName?.() ?? client.Map.getAreaName(String(room.area)) ?? '';
+                        matches.push({id: room.id, name: room.name, area: areaName, dist});
                     }
                 }
                 matches.sort((a, b) => a.dist - b.dist);

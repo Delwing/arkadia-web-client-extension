@@ -87,7 +87,7 @@ export default function initGps(client: Client) {
         });
     }
 
-    window.addEventListener('map-ready', (ev: CustomEvent) => {
-        register(ev.detail.mapData);
+    client.Map.onMapReady((mapData) => {
+        register(mapData);
     });
 }
