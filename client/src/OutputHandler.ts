@@ -26,9 +26,24 @@ export default class OutputHandler {
         }
     }
 
-    showContextMenu(items: { label: string; action: () => void }[], x: number, y: number) {
+    showContextMenu(
+        items: { label: string; action: () => void }[],
+        x: number,
+        y: number,
+        options?: { header?: string; smallHeader?: boolean }
+    ) {
         if (!this.contextMenu) return
         this.hideContextMenu()
+        const header = options?.header
+        if (header) {
+            const headerEl = document.createElement('div')
+            headerEl.className = 'context-menu-header'
+            if (options?.smallHeader) {
+                headerEl.classList.add('context-menu-header-small')
+            }
+            headerEl.textContent = header
+            this.contextMenu!.appendChild(headerEl)
+        }
         items.forEach(item => {
             const btn = document.createElement('button')
             btn.textContent = item.label
