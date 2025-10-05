@@ -1,5 +1,6 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import {roundMapZoom} from "./utils/roundMapZoom";
 
 const mapPositions = [
     'top-overlay',
@@ -35,7 +36,7 @@ const defaultSettings: UiSettings = {
     contentFontSize: 0.775,
     objectsFontSize: 0.6,
     buttonSize: 1,
-    mapScale: 0.30,
+    mapScale: roundMapZoom(0.30),
     showButtons: true,
     hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
@@ -147,7 +148,7 @@ async function load(): Promise<UiSettings> {
         if (raw || Object.keys(parsed).length > 0) {
             const mapScale = (() => {
                 const value = Math.abs(parseFloat(parsed.mapScale));
-                return value > 0 ? value : defaultSettings.mapScale;
+                return value > 0 ? roundMapZoom(value) : roundMapZoom(defaultSettings.mapScale);
             })();
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
@@ -167,7 +168,7 @@ async function load(): Promise<UiSettings> {
 }
 
 function save(settings: UiSettings) {
-    storage.setItem('uiSettings', settings);
+    storage.setItem('uiSettings', { ...settings, mapScale: roundMapZoom(settings.mapScale) });
 }
 
 export default async function initUiSettings() {
@@ -197,7 +198,7 @@ export default async function initUiSettings() {
     contentInput.value = String(current.contentFontSize);
     objectsInput.value = String(current.objectsFontSize);
     buttonInput.value = String(current.buttonSize);
-    mapInput.value = String(current.mapScale);
+    mapInput.value = String(roundMapZoom(current.mapScale));
     mapHeightInput.value = String(current.mapHeight);
     mapPositionInput.value = current.mapPosition;
     explorationInput.checked = current.explorationMode;
@@ -222,7 +223,7 @@ export default async function initUiSettings() {
     function read(): UiSettings {
         const mapScale = (() => {
             const value = Math.abs(parseFloat(mapInput.value));
-            const scale = value > 0 ? value : defaultSettings.mapScale;
+            const scale = value > 0 ? roundMapZoom(value) : roundMapZoom(defaultSettings.mapScale);
             mapInput.value = String(scale);
             return scale;
         })();
