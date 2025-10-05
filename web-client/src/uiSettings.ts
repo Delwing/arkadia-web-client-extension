@@ -220,9 +220,8 @@ export default async function initUiSettings() {
     apply(current);
 
     const updateMapScale = (scale: number) => {
-        const rounded = roundMapZoom(scale);
-        mapInput.value = String(rounded);
-        current = { ...current, mapScale: rounded };
+        mapInput.value = String(scale);
+        current = { ...current, mapScale: scale };
     };
 
     const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
