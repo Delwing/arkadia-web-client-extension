@@ -200,9 +200,6 @@ export class EmbeddedMap {
 
     renderRoom(roomId: number) {
         this.renderer.setPosition(roomId)
-        if (!this.highlightCurrentRoom) {
-            this.renderer.clearPosition();
-        }
         this.renderer.setZoom(this.zoom);
         const area = this.renderer.getCurrentArea()
         this.currentRoom = roomId;
@@ -276,24 +273,15 @@ export class EmbeddedMap {
     setHighlightCurrentRoom(on: boolean) {
         this.highlightCurrentRoom = on;
         Settings.highlightCurrentRoom = on;
-        if (!on) {
-            this.renderer.clearPosition();
-            return;
-        }
-        if (typeof this.currentRoom === 'number') {
-            try {
-                this.renderer.renderPosition(this.currentRoom);
-            } catch {
-                // ignore rendering errors when room is not ready yet
-            }
-        }
+        this.renderer.setPosition(this.currentRoom);
+
     }
 
     leadTo(id?: string) {
         if (id) {
             this.destinations = [parseInt(id)];
         } else {
-            this.destinations = [];
+            this.destinations = [];6
         }
         this.refresh();
     }
