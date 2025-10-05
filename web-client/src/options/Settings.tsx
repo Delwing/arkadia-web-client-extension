@@ -44,6 +44,17 @@ const languageOptions = [
     "ghassall",
 ]
 
+const lowHpAlertOptions = [
+    { value: 0, label: '0 - Wylaczony' },
+    { value: 1, label: '1 - Ledwo zywy' },
+    { value: 2, label: '2 - Ciezko ranny' },
+    { value: 3, label: '3 - W zlej kondycji' },
+    { value: 4, label: '4 - Ranny' },
+    { value: 5, label: '5 - Lekko ranny' },
+    { value: 6, label: '6 - W dobrym stanie' },
+    { value: 7, label: '7 - W swietnej kondycji' },
+];
+
 function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
 
@@ -78,7 +89,11 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
     useEffect(() => {
         const load = () => {
             storage.getItem("settings").then(res => {
-                setSettings(Object.assign({}, defaultSettings, res?.settings));
+                const merged = Object.assign({}, defaultSettings, res?.settings);
+                if (typeof merged.lowHpAlert !== 'number') {
+                    merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
+                }
+                setSettings(merged);
             });
         };
 
@@ -134,6 +149,20 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                         onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                         className="me-2"
                     />
+                    <Form.Group className="d-flex align-items-center me-2">
+                        <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego zdrowia:</Form.Label>
+                        <Form.Select
+                            size="sm"
+                            id="lowHpAlert"
+                            value={settings.lowHpAlert}
+                            onChange={e => onChangeSetting(s => s.lowHpAlert = parseInt(e.target.value) || 0)}
+                            className="w-auto"
+                        >
+                            {lowHpAlertOptions.map(option => (
+                                <option value={option.value} key={option.value}>{option.label}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
                 </div>
             </div>
             <div className="mb-4 border rounded p-3">

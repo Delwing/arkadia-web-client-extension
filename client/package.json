@@ -12,6 +12,7 @@
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
     "mudlet-map-renderer": "^0.2.0-konva"
+    "sql.js": "^1.13.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.326",

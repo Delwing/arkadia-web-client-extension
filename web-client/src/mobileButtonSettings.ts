@@ -24,6 +24,8 @@ export interface ButtonSetting {
     direction?: string;
 }
 
+export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
+
 export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
@@ -79,6 +81,7 @@ export interface LayoutSettings {
     buttons: Record<string, ButtonSetting>;
     order: string[];
     cols: number;
+    background: string;
 }
 
 export interface Settings {
@@ -89,7 +92,7 @@ export interface Settings {
 }
 
 export function createDefaultLayout(): LayoutSettings {
-    return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols };
+    return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols, background: defaultBackground };
 }
 
 export async function loadSettings(): Promise<Settings> {
@@ -101,6 +104,9 @@ export async function loadSettings(): Promise<Settings> {
                 buttons: { ...defaultSettings, ...(set?.buttons || set || {}) },
                 order: Array.isArray(set?.order) ? set.order : [...defaultOrder],
                 cols: typeof set?.cols === 'number' && set.cols > 0 ? set.cols : defaultCols,
+                background: typeof set?.background === 'string' && set.background
+                    ? set.background
+                    : defaultBackground,
             });
             const locked = !!raw.locked;
             if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
@@ -108,10 +114,40 @@ export async function loadSettings(): Promise<Settings> {
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
             const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
+            const soloBackground = typeof raw?.solo?.background === 'string' && raw.solo.background
+                ? raw.solo.background
+                : defaultBackground;
+            const teamBackground = typeof raw?.team?.background === 'string' && raw.team.background
+                ? raw.team.background
+                : typeof raw?.solo?.background === 'string' && raw.solo.background
+                    ? raw.solo.background
+                    : defaultBackground;
+            const leaderBackground = typeof raw?.leader?.background === 'string' && raw.leader.background
+                ? raw.leader.background
+                : typeof raw?.team?.background === 'string' && raw.team.background
+                    ? raw.team.background
+                    : typeof raw?.solo?.background === 'string' && raw.solo.background
+                        ? raw.solo.background
+                        : defaultBackground;
             return {
-                solo: { buttons: { ...defaultSettings, ...(raw.solo || {}) }, order: [...order], cols },
-                team: { buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) }, order: [...order], cols },
-                leader: { buttons: { ...defaultSettings, ...(raw.leader || raw.team || raw.solo || {}) }, order: [...order], cols },
+                solo: {
+                    buttons: { ...defaultSettings, ...(raw.solo || {}) },
+                    order: [...order],
+                    cols,
+                    background: soloBackground,
+                },
+                team: {
+                    buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) },
+                    order: [...order],
+                    cols,
+                    background: teamBackground,
+                },
+                leader: {
+                    buttons: { ...defaultSettings, ...(raw.leader || raw.team || raw.solo || {}) },
+                    order: [...order],
+                    cols,
+                    background: leaderBackground,
+                },
                 locked,
             };
         }
@@ -134,6 +170,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             container.removeAttribute('data-drag-locked');
         }
         container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
+        container.style.backgroundColor = set.background || defaultBackground;
 
         // Preserve current button size
         const ref = container.querySelector('.mobile-button') as HTMLButtonElement | null;

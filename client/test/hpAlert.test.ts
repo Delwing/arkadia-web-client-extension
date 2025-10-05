@@ -23,13 +23,14 @@ describe('hp alert', () => {
     client = new FakeClient();
     initHpAlert((client as unknown) as any);
     jest.clearAllMocks();
+    client.sendEvent('settings', { lowHpAlert: 2 });
   });
 
   function send(hp: number) {
     client.sendEvent('gmcp.char.state', { hp });
   }
 
-  test('beeps and prints when hp drops below 3', () => {
+  test('beeps and prints when hp drops to configured threshold', () => {
     send(3);
     send(1);
     expect(client.playSound).toHaveBeenCalledTimes(1);
@@ -61,5 +62,25 @@ describe('hp alert', () => {
     expect(client.playSound).not.toHaveBeenCalled();
     expect(client.println).not.toHaveBeenCalled();
     expect(client.notify).not.toHaveBeenCalled();
+  });
+
+  test('disabling alert prevents notifications', () => {
+    client.sendEvent('settings', { lowHpAlert: 0 });
+    send(3);
+    send(1);
+    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.println).not.toHaveBeenCalled();
+    expect(client.notify).not.toHaveBeenCalled();
+  });
+
+  test('higher threshold expands alert range', () => {
+    client.sendEvent('settings', { lowHpAlert: 3 });
+    send(4);
+    send(2);
+    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const plain = 'Jestes w zlej kondycji';
+    const msg = colorString(plain, color);
+    expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
+    expect(client.notify).toHaveBeenCalledWith(plain);
   });
 });
