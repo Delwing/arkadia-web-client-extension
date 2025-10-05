@@ -92,6 +92,7 @@ export class EmbeddedMap {
         });
         let zoom = 0.30;
         let explorationMode = false;
+        let instantMove = false;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -102,6 +103,9 @@ export class EmbeddedMap {
                 }
                 if (typeof parsed.explorationMode === 'boolean') {
                     explorationMode = parsed.explorationMode;
+                }
+                if (typeof parsed.instantMove === 'boolean') {
+                    instantMove = parsed.instantMove;
                 }
             }
         } catch {
@@ -118,6 +122,7 @@ export class EmbeddedMap {
         this.zoom = zoom;
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
+        this.setInstantMove(instantMove);
 
         window.addEventListener('enterLocation', async (ev: any) => {
             const id = ev.detail.id;
@@ -257,6 +262,10 @@ export class EmbeddedMap {
     setZoom(zoom: number) {
         this.zoom = zoom;
         this.renderer.setZoom(zoom);
+    }
+
+    setInstantMove(on: boolean) {
+        Settings.instantMove = on;
     }
 
     leadTo(id?: string) {
