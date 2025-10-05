@@ -220,6 +220,29 @@ export default async function initUiSettings() {
     highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
     apply(current);
 
+    const updateMapScale = (scale: number) => {
+        const rounded = roundMapZoom(scale);
+        mapInput.value = String(rounded);
+        current = { ...current, mapScale: rounded };
+    };
+
+    const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+        const uiSettingsChange = changes.uiSettings;
+        if (!uiSettingsChange || !uiSettingsChange.newValue) {
+            return;
+        }
+        const newValue = uiSettingsChange.newValue;
+        const scaleValue = typeof newValue.mapScale === 'number'
+            ? newValue.mapScale
+            : parseFloat(newValue.mapScale);
+        const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0
+            ? scaleValue
+            : defaultSettings.mapScale;
+        updateMapScale(normalizedScale);
+    };
+
+    storage.onChanged?.addListener(handleStorageChange);
+
     function refreshExplorationStats() {
         const map = (window as any).embedded;
         if (map?.getVisitedCount && map?.getRoomCount && explorationStats) {
