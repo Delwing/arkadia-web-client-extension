@@ -11,7 +11,7 @@
   "dependencies": {
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
-    "mudlet-map-renderer": "^0.6.2-konva",
+    "mudlet-map-renderer": "^0.6.3-konva",
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
