@@ -910,6 +910,63 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   pointer-events: none;
 }
 
+.letter-composer {
+  position: fixed;
+  top: 4rem;
+  left: 4rem;
+  width: min(28rem, 90vw);
+  max-height: min(32rem, 90vh);
+  background-color: rgba(17, 19, 23, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
+  color: #f8f9fa;
+  z-index: 1100;
+  overflow: hidden;
+}
+
+.letter-composer[hidden] {
+  display: none !important;
+}
+
+.letter-composer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: move;
+}
+
+.letter-composer-header span {
+  font-weight: 600;
+}
+
+.letter-composer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.letter-composer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.letter-composer textarea {
+  resize: vertical;
+  min-height: 8rem;
+}
+
+.letter-composer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .docs-content {
   flex: 1;
   overflow-y: auto;

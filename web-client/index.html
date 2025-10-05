@@ -493,6 +493,29 @@
         <div id="idz-buttons-list" class="mobile-idz-buttons"></div>
     </div>
 </div>
+<div id="letter-composer" class="letter-composer" hidden>
+    <div class="letter-composer-header">
+        <span>Nowy list</span>
+        <button type="button" class="btn-close btn-close-white" aria-label="Zamknij" data-letter-close></button>
+    </div>
+    <form class="letter-composer-form">
+        <div class="letter-composer-field">
+            <label for="letter-to" class="form-label">Do:</label>
+            <input id="letter-to" name="letter-to" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="letter-composer-field">
+            <label for="letter-cc" class="form-label">CC:</label>
+            <input id="letter-cc" name="letter-cc" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="letter-composer-field">
+            <label for="letter-content" class="form-label">Treść:</label>
+            <textarea id="letter-content" name="letter-content" class="form-control" rows="6"></textarea>
+        </div>
+        <div class="letter-composer-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Wyślij</button>
+        </div>
+    </form>
+</div>
 <div id="context-menu" class="context-menu"></div>
 <script src="/pako.min.js"></script>
 <script type="module" src="/src/plugin.ts"></script>

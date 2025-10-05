@@ -16,6 +16,8 @@ export interface KnownEvents {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'multibinds': { list: { index: number; action: string; label: string }[] };
+    'letterComposer': { open: boolean };
+    'letterComposer.submit': { to: string; cc: string; content: string };
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;

@@ -17,6 +17,7 @@ import AttackMode from "./AttackMode";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
+import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -947,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
     new ObjectList(client);
+    new LetterComposer(arkadiaClient);
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
