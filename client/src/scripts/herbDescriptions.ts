@@ -31,7 +31,7 @@ export default async function initHerbDescriptions(client: Client) {
                     label: `${a.action} ${n}`,
                     action: () => {
                         preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                        client.sendCommand(`/z ${a.action} ${herbId} ${n}`);
+                        client.sendCommand(`/zi ${a.action} ${herbId} ${n}`);
                         postUseCommands.forEach(cmd => client.sendCommand(cmd));
                     }
                 }))
