@@ -828,6 +828,37 @@ function ExportImport() {
         }
     };
 
+    const handleDriveDelete = async (fileSummary: DriveFileSummary) => {
+        if (!tokenClientRef.current) return;
+        const confirmed = window.confirm(`Czy na pewno chcesz usunąć kopię "${fileSummary.name}" z Google Drive?`);
+        if (!confirmed) {
+            return;
+        }
+        setDriveError(null);
+        setDriveStatus(null);
+        setDriveAction(`delete:${fileSummary.id}`);
+        setIsDriveBusy(true);
+        try {
+            const response = await driveFetch(
+                `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileSummary.id)}`,
+                {
+                    method: "DELETE",
+                }
+            );
+            if (!response.ok) {
+                throw new Error(`Delete failed with status ${response.status}`);
+            }
+            setDriveStatus(`Usunięto kopię "${fileSummary.name}" z Google Drive.`);
+            await refreshDriveFiles();
+        } catch (err) {
+            console.error("Failed to delete backup from Google Drive", err);
+            setDriveError("Nie udało się usunąć kopii z Google Drive.");
+        } finally {
+            setIsDriveBusy(false);
+            setDriveAction(null);
+        }
+    };
+
     const handleDriveDisconnect = async () => {
         setDriveError(null);
         setDriveStatus(null);
@@ -993,21 +1024,38 @@ function ExportImport() {
                                                 {sizeText ? ` • ${sizeText}` : ""}
                                             </div>
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => handleDriveImport(file)}
-                                            disabled={isDriveBusy || isDriveLoading || isProcessing}
-                                        >
-                                            {driveAction === `import:${file.id}` ? (
-                                                <span className="d-inline-flex align-items-center gap-2">
-                                                    <Spinner animation="border" size="sm" role="status" />
-                                                    <span>Importowanie…</span>
-                                                </span>
-                                            ) : (
-                                                "Importuj"
-                                            )}
-                                        </Button>
+                                        <div className="d-flex flex-wrap align-items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => handleDriveImport(file)}
+                                                disabled={isDriveBusy || isDriveLoading || isProcessing}
+                                            >
+                                                {driveAction === `import:${file.id}` ? (
+                                                    <span className="d-inline-flex align-items-center gap-2">
+                                                        <Spinner animation="border" size="sm" role="status" />
+                                                        <span>Importowanie…</span>
+                                                    </span>
+                                                ) : (
+                                                    "Importuj"
+                                                )}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline-danger"
+                                                onClick={() => handleDriveDelete(file)}
+                                                disabled={isDriveBusy || isDriveLoading}
+                                            >
+                                                {driveAction === `delete:${file.id}` ? (
+                                                    <span className="d-inline-flex align-items-center gap-2">
+                                                        <Spinner animation="border" size="sm" role="status" />
+                                                        <span>Usuwanie…</span>
+                                                    </span>
+                                                ) : (
+                                                    "Usuń"
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                 );
                             })
