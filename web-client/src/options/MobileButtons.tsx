@@ -585,7 +585,7 @@ function MobileButtons() {
                         Kopiuj
                     </Button>
                 </div>
-                <Button id="mobile-buttons-save" className="w-100 w-md-auto" onClick={save}>Zapisz</Button>
+                <Button id="mobile-buttons-save" className="w-100 w-md-auto text-nowrap" onClick={save}>Zapisz</Button>
             </div>
         </div>
     );

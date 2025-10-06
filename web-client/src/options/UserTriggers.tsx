@@ -175,7 +175,7 @@ function UserTriggers() {
                     className="flex-grow-1"
                     style={{ minWidth: 0 }}
                 />
-                <Button size="sm" className="w-100 w-md-auto" onClick={openNew}>Add trigger</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openNew}>Add trigger</Button>
             </div>
             
             {showCreateForm && (

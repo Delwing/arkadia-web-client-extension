@@ -145,9 +145,9 @@ function Aliases() {
                     className="flex-grow-1"
                     style={{ minWidth: 0 }}
                 />
-                <Button size="sm" className="w-100 w-md-auto" onClick={openNew}>Dodaj alias</Button>
-                <Button size="sm" className="w-100 w-md-auto" onClick={openArkadiaImport}>Importuj z klienta Arkadii</Button>
-                <Button size="sm" className="w-100 w-md-auto" onClick={openImport}>Importuj z Blowtorch</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openNew}>Dodaj alias</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openArkadiaImport}>Importuj z klienta Arkadii</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openImport}>Importuj z Blowtorch</Button>
                 <input
                     ref={arkadiaInputRef}
                     type="file"
