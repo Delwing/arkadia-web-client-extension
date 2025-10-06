@@ -15,9 +15,13 @@ interface GoogleTokenResponse {
     error?: string;
 }
 
+interface GoogleTokenError {
+    type?: "popup_closed" | "popup_failed_to_open" | "unknown";
+}
+
 interface GoogleTokenClient {
     callback: (response: GoogleTokenResponse) => void;
-    requestAccessToken: (options?: { prompt?: "" | "consent" }) => void;
+    requestAccessToken: (options?: { prompt?: "" | "consent" | "select_account" }) => void;
 }
 
 interface DriveFileSummary {
@@ -36,6 +40,7 @@ declare global {
                         client_id: string;
                         scope: string;
                         callback: (response: GoogleTokenResponse) => void;
+                        error_callback?: (error: GoogleTokenError) => void;
                     }) => GoogleTokenClient;
                     revoke?: (token: string, done?: () => void) => void;
                 };
@@ -358,6 +363,7 @@ function ExportImport() {
     const tokenClientRef = useRef<GoogleTokenClient | null>(null);
     const driveTokenRef = useRef<string | null>(null);
     const driveTokenExpiryRef = useRef(0);
+    const tokenErrorRejectRef = useRef<((error: Error) => void) | null>(null);
 
     const selectedCharacters = useMemo(
         () => characters.filter(name => selection[name]),
@@ -416,6 +422,20 @@ function ExportImport() {
             client_id: GOOGLE_CLIENT_ID,
             scope: DRIVE_SCOPES.join(" "),
             callback: () => {},
+            error_callback: error => {
+                const reject = tokenErrorRejectRef.current;
+                if (!reject) {
+                    return;
+                }
+                tokenErrorRejectRef.current = null;
+                if (error?.type === "popup_closed") {
+                    reject(new Error("Logowanie Google zostało przerwane."));
+                } else if (error?.type === "popup_failed_to_open") {
+                    reject(new Error("Nie udało się otworzyć okna logowania Google."));
+                } else {
+                    reject(new Error("Wystąpił nieznany błąd logowania Google."));
+                }
+            },
         });
     }, [isDriveScriptReady]);
 
@@ -433,32 +453,63 @@ function ExportImport() {
                     return existingToken;
                 }
             }
-            return new Promise<string>((resolve, reject) => {
-                client.callback = (response: GoogleTokenResponse) => {
-                    if (response?.error) {
-                        reject(new Error("Dostęp do Google Drive został odrzucony."));
-                        return;
+            const requestToken = async (prompt?: "" | "consent" | "select_account"): Promise<GoogleTokenResponse> => {
+                return new Promise<GoogleTokenResponse>((resolve, reject) => {
+                    client.callback = (response: GoogleTokenResponse) => {
+                        tokenErrorRejectRef.current = null;
+                        resolve(response);
+                    };
+                    tokenErrorRejectRef.current = error => {
+                        tokenErrorRejectRef.current = null;
+                        reject(error);
+                    };
+                    try {
+                        if (prompt) {
+                            client.requestAccessToken({ prompt });
+                        } else {
+                            client.requestAccessToken();
+                        }
+                    } catch (err) {
+                        tokenErrorRejectRef.current = null;
+                        reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                     }
-                    const token = response?.access_token;
-                    if (!token) {
-                        reject(new Error("Nie udało się uzyskać tokenu Google Drive."));
-                        return;
+                });
+            };
+
+            const evaluateResponse = (response: GoogleTokenResponse): string => {
+                if (response?.error) {
+                    if (response.error === "access_denied") {
+                        throw new Error("Dostęp do Google Drive został odrzucony.");
                     }
-                    const expiresRaw = response.expires_in;
-                    const expiresIn =
-                        typeof expiresRaw === "string" ? Number.parseInt(expiresRaw, 10) : Number(expiresRaw ?? 0);
-                    const buffer = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
-                    driveTokenRef.current = token;
-                    driveTokenExpiryRef.current = buffer ? now + buffer : now + 5 * 60 * 1000;
-                    setDriveToken(token);
-                    resolve(token);
-                };
-                try {
-                    client.requestAccessToken({ prompt: forcePrompt || !driveTokenRef.current ? "consent" : "" });
-                } catch (err) {
-                    reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
+                    throw new Error("Nie udało się uzyskać tokenu Google Drive.");
                 }
-            });
+                const token = response?.access_token;
+                if (!token) {
+                    throw new Error("Nie udało się uzyskać tokenu Google Drive.");
+                }
+                const expiresRaw = response.expires_in;
+                const expiresIn = typeof expiresRaw === "string" ? Number.parseInt(expiresRaw, 10) : Number(expiresRaw ?? 0);
+                const buffer = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
+                driveTokenRef.current = token;
+                driveTokenExpiryRef.current = buffer ? now + buffer : now + 5 * 60 * 1000;
+                setDriveToken(token);
+                return token;
+            };
+
+            const initialPrompt: "" | "select_account" | undefined = forcePrompt ? "select_account" : undefined;
+            try {
+                const response = await requestToken(initialPrompt);
+                if (!response.error || forcePrompt) {
+                    return evaluateResponse(response);
+                }
+                if (response.error === "consent_required" || response.error === "interaction_required") {
+                    const retry = await requestToken("consent");
+                    return evaluateResponse(retry);
+                }
+                throw new Error("Nie udało się uzyskać tokenu Google Drive.");
+            } catch (err) {
+                throw err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive.");
+            }
         },
         []
     );
