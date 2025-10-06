@@ -1,5 +1,11 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import { isLetterTemplate, type LetterSubmitPayload, type LetterTemplate } from "@client/src/types/letter";
+import {
+    LETTER_TEMPLATE_CHOICES,
+    LETTER_TEMPLATE_DEFINITIONS,
+    isLetterTemplate,
+    type LetterSubmitPayload,
+    type LetterTemplate,
+} from "@client/src/types/letter";
 
 interface LetterComposerState {
     hasCustomPosition: boolean;
@@ -36,6 +42,7 @@ export default class LetterComposer {
         this.closeButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-close]");
         this.previewButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-preview]");
         this.templateSelect = this.container?.querySelector<HTMLSelectElement>("[name='letter-template']");
+        this.rebuildTemplateOptions();
         this.templateSelection = this.loadTemplateSelection();
         this.applyTemplateSelection(this.templateSelection);
 
@@ -174,31 +181,59 @@ export default class LetterComposer {
         document.removeEventListener("pointerup", this.handlePointerUp);
     };
 
+    private isSelectableTemplate(value: unknown): value is LetterTemplate {
+        return isLetterTemplate(value) && Boolean(LETTER_TEMPLATE_DEFINITIONS[value]?.supportsJustification);
+    }
+
+    private rebuildTemplateOptions() {
+        if (!this.templateSelect) {
+            return;
+        }
+        const currentValue = this.templateSelect.value;
+        this.templateSelect.innerHTML = "";
+        LETTER_TEMPLATE_CHOICES.forEach(definition => {
+            const option = document.createElement("option");
+            option.value = definition.value;
+            option.textContent = definition.displayLabel;
+            this.templateSelect!.appendChild(option);
+        });
+
+        if (this.isSelectableTemplate(currentValue)) {
+            this.templateSelect.value = currentValue;
+        } else if (LETTER_TEMPLATE_CHOICES.length > 0) {
+            this.templateSelect.value = LETTER_TEMPLATE_CHOICES[0].value;
+        }
+    }
+
     private loadTemplateSelection(): LetterTemplate {
         try {
             const stored = localStorage.getItem(LetterComposer.TEMPLATE_STORAGE_KEY);
-            if (stored && isLetterTemplate(stored)) {
+            if (this.isSelectableTemplate(stored)) {
                 return stored;
             }
         } catch {
             // ignore storage errors
         }
-        if (this.templateSelect && isLetterTemplate(this.templateSelect.value)) {
+        if (this.templateSelect && this.isSelectableTemplate(this.templateSelect.value)) {
             return this.templateSelect.value;
         }
-        return "plain";
+        return LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
     }
 
     private getCurrentTemplateSelection(): LetterTemplate {
-        if (this.templateSelect && isLetterTemplate(this.templateSelect.value)) {
+        if (this.templateSelect && this.isSelectableTemplate(this.templateSelect.value)) {
             return this.templateSelect.value;
         }
-        return "plain";
+        return LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
     }
 
     private applyTemplateSelection(value: LetterTemplate) {
         if (this.templateSelect) {
-            this.templateSelect.value = value;
+            if (this.isSelectableTemplate(value)) {
+                this.templateSelect.value = value;
+            } else if (LETTER_TEMPLATE_CHOICES.length > 0) {
+                this.templateSelect.value = LETTER_TEMPLATE_CHOICES[0].value;
+            }
         }
     }
 

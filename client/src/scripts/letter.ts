@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { defaultSettings } from "../defaultSettings";
 import type { LetterSubmitPayload, LetterTemplate } from "../types/letter";
-import { isLetterTemplate } from "../types/letter";
+import { LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate } from "../types/letter";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
@@ -245,7 +245,7 @@ class ParchmentTemplate extends BaseLetterTemplate {
 
 class Parchment2Template extends BaseLetterTemplate {
     constructor() {
-        super(" |     ", "     | ");
+        super(" |     ", "   |   ");
     }
 
     createHeader(width: number) {
@@ -331,15 +331,8 @@ function renderLetter(content: string, template: LetterTemplate) {
     return { lines, hasContent };
 }
 
-const TEMPLATE_LABELS: Record<LetterTemplate, string> = {
-    plain: "zwykly",
-    parchment: "pergamin",
-    parchment2: "pergamin 2",
-    parchment3: "pergamin 3",
-};
-
 function printPreview(client: Client, lines: string[], template: LetterTemplate, hasContent: boolean) {
-    const templateLabel = TEMPLATE_LABELS[template] ?? template;
+    const templateLabel = LETTER_TEMPLATE_PREVIEW_LABELS[template] ?? template;
     const header = `Podglad listu (szerokosc ${lineWidth}, szablon ${templateLabel})`;
     if (!hasContent) {
         client.println(`${header}\n(brak tresci)`);
