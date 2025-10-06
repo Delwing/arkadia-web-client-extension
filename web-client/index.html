@@ -512,17 +512,15 @@
             <input id="letter-subject" name="letter-subject" class="form-control form-control-sm" type="text" autocomplete="off">
         </div>
         <div class="letter-composer-field">
-            <label for="letter-template" class="form-label">Szablon:</label>
-            <select id="letter-template" name="letter-template" class="form-select form-select-sm">
-                <option value="plain">Zwykly</option>
-                <option value="parchment">Pergamin</option>
-            </select>
-        </div>
-        <div class="letter-composer-field">
             <label for="letter-content" class="form-label">Treść:</label>
             <textarea id="letter-content" name="letter-content" class="form-control" rows="10"></textarea>
         </div>
         <div class="letter-composer-actions">
+            <label for="letter-template" class="form-label mb-0">Szablon:</label>
+            <select id="letter-template" name="letter-template" class="form-select form-select-sm letter-template-select">
+                <option value="plain">Zwykly</option>
+                <option value="parchment">Pergamin</option>
+            </select>
             <button type="button" class="btn btn-secondary btn-sm" data-letter-preview>Podgląd</button>
             <button type="submit" class="btn btn-primary btn-sm">Wyślij</button>
         </div>

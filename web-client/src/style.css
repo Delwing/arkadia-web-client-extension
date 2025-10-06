@@ -1130,10 +1130,23 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-start;
   gap: 0.5rem;
+  flex-wrap: wrap;
   margin-top: auto;
   padding-top: 0.5rem;
+}
+
+.letter-composer-actions .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.letter-template-select {
+  width: auto;
+  min-width: 9rem;
 }
 
 .docs-content {
