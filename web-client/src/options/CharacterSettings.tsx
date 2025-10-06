@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GeneralSettings from "./Settings";
 import GuildsSettings from "./GuildsSettings";
+import ExportImport from "./ExportImport";
 
 type Tab = "general" | "guild";
 
@@ -91,6 +92,7 @@ function CharacterSettings() {
                     </div>
                 )
             )}
+            <ExportImport />
             <div className="mb-3 pb-2 flex-shrink-0">
                 <div className="d-flex gap-2">
                     <button
