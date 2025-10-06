@@ -17,3 +17,6 @@ Prefer creation of HTML elements in HTML files, when possible.
 ## Data directory
 
 Never modify files inside the `data` directory.
+
+## Screenshots
+For taking screenshots it might be better to use sandbox.html or there is close connection popup button, logging in is not required.
