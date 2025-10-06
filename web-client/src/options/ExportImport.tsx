@@ -16,7 +16,7 @@ interface GoogleTokenResponse {
 }
 
 interface GoogleTokenError {
-    type?: "popup_closed" | "popup_failed_to_open" | "unknown";
+    type?: "popup_closed" | "popup_failed_to_open" | "popup_opener_error" | "unknown";
 }
 
 interface GoogleTokenClient {
@@ -41,6 +41,8 @@ declare global {
                         scope: string;
                         callback: (response: GoogleTokenResponse) => void;
                         error_callback?: (error: GoogleTokenError) => void;
+                        ux_mode?: "popup" | "redirect";
+                        use_fedcm_for_prompt?: boolean;
                     }) => GoogleTokenClient;
                     revoke?: (token: string, done?: () => void) => void;
                 };
@@ -422,6 +424,8 @@ function ExportImport() {
             client_id: GOOGLE_CLIENT_ID,
             scope: DRIVE_SCOPES.join(" "),
             callback: () => {},
+            ux_mode: "popup",
+            use_fedcm_for_prompt: true,
             error_callback: error => {
                 const reject = tokenErrorRejectRef.current;
                 if (!reject) {
@@ -432,6 +436,8 @@ function ExportImport() {
                     reject(new Error("Logowanie Google zostało przerwane."));
                 } else if (error?.type === "popup_failed_to_open") {
                     reject(new Error("Nie udało się otworzyć okna logowania Google."));
+                } else if (error?.type === "popup_opener_error") {
+                    reject(new Error("Przeglądarka zablokowała okno logowania Google."));
                 } else {
                     reject(new Error("Wystąpił nieznany błąd logowania Google."));
                 }
@@ -453,7 +459,7 @@ function ExportImport() {
                     return existingToken;
                 }
             }
-            const requestToken = async (prompt?: "" | "consent" | "select_account"): Promise<GoogleTokenResponse> => {
+            const requestToken = async (prompt: "" | "consent" | "select_account" = ""): Promise<GoogleTokenResponse> => {
                 return new Promise<GoogleTokenResponse>((resolve, reject) => {
                     client.callback = (response: GoogleTokenResponse) => {
                         tokenErrorRejectRef.current = null;
@@ -464,11 +470,7 @@ function ExportImport() {
                         reject(error);
                     };
                     try {
-                        if (prompt) {
-                            client.requestAccessToken({ prompt });
-                        } else {
-                            client.requestAccessToken();
-                        }
+                        client.requestAccessToken({ prompt });
                     } catch (err) {
                         tokenErrorRejectRef.current = null;
                         reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
@@ -496,7 +498,7 @@ function ExportImport() {
                 return token;
             };
 
-            const initialPrompt: "" | "select_account" | undefined = forcePrompt ? "select_account" : undefined;
+            const initialPrompt: "" | "select_account" = forcePrompt ? "select_account" : "";
             try {
                 const response = await requestToken(initialPrompt);
                 if (!response.error || forcePrompt) {
