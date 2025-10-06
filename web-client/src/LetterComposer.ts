@@ -20,6 +20,7 @@ export default class LetterComposer {
     private subjectInput: HTMLInputElement | null;
     private contentInput: HTMLTextAreaElement | null;
     private closeButton: HTMLButtonElement | null;
+    private previewButton: HTMLButtonElement | null;
     private dragPointerId: number | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
@@ -34,21 +35,26 @@ export default class LetterComposer {
         this.subjectInput = this.container?.querySelector<HTMLInputElement>("[name='letter-subject']");
         this.contentInput = this.container?.querySelector<HTMLTextAreaElement>("[name='letter-content']");
         this.closeButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-close]");
+        this.previewButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-preview]");
 
         this.attachListeners();
         this.client.on("letterComposer", () => this.show());
+    }
+
+    private getPayload(): SubmitPayload {
+        return {
+            to: this.toInput?.value ?? "",
+            cc: this.ccInput?.value ?? "",
+            subject: this.subjectInput?.value ?? "",
+            content: this.contentInput?.value ?? "",
+        };
     }
 
     private attachListeners() {
         if (this.form) {
             this.form.addEventListener("submit", ev => {
                 ev.preventDefault();
-                const payload: SubmitPayload = {
-                    to: this.toInput?.value ?? "",
-                    cc: this.ccInput?.value ?? "",
-                    subject: this.subjectInput?.value ?? "",
-                    content: this.contentInput?.value ?? "",
-                };
+                const payload = this.getPayload();
                 this.client.emit("letterComposer.submit", payload);
                 this.hide();
                 this.form?.reset();
@@ -57,6 +63,14 @@ export default class LetterComposer {
 
         if (this.closeButton) {
             this.closeButton.addEventListener("click", () => this.hide());
+        }
+
+        if (this.previewButton) {
+            this.previewButton.addEventListener("click", ev => {
+                ev.preventDefault();
+                const payload = this.getPayload();
+                this.client.emit("letterComposer.preview", payload);
+            });
         }
 
         if (this.header && this.container) {

@@ -994,6 +994,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .letter-composer-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.5rem;
 }
