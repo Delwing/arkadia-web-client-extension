@@ -20,6 +20,13 @@ interface GoogleTokenClient {
     requestAccessToken: (options?: { prompt?: "" | "consent" }) => void;
 }
 
+interface GoogleTokenClientConfig {
+    client_id: string;
+    scope: string;
+    callback: (response: GoogleTokenResponse) => void;
+    use_fedcm_for_prompt?: boolean;
+}
+
 interface DriveFileSummary {
     id: string;
     name: string;
@@ -32,11 +39,7 @@ declare global {
         google?: {
             accounts?: {
                 oauth2?: {
-                    initTokenClient: (config: {
-                        client_id: string;
-                        scope: string;
-                        callback: (response: GoogleTokenResponse) => void;
-                    }) => GoogleTokenClient;
+                    initTokenClient: (config: GoogleTokenClientConfig) => GoogleTokenClient;
                     revoke?: (token: string, done?: () => void) => void;
                 };
             };
@@ -434,6 +437,7 @@ function ExportImport() {
             client_id: GOOGLE_CLIENT_ID,
             scope: DRIVE_SCOPES.join(" "),
             callback: () => {},
+            use_fedcm_for_prompt: true,
         });
     }, [isDriveScriptReady]);
 
