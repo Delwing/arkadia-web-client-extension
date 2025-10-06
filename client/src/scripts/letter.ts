@@ -153,171 +153,160 @@ function formatContent(content: string, width: number) {
     return result;
 }
 
-function createPlainHeader(width: number) {
-    const dashes = "-".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        ` +--${dashes}--+ `,
-        ` |  ${spaces}  | `,
-        ` |  ${spaces}  | `,
-    ];
+interface LetterTemplateRenderer {
+    createHeader(width: number): string[];
+    createFooter(width: number): string[];
+    formatLine(line: string, width: number): string;
 }
 
-function createPlainFooter(width: number) {
-    const dashes = "-".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        ` |  ${spaces}  | `,
-        ` |  ${spaces}  | `,
-        ` +--${dashes}--+ `,
-    ];
+abstract class BaseLetterTemplate implements LetterTemplateRenderer {
+    protected constructor(private readonly bodyPrefix: string, private readonly bodySuffix: string) {}
+
+    abstract createHeader(width: number): string[];
+
+    abstract createFooter(width: number): string[];
+
+    formatLine(line: string, width: number): string {
+        const alignRight = line.startsWith(">");
+        const content = alignRight ? line.slice(1) : line;
+        const trimmed = content.length > width ? content.slice(0, width) : content;
+        const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
+        return `${this.bodyPrefix}${padded}${this.bodySuffix}`;
+    }
 }
 
-function createPlainBodyLine(line: string, width: number) {
-    const alignRight = line.startsWith(">");
-    const content = alignRight ? line.slice(1) : line;
-    const trimmed = content.length > width ? content.slice(0, width) : content;
-    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-    return ` |  ${padded}  | `;
+class PlainTemplate extends BaseLetterTemplate {
+    constructor() {
+        super(" |  ", "  | ");
+    }
+
+    createHeader(width: number) {
+        const dashes = "-".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` +--${dashes}--+ `,
+            ` |  ${spaces}  | `,
+            ` |  ${spaces}  | `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const dashes = "-".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` |  ${spaces}  | `,
+            ` |  ${spaces}  | `,
+            ` +--${dashes}--+ `,
+        ];
+    }
 }
 
-function createParchmentHeader(width: number) {
-    const underscores = "_".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        `  ____${underscores}___  `,
-        `/ \\   ${spaces}   \\.`,
-        `|  |  ${spaces}   |.`,
-        `\\_ |  ${spaces}   |.`,
-        `   |  ${spaces}   |.`,
-    ];
+class ParchmentTemplate extends BaseLetterTemplate {
+    constructor() {
+        super("   |   ", "  |.");
+    }
+
+    createHeader(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            `  ____${underscores}___  `,
+            `/ \\   ${spaces}   \\.`,
+            `|  |  ${spaces}   |.`,
+            `\\_ |  ${spaces}   |.`,
+            `   |  ${spaces}   |.`,
+        ];
+    }
+
+    createFooter(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            `   |  ${spaces}   |.   `,
+            `   |   ${underscores}__|___ `,
+            `   |  /${spaces}     /.`,
+            `   \\_/_${underscores}____/. `,
+        ];
+    }
 }
 
-function createParchmentFooter(width: number) {
-    const underscores = "_".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        `   |  ${spaces}   |.   `,
-        `   |   ${underscores}__|___ `,
-        `   |  /${spaces}     /.`,
-        `   \\_/_${underscores}____/. `,
-    ];
+class Parchment2Template extends BaseLetterTemplate {
+    constructor() {
+        super(" |    ", " |   ");
+    }
+
+    createHeader(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` ______${underscores}_____  `,
+            `/ _\\  ${spaces}     \\`,
+            `|/ >|  ${spaces}     | `,
+            `|\\_/__${underscores}______/`,
+            `\\.    ${spaces}   ./  `,
+            ` |     ${spaces}   |   `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` |  ___${underscores}___|    `,
+            ` |/\\  ${spaces}     \\ `,
+            ` \\_|${spaces}       |`,
+            `  \\_/_${underscores}_____/  `,
+        ];
+    }
 }
 
-function createParchmentBodyLine(line: string, width: number) {
-    const alignRight = line.startsWith(">");
-    const content = alignRight ? line.slice(1) : line;
-    const trimmed = content.length > width ? content.slice(0, width) : content;
-    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-    return `   |   ${padded}  |.`;
+class Parchment3Template extends BaseLetterTemplate {
+    constructor() {
+        super(" |       |   ", "        | ");
+    }
+
+    createHeader(width: number) {
+        const spaces = " ".repeat(width);
+        const dashes = "-".repeat(width);
+        return [
+            `             ${spaces}  .---.   `,
+            `             ${spaces} /  .  \\ `,
+            `             ${spaces}|\\_/|   |`,
+            `             ${spaces}|   |  /| `,
+            String.raw`   .---------${dashes}------\' |`,
+            `  /  .-.     ${spaces}        | `,
+            ` |  /   \\   ${spaces}         |`,
+            ` | |\\_.  |  ${spaces}         |`,
+            ` |\\|  | /|  ${spaces}         |`,
+            String.raw` | \`---\' |  ${spaces}        | `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const spaces = " ".repeat(width);
+        const dashes = "-".repeat(width);
+        return [
+            ` |       |   ${spaces}        /   `,
+            ` |       |---${dashes}--------\\'  `,
+            ` \\       |  ${spaces}            `,
+            ` \\.___./    ${spaces}            `,
+        ];
+    }
 }
 
-function createParchment2Header(width: number) {
-    const underscores = "_".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        ` ______${underscores}_____  `,
-        `/ _\\  ${spaces}     \\`,
-        `|/ >|  ${spaces}     | `,
-        `|\\_/__${underscores}______/`,
-        `\\.    ${spaces}   ./  `,
-        ` |     ${spaces}   |   `,
-    ];
-}
-
-function createParchment2Footer(width: number) {
-    const underscores = "_".repeat(width);
-    const spaces = " ".repeat(width);
-    return [
-        ` |  ___${underscores}___|    `,
-        ` |/\\  ${spaces}     \\ `,
-        ` \\_|${spaces}       |`,
-        `  \\_/_${underscores}_____/  `,
-    ];
-}
-
-function createParchment2BodyLine(line: string, width: number) {
-    const alignRight = line.startsWith(">");
-    const content = alignRight ? line.slice(1) : line;
-    const trimmed = content.length > width ? content.slice(0, width) : content;
-    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-    return ` |    ${padded} |   `;
-}
-
-function createParchment3Header(width: number) {
-    const spaces = " ".repeat(width);
-    const dashes = "-".repeat(width);
-    return [
-        `             ${spaces}  .---.   `,
-        `             ${spaces} /  .  \\ `,
-        `             ${spaces}|\\_/|   |`,
-        `             ${spaces}|   |  /| `,
-        String.raw`   .---------${dashes}------\' |`,
-        `  /  .-.     ${spaces}        | `,
-        ` |  /   \\   ${spaces}         |`,
-        ` | |\\_.  |  ${spaces}         |`,
-        ` |\\|  | /|  ${spaces}         |`,
-        String.raw` | \`---\' |  ${spaces}        | `,
-    ];
-}
-
-function createParchment3Footer(width: number) {
-    const spaces = " ".repeat(width);
-    const dashes = "-".repeat(width);
-    return [
-        ` |       |   ${spaces}        /   `,
-        ` |       |---${dashes}--------\\'  `,
-        ` \\       |  ${spaces}            `,
-        ` \\.___./    ${spaces}            `,
-    ];
-}
-
-function createParchment3BodyLine(line: string, width: number) {
-    const alignRight = line.startsWith(">");
-    const content = alignRight ? line.slice(1) : line;
-    const trimmed = content.length > width ? content.slice(0, width) : content;
-    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-    return ` |       |   ${padded}        | `;
-}
-
-interface TemplateRenderer {
-    header: (width: number) => string[];
-    footer: (width: number) => string[];
-    bodyLine: (line: string, width: number) => string;
-}
-
-const TEMPLATE_RENDERERS: Record<LetterTemplate, TemplateRenderer | null> = {
-    plain: {
-        header: createPlainHeader,
-        footer: createPlainFooter,
-        bodyLine: createPlainBodyLine,
-    },
-    parchment: {
-        header: createParchmentHeader,
-        footer: createParchmentFooter,
-        bodyLine: createParchmentBodyLine,
-    },
-    parchment2: {
-        header: createParchment2Header,
-        footer: createParchment2Footer,
-        bodyLine: createParchment2BodyLine,
-    },
-    parchment3: {
-        header: createParchment3Header,
-        footer: createParchment3Footer,
-        bodyLine: createParchment3BodyLine,
-    },
+const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
+    plain: new PlainTemplate(),
+    parchment: new ParchmentTemplate(),
+    parchment2: new Parchment2Template(),
+    parchment3: new Parchment3Template(),
 };
 
 function applyTemplate(lines: string[], width: number, template: LetterTemplate) {
     const renderer = TEMPLATE_RENDERERS[template];
-    if (!renderer) {
-        return lines;
-    }
-    const header = renderer.header(width);
-    const footer = renderer.footer(width);
+    const header = renderer.createHeader(width);
+    const footer = renderer.createFooter(width);
     const bodySource = lines.length ? lines : [""];
-    const body = bodySource.map(line => renderer.bodyLine(line, width));
+    const body = bodySource.map(line => renderer.formatLine(line, width));
     return [...header, ...body, ...footer];
 }
 
