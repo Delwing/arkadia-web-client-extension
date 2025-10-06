@@ -12,14 +12,14 @@ export interface LetterTemplateDefinition {
 const LETTER_TEMPLATE_DEFINITION_MAP: Record<LetterTemplate, LetterTemplateDefinition> = {
     none: {
         value: "none",
-        displayLabel: "No template",
+        displayLabel: "Brak",
         previewLabel: "bez szablonu",
         supportsJustification: true,
     },
     plain: {
         value: "plain",
-        displayLabel: "Zwykly",
-        previewLabel: "zwykly",
+        displayLabel: "Ramka",
+        previewLabel: "Ramka",
         supportsJustification: true,
     },
     parchment: {
