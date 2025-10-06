@@ -174,12 +174,12 @@ function UserTriggers() {
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
                     style={{ width: '100%', maxWidth: '12rem' }}
                 />
-                <Button size="sm" onClick={openNew}>Add trigger</Button>
+                <Button size="sm" onClick={openNew}>Dodaj trigger</Button>
             </div>
             
             {showCreateForm && (
                 <div className="border rounded p-3 mb-3">
-                    <h6 className="mb-3">{editIndex === null ? 'Add trigger' : 'Edit trigger'}</h6>
+                    <h6 className="mb-3">{editIndex === null ? 'Dodaj trigger' : 'Edytuj trigger'}</h6>
                     <Form.Group className="d-flex flex-column gap-2">
                         <Form.Control
                             type="text"
@@ -197,10 +197,10 @@ function UserTriggers() {
                                 onRemove={() => removeMacro(i)}
                             />
                         ))}
-                        <Button size="sm" onClick={addMacro}>Add action</Button>
+                        <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>
                         <div className="d-flex gap-2 mt-2">
-                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Cancel</Button>
-                            <Button size="sm" onClick={save}>{editIndex === null ? 'Add' : 'Save'}</Button>
+                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Anuluj</Button>
+                            <Button size="sm" onClick={save}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
                         </div>
                     </Form.Group>
                 </div>
@@ -211,7 +211,7 @@ function UserTriggers() {
                     editIndex === t.idx ? (
                         <li key={t.idx} className="alias-list-item">
                             <div className="border rounded p-3 mb-3">
-                                <h6 className="mb-3">Edit trigger</h6>
+                                <h6 className="mb-3">Edytuj trigger</h6>
                                 <Form.Group className="d-flex flex-column gap-2">
                                     <Form.Control
                                         type="text"
@@ -229,10 +229,10 @@ function UserTriggers() {
                                             onRemove={() => removeMacro(i)}
                                         />
                                     ))}
-                                    <Button size="sm" onClick={addMacro}>Add action</Button>
+                                    <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>
                                     <div className="d-flex gap-2 mt-2">
-                                        <Button size="sm" variant="secondary" onClick={resetForm}>Cancel</Button>
-                                        <Button size="sm" onClick={save}>Save</Button>
+                                        <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
+                                        <Button size="sm" onClick={save}>Zapisz</Button>
                                     </div>
                                 </Form.Group>
                             </div>
