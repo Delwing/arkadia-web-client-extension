@@ -132,7 +132,7 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
-const IGNORED_CHARACTER_KEY_PREFIXES = new Set(["firebase"]);
+const IGNORED_CHARACTER_KEY_PREFIXES = new Set(["firebase", "arkadia"]);
 
 function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
     if (!key) return null;
