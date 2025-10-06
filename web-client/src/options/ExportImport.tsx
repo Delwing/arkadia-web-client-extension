@@ -8,6 +8,7 @@ import { getRecording, getRecordingNames } from "./recordingStorage";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
+const DRIVE_CONNECTION_STORAGE_KEY = "arkadia:google-drive-connected";
 
 interface GoogleTokenResponse {
     access_token?: string;
@@ -17,7 +18,7 @@ interface GoogleTokenResponse {
 
 interface GoogleTokenClient {
     callback: (response: GoogleTokenResponse) => void;
-    requestAccessToken: (options?: { prompt?: "" | "consent" }) => void;
+    requestAccessToken: (options?: { prompt?: "" | "consent" | "select_account" }) => void;
 }
 
 interface GoogleTokenClientConfig {
@@ -379,6 +380,45 @@ function ExportImport() {
     const tokenClientRef = useRef<GoogleTokenClient | null>(null);
     const driveTokenRef = useRef<string | null>(null);
     const driveTokenExpiryRef = useRef(0);
+    const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
+        if (typeof window === "undefined") {
+            return false;
+        }
+        try {
+            return window.localStorage?.getItem(DRIVE_CONNECTION_STORAGE_KEY) === "1";
+        } catch {
+            return false;
+        }
+    });
+    const isDriveConnectedRef = useRef(isDriveConnected);
+
+    const persistDriveConnection = useCallback((connected: boolean) => {
+        setIsDriveConnected(connected);
+        isDriveConnectedRef.current = connected;
+        if (!connected) {
+            setDriveFiles([]);
+        }
+        if (typeof window === "undefined") {
+            return;
+        }
+        try {
+            const storage = window.localStorage;
+            if (!storage) return;
+            if (connected) {
+                storage.setItem(DRIVE_CONNECTION_STORAGE_KEY, "1");
+            } else {
+                storage.removeItem(DRIVE_CONNECTION_STORAGE_KEY);
+            }
+        } catch {
+            // ignore storage failures
+        }
+    }, [setDriveFiles]);
+
+    const resetDriveToken = useCallback(() => {
+        driveTokenRef.current = null;
+        driveTokenExpiryRef.current = 0;
+        setDriveToken(null);
+    }, []);
 
     const selectedCharacters = useMemo(
         () => characters.filter(name => selection[name]),
@@ -441,14 +481,25 @@ function ExportImport() {
         });
     }, [isDriveScriptReady]);
 
+    const handleDriveAuthError = useCallback(
+        (error?: string) => {
+            if (error === "access_denied" || error === "user_logged_out" || error === "consent_required" || error === "interaction_required") {
+                persistDriveConnection(false);
+                resetDriveToken();
+            }
+        },
+        [persistDriveConnection, resetDriveToken]
+    );
+
     const ensureDriveToken = useCallback(
-        async (forcePrompt = false): Promise<string> => {
+        async (options?: { forcePrompt?: boolean }): Promise<string> => {
             const client = tokenClientRef.current;
             if (!client) {
                 throw new Error("Integracja z Google Drive nie jest dostępna.");
             }
-            const now = Date.now();
+            const forcePrompt = options?.forcePrompt ?? false;
             if (!forcePrompt) {
+                const now = Date.now();
                 const existingToken = driveTokenRef.current;
                 const expiry = driveTokenExpiryRef.current;
                 if (existingToken && expiry && now < expiry) {
@@ -458,6 +509,7 @@ function ExportImport() {
             return new Promise<string>((resolve, reject) => {
                 client.callback = (response: GoogleTokenResponse) => {
                     if (response?.error) {
+                        handleDriveAuthError(response.error);
                         reject(new Error("Dostęp do Google Drive został odrzucony."));
                         return;
                     }
@@ -470,19 +522,21 @@ function ExportImport() {
                     const expiresIn =
                         typeof expiresRaw === "string" ? Number.parseInt(expiresRaw, 10) : Number(expiresRaw ?? 0);
                     const buffer = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
+                    const receivedAt = Date.now();
                     driveTokenRef.current = token;
-                    driveTokenExpiryRef.current = buffer ? now + buffer : now + 5 * 60 * 1000;
+                    driveTokenExpiryRef.current = buffer ? receivedAt + buffer : receivedAt + 5 * 60 * 1000;
                     setDriveToken(token);
+                    persistDriveConnection(true);
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({ prompt: "" });
+                    client.requestAccessToken({ prompt: forcePrompt ? "consent" : "" });
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
             });
         },
-        []
+        [handleDriveAuthError, persistDriveConnection]
     );
 
     const driveFetch = useCallback(
@@ -493,19 +547,20 @@ function ExportImport() {
             const requestInit: RequestInit = { ...init, headers };
             const response = await fetch(url, requestInit);
             if (response.status === 401 && retry) {
-                driveTokenRef.current = null;
-                driveTokenExpiryRef.current = 0;
-                setDriveToken(null);
+                resetDriveToken();
                 return driveFetch(url, init, false);
             }
             return response;
         },
-        [ensureDriveToken]
+        [ensureDriveToken, resetDriveToken]
     );
 
     const refreshDriveFiles = useCallback(
         async (options?: { action?: "list" }) => {
             if (!tokenClientRef.current) {
+                return;
+            }
+            if (!driveTokenRef.current && !isDriveConnectedRef.current) {
                 return;
             }
             if (options?.action === "list") {
@@ -538,7 +593,9 @@ function ExportImport() {
                 setDriveFiles(list);
             } catch (err) {
                 console.error("Failed to list Google Drive files", err);
-                setDriveError("Nie udało się pobrać listy plików z Google Drive.");
+                if (isDriveConnectedRef.current) {
+                    setDriveError("Nie udało się pobrać listy plików z Google Drive.");
+                }
             } finally {
                 setIsDriveLoading(false);
                 if (options?.action === "list") {
@@ -578,12 +635,11 @@ function ExportImport() {
     useEffect(() => {
         const handleShow = () => {
             refreshCharacters();
-            if (!tokenClientRef.current) {
+            if (!tokenClientRef.current || !isDriveConnectedRef.current) {
                 return;
             }
             void (async () => {
                 try {
-                    await ensureDriveToken();
                     await refreshDriveFiles();
                 } catch (err) {
                     console.error("Failed to refresh Google Drive files", err);
@@ -594,7 +650,27 @@ function ExportImport() {
         return () => {
             window.removeEventListener("show-export-import", handleShow);
         };
-    }, [refreshCharacters, refreshDriveFiles, ensureDriveToken]);
+    }, [refreshCharacters, refreshDriveFiles]);
+
+    useEffect(() => {
+        if (!tokenClientRef.current) {
+            return;
+        }
+        if (!isDriveConnected) {
+            return;
+        }
+        if (driveTokenRef.current) {
+            return;
+        }
+        void (async () => {
+            try {
+                await ensureDriveToken();
+                await refreshDriveFiles();
+            } catch (err) {
+                console.error("Failed to refresh Google Drive files", err);
+            }
+        })();
+    }, [isDriveConnected, ensureDriveToken, refreshDriveFiles]);
 
     const handleToggleAll = (checked: boolean) => {
         setSelection(prev => {
@@ -677,7 +753,7 @@ function ExportImport() {
         setDriveAction("connect");
         setIsDriveBusy(true);
         try {
-            await ensureDriveToken();
+            await ensureDriveToken({ forcePrompt: true });
             setDriveStatus("Połączono z Google Drive.");
             await refreshDriveFiles();
         } catch (err) {
@@ -785,10 +861,8 @@ function ExportImport() {
         } catch (err) {
             console.error("Failed to revoke Google Drive token", err);
         } finally {
-            driveTokenRef.current = null;
-            driveTokenExpiryRef.current = 0;
-            setDriveToken(null);
-            setDriveFiles([]);
+            resetDriveToken();
+            persistDriveConnection(false);
             setDriveStatus("Połączenie z Google Drive zostało zakończone.");
             setIsDriveBusy(false);
             setDriveAction(null);
