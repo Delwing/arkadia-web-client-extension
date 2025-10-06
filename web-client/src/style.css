@@ -5,6 +5,7 @@
   --surface-base: #0f1219;
   --surface-elevated: #161a24;
   --surface-raised: #1d222d;
+  --surface-content: #242424;
   --surface-border: rgba(118, 127, 150, 0.35);
   --surface-border-strong: rgba(138, 180, 248, 0.65);
   --input-background: rgba(11, 15, 23, 0.94);
@@ -13,7 +14,7 @@
   --input-focus-ring: rgba(88, 154, 255, 0.45);
   --text-primary: #f1f5f9;
   --text-secondary: rgba(226, 232, 240, 0.72);
-  --bs-body-bg: var(--surface-base);
+  --bs-body-bg: var(--surface-content);
   --bs-body-color: var(--text-primary);
   color: var(--text-primary);
   background-color: var(--surface-base);
@@ -195,6 +196,7 @@ h1 {
   flex-direction: column;
   min-height: 0;
   --map-size: 30vh;
+  background-color: var(--surface-content);
 }
 
 #main_text_output_msg_wrapper {
