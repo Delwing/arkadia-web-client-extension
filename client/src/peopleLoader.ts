@@ -35,7 +35,9 @@ async function loadFromCache(): Promise<PersonEntry[] | null> {
 
 function ensureWorker(): Worker {
     if (!workerInstance) {
-        workerInstance = new Worker(new URL('./peopleWorker.ts', import.meta.url));
+        workerInstance = new Worker(new URL('./peopleWorker.ts', import.meta.url), {
+            type: 'module',
+        });
         workerInstance.onmessage = (event: MessageEvent<WorkerMessage>) => {
             const { data } = event;
             const pending = pendingWorkerRequests.get(data.id);
