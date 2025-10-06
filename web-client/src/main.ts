@@ -33,6 +33,7 @@ import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
 import CharacterSettings from "./options/CharacterSettings.tsx"
+import ExportImport from "./options/ExportImport.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
@@ -453,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
+    const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
     const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
@@ -477,6 +479,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Bootstrap modal
     const optionsModalElement = document.getElementById('options-modal');
     const optionsModal = optionsModalElement ? new Modal(optionsModalElement) : null;
+    const exportImportModalElement = document.getElementById('export-import-modal');
+    const exportImportModal = exportImportModalElement ? new Modal(exportImportModalElement) : null;
     const bindsModalElement = document.getElementById('binds-modal');
     const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
     const npcModalElement = document.getElementById('npc-modal');
@@ -549,6 +553,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (optionsModal) {
             optionsModal.hide();
         }
+        if (exportImportModal) {
+            exportImportModal.hide();
+        }
         if (bindsModal) {
             bindsModal.hide();
         }
@@ -575,11 +582,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    window.addEventListener('show-export-import', () => {
+        if (exportImportModal) {
+            exportImportModal.show();
+        }
+    });
+
     // Add event listener to options button
     if (optionsButton && optionsModal) {
         optionsButton.addEventListener('click', () => {
             window.dispatchEvent(new Event('show-general-settings'));
             optionsModal.show();
+        });
+    }
+
+    if (exportImportButton && exportImportModal) {
+        exportImportButton.addEventListener('click', () => {
+            window.dispatchEvent(new Event('show-export-import'));
         });
     }
 
@@ -975,6 +994,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const rootElement = document.getElementById('options');
     if (rootElement) {
         createRoot(rootElement).render(createElement(CharacterSettings));
+    }
+
+    const exportImportRoot = document.getElementById('export-import-root');
+    if (exportImportRoot) {
+        createRoot(exportImportRoot).render(createElement(ExportImport));
     }
 
     const bindsRoot = document.getElementById('binds-options');

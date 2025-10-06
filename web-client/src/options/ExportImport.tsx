@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import storage from "@client/src/storage";
 import type { StoredMultibindRecord } from "../multibindStorage";
@@ -298,7 +298,7 @@ function ExportImport() {
         [characters, selection]
     );
 
-    const refreshCharacters = () => {
+    const refreshCharacters = useCallback(() => {
         const list = collectCharacters();
         setCharacters(list);
         setSelection(prev => {
@@ -311,7 +311,7 @@ function ExportImport() {
             });
             return next;
         });
-    };
+    }, []);
 
     useEffect(() => {
         refreshCharacters();
@@ -322,7 +322,15 @@ function ExportImport() {
             storage.onChanged?.removeListener?.(handleChange);
             window.removeEventListener("storage", handleChange);
         };
-    }, []);
+    }, [refreshCharacters]);
+
+    useEffect(() => {
+        const handleShow = () => refreshCharacters();
+        window.addEventListener("show-export-import", handleShow);
+        return () => {
+            window.removeEventListener("show-export-import", handleShow);
+        };
+    }, [refreshCharacters]);
 
     const handleToggleAll = (checked: boolean) => {
         setSelection(prev => {
@@ -395,67 +403,64 @@ function ExportImport() {
     };
 
     return (
-        <div className="mb-3">
-            <div className="border rounded p-3">
-                <h5 className="fw-bold mb-3">Eksport i import ustawień</h5>
-                <p className="mb-2">
-                    Wybierz postacie, które chcesz uwzględnić w eksporcie. Dane pobierane z internetu (mapy, zioła, magiki itp.) nie są dołączane.
-                </p>
-                {characters.length > 0 ? (
-                    <div className="mb-3">
-                        <div className="d-flex flex-wrap gap-3 align-items-center">
-                            {characters.map(name => (
-                                <Form.Check
-                                    key={name}
-                                    type="checkbox"
-                                    id={`export-character-${name}`}
-                                    label={name}
-                                    checked={!!selection[name]}
-                                    onChange={e => setSelection(prev => ({ ...prev, [name]: e.target.checked }))}
-                                />
-                            ))}
-                        </div>
-                        <div className="d-flex gap-2 mt-2">
-                            <Button size="sm" variant="secondary" onClick={() => handleToggleAll(true)}>Zaznacz wszystkie</Button>
-                            <Button size="sm" variant="secondary" onClick={() => handleToggleAll(false)}>Odznacz wszystkie</Button>
-                        </div>
+        <div className="d-flex flex-column gap-3">
+            <p className="mb-0">
+                Wybierz postacie, które chcesz uwzględnić w eksporcie. Dane pobierane z internetu (mapy, zioła, magiki itp.) nie są dołączane.
+            </p>
+            {characters.length > 0 ? (
+                <div className="d-flex flex-column gap-2">
+                    <div className="d-flex flex-wrap gap-3 align-items-center">
+                        {characters.map(name => (
+                            <Form.Check
+                                key={name}
+                                type="checkbox"
+                                id={`export-character-${name}`}
+                                label={name}
+                                checked={!!selection[name]}
+                                onChange={e => setSelection(prev => ({ ...prev, [name]: e.target.checked }))}
+                            />
+                        ))}
                     </div>
-                ) : (
-                    <p className="text-muted">Brak zapisanych postaci.</p>
-                )}
-                <div className="d-flex flex-wrap gap-2 align-items-center">
-                    <Button onClick={handleExport} disabled={isProcessing}>
-                        {isProcessing ? (
-                            <span className="d-inline-flex align-items-center gap-2">
-                                <Spinner animation="border" size="sm" role="status" />
-                                <span>Eksportowanie…</span>
-                            </span>
-                        ) : (
-                            "Eksportuj dane"
-                        )}
-                    </Button>
-                    <Button variant="secondary" onClick={handleImport} disabled={isProcessing}>
-                        Importuj dane…
-                    </Button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="application/json"
-                        style={{ display: "none" }}
-                        onChange={onFileChange}
-                    />
+                    <div className="d-flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(true)}>Zaznacz wszystkie</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(false)}>Odznacz wszystkie</Button>
+                    </div>
                 </div>
-                {status && (
-                    <Alert variant="success" className="mt-3 mb-0">
-                        {status}
-                    </Alert>
-                )}
-                {error && (
-                    <Alert variant="danger" className="mt-3 mb-0">
-                        {error}
-                    </Alert>
-                )}
+            ) : (
+                <p className="text-muted mb-0">Brak zapisanych postaci.</p>
+            )}
+            <div className="d-flex flex-wrap gap-2 align-items-center">
+                <Button onClick={handleExport} disabled={isProcessing}>
+                    {isProcessing ? (
+                        <span className="d-inline-flex align-items-center gap-2">
+                            <Spinner animation="border" size="sm" role="status" />
+                            <span>Przetwarzanie…</span>
+                        </span>
+                    ) : (
+                        "Eksportuj dane"
+                    )}
+                </Button>
+                <Button variant="secondary" onClick={handleImport} disabled={isProcessing}>
+                    Importuj dane…
+                </Button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: "none" }}
+                    onChange={onFileChange}
+                />
             </div>
+            {status && (
+                <Alert variant="success" className="mb-0">
+                    {status}
+                </Alert>
+            )}
+            {error && (
+                <Alert variant="danger" className="mb-0">
+                    {error}
+                </Alert>
+            )}
         </div>
     );
 }
