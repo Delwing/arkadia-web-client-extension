@@ -8,6 +8,55 @@ import { getRecording, getRecordingNames } from "./recordingStorage";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
+const DRIVE_TOKEN_STORAGE_KEY = "arkadia.driveToken";
+
+interface StoredDriveToken {
+    token: string;
+    expiresAt: number;
+}
+
+function loadStoredDriveToken(): StoredDriveToken | null {
+    if (typeof localStorage === "undefined") {
+        return null;
+    }
+    try {
+        const raw = localStorage.getItem(DRIVE_TOKEN_STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+        const parsed = JSON.parse(raw) as Partial<StoredDriveToken> | null;
+        if (!parsed || typeof parsed.token !== "string" || typeof parsed.expiresAt !== "number") {
+            return null;
+        }
+        return parsed as StoredDriveToken;
+    } catch (err) {
+        console.error("Failed to load stored Google Drive token", err);
+        return null;
+    }
+}
+
+function saveStoredDriveToken(token: string, expiresAt: number) {
+    if (typeof localStorage === "undefined") {
+        return;
+    }
+    try {
+        const value: StoredDriveToken = { token, expiresAt };
+        localStorage.setItem(DRIVE_TOKEN_STORAGE_KEY, JSON.stringify(value));
+    } catch (err) {
+        console.error("Failed to persist Google Drive token", err);
+    }
+}
+
+function clearStoredDriveToken() {
+    if (typeof localStorage === "undefined") {
+        return;
+    }
+    try {
+        localStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
+    } catch (err) {
+        console.error("Failed to clear stored Google Drive token", err);
+    }
+}
 
 interface GoogleTokenResponse {
     access_token?: string;
@@ -386,6 +435,20 @@ function ExportImport() {
     );
 
     useEffect(() => {
+        const stored = loadStoredDriveToken();
+        if (!stored) {
+            return;
+        }
+        if (Date.now() < stored.expiresAt) {
+            driveTokenRef.current = stored.token;
+            driveTokenExpiryRef.current = stored.expiresAt;
+            setDriveToken(stored.token);
+        } else {
+            clearStoredDriveToken();
+        }
+    }, []);
+
+    useEffect(() => {
         if (window.google?.accounts?.oauth2) {
             setIsDriveScriptReady(true);
             return;
@@ -447,11 +510,10 @@ function ExportImport() {
             if (!client) {
                 throw new Error("Integracja z Google Drive nie jest dostępna.");
             }
-            const now = Date.now();
             if (!forcePrompt) {
                 const existingToken = driveTokenRef.current;
                 const expiry = driveTokenExpiryRef.current;
-                if (existingToken && expiry && now < expiry) {
+                if (existingToken && expiry && Date.now() < expiry) {
                     return existingToken;
                 }
             }
@@ -469,10 +531,13 @@ function ExportImport() {
                     const expiresRaw = response.expires_in;
                     const expiresIn =
                         typeof expiresRaw === "string" ? Number.parseInt(expiresRaw, 10) : Number(expiresRaw ?? 0);
+                    const issuedAt = Date.now();
                     const buffer = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
+                    const expiresAt = buffer ? issuedAt + buffer : issuedAt + 5 * 60 * 1000;
                     driveTokenRef.current = token;
-                    driveTokenExpiryRef.current = buffer ? now + buffer : now + 5 * 60 * 1000;
+                    driveTokenExpiryRef.current = expiresAt;
                     setDriveToken(token);
+                    saveStoredDriveToken(token, expiresAt);
                     resolve(token);
                 };
                 try {
@@ -496,6 +561,7 @@ function ExportImport() {
                 driveTokenRef.current = null;
                 driveTokenExpiryRef.current = 0;
                 setDriveToken(null);
+                clearStoredDriveToken();
                 return driveFetch(url, init, false);
             }
             return response;
@@ -780,6 +846,7 @@ function ExportImport() {
             driveTokenRef.current = null;
             driveTokenExpiryRef.current = 0;
             setDriveToken(null);
+            clearStoredDriveToken();
             setDriveFiles([]);
             setDriveStatus("Połączenie z Google Drive zostało zakończone.");
             setIsDriveBusy(false);
