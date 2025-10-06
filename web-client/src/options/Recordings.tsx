@@ -76,6 +76,16 @@ function Recordings() {
         }
     }
 
+    function createDownload(json: string, filename: string) {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     async function downloadRecordings() {
         const all: Record<string, any[]> = {};
         for (const name of await getRecordingNames()) {
@@ -85,13 +95,16 @@ function Recordings() {
             }
         }
         const json = JSON.stringify(all, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'arkadia-recordings.json';
-        a.click();
-        URL.revokeObjectURL(url);
+        createDownload(json, 'arkadia-recordings.json');
+    }
+
+    async function downloadRecording(name: string) {
+        const events = await getRecording(name);
+        if (!events) return;
+
+        const json = JSON.stringify({ [name]: events }, null, 2);
+        const safeName = name.replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
+        createDownload(json, `arkadia-recording-${safeName}.json`);
     }
 
     async function uploadRecordings(event: ChangeEvent<HTMLInputElement>) {
@@ -176,6 +189,7 @@ function Recordings() {
                         <td className="d-flex gap-2">
                             <Button size="sm" onClick={() => handlePlay(n)}>Odtwórz</Button>
                             <Button size="sm" onClick={() => handlePlayTimed(n)}>Odtwórz w czasie</Button>
+                            <Button size="sm" onClick={() => downloadRecording(n)}>Pobierz</Button>
                             <Button size="sm" variant="danger" onClick={() => handleDelete(n)}>Usuń</Button>
                         </td>
                     </tr>
