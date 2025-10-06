@@ -1052,8 +1052,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   top: 4rem;
   left: 4rem;
   width: min(32rem, 90vw);
-  min-height: 22rem;
-  max-height: min(40rem, 90vh);
+  min-height: 23rem;
+  max-height: min(42rem, 90vh);
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);
   border-radius: 0.5rem;
@@ -1125,12 +1125,13 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer textarea {
   resize: vertical;
-  min-height: 10rem;
+  min-height: 10.5rem;
 }
 
 .letter-composer-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.5rem;
 }

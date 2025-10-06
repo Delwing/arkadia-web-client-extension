@@ -55,6 +55,9 @@ const lowHpAlertOptions = [
     { value: 7, label: '7 - W swietnej kondycji' },
 ];
 
+const LETTER_LINE_WIDTH_MIN = 40;
+const LETTER_LINE_WIDTH_MAX = 120;
+
 function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
 
@@ -149,6 +152,26 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                         onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                         className="me-2"
                     />
+                    <Form.Group className="d-flex align-items-center me-2">
+                        <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii listu:</Form.Label>
+                        <Form.Control
+                            type="number"
+                            min={LETTER_LINE_WIDTH_MIN}
+                            max={LETTER_LINE_WIDTH_MAX}
+                            id="letterLineWidth"
+                            value={settings.letterLineWidth}
+                            onChange={ev => {
+                                const parsed = parseInt(ev.target.value, 10);
+                                const fallback = defaultSettings.letterLineWidth;
+                                const clamped = Math.min(
+                                    LETTER_LINE_WIDTH_MAX,
+                                    Math.max(LETTER_LINE_WIDTH_MIN, Number.isFinite(parsed) ? parsed : fallback)
+                                );
+                                onChangeSetting(s => s.letterLineWidth = clamped);
+                            }}
+                            style={{ width: '100%', maxWidth: '5rem' }}
+                        />
+                    </Form.Group>
                     <Form.Group className="d-flex align-items-center me-2">
                         <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego zdrowia:</Form.Label>
                         <Form.Select
