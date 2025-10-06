@@ -1,17 +1,13 @@
 import Client from "../Client";
 import { defaultSettings } from "../defaultSettings";
+import type { LetterSubmitPayload, LetterTemplate } from "../types/letter";
+import { LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate } from "../types/letter";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
 const MIN_LINE_WIDTH = 20;
 const MAX_LINE_WIDTH = 120;
-
-interface LetterSubmitPayload {
-    to: string;
-    cc: string;
-    subject: string;
-    content: string;
-}
+const DEFAULT_TEMPLATE: LetterTemplate = "plain";
 
 let lineWidth = clampLineWidth(defaultSettings.letterLineWidth);
 
@@ -31,6 +27,13 @@ function updateLineWidth(value: unknown) {
             lineWidth = clampLineWidth(parsed);
         }
     }
+}
+
+function normalizeTemplate(value: unknown): LetterTemplate {
+    if (isLetterTemplate(value)) {
+        return value;
+    }
+    return DEFAULT_TEMPLATE;
 }
 
 function normalizeLine(line: string) {
@@ -150,9 +153,215 @@ function formatContent(content: string, width: number) {
     return result;
 }
 
-function printPreview(client: Client, lines: string[]) {
-    const header = `Podglad listu (szerokosc ${lineWidth})`;
-    if (!lines.length) {
+interface LetterTemplateRenderer {
+    createHeader(width: number): string[];
+    createFooter(width: number): string[];
+    formatLine(line: string, width: number): string;
+    getBodyWidth(totalWidth: number): number;
+}
+
+class NoneTemplate implements LetterTemplateRenderer {
+    createHeader(): string[] {
+        return [];
+    }
+
+    createFooter(): string[] {
+        return [];
+    }
+
+    getBodyWidth(totalWidth: number): number {
+        return totalWidth;
+    }
+
+    formatLine(line: string, width: number): string {
+        if (!line) {
+            return "";
+        }
+        if (line.startsWith(">")) {
+            const content = line.slice(1);
+            const trimmed = content.length > width ? content.slice(0, width) : content;
+            return trimmed.padStart(width, " ");
+        }
+        return line.length > width ? line.slice(0, width) : line;
+    }
+}
+
+abstract class BaseLetterTemplate implements LetterTemplateRenderer {
+    private readonly prefixLength: number;
+    private readonly suffixLength: number;
+
+    protected constructor(private readonly bodyPrefix: string, private readonly bodySuffix: string) {
+        this.prefixLength = bodyPrefix.length;
+        this.suffixLength = bodySuffix.length;
+    }
+
+    abstract createHeader(width: number): string[];
+
+    abstract createFooter(width: number): string[];
+
+    getBodyWidth(totalWidth: number): number {
+        const decorationWidth = this.prefixLength + this.suffixLength;
+        const bodyWidth = totalWidth - decorationWidth;
+        return Math.max(1, bodyWidth);
+    }
+
+    formatLine(line: string, width: number): string {
+        const alignRight = line.startsWith(">");
+        const content = alignRight ? line.slice(1) : line;
+        const trimmed = content.length > width ? content.slice(0, width) : content;
+        const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
+        return `${this.bodyPrefix}${padded}${this.bodySuffix}`;
+    }
+}
+
+class PlainTemplate extends BaseLetterTemplate {
+    constructor() {
+        super(" |  ", "  | ");
+    }
+
+    createHeader(width: number) {
+        const dashes = "-".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` +--${dashes}--+ `,
+            ` |  ${spaces}  | `,
+            ` |  ${spaces}  | `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const dashes = "-".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` |  ${spaces}  | `,
+            ` |  ${spaces}  | `,
+            ` +--${dashes}--+ `,
+        ];
+    }
+}
+
+class ParchmentTemplate extends BaseLetterTemplate {
+    constructor() {
+        super("   |   ", "  |.");
+    }
+
+    createHeader(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            `  ____${underscores}___  `,
+            `/ \\   ${spaces}   \\.`,
+            `|  |  ${spaces}   |.`,
+            `\\_ |  ${spaces}   |.`,
+            `   |  ${spaces}   |.`,
+        ];
+    }
+
+    createFooter(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            `   |  ${spaces}   |.   `,
+            `   |   ${underscores}__|___ `,
+            `   |  /${spaces}     /.`,
+            `   \\_/_${underscores}____/. `,
+        ];
+    }
+}
+
+class Parchment2Template extends BaseLetterTemplate {
+    constructor() {
+        super(" |     ", "   |   ");
+    }
+
+    createHeader(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` ______${underscores}_____  `,
+            String.raw` / _\  ${spaces}     \ `,
+            `|/ >|  ${spaces}     | `,
+            String.raw` |\_/__${underscores}______/`,
+            String.raw` \.    ${spaces}   ./  `,
+            ` |     ${spaces}   |   `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const underscores = "_".repeat(width);
+        const spaces = " ".repeat(width);
+        return [
+            ` |  ___${underscores}___|   `,
+            String.raw` |/\   ${spaces}     \ `,
+            String.raw` \_|   ${spaces}      |`,
+            String.raw`  \_/_ ${underscores}_____/ `,
+        ];
+    }
+}
+
+class Parchment3Template extends BaseLetterTemplate {
+    constructor() {
+        super(" |       |   ", "        | ");
+    }
+
+    createHeader(width: number) {
+        const spaces = " ".repeat(width);
+        const dashes = "-".repeat(width);
+        return [
+            `             ${spaces}  .---.   `,
+            `             ${spaces} /  .  \\ `,
+            `             ${spaces}|\\_/|   |`,
+            `             ${spaces}|   |  /| `,
+            String.raw`   .---------${dashes}------\' |`,
+            `  /  .-.     ${spaces}        | `,
+            ` |  /   \\   ${spaces}         |`,
+            ` | |\\_.  |  ${spaces}         |`,
+            ` |\\|  | /|  ${spaces}         |`,
+            String.raw` | \`---\' |  ${spaces}        | `,
+        ];
+    }
+
+    createFooter(width: number) {
+        const spaces = " ".repeat(width);
+        const dashes = "-".repeat(width);
+        return [
+            ` |       |   ${spaces}        /   `,
+            String.raw` |       |---${dashes}--------\' `,
+            ` \\       |  ${spaces}            `,
+            ` \\.___./    ${spaces}            `,
+        ];
+    }
+}
+
+const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
+    none: new NoneTemplate(),
+    plain: new PlainTemplate(),
+    parchment: new ParchmentTemplate(),
+    parchment2: new Parchment2Template(),
+    parchment3: new Parchment3Template(),
+};
+
+function applyTemplate(lines: string[], width: number, renderer: LetterTemplateRenderer) {
+    const header = renderer.createHeader(width);
+    const footer = renderer.createFooter(width);
+    const bodySource = lines.length ? lines : [""];
+    const body = bodySource.map(line => renderer.formatLine(line, width));
+    return [...header, ...body, ...footer];
+}
+
+function renderLetter(content: string, template: LetterTemplate) {
+    const renderer = TEMPLATE_RENDERERS[template];
+    const bodyWidth = renderer.getBodyWidth(lineWidth);
+    const baseLines = formatContent(content, bodyWidth);
+    const lines = applyTemplate(baseLines, bodyWidth, renderer);
+    const hasContent = baseLines.some(line => line.length > 0);
+    return { lines, hasContent };
+}
+
+function printPreview(client: Client, lines: string[], template: LetterTemplate, hasContent: boolean) {
+    const templateLabel = LETTER_TEMPLATE_PREVIEW_LABELS[template] ?? template;
+    const header = `Podglad listu (szerokosc ${lineWidth}, szablon ${templateLabel})`;
+    if (!hasContent) {
         client.println(`${header}\n(brak tresci)`);
         return;
     }
@@ -174,11 +383,12 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.addEventListener("letterComposer.submit", (event: CustomEvent<LetterSubmitPayload>) => {
-        const { to, cc, subject, content } = event.detail;
+        const { to, cc, subject, content, template: rawTemplate } = event.detail;
         const recipient = to.trim();
         const carbonCopy = cc.trim();
         const subjectLine = subject.trim();
-        const lines = formatContent(content, lineWidth);
+        const template = normalizeTemplate(rawTemplate);
+        const { lines } = renderLetter(content, template);
 
         client.Triggers.removeByTag(TRIGGER_TAG);
         client.Triggers.registerOneTimeTrigger(
@@ -202,7 +412,8 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.addEventListener("letterComposer.preview", (event: CustomEvent<LetterSubmitPayload>) => {
-        const lines = formatContent(event.detail.content, lineWidth);
-        printPreview(client, lines);
+        const template = normalizeTemplate(event.detail.template);
+        const { lines, hasContent } = renderLetter(event.detail.content, template);
+        printPreview(client, lines, template, hasContent);
     });
 }

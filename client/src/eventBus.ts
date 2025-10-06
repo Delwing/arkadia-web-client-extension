@@ -1,3 +1,5 @@
+import type { LetterSubmitPayload } from "./types/letter";
+
 export interface KnownEvents {
     'command': string;
     'port-connected': void;
@@ -17,7 +19,8 @@ export interface KnownEvents {
     'enterLocation': { id: number; room: any };
     'multibinds': { list: { index: number; action: string; label: string }[] };
     'letterComposer': { open: boolean };
-    'letterComposer.submit': { to: string; cc: string; subject: string; content: string };
+    'letterComposer.submit': LetterSubmitPayload;
+    'letterComposer.preview': LetterSubmitPayload;
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
