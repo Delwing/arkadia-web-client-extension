@@ -1,4 +1,4 @@
-export const LETTER_TEMPLATES = ["plain", "parchment"] as const;
+export const LETTER_TEMPLATES = ["plain", "parchment", "parchment2", "parchment3"] as const;
 
 export type LetterTemplate = (typeof LETTER_TEMPLATES)[number];
 
