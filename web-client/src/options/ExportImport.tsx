@@ -476,7 +476,7 @@ function ExportImport() {
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({ prompt: ""});
+                    client.requestAccessToken({ prompt: forcePrompt || !driveTokenRef.current ? "consent" : "" });
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
@@ -669,7 +669,7 @@ function ExportImport() {
         setDriveAction("connect");
         setIsDriveBusy(true);
         try {
-            await ensureDriveToken(true);
+            await ensureDriveToken();
             setDriveStatus("Połączono z Google Drive.");
             await refreshDriveFiles();
         } catch (err) {
