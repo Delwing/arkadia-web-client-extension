@@ -14,6 +14,14 @@
   --input-focus-ring: rgba(88, 154, 255, 0.45);
   --text-primary: #f1f5f9;
   --text-secondary: rgba(226, 232, 240, 0.72);
+  --floating-close-size: 1.75rem;
+  --floating-close-icon-size: 0.9rem;
+  --floating-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
+  --floating-close-opacity: 0.9;
+  --floating-close-hover-opacity: 1;
+  --floating-close-background: rgba(255, 255, 255, 0.08);
+  --floating-close-hover-background: rgba(255, 255, 255, 0.2);
+  --floating-close-hover-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
   --bs-body-bg: var(--surface-content);
   --bs-body-color: var(--text-primary);
   color: var(--text-primary);
@@ -77,15 +85,41 @@ body {
   background-color: var(--surface-elevated);
 }
 
-.modal .btn-close {
-  filter: invert(1) grayscale(100%);
-  opacity: 0.75;
-  transition: opacity 0.2s ease;
+.modal .btn-close,
+.letter-composer .btn-close {
+  width: var(--close-button-size, var(--floating-close-size));
+  height: var(--close-button-size, var(--floating-close-size));
+  border-radius: 999px;
+  padding: 0;
+  background-image: var(
+    --close-button-icon,
+    var(--floating-close-icon)
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--close-button-icon-size, var(--floating-close-icon-size));
+  filter: none;
+  opacity: var(--close-button-opacity, var(--floating-close-opacity));
+  background-color: var(
+    --close-button-background,
+    var(--floating-close-background)
+  );
+  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .modal .btn-close:hover,
-.modal .btn-close:focus-visible {
-  opacity: 1;
+.modal .btn-close:focus-visible,
+.letter-composer .btn-close:hover,
+.letter-composer .btn-close:focus-visible {
+  opacity: var(--close-button-hover-opacity, var(--floating-close-hover-opacity));
+  background-color: var(
+    --close-button-hover-background,
+    var(--floating-close-hover-background)
+  );
+  box-shadow: var(
+    --close-button-hover-shadow,
+    var(--floating-close-hover-shadow)
+  );
 }
 
 .modal .form-text,
@@ -1082,29 +1116,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer-header span {
   font-weight: 600;
-}
-
-.letter-composer .btn-close {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  padding: 0;
-  --letter-composer-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
-  background-image: var(--letter-composer-close-icon);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 0.9rem;
-  filter: none;
-  opacity: 0.9;
-  background-color: rgba(255, 255, 255, 0.08);
-  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.letter-composer .btn-close:hover,
-.letter-composer .btn-close:focus-visible {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .letter-composer-form {
