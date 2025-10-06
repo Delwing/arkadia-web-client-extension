@@ -578,15 +578,23 @@ function ExportImport() {
     useEffect(() => {
         const handleShow = () => {
             refreshCharacters();
-            if (driveTokenRef.current && driveTokenExpiryRef.current && Date.now() < driveTokenExpiryRef.current) {
-                void refreshDriveFiles();
+            if (!tokenClientRef.current) {
+                return;
             }
+            void (async () => {
+                try {
+                    await ensureDriveToken();
+                    await refreshDriveFiles();
+                } catch (err) {
+                    console.error("Failed to refresh Google Drive files", err);
+                }
+            })();
         };
         window.addEventListener("show-export-import", handleShow);
         return () => {
             window.removeEventListener("show-export-import", handleShow);
         };
-    }, [refreshCharacters, refreshDriveFiles]);
+    }, [refreshCharacters, refreshDriveFiles, ensureDriveToken]);
 
     const handleToggleAll = (checked: boolean) => {
         setSelection(prev => {
