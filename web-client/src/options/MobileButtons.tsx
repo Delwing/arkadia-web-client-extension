@@ -312,6 +312,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
+                        className="text-nowrap w-100 w-lg-auto"
                         onClick={() => changeView('solo')}
                     >
                         Bez drużyny
@@ -319,6 +320,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
+                        className="text-nowrap w-100 w-lg-auto"
                         onClick={() => changeView('team')}
                     >
                         W drużynie
@@ -326,6 +328,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
+                        className="text-nowrap w-100 w-lg-auto"
                         onClick={() => changeView('leader')}
                     >
                         Prowadzący
