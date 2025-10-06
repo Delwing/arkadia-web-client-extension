@@ -91,6 +91,18 @@ function CharacterSettings() {
                     </div>
                 )
             )}
+            <div className="mb-3">
+                <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                        window.dispatchEvent(new Event("close-options"));
+                        setTimeout(() => window.dispatchEvent(new Event("show-export-import")), 0);
+                    }}
+                >
+                    Eksportuj i importuj ustawienia…
+                </button>
+            </div>
             <div className="mb-3 pb-2 flex-shrink-0">
                 <div className="d-flex gap-2">
                     <button

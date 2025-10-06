@@ -80,6 +80,19 @@
             </div>
         </div>
     </div>
+    <div id="export-import-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eksport i import ustawień</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="export-import-root"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="binds-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -183,6 +196,9 @@
             <ul class="dropdown-menu dropdown-menu-end mb-1 gap-2">
                 <li>
                     <button class="w-100 p-1" id="options-button">Ustawienia</button>
+                </li>
+                <li>
+                    <button class="w-100 p-1" id="export-import-button">Eksport / import</button>
                 </li>
                 <li>
                     <button class="w-100 p-1" id="ui-settings-button">Interfejs</button>
