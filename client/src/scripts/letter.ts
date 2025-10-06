@@ -1,17 +1,13 @@
 import Client from "../Client";
 import { defaultSettings } from "../defaultSettings";
+import type { LetterSubmitPayload, LetterTemplate } from "../types/letter";
+import { isLetterTemplate } from "../types/letter";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
 const MIN_LINE_WIDTH = 20;
 const MAX_LINE_WIDTH = 120;
-
-interface LetterSubmitPayload {
-    to: string;
-    cc: string;
-    subject: string;
-    content: string;
-}
+const DEFAULT_TEMPLATE: LetterTemplate = "plain";
 
 let lineWidth = clampLineWidth(defaultSettings.letterLineWidth);
 
@@ -31,6 +27,13 @@ function updateLineWidth(value: unknown) {
             lineWidth = clampLineWidth(parsed);
         }
     }
+}
+
+function normalizeTemplate(value: unknown): LetterTemplate {
+    if (isLetterTemplate(value)) {
+        return value;
+    }
+    return DEFAULT_TEMPLATE;
 }
 
 function normalizeLine(line: string) {
@@ -150,8 +153,51 @@ function formatContent(content: string, width: number) {
     return result;
 }
 
-function printPreview(client: Client, lines: string[]) {
-    const header = `Podglad listu (szerokosc ${lineWidth})`;
+function createParchmentHeader(width: number) {
+    const underscores = "_".repeat(width);
+    const spaces = " ".repeat(width);
+    return [
+        `  ____${underscores}___  `,
+        `/ \\   ${spaces}   \\.`,
+        `|  |  ${spaces}   |.`,
+        `\\_ |  ${spaces}   |.`,
+        `   |  ${spaces}   |.`,
+    ];
+}
+
+function createParchmentFooter(width: number) {
+    const underscores = "_".repeat(width);
+    const spaces = " ".repeat(width);
+    return [
+        `   |  ${spaces}   |.   `,
+        `   |   ${underscores}__|___ `,
+        `   |  /${spaces}     /.`,
+        `   \\_/_${underscores}____/. `,
+    ];
+}
+
+function createParchmentBodyLine(line: string, width: number) {
+    const alignRight = line.startsWith(">");
+    const content = alignRight ? line.slice(1) : line;
+    const trimmed = content.length > width ? content.slice(0, width) : content;
+    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
+    return `   |   ${padded}  |.`;
+}
+
+function applyTemplate(lines: string[], width: number, template: LetterTemplate) {
+    if (template === "parchment") {
+        const header = createParchmentHeader(width);
+        const footer = createParchmentFooter(width);
+        const bodySource = lines.length ? lines : [""];
+        const body = bodySource.map(line => createParchmentBodyLine(line, width));
+        return [...header, ...body, ...footer];
+    }
+    return lines;
+}
+
+function printPreview(client: Client, lines: string[], template: LetterTemplate) {
+    const templateLabel = template === "parchment" ? "pergamin" : "zwykly";
+    const header = `Podglad listu (szerokosc ${lineWidth}, szablon ${templateLabel})`;
     if (!lines.length) {
         client.println(`${header}\n(brak tresci)`);
         return;
@@ -174,11 +220,13 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.addEventListener("letterComposer.submit", (event: CustomEvent<LetterSubmitPayload>) => {
-        const { to, cc, subject, content } = event.detail;
+        const { to, cc, subject, content, template: rawTemplate } = event.detail;
         const recipient = to.trim();
         const carbonCopy = cc.trim();
         const subjectLine = subject.trim();
-        const lines = formatContent(content, lineWidth);
+        const template = normalizeTemplate(rawTemplate);
+        const baseLines = formatContent(content, lineWidth);
+        const lines = applyTemplate(baseLines, lineWidth, template);
 
         client.Triggers.removeByTag(TRIGGER_TAG);
         client.Triggers.registerOneTimeTrigger(
@@ -202,7 +250,9 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.addEventListener("letterComposer.preview", (event: CustomEvent<LetterSubmitPayload>) => {
-        const lines = formatContent(event.detail.content, lineWidth);
-        printPreview(client, lines);
+        const template = normalizeTemplate(event.detail.template);
+        const baseLines = formatContent(event.detail.content, lineWidth);
+        const lines = applyTemplate(baseLines, lineWidth, template);
+        printPreview(client, lines, template);
     });
 }

@@ -1,17 +1,14 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import { isLetterTemplate, type LetterSubmitPayload, type LetterTemplate } from "@client/src/types/letter";
 
 interface LetterComposerState {
     hasCustomPosition: boolean;
 }
 
-interface SubmitPayload {
-    to: string;
-    cc: string;
-    subject: string;
-    content: string;
-}
+type SubmitPayload = LetterSubmitPayload;
 
 export default class LetterComposer {
+    private static readonly TEMPLATE_STORAGE_KEY = "letter-composer-template";
     private container: HTMLElement | null;
     private header: HTMLElement | null;
     private form: HTMLFormElement | null;
@@ -21,10 +18,12 @@ export default class LetterComposer {
     private contentInput: HTMLTextAreaElement | null;
     private closeButton: HTMLButtonElement | null;
     private previewButton: HTMLButtonElement | null;
+    private templateSelect: HTMLSelectElement | null;
     private dragPointerId: number | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private state: LetterComposerState = { hasCustomPosition: false };
+    private templateSelection: LetterTemplate = "plain";
 
     constructor(private client: typeof ArkadiaClient) {
         this.container = document.getElementById("letter-composer");
@@ -36,17 +35,24 @@ export default class LetterComposer {
         this.contentInput = this.container?.querySelector<HTMLTextAreaElement>("[name='letter-content']");
         this.closeButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-close]");
         this.previewButton = this.container?.querySelector<HTMLButtonElement>("[data-letter-preview]");
+        this.templateSelect = this.container?.querySelector<HTMLSelectElement>("[name='letter-template']");
+        this.templateSelection = this.loadTemplateSelection();
+        this.applyTemplateSelection(this.templateSelection);
 
         this.attachListeners();
         this.client.on("letterComposer", () => this.show());
     }
 
     private getPayload(): SubmitPayload {
+        const template = this.getCurrentTemplateSelection();
+        this.templateSelection = template;
+        this.saveTemplateSelection(template);
         return {
             to: this.toInput?.value ?? "",
             cc: this.ccInput?.value ?? "",
             subject: this.subjectInput?.value ?? "",
             content: this.contentInput?.value ?? "",
+            template,
         };
     }
 
@@ -58,6 +64,7 @@ export default class LetterComposer {
                 this.client.emit("letterComposer.submit", payload);
                 this.hide();
                 this.form?.reset();
+                this.applyTemplateSelection(this.templateSelection);
             });
         }
 
@@ -73,6 +80,13 @@ export default class LetterComposer {
             });
         }
 
+        if (this.templateSelect) {
+            this.templateSelect.addEventListener("change", () => {
+                this.templateSelection = this.getCurrentTemplateSelection();
+                this.saveTemplateSelection(this.templateSelection);
+            });
+        }
+
         if (this.header && this.container) {
             this.header.addEventListener("pointerdown", ev => this.startDrag(ev));
         }
@@ -82,7 +96,9 @@ export default class LetterComposer {
         if (!this.container) {
             return;
         }
+        this.templateSelection = this.loadTemplateSelection();
         this.form?.reset();
+        this.applyTemplateSelection(this.templateSelection);
         this.container.hidden = false;
         requestAnimationFrame(() => {
             if (!this.state.hasCustomPosition) {
@@ -157,4 +173,40 @@ export default class LetterComposer {
         document.removeEventListener("pointermove", this.handlePointerMove);
         document.removeEventListener("pointerup", this.handlePointerUp);
     };
+
+    private loadTemplateSelection(): LetterTemplate {
+        try {
+            const stored = localStorage.getItem(LetterComposer.TEMPLATE_STORAGE_KEY);
+            if (stored && isLetterTemplate(stored)) {
+                return stored;
+            }
+        } catch {
+            // ignore storage errors
+        }
+        if (this.templateSelect && isLetterTemplate(this.templateSelect.value)) {
+            return this.templateSelect.value;
+        }
+        return "plain";
+    }
+
+    private getCurrentTemplateSelection(): LetterTemplate {
+        if (this.templateSelect && isLetterTemplate(this.templateSelect.value)) {
+            return this.templateSelect.value;
+        }
+        return "plain";
+    }
+
+    private applyTemplateSelection(value: LetterTemplate) {
+        if (this.templateSelect) {
+            this.templateSelect.value = value;
+        }
+    }
+
+    private saveTemplateSelection(value: LetterTemplate) {
+        try {
+            localStorage.setItem(LetterComposer.TEMPLATE_STORAGE_KEY, value);
+        } catch {
+            // ignore storage errors
+        }
+    }
 }
