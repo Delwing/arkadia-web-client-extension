@@ -8,6 +8,7 @@ import { getRecording, getRecordingNames } from "./recordingStorage";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
+const DRIVE_SESSION_EXPIRED_MESSAGE = "Połączenie z Google Drive wygasło. Kliknij przycisk, aby zalogować się ponownie.";
 
 interface GoogleTokenResponse {
     access_token?: string;
@@ -15,13 +16,34 @@ interface GoogleTokenResponse {
     error?: string;
 }
 
+type GoogleTokenErrorType = "popup_closed" | "popup_failed_to_open" | "popup_opener_error" | "unknown";
+
 interface GoogleTokenError {
-    type?: "popup_closed" | "popup_failed_to_open" | "popup_opener_error" | "unknown";
+    type?: GoogleTokenErrorType;
 }
+
+type GooglePrompt = "" | "consent" | "select_account";
 
 interface GoogleTokenClient {
     callback: (response: GoogleTokenResponse) => void;
-    requestAccessToken: (options?: { prompt?: "" | "consent" | "select_account" }) => void;
+    requestAccessToken: (options?: { prompt?: GooglePrompt }) => void;
+}
+
+type DriveAuthErrorCode =
+    | "popup_closed"
+    | "popup_blocked"
+    | "interactive_required"
+    | "access_denied"
+    | "token_failed";
+
+class DriveAuthError extends Error {
+    readonly code: DriveAuthErrorCode;
+
+    constructor(message: string, code: DriveAuthErrorCode) {
+        super(message);
+        this.name = "DriveAuthError";
+        this.code = code;
+    }
 }
 
 interface DriveFileSummary {
@@ -365,7 +387,7 @@ function ExportImport() {
     const tokenClientRef = useRef<GoogleTokenClient | null>(null);
     const driveTokenRef = useRef<string | null>(null);
     const driveTokenExpiryRef = useRef(0);
-    const tokenErrorRejectRef = useRef<((error: Error) => void) | null>(null);
+    const tokenErrorRejectRef = useRef<((error: DriveAuthError) => void) | null>(null);
 
     const selectedCharacters = useMemo(
         () => characters.filter(name => selection[name]),
@@ -433,34 +455,47 @@ function ExportImport() {
                 }
                 tokenErrorRejectRef.current = null;
                 if (error?.type === "popup_closed") {
-                    reject(new Error("Logowanie Google zostało przerwane."));
-                } else if (error?.type === "popup_failed_to_open") {
-                    reject(new Error("Nie udało się otworzyć okna logowania Google."));
-                } else if (error?.type === "popup_opener_error") {
-                    reject(new Error("Przeglądarka zablokowała okno logowania Google."));
-                } else {
-                    reject(new Error("Wystąpił nieznany błąd logowania Google."));
+                    reject(new DriveAuthError("Logowanie Google zostało przerwane.", "popup_closed"));
+                    return;
                 }
+                if (error?.type === "popup_failed_to_open") {
+                    reject(new DriveAuthError("Nie udało się otworzyć okna logowania Google.", "popup_blocked"));
+                    return;
+                }
+                if (error?.type === "popup_opener_error") {
+                    reject(new DriveAuthError("Przeglądarka zablokowała okno logowania Google.", "popup_blocked"));
+                    return;
+                }
+                reject(new DriveAuthError("Wystąpił nieznany błąd logowania Google.", "token_failed"));
             },
         });
     }, [isDriveScriptReady]);
 
     const ensureDriveToken = useCallback(
-        async (forcePrompt = false): Promise<string> => {
+        async (options?: { interactive?: boolean; forcePrompt?: boolean }): Promise<string> => {
+            const interactive = options?.interactive ?? false;
+            const forcePrompt = options?.forcePrompt ?? false;
             const client = tokenClientRef.current;
             if (!client) {
                 throw new Error("Integracja z Google Drive nie jest dostępna.");
             }
+
             const now = Date.now();
-            if (!forcePrompt) {
-                const existingToken = driveTokenRef.current;
-                const expiry = driveTokenExpiryRef.current;
-                if (existingToken && expiry && now < expiry) {
-                    return existingToken;
-                }
+            const existingToken = driveTokenRef.current;
+            const expiry = driveTokenExpiryRef.current;
+            const hasValidToken = Boolean(existingToken && expiry && now < expiry);
+
+            if (!forcePrompt && hasValidToken && existingToken) {
+                return existingToken;
             }
-            const requestToken = async (prompt: "" | "consent" | "select_account" = ""): Promise<GoogleTokenResponse> => {
-                return new Promise<GoogleTokenResponse>((resolve, reject) => {
+
+            const needsInteractive = forcePrompt || !hasValidToken;
+            if (needsInteractive && !interactive) {
+                throw new DriveAuthError(DRIVE_SESSION_EXPIRED_MESSAGE, "interactive_required");
+            }
+
+            const requestToken = (prompt: GooglePrompt): Promise<GoogleTokenResponse> =>
+                new Promise<GoogleTokenResponse>((resolve, reject) => {
                     client.callback = (response: GoogleTokenResponse) => {
                         tokenErrorRejectRef.current = null;
                         resolve(response);
@@ -473,65 +508,111 @@ function ExportImport() {
                         client.requestAccessToken({ prompt });
                     } catch (err) {
                         tokenErrorRejectRef.current = null;
-                        reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
+                        reject(new DriveAuthError("Nie udało się uzyskać tokenu Google Drive.", "token_failed"));
                     }
                 });
-            };
 
-            const evaluateResponse = (response: GoogleTokenResponse): string => {
-                if (response?.error) {
-                    if (response.error === "access_denied") {
-                        throw new Error("Dostęp do Google Drive został odrzucony.");
-                    }
-                    throw new Error("Nie udało się uzyskać tokenu Google Drive.");
-                }
-                const token = response?.access_token;
+            const storeTokenFromResponse = (response: GoogleTokenResponse): string => {
+                const token = response.access_token;
                 if (!token) {
-                    throw new Error("Nie udało się uzyskać tokenu Google Drive.");
+                    throw new DriveAuthError("Nie udało się uzyskać tokenu Google Drive.", "token_failed");
                 }
                 const expiresRaw = response.expires_in;
                 const expiresIn = typeof expiresRaw === "string" ? Number.parseInt(expiresRaw, 10) : Number(expiresRaw ?? 0);
-                const buffer = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
+                const obtainedAt = Date.now();
+                const expiryOffset = Number.isFinite(expiresIn) ? Math.max(0, (expiresIn - 60) * 1000) : 0;
                 driveTokenRef.current = token;
-                driveTokenExpiryRef.current = buffer ? now + buffer : now + 5 * 60 * 1000;
+                driveTokenExpiryRef.current = expiryOffset
+                    ? obtainedAt + expiryOffset
+                    : obtainedAt + 5 * 60 * 1000;
                 setDriveToken(token);
                 return token;
             };
 
-            const initialPrompt: "" | "select_account" = forcePrompt ? "select_account" : "";
-            try {
-                const response = await requestToken(initialPrompt);
-                if (!response.error || forcePrompt) {
-                    return evaluateResponse(response);
-                }
-                if (response.error === "consent_required" || response.error === "interaction_required") {
-                    const retry = await requestToken("consent");
-                    return evaluateResponse(retry);
-                }
-                throw new Error("Nie udało się uzyskać tokenu Google Drive.");
-            } catch (err) {
-                throw err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive.");
+            const attempts: GooglePrompt[] = [];
+            if (!needsInteractive) {
+                attempts.push("");
+            } else {
+                attempts.push("select_account");
             }
+            if (interactive && !attempts.includes("consent")) {
+                attempts.push("consent");
+            }
+
+            let lastError: DriveAuthError | null = null;
+
+            for (const prompt of attempts) {
+                try {
+                    const response = await requestToken(prompt);
+                    if (response.error === "access_denied") {
+                        throw new DriveAuthError("Dostęp do Google Drive został odrzucony.", "access_denied");
+                    }
+                    if (response.error === "consent_required" || response.error === "interaction_required") {
+                        const interactiveError = new DriveAuthError(
+                            "Połączenie z Google Drive wymaga ponownego zalogowania.",
+                            "interactive_required"
+                        );
+                        if (!interactive || prompt === "consent") {
+                            throw interactiveError;
+                        }
+                        lastError = interactiveError;
+                        continue;
+                    }
+                    if (response.error) {
+                        throw new DriveAuthError("Nie udało się uzyskać tokenu Google Drive.", "token_failed");
+                    }
+                    return storeTokenFromResponse(response);
+                } catch (err) {
+                    if (err instanceof DriveAuthError) {
+                        if (err.code === "popup_closed" || err.code === "popup_blocked" || err.code === "access_denied") {
+                            throw err;
+                        }
+                        if (err.code === "interactive_required" && interactive && prompt !== "consent") {
+                            lastError = err;
+                            continue;
+                        }
+                        lastError = err;
+                        break;
+                    }
+                    lastError = new DriveAuthError("Nie udało się uzyskać tokenu Google Drive.", "token_failed");
+                    if (!interactive || prompt === "consent") {
+                        break;
+                    }
+                }
+            }
+
+            throw (
+                lastError ??
+                new DriveAuthError(
+                    needsInteractive ? DRIVE_SESSION_EXPIRED_MESSAGE : "Nie udało się uzyskać tokenu Google Drive.",
+                    needsInteractive ? "interactive_required" : "token_failed"
+                )
+            );
         },
-        []
+        [setDriveToken]
     );
 
     const driveFetch = useCallback(
-        async (url: string, init?: RequestInit, retry = true): Promise<Response> => {
-            const token = await ensureDriveToken();
+        async (url: string, init?: RequestInit): Promise<Response> => {
+            const token = driveTokenRef.current;
+            const expiry = driveTokenExpiryRef.current;
+            const now = Date.now();
+            if (!token || !expiry || now >= expiry) {
+                throw new DriveAuthError(DRIVE_SESSION_EXPIRED_MESSAGE, "interactive_required");
+            }
             const headers = new Headers(init?.headers as HeadersInit | undefined);
             headers.set("Authorization", `Bearer ${token}`);
             const requestInit: RequestInit = { ...init, headers };
             const response = await fetch(url, requestInit);
-            if (response.status === 401 && retry) {
+            if (response.status === 401) {
                 driveTokenRef.current = null;
                 driveTokenExpiryRef.current = 0;
                 setDriveToken(null);
-                return driveFetch(url, init, false);
+                throw new DriveAuthError(DRIVE_SESSION_EXPIRED_MESSAGE, "interactive_required");
             }
             return response;
         },
-        [ensureDriveToken]
+        [setDriveToken]
     );
 
     const refreshDriveFiles = useCallback(
@@ -544,7 +625,9 @@ function ExportImport() {
             }
             setDriveError(null);
             setIsDriveLoading(true);
+            const interactive = options?.action === "list";
             try {
+                await ensureDriveToken({ interactive });
                 const params = new URLSearchParams({
                     spaces: "appDataFolder",
                     fields: "files(id,name,modifiedTime,size)",
@@ -569,7 +652,17 @@ function ExportImport() {
                 setDriveFiles(list);
             } catch (err) {
                 console.error("Failed to list Google Drive files", err);
-                setDriveError("Nie udało się pobrać listy plików z Google Drive.");
+                if (err instanceof DriveAuthError) {
+                    if (err.code === "interactive_required") {
+                        setDriveError(DRIVE_SESSION_EXPIRED_MESSAGE);
+                    } else if (err.code === "access_denied") {
+                        setDriveError("Dostęp do Google Drive został odrzucony.");
+                    } else {
+                        setDriveError(err.message);
+                    }
+                } else {
+                    setDriveError("Nie udało się pobrać listy plików z Google Drive.");
+                }
             } finally {
                 setIsDriveLoading(false);
                 if (options?.action === "list") {
@@ -577,7 +670,7 @@ function ExportImport() {
                 }
             }
         },
-        [driveFetch]
+        [driveFetch, ensureDriveToken]
     );
 
     const refreshCharacters = useCallback(() => {
@@ -700,12 +793,22 @@ function ExportImport() {
         setDriveAction("connect");
         setIsDriveBusy(true);
         try {
-            await ensureDriveToken(true);
+            await ensureDriveToken({ interactive: true, forcePrompt: true });
             setDriveStatus("Połączono z Google Drive.");
             await refreshDriveFiles();
         } catch (err) {
             console.error("Failed to connect to Google Drive", err);
-            setDriveError("Nie udało się połączyć z Google Drive.");
+            if (err instanceof DriveAuthError) {
+                if (err.code === "interactive_required") {
+                    setDriveError(DRIVE_SESSION_EXPIRED_MESSAGE);
+                } else if (err.code === "access_denied") {
+                    setDriveError("Dostęp do Google Drive został odrzucony.");
+                } else {
+                    setDriveError(err.message);
+                }
+            } else {
+                setDriveError("Nie udało się połączyć z Google Drive.");
+            }
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -719,6 +822,7 @@ function ExportImport() {
         setDriveAction("upload");
         setIsDriveBusy(true);
         try {
+            await ensureDriveToken({ interactive: true });
             const payload = await buildExport(selectedCharacters);
             const json = JSON.stringify(payload, null, 2);
             const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
@@ -753,7 +857,17 @@ function ExportImport() {
             await refreshDriveFiles();
         } catch (err) {
             console.error("Failed to upload backup to Google Drive", err);
-            setDriveError("Nie udało się wysłać kopii na Google Drive.");
+            if (err instanceof DriveAuthError) {
+                if (err.code === "interactive_required") {
+                    setDriveError(DRIVE_SESSION_EXPIRED_MESSAGE);
+                } else if (err.code === "access_denied") {
+                    setDriveError("Dostęp do Google Drive został odrzucony.");
+                } else {
+                    setDriveError(err.message);
+                }
+            } else {
+                setDriveError("Nie udało się wysłać kopii na Google Drive.");
+            }
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -769,6 +883,7 @@ function ExportImport() {
         setDriveAction(`import:${fileSummary.id}`);
         setIsDriveBusy(true);
         try {
+            await ensureDriveToken({ interactive: true });
             const response = await driveFetch(
                 `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileSummary.id)}?alt=media`
             );
@@ -786,7 +901,17 @@ function ExportImport() {
             setDriveStatus(`Zaimportowano plik "${fileSummary.name}" z Google Drive.`);
         } catch (err) {
             console.error("Failed to import backup from Google Drive", err);
-            setDriveError("Nie udało się pobrać danych z Google Drive.");
+            if (err instanceof DriveAuthError) {
+                if (err.code === "interactive_required") {
+                    setDriveError(DRIVE_SESSION_EXPIRED_MESSAGE);
+                } else if (err.code === "access_denied") {
+                    setDriveError("Dostęp do Google Drive został odrzucony.");
+                } else {
+                    setDriveError(err.message);
+                }
+            } else {
+                setDriveError("Nie udało się pobrać danych z Google Drive.");
+            }
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
