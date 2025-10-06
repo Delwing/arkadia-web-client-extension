@@ -1131,17 +1131,19 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .letter-composer-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: auto;
   padding-top: 0.5rem;
+  width: 100%;
 }
 
-.letter-composer-actions .form-label {
+.letter-template-group {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  margin-right: auto;
 }
 
 .letter-template-select {
