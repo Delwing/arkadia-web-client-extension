@@ -160,6 +160,32 @@ interface LetterTemplateRenderer {
     getBodyWidth(totalWidth: number): number;
 }
 
+class NoneTemplate implements LetterTemplateRenderer {
+    createHeader(): string[] {
+        return [];
+    }
+
+    createFooter(): string[] {
+        return [];
+    }
+
+    getBodyWidth(totalWidth: number): number {
+        return totalWidth;
+    }
+
+    formatLine(line: string, width: number): string {
+        if (!line) {
+            return "";
+        }
+        if (line.startsWith(">")) {
+            const content = line.slice(1);
+            const trimmed = content.length > width ? content.slice(0, width) : content;
+            return trimmed.padStart(width, " ");
+        }
+        return line.length > width ? line.slice(0, width) : line;
+    }
+}
+
 abstract class BaseLetterTemplate implements LetterTemplateRenderer {
     private readonly prefixLength: number;
     private readonly suffixLength: number;
@@ -308,6 +334,7 @@ class Parchment3Template extends BaseLetterTemplate {
 }
 
 const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
+    none: new NoneTemplate(),
     plain: new PlainTemplate(),
     parchment: new ParchmentTemplate(),
     parchment2: new Parchment2Template(),

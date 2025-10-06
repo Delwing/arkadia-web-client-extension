@@ -29,7 +29,7 @@ export default class LetterComposer {
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private state: LetterComposerState = { hasCustomPosition: false };
-    private templateSelection: LetterTemplate = "plain";
+    private templateSelection: LetterTemplate = LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
 
     constructor(private client: typeof ArkadiaClient) {
         this.container = document.getElementById("letter-composer");

@@ -1,4 +1,4 @@
-export const LETTER_TEMPLATES = ["plain", "parchment", "parchment2", "parchment3"] as const;
+export const LETTER_TEMPLATES = ["none", "plain", "parchment", "parchment2", "parchment3"] as const;
 
 export type LetterTemplate = (typeof LETTER_TEMPLATES)[number];
 
@@ -10,6 +10,12 @@ export interface LetterTemplateDefinition {
 }
 
 const LETTER_TEMPLATE_DEFINITION_MAP: Record<LetterTemplate, LetterTemplateDefinition> = {
+    none: {
+        value: "none",
+        displayLabel: "No template",
+        previewLabel: "bez szablonu",
+        supportsJustification: true,
+    },
     plain: {
         value: "plain",
         displayLabel: "Zwykly",
