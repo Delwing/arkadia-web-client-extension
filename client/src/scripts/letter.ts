@@ -245,7 +245,7 @@ class ParchmentTemplate extends BaseLetterTemplate {
 
 class Parchment2Template extends BaseLetterTemplate {
     constructor() {
-        super(" |    ", " |   ");
+        super(" |     ", "     | ");
     }
 
     createHeader(width: number) {
@@ -253,10 +253,10 @@ class Parchment2Template extends BaseLetterTemplate {
         const spaces = " ".repeat(width);
         return [
             ` ______${underscores}_____  `,
-            `/ _\\  ${spaces}     \\`,
+            String.raw` / _\  ${spaces}     \ `,
             `|/ >|  ${spaces}     | `,
-            `|\\_/__${underscores}______/`,
-            `\\.    ${spaces}   ./  `,
+            String.raw` |\_/__${underscores}______/`,
+            String.raw` \.    ${spaces}   ./  `,
             ` |     ${spaces}   |   `,
         ];
     }
@@ -265,10 +265,10 @@ class Parchment2Template extends BaseLetterTemplate {
         const underscores = "_".repeat(width);
         const spaces = " ".repeat(width);
         return [
-            ` |  ___${underscores}___|    `,
-            ` |/\\  ${spaces}     \\ `,
-            ` \\_|${spaces}       |`,
-            `  \\_/_${underscores}_____/  `,
+            ` |  ___${underscores}___|   `,
+            String.raw` |/\   ${spaces}     \ `,
+            String.raw` \_|   ${spaces}      |`,
+            String.raw`  \_/_ ${underscores}_____/ `,
         ];
     }
 }
@@ -300,7 +300,7 @@ class Parchment3Template extends BaseLetterTemplate {
         const dashes = "-".repeat(width);
         return [
             ` |       |   ${spaces}        /   `,
-            ` |       |---${dashes}--------\\'  `,
+            String.raw` |       |---${dashes}--------\' `,
             ` \\       |  ${spaces}            `,
             ` \\.___./    ${spaces}            `,
         ];
