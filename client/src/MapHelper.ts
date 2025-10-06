@@ -132,9 +132,6 @@ export default class MapHelper {
     }
 
     parseCommand(command: string): string | null {
-        if (command === "zerknij" || command === "spojrz" || command === "sp") {
-            this.refreshPosition = true;
-        }
         if (command.trim() === "idz") {
             this.refreshPosition = true;
             if (this.currentRoom) {
