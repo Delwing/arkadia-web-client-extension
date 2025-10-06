@@ -157,14 +157,27 @@ interface LetterTemplateRenderer {
     createHeader(width: number): string[];
     createFooter(width: number): string[];
     formatLine(line: string, width: number): string;
+    getBodyWidth(totalWidth: number): number;
 }
 
 abstract class BaseLetterTemplate implements LetterTemplateRenderer {
-    protected constructor(private readonly bodyPrefix: string, private readonly bodySuffix: string) {}
+    private readonly prefixLength: number;
+    private readonly suffixLength: number;
+
+    protected constructor(private readonly bodyPrefix: string, private readonly bodySuffix: string) {
+        this.prefixLength = bodyPrefix.length;
+        this.suffixLength = bodySuffix.length;
+    }
 
     abstract createHeader(width: number): string[];
 
     abstract createFooter(width: number): string[];
+
+    getBodyWidth(totalWidth: number): number {
+        const decorationWidth = this.prefixLength + this.suffixLength;
+        const bodyWidth = totalWidth - decorationWidth;
+        return Math.max(1, bodyWidth);
+    }
 
     formatLine(line: string, width: number): string {
         const alignRight = line.startsWith(">");
@@ -301,13 +314,21 @@ const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
     parchment3: new Parchment3Template(),
 };
 
-function applyTemplate(lines: string[], width: number, template: LetterTemplate) {
-    const renderer = TEMPLATE_RENDERERS[template];
+function applyTemplate(lines: string[], width: number, renderer: LetterTemplateRenderer) {
     const header = renderer.createHeader(width);
     const footer = renderer.createFooter(width);
     const bodySource = lines.length ? lines : [""];
     const body = bodySource.map(line => renderer.formatLine(line, width));
     return [...header, ...body, ...footer];
+}
+
+function renderLetter(content: string, template: LetterTemplate) {
+    const renderer = TEMPLATE_RENDERERS[template];
+    const bodyWidth = renderer.getBodyWidth(lineWidth);
+    const baseLines = formatContent(content, bodyWidth);
+    const lines = applyTemplate(baseLines, bodyWidth, renderer);
+    const hasContent = baseLines.some(line => line.length > 0);
+    return { lines, hasContent };
 }
 
 const TEMPLATE_LABELS: Record<LetterTemplate, string> = {
@@ -317,10 +338,10 @@ const TEMPLATE_LABELS: Record<LetterTemplate, string> = {
     parchment3: "pergamin 3",
 };
 
-function printPreview(client: Client, lines: string[], template: LetterTemplate) {
+function printPreview(client: Client, lines: string[], template: LetterTemplate, hasContent: boolean) {
     const templateLabel = TEMPLATE_LABELS[template] ?? template;
     const header = `Podglad listu (szerokosc ${lineWidth}, szablon ${templateLabel})`;
-    if (!lines.length) {
+    if (!hasContent) {
         client.println(`${header}\n(brak tresci)`);
         return;
     }
@@ -347,8 +368,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         const carbonCopy = cc.trim();
         const subjectLine = subject.trim();
         const template = normalizeTemplate(rawTemplate);
-        const baseLines = formatContent(content, lineWidth);
-        const lines = applyTemplate(baseLines, lineWidth, template);
+        const { lines } = renderLetter(content, template);
 
         client.Triggers.removeByTag(TRIGGER_TAG);
         client.Triggers.registerOneTimeTrigger(
@@ -373,8 +393,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
 
     client.addEventListener("letterComposer.preview", (event: CustomEvent<LetterSubmitPayload>) => {
         const template = normalizeTemplate(event.detail.template);
-        const baseLines = formatContent(event.detail.content, lineWidth);
-        const lines = applyTemplate(baseLines, lineWidth, template);
-        printPreview(client, lines, template);
+        const { lines, hasContent } = renderLetter(event.detail.content, template);
+        printPreview(client, lines, template, hasContent);
     });
 }
