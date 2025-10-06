@@ -80,17 +80,39 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
+const IGNORED_CHARACTER_KEY_PREFIXES = new Set(["firebase"]);
+
+function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
+    if (!key) return null;
+    if (key.includes("://")) return null;
+    const firstColon = key.indexOf(":");
+    if (firstColon <= 0) return null;
+    const prefix = key.slice(0, firstColon);
+    if (IGNORED_CHARACTER_KEY_PREFIXES.has(prefix)) {
+        return null;
+    }
+    if (prefix === "Player") {
+        const remainder = key.slice(firstColon + 1);
+        if (!remainder) return null;
+        const secondColon = remainder.indexOf(":");
+        if (secondColon === -1) {
+            const name = remainder.trim();
+            return name ? { name, baseKey: "" } : null;
+        }
+        const name = remainder.slice(0, secondColon).trim();
+        const baseKey = remainder.slice(secondColon + 1);
+        return name ? { name, baseKey } : null;
+    }
+    const name = prefix.trim();
+    const baseKey = key.slice(firstColon + 1);
+    return name ? { name, baseKey } : null;
+}
 
 function isExcludedLocalStorageKey(key: string) {
     if (EXCLUDED_LOCAL_STORAGE_KEYS.has(key)) {
         return true;
     }
     return EXCLUDED_LOCAL_STORAGE_PREFIXES.some(prefix => key.startsWith(prefix));
-}
-
-function getBaseKey(key: string) {
-    const idx = key.indexOf(":");
-    return idx > -1 ? key.slice(idx + 1) : key;
 }
 
 function formatDriveDate(iso?: string) {
@@ -115,13 +137,9 @@ function collectCharacters(): string[] {
     for (let i = 0; i < localStorage.length; i += 1) {
         const key = localStorage.key(i);
         if (!key) continue;
-        if (key.includes("://")) continue;
-        const idx = key.indexOf(":");
-        if (idx > 0) {
-            const name = key.slice(0, idx);
-            if (name) {
-                names.add(name);
-            }
+        const parsed = parseCharacterStorageKey(key);
+        if (parsed?.name) {
+            names.add(parsed.name);
         }
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
@@ -139,23 +157,20 @@ function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage 
         const raw = localStorage.getItem(key);
         if (raw === null) continue;
 
-        const baseKey = getBaseKey(key);
-        if (isExcludedLocalStorageKey(baseKey)) {
+        const parsed = parseCharacterStorageKey(key);
+        if (parsed?.name) {
+            if (!selectedSet.has(parsed.name)) continue;
+            if (parsed.baseKey && isExcludedLocalStorageKey(parsed.baseKey)) {
+                continue;
+            }
+            if (!characters[parsed.name]) {
+                characters[parsed.name] = {};
+            }
+            characters[parsed.name][key] = raw;
             continue;
         }
-
-        const idx = key.indexOf(":");
-        if (idx > 0) {
-            const name = key.slice(0, idx);
-            if (!name || !selectedSet.has(name)) continue;
-            if (!characters[name]) {
-                characters[name] = {};
-            }
-            characters[name][baseKey] = raw;
-        } else {
-            if (isExcludedLocalStorageKey(key)) continue;
-            global[key] = raw;
-        }
+        if (isExcludedLocalStorageKey(key)) continue;
+        global[key] = raw;
     }
 
     return { global, characters };
@@ -324,8 +339,11 @@ function applyLocalStorageImport(data: ExportedLocalStorage) {
         if (!entries || typeof entries !== "object") return;
         Object.entries(entries).forEach(([key, raw]) => {
             if (typeof raw !== "string") return;
-            if (isExcludedLocalStorageKey(key)) return;
-            localStorage.setItem(`${character}:${key}`, raw);
+            const storageKey = key.includes(":") ? key : `${character}:${key}`;
+            const baseIdx = storageKey.lastIndexOf(":");
+            const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
+            if (isExcludedLocalStorageKey(baseKey)) return;
+            localStorage.setItem(storageKey, raw);
         });
     });
 }
