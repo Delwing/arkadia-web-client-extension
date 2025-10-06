@@ -307,8 +307,8 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="d-flex align-items-center gap-2 mb-2">
-                <div className="btn-group">
+            <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 mb-2 w-100">
+                <div className="btn-group flex-wrap flex-lg-nowrap">
                     <Button
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
@@ -331,25 +331,30 @@ function MobileButtons() {
                         Prowadzący
                     </Button>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-100 w-lg-auto"
+                    onClick={() => restoreDefaults(view)}
+                >
                     Domyślne
                 </Button>
                 <Form.Check
                     id="mobile-buttons-lock"
                     type="checkbox"
-                    className="ms-auto user-select-none"
+                    className="user-select-none ms-lg-auto"
                     label="Zablokuj przyciski"
                     checked={settings.locked}
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
                 />
             </div>
-            <div className="d-flex flex-column align-items-center mb-2">
+            <div className="d-flex flex-column align-items-center mb-2 w-100">
                 <div className="d-flex gap-1 mb-2">
                     <Button size="sm" variant="secondary" onClick={() => addRow('top')}>+R↑</Button>
                     <Button size="sm" variant="secondary" onClick={() => removeRow('top')}>-R↑</Button>
                 </div>
-                <div className="d-flex align-items-center">
-                    <div className="d-flex flex-column gap-1 me-2">
+                <div className="d-flex flex-column flex-lg-row align-items-center gap-2">
+                    <div className="d-flex flex-column gap-1 me-lg-2">
                         <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
                         <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
                     </div>
@@ -367,7 +372,7 @@ function MobileButtons() {
                             />
                         ))}
                     </div>
-                    <div className="d-flex flex-column gap-1 ms-2">
+                    <div className="d-flex flex-column gap-1 ms-lg-2">
                         <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
                         <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
                     </div>
@@ -404,8 +409,9 @@ function MobileButtons() {
                             });
                         }}
                     />
-                    <div className="d-flex align-items-center gap-2 flex-grow-1">
+                    <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
                         <Form.Range
+                            className="flex-grow-1"
                             min={0}
                             max={100}
                             value={Math.round(backgroundAlpha * 100)}
@@ -562,18 +568,24 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-between mt-2">
-                <div className="d-flex align-items-center gap-2">
-                    <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
+            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mt-2">
+                <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 flex-grow-1">
+                    <Form.Select
+                        size="sm"
+                        value={copyFrom}
+                        onChange={e => setCopyFrom(e.target.value as Mode)}
+                        className="flex-grow-1"
+                        style={{ minWidth: 0 }}
+                    >
                         <option value="solo">Bez drużyny</option>
                         <option value="team">W drużynie</option>
                         <option value="leader">Prowadzący</option>
                     </Form.Select>
-                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                    <Button size="sm" variant="secondary" className="w-100 w-sm-auto" onClick={() => copyLayout(copyFrom)}>
                         Kopiuj
                     </Button>
                 </div>
-                <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
+                <Button id="mobile-buttons-save" className="w-100 w-md-auto" onClick={save}>Zapisz</Button>
             </div>
         </div>
     );

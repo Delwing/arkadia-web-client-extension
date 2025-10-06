@@ -165,16 +165,17 @@ function UserTriggers() {
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <div className="d-flex gap-2 align-items-center">
+            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 w-100">
                 <Form.Control
                     type="text"
                     size="sm"
                     placeholder="Filter"
                     value={filter}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
-                    style={{ width: '100%', maxWidth: '12rem' }}
+                    className="flex-grow-1"
+                    style={{ minWidth: 0 }}
                 />
-                <Button size="sm" onClick={openNew}>Add trigger</Button>
+                <Button size="sm" className="w-100 w-md-auto" onClick={openNew}>Add trigger</Button>
             </div>
             
             {showCreateForm && (
