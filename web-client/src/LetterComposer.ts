@@ -82,6 +82,7 @@ export default class LetterComposer {
         if (!this.container) {
             return;
         }
+        this.form?.reset();
         this.container.hidden = false;
         requestAnimationFrame(() => {
             if (!this.state.hasCustomPosition) {
