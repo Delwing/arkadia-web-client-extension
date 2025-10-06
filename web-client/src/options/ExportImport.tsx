@@ -476,7 +476,7 @@ function ExportImport() {
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({ prompt: forcePrompt || !driveTokenRef.current ? "consent" : "" });
+                    client.requestAccessToken({ prompt: ""});
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
