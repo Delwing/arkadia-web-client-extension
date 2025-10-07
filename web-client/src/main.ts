@@ -47,13 +47,38 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const VIEWPORT_HEIGHT_VAR = '--viewport-height';
 const setViewportHeightVariable = () => {
-    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-    document.documentElement.style.setProperty(VIEWPORT_HEIGHT_VAR, `${viewportHeight}px`);
+    const docEl = document.documentElement;
+    if (!docEl) {
+        return;
+    }
+
+    const visualViewportHeight = window.visualViewport?.height;
+    const innerHeight = window.innerHeight;
+    const clientHeight = docEl.clientHeight;
+    const viewportHeight = visualViewportHeight ?? (clientHeight ? Math.min(innerHeight, clientHeight) : innerHeight);
+
+    docEl.style.setProperty(VIEWPORT_HEIGHT_VAR, `${viewportHeight}px`);
+};
+
+const queueViewportHeightRefresh = () => {
+    requestAnimationFrame(setViewportHeightVariable);
 };
 
 setViewportHeightVariable();
-window.addEventListener('resize', setViewportHeightVariable);
-window.visualViewport?.addEventListener('resize', setViewportHeightVariable);
+window.addEventListener('resize', queueViewportHeightRefresh);
+window.visualViewport?.addEventListener('resize', queueViewportHeightRefresh);
+
+if (!('visualViewport' in window)) {
+    const scheduleViewportHeightRefresh = () => {
+        queueViewportHeightRefresh();
+        window.setTimeout(queueViewportHeightRefresh, 50);
+        window.setTimeout(queueViewportHeightRefresh, 150);
+    };
+
+    document.addEventListener('focusin', scheduleViewportHeightRefresh);
+    document.addEventListener('focusout', scheduleViewportHeightRefresh);
+    window.addEventListener('orientationchange', scheduleViewportHeightRefresh);
+}
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
