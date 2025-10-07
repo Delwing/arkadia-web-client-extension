@@ -229,7 +229,7 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  --map-size: 30vh;
+  --map-size: 30dvh;
   background-color: var(--surface-content);
 }
 
@@ -252,7 +252,7 @@ h1 {
   font-size: 0.775rem;
   overflow-wrap: break-word;
   position: relative;
-  height: 60vh;
+  height: 60dvh;
   background-color: var(--bs-body-bg);
 }
 
@@ -272,7 +272,7 @@ h1 {
   background-color: var(--bs-body-bg);
   z-index: 1;
   height: 15rem;
-  max-height: 25vh;
+  max-height: 25dvh;
   overflow: hidden;
   border-top: 2px solid rgba(255, 255, 255, 0.6);
 }
@@ -293,11 +293,11 @@ h1 {
 #multi-binds {
   display: none;
   gap: 1vw;
-  padding: 0.5vh 1vh;
+  padding: 0.5dvh 1dvh;
   font-family: monospace;
   font-size: 0.8rem;
   background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  border-top: 0.1dvh solid rgba(255, 255, 255, 0.1);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -328,11 +328,11 @@ h1 {
 #char-state {
   display: flex;
   gap: 1vw;
-  padding: 0.5vh 1vh;
+  padding: 0.5dvh 1dvh;
   font-family: monospace;
   font-size: 0.8rem;
   background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  border-top: 0.1dvh solid rgba(255, 255, 255, 0.1);
   position: relative;
 }
 
@@ -462,11 +462,11 @@ h1 {
   position: absolute;
   top: 0;
   left: 0;
-  padding: 0.5vh 1vh;
+  padding: 0.5dvh 1dvh;
   font-family: monospace;
   font-size: 0.6rem;
   background-color: rgba(0, 0, 0, 0.4);
-  border: 0.1vh solid silver;
+  border: 0.1dvh solid silver;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   cursor: move;
@@ -565,7 +565,7 @@ h1 {
 #app {
   max-width: 90vw;
   margin: 0 auto;
-  padding: 3vh;
+  padding: 3dvh;
   text-align: center;
 }
 
@@ -573,7 +573,7 @@ h1 {
   display: flex;
   padding: 7px 10px;
   background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  border-top: 0.1dvh solid rgba(255, 255, 255, 0.1);
   gap: 10px;
   position: relative;
   z-index: 1001;
@@ -581,8 +581,8 @@ h1 {
 
 #message-input {
   flex: 1;
-  padding: 0.75vh 1.25vh;
-  border: 0.1vh solid rgba(255, 255, 255, 0.2);
+  padding: 0.75dvh 1.25dvh;
+  border: 0.1dvh solid rgba(255, 255, 255, 0.2);
   border-radius: 1vmin;
   background-color: rgba(255, 255, 255, 0.05);
   color: inherit;
@@ -599,7 +599,7 @@ h1 {
 }
 
 #input-area button {
-  padding: 0 2vh;
+  padding: 0 2dvh;
   background: #3e3f3a;
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -635,8 +635,8 @@ h1 {
 #input-area .dropdown-menu {
   display: none;
   flex-wrap: wrap;
-  gap: 0.5vh;
-  padding: 0.5vh;
+  gap: 0.5dvh;
+  padding: 0.5dvh;
   width: 400px;
 }
 
@@ -708,8 +708,8 @@ h1 {
 
 button {
   border-radius: 1vmin;
-  border: 0.1vh solid transparent;
-  padding: 0.75vh 2vw;
+  border: 0.1dvh solid transparent;
+  padding: 0.75dvh 2vw;
   font-size: 1rem;
   font-weight: 500;
   font-family: inherit;
@@ -881,7 +881,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   }
 
   #content-area {
-  --map-size: 25vh;
+  --map-size: 25dvh;
   }
 
   #main_text_output_msg_wrapper {
@@ -906,12 +906,12 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   }
 
   #message-input {
-  padding: 0.75vh;
+  padding: 0.75dvh;
   font-size: 1rem; /* Prevents iOS zoom on focus */
   }
 
   #send-button {
-  padding: 0.75vh 2vw;
+  padding: 0.75dvh 2vw;
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }
@@ -1087,7 +1087,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   left: 4rem;
   width: min(32rem, 90vw);
   min-height: 23rem;
-  max-height: min(42rem, 90vh);
+  max-height: min(42rem, 90dvh);
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);
   border-radius: 0.5rem;
@@ -1188,8 +1188,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 #docs-modal .modal-dialog,
 #debug-modal .modal-dialog,
 #aliases-modal .modal-dialog {
-  margin-top: 5vh;
-  margin-bottom: 5vh;
+  margin-top: 5dvh;
+  margin-bottom: 5dvh;
 }
 
 .ui-settings-layout {
@@ -1267,7 +1267,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 #connecting-spinner {
   display: none;
-  margin-bottom: 1vh;
+  margin-bottom: 1dvh;
 }
 
 #auth-overlay {
@@ -1304,7 +1304,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 #login-form {
   display: flex;
   flex-direction: column;
-  gap: 1vh;
+  gap: 1dvh;
   max-width: 400px;
   width: 100%;
 }
@@ -1316,7 +1316,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .auth-or {
   color: #fff;
   text-align: center;
-  margin: 2vh 0;
+  margin: 2dvh 0;
 }
 
 #commit-info {
@@ -1336,7 +1336,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .logo {
   width: auto;
   height: auto;
-  max-height: 35vh;
+  max-height: 35dvh;
   max-width: 75vw;
 }
 

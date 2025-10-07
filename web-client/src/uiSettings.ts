@@ -53,7 +53,7 @@ const defaultSettings: UiSettings = {
 function apply(settings: UiSettings) {
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
-        contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
+        contentArea.style.setProperty('--map-size', settings.mapHeight + 'dvh');
         contentArea.setAttribute('data-map-position', settings.mapPosition);
     }
     if (document?.body) {
