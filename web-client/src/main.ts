@@ -45,6 +45,16 @@ import "./triggerTester"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
+const VIEWPORT_HEIGHT_VAR = '--viewport-height';
+const setViewportHeightVariable = () => {
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty(VIEWPORT_HEIGHT_VAR, `${viewportHeight}px`);
+};
+
+setViewportHeightVariable();
+window.addEventListener('resize', setViewportHeightVariable);
+window.visualViewport?.addEventListener('resize', setViewportHeightVariable);
+
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
 registerScripts(client)

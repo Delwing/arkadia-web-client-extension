@@ -2,6 +2,7 @@
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
+  --viewport-height: 100vh;
   --surface-base: #0f1219;
   --surface-elevated: #161a24;
   --surface-raised: #1d222d;
@@ -50,7 +51,8 @@ a:hover {
 body {
   margin: 0;
   min-width: 100vw;
-  height: 100dvh;
+  min-height: var(--viewport-height, 100vh);
+  height: var(--viewport-height, 100vh);
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -219,7 +221,8 @@ h1 {
 #main-container {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  min-height: var(--viewport-height, 100vh);
+  height: var(--viewport-height, 100vh);
   width: 100vw;
 }
 
@@ -923,9 +926,10 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
   /* Fix for virtual keyboard pushing content */
   @supports (-webkit-touch-callout: none) {
-  #main-container {
-    height: 100dvh;
-  }
+    #main-container {
+      min-height: var(--viewport-height, 100dvh);
+      height: var(--viewport-height, 100dvh);
+    }
   }
 }
 
