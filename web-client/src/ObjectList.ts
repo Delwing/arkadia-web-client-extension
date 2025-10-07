@@ -125,25 +125,48 @@ export default class ObjectList {
         if (!this.container) return;
         const rect = this.container.getBoundingClientRect();
         const styles = window.getComputedStyle(this.container);
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const containerWidth = this.container.offsetWidth;
+        const containerHeight = this.container.offsetHeight;
+        const fitsHorizontally = containerWidth <= viewportWidth;
+        const fitsVertically = containerHeight <= viewportHeight;
+
         let newLeft = parseFloat(styles.left || "0");
         let newTop = parseFloat(styles.top || "0");
 
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
-
-        if (rect.right > window.innerWidth) {
-            newLeft = maxLeft;
-        } else if (rect.left < 0) {
-            newLeft = 0;
+        if (fitsHorizontally) {
+            const maxLeft = viewportWidth - containerWidth;
+            if (rect.right > viewportWidth) {
+                newLeft = maxLeft;
+            } else if (rect.left < 0) {
+                newLeft = 0;
+            }
+            newLeft = Math.min(maxLeft, Math.max(0, newLeft));
+        } else {
+            if (rect.left >= viewportWidth) {
+                newLeft = viewportWidth - containerWidth;
+            } else if (rect.right <= 0) {
+                newLeft = 0;
+            }
         }
 
-        if (rect.bottom > window.innerHeight) {
-            newTop = window.innerHeight - this.container.offsetHeight;
-        } else if (rect.top < 0) {
-            newTop = 0;
+        if (fitsVertically) {
+            const maxTop = viewportHeight - containerHeight;
+            if (rect.bottom > viewportHeight) {
+                newTop = maxTop;
+            } else if (rect.top < 0) {
+                newTop = 0;
+            }
+            newTop = Math.min(maxTop, Math.max(0, newTop));
+        } else {
+            if (rect.top >= viewportHeight) {
+                newTop = viewportHeight - containerHeight;
+            } else if (rect.bottom <= 0) {
+                newTop = 0;
+            }
         }
 
-        newLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        newTop = Math.max(0, newTop);
         this.container.style.left = `${newLeft}px`;
         this.container.style.top = `${newTop}px`;
     };

@@ -255,20 +255,48 @@ export default class MobileDirectionButtons {
 
     private clampToView() {
         const rect = this.container.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const containerWidth = this.container.offsetWidth;
+        const containerHeight = this.container.offsetHeight;
+        const margin = 5;
+        const fitsHorizontally = containerWidth + margin * 2 <= viewportWidth;
+        const fitsVertically = containerHeight + margin * 2 <= viewportHeight;
+
         let right = parseInt(this.container.style.right, 10);
         let top = parseInt(this.container.style.top, 10);
-        if (isNaN(right)) {
-            right = window.innerWidth - rect.right;
+
+        if (Number.isNaN(right)) {
+            right = viewportWidth - rect.right;
         }
-        if (isNaN(top)) {
+        if (Number.isNaN(top)) {
             top = rect.top;
         }
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
-        const maxTop = window.innerHeight - this.container.offsetHeight - 5;
-        const clampedRight = Math.min(Math.max(5, right), maxRight);
-        const clampedTop = Math.min(Math.max(5, top), maxTop);
-        this.container.style.right = `${clampedRight}px`;
-        this.container.style.top = `${clampedTop}px`;
+
+        if (fitsHorizontally) {
+            const maxRight = Math.max(margin, viewportWidth - containerWidth - margin);
+            right = Math.min(Math.max(margin, right), maxRight);
+        } else {
+            if (rect.left >= viewportWidth) {
+                right = margin;
+            } else if (rect.right <= 0) {
+                right = viewportWidth - containerWidth - margin;
+            }
+        }
+
+        if (fitsVertically) {
+            const maxTop = Math.max(margin, viewportHeight - containerHeight - margin);
+            top = Math.min(Math.max(margin, top), maxTop);
+        } else {
+            if (rect.top >= viewportHeight) {
+                top = viewportHeight - containerHeight - margin;
+            } else if (rect.bottom <= 0) {
+                top = margin;
+            }
+        }
+
+        this.container.style.right = `${right}px`;
+        this.container.style.top = `${top}px`;
     }
 
     private setupKeyboardHandlers() {
