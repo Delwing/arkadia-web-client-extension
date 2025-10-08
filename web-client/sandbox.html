@@ -272,6 +272,13 @@
                                         <option value="left">Lewa</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label class="form-label" for="ui-label-render-mode">Tryb renderowania etykiet</label>
+                                    <select id="ui-label-render-mode" class="form-select">
+                                        <option value="image">Obraz</option>
+                                        <option value="data">Dane</option>
+                                    </select>
+                                </div>
                                 <div class="form-check">
                                     <input id="ui-instant-move" type="checkbox" class="form-check-input" />
                                     <label class="form-check-label" for="ui-instant-move">Natychmiastowe przechodzenie po mapie</label>
@@ -285,6 +292,10 @@
                                     <label class="form-check-label" for="ui-exploration-mode">
                                         Tryb eksploracji mapy <span id="ui-exploration-stats" class="ms-1 text-muted"></span>
                                     </label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-transparent-labels" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-transparent-labels">Przezroczyste etykiety (wymusza tryb danych)</label>
                                 </div>
                             </div>
                         </section>

@@ -12,6 +12,7 @@ import {
     defaultCols,
     createDefaultLayout,
     defaultBackground,
+    defaultFontColor,
 } from "../mobileButtonSettings";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
@@ -34,7 +35,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
-const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
+const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 function clampAlpha(value: number) {
     if (Number.isNaN(value)) return 0;
@@ -230,7 +231,7 @@ function MobileButtons() {
         }));
     }
 
-    function updateAllDirections(field: 'color' | 'activeColor', value: string) {
+    function updateAllDirections(field: 'color' | 'activeColor' | 'fontColor', value: string) {
         setSettings(prev => {
             const updateSet = (set: Settings['solo']) => {
                 const buttons: SettingsMap = { ...set.buttons };
@@ -266,6 +267,15 @@ function MobileButtons() {
             updateAllDirections('activeColor', def);
         } else {
             update(setName, id, 'activeColor', def);
+        }
+    }
+
+    function resetFontColor(setName: Mode, id: string) {
+        const def = defaultSettings[id]?.fontColor || defaultFontColor;
+        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+            updateAllDirections('fontColor', def);
+        } else {
+            update(setName, id, 'fontColor', def);
         }
     }
 
@@ -307,11 +317,12 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="d-flex align-items-center gap-2 mb-2">
-                <div className="btn-group">
+            <div className="d-flex flex-column flex-sm-row flex-sm-wrap align-items-stretch align-items-sm-center gap-2 mb-2 w-100">
+                <div className="mobile-buttons-mode-toggle">
                     <Button
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
+                        className="text-nowrap"
                         onClick={() => changeView('solo')}
                     >
                         Bez drużyny
@@ -319,6 +330,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
+                        className="text-nowrap"
                         onClick={() => changeView('team')}
                     >
                         W drużynie
@@ -326,30 +338,36 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
+                        className="text-nowrap"
                         onClick={() => changeView('leader')}
                     >
                         Prowadzący
                     </Button>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => restoreDefaults(view)}>
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-100 w-sm-auto"
+                    onClick={() => restoreDefaults(view)}
+                >
                     Domyślne
                 </Button>
                 <Form.Check
                     id="mobile-buttons-lock"
                     type="checkbox"
-                    className="ms-auto user-select-none"
+                    className="user-select-none ms-sm-auto text-nowrap"
                     label="Zablokuj przyciski"
                     checked={settings.locked}
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
                 />
             </div>
-            <div className="d-flex flex-column align-items-center mb-2">
+            <div className="d-flex flex-column align-items-center mb-2 w-100">
                 <div className="d-flex gap-1 mb-2">
                     <Button size="sm" variant="secondary" onClick={() => addRow('top')}>+R↑</Button>
                     <Button size="sm" variant="secondary" onClick={() => removeRow('top')}>-R↑</Button>
                 </div>
-                <div className="d-flex align-items-center">
-                    <div className="d-flex flex-column gap-1 me-2">
+                <div className="d-flex flex-column flex-lg-row align-items-center gap-2">
+                    <div className="d-flex flex-column gap-1 me-lg-2">
                         <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
                         <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
                     </div>
@@ -367,7 +385,7 @@ function MobileButtons() {
                             />
                         ))}
                     </div>
-                    <div className="d-flex flex-column gap-1 ms-2">
+                    <div className="d-flex flex-column gap-1 ms-lg-2">
                         <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
                         <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
                     </div>
@@ -404,8 +422,9 @@ function MobileButtons() {
                             });
                         }}
                     />
-                    <div className="d-flex align-items-center gap-2 flex-grow-1">
+                    <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
                         <Form.Range
+                            className="flex-grow-1"
                             min={0}
                             max={100}
                             value={Math.round(backgroundAlpha * 100)}
@@ -503,6 +522,26 @@ function MobileButtons() {
                             <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                         </Form.Group>
                     )}
+                    {activeCfg.macro !== 'empty' && (
+                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
+                            <Form.Label>Kolor czcionki</Form.Label>
+                            <Form.Control
+                                size="sm"
+                                type="color"
+                                className="mobile-button-color flex-grow-1"
+                                value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (syncDirs && activeCfg.macro === 'kierunek') {
+                                        updateAllDirections('fontColor', val);
+                                    } else {
+                                        update(active!.set, active!.id, 'fontColor', val);
+                                    }
+                                }}
+                            />
+                            <Button size="sm" variant="secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
+                        </Form.Group>
+                    )}
                     {activeCfg.macro === 'kierunek' && (
                         <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
                             <Form.Label>Kolor aktywny</Form.Label>
@@ -562,18 +601,24 @@ function MobileButtons() {
                     )}
                 </div>
             )}
-            <div className="d-flex justify-content-between mt-2">
-                <div className="d-flex align-items-center gap-2">
-                    <Form.Select size="sm" value={copyFrom} onChange={e => setCopyFrom(e.target.value as Mode)}>
+            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mt-2">
+                <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 flex-grow-1">
+                    <Form.Select
+                        size="sm"
+                        value={copyFrom}
+                        onChange={e => setCopyFrom(e.target.value as Mode)}
+                        className="flex-grow-1"
+                        style={{ minWidth: 0 }}
+                    >
                         <option value="solo">Bez drużyny</option>
                         <option value="team">W drużynie</option>
                         <option value="leader">Prowadzący</option>
                     </Form.Select>
-                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                    <Button size="sm" variant="secondary" className="w-100 w-sm-auto" onClick={() => copyLayout(copyFrom)}>
                         Kopiuj
                     </Button>
                 </div>
-                <Button id="mobile-buttons-save" onClick={save}>Zapisz</Button>
+                <Button id="mobile-buttons-save" className="w-100 w-md-auto text-nowrap" onClick={save}>Zapisz</Button>
             </div>
         </div>
     );

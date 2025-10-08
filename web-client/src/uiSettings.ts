@@ -31,6 +31,8 @@ interface UiSettings {
     instantMove: boolean;
     highlightCurrentRoom: boolean;
     outputBackground: string;
+    labelRenderMode: 'image' | 'data';
+    transparentLabels: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -50,6 +52,8 @@ const defaultSettings: UiSettings = {
     instantMove: true,
     highlightCurrentRoom: true,
     outputBackground: '#242424',
+    labelRenderMode: 'image',
+    transparentLabels: false,
 };
 
 const OUTPUT_BACKGROUND_PATTERN = /^#[0-9A-Fa-f]{6}$/;
@@ -129,6 +133,11 @@ function apply(settings: UiSettings) {
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
+    Settings.transparentLabels = settings.transparentLabels;
+    const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
+    Settings.labelRenderMode = labelRenderMode;
+    (window as any).embedded?.setTransparentLabels?.(settings.transparentLabels);
+    (window as any).embedded?.setLabelRenderMode?.(labelRenderMode);
     Settings.instantMapMove = settings.instantMove;
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
@@ -170,6 +179,9 @@ async function load(): Promise<UiSettings> {
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
+            const transparentLabels = !!parsed.transparentLabels;
+            const labelRenderMode = parsed.labelRenderMode === 'data' ? 'data' : defaultSettings.labelRenderMode;
+            const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
             const explorationMode = !!parsed.explorationMode;
@@ -180,7 +192,23 @@ async function load(): Promise<UiSettings> {
                 ? parsed.highlightCurrentRoom
                 : defaultSettings.highlightCurrentRoom;
             const outputBackground = normalizeOutputBackground(parsed.outputBackground);
-            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom, outputBackground };
+            return {
+                ...defaultSettings,
+                ...parsed,
+                mapScale,
+                mapPosition,
+                emojiLabels: !!parsed.emojiLabels,
+                xtermPalette,
+                footerMode,
+                explorationMode,
+                fightTitleIcon,
+                hapticFeedback,
+                instantMove,
+                highlightCurrentRoom,
+                transparentLabels,
+                labelRenderMode: effectiveLabelRenderMode,
+                outputBackground
+            };
         }
     } catch {
         // ignore malformed data
@@ -215,6 +243,8 @@ export default async function initUiSettings() {
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
+    const labelRenderModeInput = modalEl.querySelector('#ui-label-render-mode') as HTMLSelectElement;
+    const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -234,7 +264,20 @@ export default async function initUiSettings() {
     instantMoveInput.checked = current.instantMove;
     highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
     outputBackgroundInput.value = current.outputBackground;
+    labelRenderModeInput.value = current.labelRenderMode;
+    transparentLabelsInput.checked = current.transparentLabels;
+    const updateLabelRenderModeState = () => {
+        if (transparentLabelsInput.checked) {
+            labelRenderModeInput.value = 'data';
+            labelRenderModeInput.disabled = true;
+        } else {
+            labelRenderModeInput.disabled = false;
+        }
+    };
+    updateLabelRenderModeState();
     apply(current);
+
+    transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
 
     const updateMapScale = (scale: number) => {
         mapInput.value = String(scale);
@@ -296,11 +339,16 @@ export default async function initUiSettings() {
                 outputBackgroundInput.value = value;
                 return value;
             })(),
+            labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
+            transparentLabels: transparentLabelsInput.checked,
         };
     }
 
     saveBtn.addEventListener('click', () => {
         current = read();
+        if (current.transparentLabels) {
+            current = { ...current, labelRenderMode: 'data' };
+        }
         save(current);
         apply(current);
         modal.hide();

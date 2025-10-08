@@ -20,36 +20,119 @@ export interface ButtonSetting {
     label: string;
     color: string;
     activeColor?: string;
+    fontColor?: string;
     command?: string;
     direction?: string;
 }
+
+export const defaultFontColor = '#f1f5f9';
 
 export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
 
 export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
-    'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC' },
-    'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC' },
-    'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', command: '/go' },
-    'buttons-toggle': { macro: 'toggleButtons', label: '⇩', color: '#6EB4DC' },
-    'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC' },
-    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC' },
-    'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', command: '/z' },
-    'button-3': { macro: 'command', label: '/za cel', color: '#6EB4DC', command: '/za' },
+    'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
+    'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC', fontColor: defaultFontColor },
+    'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', fontColor: defaultFontColor, command: '/go' },
+    'buttons-toggle': { macro: 'toggleButtons', label: '⇩', color: '#6EB4DC', fontColor: defaultFontColor },
+    'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC', fontColor: defaultFontColor },
+    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC', fontColor: defaultFontColor },
+    'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/z' },
+    'button-3': { macro: 'command', label: '/za cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/za' },
 
     // direction buttons in visual order
-    'nw-button': { macro: 'kierunek', label: '↖', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'nw', direction: 'nw' },
-    'n-button': { macro: 'kierunek', label: '↑', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'n', direction: 'n' },
-    'ne-button': { macro: 'kierunek', label: '↗', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'ne', direction: 'ne' },
-    'u-button': { macro: 'kierunek', label: 'u', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'u', direction: 'u' },
-    'w-button': { macro: 'kierunek', label: '←', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'w', direction: 'w' },
-    'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', command: 'zerknij' },
-    'e-button': { macro: 'kierunek', label: '→', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'e', direction: 'e' },
-    'd-button': { macro: 'kierunek', label: 'd', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'd', direction: 'd' },
-    'sw-button': { macro: 'kierunek', label: '↙', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'sw', direction: 'sw' },
-    's-button': { macro: 'kierunek', label: '↓', color: '#6CA6CD', activeColor: '#2fa7c5', command: 's', direction: 's' },
-    'se-button': { macro: 'kierunek', label: '↘', color: '#6CA6CD', activeColor: '#2fa7c5', command: 'se', direction: 'se' },
-    'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD' },
+    'nw-button': {
+        macro: 'kierunek',
+        label: '↖',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'nw',
+        direction: 'nw',
+    },
+    'n-button': {
+        macro: 'kierunek',
+        label: '↑',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'n',
+        direction: 'n',
+    },
+    'ne-button': {
+        macro: 'kierunek',
+        label: '↗',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'ne',
+        direction: 'ne',
+    },
+    'u-button': {
+        macro: 'kierunek',
+        label: 'u',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'u',
+        direction: 'u',
+    },
+    'w-button': {
+        macro: 'kierunek',
+        label: '←',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'w',
+        direction: 'w',
+    },
+    'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor, command: 'zerknij' },
+    'e-button': {
+        macro: 'kierunek',
+        label: '→',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'e',
+        direction: 'e',
+    },
+    'd-button': {
+        macro: 'kierunek',
+        label: 'd',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'd',
+        direction: 'd',
+    },
+    'sw-button': {
+        macro: 'kierunek',
+        label: '↙',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'sw',
+        direction: 'sw',
+    },
+    's-button': {
+        macro: 'kierunek',
+        label: '↓',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 's',
+        direction: 's',
+    },
+    'se-button': {
+        macro: 'kierunek',
+        label: '↘',
+        color: '#6CA6CD',
+        activeColor: '#2fa7c5',
+        fontColor: defaultFontColor,
+        command: 'se',
+        direction: 'se',
+    },
+    'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD', fontColor: defaultFontColor },
 };
 
 export const defaultOrder = [
@@ -95,22 +178,60 @@ export function createDefaultLayout(): LayoutSettings {
     return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols, background: defaultBackground };
 }
 
+const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
+
+function extractButtons(set: any): Record<string, ButtonSetting> {
+    if (!set || typeof set !== 'object') {
+        return {};
+    }
+    const candidate = set.buttons && typeof set.buttons === 'object' ? set.buttons : set;
+    const result: Record<string, ButtonSetting> = {};
+    Object.keys(candidate).forEach(key => {
+        if (['order', 'cols', 'background'].includes(key)) {
+            return;
+        }
+        const value = candidate[key];
+        if (value && typeof value === 'object') {
+            result[key] = value as ButtonSetting;
+        }
+    });
+    return result;
+}
+
+function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<string, ButtonSetting> {
+    const merged: Record<string, ButtonSetting> = {};
+    const keys = new Set([...Object.keys(defaultSettings), ...Object.keys(buttons || {})]);
+    keys.forEach(id => {
+        const base = defaultSettings[id] || emptyButton;
+        const override = (buttons && buttons[id]) || {};
+        const cfg: ButtonSetting = { ...base, ...override };
+        cfg.fontColor = cfg.fontColor || base.fontColor || defaultFontColor;
+        merged[id] = cfg;
+    });
+    return merged;
+}
+
+function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout()): LayoutSettings {
+    const buttons = mergeButtonSettings(extractButtons(set));
+    const order = Array.isArray(set?.order) ? set.order : [...fallback.order];
+    const cols = typeof set?.cols === 'number' && set.cols > 0 ? set.cols : fallback.cols;
+    const background = typeof set?.background === 'string' && set.background ? set.background : fallback.background;
+    return { buttons, order, cols, background };
+}
+
 export async function loadSettings(): Promise<Settings> {
     try {
         const data = await storage.getItem('mobileButtonSettings');
         const raw = data?.mobileButtonSettings;
         if (raw) {
-            const parseSet = (set: any): LayoutSettings => ({
-                buttons: { ...defaultSettings, ...(set?.buttons || set || {}) },
-                order: Array.isArray(set?.order) ? set.order : [...defaultOrder],
-                cols: typeof set?.cols === 'number' && set.cols > 0 ? set.cols : defaultCols,
-                background: typeof set?.background === 'string' && set.background
-                    ? set.background
-                    : defaultBackground,
-            });
             const locked = !!raw.locked;
             if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
-                return { solo: parseSet(raw.solo), team: parseSet(raw.team), leader: parseSet(raw.leader), locked };
+                return {
+                    solo: parseLayout(raw.solo),
+                    team: parseLayout(raw.team),
+                    leader: parseLayout(raw.leader),
+                    locked,
+                };
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
             const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
@@ -131,19 +252,19 @@ export async function loadSettings(): Promise<Settings> {
                         : defaultBackground;
             return {
                 solo: {
-                    buttons: { ...defaultSettings, ...(raw.solo || {}) },
+                    buttons: mergeButtonSettings(extractButtons(raw.solo)),
                     order: [...order],
                     cols,
                     background: soloBackground,
                 },
                 team: {
-                    buttons: { ...defaultSettings, ...(raw.team || raw.solo || {}) },
+                    buttons: mergeButtonSettings(extractButtons(raw.team || raw.solo)),
                     order: [...order],
                     cols,
                     background: teamBackground,
                 },
                 leader: {
-                    buttons: { ...defaultSettings, ...(raw.leader || raw.team || raw.solo || {}) },
+                    buttons: mergeButtonSettings(extractButtons(raw.leader || raw.team || raw.solo)),
                     order: [...order],
                     cols,
                     background: leaderBackground,
@@ -189,7 +310,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
         const prze = document.getElementById('prze-buttons-list');
         const idz = document.getElementById('idz-buttons-list');
         container.querySelectorAll('button').forEach(b => b.remove());
-        const empty: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
+        const empty: ButtonSetting = { ...emptyButton };
         const insertBefore = z || zas || w || prze || idz || null;
         set.order.forEach(id => {
             const cfg = set.buttons[id] || defaultSettings[id] || empty;
@@ -207,11 +328,19 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
                 if (cfg.macro === 'kierunek') {
                     btn.style.setProperty('--color', cfg.color);
                     btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
+                    btn.style.backgroundColor = cfg.color;
                 } else {
                     btn.style.backgroundColor = cfg.color;
+                    btn.style.removeProperty('--color');
+                    btn.style.removeProperty('--active-color');
                 }
+                btn.style.color = cfg.fontColor || defaultFontColor;
             } else {
                 btn.classList.add('empty');
+                btn.style.removeProperty('--color');
+                btn.style.removeProperty('--active-color');
+                btn.style.color = '';
+                btn.style.backgroundColor = 'transparent';
             }
             container.insertBefore(btn, insertBefore);
         });
