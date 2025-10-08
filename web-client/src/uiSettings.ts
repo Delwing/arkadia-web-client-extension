@@ -14,7 +14,7 @@ const mapPositions = [
 
 type MapPosition = (typeof mapPositions)[number];
 
-interface UiSettings {
+export interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
     buttonSize: number;
@@ -34,7 +34,7 @@ interface UiSettings {
     transparentLabels: boolean;
 }
 
-const defaultSettings: UiSettings = {
+export const defaultSettings: UiSettings = {
     contentFontSize: 0.775,
     objectsFontSize: 0.6,
     buttonSize: 1,
@@ -54,7 +54,7 @@ const defaultSettings: UiSettings = {
     transparentLabels: true,
 };
 
-function apply(settings: UiSettings) {
+export function applyUiSettings(settings: UiSettings) {
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -149,7 +149,7 @@ function apply(settings: UiSettings) {
 
 import storage from "@client/src/storage";
 
-async function load(): Promise<UiSettings> {
+export async function loadUiSettings(): Promise<UiSettings> {
     try {
         const uiData = await storage.getItem('uiSettings');
         let raw = uiData?.uiSettings;
@@ -234,7 +234,7 @@ export default async function initUiSettings() {
     const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
-    let current = await load();
+    let current = await loadUiSettings();
     contentInput.value = String(current.contentFontSize);
     objectsInput.value = String(current.objectsFontSize);
     buttonInput.value = String(current.buttonSize);
@@ -261,7 +261,7 @@ export default async function initUiSettings() {
         }
     };
     updateLabelRenderModeState();
-    apply(current);
+    applyUiSettings(current);
 
     transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
 
@@ -331,7 +331,7 @@ export default async function initUiSettings() {
             current = { ...current, labelRenderMode: 'data' };
         }
         save(current);
-        apply(current);
+        applyUiSettings(current);
         modal.hide();
     });
 

@@ -3,6 +3,11 @@ import {Alert, Button, Form, Spinner} from "react-bootstrap";
 import storage from "@client/src/storage";
 import type {StoredMultibindRecord} from "../multibindStorage";
 import {readMultibinds, replaceMultibinds} from "../multibindStorage";
+import {applyUiSettings, loadUiSettings} from "../uiSettings";
+import {
+    applySettings as applyMobileButtonSettings,
+    loadSettings as loadMobileButtonSettings,
+} from "../mobileButtonSettings";
 import type {RecordedEvent} from "./recordingStorage";
 import {getRecording, getRecordingNames} from "./recordingStorage";
 
@@ -129,6 +134,11 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
     "magics",
     "magic_keys",
     "herbs_data"
+]);
+
+const IMPORT_EXCLUDED_KEYS = new Set([
+    "mobileButtonsPosition",
+    "objectsListPosition",
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
@@ -383,6 +393,7 @@ function applyLocalStorageImport(data: ExportedLocalStorage) {
     Object.entries(data.global ?? {}).forEach(([key, raw]) => {
         if (typeof raw !== "string") return;
         if (isExcludedLocalStorageKey(key)) return;
+        if (IMPORT_EXCLUDED_KEYS.has(key)) return;
         localStorage.setItem(key, raw);
     });
     Object.entries(data.characters ?? {}).forEach(([character, entries]) => {
@@ -393,9 +404,118 @@ function applyLocalStorageImport(data: ExportedLocalStorage) {
             const baseIdx = storageKey.lastIndexOf(":");
             const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
             if (isExcludedLocalStorageKey(baseKey)) return;
+            if (IMPORT_EXCLUDED_KEYS.has(baseKey)) return;
             localStorage.setItem(storageKey, raw);
         });
     });
+}
+
+function clampNumber(value: unknown, min: number, max: number) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        return min;
+    }
+    if (max < min) {
+        return min;
+    }
+    return Math.min(Math.max(value, min), max);
+}
+
+function adjustMobileButtonsPosition() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+        return;
+    }
+    try {
+        const raw = localStorage.getItem("mobileButtonsPosition");
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        const container = document.getElementById("mobile-direction-buttons") as HTMLDivElement | null;
+        const width = container?.offsetWidth ?? 0;
+        const height = container?.offsetHeight ?? 0;
+        const rightCandidate = (parsed as any).x ?? (parsed as any).right ?? (parsed as any).left ?? 5;
+        const topCandidate = (parsed as any).y ?? (parsed as any).top ?? 5;
+        const rightValue = typeof rightCandidate === "number" ? rightCandidate : Number(rightCandidate);
+        const topValue = typeof topCandidate === "number" ? topCandidate : Number(topCandidate);
+        const maxRight = Math.max(5, window.innerWidth - width - 5);
+        const maxTop = Math.max(5, window.innerHeight - height - 5);
+        const clampedRight = clampNumber(rightValue, 5, maxRight);
+        const clampedTop = clampNumber(topValue, 5, maxTop);
+        if (container) {
+            container.style.right = `${clampedRight}px`;
+            container.style.top = `${clampedTop}px`;
+        }
+        if (clampedRight !== rightValue || clampedTop !== topValue) {
+            localStorage.setItem("mobileButtonsPosition", JSON.stringify({x: clampedRight, y: clampedTop}));
+        }
+    } catch (err) {
+        console.error("Failed to adjust mobile buttons position", err);
+    }
+}
+
+function adjustObjectsListPosition() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+        return;
+    }
+    try {
+        const raw = localStorage.getItem("objectsListPosition");
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        const container = document.getElementById("objects-list");
+        const width = container instanceof HTMLElement ? container.offsetWidth : 0;
+        const height = container instanceof HTMLElement ? container.offsetHeight : 0;
+        const leftCandidate = (parsed as any).left ?? (parsed as any).x ?? 0;
+        const topCandidate = (parsed as any).top ?? (parsed as any).y ?? 0;
+        const leftValue = typeof leftCandidate === "number" ? leftCandidate : Number(leftCandidate);
+        const topValue = typeof topCandidate === "number" ? topCandidate : Number(topCandidate);
+        const maxLeft = Math.max(0, window.innerWidth - width);
+        const maxTop = Math.max(0, window.innerHeight - height);
+        const clampedLeft = clampNumber(leftValue, 0, maxLeft);
+        const clampedTop = clampNumber(topValue, 0, maxTop);
+        if (container instanceof HTMLElement) {
+            container.style.left = `${clampedLeft}px`;
+            container.style.top = `${clampedTop}px`;
+        }
+        if (clampedLeft !== leftValue || clampedTop !== topValue) {
+            localStorage.setItem("objectsListPosition", JSON.stringify({left: clampedLeft, top: clampedTop}));
+        }
+    } catch (err) {
+        console.error("Failed to adjust objects list position", err);
+    }
+}
+
+async function applyImportedUiSettings() {
+    if (typeof window === "undefined") {
+        return;
+    }
+    try {
+        const settings = await loadUiSettings();
+        applyUiSettings(settings);
+    } catch (err) {
+        console.error("Failed to apply UI settings after import", err);
+    }
+}
+
+async function applyImportedMobileButtonSettings() {
+    if (typeof window === "undefined") {
+        return;
+    }
+    try {
+        const settings = await loadMobileButtonSettings();
+        const teamManager = (window as any).clientExtension?.TeamManager;
+        const inTeam = !!teamManager?.isInAnyTeam?.();
+        const isLeader = !!teamManager?.isLeader?.();
+        applyMobileButtonSettings(settings, inTeam, isLeader);
+    } catch (err) {
+        console.error("Failed to apply mobile button settings after import", err);
+    }
+}
+
+async function applyImportedSettingsImmediately() {
+    await applyImportedUiSettings();
+    await applyImportedMobileButtonSettings();
+    adjustObjectsListPosition();
+    adjustMobileButtonsPosition();
 }
 
 function validatePayload(input: unknown): input is ExportPayload {
@@ -665,6 +785,7 @@ function ExportImport() {
 
     const applyImportedData = useCallback(async (payload: ExportPayload) => {
         applyLocalStorageImport(payload.localStorage);
+        await applyImportedSettingsImmediately();
         if (typeof indexedDB !== "undefined") {
             await replaceMultibinds(payload.indexedDB.multibinds ?? []);
         }
