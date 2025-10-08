@@ -50,8 +50,8 @@ const defaultSettings: UiSettings = {
     explorationMode: false,
     instantMove: true,
     highlightCurrentRoom: true,
-    labelRenderMode: 'image',
-    transparentLabels: false,
+    labelRenderMode: 'data',
+    transparentLabels: true,
 };
 
 function apply(settings: UiSettings) {
@@ -165,8 +165,12 @@ async function load(): Promise<UiSettings> {
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
-            const transparentLabels = !!parsed.transparentLabels;
-            const labelRenderMode = parsed.labelRenderMode === 'data' ? 'data' : defaultSettings.labelRenderMode;
+            const transparentLabels = typeof parsed.transparentLabels === 'boolean'
+                ? parsed.transparentLabels
+                : defaultSettings.transparentLabels;
+            const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
+                ? parsed.labelRenderMode
+                : defaultSettings.labelRenderMode;
             const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
