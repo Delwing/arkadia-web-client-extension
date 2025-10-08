@@ -229,6 +229,35 @@ input::placeholder {
   }
 }
 
+.mobile-buttons-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.mobile-buttons-mode-toggle .btn {
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .mobile-buttons-mode-toggle {
+    display: inline-flex;
+    flex-direction: row;
+    width: auto;
+    gap: 0;
+  }
+
+  .mobile-buttons-mode-toggle .btn {
+    width: auto;
+    flex-grow: 0;
+  }
+
+  .mobile-buttons-mode-toggle .btn + .btn {
+    margin-left: -1px;
+  }
+}
+
 h1 {
   font-size: 1.5rem;
   line-height: 1.1;

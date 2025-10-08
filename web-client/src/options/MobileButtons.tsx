@@ -308,11 +308,11 @@ function MobileButtons() {
     return (
         <div onClick={close} className="w-100 position-relative">
             <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 mb-2 w-100">
-                <div className="btn-group flex-wrap flex-lg-nowrap">
+                <div className="mobile-buttons-mode-toggle">
                     <Button
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
-                        className="text-nowrap w-100 w-lg-auto"
+                        className="text-nowrap"
                         onClick={() => changeView('solo')}
                     >
                         Bez drużyny
@@ -320,7 +320,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
-                        className="text-nowrap w-100 w-lg-auto"
+                        className="text-nowrap"
                         onClick={() => changeView('team')}
                     >
                         W drużynie
@@ -328,7 +328,7 @@ function MobileButtons() {
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
-                        className="text-nowrap w-100 w-lg-auto"
+                        className="text-nowrap"
                         onClick={() => changeView('leader')}
                     >
                         Prowadzący
