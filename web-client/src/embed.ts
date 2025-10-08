@@ -1,4 +1,4 @@
-import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail} from "mudlet-map-renderer";
+import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail, LabelRenderMode} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 
 const STORAGE_KEY = 'mapperRoomId';
@@ -95,6 +95,8 @@ export class EmbeddedMap {
         let explorationMode = false;
         let instantMove = true;
         let highlightCurrentRoom = true;
+        let labelRenderMode: LabelRenderMode = 'image';
+        let transparentLabels = false;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -112,6 +114,12 @@ export class EmbeddedMap {
                 if (typeof parsed.highlightCurrentRoom === 'boolean') {
                     highlightCurrentRoom = parsed.highlightCurrentRoom;
                 }
+                if (parsed.labelRenderMode === 'data') {
+                    labelRenderMode = 'data';
+                }
+                if (typeof parsed.transparentLabels === 'boolean') {
+                    transparentLabels = parsed.transparentLabels;
+                }
             }
         } catch {
             // ignore malformed data
@@ -125,6 +133,11 @@ export class EmbeddedMap {
         } catch {
         }
         this.zoom = zoom;
+        if (transparentLabels) {
+            labelRenderMode = 'data';
+        }
+        Settings.transparentLabels = transparentLabels;
+        Settings.labelRenderMode = labelRenderMode;
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
@@ -266,6 +279,31 @@ export class EmbeddedMap {
         Settings.highlightCurrentRoom = on;
         this.renderer.setPosition(this.currentRoom);
 
+    }
+
+    setLabelRenderMode(mode: LabelRenderMode) {
+        Settings.labelRenderMode = Settings.transparentLabels ? 'data' : mode;
+        this.refreshLabels();
+    }
+
+    setTransparentLabels(on: boolean) {
+        Settings.transparentLabels = on;
+        if (on) {
+            Settings.labelRenderMode = 'data';
+        }
+        this.refreshLabels();
+    }
+
+    private refreshLabels() {
+        if (typeof this.currentRoom !== 'number') {
+            return;
+        }
+        const room = this.reader.getRoom(this.currentRoom);
+        if (!room) {
+            return;
+        }
+        this.renderer.drawArea(room.area, room.z);
+        this.renderRoom(this.currentRoom);
     }
 
     leadTo(id?: string) {
