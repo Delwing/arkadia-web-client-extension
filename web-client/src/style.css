@@ -242,15 +242,30 @@ input::placeholder {
 
 @media (min-width: 576px) {
   .mobile-buttons-mode-toggle {
-    display: inline-flex;
     flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     width: auto;
+  }
+
+  .mobile-buttons-mode-toggle .btn {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .mobile-buttons-mode-toggle .btn + .btn {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-buttons-mode-toggle {
+    flex-wrap: nowrap;
     gap: 0;
   }
 
   .mobile-buttons-mode-toggle .btn {
-    width: auto;
-    flex-grow: 0;
+    flex: 0 0 auto;
   }
 
   .mobile-buttons-mode-toggle .btn + .btn {

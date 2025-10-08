@@ -307,7 +307,7 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 mb-2 w-100">
+            <div className="d-flex flex-column flex-sm-row flex-sm-wrap align-items-stretch align-items-sm-center gap-2 mb-2 w-100">
                 <div className="mobile-buttons-mode-toggle">
                     <Button
                         size="sm"
