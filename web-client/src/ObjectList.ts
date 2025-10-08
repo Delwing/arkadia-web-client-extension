@@ -101,9 +101,10 @@ export default class ObjectList {
         const deltaY = e.clientY - this.startY;
         const newLeft = this.offsetLeft + deltaX;
         const newTop = this.offsetTop + deltaY;
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
+        const maxLeft = Math.max(0, window.innerWidth - this.container.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - this.container.offsetHeight);
         const clampedLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        const clampedTop = Math.max(0, newTop);
+        const clampedTop = Math.min(maxTop, Math.max(0, newTop));
         this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     };
@@ -112,13 +113,15 @@ export default class ObjectList {
         if (!this.isDragging || !this.container || e.pointerId !== this.pointerId) return;
         this.isDragging = false;
         this.container.releasePointerCapture(this.pointerId);
+        this.clampToViewport();
         const rect = this.container.getBoundingClientRect();
+        const maxLeft = Math.max(0, window.innerWidth - this.container.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - this.container.offsetHeight);
         const position = {
-            left: rect.left,
-            top: rect.top,
+            left: Math.min(Math.max(0, rect.left), maxLeft),
+            top: Math.min(Math.max(0, rect.top), maxTop),
         };
         setItemSync("objectsListPosition", position);
-        this.clampToViewport();
     };
 
     private clampToViewport = () => {
@@ -128,7 +131,8 @@ export default class ObjectList {
         let newLeft = parseFloat(styles.left || "0");
         let newTop = parseFloat(styles.top || "0");
 
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
+        const maxLeft = Math.max(0, window.innerWidth - this.container.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - this.container.offsetHeight);
 
         if (rect.right > window.innerWidth) {
             newLeft = maxLeft;
@@ -137,15 +141,19 @@ export default class ObjectList {
         }
 
         if (rect.bottom > window.innerHeight) {
-            newTop = window.innerHeight - this.container.offsetHeight;
+            newTop = maxTop;
         } else if (rect.top < 0) {
             newTop = 0;
         }
 
         newLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        newTop = Math.max(0, newTop);
+        newTop = Math.min(maxTop, Math.max(0, newTop));
+        const changed = Math.abs(newLeft - rect.left) > 0.5 || Math.abs(newTop - rect.top) > 0.5;
         this.container.style.left = `${newLeft}px`;
         this.container.style.top = `${newTop}px`;
+        if (changed) {
+            setItemSync("objectsListPosition", { left: newLeft, top: newTop });
+        }
     };
 
     private isMobileBrowser() {

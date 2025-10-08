@@ -1,6 +1,8 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import storage from "@client/src/storage";
+import { loadSettings as loadMobileButtonSettings, applySettings as applyMobileButtonSettings } from "../mobileButtonSettings";
+import { applyUiSettings, loadUiSettings } from "../uiSettings";
 import type { StoredMultibindRecord } from "../multibindStorage";
 import { readMultibinds, replaceMultibinds } from "../multibindStorage";
 import type { RecordedEvent } from "./recordingStorage";
@@ -385,12 +387,58 @@ async function buildExport(selectedCharacters: string[]): Promise<ExportPayload>
     };
 }
 
+function dispatchStorageEvent(key: string, oldValue: string | null, newValue: string) {
+    if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") {
+        return;
+    }
+    try {
+        const event = new StorageEvent("storage", {
+            key,
+            oldValue,
+            newValue,
+            storageArea: typeof localStorage !== "undefined" ? localStorage : undefined,
+            url: window.location.href,
+        });
+        window.dispatchEvent(event);
+    } catch (err) {
+        if (typeof document === "undefined" || typeof document.createEvent !== "function") {
+            console.error("Failed to dispatch storage event", err);
+            return;
+        }
+        try {
+            const legacyEvent = document.createEvent("StorageEvent") as StorageEvent;
+            (legacyEvent as unknown as { initStorageEvent: (...args: unknown[]) => void }).initStorageEvent(
+                "storage",
+                false,
+                false,
+                key,
+                oldValue,
+                newValue,
+                window.location.href,
+                typeof localStorage !== "undefined" ? localStorage : null
+            );
+            window.dispatchEvent(legacyEvent);
+        } catch (legacyErr) {
+            console.error("Failed to dispatch storage event", legacyErr);
+        }
+    }
+}
+
+function setLocalStorageValue(key: string, value: string) {
+    if (typeof localStorage === "undefined") {
+        return;
+    }
+    const previous = localStorage.getItem(key);
+    localStorage.setItem(key, value);
+    dispatchStorageEvent(key, previous, value);
+}
+
 function applyLocalStorageImport(data: ExportedLocalStorage) {
     if (!data) return;
     Object.entries(data.global ?? {}).forEach(([key, raw]) => {
         if (typeof raw !== "string") return;
         if (isExcludedLocalStorageKey(key)) return;
-        localStorage.setItem(key, raw);
+        setLocalStorageValue(key, raw);
     });
     Object.entries(data.characters ?? {}).forEach(([character, entries]) => {
         if (!entries || typeof entries !== "object") return;
@@ -400,7 +448,7 @@ function applyLocalStorageImport(data: ExportedLocalStorage) {
             const baseIdx = storageKey.lastIndexOf(":");
             const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
             if (isExcludedLocalStorageKey(baseKey)) return;
-            localStorage.setItem(storageKey, raw);
+            setLocalStorageValue(storageKey, raw);
         });
     });
 }
@@ -451,7 +499,7 @@ function ExportImport() {
         } else {
             clearStoredDriveToken();
         }
-    }, []);
+    }, [applyUiSettings, loadUiSettings, loadMobileButtonSettings, applyMobileButtonSettings]);
 
     useEffect(() => {
         if (window.google?.accounts?.oauth2) {
@@ -678,6 +726,28 @@ function ExportImport() {
         await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     }, []);
 
+    const applyImportedSettings = useCallback(async () => {
+        try {
+            const uiSettings = await loadUiSettings();
+            applyUiSettings(uiSettings);
+        } catch (err) {
+            console.error("Failed to apply UI settings after import", err);
+        }
+        try {
+            if (typeof window !== "undefined") {
+                const client = (window as any)?.clientExtension;
+                if (client) {
+                    const settings = await loadMobileButtonSettings();
+                    const inTeam = !!client.TeamManager?.isInAnyTeam?.();
+                    const isLeader = !!client.TeamManager?.isLeader?.();
+                    applyMobileButtonSettings(settings, inTeam, isLeader);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to apply mobile button settings after import", err);
+        }
+    }, [applyUiSettings, loadUiSettings, loadMobileButtonSettings, applyMobileButtonSettings]);
+
     const handleExport = async () => {
         setError(null);
         setStatus(null);
@@ -723,7 +793,8 @@ function ExportImport() {
                 throw new Error("invalid");
             }
             await applyImportedData(parsed);
-            setStatus("Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.");
+            await applyImportedSettings();
+            setStatus("Import zakończony sukcesem. Ustawienia zostały zastosowane.");
             refreshCharacters();
         } catch (err) {
             console.error("Failed to import settings", err);

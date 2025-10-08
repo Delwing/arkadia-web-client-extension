@@ -268,12 +268,21 @@ export default class MobileDirectionButtons {
         if (isNaN(top)) {
             top = rect.top;
         }
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
-        const maxTop = window.innerHeight - this.container.offsetHeight - 5;
+        const maxRight = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
+        const maxTop = Math.max(5, window.innerHeight - this.container.offsetHeight - 5);
         const clampedRight = Math.min(Math.max(5, right), maxRight);
         const clampedTop = Math.min(Math.max(5, top), maxTop);
+        const changed = clampedRight !== right || clampedTop !== top;
         this.container.style.right = `${clampedRight}px`;
         this.container.style.top = `${clampedTop}px`;
+        if (changed) {
+            const updatedRect = this.container.getBoundingClientRect();
+            const position = {
+                x: Math.min(Math.max(5, window.innerWidth - updatedRect.right), maxRight),
+                y: Math.min(Math.max(5, updatedRect.top), maxTop),
+            };
+            setItemSync('mobileButtonsPosition', position);
+        }
     }
 
     private setupKeyboardHandlers() {
@@ -405,9 +414,10 @@ export default class MobileDirectionButtons {
         const newRight = this.offsetX + deltaX;
         const newTop = this.offsetY + deltaY;
 
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
+        const maxRight = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
+        const maxTop = Math.max(5, window.innerHeight - this.container.offsetHeight - 5);
         const clampedRight = Math.min(maxRight, Math.max(5, newRight));
-        const clampedTop = Math.max(5, newTop);
+        const clampedTop = Math.min(maxTop, Math.max(5, newTop));
 
         this.container.style.right = `${clampedRight}px`;
         this.container.style.top = `${clampedTop}px`;
@@ -420,10 +430,13 @@ export default class MobileDirectionButtons {
         }
 
         if (this.isDragging && this.container) {
+            this.clampToView();
             const rect = this.container.getBoundingClientRect();
+            const maxRight = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
+            const maxTop = Math.max(5, window.innerHeight - this.container.offsetHeight - 5);
             const position = {
-                x: window.innerWidth - rect.right,
-                y: rect.top,
+                x: Math.min(Math.max(5, window.innerWidth - rect.right), maxRight),
+                y: Math.min(Math.max(5, rect.top), maxTop),
             };
             setItemSync('mobileButtonsPosition', position);
 
