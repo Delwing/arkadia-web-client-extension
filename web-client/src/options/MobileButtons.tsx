@@ -307,7 +307,7 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 mb-2 w-100">
+            <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 mb-2 w-100">
                 <div className="mobile-buttons-mode-toggle">
                     <Button
                         size="sm"
@@ -337,7 +337,7 @@ function MobileButtons() {
                 <Button
                     size="sm"
                     variant="secondary"
-                    className="w-100 w-lg-auto"
+                    className="w-100 w-sm-auto"
                     onClick={() => restoreDefaults(view)}
                 >
                     Domyślne
@@ -345,7 +345,7 @@ function MobileButtons() {
                 <Form.Check
                     id="mobile-buttons-lock"
                     type="checkbox"
-                    className="user-select-none ms-lg-auto text-nowrap"
+                    className="user-select-none ms-sm-auto text-nowrap"
                     label="Zablokuj przyciski"
                     checked={settings.locked}
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}

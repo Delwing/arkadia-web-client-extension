@@ -240,7 +240,7 @@ input::placeholder {
   width: 100%;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 576px) {
   .mobile-buttons-mode-toggle {
     display: inline-flex;
     flex-direction: row;
