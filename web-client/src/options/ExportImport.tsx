@@ -136,13 +136,12 @@ const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
     "firebase",
     "arkadia",
     "containers",
-    "dargoth",
-    "delwing",
     "deposits",
     "improve_counter",
     "kill_counter",
     "mapperRoomId",
-    "object_num"
+    "object_num",
+    "Player"
 ]);
 
 function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
@@ -153,18 +152,6 @@ function parseCharacterStorageKey(key: string): { name: string; baseKey: string 
     const prefix = key.slice(0, firstColon);
     if (IGNORED_CHARACTER_KEY_PREFIXES.has(prefix)) {
         return null;
-    }
-    if (prefix === "Player") {
-        const remainder = key.slice(firstColon + 1);
-        if (!remainder) return null;
-        const secondColon = remainder.indexOf(":");
-        if (secondColon === -1) {
-            const name = remainder.trim();
-            return name ? {name, baseKey: ""} : null;
-        }
-        const name = remainder.slice(0, secondColon).trim();
-        const baseKey = remainder.slice(secondColon + 1);
-        return name ? {name, baseKey} : null;
     }
     const name = prefix.trim();
     const baseKey = key.slice(firstColon + 1);
