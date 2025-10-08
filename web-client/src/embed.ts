@@ -95,8 +95,8 @@ export class EmbeddedMap {
         let explorationMode = false;
         let instantMove = true;
         let highlightCurrentRoom = true;
-        let labelRenderMode: LabelRenderMode = 'image';
-        let transparentLabels = false;
+        let labelRenderMode: LabelRenderMode = 'data';
+        let transparentLabels = true;
         let initialRoom = startId ?? 1;
         try {
             const data = getItemSync('uiSettings');
@@ -114,8 +114,8 @@ export class EmbeddedMap {
                 if (typeof parsed.highlightCurrentRoom === 'boolean') {
                     highlightCurrentRoom = parsed.highlightCurrentRoom;
                 }
-                if (parsed.labelRenderMode === 'data') {
-                    labelRenderMode = 'data';
+                if (parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data') {
+                    labelRenderMode = parsed.labelRenderMode;
                 }
                 if (typeof parsed.transparentLabels === 'boolean') {
                     transparentLabels = parsed.transparentLabels;
