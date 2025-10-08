@@ -135,18 +135,19 @@ function Aliases() {
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
-            <div className="d-flex gap-2 align-items-center">
+            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 w-100">
                 <Form.Control
                     type="text"
                     size="sm"
                     placeholder="Filtruj"
                     value={filter}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
-                    style={{width: '100%', maxWidth: '12rem'}}
+                    className="flex-grow-1"
+                    style={{ minWidth: 0 }}
                 />
-                <Button size="sm" onClick={openNew}>Dodaj alias</Button>
-                <Button size="sm" onClick={openArkadiaImport}>Importuj z klienta Arkadii</Button>
-                <Button size="sm" onClick={openImport}>Importuj z Blowtorch</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openNew}>Dodaj alias</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openArkadiaImport}>Importuj z klienta Arkadii</Button>
+                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openImport}>Importuj z Blowtorch</Button>
                 <input
                     ref={arkadiaInputRef}
                     type="file"
