@@ -1,6 +1,11 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
-import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
+import {
+    loadSettings as loadMobileButtonSettings,
+    ButtonSetting,
+    Settings,
+    defaultFontColor,
+} from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { getShortDir } from "@client/src/utils/directions.ts";
 
@@ -630,10 +635,21 @@ export default class MobileDirectionButtons {
             btn.classList.add('empty');
             btn.style.backgroundColor = 'transparent';
             btn.style.border = 'none';
+            btn.style.color = '';
+            btn.style.removeProperty('--color');
+            btn.style.removeProperty('--active-color');
         } else {
             btn.classList.remove('empty');
             btn.style.backgroundColor = cfg.color;
             btn.style.border = '';
+            btn.style.color = cfg.fontColor || defaultFontColor;
+            if (cfg.macro === 'kierunek') {
+                btn.style.setProperty('--color', cfg.color);
+                btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
+            } else {
+                btn.style.removeProperty('--color');
+                btn.style.removeProperty('--active-color');
+            }
         }
         const clone = btn.cloneNode(true) as HTMLButtonElement;
         btn.replaceWith(clone);

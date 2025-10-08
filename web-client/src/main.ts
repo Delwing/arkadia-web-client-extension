@@ -458,7 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
-    const guildsButton = document.getElementById('guilds-button') as HTMLButtonElement | null;
     const scriptsButton = document.getElementById('scripts-button') as HTMLButtonElement | null;
     const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
@@ -617,13 +616,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (npcButton && npcModal) {
         npcButton.addEventListener('click', () => {
             npcModal.show();
-        });
-    }
-
-    if (guildsButton && optionsModal) {
-        guildsButton.addEventListener('click', () => {
-            window.dispatchEvent(new Event('show-guild-settings'));
-            optionsModal.show();
         });
     }
 

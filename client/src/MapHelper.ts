@@ -14,10 +14,10 @@ const directionDeltas = {
     south: {x: 0, y: 1, z: 0},
     east: {x: 1, y: 0, z: 0},
     west: {x: -1, y: 0, z: 0},
-    northwest: {x: -1, y: 1, z: 0},
-    northeast: {x: 1, y: 1, z: 0},
-    southwest: {x: -1, y: -1, z: 0},
-    southeast: {x: 1, y: -1, z: 0},
+    northwest: {x: -1, y: -1, z: 0},
+    northeast: {x: 1, y: -1, z: 0},
+    southwest: {x: -1, y: 1, z: 0},
+    southeast: {x: 1, y: 1, z: 0},
     up: {x: 0, y: 0, z: 1},
     down: {x: 0, y: 0, z: -1}
 };
@@ -132,9 +132,6 @@ export default class MapHelper {
     }
 
     parseCommand(command: string): string | null {
-        if (command === "zerknij" || command === "spojrz" || command === "sp") {
-            this.refreshPosition = true;
-        }
         if (command.trim() === "idz") {
             this.refreshPosition = true;
             if (this.currentRoom) {
