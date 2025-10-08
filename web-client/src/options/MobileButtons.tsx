@@ -345,7 +345,7 @@ function MobileButtons() {
                 <Form.Check
                     id="mobile-buttons-lock"
                     type="checkbox"
-                    className="user-select-none ms-lg-auto"
+                    className="user-select-none ms-lg-auto text-nowrap"
                     label="Zablokuj przyciski"
                     checked={settings.locked}
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
