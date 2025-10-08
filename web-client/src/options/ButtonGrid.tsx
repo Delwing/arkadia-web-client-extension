@@ -1,5 +1,5 @@
-import { RefObject, MouseEvent } from "react";
-import { ButtonSetting, Settings, defaultSettings, defaultBackground } from "../mobileButtonSettings";
+import { RefObject, MouseEvent, CSSProperties } from "react";
+import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultFontColor } from "../mobileButtonSettings";
 
 export type Mode = 'solo' | 'team' | 'leader';
 
@@ -38,12 +38,19 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 const handle = notEditable.includes(id)
                     ? undefined
                     : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);
+                const style: CSSProperties = {};
+                if (isEmpty) {
+                    style.backgroundColor = 'transparent';
+                } else {
+                    style.backgroundColor = cfg.color;
+                    style.color = cfg.fontColor || defaultFontColor;
+                }
                 return (
                     <button
                         key={id}
                         data-button-id={id}
                         className={classes}
-                        style={{ backgroundColor: isEmpty ? 'transparent' : cfg.color }}
+                        style={style}
                         onClick={handle}
                     >
                         {isEmpty ? '' : cfg.label}

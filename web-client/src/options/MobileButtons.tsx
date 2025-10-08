@@ -12,6 +12,7 @@ import {
     defaultCols,
     createDefaultLayout,
     defaultBackground,
+    defaultFontColor,
 } from "../mobileButtonSettings";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
@@ -34,7 +35,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
-const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent' };
+const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 function clampAlpha(value: number) {
     if (Number.isNaN(value)) return 0;
@@ -230,7 +231,7 @@ function MobileButtons() {
         }));
     }
 
-    function updateAllDirections(field: 'color' | 'activeColor', value: string) {
+    function updateAllDirections(field: 'color' | 'activeColor' | 'fontColor', value: string) {
         setSettings(prev => {
             const updateSet = (set: Settings['solo']) => {
                 const buttons: SettingsMap = { ...set.buttons };
@@ -266,6 +267,15 @@ function MobileButtons() {
             updateAllDirections('activeColor', def);
         } else {
             update(setName, id, 'activeColor', def);
+        }
+    }
+
+    function resetFontColor(setName: Mode, id: string) {
+        const def = defaultSettings[id]?.fontColor || defaultFontColor;
+        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+            updateAllDirections('fontColor', def);
+        } else {
+            update(setName, id, 'fontColor', def);
         }
     }
 
@@ -501,6 +511,26 @@ function MobileButtons() {
                                 }}
                             />
                             <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
+                        </Form.Group>
+                    )}
+                    {activeCfg.macro !== 'empty' && (
+                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
+                            <Form.Label>Kolor czcionki</Form.Label>
+                            <Form.Control
+                                size="sm"
+                                type="color"
+                                className="mobile-button-color flex-grow-1"
+                                value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (syncDirs && activeCfg.macro === 'kierunek') {
+                                        updateAllDirections('fontColor', val);
+                                    } else {
+                                        update(active!.set, active!.id, 'fontColor', val);
+                                    }
+                                }}
+                            />
+                            <Button size="sm" variant="secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
                         </Form.Group>
                     )}
                     {activeCfg.macro === 'kierunek' && (
