@@ -283,7 +283,7 @@ export class EmbeddedMap {
 
     setLabelRenderMode(mode: LabelRenderMode) {
         Settings.labelRenderMode = Settings.transparentLabels ? 'data' : mode;
-        this.refresh();
+        this.refreshLabels();
     }
 
     setTransparentLabels(on: boolean) {
@@ -291,7 +291,19 @@ export class EmbeddedMap {
         if (on) {
             Settings.labelRenderMode = 'data';
         }
-        this.refresh();
+        this.refreshLabels();
+    }
+
+    private refreshLabels() {
+        if (typeof this.currentRoom !== 'number') {
+            return;
+        }
+        const room = this.reader.getRoom(this.currentRoom);
+        if (!room) {
+            return;
+        }
+        this.renderer.drawArea(room.area, room.z);
+        this.renderRoom(this.currentRoom);
     }
 
     leadTo(id?: string) {
