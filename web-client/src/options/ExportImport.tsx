@@ -1,10 +1,10 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Form, Spinner } from "react-bootstrap";
+import {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {Alert, Button, Form, Spinner} from "react-bootstrap";
 import storage from "@client/src/storage";
-import type { StoredMultibindRecord } from "../multibindStorage";
-import { readMultibinds, replaceMultibinds } from "../multibindStorage";
-import type { RecordedEvent } from "./recordingStorage";
-import { getRecording, getRecordingNames } from "./recordingStorage";
+import type {StoredMultibindRecord} from "../multibindStorage";
+import {readMultibinds, replaceMultibinds} from "../multibindStorage";
+import type {RecordedEvent} from "./recordingStorage";
+import {getRecording, getRecordingNames} from "./recordingStorage";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
@@ -40,7 +40,7 @@ function saveStoredDriveToken(token: string, expiresAt: number) {
         return;
     }
     try {
-        const value: StoredDriveToken = { token, expiresAt };
+        const value: StoredDriveToken = {token, expiresAt};
         localStorage.setItem(DRIVE_TOKEN_STORAGE_KEY, JSON.stringify(value));
     } catch (err) {
         console.error("Failed to persist Google Drive token", err);
@@ -126,18 +126,24 @@ interface ExportPayload {
 const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
     "cachedMapData",
     "cachedColors",
-    "deposits",
-    "improve_counter",
-    "kill_counter",
     "magics",
     "magic_keys",
-    "herbs_data",
-    "mapperRoomId",
-    "object_num",
+    "herbs_data"
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
-const IGNORED_CHARACTER_KEY_PREFIXES = new Set(["firebase", "arkadia"]);
+const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
+    "firebase",
+    "arkadia",
+    "containers",
+    "dargoth",
+    "delwing",
+    "deposits",
+    "improve_counter",
+    "kill_counter",
+    "mapperRoomId",
+    "object_num"
+]);
 
 function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
     if (!key) return null;
@@ -154,15 +160,15 @@ function parseCharacterStorageKey(key: string): { name: string; baseKey: string 
         const secondColon = remainder.indexOf(":");
         if (secondColon === -1) {
             const name = remainder.trim();
-            return name ? { name, baseKey: "" } : null;
+            return name ? {name, baseKey: ""} : null;
         }
         const name = remainder.slice(0, secondColon).trim();
         const baseKey = remainder.slice(secondColon + 1);
-        return name ? { name, baseKey } : null;
+        return name ? {name, baseKey} : null;
     }
     const name = prefix.trim();
     const baseKey = key.slice(firstColon + 1);
-    return name ? { name, baseKey } : null;
+    return name ? {name, baseKey} : null;
 }
 
 function isExcludedLocalStorageKey(key: string) {
@@ -199,7 +205,7 @@ function collectCharacters(): string[] {
             names.add(parsed.name);
         }
     }
-    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, {sensitivity: "base"}));
 }
 
 function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage {
@@ -230,7 +236,7 @@ function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage 
         global[key] = raw;
     }
 
-    return { global, characters };
+    return {global, characters};
 }
 
 async function exportRecordings(): Promise<ExportedRecording[]> {
@@ -240,7 +246,7 @@ async function exportRecordings(): Promise<ExportedRecording[]> {
         for (const id of ids) {
             const events = await getRecording(id);
             if (events) {
-                entries.push({ id, events });
+                entries.push({id, events});
             }
         }
         return entries;
@@ -259,7 +265,7 @@ async function openRecordingsDb(): Promise<IDBDatabase> {
         request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains("recordings")) {
-                db.createObjectStore("recordings", { keyPath: "id" });
+                db.createObjectStore("recordings", {keyPath: "id"});
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -280,7 +286,7 @@ async function importRecordings(records: ExportedRecording[]): Promise<void> {
         clearReq.onerror = () => reject(new Error("Failed to clear recordings store"));
         clearReq.onsuccess = () => {
             list.forEach(record => {
-                store.put({ id: record.id, events: record.events });
+                store.put({id: record.id, events: record.events});
             });
         };
         tx.oncomplete = () => resolve();
@@ -297,7 +303,7 @@ async function openVisitedDb(): Promise<IDBDatabase> {
         request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains("visitedRooms")) {
-                db.createObjectStore("visitedRooms", { keyPath: "id" });
+                db.createObjectStore("visitedRooms", {keyPath: "id"});
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -332,7 +338,7 @@ async function exportVisitedRooms(selectedCharacters: string[]): Promise<Exporte
                     const rooms = Array.isArray(entry?.rooms)
                         ? entry.rooms.filter((v: unknown) => Number.isFinite(v as number)).map((v: number) => Number(v))
                         : [];
-                    result.push({ id, rooms });
+                    result.push({id, rooms});
                 });
                 resolve(result);
             };
@@ -355,7 +361,7 @@ async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise
         const tx = db.transaction(["visitedRooms"], "readwrite");
         const store = tx.objectStore("visitedRooms");
         entries.forEach(entry => {
-            store.put({ id: entry.id, rooms: Array.isArray(entry.rooms) ? entry.rooms : [] });
+            store.put({id: entry.id, rooms: Array.isArray(entry.rooms) ? entry.rooms : []});
         });
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(new Error("Failed to store visited rooms"));
@@ -504,7 +510,8 @@ function ExportImport() {
         tokenClientRef.current = oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: DRIVE_SCOPES.join(" "),
-            callback: () => {},
+            callback: () => {
+            },
             use_fedcm_for_prompt: true,
         });
     }, [isDriveScriptReady]);
@@ -546,7 +553,7 @@ function ExportImport() {
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({ prompt: forcePrompt || !driveTokenRef.current ? "consent" : "" });
+                    client.requestAccessToken({prompt: forcePrompt || !driveTokenRef.current ? "consent" : ""});
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
@@ -560,7 +567,7 @@ function ExportImport() {
             const token = await ensureDriveToken();
             const headers = new Headers(init?.headers as HeadersInit | undefined);
             headers.set("Authorization", `Bearer ${token}`);
-            const requestInit: RequestInit = { ...init, headers };
+            const requestInit: RequestInit = {...init, headers};
             const response = await fetch(url, requestInit);
             if (response.status === 401 && retry) {
                 driveTokenRef.current = null;
@@ -598,13 +605,13 @@ function ExportImport() {
                 const data = await response.json();
                 const list: DriveFileSummary[] = Array.isArray(data?.files)
                     ? data.files
-                          .filter((file: any) => typeof file?.id === "string" && typeof file?.name === "string")
-                          .map((file: any) => ({
-                              id: file.id as string,
-                              name: file.name as string,
-                              modifiedTime: typeof file.modifiedTime === "string" ? file.modifiedTime : undefined,
-                              size: typeof file.size === "string" ? file.size : undefined,
-                          }))
+                        .filter((file: any) => typeof file?.id === "string" && typeof file?.name === "string")
+                        .map((file: any) => ({
+                            id: file.id as string,
+                            name: file.name as string,
+                            modifiedTime: typeof file.modifiedTime === "string" ? file.modifiedTime : undefined,
+                            size: typeof file.size === "string" ? file.size : undefined,
+                        }))
                     : [];
                 setDriveFiles(list);
             } catch (err) {
@@ -685,7 +692,7 @@ function ExportImport() {
         try {
             const payload = await buildExport(selectedCharacters);
             const json = JSON.stringify(payload, null, 2);
-            const blob = new Blob([json], { type: "application/json" });
+            const blob = new Blob([json], {type: "application/json"});
             const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
             const filename = `arkadia-backup-${timestamp}.json`;
             const url = URL.createObjectURL(blob);
@@ -893,7 +900,8 @@ function ExportImport() {
     return (
         <div className="d-flex flex-column gap-3">
             <p className="mb-0">
-                Wybierz postacie, które chcesz uwzględnić w eksporcie. Dane pobierane z internetu (mapy, zioła, magiki itp.) nie są dołączane.
+                Wybierz postacie, które chcesz uwzględnić w eksporcie. Dane pobierane z internetu (mapy, zioła, magiki
+                itp.) nie są dołączane.
             </p>
             {characters.length > 0 ? (
                 <div className="d-flex flex-column gap-2">
@@ -905,13 +913,15 @@ function ExportImport() {
                                 id={`export-character-${name}`}
                                 label={name}
                                 checked={!!selection[name]}
-                                onChange={e => setSelection(prev => ({ ...prev, [name]: e.target.checked }))}
+                                onChange={e => setSelection(prev => ({...prev, [name]: e.target.checked}))}
                             />
                         ))}
                     </div>
                     <div className="d-flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(true)}>Zaznacz wszystkie</Button>
-                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(false)}>Odznacz wszystkie</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(true)}>Zaznacz
+                            wszystkie</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(false)}>Odznacz
+                            wszystkie</Button>
                     </div>
                 </div>
             ) : (
@@ -921,7 +931,7 @@ function ExportImport() {
                 <Button onClick={handleExport} disabled={isProcessing}>
                     {isProcessing ? (
                         <span className="d-inline-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" role="status" />
+                            <Spinner animation="border" size="sm" role="status"/>
                             <span>Przetwarzanie…</span>
                         </span>
                     ) : (
@@ -935,7 +945,7 @@ function ExportImport() {
                     ref={fileInputRef}
                     type="file"
                     accept="application/json"
-                    style={{ display: "none" }}
+                    style={{display: "none"}}
                     onChange={onFileChange}
                 />
             </div>
@@ -947,14 +957,14 @@ function ExportImport() {
                 <div className="d-flex flex-wrap gap-2 align-items-center">
                     {!isDriveScriptReady ? (
                         <div className="d-inline-flex align-items-center gap-2 text-muted">
-                            <Spinner animation="border" size="sm" role="status" />
+                            <Spinner animation="border" size="sm" role="status"/>
                             <span>Ładowanie integracji z Google…</span>
                         </div>
                     ) : !driveToken ? (
                         <Button onClick={handleDriveConnect} disabled={isDriveBusy}>
                             {driveAction === "connect" ? (
                                 <span className="d-inline-flex align-items-center gap-2">
-                                    <Spinner animation="border" size="sm" role="status" />
+                                    <Spinner animation="border" size="sm" role="status"/>
                                     <span>Łączenie…</span>
                                 </span>
                             ) : (
@@ -969,7 +979,7 @@ function ExportImport() {
                             >
                                 {driveAction === "upload" ? (
                                     <span className="d-inline-flex align-items-center gap-2">
-                                        <Spinner animation="border" size="sm" role="status" />
+                                        <Spinner animation="border" size="sm" role="status"/>
                                         <span>Wysyłanie…</span>
                                     </span>
                                 ) : (
@@ -978,12 +988,12 @@ function ExportImport() {
                             </Button>
                             <Button
                                 variant="secondary"
-                                onClick={() => refreshDriveFiles({ action: "list" })}
+                                onClick={() => refreshDriveFiles({action: "list"})}
                                 disabled={isDriveLoading || isDriveBusy}
                             >
                                 {driveAction === "list" ? (
                                     <span className="d-inline-flex align-items-center gap-2">
-                                        <Spinner animation="border" size="sm" role="status" />
+                                        <Spinner animation="border" size="sm" role="status"/>
                                         <span>Odświeżanie…</span>
                                     </span>
                                 ) : (
@@ -997,7 +1007,7 @@ function ExportImport() {
                             >
                                 {driveAction === "disconnect" ? (
                                     <span className="d-inline-flex align-items-center gap-2">
-                                        <Spinner animation="border" size="sm" role="status" />
+                                        <Spinner animation="border" size="sm" role="status"/>
                                         <span>Odłączanie…</span>
                                     </span>
                                 ) : (
@@ -1011,7 +1021,7 @@ function ExportImport() {
                     <div className="d-flex flex-column gap-2">
                         {isDriveLoading ? (
                             <div className="d-inline-flex align-items-center gap-2 text-muted">
-                                <Spinner animation="border" size="sm" role="status" />
+                                <Spinner animation="border" size="sm" role="status"/>
                                 <span>Ładowanie listy plików…</span>
                             </div>
                         ) : driveFiles.length > 0 ? (
@@ -1038,7 +1048,7 @@ function ExportImport() {
                                             >
                                                 {driveAction === `import:${file.id}` ? (
                                                     <span className="d-inline-flex align-items-center gap-2">
-                                                        <Spinner animation="border" size="sm" role="status" />
+                                                        <Spinner animation="border" size="sm" role="status"/>
                                                         <span>Importowanie…</span>
                                                     </span>
                                                 ) : (
@@ -1053,7 +1063,7 @@ function ExportImport() {
                                             >
                                                 {driveAction === `delete:${file.id}` ? (
                                                     <span className="d-inline-flex align-items-center gap-2">
-                                                        <Spinner animation="border" size="sm" role="status" />
+                                                        <Spinner animation="border" size="sm" role="status"/>
                                                         <span>Usuwanie…</span>
                                                     </span>
                                                 ) : (
