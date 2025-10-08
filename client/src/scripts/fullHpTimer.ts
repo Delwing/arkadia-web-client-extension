@@ -7,6 +7,7 @@ export default function initFullHpTimer(client: Client) {
     let timer: number | null = null;
     let enabled = false;
     let playerNum: string | undefined;
+    let previousHp: number | null = null;
 
     function clearTimer() {
         if (timer !== null) {
@@ -37,12 +38,18 @@ export default function initFullHpTimer(client: Client) {
 
     client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
         const hp = ev.detail?.hp;
-        if (typeof hp !== "number") return;
+        if (typeof hp !== "number") {
+            previousHp = null;
+            return;
+        }
         if (hp === FULL_HP) {
-            startTimer();
+            if (previousHp !== null && previousHp > 0 && previousHp < FULL_HP) {
+                startTimer();
+            }
         } else {
             clearTimer();
         }
+        previousHp = hp;
     });
 
     client.addEventListener("gmcp.char.info", (ev: CustomEvent) => {
@@ -64,6 +71,7 @@ export default function initFullHpTimer(client: Client) {
     client.addEventListener("client.disconnect", () => {
         playerNum = undefined;
         clearTimer();
+        previousHp = null;
     });
 }
 
