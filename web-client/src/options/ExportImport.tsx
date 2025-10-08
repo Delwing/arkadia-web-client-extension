@@ -126,9 +126,14 @@ interface ExportPayload {
 const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
     "cachedMapData",
     "cachedColors",
+    "deposits",
+    "improve_counter",
+    "kill_counter",
     "magics",
     "magic_keys",
     "herbs_data",
+    "mapperRoomId",
+    "object_num",
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
