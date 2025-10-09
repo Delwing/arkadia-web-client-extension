@@ -23,7 +23,15 @@ describe('PackageHelper', () => {
       sendEvent: jest.fn(),
       createButton: jest.fn(() => ({ remove: jest.fn() })),
       println: jest.fn(),
-      Map: { currentRoom: { id: 123 } },
+      Map: {
+        currentRoom: { id: 123 },
+        findPath: jest.fn((from: number, to: number) => {
+          if (from === to) {
+            return [from];
+          }
+          return [from, to];
+        }),
+      },
       port: { postMessage: jest.fn() },
       FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
       sendCommand: jest.fn(),
@@ -70,7 +78,7 @@ describe('PackageHelper', () => {
     const result = cb(rawLine, '', match);
 
     expect(result).toBe('click');
-    expect(helper['packages']).toEqual([{ name: 'Bob', time: '5' }]);
+    expect(helper['packages']).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
     expect(client.OutputHandler.makeClickable).toHaveBeenCalledTimes(1);
     const call = client.OutputHandler.makeClickable.mock.calls[0];
     const expectedColor = colorStringInLine(rawLine, 'Bob', findClosestColor('#aaaaaa'));
@@ -188,6 +196,8 @@ describe('PackageHelper', () => {
     client.contentWidth = 50;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
 
+    helper.npc['Bob'] = 123;
+    helper.npc['Tom'] = 456;
     const cb = helper['packageTableCallback']();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
@@ -200,13 +210,13 @@ describe('PackageHelper', () => {
     expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('  1. Bob');
-    expect(lines[3]).toBe('   0/1/2 nieogr.');
+    expect(lines[3]).toBe('   0/1/2 nieogr. dystans: 0');
     expect(lines[4]).toBe('');
     expect(lines[5]).toBe('* 2. Tom, Foo');
-    expect(lines[6]).toBe('   1/2/3 5 godz.');
+    expect(lines[6]).toBe('   1/2/3 5 godz. dystans: 1');
     expect(helper['packages']).toEqual([
-      { name: 'Bob', time: undefined },
-      { name: 'Tom', time: '5' },
+      { name: 'Bob', time: undefined, distance: 0 },
+      { name: 'Tom', time: '5', distance: 1 },
     ]);
   });
 
@@ -216,6 +226,8 @@ describe('PackageHelper', () => {
     const originalUA = navigator.userAgent;
     Object.defineProperty(navigator, 'userAgent', { value: 'Android', configurable: true });
 
+    helper.npc['Bob'] = 123;
+    helper.npc['Tom'] = 456;
     const cb = helper['packageTableCallback']();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
@@ -228,13 +240,13 @@ describe('PackageHelper', () => {
     expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('  1. Bob');
-    expect(lines[3]).toBe('   0/1/2 nieogr.');
+    expect(lines[3]).toBe('   0/1/2 nieogr. dystans: 0');
     expect(lines[4]).toBe('');
     expect(lines[5]).toBe('* 2. Tom, Foo');
-    expect(lines[6]).toBe('   1/2/3 5 godz.');
+    expect(lines[6]).toBe('   1/2/3 5 godz. dystans: 1');
     expect(helper['packages']).toEqual([
-      { name: 'Bob', time: undefined },
-      { name: 'Tom', time: '5' },
+      { name: 'Bob', time: undefined, distance: 0 },
+      { name: 'Tom', time: '5', distance: 1 },
     ]);
     Object.defineProperty(navigator, 'userAgent', { value: originalUA });
   });

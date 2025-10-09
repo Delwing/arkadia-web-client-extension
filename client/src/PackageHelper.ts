@@ -25,7 +25,7 @@ export default class PackageHelper {
     npc: Record<string, number> = {}
     enabled = false;
 
-    private packages = []
+    private packages: { name: string; time?: string; distance?: number }[] = []
     private listTime = 0
     private timer: number | undefined
     private remover = () => {
@@ -33,7 +33,7 @@ export default class PackageHelper {
     private locationListener;
 
     private pick: number
-    private currentPackage: { name: string; time?: number };
+    private currentPackage: { name: string; time?: string; distance?: number };
 
     deliveryTrigger: Trigger;
     private pickTrigger: Trigger;
@@ -116,7 +116,8 @@ export default class PackageHelper {
         return (rawLine: string, _line: string, matches: RegExpMatchArray) => {
             const index = matches.groups.number
             const name = matches.groups.name
-            this.packages.push({name: name, time: matches.groups.time})
+            const distance = this.getDistanceToNpc(name)
+            this.packages.push({name: name, time: matches.groups.time, distance})
             const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
             return this.client.OutputHandler.makeClickable(colorStringInLine(rawLine, name, colorCode), name, () => {
                 this.client.sendCommand("wybierz paczke " + index)
@@ -156,7 +157,8 @@ export default class PackageHelper {
                     const heavy = matches.groups.heavy ? '* ' : '  ';
                     const first = RESET  + `${heavy}${index}. ${name}${city}`;
                     const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-                    this.packages.push({ name, time: matches.groups.time });
+                    const distance = this.getDistanceToNpc(name);
+                    this.packages.push({ name, time: matches.groups.time, distance });
                     const clickable = this.client.OutputHandler.makeClickable(
                         colorStringInLine(first, name, colorCode),
                         name,
@@ -166,7 +168,8 @@ export default class PackageHelper {
                         'wybierz paczke ' + index
                     ) + RESET   ;
                     const time = matches.groups.time ? matches.groups.time + ' godz.' : 'nieogr.';
-                    const second = `   ${matches.groups.gold}/${matches.groups.silver}/${matches.groups.copper} ${time}\n`;
+                    const distanceText = distance !== undefined ? ` dystans: ${distance}` : '';
+                    const second = `   ${matches.groups.gold}/${matches.groups.silver}/${matches.groups.copper} ${time}${distanceText}\n`;
                     out.push(clickable, second);
                 });
                 return out.join('\n');
@@ -236,13 +239,7 @@ export default class PackageHelper {
     }
 
     private leadToPackage(name: string) {
-        let location = this.npc[name]
-        if (!location) {
-            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
-            if (found) {
-                [, location] = found
-            }
-        }
+        const location = this.findNpcLocation(name)
         if (location) {
             this.client.sendEvent('leadTo', location)
         }
@@ -260,6 +257,38 @@ export default class PackageHelper {
             }
         }
         this.client.addEventListener('enterLocation', this.locationListener)
+    }
+
+    private findNpcLocation(name: string): number | undefined {
+        let location = this.npc[name]
+        if (!location) {
+            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
+            if (found) {
+                [, location] = found
+            }
+        }
+        return location
+    }
+
+    private getDistanceToNpc(name: string): number | undefined {
+        const location = this.findNpcLocation(name)
+        const currentRoom = this.client.Map.currentRoom
+        if (!location || !currentRoom?.id) {
+            return undefined
+        }
+        const findPath = this.client.Map.findPath?.bind(this.client.Map)
+        if (!findPath) {
+            return undefined
+        }
+        try {
+            const path = findPath(currentRoom.id, location)
+            if (!path || path.length === 0) {
+                return undefined
+            }
+            return path.length - 1
+        } catch (e) {
+            return undefined
+        }
     }
 
     disable() {
