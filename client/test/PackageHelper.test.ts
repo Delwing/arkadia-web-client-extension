@@ -70,18 +70,19 @@ describe('PackageHelper', () => {
 
   test('packageLineCallback returns clickable line and stores package', () => {
     const cb = helper['packageLineCallback']();
-    client.OutputHandler.makeClickable.mockReturnValue('click');
+    client.OutputHandler.makeClickable.mockImplementation(line => line);
 
     const rawLine = " |1. Bob 1/2/3 5";
     const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/;
     const match = rawLine.match(packageLineRegex)!;
     const result = cb(rawLine, '', match);
 
-    expect(result).toBe('click');
+    const stripped = result.replace(/\x1B\[[0-9;]*m/g, '');
+    expect(stripped).toContain('dystans: --');
     expect(helper['packages']).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
     expect(client.OutputHandler.makeClickable).toHaveBeenCalledTimes(1);
     const call = client.OutputHandler.makeClickable.mock.calls[0];
-    const expectedColor = colorStringInLine(rawLine, 'Bob', findClosestColor('#aaaaaa'));
+    const expectedColor = colorStringInLine(stripped, 'Bob', findClosestColor('#aaaaaa'));
     expect(call[0]).toBe(expectedColor);
     expect(call[1]).toBe('Bob');
     expect(call[3]).toBe('wybierz paczke 1');
@@ -218,6 +219,48 @@ describe('PackageHelper', () => {
       { name: 'Bob', time: undefined, distance: 0 },
       { name: 'Tom', time: '5', distance: 1 },
     ]);
+  });
+
+  test('packageTableCallback adds distance column for standard table', () => {
+    client.contentWidth = 100;
+    client.OutputHandler.makeClickable.mockImplementation(l => l);
+
+    helper.npc['Bob'] = 123;
+    helper.npc['Tom'] = 456;
+    const cb = helper['packageTableCallback']();
+    const raw =
+      'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
+      ' |   1. Bob                     0/ 1/ 2        nieogr.\n' +
+      " | * 2. Tom, Foo                1/ 2/ 3        5\n" +
+      'Symbolem * oznaczono przesylki ciezkie.';
+
+    const result = cb(raw);
+    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    expect(lines[1]).toContain('dystans: 0');
+    expect(lines[2]).toContain('dystans: 1');
+    expect(helper['packages']).toEqual([
+      { name: 'Bob', time: undefined, distance: 0 },
+      { name: 'Tom', time: '5', distance: 1 },
+    ]);
+  });
+
+  test('packageTableCallback expands header and border for distance column', () => {
+    client.contentWidth = 120;
+    client.OutputHandler.makeClickable.mockImplementation(l => l);
+    helper.npc['Bob'] = 123;
+    const cb = helper['packageTableCallback']();
+    const raw =
+      'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
+      '+-------------------------+\n' +
+      '| Lp. | Termin           |\n' +
+      '+-------------------------+\n' +
+      ' |   1. Bob                     0/ 1/ 2        nieogr.\n' +
+      'Symbolem * oznaczono przesylki ciezkie.';
+
+    const result = cb(raw);
+    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    expect(lines[2]).toMatch(/Dystans\s*\|$/);
+    expect(lines[1].length).toBeGreaterThan(raw.split('\n')[1].length);
   });
 
   test('packageTableCallback simplifies output on mobile when width is wide', () => {
