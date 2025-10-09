@@ -1,13 +1,14 @@
 import Modal from "bootstrap/js/dist/modal";
 import { stripAnsiCodes } from "@client/src/stripAnsiCodes";
 import type { Trigger } from "@client/src/Triggers";
-import { matchTrigger, patternToString } from "./triggerUtils";
+import { getMatchingPatterns, matchTrigger, patternToString } from "./triggerUtils";
 
 type TriggerSource = "regular" | "multiline" | "token";
 
 interface MatchResult {
     path: Trigger[];
     source: TriggerSource;
+    patterns: string[];
 }
 
 function initTriggerFinder() {
@@ -52,7 +53,8 @@ function initTriggerFinder() {
             lineMatches.forEach(match => {
                 const pathText = formatPath(match.path);
                 const sourceLabel = sourceToLabel(match.source);
-                results.push(`  - ${pathText}${sourceLabel}`);
+                const patternsText = match.patterns.length > 0 ? ` => ${match.patterns.join(" | ")}` : "";
+                results.push(`  - ${pathText}${sourceLabel}${patternsText}`);
             });
         });
         if (!anyLineProcessed) {
@@ -75,7 +77,9 @@ function findMatches(rawLine: string, type: string, manager: any): MatchResult[]
         const currentPath = [...path, trigger];
         const matched = forceMatch || matchTrigger(trigger, rawLine, type);
         if (!matched) return;
-        matches.push({ path: currentPath, source });
+        const patternMatches = getMatchingPatterns(trigger, rawLine, type);
+        const patterns = patternMatches.length > 0 ? patternMatches : extractPatternStrings(trigger);
+        matches.push({ path: currentPath, source, patterns });
         trigger.children.forEach(child => traverse(child, currentPath, source));
     };
 
@@ -110,6 +114,11 @@ function tokensMatch(tokens: string[], words: string[]): boolean {
         if (found) return true;
     }
     return false;
+}
+
+function extractPatternStrings(trigger: Trigger): string[] {
+    const patterns = Array.isArray(trigger.pattern) ? trigger.pattern : [trigger.pattern];
+    return patterns.map(patternToString);
 }
 
 function formatPath(path: Trigger[]): string {

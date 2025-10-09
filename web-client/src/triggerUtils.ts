@@ -18,6 +18,41 @@ export function matchTrigger(trigger: Trigger, rawLine: string, type: string): b
     return false;
 }
 
+export function getMatchingPatterns(trigger: Trigger, rawLine: string, type: string): string[] {
+    const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+    const matches: string[] = [];
+    const patterns = Array.isArray(trigger.pattern) ? trigger.pattern : [trigger.pattern];
+
+    const analyze = (pattern: any) => {
+        if (Array.isArray(pattern)) {
+            pattern.forEach(analyze);
+            return;
+        }
+        if (pattern instanceof RegExp) {
+            if (line.match(pattern)) {
+                matches.push(pattern.toString());
+            }
+            return;
+        }
+        if (typeof pattern === "string") {
+            const index = rawLine.toLowerCase().indexOf(pattern.toLowerCase());
+            if (index > -1) {
+                matches.push(pattern);
+            }
+            return;
+        }
+        if (typeof pattern === "function") {
+            const res = pattern(rawLine, line, undefined as any, type);
+            if (res) {
+                matches.push(pattern.name ? `[fn ${pattern.name}]` : "[fn]");
+            }
+        }
+    };
+
+    patterns.forEach(analyze);
+    return matches;
+}
+
 export function patternToString(pattern: any): string {
     if (Array.isArray(pattern)) {
         return pattern.map(patternToString).join(" | ");
