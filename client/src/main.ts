@@ -79,6 +79,7 @@ import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import initLetter from './scripts/letter'
+import initZaznaczaj from './scripts/zaznaczaj'
 import Client from "./Client";
 
 
@@ -93,6 +94,7 @@ export function registerScripts(client: Client) {
         }
     })
     initMapAliases(client, aliases)
+    initZaznaczaj(client, aliases)
 
     blockers.forEach(blocker => {
         let blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
