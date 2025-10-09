@@ -17,10 +17,10 @@ import initTempBinds from './scripts/tempBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
 import initIdz from './scripts/idz'
-import { initKillCounter } from './scripts/kill'
-import { initImproveCounter } from './scripts/improveCounter'
+import {initKillCounter} from './scripts/kill'
+import {initImproveCounter} from './scripts/improveCounter'
 import initEscape from './scripts/escape'
-import { initItemCollector } from './scripts/itemCollector'
+import {initItemCollector} from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
 import initChatHistory from './scripts/chatHistory'
 import initBagManager from './scripts/bagManager'
@@ -121,8 +121,9 @@ export function registerScripts(client: Client) {
 
     client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /,
-        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) w droge\./
-    ], (): undefined => {
+        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
+    ], (_, __, matches): undefined => {
+        client.Map.followMove(matches.groups.direction)
         client.sendEvent('refreshPositionWhenAble')
     })
 
