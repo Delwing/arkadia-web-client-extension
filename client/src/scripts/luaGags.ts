@@ -345,8 +345,8 @@ export default function registerLuaGagTriggers(client: Client) {
     }
 
     function createMatches(matches: RegExpMatchArray) {
-        let namedGroups = matches.groups ? Object.entries(matches.groups).map(([key, value]) => `["${key}"] = "${value}"`) : []
-        let indexedGroups = matches.map((value, index) => `[${index + 1}] = "${value}"`)
+        let namedGroups = matches.groups ? Object.entries(matches.groups).filter(([_, value]) => value !== undefined).map(([key, value]) => `["${key}"] = "${value}"`) : []
+        let indexedGroups = matches.filter((value) => value !== undefined).map((value, index) => `[${index + 1}] = "${value}"`)
         let groups = [...namedGroups, ...indexedGroups]
         return `matches = {${groups.join(",")}}`
     }
