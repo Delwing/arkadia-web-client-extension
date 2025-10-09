@@ -73,6 +73,7 @@ import initShortcuts from './scripts/shortcuts'
 import initMultibinds from './scripts/multibinds'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
+import initFollow from './scripts/follow'
 import initMountain from './scripts/mountain'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
@@ -105,31 +106,6 @@ export function registerScripts(client: Client) {
 
     initNoExitHighlight(client)
 
-    client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
-        const tokenized = matches[2].split(' ')
-        const direction = tokenized[tokenized.length - 1]
-        const result = client.Map.move(direction)
-        if (result.moved) {
-            return;
-        }
-        client.Map.followMove(matches[2])
-    }, 'follow')
-
-    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
-        client.Map.followMove(matches.direction)
-    }, 'follow')
-
-    client.Triggers.registerTrigger([
-        /^Wykonuje komende 'idz /,
-        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) w droge\./
-    ], (): undefined => {
-        client.sendEvent('refreshPositionWhenAble')
-    })
-
-    client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
-        client.Map.refreshPosition = false
-    })
-
     client.Triggers.registerTrigger('ENTER by przejsc dalej', (): string => {
         client.sendCommand('')
         return ""
@@ -155,6 +131,7 @@ export function registerScripts(client: Client) {
     ;(client as any).killCounter = killCounter
     initImproveCounter(client, killCounter, aliases)
     initEscape(client)
+    initFollow(client)
     initGps(client)
     initLocalizers(client)
     initShipLocalizers(client)
