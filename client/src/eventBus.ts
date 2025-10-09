@@ -17,6 +17,7 @@ export interface KnownEvents {
     'attackMode': string;
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
+    'highlights': number[];
     'multibinds': { list: { index: number; action: string; label: string }[] };
     'letterComposer': { open: boolean };
     'letterComposer.submit': LetterSubmitPayload;
