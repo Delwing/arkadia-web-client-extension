@@ -127,7 +127,7 @@ export function registerScripts(client: Client) {
             }
         }
         client.Map.refreshPosition = true
-    })
+    }, 'follow', { stayOpenLines: 1 })
 
     client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
         client.Map.refreshPosition = false
