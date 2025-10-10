@@ -794,7 +794,8 @@ export default class MobileDirectionButtons {
                     break;
                 case 'moveMode':
                     if (this.client.carriageMode) break;
-                    this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
+                    const options = this.getMoveModeOptionsCount() || 1;
+                    this.client.moveMode = (this.client.moveMode + 1) % options;
                     this.updateMoveModeButton(newBtn);
                     this.client.sendEvent('moveModeChanged', this.client.moveMode);
                     break;
@@ -831,10 +832,21 @@ export default class MobileDirectionButtons {
         }
     }
 
+    private getMoveModeOptionsCount() {
+        return this.leaderMode ? MOVE_MODE_LABELS.length : Math.max(1, MOVE_MODE_LABELS.length - 1);
+    }
+
     private updateMoveModeButton(button: HTMLButtonElement, mode: number = this.client.moveMode) {
+        const options = this.getMoveModeOptionsCount();
+        const maxIndex = Math.max(0, options - 1);
+        const safeMode = Math.max(0, Math.min(mode, maxIndex));
+        if (safeMode !== this.client.moveMode) {
+            this.client.moveMode = safeMode;
+            this.client.sendEvent('moveModeChanged', this.client.moveMode);
+        }
         const prefix = button.dataset.moveModeLabel ?? '';
-        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[mode]}` : MOVE_MODE_LABELS[mode];
-        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[mode]}` : MOVE_MODE_TITLES[mode];
+        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];
+        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
         button.textContent = label;
         button.title = title;
     }
