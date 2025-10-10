@@ -48,3 +48,8 @@ export function getShortDir(dir: string): string {
     return longToShort[long] ?? dir;
 }
 
+export function isDirection(dir: string): boolean {
+    const long = getLongDir(dir);
+    return Object.prototype.hasOwnProperty.call(longToShort, long);
+}
+
