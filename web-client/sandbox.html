@@ -381,6 +381,23 @@
             </div>
         </div>
     </div>
+    <div id="debug-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Debug Log</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-finder-button">Trigger finder</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="notification-schedule-button">Powiadomienie</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+                <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -433,23 +450,6 @@
             </div>
         </div>
     </div>
-    <div id="debug-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Debug Log</h5>
-                    <div class="d-flex gap-2 align-items-center">
-                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
-                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-finder-button">Trigger finder</button>
-                        <button type="button" class="btn btn-secondary btn-sm" id="notification-schedule-button">Powiadomienie</button>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                </div>
-                <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
-            </div>
-        </div>
-    </div>
-
     <div id="logs-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
