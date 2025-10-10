@@ -32,6 +32,7 @@ interface UiSettings {
     highlightCurrentRoom: boolean;
     labelRenderMode: 'image' | 'data';
     transparentLabels: boolean;
+    outputBackground: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -52,6 +53,7 @@ const defaultSettings: UiSettings = {
     highlightCurrentRoom: true,
     labelRenderMode: 'data',
     transparentLabels: true,
+    outputBackground: '#242424',
 };
 
 function apply(settings: UiSettings) {
@@ -66,6 +68,7 @@ function apply(settings: UiSettings) {
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
         content.style.fontSize = settings.contentFontSize + 'rem';
+        content.style.backgroundColor = settings.outputBackground;
     }
     const charState = document.getElementById('char-state');
     if (charState) {
@@ -85,6 +88,10 @@ function apply(settings: UiSettings) {
         } else {
             iframeContainer.style.top = '';
         }
+    }
+    const splitBottom = document.getElementById('split-bottom');
+    if (splitBottom) {
+        splitBottom.style.backgroundColor = settings.outputBackground;
     }
     const mainContainer = document.getElementById('main-container') as HTMLElement | null;
     if (mainContainer && settings.mapPosition !== 'top-overlay') {
@@ -181,6 +188,10 @@ async function load(): Promise<UiSettings> {
             const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
                 ? parsed.highlightCurrentRoom
                 : defaultSettings.highlightCurrentRoom;
+            const outputBackground = typeof parsed.outputBackground === 'string'
+                && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
+                    ? parsed.outputBackground.trim()
+                    : defaultSettings.outputBackground;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -196,6 +207,7 @@ async function load(): Promise<UiSettings> {
                 highlightCurrentRoom,
                 transparentLabels,
                 labelRenderMode: effectiveLabelRenderMode,
+                outputBackground,
             };
         }
     } catch {
@@ -232,6 +244,7 @@ export default async function initUiSettings() {
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
     const labelRenderModeInput = modalEl.querySelector('#ui-label-render-mode') as HTMLSelectElement;
     const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
+    const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -252,6 +265,7 @@ export default async function initUiSettings() {
     highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
     labelRenderModeInput.value = current.labelRenderMode;
     transparentLabelsInput.checked = current.transparentLabels;
+    outputBackgroundInput.value = current.outputBackground;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -304,6 +318,10 @@ export default async function initUiSettings() {
             return scale;
         })();
 
+        const backgroundValue = /^#[0-9a-f]{6}$/i.test(outputBackgroundInput.value)
+            ? outputBackgroundInput.value
+            : defaultSettings.outputBackground;
+
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
@@ -322,6 +340,7 @@ export default async function initUiSettings() {
             highlightCurrentRoom: highlightCurrentRoomInput.checked,
             labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
             transparentLabels: transparentLabelsInput.checked,
+            outputBackground: backgroundValue,
         };
     }
 
