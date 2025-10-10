@@ -42,6 +42,7 @@ import {
     applySettings as applyMobileButtonSettings
 } from "./mobileButtonSettings"
 import "./triggerTester"
+import "./triggerFinder"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
