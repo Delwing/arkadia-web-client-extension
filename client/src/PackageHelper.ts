@@ -48,7 +48,6 @@ export default class PackageHelper {
     private remover = () => {
     };
     private locationListener;
-    private standardRowExtraWidth = 0;
 
     private pick: number
     private currentPackage: { name: string; time?: string; distance?: number };
@@ -131,9 +130,9 @@ export default class PackageHelper {
     }
 
     private packageLineCallback() {
-        return (rawLine: string, _line: string, matches: RegExpMatchArray) => {
+        return (_rawLine: string, _line: string, matches: RegExpMatchArray) => {
             const info = this.parsePackageLine(matches)
-            const { line } = this.composeStandardRow(rawLine, info)
+            const line = this.composeStandardRow(info)
             return this.makePackageClickable(line, info)
         };
     }
@@ -144,7 +143,6 @@ export default class PackageHelper {
     }
 
     private packageTableCallback() {
-        const lineCallback = this.packageLineCallback();
         const widthLimit = 78;
         return (raw: string): string => {
             this.onPackageList();
@@ -184,30 +182,30 @@ export default class PackageHelper {
                 });
                 return out.join('\n');
             }
-            this.standardRowExtraWidth = 0;
-            const borderLines: number[] = [];
-            const headerLines: number[] = [];
-            const processed = lines.map((line, index) => {
+            const introLine = lines.find(line => line.includes('Tablica zawiera liste adresatow przesylek'));
+            const outroLine = lines.find(line => /^Symbolem \* oznaczono przesylki ciezkie\./.test(line));
+            const rowBuilder = this.packageLineCallback();
+            const rows: string[] = [];
+            lines.forEach(line => {
                 const matches = line.match(packageLineRegex);
-                if (matches) {
-                    return lineCallback(line, '', matches) || line;
+                if (!matches) {
+                    return;
                 }
-                if (this.isBorderLine(line)) {
-                    borderLines.push(index);
-                } else if (this.isHeaderLine(line)) {
-                    headerLines.push(index);
+                const row = rowBuilder(line, '', matches);
+                if (row) {
+                    rows.push(row);
                 }
-                return line;
             });
-            if (this.standardRowExtraWidth > 0) {
-                borderLines.forEach(idx => {
-                    processed[idx] = this.expandBorderLine(processed[idx], this.standardRowExtraWidth);
-                });
-                headerLines.forEach(idx => {
-                    processed[idx] = this.expandHeaderLine(processed[idx], this.standardRowExtraWidth);
-                });
+            const table = this.buildStandardTable(rows);
+            const output: string[] = [];
+            if (introLine) {
+                output.push(introLine);
             }
-            return processed.join('\n');
+            output.push(...table);
+            if (outroLine) {
+                output.push(outroLine);
+            }
+            return output.join('\n');
         };
     }
 
@@ -236,7 +234,7 @@ export default class PackageHelper {
         return value + ' '.repeat(length - value.length);
     }
 
-    private composeStandardRow(rawLine: string, info: PackageLineInfo): { line: string } {
+    private composeStandardRow(info: PackageLineInfo): string {
         const city = info.city ? `, ${info.city}` : '';
         const heavyPrefix = info.heavy ? '* ' : '  ';
         const number = info.index.padStart(2, ' ');
@@ -248,9 +246,7 @@ export default class PackageHelper {
         const timeColumn = this.padRight(timeText, STANDARD_TIME_COLUMN_WIDTH);
         const distanceValue = info.distance !== undefined ? `${info.distance}` : '--';
         const distanceColumn = this.padRight(`dystans: ${distanceValue}`, STANDARD_DISTANCE_COLUMN_WIDTH);
-        const line = ` | ${nameColumn}${rewardColumn}${timeColumn}${distanceColumn}`;
-        this.standardRowExtraWidth = Math.max(this.standardRowExtraWidth, Math.max(0, line.length - rawLine.length));
-        return { line };
+        return ` | ${nameColumn}${rewardColumn}${timeColumn}${distanceColumn}`;
     }
 
     private makePackageClickable(line: string, info: PackageLineInfo): string {
@@ -266,73 +262,28 @@ export default class PackageHelper {
         );
     }
 
-    private isBorderLine(line: string): boolean {
-        const trimmed = line.trim();
-        if (!trimmed) {
-            return false;
-        }
-        if (/^[\\\\\/+].*[\\\\\/+]$/.test(trimmed)) {
-            return true;
-        }
-        return /^[+\-=]{3,}$/.test(trimmed);
+    private composeStandardHeaderRow(): string {
+        const nameHeader = this.padRight('Paczka', STANDARD_NAME_COLUMN_WIDTH);
+        const rewardHeader = this.padRight('Nagroda', STANDARD_REWARD_COLUMN_WIDTH);
+        const timeHeader = this.padRight('Termin', STANDARD_TIME_COLUMN_WIDTH);
+        const distanceHeader = this.padRight('Dystans', STANDARD_DISTANCE_COLUMN_WIDTH);
+        return ` | ${nameHeader}${rewardHeader}${timeHeader}${distanceHeader}`;
     }
 
-    private isHeaderLine(line: string): boolean {
-        const trimmed = line.trim();
-        if (!trimmed) {
-            return false;
+    private buildStandardTable(rows: string[]): string[] {
+        if (rows.length === 0) {
+            return [];
         }
-        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-            return true;
-        }
-        return /^ \|/.test(line) && !packageLineRegex.test(line);
-    }
-
-    private expandBorderLine(line: string, extraWidth: number): string {
-        if (extraWidth <= 0) {
-            return line;
-        }
-        const trimmed = line.trim();
-        if (!trimmed) {
-            return line;
-        }
-        const lastChar = trimmed[trimmed.length - 1];
-        const insertPos = line.lastIndexOf(lastChar);
-        const fillerChar = trimmed.length > 1 ? trimmed[1] : '-';
-        if (insertPos >= 0) {
-            return line.slice(0, insertPos) + fillerChar.repeat(extraWidth) + line.slice(insertPos);
-        }
-        return line;
-    }
-
-    private expandHeaderLine(line: string, extraWidth: number): string {
-        if (extraWidth <= 0) {
-            return line;
-        }
-        const trimmed = line.trim();
-        if (!trimmed) {
-            return line;
-        }
-        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-            if (/dystans/i.test(trimmed)) {
-                const lastPipe = line.lastIndexOf('|');
-                if (lastPipe >= 0) {
-                    return line.slice(0, lastPipe) + ' '.repeat(extraWidth) + line.slice(lastPipe);
-                }
-                return line;
-            }
-            const lastPipe = line.lastIndexOf('|');
-            if (lastPipe >= 0) {
-                const before = line.slice(0, lastPipe).replace(/\s+$/, '');
-                const padding = Math.max(extraWidth - 1, 1);
-                return `${before} Dystans ${' '.repeat(padding)}|`;
-            }
-            return line;
-        }
-        if (line.startsWith(' |')) {
-            return line + ' '.repeat(extraWidth);
-        }
-        return line;
+        const totalWidth = 3 + STANDARD_NAME_COLUMN_WIDTH + STANDARD_REWARD_COLUMN_WIDTH + STANDARD_TIME_COLUMN_WIDTH + STANDARD_DISTANCE_COLUMN_WIDTH;
+        const border = ' +' + '-'.repeat(totalWidth - 3) + '+';
+        const header = this.composeStandardHeaderRow();
+        return [
+            border,
+            header,
+            border,
+            ...rows,
+            border,
+        ];
     }
 
     private startTimer() {

@@ -236,15 +236,23 @@ describe('PackageHelper', () => {
 
     const result = cb(raw);
     const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
-    expect(lines[1]).toContain('dystans: 0');
-    expect(lines[2]).toContain('dystans: 1');
+    expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
+    expect(lines[1]).toMatch(/^ \+[-+]+\+$/);
+    expect(lines[2]).toContain('Dystans');
+    expect(lines[3]).toMatch(/^ \+[-+]+\+$/);
+    expect(lines[4]).toContain('1. Bob');
+    expect(lines[4]).toContain('dystans: 0');
+    expect(lines[5]).toMatch(/\*\s*2\. Tom, Foo/);
+    expect(lines[5]).toContain('dystans: 1');
+    expect(lines[6]).toMatch(/^ \+[-+]+\+$/);
+    expect(lines[7]).toBe('Symbolem * oznaczono przesylki ciezkie.');
     expect(helper['packages']).toEqual([
       { name: 'Bob', time: undefined, distance: 0 },
       { name: 'Tom', time: '5', distance: 1 },
     ]);
   });
 
-  test('packageTableCallback expands header and border for distance column', () => {
+  test('packageTableCallback builds consistent borders for standard table', () => {
     client.contentWidth = 120;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
     helper.npc['Bob'] = 123;
@@ -259,8 +267,12 @@ describe('PackageHelper', () => {
 
     const result = cb(raw);
     const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
-    expect(lines[2]).toMatch(/Dystans\s*\|$/);
-    expect(lines[1].length).toBeGreaterThan(raw.split('\n')[1].length);
+    expect(lines[1]).toMatch(/^ \+[-+]+\+$/);
+    expect(lines[2]).toContain('Dystans');
+    expect(lines[3]).toMatch(/^ \+[-+]+\+$/);
+    const row = lines[4];
+    expect(row).toContain('dystans: 0');
+    expect(lines[1].length).toBe(row.length);
   });
 
   test('packageTableCallback simplifies output on mobile when width is wide', () => {
