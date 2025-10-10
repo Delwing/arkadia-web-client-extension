@@ -305,6 +305,7 @@ h1 {
   position: relative;
   min-height: 0;
   min-width: 0;
+  background-color: var(--bs-body-bg);
 }
 
 #logs-preview {
@@ -331,7 +332,7 @@ h1 {
 #split-bottom {
   position: sticky;
   bottom: 0px;
-  background-color: var(--bs-body-bg);
+  background-color: inherit;
   z-index: 1;
   height: 15rem;
   max-height: 25vh;
@@ -807,6 +808,7 @@ button:focus-visible {
   background-color: rgba(0, 0, 0, 0.50);
   overflow: hidden;
   z-index: 5;
+  border-bottom: 1px solid #333;
 }
 
 body[data-map-position="top-overlay"] #content-area #iframe-container {
