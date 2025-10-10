@@ -994,7 +994,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Direction Buttons (visible on both mobile and desktop) */
 .mobile-direction-buttons {
   position: fixed;
-  right: 5px;
+  left: 5px;
   top: 160px; /* Position relative to top */
   z-index: 1000;
   gap: 10px;
