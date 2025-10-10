@@ -364,8 +364,7 @@ export default class Client {
                 if (part !== preparse) {
                     this.sendCommand(part, echo)
                 } else {
-                    const moveRes = this.Map.move(part)
-                    this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
+                    this.sendMovement(part, echo)
                 }
             })
             return
@@ -384,8 +383,7 @@ export default class Client {
                 this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
                 return
             }
-            const moveRes = this.Map.move(command)
-            this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
+            this.sendMovement(command, echo)
         }
     }
 
@@ -398,6 +396,14 @@ export default class Client {
             const obj = this.ObjectManager.getObjectsOnLocation().find(o => o.shortcut?.toLowerCase() === short.toLowerCase())
             return obj ? `ob_${obj.num}` : match
         })
+    }
+
+    private sendMovement(command: string, echo: boolean) {
+        const moveRes = this.Map.move(command)
+        if (moveRes.moved) {
+            this.Map.setBlockable(true)
+        }
+        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {

@@ -79,6 +79,7 @@ import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import initLetter from './scripts/letter'
+import initTeamBlockers from './scripts/teamBlockers'
 import Client from "./Client";
 
 
@@ -100,6 +101,8 @@ export function registerScripts(client: Client) {
             client.Map.moveBack()
         }, 'blocker')
     })
+
+    initTeamBlockers(client)
 
     initNoExitHighlight(client)
 

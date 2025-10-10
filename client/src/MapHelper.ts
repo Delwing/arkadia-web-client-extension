@@ -35,6 +35,7 @@ export default class MapHelper {
     paused = false;
     savedRoomId: number | null = null;
     areas: Record<string, string> = {}
+    isBlockable = false;
     private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];
     private mapData?: MapData.Map;
     private colors?: any;
@@ -50,6 +51,7 @@ export default class MapHelper {
         this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
 
         this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
+            this.setBlockable(false);
             this.gmcpPosition = event.detail.map;
             if (this.refreshPosition) {
                 this.setMapPosition(this.gmcpPosition)
@@ -75,6 +77,10 @@ export default class MapHelper {
         });
 
         this.client.sendEvent('refreshPositionWhenAble');
+    }
+
+    setBlockable(isBlockable: boolean) {
+        this.isBlockable = isBlockable;
     }
 
     initialize(mapData: MapData.Map, colors: any): { startId: number; reader: MapReader, pathFinder: PathFinder } {
