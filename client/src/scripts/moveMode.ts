@@ -3,6 +3,28 @@ import Client from "../Client";
 const LABELS = ["zwykly", "prz", "prz dr"];
 const TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
+function getAvailableModes(client: Client) {
+    const total = LABELS.length;
+    if (client.TeamManager.isLeader?.()) {
+        return total;
+    }
+    return Math.max(1, total - 1);
+}
+
+function clampMoveMode(client: Client) {
+    const available = getAvailableModes(client);
+    const maxIndex = Math.max(0, available - 1);
+    if (client.moveMode > maxIndex) {
+        client.moveMode = maxIndex;
+        return true;
+    }
+    if (client.moveMode < 0) {
+        client.moveMode = 0;
+        return true;
+    }
+    return false;
+}
+
 export default function initMoveMode(client: Client) {
     const button = client.createButton(`Ruch: ${LABELS[0]}`, () => toggle(false));
     button.title = `Ruch: ${TITLES[0]}`;
@@ -10,6 +32,7 @@ export default function initMoveMode(client: Client) {
     let playerNum: string | undefined;
 
     function update() {
+        clampMoveMode(client);
         const mode = client.moveMode;
         const valueLabel = `Ruch: ${LABELS[mode]}`;
         const valueTitle = `Ruch: ${TITLES[mode]}`;
@@ -45,7 +68,8 @@ export default function initMoveMode(client: Client) {
 
     function toggle(notify = false) {
         if (client.carriageMode) return;
-        client.moveMode = (client.moveMode + 1) % LABELS.length;
+        const available = getAvailableModes(client) || 1;
+        client.moveMode = (client.moveMode + 1) % available;
         update();
         emitChange();
         if (notify) {
@@ -88,5 +112,14 @@ export default function initMoveMode(client: Client) {
         playerNum = undefined;
     });
 
+    client.addEventListener('teamChange', () => {
+        const changed = clampMoveMode(client);
+        update();
+        if (changed) {
+            emitChange();
+        }
+    });
+
+    update();
     emitChange();
 }
