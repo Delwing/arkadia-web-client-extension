@@ -1,6 +1,6 @@
 import initMoveMode from '../src/scripts/moveMode';
 
-class FakeClient {
+class FakeClient extends EventTarget {
   moveMode = 0;
   carriageMode = false;
   moveModeButton?: HTMLInputElement;
@@ -53,6 +53,25 @@ describe('move mode default bind', () => {
     initMoveMode((client as unknown) as any);
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(1);
+    expect(client.println).not.toHaveBeenCalled();
+  });
+
+  test('combat gmcp resets move mode to normal', () => {
+    const client = new FakeClient();
+    initMoveMode((client as unknown) as any);
+    client.moveModeButton!.click();
+    client.moveModeButton!.click();
+    expect(client.moveMode).toBe(2);
+    client.sendEvent.mockClear();
+
+    client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 5 } }));
+    client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: false } } }));
+    expect(client.moveMode).toBe(2);
+
+    client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: true } } }));
+    expect(client.moveMode).toBe(0);
+    expect(client.moveModeButton!.value).toBe('Ruch: zwykly');
+    expect(client.sendEvent).toHaveBeenLastCalledWith('moveModeChanged', 0);
     expect(client.println).not.toHaveBeenCalled();
   });
 });
