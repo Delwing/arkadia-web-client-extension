@@ -504,6 +504,9 @@ body {
 }
 #objects-list-pip {
     white-space: pre;
+    box-sizing: border-box;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 #objects-list-pip .object-num,
 #objects-list-pip .object-desc {
