@@ -31,6 +31,8 @@ window.addEventListener('load', () => {
     let id = 1;
     const ids = new Map<string, number>();
     const objectNums = new Set<number>();
+    const teamIds = new Set<number>();
+    const enemyIds = new Set<number>();
     const hps = new Map<number, number>();
     let fightActive = false;
 
@@ -45,6 +47,9 @@ window.addEventListener('load', () => {
             memberId = id++;
             ids.set(name, memberId);
         }
+        teamIds.add(memberId);
+        enemyIds.delete(memberId);
+
         let hp = hps.get(memberId);
         if (hp === undefined) {
             hp = Math.floor(Math.random() * 7);
@@ -57,25 +62,38 @@ window.addEventListener('load', () => {
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
     }
 
+    function getRandomEntry(idsArray: number[]) {
+        if (!idsArray.length) {
+            return false;
+        }
+        const index = Math.floor(Math.random() * idsArray.length);
+        return idsArray[index];
+    }
+
     function assignRandomAttackTargets() {
-        const idsArray = Array.from(objectNums);
-        if (!idsArray.length) return;
+        if (!objectNums.size) return;
 
+        const activeTeamIds = Array.from(teamIds).filter((teamId) => objectNums.has(teamId));
+        const activeEnemyIds = Array.from(enemyIds).filter((enemyId) => objectNums.has(enemyId));
+
+        if (!activeTeamIds.length && !activeEnemyIds.length) return;
+
+        const activeTeamSet = new Set(activeTeamIds);
+        const activeEnemySet = new Set(activeEnemyIds);
         const payload: Record<number, { attack_num: number | false }> = {};
-        idsArray.forEach((objId) => {
-            if (idsArray.length <= 1) {
-                payload[objId] = { attack_num: false };
-                return;
-            }
 
-            const possibleTargets = idsArray.filter((targetId) => targetId !== objId);
-            if (!possibleTargets.length) {
+        objectNums.forEach((objId) => {
+            if (activeTeamSet.has(objId)) {
+                payload[objId] = {
+                    attack_num: getRandomEntry(activeEnemyIds),
+                };
+            } else if (activeEnemySet.has(objId)) {
+                payload[objId] = {
+                    attack_num: getRandomEntry(activeTeamIds),
+                };
+            } else {
                 payload[objId] = { attack_num: false };
-                return;
             }
-
-            const target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-            payload[objId] = { attack_num: target };
         });
 
         client.sendEvent('gmcp.objects.data', payload);
@@ -146,6 +164,7 @@ window.addEventListener('load', () => {
         const memberId = ids.get(name);
         if (memberId) {
             objectNums.delete(memberId);
+            teamIds.delete(memberId);
             hps.delete(memberId);
             client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
         }
@@ -160,12 +179,24 @@ window.addEventListener('load', () => {
         const enemyId = id++;
         ids.set(enemyName, enemyId);
         objectNums.add(enemyId);
+        enemyIds.add(enemyId);
         const hp = Math.floor(Math.random() * 7);
         const obj: any = {};
         obj[enemyId] = { desc: enemyName, state: hp, hp };
         client.sendEvent('gmcp.objects.data', obj);
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
         ensureFightAssignments();
+    }
+
+    function generateRandomMemberName() {
+        const names = ['Arin', 'Bran', 'Cira', 'Doran', 'Elia'];
+        const base = names[Math.floor(Math.random() * names.length)];
+        let candidate = `${base} ${id}`;
+        while (ids.has(candidate)) {
+            const nextBase = names[Math.floor(Math.random() * names.length)];
+            candidate = `${nextBase} ${id}`;
+        }
+        return candidate;
     }
 
     client.addEventListener?.('teamChange', renderTeam);
@@ -176,10 +207,13 @@ window.addEventListener('load', () => {
     addMember(playerName);
 
     addMemberButton?.addEventListener('click', () => {
-        const name = memberInput?.value.trim();
-        if (name) {
-            addMember(name);
-            memberInput!.value = '';
+        let name = memberInput?.value.trim() || '';
+        if (!name) {
+            name = generateRandomMemberName();
+        }
+        addMember(name);
+        if (memberInput) {
+            memberInput.value = '';
         }
     });
 
