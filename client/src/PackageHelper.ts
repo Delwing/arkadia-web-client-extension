@@ -8,10 +8,6 @@ const pickCommand = "wybierz paczke"
 const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/
 const packageTableRegex = /Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:[\s\S]*?Symbolem \* oznaczono przesylki ciezkie\./
 const shortInfo = RESET + 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n'
-
-const STANDARD_NAME_COLUMN_WIDTH = 33;
-const STANDARD_REWARD_COLUMN_WIDTH = 13;
-const STANDARD_TIME_COLUMN_WIDTH = 12;
 const STANDARD_DISTANCE_COLUMN_WIDTH = 16;
 
 type PackageLineInfo = {
@@ -25,6 +21,7 @@ type PackageLineInfo = {
     time?: string;
     distance?: number;
 }
+
 const pickFailMessages = [
     'Nie ufam ci na tyle, aby powierzyc ci dostarczenie tej przesylki.',
     'Lista przesylek zmienila sie i ta, ktora chcesz podjac byc moze nie jest juz ta, ktora widziales w spisie. Sprawdz spis ponownie, badz sprobuj podjac paczke jeszcze raz, jesli mimo to chcesz ja dostarczyc.',
@@ -130,10 +127,14 @@ export default class PackageHelper {
     }
 
     private packageLineCallback() {
-        return (_rawLine: string, _line: string, matches: RegExpMatchArray) => {
+        return (rawLine: string, _line: string, matches: RegExpMatchArray) => {
             const info = this.parsePackageLine(matches)
-            const line = this.composeStandardRow(info)
-            return this.makePackageClickable(line, info)
+            const line = this.extendStandardDataLine(rawLine, info)
+            const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
+            const command = `${pickCommand} ${info.index}`
+            return this.client.OutputHandler.makeClickable(colorStringInLine(line, info.name, colorCode), info.name, () => {
+                this.client.sendCommand(command)
+            }, command)
         };
     }
 
@@ -143,6 +144,7 @@ export default class PackageHelper {
     }
 
     private packageTableCallback() {
+        const lineCallback = this.packageLineCallback();
         const widthLimit = 78;
         return (raw: string): string => {
             this.onPackageList();
@@ -165,7 +167,7 @@ export default class PackageHelper {
                     const info = this.parsePackageLine(matches);
                     const city = info.city ? `, ${info.city}` : '';
                     const heavy = info.heavy ? '* ' : '  ';
-                    const first = RESET + `${heavy}${info.index}. ${info.name}${city}`;
+                    const first = RESET  + `${heavy}${info.index}. ${info.name}${city}`;
                     const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
                     const clickable = this.client.OutputHandler.makeClickable(
                         colorStringInLine(first, info.name, colorCode),
@@ -174,116 +176,118 @@ export default class PackageHelper {
                             this.client.sendCommand('wybierz paczke ' + info.index);
                         },
                         'wybierz paczke ' + info.index
-                    ) + RESET;
+                    ) + RESET   ;
                     const time = info.time ? info.time + ' godz.' : 'nieogr.';
-                    const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : '';
+                    const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : ' dystans: --';
                     const second = `   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`;
                     out.push(clickable, second);
                 });
                 return out.join('\n');
             }
-            const introLine = lines.find(line => line.includes('Tablica zawiera liste adresatow przesylek'));
-            const outroLine = lines.find(line => /^Symbolem \* oznaczono przesylki ciezkie\./.test(line));
-            const rowBuilder = this.packageLineCallback();
-            const rows: string[] = [];
-            lines.forEach(line => {
-                const matches = line.match(packageLineRegex);
-                if (!matches) {
-                    return;
-                }
-                const row = rowBuilder(line, '', matches);
-                if (row) {
-                    rows.push(row);
-                }
-            });
-            const table = this.buildStandardTable(rows);
-            const output: string[] = [];
-            if (introLine) {
-                output.push(introLine);
-            }
-            output.push(...table);
-            if (outroLine) {
-                output.push(outroLine);
-            }
-            return output.join('\n');
+            return lines
+                .map(line => {
+                    const matches = line.match(packageLineRegex);
+                    if (matches) {
+                        return lineCallback(line, '', matches) || line;
+                    }
+                    if (this.isStandardTopOrBottomBorder(line)) {
+                        return this.extendBorderLine(line, '=');
+                    }
+                    if (this.isStandardSeparator(line)) {
+                        return this.extendBorderLine(line, '-');
+                    }
+                    if (this.isStandardHeaderLine(line)) {
+                        return this.appendDistanceColumn(line, ' Dystans');
+                    }
+                    if (this.isStandardSubHeaderLine(line)) {
+                        return this.appendDistanceColumn(line, ' w krokach');
+                    }
+                    if (this.isStandardFooterLine(line)) {
+                        return this.appendDistanceColumn(line, '');
+                    }
+                    if (line.startsWith(' |')) {
+                        return this.appendDistanceColumn(line, '');
+                    }
+                    return line;
+                })
+                .join('\n');
         };
     }
 
     private parsePackageLine(matches: RegExpMatchArray): PackageLineInfo {
-        const name = matches.groups.name;
-        const distance = this.getDistanceToNpc(name);
+        const name = matches.groups.name.trimEnd()
+        const distance = this.getDistanceToNpc(name)
         const info: PackageLineInfo = {
             index: matches.groups.number,
             heavy: !!matches.groups.heavy,
             name,
-            city: matches.groups.city,
+            city: matches.groups.city?.trimEnd(),
             gold: matches.groups.gold,
             silver: matches.groups.silver,
             copper: matches.groups.copper,
             time: matches.groups.time,
             distance,
-        };
-        this.packages.push({ name, time: info.time, distance });
-        return info;
+        }
+        this.packages.push({ name, time: info.time, distance })
+        return info
+    }
+
+    private extendStandardDataLine(rawLine: string, info: PackageLineInfo): string {
+        const distanceValue = info.distance !== undefined ? `${info.distance}` : '--'
+        return this.appendDistanceColumn(rawLine, ` dystans: ${distanceValue}`)
+    }
+
+    private appendDistanceColumn(line: string, content: string): string {
+        const index = line.lastIndexOf('|')
+        if (index === -1) {
+            return line
+        }
+        const prefix = line.slice(0, index)
+        const trailingMatch = prefix.match(/\s*$/)
+        const trailingSpaces = trailingMatch ? trailingMatch[0].length : 0
+        const trimmed = trailingSpaces > 0 ? prefix.slice(0, prefix.length - trailingSpaces) : prefix
+        const normalized = content.startsWith(' ') ? content : ` ${content}`
+        const padded = this.padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH + trailingSpaces)
+        return `${trimmed}${padded}|`
+    }
+
+    private extendBorderLine(line: string, fill: '=' | '-') {
+        const first = line.indexOf(fill)
+        const last = line.lastIndexOf(fill)
+        if (first === -1 || last === -1) {
+            return line
+        }
+        const repeat = last - first + 1 + STANDARD_DISTANCE_COLUMN_WIDTH
+        return line.slice(0, first) + fill.repeat(repeat) + line.slice(last + 1)
+    }
+
+    private isStandardTopOrBottomBorder(line: string): boolean {
+        const trimmed = line.trim()
+        return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('=')
+    }
+
+    private isStandardSeparator(line: string): boolean {
+        const trimmed = line.trim()
+        return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('-')
+    }
+
+    private isStandardHeaderLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('Adresat badz')
+    }
+
+    private isStandardSubHeaderLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('urzad pocztowy')
+    }
+
+    private isStandardFooterLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('Symbolem *')
     }
 
     private padRight(value: string, length: number): string {
         if (value.length >= length) {
-            return value;
+            return value
         }
-        return value + ' '.repeat(length - value.length);
-    }
-
-    private composeStandardRow(info: PackageLineInfo): string {
-        const city = info.city ? `, ${info.city}` : '';
-        const heavyPrefix = info.heavy ? '* ' : '  ';
-        const number = info.index.padStart(2, ' ');
-        const namePart = `${heavyPrefix}${number}. ${info.name}${city}`;
-        const nameColumn = this.padRight(namePart, STANDARD_NAME_COLUMN_WIDTH);
-        const reward = `${info.gold}/${info.silver}/${info.copper}`;
-        const rewardColumn = this.padRight(reward, STANDARD_REWARD_COLUMN_WIDTH);
-        const timeText = info.time ? `${info.time} godz.` : 'nieogr.';
-        const timeColumn = this.padRight(timeText, STANDARD_TIME_COLUMN_WIDTH);
-        const distanceValue = info.distance !== undefined ? `${info.distance}` : '--';
-        const distanceColumn = this.padRight(`dystans: ${distanceValue}`, STANDARD_DISTANCE_COLUMN_WIDTH);
-        return ` | ${nameColumn}${rewardColumn}${timeColumn}${distanceColumn}`;
-    }
-
-    private makePackageClickable(line: string, info: PackageLineInfo): string {
-        const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-        const command = `${pickCommand} ${info.index}`;
-        return this.client.OutputHandler.makeClickable(
-            colorStringInLine(line, info.name, colorCode),
-            info.name,
-            () => {
-                this.client.sendCommand(command);
-            },
-            command
-        );
-    }
-
-    private composeStandardHeaderRow(): string {
-        const nameHeader = this.padRight('Paczka', STANDARD_NAME_COLUMN_WIDTH);
-        const rewardHeader = this.padRight('Nagroda', STANDARD_REWARD_COLUMN_WIDTH);
-        const timeHeader = this.padRight('Termin', STANDARD_TIME_COLUMN_WIDTH);
-        const distanceHeader = this.padRight('Dystans', STANDARD_DISTANCE_COLUMN_WIDTH);
-        return ` | ${nameHeader}${rewardHeader}${timeHeader}${distanceHeader}`;
-    }
-
-    private buildStandardTable(rows: string[]): string[] {
-        if (rows.length === 0) {
-            return [];
-        }
-        const totalWidth = 3 + STANDARD_NAME_COLUMN_WIDTH + STANDARD_REWARD_COLUMN_WIDTH + STANDARD_TIME_COLUMN_WIDTH + STANDARD_DISTANCE_COLUMN_WIDTH;
-        const border = ' +' + '-'.repeat(totalWidth - 3) + '+';
-        const header = this.composeStandardHeaderRow();
-        return [
-            border,
-            header,
-            border,
-            ...rows,
-            border,
-        ];
+        return value + ' '.repeat(length - value.length)
     }
 
     private startTimer() {
