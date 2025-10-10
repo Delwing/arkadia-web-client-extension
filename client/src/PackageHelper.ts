@@ -8,6 +8,20 @@ const pickCommand = "wybierz paczke"
 const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/
 const packageTableRegex = /Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:[\s\S]*?Symbolem \* oznaczono przesylki ciezkie\./
 const shortInfo = RESET + 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n'
+const STANDARD_DISTANCE_COLUMN_WIDTH = 16;
+
+type PackageLineInfo = {
+    index: string;
+    heavy: boolean;
+    name: string;
+    city?: string;
+    gold: string;
+    silver: string;
+    copper: string;
+    time?: string;
+    distance?: number;
+}
+
 const pickFailMessages = [
     'Nie ufam ci na tyle, aby powierzyc ci dostarczenie tej przesylki.',
     'Lista przesylek zmienila sie i ta, ktora chcesz podjac byc moze nie jest juz ta, ktora widziales w spisie. Sprawdz spis ponownie, badz sprobuj podjac paczke jeszcze raz, jesli mimo to chcesz ja dostarczyc.',
@@ -25,7 +39,7 @@ export default class PackageHelper {
     npc: Record<string, number> = {}
     enabled = false;
 
-    private packages = []
+    private packages: { name: string; time?: string; distance?: number }[] = []
     private listTime = 0
     private timer: number | undefined
     private remover = () => {
@@ -33,7 +47,7 @@ export default class PackageHelper {
     private locationListener;
 
     private pick: number
-    private currentPackage: { name: string; time?: number };
+    private currentPackage: { name: string; time?: string; distance?: number };
 
     deliveryTrigger: Trigger;
     private pickTrigger: Trigger;
@@ -114,13 +128,13 @@ export default class PackageHelper {
 
     private packageLineCallback() {
         return (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-            const index = matches.groups.number
-            const name = matches.groups.name
-            this.packages.push({name: name, time: matches.groups.time})
-            const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-            return this.client.OutputHandler.makeClickable(colorStringInLine(rawLine, name, colorCode), name, () => {
-                this.client.sendCommand("wybierz paczke " + index)
-            }, "wybierz paczke " + index)
+            const info = this.parsePackageLine(matches)
+            const line = this.extendStandardDataLine(rawLine, info)
+            const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
+            const command = `${pickCommand} ${info.index}`
+            return this.client.OutputHandler.makeClickable(colorStringInLine(line, info.name, colorCode), info.name, () => {
+                this.client.sendCommand(command)
+            }, command)
         };
     }
 
@@ -150,23 +164,22 @@ export default class PackageHelper {
                     if (!matches) {
                         return;
                     }
-                    const index = matches.groups.number;
-                    const name = matches.groups.name;
-                    const city = matches.groups.city ? `, ${matches.groups.city}` : '';
-                    const heavy = matches.groups.heavy ? '* ' : '  ';
-                    const first = RESET  + `${heavy}${index}. ${name}${city}`;
-                    const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-                    this.packages.push({ name, time: matches.groups.time });
+                    const info = this.parsePackageLine(matches);
+                    const city = info.city ? `, ${info.city}` : '';
+                    const heavy = info.heavy ? '* ' : '  ';
+                    const first = RESET  + `${heavy}${info.index}. ${info.name}${city}`;
+                    const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
                     const clickable = this.client.OutputHandler.makeClickable(
-                        colorStringInLine(first, name, colorCode),
-                        name,
+                        colorStringInLine(first, info.name, colorCode),
+                        info.name,
                         () => {
-                            this.client.sendCommand('wybierz paczke ' + index);
+                            this.client.sendCommand('wybierz paczke ' + info.index);
                         },
-                        'wybierz paczke ' + index
+                        'wybierz paczke ' + info.index
                     ) + RESET   ;
-                    const time = matches.groups.time ? matches.groups.time + ' godz.' : 'nieogr.';
-                    const second = `   ${matches.groups.gold}/${matches.groups.silver}/${matches.groups.copper} ${time}\n`;
+                    const time = info.time ? info.time + ' godz.' : 'nieogr.';
+                    const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : ' dystans: --';
+                    const second = `   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`;
                     out.push(clickable, second);
                 });
                 return out.join('\n');
@@ -177,10 +190,103 @@ export default class PackageHelper {
                     if (matches) {
                         return lineCallback(line, '', matches) || line;
                     }
+                    if (this.isStandardTopOrBottomBorder(line)) {
+                        return this.extendBorderLine(line, '=');
+                    }
+                    if (this.isStandardSeparator(line)) {
+                        return this.extendBorderLine(line, '-');
+                    }
+                    if (this.isStandardHeaderLine(line)) {
+                        return this.appendDistanceColumn(line, ' Dystans');
+                    }
+                    if (this.isStandardSubHeaderLine(line)) {
+                        return this.appendDistanceColumn(line, ' w krokach');
+                    }
+                    if (this.isStandardFooterLine(line)) {
+                        return this.appendDistanceColumn(line, '');
+                    }
+                    if (line.startsWith(' |')) {
+                        return this.appendDistanceColumn(line, '');
+                    }
                     return line;
                 })
                 .join('\n');
         };
+    }
+
+    private parsePackageLine(matches: RegExpMatchArray): PackageLineInfo {
+        const name = matches.groups.name.trimEnd()
+        const distance = this.getDistanceToNpc(name)
+        const info: PackageLineInfo = {
+            index: matches.groups.number,
+            heavy: !!matches.groups.heavy,
+            name,
+            city: matches.groups.city?.trimEnd(),
+            gold: matches.groups.gold,
+            silver: matches.groups.silver,
+            copper: matches.groups.copper,
+            time: matches.groups.time,
+            distance,
+        }
+        this.packages.push({ name, time: info.time, distance })
+        return info
+    }
+
+    private extendStandardDataLine(rawLine: string, info: PackageLineInfo): string {
+        const distanceValue = info.distance !== undefined ? `${info.distance}` : '--'
+        return this.appendDistanceColumn(rawLine, ` dystans: ${distanceValue}`)
+    }
+
+    private appendDistanceColumn(line: string, content: string): string {
+        const index = line.lastIndexOf('|')
+        if (index === -1) {
+            return line
+        }
+        const prefix = line.slice(0, index)
+        const normalized = content
+            ? (content.startsWith(' ') ? content : ` ${content}`)
+            : ''
+        const padded = this.padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH)
+        return `${prefix}${padded}|`
+    }
+
+    private extendBorderLine(line: string, fill: '=' | '-') {
+        const first = line.indexOf(fill)
+        const last = line.lastIndexOf(fill)
+        if (first === -1 || last === -1) {
+            return line
+        }
+        const repeat = last - first + 1 + STANDARD_DISTANCE_COLUMN_WIDTH
+        return line.slice(0, first) + fill.repeat(repeat) + line.slice(last + 1)
+    }
+
+    private isStandardTopOrBottomBorder(line: string): boolean {
+        const trimmed = line.trim()
+        return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('=')
+    }
+
+    private isStandardSeparator(line: string): boolean {
+        const trimmed = line.trim()
+        return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('-')
+    }
+
+    private isStandardHeaderLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('Adresat badz')
+    }
+
+    private isStandardSubHeaderLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('urzad pocztowy')
+    }
+
+    private isStandardFooterLine(line: string): boolean {
+        return line.startsWith(' |') && line.includes('Symbolem *')
+    }
+
+    private padRight(value: string, length: number): string {
+        if (value.length >= length) {
+            return value
+        }
+        return value + ' '.repeat(length - value.length)
     }
 
     private startTimer() {
@@ -236,13 +342,7 @@ export default class PackageHelper {
     }
 
     private leadToPackage(name: string) {
-        let location = this.npc[name]
-        if (!location) {
-            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
-            if (found) {
-                [, location] = found
-            }
-        }
+        const location = this.findNpcLocation(name)
         if (location) {
             this.client.sendEvent('leadTo', location)
         }
@@ -260,6 +360,38 @@ export default class PackageHelper {
             }
         }
         this.client.addEventListener('enterLocation', this.locationListener)
+    }
+
+    private findNpcLocation(name: string): number | undefined {
+        let location = this.npc[name]
+        if (!location) {
+            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
+            if (found) {
+                [, location] = found
+            }
+        }
+        return location
+    }
+
+    private getDistanceToNpc(name: string): number | undefined {
+        const location = this.findNpcLocation(name)
+        const currentRoom = this.client.Map.currentRoom
+        if (!location || !currentRoom?.id) {
+            return undefined
+        }
+        const findPath = this.client.Map.findPath?.bind(this.client.Map)
+        if (!findPath) {
+            return undefined
+        }
+        try {
+            const path = findPath(currentRoom.id, location)
+            if (!path || path.length === 0) {
+                return undefined
+            }
+            return path.length - 1
+        } catch (e) {
+            return undefined
+        }
     }
 
     disable() {
