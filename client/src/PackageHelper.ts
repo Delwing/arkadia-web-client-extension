@@ -243,12 +243,11 @@ export default class PackageHelper {
             return line
         }
         const prefix = line.slice(0, index)
-        const trailingMatch = prefix.match(/\s*$/)
-        const trailingSpaces = trailingMatch ? trailingMatch[0].length : 0
-        const trimmed = trailingSpaces > 0 ? prefix.slice(0, prefix.length - trailingSpaces) : prefix
-        const normalized = content.startsWith(' ') ? content : ` ${content}`
-        const padded = this.padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH + trailingSpaces)
-        return `${trimmed}${padded}|`
+        const normalized = content
+            ? (content.startsWith(' ') ? content : ` ${content}`)
+            : ''
+        const padded = this.padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH)
+        return `${prefix}${padded}|`
     }
 
     private extendBorderLine(line: string, fill: '=' | '-') {
