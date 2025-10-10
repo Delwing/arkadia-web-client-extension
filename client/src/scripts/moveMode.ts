@@ -10,8 +10,26 @@ export default function initMoveMode(client: Client) {
     let playerNum: string | undefined;
 
     function update() {
-        button.value = `Ruch: ${LABELS[client.moveMode]}`;
-        button.title = `Ruch: ${TITLES[client.moveMode]}`;
+        const mode = client.moveMode;
+        const valueLabel = `Ruch: ${LABELS[mode]}`;
+        const valueTitle = `Ruch: ${TITLES[mode]}`;
+
+        button.value = valueLabel;
+        button.title = valueTitle;
+
+        const assignedButton = client.moveModeButton;
+        if (assignedButton && assignedButton !== button) {
+            if (assignedButton instanceof HTMLInputElement) {
+                assignedButton.value = valueLabel;
+                assignedButton.title = valueTitle;
+            } else {
+                const prefix = assignedButton.dataset.moveModeLabel;
+                const textLabel = prefix ? `${prefix} ${LABELS[mode]}` : valueLabel;
+                const textTitle = prefix ? `${prefix} ${TITLES[mode]}` : valueTitle;
+                assignedButton.textContent = textLabel;
+                assignedButton.title = textTitle;
+            }
+        }
     }
 
     function emitChange() {

@@ -776,8 +776,7 @@ export default class MobileDirectionButtons {
                 case 'moveMode':
                     if (this.client.carriageMode) break;
                     this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
-                    newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
-                    newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+                    this.updateMoveModeButton(newBtn);
                     this.client.sendEvent('moveModeChanged', this.client.moveMode);
                     break;
                 case 'specialExit':
@@ -793,8 +792,8 @@ export default class MobileDirectionButtons {
 
         if (cfg.macro === 'moveMode') {
             this.client.moveModeButton = newBtn;
-            newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
-            newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+            newBtn.dataset.moveModeLabel = cfg.label || '';
+            this.updateMoveModeButton(newBtn);
             newBtn.disabled = this.client.carriageMode;
         } else if (cfg.macro === 'specialExit') {
             const updateLabel = () => {
@@ -811,6 +810,14 @@ export default class MobileDirectionButtons {
             this.client.addEventListener('enterLocation', updateLabel as EventListener);
             updateLabel();
         }
+    }
+
+    private updateMoveModeButton(button: HTMLButtonElement, mode: number = this.client.moveMode) {
+        const prefix = button.dataset.moveModeLabel ?? '';
+        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[mode]}` : MOVE_MODE_LABELS[mode];
+        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[mode]}` : MOVE_MODE_TITLES[mode];
+        button.textContent = label;
+        button.title = title;
     }
 
 }
