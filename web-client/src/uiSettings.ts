@@ -30,6 +30,7 @@ interface UiSettings {
     explorationMode: boolean;
     instantMove: boolean;
     highlightCurrentRoom: boolean;
+    outputBackground: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -48,7 +49,17 @@ const defaultSettings: UiSettings = {
     explorationMode: false,
     instantMove: true,
     highlightCurrentRoom: true,
+    outputBackground: '#242424',
 };
+
+const OUTPUT_BACKGROUND_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+
+function normalizeOutputBackground(value: unknown): string {
+    if (typeof value === 'string' && OUTPUT_BACKGROUND_PATTERN.test(value)) {
+        return value.toLowerCase();
+    }
+    return defaultSettings.outputBackground;
+}
 
 function apply(settings: UiSettings) {
     const contentArea = document.getElementById('content-area');
@@ -58,6 +69,9 @@ function apply(settings: UiSettings) {
     }
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
+    }
+    if (document?.documentElement) {
+        document.documentElement.style.setProperty('--output-background', settings.outputBackground);
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
@@ -165,7 +179,8 @@ async function load(): Promise<UiSettings> {
             const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
                 ? parsed.highlightCurrentRoom
                 : defaultSettings.highlightCurrentRoom;
-            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom };
+            const outputBackground = normalizeOutputBackground(parsed.outputBackground);
+            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom, outputBackground };
         }
     } catch {
         // ignore malformed data
@@ -199,6 +214,7 @@ export default async function initUiSettings() {
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
+    const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -217,6 +233,7 @@ export default async function initUiSettings() {
     footerModeInput.value = String(current.footerMode);
     instantMoveInput.checked = current.instantMove;
     highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
+    outputBackgroundInput.value = current.outputBackground;
     apply(current);
 
     const updateMapScale = (scale: number) => {
@@ -274,6 +291,11 @@ export default async function initUiSettings() {
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
             highlightCurrentRoom: highlightCurrentRoomInput.checked,
+            outputBackground: (() => {
+                const value = normalizeOutputBackground(outputBackgroundInput.value);
+                outputBackgroundInput.value = value;
+                return value;
+            })(),
         };
     }
 

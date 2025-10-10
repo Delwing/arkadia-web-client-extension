@@ -6,6 +6,7 @@
   --surface-elevated: #161a24;
   --surface-raised: #1d222d;
   --surface-content: #242424;
+  --output-background: var(--surface-content);
   --surface-border: rgba(118, 127, 150, 0.35);
   --surface-border-strong: rgba(138, 180, 248, 0.65);
   --input-background: rgba(11, 15, 23, 0.94);
@@ -230,7 +231,7 @@ h1 {
   flex-direction: column;
   min-height: 0;
   --map-size: 30vh;
-  background-color: var(--surface-content);
+  background-color: var(--output-background);
 }
 
 #main_text_output_msg_wrapper {
@@ -243,6 +244,7 @@ h1 {
   position: relative;
   min-height: 0;
   min-width: 0;
+  background-color: var(--output-background);
 }
 
 #logs-preview {
@@ -253,7 +255,7 @@ h1 {
   overflow-wrap: break-word;
   position: relative;
   height: 60vh;
-  background-color: var(--bs-body-bg);
+  background-color: var(--output-background);
 }
 
 #logs-preview .output_msg_text {
@@ -269,7 +271,7 @@ h1 {
 #split-bottom {
   position: sticky;
   bottom: 0px;
-  background-color: var(--bs-body-bg);
+  background-color: var(--output-background);
   z-index: 1;
   height: 15rem;
   max-height: 25vh;
@@ -745,6 +747,7 @@ button:focus-visible {
   background-color: rgba(0, 0, 0, 0.50);
   overflow: hidden;
   z-index: 5;
+  border-bottom: 1px solid #333;
 }
 
 body[data-map-position="top-overlay"] #content-area #iframe-container {
