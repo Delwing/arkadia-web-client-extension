@@ -1,6 +1,12 @@
 import Client from "@client/src/Client";
 import { formatLabel } from "@client/src/scripts/functionalBind";
-import { loadSettings as loadMobileButtonSettings, ButtonSetting, Settings } from "../mobileButtonSettings";
+import {
+    loadSettings as loadMobileButtonSettings,
+    ButtonSetting,
+    Settings,
+    defaultFontColor,
+    defaultBackground,
+} from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { getShortDir } from "@client/src/utils/directions.ts";
 
@@ -17,13 +23,13 @@ export default class MobileDirectionButtons {
     private readonly wList: HTMLDivElement | null = null;
     private readonly przeList: HTMLDivElement | null = null;
     private readonly idzList: HTMLDivElement | null = null;
-    private readonly zToggle: HTMLButtonElement | null = null;
-    private readonly zasToggle: HTMLButtonElement | null = null;
+    private zToggle: HTMLButtonElement | null = null;
+    private zasToggle: HTMLButtonElement | null = null;
     private wToggle: HTMLButtonElement | null = null;
     private przeToggle: HTMLButtonElement | null = null;
     private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
-    private readonly toggleButton: HTMLButtonElement | null = null;
+    private toggleButton: HTMLButtonElement | null = null;
     private boundKey = 'BracketRight';
     private boundCtrl = false;
     private boundAlt = false;
@@ -45,9 +51,9 @@ export default class MobileDirectionButtons {
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
     private allSettings: Settings = {
-        solo: { buttons: {}, order: [], cols: 0 },
-        team: { buttons: {}, order: [], cols: 0 },
-        leader: { buttons: {}, order: [], cols: 0 },
+        solo: { buttons: {}, order: [], cols: 0, background: defaultBackground },
+        team: { buttons: {}, order: [], cols: 0, background: defaultBackground },
+        leader: { buttons: {}, order: [], cols: 0, background: defaultBackground },
         locked: false,
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
@@ -255,19 +261,19 @@ export default class MobileDirectionButtons {
 
     private clampToView() {
         const rect = this.container.getBoundingClientRect();
-        let right = parseInt(this.container.style.right, 10);
+        let left = parseInt(this.container.style.left, 10);
         let top = parseInt(this.container.style.top, 10);
-        if (isNaN(right)) {
-            right = window.innerWidth - rect.right;
+        if (isNaN(left)) {
+            left = rect.left;
         }
         if (isNaN(top)) {
             top = rect.top;
         }
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
+        const maxLeft = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
         const maxTop = window.innerHeight - this.container.offsetHeight - 5;
-        const clampedRight = Math.min(Math.max(5, right), maxRight);
+        const clampedLeft = Math.min(Math.max(5, left), maxLeft);
         const clampedTop = Math.min(Math.max(5, top), maxTop);
-        this.container.style.right = `${clampedRight}px`;
+        this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     }
 
@@ -304,13 +310,30 @@ export default class MobileDirectionButtons {
         this.container.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Set initial position from storage if available
+        this.container.style.removeProperty('right');
+
         const savedData = getItemSync('mobileButtonsPosition');
         const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
-                const { x, y } = savedPosition as any;
-                this.container.style.right = `${x}px`;
-                this.container.style.top = `${y}px`;
+                const { x, y, origin } = savedPosition as any;
+                const rect = this.container.getBoundingClientRect();
+                const width = rect.width || this.container.offsetWidth;
+                const safeWidth = Number.isFinite(width) ? width : 0;
+                if (typeof x === 'number' && !Number.isNaN(x)) {
+                    if (origin === 'left') {
+                        this.container.style.left = `${x}px`;
+                    } else {
+                        const fromLeft = window.innerWidth - safeWidth - x;
+                        if (Number.isFinite(fromLeft)) {
+                            this.container.style.left = `${fromLeft}px`;
+                        }
+                    }
+                }
+                if (typeof y === 'number' && !Number.isNaN(y)) {
+                    this.container.style.top = `${y}px`;
+                }
+                this.container.style.removeProperty('right');
                 requestAnimationFrame(() => this.clampToView());
             } catch (e) {
                 console.error('Error parsing saved position:', e);
@@ -376,7 +399,7 @@ export default class MobileDirectionButtons {
             this.container.classList.add('dragging');
 
             const rect = this.container.getBoundingClientRect();
-            this.offsetX = window.innerWidth - rect.right;
+            this.offsetX = rect.left;
             this.offsetY = rect.top;
 
             this.container.style.opacity = '0.8';
@@ -394,17 +417,17 @@ export default class MobileDirectionButtons {
         this.currentX = x;
         this.currentY = y;
 
-        const deltaX = this.initialX - this.currentX;
+        const deltaX = this.currentX - this.initialX;
         const deltaY = this.currentY - this.initialY;
 
-        const newRight = this.offsetX + deltaX;
+        const newLeft = this.offsetX + deltaX;
         const newTop = this.offsetY + deltaY;
 
-        const maxRight = window.innerWidth - this.container.offsetWidth - 5;
-        const clampedRight = Math.min(maxRight, Math.max(5, newRight));
+        const maxLeft = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
+        const clampedLeft = Math.min(maxLeft, Math.max(5, newLeft));
         const clampedTop = Math.max(5, newTop);
 
-        this.container.style.right = `${clampedRight}px`;
+        this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     }
 
@@ -417,8 +440,9 @@ export default class MobileDirectionButtons {
         if (this.isDragging && this.container) {
             const rect = this.container.getBoundingClientRect();
             const position = {
-                x: window.innerWidth - rect.right,
+                x: rect.left,
                 y: rect.top,
+                origin: 'left' as const,
             };
             setItemSync('mobileButtonsPosition', position);
 
@@ -630,10 +654,21 @@ export default class MobileDirectionButtons {
             btn.classList.add('empty');
             btn.style.backgroundColor = 'transparent';
             btn.style.border = 'none';
+            btn.style.color = '';
+            btn.style.removeProperty('--color');
+            btn.style.removeProperty('--active-color');
         } else {
             btn.classList.remove('empty');
             btn.style.backgroundColor = cfg.color;
             btn.style.border = '';
+            btn.style.color = cfg.fontColor || defaultFontColor;
+            if (cfg.macro === 'kierunek') {
+                btn.style.setProperty('--color', cfg.color);
+                btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
+            } else {
+                btn.style.removeProperty('--color');
+                btn.style.removeProperty('--active-color');
+            }
         }
         const clone = btn.cloneNode(true) as HTMLButtonElement;
         btn.replaceWith(clone);
@@ -759,9 +794,9 @@ export default class MobileDirectionButtons {
                     break;
                 case 'moveMode':
                     if (this.client.carriageMode) break;
-                    this.client.moveMode = (this.client.moveMode + 1) % MOVE_MODE_LABELS.length;
-                    newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
-                    newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+                    const options = this.getMoveModeOptionsCount() || 1;
+                    this.client.moveMode = (this.client.moveMode + 1) % options;
+                    this.updateMoveModeButton(newBtn);
                     this.client.sendEvent('moveModeChanged', this.client.moveMode);
                     break;
                 case 'specialExit':
@@ -777,8 +812,8 @@ export default class MobileDirectionButtons {
 
         if (cfg.macro === 'moveMode') {
             this.client.moveModeButton = newBtn;
-            newBtn.textContent = `${cfg.label} ${MOVE_MODE_LABELS[this.client.moveMode]}`;
-            newBtn.title = `${cfg.label} ${MOVE_MODE_TITLES[this.client.moveMode]}`;
+            newBtn.dataset.moveModeLabel = cfg.label || '';
+            this.updateMoveModeButton(newBtn);
             newBtn.disabled = this.client.carriageMode;
         } else if (cfg.macro === 'specialExit') {
             const updateLabel = () => {
@@ -795,6 +830,25 @@ export default class MobileDirectionButtons {
             this.client.addEventListener('enterLocation', updateLabel as EventListener);
             updateLabel();
         }
+    }
+
+    private getMoveModeOptionsCount() {
+        return this.leaderMode ? MOVE_MODE_LABELS.length : Math.max(1, MOVE_MODE_LABELS.length - 1);
+    }
+
+    private updateMoveModeButton(button: HTMLButtonElement, mode: number = this.client.moveMode) {
+        const options = this.getMoveModeOptionsCount();
+        const maxIndex = Math.max(0, options - 1);
+        const safeMode = Math.max(0, Math.min(mode, maxIndex));
+        if (safeMode !== this.client.moveMode) {
+            this.client.moveMode = safeMode;
+            this.client.sendEvent('moveModeChanged', this.client.moveMode);
+        }
+        const prefix = button.dataset.moveModeLabel ?? '';
+        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];
+        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
+        button.textContent = label;
+        button.title = title;
     }
 
 }

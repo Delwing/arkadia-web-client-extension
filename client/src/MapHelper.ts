@@ -311,8 +311,6 @@ export default class MapHelper {
         const dy = targetRoom.y - room.y;
         const dz = targetRoom.z - room.z;
 
-        console.log(dx, dy, dz)
-
         const check = (d: number, expected: number) => {
             if (expected === 0) {
                 return d === 0;

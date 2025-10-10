@@ -17,10 +17,10 @@ import initTempBinds from './scripts/tempBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
 import initIdz from './scripts/idz'
-import { initKillCounter } from './scripts/kill'
-import { initImproveCounter } from './scripts/improveCounter'
+import {initKillCounter} from './scripts/kill'
+import {initImproveCounter} from './scripts/improveCounter'
 import initEscape from './scripts/escape'
-import { initItemCollector } from './scripts/itemCollector'
+import {initItemCollector} from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
 import initChatHistory from './scripts/chatHistory'
 import initBagManager from './scripts/bagManager'
@@ -80,6 +80,7 @@ import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import initLetter from './scripts/letter'
 import initTeamBlockers from './scripts/teamBlockers'
+import initZaznaczaj from './scripts/zaznaczaj'
 import Client from "./Client";
 
 
@@ -94,6 +95,7 @@ export function registerScripts(client: Client) {
         }
     })
     initMapAliases(client, aliases)
+    initZaznaczaj(client, aliases)
 
     blockers.forEach(blocker => {
         let blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
@@ -109,23 +111,27 @@ export function registerScripts(client: Client) {
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
         const direction = tokenized[tokenized.length - 1]
-        const result = client.Map.move(direction)
-        if (result.moved) {
-            return;
-        }
-        client.Map.followMove(matches[2])
+        client.Map.move(direction)
     }, 'follow')
 
     client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
-        client.Map.followMove(matches.direction)
+        client.Map.move(matches.direction)
     }, 'follow')
 
-    client.Triggers.registerTrigger([
-        /^Wykonuje komende 'idz /,
-        /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) w droge\./
-    ], (): undefined => {
-        client.sendEvent('refreshPositionWhenAble')
-    })
+    const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
+    client.Triggers.registerMultilineTrigger([
+        /^Wykonuje komende 'idz /
+    ], (_, line): undefined => {
+        const lines = line.split("\n")
+        if (lines.length > 1) {
+            const matches = lines[1].match(movePattern)
+            if (matches.groups.direction) {
+                client.Map.move(matches.groups.direction)
+            }
+        } else {
+            client.Map.refreshPosition = true
+        }
+    }, 'follow', { stayOpenLines: 1 })
 
     client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
         client.Map.refreshPosition = false

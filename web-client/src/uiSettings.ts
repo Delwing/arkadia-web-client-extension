@@ -30,6 +30,9 @@ interface UiSettings {
     explorationMode: boolean;
     instantMove: boolean;
     highlightCurrentRoom: boolean;
+    labelRenderMode: 'image' | 'data';
+    transparentLabels: boolean;
+    outputBackground: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -48,6 +51,9 @@ const defaultSettings: UiSettings = {
     explorationMode: false,
     instantMove: true,
     highlightCurrentRoom: true,
+    labelRenderMode: 'data',
+    transparentLabels: true,
+    outputBackground: '#242424',
 };
 
 function apply(settings: UiSettings) {
@@ -62,6 +68,7 @@ function apply(settings: UiSettings) {
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
         content.style.fontSize = settings.contentFontSize + 'rem';
+        content.style.backgroundColor = settings.outputBackground;
     }
     const charState = document.getElementById('char-state');
     if (charState) {
@@ -81,6 +88,10 @@ function apply(settings: UiSettings) {
         } else {
             iframeContainer.style.top = '';
         }
+    }
+    const splitBottom = document.getElementById('split-bottom');
+    if (splitBottom) {
+        splitBottom.style.backgroundColor = settings.outputBackground;
     }
     const mainContainer = document.getElementById('main-container') as HTMLElement | null;
     if (mainContainer && settings.mapPosition !== 'top-overlay') {
@@ -115,6 +126,11 @@ function apply(settings: UiSettings) {
         (window as any).embedded.setExplorationMode?.(settings.explorationMode);
         (window as any).embedded.refresh();
     }
+    Settings.transparentLabels = settings.transparentLabels;
+    const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
+    Settings.labelRenderMode = labelRenderMode;
+    (window as any).embedded?.setTransparentLabels?.(settings.transparentLabels);
+    (window as any).embedded?.setLabelRenderMode?.(labelRenderMode);
     Settings.instantMapMove = settings.instantMove;
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
@@ -156,6 +172,13 @@ async function load(): Promise<UiSettings> {
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
+            const transparentLabels = typeof parsed.transparentLabels === 'boolean'
+                ? parsed.transparentLabels
+                : defaultSettings.transparentLabels;
+            const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
+                ? parsed.labelRenderMode
+                : defaultSettings.labelRenderMode;
+            const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
             const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
             const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
             const explorationMode = !!parsed.explorationMode;
@@ -165,7 +188,27 @@ async function load(): Promise<UiSettings> {
             const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
                 ? parsed.highlightCurrentRoom
                 : defaultSettings.highlightCurrentRoom;
-            return { ...defaultSettings, ...parsed, mapScale, mapPosition, emojiLabels: !!parsed.emojiLabels, xtermPalette, footerMode, explorationMode, fightTitleIcon, hapticFeedback, instantMove, highlightCurrentRoom };
+            const outputBackground = typeof parsed.outputBackground === 'string'
+                && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
+                    ? parsed.outputBackground.trim()
+                    : defaultSettings.outputBackground;
+            return {
+                ...defaultSettings,
+                ...parsed,
+                mapScale,
+                mapPosition,
+                emojiLabels: !!parsed.emojiLabels,
+                xtermPalette,
+                footerMode,
+                explorationMode,
+                fightTitleIcon,
+                hapticFeedback,
+                instantMove,
+                highlightCurrentRoom,
+                transparentLabels,
+                labelRenderMode: effectiveLabelRenderMode,
+                outputBackground,
+            };
         }
     } catch {
         // ignore malformed data
@@ -199,6 +242,10 @@ export default async function initUiSettings() {
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
+    const labelRenderModeInput = modalEl.querySelector('#ui-label-render-mode') as HTMLSelectElement;
+    const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
+    const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
+    const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -217,7 +264,24 @@ export default async function initUiSettings() {
     footerModeInput.value = String(current.footerMode);
     instantMoveInput.checked = current.instantMove;
     highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
+    labelRenderModeInput.value = current.labelRenderMode;
+    transparentLabelsInput.checked = current.transparentLabels;
+    outputBackgroundInput.value = current.outputBackground;
+    const updateLabelRenderModeState = () => {
+        if (transparentLabelsInput.checked) {
+            labelRenderModeInput.value = 'data';
+            labelRenderModeInput.disabled = true;
+        } else {
+            labelRenderModeInput.disabled = false;
+        }
+    };
+    updateLabelRenderModeState();
+    outputBackgroundReset?.addEventListener('click', () => {
+        outputBackgroundInput.value = defaultSettings.outputBackground;
+    });
     apply(current);
+
+    transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
 
     const updateMapScale = (scale: number) => {
         mapInput.value = String(scale);
@@ -258,6 +322,10 @@ export default async function initUiSettings() {
             return scale;
         })();
 
+        const backgroundValue = /^#[0-9a-f]{6}$/i.test(outputBackgroundInput.value)
+            ? outputBackgroundInput.value
+            : defaultSettings.outputBackground;
+
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
@@ -274,11 +342,17 @@ export default async function initUiSettings() {
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
             highlightCurrentRoom: highlightCurrentRoomInput.checked,
+            labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
+            transparentLabels: transparentLabelsInput.checked,
+            outputBackground: backgroundValue,
         };
     }
 
     saveBtn.addEventListener('click', () => {
         current = read();
+        if (current.transparentLabels) {
+            current = { ...current, labelRenderMode: 'data' };
+        }
         save(current);
         apply(current);
         modal.hide();

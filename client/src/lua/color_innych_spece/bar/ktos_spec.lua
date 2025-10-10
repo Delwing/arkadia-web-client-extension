@@ -5,7 +5,7 @@ end
 function trigger_func_skrypty_ui_gags_color_color_innych_spece_bar_ktos_spec_ktos_spec()
     local value = get_barb_damage_value(matches["damage"])
     scripts.gags:gag_spec("BAR", value, 6, "innych_spece")
-    if string.len(matches["stun"]) > 0 then
+    if matches["stun"] and string.len(matches["stun"]) > 0 then
         scripts.gags:gag_prefix("BAR OGL", "innych_spece")
         ateam:may_setup_paralyzed_name(matches["target"])
     end

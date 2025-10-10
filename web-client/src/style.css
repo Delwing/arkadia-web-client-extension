@@ -211,6 +211,68 @@ input::placeholder {
   color: var(--text-primary);
 }
 
+@media (min-width: 576px) {
+  .w-sm-auto {
+    width: auto !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .w-md-auto {
+    width: auto !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .w-lg-auto {
+    width: auto !important;
+  }
+}
+
+.mobile-buttons-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.mobile-buttons-mode-toggle .btn {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .mobile-buttons-mode-toggle {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: auto;
+  }
+
+  .mobile-buttons-mode-toggle .btn {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .mobile-buttons-mode-toggle .btn + .btn {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-buttons-mode-toggle {
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .mobile-buttons-mode-toggle .btn {
+    flex: 0 0 auto;
+  }
+
+  .mobile-buttons-mode-toggle .btn + .btn {
+    margin-left: -1px;
+  }
+}
+
 h1 {
   font-size: 1.5rem;
   line-height: 1.1;
@@ -243,6 +305,7 @@ h1 {
   position: relative;
   min-height: 0;
   min-width: 0;
+  background-color: var(--bs-body-bg);
 }
 
 #logs-preview {
@@ -269,7 +332,7 @@ h1 {
 #split-bottom {
   position: sticky;
   bottom: 0px;
-  background-color: var(--bs-body-bg);
+  background-color: inherit;
   z-index: 1;
   height: 15rem;
   max-height: 25vh;
@@ -745,6 +808,7 @@ button:focus-visible {
   background-color: rgba(0, 0, 0, 0.50);
   overflow: hidden;
   z-index: 5;
+  border-bottom: 1px solid #333;
 }
 
 body[data-map-position="top-overlay"] #content-area #iframe-container {
@@ -932,7 +996,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Direction Buttons (visible on both mobile and desktop) */
 .mobile-direction-buttons {
   position: fixed;
-  right: 5px;
+  left: 5px;
   top: 160px; /* Position relative to top */
   z-index: 1000;
   gap: 10px;

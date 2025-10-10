@@ -272,6 +272,13 @@
                                         <option value="left">Lewa</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label class="form-label" for="ui-label-render-mode">Tryb renderowania etykiet</label>
+                                    <select id="ui-label-render-mode" class="form-select">
+                                        <option value="image">Obraz</option>
+                                        <option value="data">Dane</option>
+                                    </select>
+                                </div>
                                 <div class="form-check">
                                     <input id="ui-instant-move" type="checkbox" class="form-check-input" />
                                     <label class="form-check-label" for="ui-instant-move">Natychmiastowe przechodzenie po mapie</label>
@@ -285,6 +292,10 @@
                                     <label class="form-check-label" for="ui-exploration-mode">
                                         Tryb eksploracji mapy <span id="ui-exploration-stats" class="ms-1 text-muted"></span>
                                     </label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-transparent-labels" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-transparent-labels">Przezroczyste etykiety (wymusza tryb danych)</label>
                                 </div>
                             </div>
                         </section>
@@ -370,6 +381,23 @@
             </div>
         </div>
     </div>
+    <div id="debug-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Debug Log</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-finder-button">Trigger finder</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="notification-schedule-button">Powiadomienie</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+                <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -400,22 +428,28 @@
             </div>
         </div>
     </div>
-    <div id="debug-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div id="trigger-finder-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Debug Log</h5>
-                    <div class="d-flex gap-2 align-items-center">
-                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
-                        <button type="button" class="btn btn-secondary btn-sm" id="notification-schedule-button">Powiadomienie</button>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
+                    <h5 class="modal-title">Trigger finder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
+                <div class="modal-body d-flex flex-column gap-2">
+                    <div>
+                        <label for="trigger-finder-lines" class="form-label mb-1">Linie</label>
+                        <textarea id="trigger-finder-lines" class="form-control" rows="6"></textarea>
+                    </div>
+                    <div>
+                        <label for="trigger-finder-type" class="form-label mb-1">Typ GMCP</label>
+                        <input id="trigger-finder-type" class="form-control" />
+                    </div>
+                    <button class="btn btn-primary" id="trigger-finder-run">Znajdź</button>
+                    <pre id="trigger-finder-output" class="mb-0"></pre>
+                </div>
             </div>
         </div>
     </div>
-
     <div id="logs-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
