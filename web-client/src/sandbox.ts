@@ -25,12 +25,19 @@ window.addEventListener('load', () => {
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
     const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
+    const toggleFightButton = document.getElementById('sandbox-toggle-fight') as HTMLButtonElement | null;
     const preview = document.getElementById('sandbox-team-preview');
 
     let id = 1;
     const ids = new Map<string, number>();
     const objectNums = new Set<number>();
     const hps = new Map<number, number>();
+    let fightActive = false;
+
+    function updateFightButton() {
+        if (!toggleFightButton) return;
+        toggleFightButton.textContent = fightActive ? 'Stop Fight' : 'Start Fight';
+    }
 
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
@@ -48,6 +55,46 @@ window.addEventListener('load', () => {
         objectNums.add(memberId);
         client.sendEvent('gmcp.objects.data', obj);
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+    }
+
+    function assignRandomAttackTargets() {
+        const idsArray = Array.from(objectNums);
+        if (!idsArray.length) return;
+
+        const payload: Record<number, { attack_num: number | false }> = {};
+        idsArray.forEach((objId) => {
+            if (idsArray.length <= 1) {
+                payload[objId] = { attack_num: false };
+                return;
+            }
+
+            const possibleTargets = idsArray.filter((targetId) => targetId !== objId);
+            if (!possibleTargets.length) {
+                payload[objId] = { attack_num: false };
+                return;
+            }
+
+            const target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+            payload[objId] = { attack_num: target };
+        });
+
+        client.sendEvent('gmcp.objects.data', payload);
+    }
+
+    function clearAttackTargets() {
+        if (!objectNums.size) return;
+
+        const payload: Record<number, { attack_num: false }> = {};
+        objectNums.forEach((objId) => {
+            payload[objId] = { attack_num: false };
+        });
+
+        client.sendEvent('gmcp.objects.data', payload);
+    }
+
+    function ensureFightAssignments() {
+        if (!fightActive) return;
+        assignRandomAttackTargets();
     }
 
     function renderTeam() {
@@ -84,6 +131,7 @@ window.addEventListener('load', () => {
 
     function addMember(name: string) {
         sendTeam(name, false);
+        ensureFightAssignments();
     }
 
     function setLeader(name: string) {
@@ -102,6 +150,7 @@ window.addEventListener('load', () => {
             client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
         }
         client.TeamManager?.removeMember?.(name);
+        ensureFightAssignments();
     }
 
     function addEnemy() {
@@ -116,6 +165,7 @@ window.addEventListener('load', () => {
         obj[enemyId] = { desc: enemyName, state: hp, hp };
         client.sendEvent('gmcp.objects.data', obj);
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+        ensureFightAssignments();
     }
 
     client.addEventListener?.('teamChange', renderTeam);
@@ -136,5 +186,18 @@ window.addEventListener('load', () => {
     addEnemyButton?.addEventListener('click', () => {
         addEnemy();
     });
+
+    toggleFightButton?.addEventListener('click', () => {
+        if (fightActive) {
+            clearAttackTargets();
+            fightActive = false;
+        } else {
+            assignRandomAttackTargets();
+            fightActive = true;
+        }
+        updateFightButton();
+    });
+
+    updateFightButton();
 
 });
