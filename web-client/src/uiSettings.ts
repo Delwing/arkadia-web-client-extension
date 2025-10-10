@@ -245,6 +245,7 @@ export default async function initUiSettings() {
     const labelRenderModeInput = modalEl.querySelector('#ui-label-render-mode') as HTMLSelectElement;
     const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
+    const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -275,6 +276,9 @@ export default async function initUiSettings() {
         }
     };
     updateLabelRenderModeState();
+    outputBackgroundReset?.addEventListener('click', () => {
+        outputBackgroundInput.value = defaultSettings.outputBackground;
+    });
     apply(current);
 
     transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
