@@ -5,6 +5,7 @@ import {
     ButtonSetting,
     Settings,
     defaultFontColor,
+    defaultBackground,
 } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { getShortDir } from "@client/src/utils/directions.ts";
@@ -22,13 +23,13 @@ export default class MobileDirectionButtons {
     private readonly wList: HTMLDivElement | null = null;
     private readonly przeList: HTMLDivElement | null = null;
     private readonly idzList: HTMLDivElement | null = null;
-    private readonly zToggle: HTMLButtonElement | null = null;
-    private readonly zasToggle: HTMLButtonElement | null = null;
+    private zToggle: HTMLButtonElement | null = null;
+    private zasToggle: HTMLButtonElement | null = null;
     private wToggle: HTMLButtonElement | null = null;
     private przeToggle: HTMLButtonElement | null = null;
     private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
-    private readonly toggleButton: HTMLButtonElement | null = null;
+    private toggleButton: HTMLButtonElement | null = null;
     private boundKey = 'BracketRight';
     private boundCtrl = false;
     private boundAlt = false;
@@ -50,9 +51,9 @@ export default class MobileDirectionButtons {
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
     private allSettings: Settings = {
-        solo: { buttons: {}, order: [], cols: 0 },
-        team: { buttons: {}, order: [], cols: 0 },
-        leader: { buttons: {}, order: [], cols: 0 },
+        solo: { buttons: {}, order: [], cols: 0, background: defaultBackground },
+        team: { buttons: {}, order: [], cols: 0, background: defaultBackground },
+        leader: { buttons: {}, order: [], cols: 0, background: defaultBackground },
         locked: false,
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
