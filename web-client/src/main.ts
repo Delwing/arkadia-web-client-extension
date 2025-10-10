@@ -27,6 +27,7 @@ import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
+import App from './App.tsx'
 import Binds from "./options/Binds.tsx"
 import Npc from "./options/Npc.tsx"
 import Scripts from "./options/Scripts.tsx"
@@ -43,6 +44,15 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
+
+document.body.dataset.mapPosition = document.body.dataset.mapPosition || 'top-overlay';
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+    throw new Error('Root element not found');
+}
+
+createRoot(rootElement).render(createElement(App));
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
