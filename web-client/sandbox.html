@@ -57,8 +57,8 @@
     <div id="objects-list"></div>
     <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
     <div id="playback-controls" class="card shadow-sm" style="position:absolute;top:2.5rem;right:0.5rem;z-index:1013;display:none;">
-        <div class="card-body py-0 px-1">
-            <div class="d-flex flex-wrap align-items-center gap-1">
+        <div class="card-body py-0 px-1 text-center">
+            <div class="d-flex flex-wrap justify-content-center align-items-center gap-1">
                 <div class="btn-group btn-group-sm" role="group" aria-label="Sterowanie odtwarzaniem">
                     <button id="playback-pause" class="btn btn-secondary" aria-label="Wstrzymaj odtwarzanie">⏸</button>
                     <button id="playback-stop" class="btn btn-secondary" aria-label="Zatrzymaj odtwarzanie">⏹</button>
@@ -68,10 +68,10 @@
                     <button id="playback-step-back" class="btn btn-secondary" aria-label="Przejdź krok wstecz">⏮</button>
                     <button id="playback-step" class="btn btn-secondary" aria-label="Przejdź krok naprzód">⏭</button>
                 </div>
-                <span id="playback-info" class="ms-auto small text-body-secondary"></span>
             </div>
-            <div class="progress mt-2" style="height:0.3rem;">
+            <div class="progress mt-2 position-relative">
                 <div id="playback-progress" class="progress-bar bg-info" role="progressbar" style="width:0%;" aria-valuemin="0" aria-valuenow="0" aria-valuemax="0"></div>
+                <span id="playback-info" class="progress-step-label small">Krok 0 z 0</span>
             </div>
         </div>
     </div>

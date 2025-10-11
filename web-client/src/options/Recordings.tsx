@@ -200,7 +200,7 @@ function Recordings() {
                     <tr key={n}>
                         <td>{n}</td>
                         <td className="d-flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline-secondary" onClick={() => handleLoad(n)}>Załaduj</Button>
+                            <Button size="sm" onClick={() => handleLoad(n)}>Załaduj</Button>
                             <Button size="sm" onClick={() => handlePlay(n)}>Odtwórz</Button>
                             <Button size="sm" onClick={() => handlePlayTimed(n)}>Odtwórz w czasie</Button>
                             <Button size="sm" onClick={() => downloadRecording(n)}>Pobierz</Button>

@@ -629,11 +629,23 @@ h1 {
 }
 
 #playback-controls .progress {
-  margin-bottom: 0.15rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+  height: 0.8rem;
+  position: relative;
 }
 
-#playback-controls #playback-info {
+#playback-controls .progress-step-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
   font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--bs-body-color);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.45);
 }
 
 #playback-controls .btn-group .btn {
