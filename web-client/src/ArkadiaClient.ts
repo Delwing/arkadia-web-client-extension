@@ -408,6 +408,10 @@ class ArkadiaClient implements ClientAdapter {
         this.recorder.stepBack();
     }
 
+    startOver() {
+        this.recorder.startOver();
+    }
+
     replayLast() {
         this.recorder.replayLast();
     }

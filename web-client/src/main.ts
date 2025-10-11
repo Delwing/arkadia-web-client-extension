@@ -473,6 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playbackInfo = document.getElementById('playback-info') as HTMLElement | null;
     const playbackProgress = document.getElementById('playback-progress') as HTMLElement | null;
     const playbackReplay = document.getElementById('playback-replay') as HTMLButtonElement | null;
+    const playbackStartOver = document.getElementById('playback-start-over') as HTMLButtonElement | null;
     const playbackStepBack = document.getElementById('playback-step-back') as HTMLButtonElement | null;
     const playbackStep = document.getElementById('playback-step') as HTMLButtonElement | null;
 
@@ -718,6 +719,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (playbackReplay) {
         playbackReplay.addEventListener('click', () => {
             arkadiaClient.replayLast();
+        });
+    }
+
+    if (playbackStartOver) {
+        playbackStartOver.addEventListener('click', () => {
+            arkadiaClient.startOver();
         });
     }
 

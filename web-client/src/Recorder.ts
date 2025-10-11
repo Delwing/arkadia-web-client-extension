@@ -163,6 +163,42 @@ export default class Recorder {
         }
     }
 
+    startOver() {
+        if (this.recordedMessages.length === 0) return;
+        if (this.playbackTimeout !== null) {
+            clearTimeout(this.playbackTimeout);
+            this.playbackTimeout = null;
+        }
+        const wasPlaying = this.isPlaying;
+        const wasPaused = this.paused;
+
+        this.playbackIndex = 0;
+        this.playbackDelay = 0;
+        this.playbackStart = 0;
+        this.pausedDelay = 0;
+
+        if (!wasPlaying) {
+            this.isPlaying = true;
+            this.paused = true;
+            this.hooks.emit('playback.start', this.recordedMessages.length);
+            Output.send('== Playback start ==');
+            this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+            this.hooks.emit('playback.pause');
+            return;
+        }
+
+        this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+
+        if (wasPaused) {
+            this.paused = true;
+            this.hooks.emit('playback.pause');
+            return;
+        }
+
+        this.paused = false;
+        this.scheduleNext(0);
+    }
+
     replayLast() {
         if (!this.isPlaying || this.playbackIndex === 0) return;
         const ev = this.recordedMessages[this.playbackIndex - 1];
