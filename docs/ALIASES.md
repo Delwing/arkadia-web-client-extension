@@ -27,6 +27,10 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/list** - otwiera edytor pisania listów w kliencie.
 - **/zaznaczaj** - włącza zaznaczanie odwiedzanych lokacji na mapie i oznacza bieżącą.
 - **/zaznaczaj-** - wyłącza zaznaczanie lokacji i usuwa dotychczasowe zaznaczenia.
+- **/odloz_magie [_pojemnik_]** - skanuje inwentarz w poszukiwaniu magicznych przedmiotów i ustawia binda odkładania ich do podanego pojemnika (domyślnie do skrzyni).
+
+## Umiejętności
+- **um** - wyświetla zestawienie umiejętności w czytelnej tabeli z kolorowymi poziomami.
 
 ## Menedżer pojemników
 - **/pojemnik** - uruchamia konfigurację menedżera pojemników.
@@ -65,12 +69,22 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/szybciej** - zmniejsza opoznienie o 0.5 s.
 - **/wolniej** - zwieksza opoznienie o 0.5 s.
 
+## Multibindy
+- **/mbind _numer akcja_** - ustawia pod numerem 1-4 akcję multibinda dla bieżącej lokacji.
+- **/mbind+ _akcja_** - dodaje akcję do pierwszego wolnego multibinda w bieżącej lokacji.
+- **/mbind-** - usuwa wszystkie multibindy przypisane do bieżącej lokacji.
+- **/mbind- _numer_** - usuwa wskazany multibind z bieżącej lokacji.
+- **/mbind** - wyświetla multibindy ustawione w bieżącej lokacji.
+- **/mbind _id_** - wyświetla multibindy skonfigurowane dla lokacji o podanym identyfikatorze.
+
 ## Skróty
 - **/binds** - wyświetla aktualnie ustawione skróty klawiaturowe.
 - **/pokaz_skroty** - wyświetla listę ustawionych skrótów.
 - **/dodaj_skrot _klawisz nazwa [komenda]_** - dodaje skrót klawiaturowy.
 - **/usun_skrot _nazwa_** - usuwa wskazany skrót.
 - **/usun_skroty** - usuwa wszystkie skróty.
+- **/tbind1 [_komenda_]** - ustawia (lub czyści, gdy bez parametru) pierwszy tymczasowy bind na podaną komendę.
+- **/tbind2 [_komenda_]** - ustawia (lub czyści) drugi tymczasowy bind na podaną komendę.
 
 ## Zioła
 - **/ziola_buduj** - przegląda wszystkie woreczki z ziołami i podsumowuje ich zawartość.
