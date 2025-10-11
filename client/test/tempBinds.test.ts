@@ -66,6 +66,7 @@ describe('temp binds', () => {
   test('temp bind aliases forward to client without typo variant', () => {
     const client = {
       setTempBind: jest.fn(),
+      Triggers: { registerTrigger: jest.fn() },
     } as unknown as Client;
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initTempBinds(client, aliases);
@@ -76,5 +77,39 @@ describe('temp binds', () => {
     expect(client.setTempBind).toHaveBeenCalledWith(0, 'ctrl+f7');
     const typoAlias = aliases.find((entry) => entry.pattern.test('/tbdind1 ctrl+f7'));
     expect(typoAlias).toBeUndefined();
+  });
+
+  test('blocked movement message populates first temp bind for active destination path', () => {
+    const registerTrigger = jest.fn();
+    const findPath = jest.fn(() => ['1', '2']);
+    const client = {
+      Map: {
+        currentRoom: { id: 1, exits: { north: 2 }, specialExits: {} },
+        findPath,
+      },
+      Triggers: { registerTrigger },
+      setTempBind: jest.fn(),
+    } as unknown as Client;
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+
+    initTempBinds(client, aliases);
+
+    const triggerCall = registerTrigger.mock.calls.find(([pattern]) =>
+      pattern instanceof RegExp && pattern.test('Nie wiesz, w ktorym kierunku masz ruszyc...'),
+    );
+    expect(triggerCall).toBeDefined();
+    const trigger = triggerCall![1] as Function;
+
+    (window as any).embedded = { destinations: [] };
+    trigger('raw', 'raw', [] as unknown as RegExpMatchArray, '');
+    expect(client.setTempBind).not.toHaveBeenCalled();
+
+    (window as any).embedded = { destinations: [2] };
+    trigger('raw', 'raw', [] as unknown as RegExpMatchArray, '');
+
+    expect(findPath).toHaveBeenCalledWith(1, 2);
+    expect(client.setTempBind).toHaveBeenCalledWith(0, 'n');
+
+    delete (window as any).embedded;
   });
 });
