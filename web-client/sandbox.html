@@ -20,7 +20,7 @@
 <div id="main-container">
     <div id="content-area">
         <div id="iframe-container">
-            <canvas id="map" resize="true"></canvas>
+            <div id="map"></div>
             <div id="location-wrapper">
                 <div id="location-label">
                     <span id="location-text"></span>
@@ -41,6 +41,7 @@
             </div>
         </div>
     </div>
+    <div id="multi-binds"></div>
     <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
         <span id="char-state-text"></span>
         <span id="state-info"></span>
@@ -51,6 +52,7 @@
         <span id="attack-mode"></span>
         <span id="release-guard"></span>
         <span id="cover-timer"></span>
+        <span id="zask-timer"></span>
     </div>
     <div id="objects-list"></div>
     <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
@@ -64,14 +66,30 @@
     </div>
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
     <div id="options-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable h-100">
+            <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Opcje</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
+                    <div id="options" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="options-save">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="export-import-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eksport i import ustawień</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body">
-                    <div id="options"></div>
+                    <div id="export-import-root"></div>
                 </div>
             </div>
         </div>
@@ -167,19 +185,6 @@
             </div>
         </div>
     </div>
-    <div id="guilds-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Gildie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="guilds-options"></div>
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="input-area">
         <div id="history-buttons">
             <button id="history-up-button">▲</button>
@@ -192,6 +197,9 @@
             <ul class="dropdown-menu dropdown-menu-end mb-1 gap-2">
                 <li>
                     <button class="w-100 p-1" id="options-button">Ustawienia</button>
+                </li>
+                <li>
+                    <button class="w-100 p-1" id="export-import-button">Eksport / import</button>
                 </li>
                 <li>
                     <button class="w-100 p-1" id="ui-settings-button">Interfejs</button>
@@ -326,6 +334,15 @@
                                 <div>
                                     <label class="form-label" for="ui-objects-font">Rozmiar czcionki listy obiektów (rem)</label>
                                     <input id="ui-objects-font" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-output-background">Kolor tła okna głównego</label>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <input id="ui-output-background" type="color" class="form-control form-control-color" />
+                                        <button id="ui-output-background-reset" type="button" class="btn btn-outline-secondary btn-sm">
+                                            Przywróć domyślny
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label" for="ui-footer-mode">Tryb stopki</label>

@@ -129,6 +129,7 @@ export function registerScripts(client: Client) {
                 client.Map.move(matches.groups.direction)
             }
         } else {
+            client.Map.refresh()
             client.Map.refreshPosition = true
         }
     }, 'follow', { stayOpenLines: 1 })
