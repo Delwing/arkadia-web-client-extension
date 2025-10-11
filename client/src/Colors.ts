@@ -59,7 +59,7 @@ export function colorTokenInLine(rawLine: string, string: string, colorCode: num
     if (matchIndex === -1) {
         return rawLine
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex + string.length)
+    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex)
 }
 
 export function findClosestColor(hex: string | number[]): number {
