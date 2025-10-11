@@ -81,6 +81,8 @@ describe('people triggers enemy highlight', () => {
 describe('people triggers guild highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
+  type SettingsEvent = { detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> } };
+  let settingsHandler: ((event: SettingsEvent) => void) | undefined;
 
   beforeEach(async () => {
     loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
@@ -88,18 +90,60 @@ describe('people triggers guild highlight', () => {
     new People((client as unknown) as any);
     await loadPeopleMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { guilds: ['CKN'], enemyGuilds: [] } } as any);
-    }
+    settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
     const lastGuildCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
     await lastGuildCall?.value;
   });
 
+  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
+    settingsHandler?.({ detail } as any);
+  };
+
   test('adds name after description without red color', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna tutaj.');
     const red = findClosestColor('#ff0000');
+    const green = findClosestColor('#00ff00');
     expect(result).not.toContain(color(red));
+    expect(result).toContain(color(green));
     expect(stripAnsiCodes(result)).toContain('(Eamon CKN)');
+  });
+
+  test('adds names for two guild members in the same sentence', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+    const result = parse('Widzisz wysoki mezczyzna oraz krepy lysy krasnolud.');
+    const green = findClosestColor('#00ff00');
+    const highlight = color(green);
+    expect(result.split(highlight).length - 1).toBeGreaterThanOrEqual(2);
+    const stripped = stripAnsiCodes(result);
+    expect(stripped).toContain('(Eamon CKN)');
+    expect(stripped).toContain('(Krasn CKN)');
+  });
+
+  test('colors enemy guild member in red', () => {
+    emitSettings({ guilds: [], enemyGuilds: ['CKN'], guildColors: {} });
+    const result = parse('Widzisz wysoki mezczyzna tutaj.');
+    const red = findClosestColor('#ff0000');
+    expect(result).toContain(color(red) + 'wysoki mezczyzna' + RESET);
+    expect(result).toContain(color(red) + '(Eamon CKN)' + RESET);
+  });
+
+  test('colors two enemy guild members in one sentence', () => {
+    emitSettings({ guilds: [], enemyGuilds: ['CKN', 'GP'], guildColors: {} });
+    const result = parse('Widzisz wysoki mezczyzna i koscisty mezczyzna obok siebie.');
+    const red = findClosestColor('#ff0000');
+    const stripped = stripAnsiCodes(result);
+    expect(stripped).toContain('(Eamon CKN)');
+    expect(stripped).toContain('(w GP)');
+    expect(result.split(color(red)).length - 1).toBeGreaterThanOrEqual(4);
+  });
+
+  test('colors ally and enemy differently when they appear together', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: ['GP'], guildColors: { CKN: '#00ff00' } });
+    const result = parse('Widzisz wysoki mezczyzna oraz koscisty mezczyzna.');
+    const red = findClosestColor('#ff0000');
+    const green = findClosestColor('#00ff00');
+    expect(result).toContain(color(green) + '(Eamon CKN)' + RESET);
+    expect(result).toContain(color(red) + '(w GP)' + RESET);
   });
 });
