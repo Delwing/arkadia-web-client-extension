@@ -4,6 +4,7 @@ export interface RecorderHooks {
     processIncomingData(data: string): void;
     sendCommand(command: string, echo?: boolean): void;
     emit(event: string, ...args: any[]): void;
+    output(text: string, type?: string): void;
 }
 
 export default class Recorder {
@@ -142,15 +143,15 @@ export default class Recorder {
         this.stopPlayback();
         this.isPlaying = true;
         this.hooks.emit('playback.start');
-        Output.send('== Playback start ==');
+        this.hooks.output('== Playback start ==');
         this.recordedMessages.forEach(ev => {
             if (ev.direction === 'in') {
                 this.hooks.processIncomingData(ev.message);
             } else {
-                Output.send('→ ' + ev.message);
+                this.hooks.output('→ ' + ev.message);
             }
         });
-        Output.send('== Playback end ==');
+        this.hooks.output('== Playback end ==');
         this.stopPlayback();
     }
 
@@ -161,7 +162,7 @@ export default class Recorder {
         this.paused = false;
         this.playbackIndex = 0;
         this.hooks.emit('playback.start', this.recordedMessages.length);
-        Output.send('== Playback start ==');
+        this.hooks.output('== Playback start ==');
         this.hooks.emit('playback.index', 0, this.recordedMessages.length);
         this.scheduleNext(0);
     }
@@ -170,7 +171,7 @@ export default class Recorder {
         if (ev.direction === 'in') {
             this.hooks.processIncomingData(ev.message);
         } else {
-            Output.send('→ ' + ev.message);
+            this.hooks.output('→ ' + ev.message);
             window.clientExtension.sendCommand(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }
@@ -179,7 +180,7 @@ export default class Recorder {
     private executeCurrent() {
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+            this.hooks.output('== Playback end ==');
             this.stopPlayback();
             return;
         }
@@ -192,7 +193,7 @@ export default class Recorder {
         if (!this.isPlaying) return;
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+            this.hooks.output('== Playback end ==');
             this.stopPlayback();
             return;
         }

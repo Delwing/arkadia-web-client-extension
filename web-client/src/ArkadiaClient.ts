@@ -32,7 +32,8 @@ class ArkadiaClient implements ClientAdapter {
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
         sendCommand: (cmd) => this.sendCommand(cmd),
-        emit: (ev, ...args) => this.emit(ev, ...args)
+        emit: (ev, ...args) => this.emit(ev, ...args),
+        output: (text, type) => this.output(text, type)
     });
 
     constructor() {
