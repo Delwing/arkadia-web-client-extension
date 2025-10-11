@@ -1,5 +1,5 @@
 import initMagics, { MAGICS_COLOR } from '../src/scripts/magics';
-import { colorStringInLine } from '../src/Colors';
+import { colorTokenInLine } from '../src/Colors';
 
 describe('magics', () => {
     beforeEach(() => {
@@ -19,7 +19,10 @@ describe('magics', () => {
         const call = client.Triggers.registerTokenTrigger.mock.calls[0];
         const pattern = call[0];
         const callback = call[1];
-        const colored = colorStringInLine('alpha test', pattern, MAGICS_COLOR);
-        expect(callback('alpha test', 'alpha test', {} as any)).toBe(colored);
+        const sentence = 'to jest alpha w zdaniu';
+        expect(callback(sentence, sentence, {} as any)).toBe(colorTokenInLine(sentence, pattern, MAGICS_COLOR));
+
+        const titleCase = 'Alpha pojawila sie w zdaniu';
+        expect(callback(titleCase, titleCase, {} as any)).toBe(colorTokenInLine(titleCase, pattern, MAGICS_COLOR));
     });
 });
