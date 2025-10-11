@@ -33,6 +33,31 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
     };
 
+    const getNextStep = () => {
+        if (index >= path.length - 1) {
+            return null;
+        }
+
+        const current = client.Map.getRoomById(path[index]);
+        if (!current) {
+            return null;
+        }
+
+        const nextId = path[index + 1];
+        const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
+        const dir = Object.keys(exits).find(d => exits[d] === nextId);
+        if (!dir) {
+            return null;
+        }
+
+        const command = longToShort[dir] ?? dir;
+        if (typeof command !== 'string' || command.length === 0) {
+            return null;
+        }
+
+        return { command };
+    };
+
     const scheduleStep = () => {
         if (paused || index >= path.length - 1) {
             clearTimer();
@@ -48,17 +73,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             return;
         }
 
-        const current = client.Map.getRoomById(path[index]);
-        if (!current) {
-            clearTimer();
-            path = [];
-            client.sendEvent('leadTo');
-            return;
-        }
-        const nextId = path[index + 1];
-        const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
-        const dir = Object.keys(exits).find(d => exits[d] === nextId);
-        if (!dir) {
+        const nextStep = getNextStep();
+        if (!nextStep) {
             clearTimer();
             path = [];
             client.sendEvent('leadTo');
@@ -70,7 +86,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             timer = null;
             if (paused) return;
             client.suppressMapMoveEvent = true;
-            client.sendCommand(longToShort[dir] ?? dir);
+            client.sendCommand(nextStep.command);
             index += 1;
             scheduleStep();
         }, time);
@@ -226,5 +242,21 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
+
+    if (client.Triggers?.registerTrigger) {
+        client.Triggers.registerTrigger(
+            /^Nie wiesz, w ktorym kierunku masz ruszyc\.\.\.$/,
+            () => {
+                const step = getNextStep();
+                if (!step) {
+                    return undefined;
+                }
+
+                client.setTempBind?.(0, step.command);
+                return undefined;
+            },
+            'idzWalker'
+        );
+    }
 }
 
