@@ -111,11 +111,11 @@ export function registerScripts(client: Client) {
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
         const direction = tokenized[tokenized.length - 1]
-        this.Map.followMove(direction)
+        client.Map.followMove(direction)
     }, 'follow')
 
     client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
-        this.Map.followMove(matches.groups.direction)
+        client.Map.followMove(matches.groups.direction)
     }, 'follow')
 
     const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
