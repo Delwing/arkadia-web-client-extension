@@ -209,6 +209,11 @@ export default class MapHelper {
     }
 
     followMove(direction: string) {
+        const result = this.move(direction)
+        if (result.moved) {
+            return;
+        }
+
         if (this.currentRoom?.userData?.team_follow_link) {
             const entries = this.currentRoom.userData.team_follow_link.split('#')
             for (const entry of entries) {
