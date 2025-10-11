@@ -468,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     const playbackControls = document.getElementById('playback-controls') as HTMLElement | null;
+    const playbackHandle = document.getElementById('playback-handle') as HTMLElement | null;
     const playbackPause = document.getElementById('playback-pause') as HTMLButtonElement | null;
     const playbackStop = document.getElementById('playback-stop') as HTMLButtonElement | null;
     const playbackInfo = document.getElementById('playback-info') as HTMLElement | null;
@@ -487,6 +488,75 @@ document.addEventListener('DOMContentLoaded', () => {
             playbackPause.setAttribute('aria-label', 'Wstrzymaj odtwarzanie');
         }
     };
+
+    if (playbackControls && playbackHandle) {
+        let dragPointerId: number | null = null;
+        let startLeft = 0;
+        let startTop = 0;
+        let startClientX = 0;
+        let startClientY = 0;
+
+        const clamp = (value: number, min: number, max: number) => {
+            if (value < min) {
+                return min;
+            }
+            if (value > max) {
+                return max;
+            }
+            return value;
+        };
+
+        const handlePointerMove = (event: PointerEvent) => {
+            if (dragPointerId === null || event.pointerId !== dragPointerId) {
+                return;
+            }
+            event.preventDefault();
+            const deltaX = event.clientX - startClientX;
+            const deltaY = event.clientY - startClientY;
+            const maxLeft = Math.max(0, window.innerWidth - playbackControls.offsetWidth);
+            const maxTop = Math.max(0, window.innerHeight - playbackControls.offsetHeight);
+            const nextLeft = clamp(startLeft + deltaX, 0, maxLeft);
+            const nextTop = clamp(startTop + deltaY, 0, maxTop);
+            playbackControls.style.left = `${nextLeft}px`;
+            playbackControls.style.top = `${nextTop}px`;
+        };
+
+        const endDrag = (event: PointerEvent) => {
+            if (dragPointerId === null || event.pointerId !== dragPointerId) {
+                return;
+            }
+            dragPointerId = null;
+            playbackControls.classList.remove('dragging');
+            if (typeof playbackHandle.hasPointerCapture === 'function' && playbackHandle.hasPointerCapture(event.pointerId)) {
+                playbackHandle.releasePointerCapture(event.pointerId);
+            }
+        };
+
+        playbackHandle.addEventListener('pointerdown', (event: PointerEvent) => {
+            if (event.button !== undefined && event.button !== 0) {
+                return;
+            }
+            const rect = playbackControls.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            startClientX = event.clientX;
+            startClientY = event.clientY;
+            dragPointerId = event.pointerId;
+            playbackControls.style.left = `${startLeft}px`;
+            playbackControls.style.top = `${startTop}px`;
+            playbackControls.style.right = 'auto';
+            playbackControls.style.bottom = 'auto';
+            playbackControls.classList.add('dragging');
+            if (typeof playbackHandle.setPointerCapture === 'function') {
+                playbackHandle.setPointerCapture(event.pointerId);
+            }
+            event.preventDefault();
+        });
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('pointercancel', endDrag);
+    }
 
     const renderPlaybackInfo = (index: number, total: number) => {
         if (!playbackInfo) return;

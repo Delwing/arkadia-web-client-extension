@@ -625,6 +625,23 @@ h1 {
   padding: 3px;
 }
 
+#playback-controls .playback-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.05rem 0.25rem 0.2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+#playback-controls.dragging .playback-card-header {
+  cursor: grabbing;
+}
+
 #playback-controls .card-body {
   padding: 0.08rem 0.2rem;
 }
