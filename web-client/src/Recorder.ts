@@ -57,8 +57,18 @@ export default class Recorder {
     }
 
     async loadRecording(name: string) {
+        if (this.playbackTimeout !== null) {
+            clearTimeout(this.playbackTimeout);
+            this.playbackTimeout = null;
+        }
         const data = await getRecording(name);
         this.recordedMessages = data || [];
+        this.isPlaying = false;
+        this.paused = false;
+        this.playbackIndex = 0;
+        this.playbackDelay = 0;
+        this.playbackStart = 0;
+        this.pausedDelay = 0;
         this.hooks.emit('playback.loaded', this.recordedMessages.length);
     }
 
@@ -93,20 +103,46 @@ export default class Recorder {
     }
 
     resumePlayback() {
-        if (!this.isPlaying || !this.paused) return;
+        if (this.recordedMessages.length === 0) return;
+        if (!this.isPlaying) {
+            this.isPlaying = true;
+            this.paused = false;
+            this.pausedDelay = 0;
+            this.playbackDelay = 0;
+            this.playbackStart = 0;
+            this.hooks.emit('playback.start', this.recordedMessages.length);
+            Output.send('== Playback start ==');
+            this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+            this.scheduleNext(0);
+            return;
+        }
+        if (!this.paused) return;
         this.paused = false;
         this.scheduleNext(this.pausedDelay);
         this.hooks.emit('playback.resume');
     }
 
     stepForward() {
-        if (!this.isPlaying) return;
+        if (this.recordedMessages.length === 0) return;
+        if (!this.isPlaying) {
+            this.isPlaying = true;
+            this.paused = true;
+            this.pausedDelay = 0;
+            this.playbackDelay = 0;
+            this.playbackStart = 0;
+            this.hooks.emit('playback.start', this.recordedMessages.length);
+            Output.send('== Playback start ==');
+            this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+        }
         if (this.playbackTimeout !== null) {
             clearTimeout(this.playbackTimeout);
             this.playbackTimeout = null;
         }
         this.paused = true;
         this.executeCurrent();
+        if (this.isPlaying) {
+            this.hooks.emit('playback.pause');
+        }
     }
 
     stepBack() {
@@ -122,6 +158,9 @@ export default class Recorder {
             this.playbackIndex = 0;
         }
         this.executeCurrent();
+        if (this.isPlaying) {
+            this.hooks.emit('playback.pause');
+        }
     }
 
     replayLast() {
