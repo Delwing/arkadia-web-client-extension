@@ -53,6 +53,14 @@ export function colorStringInLine(rawLine: string, string: string, colorCode: nu
     return rawLine.substring(0, matchIndex) + color(colorCode) + string + RESET + rawLine.substring(matchIndex + string.length)
 }
 
+export function colorTokenInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
+    const matchIndex = rawLine.toLowerCase().indexOf(string, startIndex)
+    if (matchIndex === -1) {
+        return rawLine
+    }
+    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, string.length) + RESET + rawLine.substring(matchIndex + string.length)
+}
+
 export function findClosestColor(hex: string | number[]): number {
     const targetRgb = Array.isArray(hex) ? hex : hexToRgb(hex)
     let distance = 99999999999999
