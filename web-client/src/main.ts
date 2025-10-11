@@ -305,6 +305,7 @@ arkadiaClient.on('message', (message: string, type?: string) => {
 let isConnected = false;
 let isConnecting = false;
 let playbackMode = false;
+let playbackPaused = false;
 let authClosed = false;
 
 // Function to update the connect button state
@@ -470,9 +471,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const playbackPause = document.getElementById('playback-pause') as HTMLButtonElement | null;
     const playbackStop = document.getElementById('playback-stop') as HTMLButtonElement | null;
     const playbackInfo = document.getElementById('playback-info') as HTMLElement | null;
+    const playbackProgress = document.getElementById('playback-progress') as HTMLElement | null;
     const playbackReplay = document.getElementById('playback-replay') as HTMLButtonElement | null;
     const playbackStepBack = document.getElementById('playback-step-back') as HTMLButtonElement | null;
     const playbackStep = document.getElementById('playback-step') as HTMLButtonElement | null;
+
+    const setPauseButtonState = (paused: boolean) => {
+        if (!playbackPause) return;
+        if (paused) {
+            playbackPause.textContent = '▶';
+            playbackPause.setAttribute('aria-label', 'Wznów odtwarzanie');
+        } else {
+            playbackPause.textContent = '⏸';
+            playbackPause.setAttribute('aria-label', 'Wstrzymaj odtwarzanie');
+        }
+    };
+
+    const renderPlaybackInfo = (index: number, total: number) => {
+        if (!playbackInfo) return;
+        const safeTotal = Math.max(0, total);
+        const safeIndex = Math.max(0, Math.min(index, safeTotal));
+        if (safeTotal === 0) {
+            playbackInfo.textContent = 'Krok 0 z 0';
+            return;
+        }
+        playbackInfo.textContent = `Krok ${safeIndex} z ${safeTotal}`;
+    };
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
@@ -677,10 +701,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (playbackPause) {
         playbackPause.addEventListener('click', () => {
-            if (playbackPause.textContent === 'Pause') {
-                arkadiaClient.pausePlayback();
-            } else {
+            if (playbackPaused) {
                 arkadiaClient.resumePlayback();
+            } else {
+                arkadiaClient.pausePlayback();
             }
         });
     }
@@ -716,30 +740,77 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordingButton) recordingButton.style.display = 'none';
     });
 
-    arkadiaClient.on('playback.start', (total: number) => {
+    arkadiaClient.on('playback.start', (total: number = 0) => {
         playbackMode = true;
-        if (playbackControls) playbackControls.style.display = 'flex';
-        if (playbackInfo) playbackInfo.textContent = `0 / ${total}`;
-        if (playbackPause) playbackPause.textContent = 'Pause';
+        playbackPaused = false;
+        if (playbackControls) playbackControls.style.display = 'block';
+        renderPlaybackInfo(0, total);
+        setPauseButtonState(false);
+        if (playbackProgress) {
+            playbackProgress.style.width = '0%';
+            playbackProgress.setAttribute('aria-valuemin', '0');
+            playbackProgress.setAttribute('aria-valuenow', '0');
+            playbackProgress.setAttribute('aria-valuemax', total.toString());
+        }
         updateConnectButtons();
     });
 
     arkadiaClient.on('playback.stop', () => {
         playbackMode = false;
+        playbackPaused = false;
         if (playbackControls) playbackControls.style.display = 'none';
+        setPauseButtonState(false);
+        if (playbackProgress) {
+            playbackProgress.style.width = '0%';
+            playbackProgress.setAttribute('aria-valuenow', '0');
+            playbackProgress.setAttribute('aria-valuemax', '0');
+        }
         updateConnectButtons();
     });
 
     arkadiaClient.on('playback.pause', () => {
-        if (playbackPause) playbackPause.textContent = 'Resume';
+        playbackPaused = true;
+        setPauseButtonState(true);
     });
 
     arkadiaClient.on('playback.resume', () => {
-        if (playbackPause) playbackPause.textContent = 'Pause';
+        playbackPaused = false;
+        setPauseButtonState(false);
     });
 
     arkadiaClient.on('playback.index', (index: number, total: number) => {
-        if (playbackInfo) playbackInfo.textContent = `${index} / ${total}`;
+        renderPlaybackInfo(index, total);
+        if (playbackProgress) {
+            const percentage = total ? Math.min(100, Math.round((index / total) * 100)) : 0;
+            playbackProgress.style.width = `${percentage}%`;
+            playbackProgress.setAttribute('aria-valuenow', index.toString());
+            playbackProgress.setAttribute('aria-valuemax', total.toString());
+        }
+    });
+
+    arkadiaClient.on('playback.loaded', (total: number) => {
+        if (total === 0) {
+            if (playbackControls) playbackControls.style.display = 'none';
+            if (playbackProgress) {
+                playbackProgress.style.width = '0%';
+                playbackProgress.setAttribute('aria-valuenow', '0');
+                playbackProgress.setAttribute('aria-valuemax', '0');
+            }
+            if (playbackInfo) playbackInfo.textContent = '';
+            playbackPaused = false;
+            setPauseButtonState(false);
+            return;
+        }
+        if (playbackControls) playbackControls.style.display = 'block';
+        renderPlaybackInfo(0, total);
+        if (playbackProgress) {
+            playbackProgress.style.width = '0%';
+            playbackProgress.setAttribute('aria-valuemin', '0');
+            playbackProgress.setAttribute('aria-valuenow', '0');
+            playbackProgress.setAttribute('aria-valuemax', total.toString());
+        }
+        playbackPaused = true;
+        setPauseButtonState(true);
     });
 
     if (wakeLockButton) {

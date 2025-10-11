@@ -59,6 +59,7 @@ export default class Recorder {
     async loadRecording(name: string) {
         const data = await getRecording(name);
         this.recordedMessages = data || [];
+        this.hooks.emit('playback.loaded', this.recordedMessages.length);
     }
 
     listRecordings() {
@@ -141,7 +142,7 @@ export default class Recorder {
         if (this.recordedMessages.length === 0) return;
         this.stopPlayback();
         this.isPlaying = true;
-        this.hooks.emit('playback.start');
+        this.hooks.emit('playback.start', this.recordedMessages.length);
         Output.send('== Playback start ==');
         this.recordedMessages.forEach(ev => {
             if (ev.direction === 'in') {

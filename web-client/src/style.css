@@ -620,13 +620,25 @@ h1 {
   right: 0.5rem;
   z-index: 1013;
   display: none;
-  gap: 0.25rem;
+  min-width: 13rem;
+  max-width: 18rem;
 }
 
-#playback-controls span {
-  align-self: center;
-  font-size: 0.8rem;
-  color: white;
+#playback-controls .card-body {
+  padding: 0.18rem 0.35rem;
+}
+
+#playback-controls .progress {
+  margin-bottom: 0.15rem;
+}
+
+#playback-controls #playback-info {
+  font-size: 0.7rem;
+}
+
+#playback-controls .btn-group .btn {
+  min-width: 2.2rem;
+  padding: 0.1rem 0.35rem;
 }
 
 #app {

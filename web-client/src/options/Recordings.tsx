@@ -44,7 +44,19 @@ function Recordings() {
         });
     }
 
+    async function handleLoad(name: string) {
+        if (window.client) {
+            await window.client.loadRecording(name);
+        } else {
+            const events = await getRecording(name);
+            if (!events) return;
+            activeTabAction({ type: 'LOAD_RECORDING', events });
+        }
+        setMessage(`Nagranie "${name}" wczytane`);
+    }
+
     async function handlePlay(name: string) {
+        setMessage('');
         if (window.client) {
             await window.client.loadRecording(name);
             window.client.replayRecordedMessages();
@@ -56,6 +68,7 @@ function Recordings() {
     }
 
     async function handlePlayTimed(name: string) {
+        setMessage('');
         if (window.client) {
             await window.client.loadRecording(name);
             window.client.replayRecordedMessagesTimed();
@@ -186,7 +199,8 @@ function Recordings() {
                 {names.map(n => (
                     <tr key={n}>
                         <td>{n}</td>
-                        <td className="d-flex gap-2">
+                        <td className="d-flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline-secondary" onClick={() => handleLoad(n)}>Załaduj</Button>
                             <Button size="sm" onClick={() => handlePlay(n)}>Odtwórz</Button>
                             <Button size="sm" onClick={() => handlePlayTimed(n)}>Odtwórz w czasie</Button>
                             <Button size="sm" onClick={() => downloadRecording(n)}>Pobierz</Button>
