@@ -1,5 +1,5 @@
-import initMagicKeys from '../src/scripts/magicKeys';
-import { colorStringInLine, findClosestColor } from '../src/Colors';
+import initMagicKeys, { KEYS_COLOR } from '../src/scripts/magicKeys';
+import { colorTokenInLine } from '../src/Colors';
 
 describe('magic keys', () => {
     beforeEach(() => {
@@ -19,7 +19,10 @@ describe('magic keys', () => {
         const call = client.Triggers.registerTokenTrigger.mock.calls[0];
         const pattern = call[0];
         const callback = call[1];
-        const colored = colorStringInLine('alpha test', pattern, findClosestColor('#00ff7f'));
-        expect(callback('alpha test', 'alpha test', {} as any)).toBe(colored);
+        const sentence = 'to jest alpha w zdaniu';
+        expect(callback(sentence, sentence, {} as any)).toBe(colorTokenInLine(sentence, pattern, KEYS_COLOR));
+
+        const titleCase = 'Alpha pojawila sie w zdaniu';
+        expect(callback(titleCase, titleCase, {} as any)).toBe(colorTokenInLine(titleCase, pattern, KEYS_COLOR));
     });
 });
