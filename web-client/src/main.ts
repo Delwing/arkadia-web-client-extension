@@ -492,10 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const safeTotal = Math.max(0, total);
         const safeIndex = Math.max(0, Math.min(index, safeTotal));
         if (safeTotal === 0) {
-            playbackInfo.textContent = 'Krok 0 z 0';
+            playbackInfo.textContent = '0 / 0';
             return;
         }
-        playbackInfo.textContent = `Krok ${safeIndex} z ${safeTotal}`;
+        playbackInfo.textContent = `${safeIndex} / ${safeTotal}`;
     };
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();

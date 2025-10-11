@@ -622,14 +622,20 @@ h1 {
   display: none;
   min-width: 13rem;
   max-width: 18rem;
+  padding: 0.12rem 0.18rem;
 }
 
 #playback-controls .card-body {
-  padding: 0.18rem 0.35rem;
+  padding: 0.08rem 0.2rem;
+}
+
+#playback-controls .playback-control-row {
+  gap: 0.12rem;
+  margin: 0;
 }
 
 #playback-controls .progress {
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
   margin-bottom: 0;
   height: 0.8rem;
   position: relative;
