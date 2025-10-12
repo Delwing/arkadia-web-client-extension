@@ -1,43 +1,38 @@
 import LampTimer from '../src/LampTimer';
-
-class MockClient {
-  private events: Record<string, Function[]> = {};
-  on(event: string, listener: Function) {
-    (this.events[event] ||= []).push(listener);
-  }
-  emit(event: string, ...args: any[]) {
-    (this.events[event] || []).forEach(fn => fn(...args));
-  }
-}
+import { uiStore, __uiStoreTestApi } from '../src/ui/store';
 
 describe('LampTimer', () => {
   let container: HTMLElement;
-  let client: MockClient;
 
   beforeEach(() => {
+    __uiStoreTestApi?.resetUiStoreForTesting();
     document.body.innerHTML = '<div id="lamp-timer"></div>';
     container = document.getElementById('lamp-timer')!;
-    client = new MockClient();
-    new LampTimer(client as any);
+    new LampTimer();
   });
 
   test('hides timer when no time', () => {
-    client.emit('lampTimer', null);
+    expect(container.style.display).toBe('none');
+    expect(container.textContent).toBe('');
+    expect(container.className).toBe('');
+
+    uiStore.setState({ lampTimer: 30 });
+    uiStore.setState({ lampTimer: null });
     expect(container.style.display).toBe('none');
     expect(container.textContent).toBe('');
     expect(container.className).toBe('');
   });
 
   test('updates display and class based on time', () => {
-    client.emit('lampTimer', 65);
+    uiStore.setState({ lampTimer: 65 });
     expect(container.textContent).toBe('lamp 1:05');
     expect(container.style.display).toBe('block');
     expect(container.className).toBe('green');
 
-    client.emit('lampTimer', 55);
+    uiStore.setState({ lampTimer: 55 });
     expect(container.className).toBe('yellow');
 
-    client.emit('lampTimer', 25);
+    uiStore.setState({ lampTimer: 25 });
     expect(container.className).toBe('red');
   });
 });

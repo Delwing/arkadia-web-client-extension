@@ -1,10 +1,10 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import { uiStore, selectLampTimer } from "./ui/store";
 
 export default class LampTimer {
   private container: HTMLElement | null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor() {
     this.container = document.getElementById("lamp-timer");
-    client.on("lampTimer", (seconds: number | null) => this.update(seconds));
+    uiStore.subscribe(selectLampTimer, (seconds) => this.update(seconds), { fireImmediately: true });
   }
 
   private update(seconds: number | null) {

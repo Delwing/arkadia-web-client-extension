@@ -1,11 +1,10 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import { uiStore, selectCoverTimer } from "./ui/store";
 
 export default class CoverTimer {
   private container: HTMLElement | null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor() {
     this.container = document.getElementById("cover-timer");
-    client.on("coverTimer", (sec: number | null) => this.update(sec));
-    this.update(null);
+    uiStore.subscribe(selectCoverTimer, (seconds) => this.update(seconds), { fireImmediately: true });
   }
 
   private update(seconds: number | null) {
