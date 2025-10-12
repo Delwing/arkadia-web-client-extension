@@ -10,12 +10,12 @@ describe("MessageRouter runtime event hub integration", () => {
         eventHub = new EventHub<RuntimeEvents>();
         router = new MessageRouter(new MockTransportAdapter({ emitLifecycle: false }), eventHub, {
             parseAnsiPatterns: (text) => text,
-            transformLine: (text) => text,
         });
     });
 
     afterEach(() => {
         router.dispose();
+        delete (window as any).clientExtension;
     });
 
     function processFrame(frame: string) {
@@ -33,6 +33,52 @@ describe("MessageRouter runtime event hub integration", () => {
         const gmcpData = String.fromCharCode(201) + `gmcp_msgs ${gmcpPayload}`;
         return `\u00FF\u00FA${gmcpData}\u00FF\u00F0`;
     }
+
+    test("uses an identity line transform by default", () => {
+        const outputLines: RuntimeEvents["outputLine"][] = [];
+        const transformSpy = jest.fn();
+        (window as any).clientExtension = { onLine: transformSpy };
+        const subscription = eventHub.on("outputLine", (payload) => {
+            outputLines.push(payload);
+        });
+
+        processFrame(createGmcpMessageFrame("room.info", "Look around"));
+
+        expect(outputLines).toEqual([
+            {
+                index: 0,
+                rawText: "Look around",
+                text: "Look around",
+                type: "room.info",
+            },
+        ]);
+        expect(transformSpy).not.toHaveBeenCalled();
+
+        subscription.unsubscribe();
+    });
+
+    test("allows updating the line transform via setLineTransform", () => {
+        const outputLines: RuntimeEvents["outputLine"][] = [];
+        const transform = jest.fn((text: string) => `#${text}`);
+        router.setLineTransform(transform);
+        const subscription = eventHub.on("outputLine", (payload) => {
+            outputLines.push(payload);
+        });
+
+        processFrame(createGmcpMessageFrame("room.info", "Look around"));
+
+        expect(transform).toHaveBeenCalledWith("Look around", "room.info");
+        expect(outputLines).toEqual([
+            {
+                index: 0,
+                rawText: "Look around",
+                text: "#Look around",
+                type: "room.info",
+            },
+        ]);
+
+        subscription.unsubscribe();
+    });
 
     test("emits GMCP updates through the event hub", () => {
         const gmcpUpdates: { path: string; value: unknown }[] = [];
