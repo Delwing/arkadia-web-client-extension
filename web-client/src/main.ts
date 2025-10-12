@@ -19,7 +19,7 @@ import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
-import "@client/src/main.ts"
+import { createClientRuntime } from "@client/src/main.ts";
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {EmbeddedMap} from "./embed.ts"
@@ -68,7 +68,16 @@ const commandDispatcher = new ClientCommandDispatcher(client);
 uiStore.getState().setCommandDispatcher(commandDispatcher);
 window.clientExtension = client;
 bindUiStoreToClientEvents(client);
-registerScripts(client)
+const clientRuntime = createClientRuntime({
+    client,
+    eventHub: runtimeEventHub,
+    settingsService: services.settings,
+    dataCatalog: services.dataCatalog,
+    commandDispatcher,
+});
+clientRuntime.initialise();
+// @ts-ignore
+window.clientRuntime = clientRuntime;
 client.connect(client.port, true)
 
 
@@ -1148,4 +1157,3 @@ window.client = arkadiaClient
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
-import {registerScripts} from "@client/src/main.ts";
