@@ -25,6 +25,7 @@ describe('TeamManager', () => {
   let eventHub: EventHub<RuntimeEvents>;
 
   const emitGmcp = (path: string, value: unknown) => {
+    eventHub.emit(`gmcp.${path}` as `gmcp.${string}`, value);
     eventHub.emit('gmcp', { path, value });
   };
 
@@ -33,10 +34,6 @@ describe('TeamManager', () => {
     eventHub = new EventHub<RuntimeEvents>();
     manager = new TeamManager((client as unknown) as any, eventHub);
     emitGmcp('char.info', { object_num: '99' });
-  });
-
-  afterEach(() => {
-    manager.dispose();
   });
 
   test('adds member from gmcp objects', () => {
@@ -250,24 +247,6 @@ describe('TeamManager', () => {
     expect(client.println).toHaveBeenCalledWith(
       '<span style="color:orange">/nn zeby zaatakowac nastepny cel: ob_10</span>',
     );
-  });
-
-  test('dispose removes gmcp listeners', () => {
-    const callback = jest.fn();
-    client.addEventListener('teamChange', callback);
-
-    emitGmcp('objects.data', {
-      '1': { desc: 'Alice', living: true, team: true },
-    });
-
-    expect(callback).toHaveBeenCalledTimes(1);
-
-    manager.dispose();
-    emitGmcp('objects.data', {
-      '2': { desc: 'Bob', living: true, team: true },
-    });
-
-    expect(callback).toHaveBeenCalledTimes(1);
   });
 
 });

@@ -116,8 +116,6 @@ export default class Client {
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
         this.addEventListener('uiSettings', () => this.updateContentWidth())
-        window.addEventListener('beforeunload', () => this.dispose())
-
         Object.values(this.sounds).forEach((sound) => sound.load())
 
         window.addEventListener('keydown', (ev) => {
@@ -594,7 +592,4 @@ export default class Client {
         }
     }
 
-    dispose() {
-        this.TeamManager.dispose?.()
-    }
 }
