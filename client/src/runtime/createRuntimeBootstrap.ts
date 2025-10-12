@@ -10,7 +10,6 @@ import type {
     MagicDataCatalog,
     MagicKeysDataCatalog,
     HerbsDataCatalog,
-    DataCatalogEntryMetadata,
 } from "./data";
 import type { EventHub, RuntimeEvents } from "./event-hub";
 import type MessageRouter from "./transport/message-router";
@@ -50,15 +49,6 @@ export interface RuntimeBootstrapResult {
         magicKeys: MagicKeysDataCatalog;
         herbs: HerbsDataCatalog;
     };
-    catalogMetadata: {
-        map: DataCatalogEntryMetadata | undefined;
-        npc: DataCatalogEntryMetadata | undefined;
-        colors: DataCatalogEntryMetadata | undefined;
-        people: DataCatalogEntryMetadata | undefined;
-        magic: DataCatalogEntryMetadata | undefined;
-        magicKeys: DataCatalogEntryMetadata | undefined;
-        herbs: DataCatalogEntryMetadata | undefined;
-    };
 }
 
 export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): RuntimeBootstrapResult {
@@ -86,8 +76,6 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
     });
 
     const commandDispatcher = registry.getCommandDispatcher(client);
-    const catalogMetadata = registry.getCatalogMetadata();
-
     const moduleLoader = options.registerModules ?? registerLegacyModules;
     moduleLoader?.({
         client,
@@ -103,7 +91,6 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
             magicKeys: registry.magicKeysCatalog,
             herbs: registry.herbsCatalog,
         },
-        catalogMetadata,
     });
 
     return {
@@ -120,7 +107,6 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
             magicKeys: registry.magicKeysCatalog,
             herbs: registry.herbsCatalog,
         },
-        catalogMetadata,
     };
 }
 

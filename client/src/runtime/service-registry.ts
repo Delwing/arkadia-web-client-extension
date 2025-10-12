@@ -19,7 +19,6 @@ import {
     MAGIC_KEYS_DATASET_KEY,
     HERBS_DATASET_KEY,
 } from "./data";
-import type { DataCatalogEntryMetadata } from "./data";
 import type { EventHub } from "./event-hub";
 import { runtimeEventHub } from "./event-hub";
 import type { RuntimeEvents } from "./event-hub";
@@ -179,25 +178,6 @@ class ServiceRegistry {
         return this.commandDispatcher;
     }
 
-    getCatalogMetadata(): {
-        map: DataCatalogEntryMetadata | undefined;
-        npc: DataCatalogEntryMetadata | undefined;
-        colors: DataCatalogEntryMetadata | undefined;
-        people: DataCatalogEntryMetadata | undefined;
-        magic: DataCatalogEntryMetadata | undefined;
-        magicKeys: DataCatalogEntryMetadata | undefined;
-        herbs: DataCatalogEntryMetadata | undefined;
-    } {
-        return {
-            map: this.mapCatalogInstance.getMapMetadata(),
-            npc: this.npcCatalogInstance.getNpcMetadata(),
-            colors: this.mapCatalogInstance.getColorMetadata(),
-            people: this.peopleCatalogInstance.getPeopleMetadata(),
-            magic: this.magicCatalogInstance.getMagicMetadata(),
-            magicKeys: this.magicKeysCatalogInstance.getMagicKeysMetadata(),
-            herbs: this.herbsCatalogInstance.getHerbsMetadata(),
-        };
-    }
 }
 
 const services = new ServiceRegistry();
