@@ -11,6 +11,7 @@ import type {
     TransportSubscription,
 } from "@client/src/runtime/transport/types";
 import MessageRouter from "@client/src/runtime/transport/message-router";
+import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
@@ -22,7 +23,7 @@ export interface ArkadiaClientDependencies {
 }
 
 function createRouter(transport: TransportAdapter) {
-    return new MessageRouter(transport, { parseAnsiPatterns });
+    return new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
 }
 
 class ArkadiaClient implements ClientAdapter {

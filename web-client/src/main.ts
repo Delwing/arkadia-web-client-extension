@@ -44,11 +44,12 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import MessageRouter from "@client/src/runtime/transport/message-router";
+import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
 
 const transport = new WebSocketTransportAdapter();
-const router = new MessageRouter(transport, { parseAnsiPatterns });
+const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
 configureArkadiaClient({ transport, router });
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
