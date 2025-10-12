@@ -76,7 +76,14 @@ describe("MessageRouter runtime event hub integration", () => {
 
         processFrame(createGmcpMessageFrame("room.info", "Look around"));
 
-        expect(outputLines).toEqual([]);
+        expect(outputLines).toEqual([
+            {
+                index: 0,
+                rawText: "Look around",
+                text: "Look around",
+                type: "room.info",
+            },
+        ]);
         expect(gmcpMessages).toEqual([
             {
                 type: "room.info",
@@ -114,7 +121,14 @@ describe("MessageRouter runtime event hub integration", () => {
 
         processFrame(createGmcpMessageFrame("room.info", "foghorn"));
 
-        expect(outputLines).toEqual([]);
+        expect(outputLines).toEqual([
+            {
+                index: 0,
+                rawText: "foghorn",
+                text: "foghorn",
+                type: "room.info",
+            },
+        ]);
         expect(gmcpMessages).toEqual([
             {
                 type: "room.info",
@@ -143,7 +157,8 @@ describe("MessageRouter runtime event hub integration", () => {
 
         processFrame("Hello adventurer!\n");
 
-        expect(messages.at(-1)).toBe("Hello adventurer!\n");
+        expect(messages).toEqual(["Hello adventurer!\n"]);
+        expect(busListener).toHaveBeenCalledTimes(1);
         expect(busListener).toHaveBeenCalledWith("Hello adventurer!\n");
 
         subscription.unsubscribe();
