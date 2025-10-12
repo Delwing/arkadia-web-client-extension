@@ -1,24 +1,9 @@
 import MessageRouter from "../../src/runtime/transport/message-router";
-import type {
-    TransportAdapter,
-    TransportConnectOptions,
-    TransportOut,
-    TransportSubscription,
-} from "../../src/runtime/transport/types";
 import { EventHub, bridgeRuntimeEventsToLegacyEventBus, type RuntimeEvents } from "../../src/runtime/event-hub";
+import MockTransportAdapter from "../../src/runtime/transport/mock-adapter";
 import eventBus from "../../src/eventBus";
 
 describe("MessageRouter runtime event hub integration", () => {
-    class DummyTransport implements TransportAdapter {
-        readonly messages$ = {
-            subscribe: () => ({ unsubscribe() {} }) as TransportSubscription,
-        };
-
-        connect(_options?: TransportConnectOptions | undefined): void {}
-        disconnect(): void {}
-        send(_message: TransportOut): void {}
-    }
-
     let eventHub: EventHub<RuntimeEvents>;
     let router: MessageRouter;
     let teardownBridge: (() => void) | null = null;
@@ -26,7 +11,7 @@ describe("MessageRouter runtime event hub integration", () => {
     beforeEach(() => {
         eventHub = new EventHub<RuntimeEvents>();
         teardownBridge = bridgeRuntimeEventsToLegacyEventBus(eventHub);
-        router = new MessageRouter(new DummyTransport(), eventHub, {
+        router = new MessageRouter(new MockTransportAdapter({ emitLifecycle: false }), eventHub, {
             parseAnsiPatterns: (text) => text,
             transformLine: (text) => text,
         });
