@@ -2,6 +2,7 @@ jest.mock("mudlet-map-renderer", () => ({
     MapReader: jest.fn(),
     PathFinder: jest.fn(),
 }));
+jest.mock("../../src/scripts/luaGags", () => jest.fn());
 
 import type { ClientAdapter } from "../../src/Client";
 import createRuntimeBootstrap from "../../src/runtime/createRuntimeBootstrap";
@@ -27,6 +28,8 @@ describe("createRuntimeBootstrap", () => {
 
         const port = { onMessage: { addListener: jest.fn() } };
 
+        const registerModules = jest.fn();
+
         const bootstrap = createRuntimeBootstrap({
             clientAdapter,
             registry,
@@ -34,8 +37,10 @@ describe("createRuntimeBootstrap", () => {
             transportFactory: () => transport,
             configureAdapter,
             port,
+            registerModules,
         });
 
+        expect(registerModules).toHaveBeenCalledTimes(1);
         expect(configureAdapter).toHaveBeenCalledTimes(1);
         expect(configureAdapter).toHaveBeenCalledWith({
             transport,

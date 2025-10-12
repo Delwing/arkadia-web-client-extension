@@ -16,6 +16,8 @@ import type { EventHub, RuntimeEvents } from "./event-hub";
 import type MessageRouter from "./transport/message-router";
 import type { TransportAdapter } from "./transport/types";
 import services, { ServiceRegistry } from "./service-registry";
+import type { ModuleLoader } from "./modules";
+import { registerLegacyModules } from "./modules";
 
 interface AdapterConfiguration {
     transport: TransportAdapter;
@@ -31,6 +33,7 @@ export interface RuntimeBootstrapOptions {
     registry?: ServiceRegistry;
     transportFactory?: () => TransportAdapter;
     configureAdapter?: (configuration: AdapterConfiguration) => void;
+    registerModules?: ModuleLoader;
 }
 
 export interface RuntimeBootstrapResult {
@@ -83,6 +86,25 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
     });
 
     const commandDispatcher = registry.getCommandDispatcher(client);
+    const catalogMetadata = registry.getCatalogMetadata();
+
+    const moduleLoader = options.registerModules ?? registerLegacyModules;
+    moduleLoader?.({
+        client,
+        eventHub,
+        settings: registry.settings,
+        commandDispatcher,
+        dataCatalog: registry.dataCatalog,
+        catalogs: {
+            map: registry.mapCatalog,
+            npc: registry.npcCatalog,
+            people: registry.peopleCatalog,
+            magic: registry.magicCatalog,
+            magicKeys: registry.magicKeysCatalog,
+            herbs: registry.herbsCatalog,
+        },
+        catalogMetadata,
+    });
 
     return {
         registry,
@@ -98,7 +120,7 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
             magicKeys: registry.magicKeysCatalog,
             herbs: registry.herbsCatalog,
         },
-        catalogMetadata: registry.getCatalogMetadata(),
+        catalogMetadata,
     };
 }
 
