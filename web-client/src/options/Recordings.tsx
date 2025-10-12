@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Button, Table, Form } from 'react-bootstrap';
 import { getRecordingNames, deleteRecording, getRecording, saveRecording } from './recordingStorage';
+import { useUiStore } from '../ui/store';
 
 function Recordings() {
     const [names, setNames] = useState<string[]>([]);
@@ -8,6 +9,7 @@ function Recordings() {
     const [recording, setRecording] = useState(false);
     const [message, setMessage] = useState('');
     const fileInput = useRef<HTMLInputElement>(null);
+    const client = useUiStore(state => state.clientBindings.client);
 
     const load = () => {
         getRecordingNames().then(setNames).catch(() => setNames([]));
@@ -16,7 +18,7 @@ function Recordings() {
     useEffect(load, []);
 
     useEffect(() => {
-        if (!window.client) return;
+        if (!client) return;
 
         const startHandler = (name: string) => {
             setRecordingName(name);
@@ -28,13 +30,13 @@ function Recordings() {
             if (save) load();
         };
 
-        window.client.on('recording.start', startHandler);
-        window.client.on('recording.stop', stopHandler);
+        client.on('recording.start', startHandler);
+        client.on('recording.stop', stopHandler);
         return () => {
-            window.client.off('recording.start', startHandler);
-            window.client.off('recording.stop', stopHandler);
+            client.off('recording.start', startHandler);
+            client.off('recording.stop', stopHandler);
         };
-    }, []);
+    }, [client]);
 
     function activeTabAction(msg: any) {
         chrome.tabs?.query({ active: true, currentWindow: true }, tabs => {
@@ -45,9 +47,9 @@ function Recordings() {
     }
 
     async function handlePlay(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessages();
+        if (client) {
+            await client.loadRecording(name);
+            client.replayRecordedMessages();
         } else {
             const events = await getRecording(name);
             if (!events) return;
@@ -56,9 +58,9 @@ function Recordings() {
     }
 
     async function handlePlayTimed(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessagesTimed();
+        if (client) {
+            await client.loadRecording(name);
+            client.replayRecordedMessagesTimed();
         } else {
             const events = await getRecording(name);
             if (!events) return;
@@ -67,8 +69,8 @@ function Recordings() {
     }
 
     async function handleDelete(name: string) {
-        if (window.client) {
-            await window.client.deleteRecording(name);
+        if (client) {
+            await client.deleteRecording(name);
             load();
         } else {
             await deleteRecording(name);
@@ -142,8 +144,8 @@ function Recordings() {
     function start() {
         const name = recordingName.trim();
         if (!name) return;
-        if (window.client) {
-            window.client.startRecording(name);
+        if (client) {
+            client.startRecording(name);
         } else {
             activeTabAction({ type: 'START_RECORDING', name });
         }
@@ -151,8 +153,8 @@ function Recordings() {
     }
 
     async function stop(save: boolean) {
-        if (window.client) {
-            await window.client.stopRecording(save);
+        if (client) {
+            await client.stopRecording(save);
             if (save) load();
         } else {
             activeTabAction({ type: 'STOP_RECORDING', save });
