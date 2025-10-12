@@ -21,7 +21,6 @@ function createDispatcher(): CommandDispatcher {
   return {
     sendCommand: jest.fn(() => true),
     sendEvent: jest.fn(),
-    sendExtensionCommand: jest.fn().mockReturnValue(false),
   };
 }
 

@@ -1,19 +1,8 @@
 import type Client from "../Client";
 
-export interface MultibindPortRecord {
-    roomId: number;
-    index: number;
-    action: string;
-}
-
-export type ExtensionCommand =
-    | { type: "MULTIBINDS_LOAD" }
-    | { type: "MULTIBINDS_SAVE"; value: MultibindPortRecord[] };
-
 export interface CommandDispatcher {
     sendCommand(command: string, options?: { echo?: boolean }): boolean;
     sendEvent(type: string, payload?: unknown): void;
-    sendExtensionCommand(command: ExtensionCommand): boolean;
 }
 
 export class ClientCommandDispatcher implements CommandDispatcher {
@@ -28,13 +17,5 @@ export class ClientCommandDispatcher implements CommandDispatcher {
         this.client.sendEvent(type, payload);
     }
 
-    sendExtensionCommand(command: ExtensionCommand): boolean {
-        const port = this.client.port;
-        if (port && typeof port.postMessage === "function") {
-            port.postMessage(command);
-            return true;
-        }
-        return false;
-    }
 }
 
