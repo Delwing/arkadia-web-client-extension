@@ -1053,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new PackageStatus(arkadiaClient);
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
-    new ObjectList(client);
+    new ObjectList();
     new LetterComposer(arkadiaClient);
 
     // Initialize mobile direction buttons

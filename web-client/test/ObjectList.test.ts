@@ -1,22 +1,37 @@
 import ObjectList from '../src/ObjectList';
 import { getItemSync, setItemSync } from '@client/src/storage';
-import ObjectManager from '@client/src/ObjectManager';
-import { EventEmitter } from 'events';
+import type { NearbyObject } from '../src/ui/store';
+import { uiStore, resetUiStoreForTesting } from '../src/ui/store';
+import type { CommandDispatcher } from '@client/src/runtime/command-dispatcher';
 
 jest.mock('@client/src/storage', () => ({
   getItemSync: jest.fn(),
   setItemSync: jest.fn(),
 }));
 
-class MockClient {
-  ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
-  addEventListener() {}
-  sendCommand = jest.fn();
+function setNearbyObjects(objects: NearbyObject[]) {
+  uiStore.setState({ nearbyObjects: objects });
+}
+
+function setAttackQueue(queue: string[]) {
+  uiStore.setState({ attackQueue: queue });
+}
+
+function createDispatcher(): CommandDispatcher {
+  return {
+    sendCommand: jest.fn(),
+    sendEvent: jest.fn(),
+    sendExtensionCommand: jest.fn().mockReturnValue(false),
+  };
 }
 
 describe('ObjectList', () => {
+  let dispatcher: CommandDispatcher;
+
   beforeEach(() => {
+    resetUiStoreForTesting();
+    dispatcher = createDispatcher();
+    uiStore.getState().setCommandDispatcher(dispatcher);
     (getItemSync as jest.Mock).mockReset();
     (setItemSync as jest.Mock).mockReset();
     document.body.innerHTML = '';
@@ -26,14 +41,12 @@ describe('ObjectList', () => {
 
   test('non team members not fighting are not purple', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
-    const objects = [
-      { shortcut: '1', desc: 'Goblin', state: 10 },
-      { shortcut: '2', desc: 'Orc', state: 10, attack_num: true },
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '1', num: 1, shortcut: '1', desc: 'Goblin', state: 10 } as NearbyObject,
+      { id: '2', num: 2, shortcut: '2', desc: 'Orc', state: 10, attackNum: true } as NearbyObject,
     ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    setNearbyObjects(objects);
     const html = (
       document.querySelector('#objects-list .objects-list-content') as HTMLElement
     ).innerHTML.split('<br>');
@@ -56,8 +69,7 @@ describe('ObjectList', () => {
       width: container.offsetWidth,
       height: container.offsetHeight,
     });
-    const client = new MockClient();
-    new ObjectList(client as any);
+    new ObjectList();
     expect(container.style.left).toBe('700px');
     expect(container.style.top).toBe('50px');
   });
@@ -78,8 +90,7 @@ describe('ObjectList', () => {
     });
     container.setPointerCapture = jest.fn();
     container.releasePointerCapture = jest.fn();
-    const client = new MockClient();
-    const ol: any = new ObjectList(client as any);
+    const ol: any = new ObjectList();
     const downEvent = {
       clientX: 0,
       clientY: 0,
@@ -96,11 +107,11 @@ describe('ObjectList', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const container = document.getElementById('objects-list') as any;
     container.setPointerCapture = jest.fn();
-    const client = new MockClient();
-    const ol: any = new ObjectList(client as any);
-    const objects = [{ shortcut: '1', desc: 'Goblin', num: 1 }];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (ol as any).render();
+    const ol: any = new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '1', num: 1, shortcut: '1', desc: 'Goblin' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     const num = document.querySelector('.object-num') as HTMLElement;
     const downEventNum = {
       pointerId: 1,
@@ -126,52 +137,49 @@ describe('ObjectList', () => {
 
   test('clicking number attacks that target', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
-    const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '123', num: 123, shortcut: '1', desc: 'Orc' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     const num = document.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     num.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/z 1', undefined);
   });
 
   test('clicking teammate shields them', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    client.TeamManager.isInTeam = (d: string) => d === 'Ally';
-    const objectList = new ObjectList(client as any);
-    const objects = [ { shortcut: '1', desc: 'Ally', num: 42 } ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '42', num: 42, shortcut: '1', desc: 'Ally', team: true } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     const desc = document.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     desc.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/za 1', undefined);
   });
 
   test('clicking enemy shields against them', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
-    const objects = [ { shortcut: '1', desc: 'Goblin', num: 77 } ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '77', num: 77, shortcut: '1', desc: 'Goblin' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     const desc = document.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     desc.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/za 1', undefined);
   });
 
   test('highlights next queued enemy number in gold', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    client.TeamManager.getEnemyQueue = () => ['123'];
-    const objectList = new ObjectList(client as any);
-    const objects = [
-      { shortcut: '1', desc: 'Ork', num: 123 },
-      { shortcut: '2', desc: 'Goblin', num: 456 },
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '123', num: 123, shortcut: '1', desc: 'Ork' } as NearbyObject,
+      { id: '456', num: 456, shortcut: '2', desc: 'Goblin' } as NearbyObject,
     ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    setNearbyObjects(objects);
+    setAttackQueue(['123']);
     const highlighted = document.querySelector(
       '.object-num[data-object-id="123"]',
     ) as HTMLElement;
@@ -182,40 +190,27 @@ describe('ObjectList', () => {
 
   test('player object is not clickable', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
-    const objects = [ { shortcut: '@', desc: 'Hero', num: 99 } ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '99', num: 99, shortcut: '@', desc: 'Hero' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     expect(document.querySelector('.object-num[data-object-id="99"]')).toBeNull();
     expect(document.querySelector('.object-desc[data-object-id="99"]')).toBeNull();
     const content = document.querySelector('#objects-list .objects-list-content') as HTMLElement;
     content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(dispatcher.sendCommand).not.toHaveBeenCalled();
   });
 
   test('moves non-combat objects to the end with shortcuts starting at 50', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    class TestClient {
-      private emitter = new EventEmitter();
-      ObjectManager = new ObjectManager(this as any);
-      TeamManager = { isInTeam: (_d: string) => false };
-      sendCommand = jest.fn();
-      addEventListener(event: string, cb: any) {
-        this.emitter.on(event, cb);
-      }
-      sendEvent(type: string, detail?: any) {
-        this.emitter.emit(type, { detail });
-      }
-    }
-    const client = new TestClient();
-    new ObjectList(client as any);
-    client.sendEvent('gmcp.objects.data', {
-      '1': { desc: 'Fighter', attack_num: true },
-      '2': { desc: 'Rock' },
-      '3': { desc: 'Tree' },
-    });
-    client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    new ObjectList();
+    const objects: NearbyObject[] = [
+      { id: '1', num: 1, shortcut: '1', desc: 'Fighter', attackNum: 1 } as NearbyObject,
+      { id: '2', num: 2, shortcut: '50', desc: 'Rock' } as NearbyObject,
+      { id: '3', num: 3, shortcut: '51', desc: 'Tree' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
     const html = (
       document.querySelector('#objects-list .objects-list-content') as HTMLElement
     ).innerHTML.split('<br>');
@@ -226,8 +221,7 @@ describe('ObjectList', () => {
 
   test('hides picture-in-picture control when unsupported', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
-    const client = new MockClient();
-    new ObjectList(client as any);
+    new ObjectList();
     expect(document.getElementById('objects-list-pip-button')).toBeNull();
     const container = document.getElementById('objects-list') as HTMLElement;
     expect(container.classList.contains('objects-list-pip-supported')).toBe(false);
@@ -251,16 +245,16 @@ describe('ObjectList', () => {
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
     (window as any).documentPictureInPicture = { requestWindow };
 
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
+    new ObjectList();
     const container = document.getElementById('objects-list') as HTMLElement;
     expect(container.classList.contains('objects-list-pip-supported')).toBe(true);
     const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
     expect(button).toBeTruthy();
 
-    const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
-    client.ObjectManager.getObjectsOnLocation = () => objects;
-    (objectList as any).render();
+    const objects: NearbyObject[] = [
+      { id: '123', num: 123, shortcut: '1', desc: 'Orc' } as NearbyObject,
+    ];
+    setNearbyObjects(objects);
 
     button.click();
     await Promise.resolve();
@@ -292,13 +286,12 @@ describe('ObjectList', () => {
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
     (window as any).documentPictureInPicture = { requestWindow };
 
-    const client = new MockClient();
-    const objectList = new ObjectList(client as any);
+    const objectList: any = new ObjectList();
     const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
-    client.ObjectManager.getObjectsOnLocation = () => [
-      { shortcut: '1', desc: 'Goblin', num: 7 },
+    const objects: NearbyObject[] = [
+      { id: '7', num: 7, shortcut: '1', desc: 'Goblin' } as NearbyObject,
     ];
-    (objectList as any).render();
+    setNearbyObjects(objects);
 
     button.click();
     await Promise.resolve();
@@ -306,12 +299,12 @@ describe('ObjectList', () => {
     const pipNum = pipDoc.body.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     expect(pipNum).toBeTruthy();
     pipNum.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/z 1', undefined);
 
     const pipDesc = pipDoc.body.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     expect(pipDesc).toBeTruthy();
     pipDesc.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/za 1');
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/za 1', undefined);
 
     const foreignTarget = {
       nodeType: Node.ELEMENT_NODE,
@@ -334,8 +327,8 @@ describe('ObjectList', () => {
         return null;
       },
     } as unknown as HTMLElement;
-    (objectList as any).onClick({ target: foreignTarget } as unknown as MouseEvent);
-    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+    objectList.onClick({ target: foreignTarget } as unknown as MouseEvent);
+    expect(dispatcher.sendCommand).toHaveBeenCalledWith('/z 1', undefined);
 
     delete (window as any).documentPictureInPicture;
   });
@@ -353,8 +346,7 @@ describe('ObjectList', () => {
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
     (window as any).documentPictureInPicture = { requestWindow };
 
-    const client = new MockClient();
-    new ObjectList(client as any);
+    new ObjectList();
     const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
     button.click();
     await Promise.resolve();
