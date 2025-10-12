@@ -2,6 +2,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "module": "CommonJS",
+    "moduleResolution": "node16",
     "types": ["jest"],
     "resolveJsonModule": true,
     "esModuleInterop": true
