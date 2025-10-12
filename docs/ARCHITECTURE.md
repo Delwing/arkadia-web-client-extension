@@ -117,8 +117,8 @@ graph TD
   from the store and dispatch intents (e.g., `UIStore.dispatch(saveSettings)`).
 - **HUD Widgets** (imperative overlays) subscribe to the same store so DOM
   manipulations remain in sync with React panels. Commands (movement, actions)
-  go back to the runtime through an injected `CommandDispatcher` instead of
-  writing to `window.clientExtension`.
+  go back to the runtime through the injected `CommandDispatcher` or store
+  provided client bindings instead of writing to a global object.
 
 ## Interaction flow without window globals
 
@@ -177,8 +177,8 @@ teardown behaviour.
    adapter and router. Ensure legacy `ArkadiaClient` delegates entirely to the
    adapter before removing it.
 4. **Adopt the UIStore** for new UI features, then migrate existing widgets and
-   React panels. Replace `window.clientExtension` calls with an injected
-   `CommandDispatcher`.
+   React panels. Replace `window.clientExtension` calls with the injected
+   `CommandDispatcher` or `uiStore` client bindings.
 5. **Decommission legacy code** once all modules consume the new services:
    remove window globals, delete compatibility files, and simplify bootstrap
    scripts.
@@ -186,3 +186,30 @@ teardown behaviour.
 This architecture keeps the powerful feature module ecosystem while delivering
 cleaner boundaries and a single reactive data flow between transport, runtime,
 settings, data, and UI.
+
+### Migrating third-party scripts away from `window.clientExtension`
+
+Legacy extensions could reach runtime helpers by accessing `window.clientExtension`.
+That surface has been replaced by explicit dependency injection through the
+shared UI store:
+
+1. Import the store utilities exposed by the client (`import { uiStore } from "web-client/ui/store";`).
+2. Read injected services from `uiStore.getState().clientBindings`—the bindings
+   include the runtime `Client`, map helper, trigger manager, output handler,
+   team manager, and notification helpers.
+3. Send commands or events through `uiStore.getState().sendCommand()` /
+   `sendEvent()` (or by dispatching intents) instead of calling
+   `clientExtension.sendCommand`.
+
+Scripts that still require direct helpers should destructure them from the
+bindings:
+
+```ts
+const { map, triggers } = uiStore.getState().clientBindings;
+const currentRoomId = map?.currentRoom?.id;
+const allTriggers = [...(triggers?.triggers.values() ?? [])];
+```
+
+Always wait until the UI store has been initialised (for example inside a
+`DOMContentLoaded` listener) before reading the bindings to avoid race
+conditions during bootstrap.

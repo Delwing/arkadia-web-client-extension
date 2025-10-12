@@ -1,5 +1,6 @@
 import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail, LabelRenderMode} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
+import { uiStore } from "./ui/store";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -194,7 +195,7 @@ export class EmbeddedMap {
 
         const room = ev.detail.roomId
         if (room) {
-            const client: any = (window as any).clientExtension;
+            const client = uiStore.getState().clientBindings.client;
             client?.openMapContextMenu?.(room, ev.detail.position.x, ev.detail.position.y);
         }
     }

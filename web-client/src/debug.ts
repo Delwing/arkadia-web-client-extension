@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import { uiStore } from "./ui/store";
 
 function initDebug() {
   const debugButton = document.getElementById("debug-button") as HTMLButtonElement | null;
@@ -40,13 +41,13 @@ function initDebug() {
 
   if (scheduleButton) {
     scheduleButton.addEventListener("click", () => {
-      const client = (window as any).clientExtension;
-      if (!client) return;
-      client.enableNotifications?.();
-      client.sendEvent?.("notify", { text: "Powiadomienie za 5s" });
+      const { enableNotifications, notify } = uiStore.getState().clientBindings;
+      const { sendEvent } = uiStore.getState();
+      enableNotifications?.();
+      sendEvent("notify", { text: "Powiadomienie za 5s" });
       setTimeout(() => {
-        client.notify?.("Test notification");
-        client.sendEvent?.("notify", { text: "Test notification" });
+        notify?.("Test notification");
+        sendEvent("notify", { text: "Test notification" });
       }, 5000);
     });
   }

@@ -1,6 +1,7 @@
 import Modal from "bootstrap/js/dist/modal";
 import type { Trigger } from "@client/src/Triggers";
 import { matchTrigger, patternToString } from "./triggerUtils";
+import { uiStore } from "./ui/store";
 
 function initTriggerTester() {
     const button = document.getElementById('trigger-tester-button') as HTMLButtonElement | null;
@@ -31,8 +32,7 @@ function initTriggerTester() {
         selectedPath = null;
         selectedEl = null;
         treeEl.innerHTML = '';
-        // @ts-ignore
-        const manager = (window as any).clientExtension?.Triggers;
+        const manager = uiStore.getState().clientBindings.triggers;
         if (!manager) return;
         const roots: Trigger[] = [
             ...Array.from(manager.triggers.values()),
@@ -77,8 +77,7 @@ function initTriggerTester() {
         const line = lineInput.value;
         const type = typeInput.value.trim();
         outputEl.textContent = '';
-        // @ts-ignore
-        const triggers = (window as any).clientExtension?.Triggers;
+        const triggers = uiStore.getState().clientBindings.triggers;
         if (!triggers) {
             outputEl.textContent = 'No trigger manager.';
             return;

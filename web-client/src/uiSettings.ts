@@ -1,5 +1,6 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import { uiStore } from "./ui/store";
 
 const mapPositions = [
     'top-overlay',
@@ -135,20 +136,14 @@ function apply(settings: UiSettings) {
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', {
-                detail: {
-                    mobileDirectionButtons: settings.showButtons,
-                    hapticFeedback: settings.hapticFeedback,
-                    emojiLabels: settings.emojiLabels,
-                    xtermPalette: settings.xtermPalette,
-                    footerMode: settings.footerMode,
-                    fightTitleIcon: settings.fightTitleIcon,
-                },
-            })
-        );
-    }
+    uiStore.getState().sendEvent('uiSettings', {
+        mobileDirectionButtons: settings.showButtons,
+        hapticFeedback: settings.hapticFeedback,
+        emojiLabels: settings.emojiLabels,
+        xtermPalette: settings.xtermPalette,
+        footerMode: settings.footerMode,
+        fightTitleIcon: settings.fightTitleIcon,
+    });
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }
