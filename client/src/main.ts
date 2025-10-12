@@ -82,9 +82,10 @@ import initLetter from './scripts/letter'
 import initTeamBlockers from './scripts/teamBlockers'
 import initZaznaczaj from './scripts/zaznaczaj'
 import Client from "./Client";
+import type { EventHub } from "./runtime/event-hub";
 
 
-export function registerScripts(client: Client) {
+export function registerScripts(client: Client, _eventHub: EventHub = client.events) {
     const aliases = client.aliases
     aliases.push({
         pattern: /\/fake (.*)/,

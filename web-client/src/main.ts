@@ -1,6 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
-import arkadiaClient from "./ArkadiaClient.ts";
+import arkadiaClient, { configureArkadiaClientEventHub } from "./ArkadiaClient.ts";
 import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -20,6 +20,7 @@ import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
+import LegacyEventHub from "@client/src/runtime/event-hub/legacy.ts";
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
@@ -46,9 +47,12 @@ import "./triggerFinder"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort())
+const eventHub = new LegacyEventHub();
+configureArkadiaClientEventHub(eventHub);
+
+const client = new Client(arkadiaClient, new MockPort(), eventHub)
 window.clientExtension = client;
-registerScripts(client)
+registerScripts(client, eventHub)
 client.connect(client.port, true)
 
 

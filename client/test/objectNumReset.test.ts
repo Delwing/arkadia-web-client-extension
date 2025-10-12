@@ -1,4 +1,5 @@
 import Client from '../src/Client';
+import LegacyEventHub from '../src/runtime/event-hub/legacy';
 import { getItemSync } from '../src/storage';
 
 (window as any).Input = { send: jest.fn() };
@@ -62,7 +63,7 @@ describe('object_num persistence and reset event', () => {
     (window as any).dispatchEvent = jest.fn();
     (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
     (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
-    client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+    client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   });
 
   test('stores object_num and emits reset when changed', () => {

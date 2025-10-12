@@ -2,13 +2,13 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
+import LegacyEventHub from "@client/src/runtime/event-hub/legacy.ts";
+import type { ClientEventMap, EventHub, EventKey, EventParams } from "@client/src/runtime/event-hub.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
-type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
+type EventListener<K extends EventKey> = (...args: EventParams<ClientEventMap[K]>) => void;
 
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
@@ -29,6 +29,8 @@ class ArkadiaClient implements ClientAdapter {
     private lastConnectManual = true;
     private pingTimer: number | null = null;
     private messageBuffer: { text: string, type: string }[] = []
+    private eventHub: EventHub = new LegacyEventHub();
+    private subscriptions = new Map<EventKey, Map<EventListener<any>, () => void>>();
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
         sendCommand: (cmd) => this.sendCommand(cmd),
@@ -44,25 +46,55 @@ class ArkadiaClient implements ClientAdapter {
     }
 
 
+    setEventHub(eventHub: EventHub) {
+        const current = this.subscriptions;
+        current.forEach((listeners) => {
+            listeners.forEach((unsubscribe) => unsubscribe());
+        });
+        this.subscriptions = new Map();
+        this.eventHub = eventHub;
+        current.forEach((listeners, event) => {
+            listeners.forEach((_unsubscribe, listener) => {
+                this.on(event as EventKey, listener as EventListener<any>);
+            });
+        });
+    }
+
+
+
     /**
      * Register an event listener
      */
-    on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.on(event, listener);
+    on<K extends EventKey>(event: K, listener: EventListener<K>): void {
+        const unsubscribe = this.eventHub.subscribe(event, listener);
+        let listeners = this.subscriptions.get(event);
+        if (!listeners) {
+            listeners = new Map();
+            this.subscriptions.set(event, listeners);
+        }
+        listeners.set(listener as EventListener<any>, unsubscribe);
     }
 
     /**
      * Remove an event listener
      */
-    off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.off(event, listener);
+    off<K extends EventKey>(event: K, listener: EventListener<K>): void {
+        const listeners = this.subscriptions.get(event);
+        const unsubscribe = listeners?.get(listener as EventListener<any>);
+        if (unsubscribe) {
+            unsubscribe();
+            listeners!.delete(listener as EventListener<any>);
+            if (listeners!.size === 0) {
+                this.subscriptions.delete(event);
+            }
+        }
     }
 
     /**
      * Emit an event to all registered listeners
      */
-    emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
-        eventBus.emit(event, ...args);
+    emit<K extends EventKey>(event: K, ...args: EventParams<ClientEventMap[K]>): void {
+        this.eventHub.publish(event, ...args);
     }
 
     /**
@@ -363,7 +395,7 @@ class ArkadiaClient implements ClientAdapter {
 
     private sendLine(text: string, type: string, i: number) {
         text = window.clientExtension.onLine(text, type)
-        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
+        this.eventHub.subscribe('output-sent', () => this.emit(`gmcp_msg.${type}` as EventKey, text), {once: true})
         Output.send(parseAnsiPatterns(text), type);
         this.emit('line-sent')
     }
@@ -430,4 +462,11 @@ class ArkadiaClient implements ClientAdapter {
 
 }
 
-export default new ArkadiaClient();
+const arkadiaClient = new ArkadiaClient();
+
+export function configureArkadiaClientEventHub(eventHub: EventHub) {
+    arkadiaClient.setEventHub(eventHub);
+    return arkadiaClient;
+}
+
+export default arkadiaClient;

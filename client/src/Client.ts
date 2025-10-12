@@ -21,6 +21,7 @@ import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
+import type { EventHub, EventKey } from "./runtime/event-hub";
 import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
@@ -38,17 +39,18 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
-    eventTarget = eventBus;
+    readonly events: EventHub;
+    eventTarget: EventTarget = eventBus;
     Colors = Colors;
-    FunctionalBind = new FunctionalBind(this);
-    Triggers = new Triggers(this);
-    packageHelper = new PackageHelper(this);
-    Map = new MapHelper(this);
-    Pausers = new Pausers(this);
-    OutputHandler = new OutputHandler(this);
-    TeamManager = new TeamManager(this);
-    ObjectManager = new ObjectManager(this);
-    inlineCompassRose = new InlineCompassRose(this);
+    FunctionalBind: FunctionalBind;
+    Triggers: Triggers;
+    packageHelper: PackageHelper;
+    Map: MapHelper;
+    Pausers: Pausers;
+    OutputHandler: OutputHandler;
+    TeamManager: TeamManager;
+    ObjectManager: ObjectManager;
+    inlineCompassRose: InlineCompassRose;
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
     sounds: Record<string, Howl> = {
@@ -97,14 +99,26 @@ export default class Client {
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
 
 
-    constructor(clientAdapter: ClientAdapter, port: any) {
+    constructor(clientAdapter: ClientAdapter, port: any, eventHub: EventHub) {
         this.clientAdapter = clientAdapter
+        this.events = eventHub
+        this.eventTarget = eventHub.target
+        this.FunctionalBind = new FunctionalBind(this);
+        this.Triggers = new Triggers(this);
+        this.packageHelper = new PackageHelper(this);
+        this.Map = new MapHelper(this);
+        this.Pausers = new Pausers(this);
+        this.OutputHandler = new OutputHandler(this);
+        this.TeamManager = new TeamManager(this);
+        this.ObjectManager = new ObjectManager(this);
+        this.inlineCompassRose = new InlineCompassRose(this);
+
         attachGmcpListener(this);
 
         window.addEventListener('extension-message', (ev: Event) => {
             const data: any = (ev as CustomEvent).detail;
             if (data && data.data !== undefined) {
-                this.eventTarget.dispatchEvent(new CustomEvent(data.type, {detail: data.data}))
+                this.events.publish(data.type as EventKey, data.data)
             }
         })
 
@@ -311,7 +325,7 @@ export default class Client {
             port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
         }
         this.port = port
-        this.eventTarget.dispatchEvent(new CustomEvent('port-connected'))
+        this.events.publish('port-connected')
         console.log("Client connected to background service.")
     }
 
@@ -349,7 +363,7 @@ export default class Client {
         if (command) {
             command = stripPolishCharacters(command)
         }
-        this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
+        this.events.publish('command', command)
 
         let preparse = command
         command = this.Map.parseCommand(command)
@@ -416,7 +430,7 @@ export default class Client {
 
     onLine(line: string, type: string) {
         this.inLineProcess = true
-        this.eventTarget.dispatchEvent(new CustomEvent(LINE_START_EVENT))
+        this.events.publish(LINE_START_EVENT as EventKey)
         const ansiRegex = /\x1b\[[0-9;]*m/g
 
         line = this.Triggers.parseMultiline(line, type)
@@ -459,8 +473,12 @@ export default class Client {
     }
 
     sendEvent(type: string, payload?: any) {
-        this.eventTarget.dispatchEvent(new CustomEvent(type, {detail: payload}))
-        window.dispatchEvent(new CustomEvent(type, {detail: payload}))
+        const eventType = type as EventKey;
+        if (payload !== undefined) {
+            this.events.publish(eventType, payload)
+        } else {
+            this.events.publish(eventType)
+        }
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {

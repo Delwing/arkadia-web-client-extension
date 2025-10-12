@@ -17,6 +17,7 @@ jest.mock('../src/main', () => ({
 }));
 
 import Client from '../src/Client';
+import LegacyEventHub from '../src/runtime/event-hub/legacy';
 import { mudletColorLine } from '../src/Colors';
 import { Howl } from 'howler';
 
@@ -71,7 +72,7 @@ beforeEach(() => {
 
 test('requests notification permission on demand', () => {
   (global as any).Notification = { permission: 'default', requestPermission: jest.fn() };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.enableNotifications();
   expect((global as any).Notification.requestPermission).toHaveBeenCalledTimes(1);
   delete (global as any).Notification;
@@ -79,7 +80,7 @@ test('requests notification permission on demand', () => {
 
 test('does not request notification permission when already decided', () => {
   (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.enableNotifications();
   expect((global as any).Notification.requestPermission).not.toHaveBeenCalled();
   delete (global as any).Notification;
@@ -89,7 +90,7 @@ test('registers service worker if available', () => {
   (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
   const original = (navigator as any).serviceWorker;
   (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.enableNotifications();
   expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
   const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
@@ -103,7 +104,7 @@ test('registers service worker using base path', () => {
   document.head.innerHTML = '<base href="/test/">';
   const original = (navigator as any).serviceWorker;
   (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.enableNotifications();
   expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
   const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
@@ -114,7 +115,7 @@ test('registers service worker using base path', () => {
 });
 
 test('port messages trigger window events', () => {
-  new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
   const detail = [{ name: 'Foo', loc: 1 }];
   listener({ npc: detail });
@@ -124,12 +125,12 @@ test('port messages trigger window events', () => {
 });
 
 test('createEvent returns object with type and data', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   expect(client.createEvent('t', 123)).toEqual({ type: 't', data: 123 });
 });
 
 test('addEventListener allows removal', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const handler = jest.fn();
   const remove = client.addEventListener('foo', handler);
   client.eventTarget.dispatchEvent(new CustomEvent('foo', { detail: 'bar' }));
@@ -140,7 +141,7 @@ test('addEventListener allows removal', () => {
 });
 
 test('println uses print with newline', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const spy = jest.spyOn(client, 'print').mockImplementation();
   client.println('hi');
   expect(spy).toHaveBeenNthCalledWith(1, '\n');
@@ -149,7 +150,7 @@ test('println uses print with newline', () => {
 });
 
 test('createButton creates button attached to panel', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const cb = jest.fn();
   const button = client.createButton('name', cb);
   expect(button.value).toBe('name');
@@ -160,7 +161,7 @@ test('createButton creates button attached to panel', () => {
 });
 
 test('sendCommand dispatches event and splits commands', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.sendCommand('foo#bar');
   expect(parseCommand).toHaveBeenCalledWith('foo#bar');
   expect(parseCommand).toHaveBeenCalledWith('parsed:foo');
@@ -170,7 +171,7 @@ test('sendCommand dispatches event and splits commands', () => {
 });
 
 test('sendCommand allows empty command', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.sendCommand('');
   expect(parseCommand).toHaveBeenCalledWith('');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true);
@@ -178,7 +179,7 @@ test('sendCommand allows empty command', () => {
 
 test('sendCommand splits commands returned by parseCommand', () => {
   parseCommand.mockImplementationOnce(() => 'foo;bar');
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.sendCommand('e');
   expect(parseCommand).toHaveBeenCalledWith('e');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true);
@@ -187,7 +188,7 @@ test('sendCommand splits commands returned by parseCommand', () => {
 
 test('sendCommand prints echo commands locally', () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const printSpy = jest.spyOn(client, 'print').mockImplementation();
   client.sendCommand('echo <red> text');
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
@@ -195,7 +196,7 @@ test('sendCommand prints echo commands locally', () => {
 });
 
 test('onLine sends printed messages after line and restores Output.send', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const originalOutputSend = (window as any).Output.send;
 
   client.Triggers.parseLine = jest.fn(() => {
@@ -218,7 +219,7 @@ test('onLine sends printed messages after line and restores Output.send', () => 
 });
 
 test('onLine replaces reset sequences with preceding ANSI code', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const line = '\x1b[22;38;5;1mRED\x1b[0m text \x1b[22;38;5;2mGREEN\x1b[0m';
 
   const result = client.onLine(line, '');
@@ -229,7 +230,7 @@ test('onLine replaces reset sequences with preceding ANSI code', () => {
 });
 
 test('onLine keeps trailing resets without preceding color', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const line = '\x1b[22;38;5;1mred\x1b[0m\x1b[0m';
 
   const result = client.onLine(line, '');
@@ -239,7 +240,7 @@ test('onLine keeps trailing resets without preceding color', () => {
 });
 
 test('onLine restores color after inserting enclosed color', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const gray = '\x1b[22;38;5;8m';
   const yellow = '\x1b[22;38;5;11m';
   const orange = '\x1b[22;38;5;215m';
@@ -273,7 +274,7 @@ test('onLine restores color after inserting enclosed color', () => {
 });
 
 test('onLine preserves final reset at line end', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const gray = '\x1b[22;38;5;8m';
   const line = gray + 'gray text' + '\x1b[0m';
 
@@ -283,7 +284,7 @@ test('onLine preserves final reset at line end', () => {
 });
 
 test('playSound restarts sound when called twice', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   const sound = (Howl as jest.Mock).mock.results[0].value;
 
   client.playSound('beep');
@@ -302,13 +303,13 @@ test('updateContentWidth measures characters per line', () => {
   Object.defineProperty(wrapper, 'clientWidth', { value: 100, configurable: true });
   const measure = document.getElementById('content-width-measure')!;
   (measure as any).getBoundingClientRect = jest.fn(() => ({ width: 10 }));
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   client.updateContentWidth();
   expect(client.contentWidth).toBe(10);
 });
 
 test('support sends commands to support leader', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   jest.spyOn(client, 'sendCommand');
   jest.spyOn(client.TeamManager, 'getLeaderId').mockReturnValue('5');
   client.support();
@@ -317,7 +318,7 @@ test('support sends commands to support leader', () => {
 });
 
 test('sendCommand expands object shortcuts', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock, new LegacyEventHub());
   jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
     { num: 5, shortcut: '1' },
     { num: 7, shortcut: 'A' },

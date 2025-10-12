@@ -10,6 +10,7 @@ jest.mock('howler', () => ({
 }));
 
 import Client from '../src/Client';
+import LegacyEventHub from '../src/runtime/event-hub/legacy';
 import initTempBinds from '../src/scripts/tempBinds';
 
 describe('temp binds', () => {
@@ -26,7 +27,7 @@ describe('temp binds', () => {
       postMessage: jest.fn(),
       onMessage: { addListener: jest.fn() },
     } as any;
-    const client = new Client(adapter, port);
+    const client = new Client(adapter, port, new LegacyEventHub());
     (client as any).println = jest.fn();
     return client;
   }
