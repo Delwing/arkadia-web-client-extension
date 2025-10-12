@@ -2,13 +2,17 @@ import { useEffect, useState, useMemo } from "react";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
-import { defaultSettings } from "./defaultSettings";
+import { useUiDispatch, useUiStore } from "../ui/store";
 
 function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
     const [locked, setLocked] = useState(!getCurrentCharacter());
+    const dispatch = useUiDispatch();
+    const settingsGuilds = useUiStore(state => state.settings.guilds as string[] | undefined);
+    const settingsEnemyGuilds = useUiStore(state => state.settings.enemyGuilds as string[] | undefined);
+    const settingsGuildColors = useUiStore(state => state.settings.guildColors as Record<string, string | undefined> | undefined);
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
         guilds.forEach(g => {
@@ -28,36 +32,16 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
     }, []);
 
     useEffect(() => {
-        const load = () => {
-            storage.getItem("settings").then(res => {
-                if (res && res.settings) {
-                    setSelected(res.settings.guilds || []);
-                    setEnemySelected(res.settings.enemyGuilds || []);
-                    setColors(res.settings.guildColors || {});
-                } else {
-                    setSelected([]);
-                    setEnemySelected([]);
-                    setColors({});
-                }
-            });
-        };
+        setSelected(Array.isArray(settingsGuilds) ? [...settingsGuilds] : []);
+    }, [settingsGuilds]);
 
-        load();
+    useEffect(() => {
+        setEnemySelected(Array.isArray(settingsEnemyGuilds) ? [...settingsEnemyGuilds] : []);
+    }, [settingsEnemyGuilds]);
 
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                const s = changes.settings.newValue || {};
-                setSelected(s.guilds || []);
-                setEnemySelected(s.enemyGuilds || []);
-                setColors(s.guildColors || {});
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
-        return () => {
-            storage.onChanged?.removeListener?.(listener);
-        };
-    }, []);
+    useEffect(() => {
+        setColors(settingsGuildColors ? { ...settingsGuildColors } : {});
+    }, [settingsGuildColors]);
 
     function onChange(guild: string, checked: boolean) {
         setSelected(prev => checked ? [...prev, guild] : prev.filter(g => g !== guild));
@@ -89,20 +73,16 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
 
     useEffect(() => {
         registerSave(() =>
-            storage.getItem("settings").then(res => {
-                const base = res && res.settings
-                    ? { ...defaultSettings, ...res.settings }
-                    : { ...defaultSettings };
-                const settings = {
-                    ...base,
-                    guilds: selected,
-                    enemyGuilds: enemySelected,
-                    guildColors: colors,
-                };
-                return storage.setItem("settings", settings);
+            dispatch({
+                type: "settings/update",
+                patch: {
+                    guilds: [...selected],
+                    enemyGuilds: [...enemySelected],
+                    guildColors: { ...colors },
+                },
             })
         );
-    }, [registerSave, selected, enemySelected, colors]);
+    }, [registerSave, selected, enemySelected, colors, dispatch]);
 
     return (
         <div className="p-2">

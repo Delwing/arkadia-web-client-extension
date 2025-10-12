@@ -1,5 +1,7 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import type ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
+import { uiStore } from "./ui/store";
+import { shallow } from "zustand/shallow";
 
 export interface CharStateData {
   hp: number;
@@ -69,7 +71,6 @@ const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
 };
 
 export default class CharState {
-  private client: typeof ArkadiaClient;
   private container: HTMLElement | null;
   private text: HTMLElement | null;
   private bars: HTMLElement | null;
@@ -80,6 +81,9 @@ export default class CharState {
   private mode = 0;
   private labelElements: Record<keyof CharStateData, HTMLSpanElement> =
     {} as any;
+  private unsubscribeCharState: (() => void) | null = null;
+  private unsubscribeOptions: (() => void) | null = null;
+  private unsubscribePreferences: (() => void) | null = null;
 
   private applyMode(mode: number) {
     if (typeof mode === "number" && mode >= 0 && mode <= 3) {
@@ -150,46 +154,77 @@ export default class CharState {
   }
 
   constructor(
-    client: typeof ArkadiaClient,
+    _client: typeof ArkadiaClient,
     overrides?: Partial<
       Record<keyof CharStateData, Partial<CharStateConfig>>
     >,
   ) {
-    this.client = client;
     this.config = { ...DEFAULT_CONFIG };
     this.applyOverrides(overrides);
     this.initDOM();
 
-    this.client.on('settings', (ev: any) => {
-      if (typeof ev.detail?.emojiLabels === 'boolean') {
-        this.applyLabelMode(ev.detail.emojiLabels);
-      }
-      if (typeof ev.detail?.footerMode === 'number') {
-        this.applyMode(ev.detail.footerMode);
-      }
-    });
-
-    const ext: any = (window as any).clientExtension;
-    if (ext?.addEventListener) {
-      ext.addEventListener('uiSettings', (ev: CustomEvent) => {
-        if (typeof ev.detail?.emojiLabels === 'boolean') {
-          this.applyLabelMode(ev.detail.emojiLabels);
-        }
-        if (typeof ev.detail?.footerMode === 'number') {
-          this.applyMode(ev.detail.footerMode);
-        }
-      });
+    const initialState = uiStore.getState();
+    if (initialState.charState && Object.keys(initialState.charState).length > 0) {
+      this.state = { ...this.state, ...initialState.charState };
     }
-
-    this.client.on(
-      "gmcp.char.state",
-      (state: Partial<CharStateData>) => this.update(state),
+    if (initialState.charOptions) {
+      this.options = { ...this.options, ...initialState.charOptions };
+    }
+    this.unsubscribeCharState = uiStore.subscribe(
+      (state) => state.charState,
+      (next) => {
+        if (next && Object.keys(next).length > 0) {
+          this.update(next);
+        }
+      },
     );
 
-    this.client.on('gmcp.char.options', (options: any) => {
-      this.options = { ...this.options, ...options };
+    this.unsubscribeOptions = uiStore.subscribe(
+      (state) => state.charOptions,
+      (options) => {
+        if (options && Object.keys(options).length > 0) {
+          this.options = { ...this.options, ...options };
+          this.update({});
+        }
+      },
+      { equalityFn: shallow },
+    );
+
+    this.unsubscribePreferences = uiStore.subscribe(
+      (state) => state.uiPreferences,
+      (preferences, previous) => {
+        if (
+          (!previous || preferences.emojiLabels !== previous.emojiLabels) &&
+          typeof preferences.emojiLabels === "boolean"
+        ) {
+          this.applyLabelMode(preferences.emojiLabels);
+        }
+        if (
+          (!previous || preferences.footerMode !== previous.footerMode) &&
+          typeof preferences.footerMode === "number"
+        ) {
+          this.applyMode(preferences.footerMode);
+        }
+      },
+      { equalityFn: shallow, fireImmediately: true },
+    );
+
+    if (
+      typeof initialState.uiPreferences.emojiLabels === "boolean" &&
+      initialState.uiPreferences.emojiLabels !== this.useEmoji
+    ) {
+      this.applyLabelMode(initialState.uiPreferences.emojiLabels);
+    }
+    if (
+      typeof initialState.uiPreferences.footerMode === "number" &&
+      initialState.uiPreferences.footerMode !== this.mode
+    ) {
+      this.applyMode(initialState.uiPreferences.footerMode);
+    }
+
+    if (initialState.charState && Object.keys(initialState.charState).length > 0) {
       this.update({});
-    });
+    }
   }
 
   private update(partialState: Partial<CharStateData>) {

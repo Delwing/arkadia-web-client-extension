@@ -47,6 +47,7 @@ import MessageRouter from "@client/src/runtime/transport/message-router";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
+import { bindUiStoreToClientEvents } from "./ui/store";
 
 const transport = new WebSocketTransportAdapter();
 const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
@@ -56,6 +57,7 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
+bindUiStoreToClientEvents(client);
 registerScripts(client)
 client.connect(client.port, true)
 
