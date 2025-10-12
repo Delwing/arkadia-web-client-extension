@@ -5,29 +5,34 @@ This document captures progress toward the next-generation runtime described in 
 ## Completed work
 
 ### Event hub foundation
-- Added a typed `EventHub` utility that wraps `EventTarget` to provide strongly typed subscriptions and emissions for runtime modules. This is the backbone for the shared event system referenced in the architecture proposal. (see `client/src/runtime/event-hub.ts`).
+- Added a typed `EventHub` utility that wraps `EventTarget` to provide strongly typed subscriptions and emissions for runtime modules, and established a compatibility bridge that keeps the legacy `eventBus` in sync while the migration proceeds. (see `client/src/runtime/event-hub.ts`, `client/test/runtime/message-router.test.ts`).
 
 ### Settings service modernization
 - Introduced a `SettingsService` interface and shared `settingsEventHub` so settings updates can be broadcast through the new event system.
-- Implemented `LocalStorageSettingsService`, which normalizes stored data, exposes a behavior-subject-like observable, forwards updates to the event hub, and handles errors consistently. This service becomes the single source of truth for configuration and removes reliance on scattered storage utilities. (see `client/src/runtime/settings/settings-service.ts`, `client/src/runtime/settings/local-storage-service.ts`).
+- Implemented `LocalStorageSettingsService`, which normalizes stored data, exposes a behavior-subject-like observable, forwards updates to the event hub, and handles errors consistently. Tests exercise per-character scoping and hub notifications, while the legacy `Client` consumes the unified stream instead of talking to storage directly. (see `client/src/runtime/settings/settings-service.ts`, `client/src/runtime/settings/local-storage-service.ts`, `client/test/runtime/settings-service.test.ts`, `client/src/Client.ts`).
 
 ### Service registry bootstrap
-- Added a lightweight `ServiceRegistry` singleton that wires the `LocalStorageSettingsService` and seeds a shared `DataCatalog`. This establishes the pattern for hosting runtime services (data catalog, transport adapters, etc.) under a unified lifecycle manager. (see `client/src/runtime/service-registry.ts`).
+- Added a lightweight `ServiceRegistry` singleton that wires the `LocalStorageSettingsService` and seeds a shared `DefaultDataCatalog` configured with the core loaders. This establishes the pattern for hosting runtime services (data catalog, transport adapters, etc.) under a unified lifecycle manager. (see `client/src/runtime/service-registry.ts`).
 
 ### Transport message routing revamp
-- Refactored the message router to depend on typed transport adapters, merge buffered GMCP messages, and forward structured events through the legacy bus. This sets the stage for routing runtime events into the new architecture without `window` globals. (see `client/src/runtime/transport/message-router.ts` and `client/src/runtime/transport/types.ts`).
+- Refactored the message router to depend on typed transport adapters, merge buffered GMCP messages, and forward structured events through the legacy bus while emitting typed runtime events. Jest coverage asserts GMCP forwarding, message sanitisation, and compatibility bridge behaviour. (see `client/src/runtime/transport/message-router.ts`, `client/src/runtime/transport/types.ts`, `client/test/runtime/message-router.test.ts`).
 
 ### Core data catalog with remote loaders
-- Implemented a typed data catalog and registered default loaders for maps, NPCs, and color definitions that fetch authoritative JSON snapshots over HTTPS before persisting to IndexedDB/localStorage. These loaders can be overridden in tests, giving the runtime a unified way to hydrate shared datasets. (see `client/src/runtime/data/core-loaders.ts`).
+- Implemented a typed data catalog and registered default loaders for maps, NPCs, and color definitions that fetch authoritative JSON snapshots over HTTPS before persisting to IndexedDB/localStorage via pluggable adapters. Runtime tests cover readiness events, caching behaviour, and loader overrides. (see `client/src/runtime/data/default-catalog.ts`, `client/src/runtime/data/core-loaders.ts`, `client/src/runtime/data/persistence`, `client/test/runtime/data/catalog.test.ts`).
+- The web client now surfaces catalog status in the bootstrap progress UI by inspecting dataset metadata, ensuring users understand when map and colour data are ready. (see `web-client/src/main.ts`).
 
 ### WebSocket transport adapter
-- Added a production-ready `WebSocketTransportAdapter` that encapsulates Arkadia-specific protocol details such as GMCP framing, MCCP decompression, periodic pings, and exponential backoff reconnect logic. This adapter implements the typed transport contract so it can be swapped or mocked without touching runtime modules. (see `client/src/runtime/transport/websocket-adapter.ts`).
+- Added a production-ready `WebSocketTransportAdapter` that encapsulates Arkadia-specific protocol details such as GMCP framing, MCCP decompression, periodic pings, and exponential backoff reconnect logic. Unit tests simulate socket lifecycles to confirm reconnection, encoding, and ping behaviour. (see `client/src/runtime/transport/websocket-adapter.ts`, `client/test/runtime/transport/websocket-adapter.test.ts`).
+
+### Mock transport adapter and test subject
+- Implemented a `MockTransportAdapter` plus a minimal `TransportSubject` so runtime components can be exercised without a real socket. The message-router tests rely on this adapter to simulate GMCP frames and lifecycle events deterministically. (see `client/src/runtime/transport/mock-adapter.ts`, `client/src/runtime/transport/subject.ts`, `client/test/runtime/message-router.test.ts`).
 
 ### Shared UI store integration
-- Introduced a Zustand-based `uiStore` that subscribes to the runtime event hub and the modernised settings service, projecting GMCP updates and preference changes into a single UI state tree. Integration tests assert that HUD widgets and React panels observe the same store, demonstrating the end-to-end flow from runtime events to UI reactions. (see `web-client/src/ui/store.ts`, `web-client/test/uiStore.integration.test.tsx`).
+- Introduced a Zustand-based `uiStore` that subscribes to the runtime event hub and the modernised settings service, projecting GMCP updates and preference changes into a single UI state tree. The store can also bind to legacy DOM events so existing widgets continue to work during the transition. (see `web-client/src/ui/store.ts`).
+- Updated HUD behaviour to consume the shared store; for example, the fight title widget reacts to store state and preferences in tests, proving the end-to-end flow from store updates to DOM side effects. (see `web-client/test/FightTitle.test.ts`).
 
 ## Planned next steps
 - Replace legacy `eventBus` listeners in runtime modules with direct `EventHub` subscriptions so the bridge shim can be removed.
 - Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
 - Migrate additional UI widgets and React panels to the shared `uiStore`, removing direct DOM manipulation and `window.clientExtension` dependencies.
-- Provide a lightweight mock transport adapter so integration tests can exercise the runtime without opening real WebSocket connections.
+- Update runtime bootstrap code to construct transports, routers, and services through the new registry so we can phase out ad-hoc wiring in `web-client/src/main.ts` and `client/src/main.ts`.
