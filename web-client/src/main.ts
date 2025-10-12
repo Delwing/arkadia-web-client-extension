@@ -122,9 +122,16 @@ function disableTabSleepPrevention() {
     updateWakeLockButton();
 }
 
-loadNpcData().then(npc => {
-    client.sendEvent("npc", npc)
-})
+const initializeNpcData = async () => {
+    try {
+        const npc = await loadNpcData();
+        client.sendEvent("npc", npc);
+    } catch (error) {
+        console.error('Failed to load NPC data:', error);
+    }
+};
+
+void initializeNpcData();
 
 arkadiaClient.on('settings', (detail: any) => {
     if (detail?.binds?.directions) {

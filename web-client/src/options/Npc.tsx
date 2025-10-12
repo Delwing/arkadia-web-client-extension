@@ -19,9 +19,24 @@ function Npc() {
     const [filter, setFilter] = useState<string>('')
 
     useEffect(() => {
-        loadNpcData().then((data: NpcProps[]) => {
-            setNpcs(data)
-        })
+        let isMounted = true;
+
+        const fetchNpcData = async () => {
+            try {
+                const data = await loadNpcData<NpcProps[]>();
+                if (isMounted) {
+                    setNpcs(data);
+                }
+            } catch (error) {
+                console.error('Failed to load NPC data:', error);
+            }
+        };
+
+        void fetchNpcData();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {

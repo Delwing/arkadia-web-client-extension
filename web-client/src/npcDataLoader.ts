@@ -1,12 +1,22 @@
-// Loader for NPC data sharing cache logic with map loader.
-import { loadCachedJSON } from "@client/src/utils/dataCache.ts";
+import services from "@client/src/runtime/service-registry";
+import { NPC_DATASET_KEY } from "@client/src/runtime/data";
 
-const TTL = 24 * 60 * 60 * 1000; // 24h
+async function loadCatalogDataset<T>(key: string): Promise<T> {
+    const cached = services.dataCatalog.get<T>(key);
+    if (cached !== undefined) {
+        return cached;
+    }
 
-export function loadNpcData() {
-    return loadCachedJSON({
-        url: 'https://delwing.github.io/arkadia-mapa/data/npc.json',
-        indexedDB: { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' },
-        ttl: TTL,
-    });
+    await services.dataCatalog.load(key);
+
+    const loaded = services.dataCatalog.get<T>(key);
+    if (loaded === undefined) {
+        throw new Error(`Dataset "${key}" was not available after loading.`);
+    }
+
+    return loaded;
+}
+
+export function loadNpcData<T = unknown>() {
+    return loadCatalogDataset<T>(NPC_DATASET_KEY);
 }
