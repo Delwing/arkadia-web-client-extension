@@ -1,12 +1,39 @@
+const waitForReadyMock = jest.fn();
+const readyObservableMock = jest.fn();
+
+jest.mock('../src/runtime/service-registry', () => ({
+  __esModule: true,
+  default: {
+    defaultDataCatalog: {
+      waitForReady: waitForReadyMock,
+      ready$: readyObservableMock,
+    },
+  },
+}));
+
 import PackageHelper from '../src/PackageHelper';
 import { colorStringInLine, findClosestColor } from '../src/Colors';
+import type { DataCatalogReadyEvent } from '../src/runtime/data';
 
 describe('PackageHelper', () => {
   let helper: any;
   let client: any;
+  let readySubscribers: Array<{ next?: (event: DataCatalogReadyEvent<{ name: string; loc: number }[]>) => void; error?: (error: unknown) => void }>;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
+    readySubscribers = [];
+    waitForReadyMock.mockResolvedValue({
+      key: 'npcs',
+      data: [],
+      metadata: { key: 'npcs', status: 'ready' },
+    });
+    readyObservableMock.mockImplementation(() => ({
+      subscribe: jest.fn((observer: any) => {
+        readySubscribers.push(observer);
+        return { unsubscribe: jest.fn() };
+      }),
+    }));
     client = {
       Triggers: {
         registerTrigger: jest.fn(),
@@ -39,6 +66,37 @@ describe('PackageHelper', () => {
     helper = new PackageHelper(client);
     client.Triggers.registerTrigger.mockClear();
     client.Triggers.registerMultilineTrigger.mockClear();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  function emitReady(event: DataCatalogReadyEvent<{ name: string; loc: number }[]>) {
+    readySubscribers.forEach(subscriber => subscriber?.next?.(event));
+  }
+
+  const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+  test('loads NPC list from catalog on initialization', async () => {
+    waitForReadyMock.mockResolvedValueOnce({
+      key: 'npcs',
+      data: [{ name: 'Bob', loc: 123 }],
+      metadata: { key: 'npcs', status: 'ready' },
+    });
+
+    helper = new PackageHelper(client);
+    await flushPromises();
+
+    expect(helper.npc['Bob']).toBe(123);
+
+    emitReady({
+      key: 'npcs',
+      data: [{ name: 'Tom', loc: 456 }],
+      metadata: { key: 'npcs', status: 'ready' },
+    });
+
+    expect(helper.npc['Tom']).toBe(456);
   });
 
   test('constructor initializes helper by default', () => {

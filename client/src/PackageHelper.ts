@@ -1,7 +1,10 @@
-import {colorStringInLine, findClosestColor, RESET} from "./Colors";
+import { colorStringInLine, findClosestColor, RESET } from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
+import services from "./runtime/service-registry";
+import { NPC_DATASET_KEY } from "./runtime/data";
+import type { Subscription } from "rxjs";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -38,6 +41,7 @@ export default class PackageHelper {
     private client: Client
     npc: Record<string, number> = {}
     enabled = false;
+    private npcCatalogSubscription?: Subscription;
 
     private packages: { name: string; time?: string; distance?: number }[] = []
     private listTime = 0
@@ -56,8 +60,14 @@ export default class PackageHelper {
     constructor(clientExtension: Client) {
         this.client = clientExtension
         this.client.addEventListener('npc', (event) => {
-            event.detail.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
+            const detail = (event as CustomEvent).detail as { name: string; loc: number }[] | undefined;
+            if (!Array.isArray(detail)) {
+                return;
+            }
+            this.applyNpcDataset(detail);
         })
+
+        this.initializeNpcCatalogSync();
 
 
         this.client.addEventListener('settings', (event) => {
@@ -89,6 +99,47 @@ export default class PackageHelper {
             return colorStringInLine(rawLine, matches[1], colorCode)
         }, tag)
         this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
+    }
+
+    private initializeNpcCatalogSync() {
+        if (!this.npcCatalogSubscription) {
+            void services.defaultDataCatalog
+                .waitForReady<{ name: string; loc: number }[]>(NPC_DATASET_KEY)
+                .then(({ data }) => {
+                    this.applyNpcDataset(data);
+                })
+                .catch((error) => {
+                    console.error('Failed to load NPC dataset for PackageHelper:', error);
+                });
+
+            this.npcCatalogSubscription = services.defaultDataCatalog
+                .ready$<{ name: string; loc: number }[]>(NPC_DATASET_KEY)
+                .subscribe({
+                    next: (event) => {
+                        this.applyNpcDataset(event.data);
+                    },
+                    error: (error) => {
+                        console.error('NPC dataset stream failed for PackageHelper:', error);
+                    },
+                });
+        }
+    }
+
+    private applyNpcDataset(list: { name: string; loc: number }[] | undefined) {
+        if (!Array.isArray(list)) {
+            return;
+        }
+        const normalized: Record<string, number> = {};
+        list.forEach((item) => {
+            if (!item || typeof item.name !== 'string') {
+                return;
+            }
+            const { name, loc } = item;
+            if (typeof loc === 'number') {
+                normalized[name] = loc;
+            }
+        });
+        this.npc = normalized;
     }
 
     private onPackageList() {
