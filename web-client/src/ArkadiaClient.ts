@@ -3,205 +3,161 @@ import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
-import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
-import {uncompress} from "./compression.ts";
+import type {
+    TransportAdapter,
+    TransportConnectOptions,
+    TransportIn,
+    TransportSubscription,
+} from "@client/src/runtime/transport/types";
+import MessageRouter from "@client/src/runtime/transport/message-router";
+import WebSocketTransportAdapter from "./transport/websocket-adapter";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
-// WebSocket configuration
-const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
-const GMCP_COMMAND_CODE = 201;
-const MCCP_COMMAND_CODE = 86;
-const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
+export interface ArkadiaClientDependencies {
+    transport: TransportAdapter;
+    router: MessageRouter;
+}
 
+function createRouter(transport: TransportAdapter) {
+    return new MessageRouter(transport, { parseAnsiPatterns });
+}
 
 class ArkadiaClient implements ClientAdapter {
-    private socket!: WebSocket;
-    private telnetNegotiator = new TelnetOptionNegotiation(this)
-    private mccp = false;
-    // @ts-ignore
-    private readInflator = new pako.Inflate()
-    private receivedFirstGmcp: boolean = false;
+    private transport: TransportAdapter;
+    private router: MessageRouter;
+    private transportSubscription?: TransportSubscription;
+    private socketOpen = false;
+    private lastConnectManual = true;
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
-    private lastConnectManual = true;
-    private pingTimer: number | null = null;
-    private messageBuffer: { text: string, type: string }[] = []
-    private recorder = new Recorder({
-        processIncomingData: (d) => this.processIncomingData(d),
-        sendCommand: (cmd) => this.sendCommand(cmd),
-        emit: (ev, ...args) => this.emit(ev, ...args)
-    });
+    private recorder: Recorder;
 
-    constructor() {
+    constructor(deps: ArkadiaClientDependencies) {
+        this.transport = deps.transport;
+        this.router = deps.router;
+        this.router.attach(this.transport);
+        this.transportSubscription = this.transport.messages$.subscribe(this.handleTransportMessage);
+        this.recorder = new Recorder({
+            processIncomingData: (data) => this.router.processFrame(data),
+            sendCommand: (command, echo = true) => this.send(command, echo),
+            emit: (event, ...args) => this.emit(event as keyof ClientEvents, ...(args as any)),
+        });
+
         addEventListener("beforeunload", (event) => {
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            if (this.socketOpen) {
                 event.preventDefault();
             }
-        })
+        });
     }
 
+    configure(deps: Partial<ArkadiaClientDependencies>) {
+        let shouldResubscribe = false;
 
-    /**
-     * Register an event listener
-     */
-    on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.on(event, listener);
+        if (deps.transport && deps.transport !== this.transport) {
+            this.transportSubscription?.unsubscribe();
+            this.transport = deps.transport;
+            shouldResubscribe = true;
+        }
+
+        if (deps.router && deps.router !== this.router) {
+            this.router.dispose();
+            this.router = deps.router;
+            shouldResubscribe = true;
+        }
+
+        if (shouldResubscribe) {
+            this.router.attach(this.transport);
+            this.transportSubscription = this.transport.messages$.subscribe(this.handleTransportMessage);
+        }
     }
 
-    /**
-     * Remove an event listener
-     */
-    off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.off(event, listener);
-    }
-
-    /**
-     * Emit an event to all registered listeners
-     */
-    emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
-        eventBus.emit(event, ...args);
-    }
-
-    /**
-     * Connect to the WebSocket server
-     */
-    connect(manual: boolean = true): void {
-        try {
-            // Reset the flag when connecting
-            this.receivedFirstGmcp = false;
-            this.lastConnectManual = manual;
-            this.socket = new WebSocket(WEBSOCKET_URL, []);
-            this.socket.onmessage = (event: MessageEvent<string>) => {
-                try {
-                    const decodedData = this.inflate(atob(event.data));
-                    this.recorder.handleIncoming(decodedData);
-                    this.processIncomingData(decodedData);
-                } catch (error) {
-                    console.error('Error processing incoming message:', error);
-                }
-            };
-
-            this.socket.onerror = (error: Event) => {
-                this.emit('error', error);
-            };
-
-            this.socket.onclose = (event: CloseEvent) => {
-                this.emit('close', event);
-                this.emit('client.disconnect');
-                this.stopPing();
-
-                // @ts-ignore
-                this.readInflator = new pako.Inflate()
-            };
-
-            this.socket.onopen = (event: Event) => {
-                this.emit('open', event);
-                this.emit('client.connect');
-                this.mccp = false;
-                this.startPing();
+    private handleTransportMessage = (message: TransportIn) => {
+        switch (message.type) {
+            case "open":
+                this.socketOpen = true;
+                this.router.reset();
+                this.emit("open", message.event);
+                this.emit("client.connect");
                 if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
                     this.send(this.userCommand, false);
                     if (this.passwordCommand !== this.userCommand) {
                         this.send(this.passwordCommand, false);
                     }
                 }
-            };
-        } catch (error) {
-            this.emit('error', error);
+                break;
+            case "close":
+                this.socketOpen = false;
+                this.emit("close", message.event);
+                this.emit("client.disconnect");
+                this.router.reset();
+                break;
+            case "error":
+                this.emit("error", message.event);
+                break;
+            case "data":
+                this.recorder.handleIncoming(message.payload);
+                break;
         }
+    };
+
+    on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
+        eventBus.on(event, listener);
     }
 
-    private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
-                }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
-                }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
-            }
-        }
-        return decodedData;
+    off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
+        eventBus.off(event, listener);
     }
 
-    /**
-     * Disconnect from the WebSocket server
-     */
+    emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
+        eventBus.emit(event, ...args);
+    }
+
+    connect(options?: TransportConnectOptions | boolean): void {
+        const manual = typeof options === "boolean" ? options : options?.manual ?? true;
+        this.lastConnectManual = manual;
+        this.router.reset();
+        this.transport.connect({ manual });
+    }
+
     disconnect(): void {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.close();
-        }
-        this.mccp = false;
-        this.stopPing();
+        this.transport.disconnect();
+        this.router.reset();
     }
 
-    /**
-     * Check if the WebSocket is currently open
-     */
     isSocketOpen(): boolean {
-        return !!this.socket && this.socket.readyState === WebSocket.OPEN;
+        return this.socketOpen;
     }
 
-    /**
-     * Check if the first GMCP event has been received
-     */
     hasReceivedFirstGmcp(): boolean {
-        return this.receivedFirstGmcp;
+        return this.router.hasReceivedFirstGmcp;
     }
 
-    /**
-     * Manually set the stored password for automatic credential sending
-     */
     setStoredPassword(password: string | null): void {
         this.passwordCommand = password;
     }
 
-    /**
-     * Manually set the stored character for automatic credential sending
-     */
     setStoredCharacter(character: string | null): void {
         this.userCommand = character;
     }
 
     sendRaw(message: string): void {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not connected');
+        if (!this.socketOpen) {
+            console.error("WebSocket is not connected");
             return;
         }
-        try {
-            this.socket.send(message);
-        } catch (error) {
-            console.error('Error sending message:', error);
-            this.emit('error', error);
-        }
+        this.transport.send({ kind: "raw", payload: message });
     }
 
-    /**
-     * Send a message through the WebSocket
-     */
     send(message: string, echo: boolean = true): void {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not connected');
+        if (!this.socketOpen) {
+            console.error("WebSocket is not connected");
             return;
         }
 
-        if (!this.receivedFirstGmcp) {
+        if (!this.router.hasReceivedFirstGmcp) {
             if (!this.userCommand) {
                 this.userCommand = message;
             }
@@ -210,162 +166,57 @@ class ArkadiaClient implements ClientAdapter {
 
         try {
             this.recorder.handleOutgoing(message);
-            this.socket.send(btoa(message + "\r\n"));
-            // Only echo commands if requested and we've received the first GMCP event
-            if (echo && this.receivedFirstGmcp && message) {
-                this.output("→ " + message, 'command');
+            this.transport.send({ kind: "text", payload: message });
+            if (echo && this.router.hasReceivedFirstGmcp && message) {
+                this.output("→ " + message, "command");
             }
         } catch (error) {
-            console.error('Error sending message:', error);
-            this.emit('error', error);
+            console.error("Error sending message:", error);
+            const synthetic = new Event("error");
+            (synthetic as any).detail = error;
+            this.emit("error", synthetic);
         }
     }
 
     sendGmcp(path: string, payload: any = {}): void {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.socketOpen) {
             return;
         }
         try {
-            const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-            const gmcpMessage = `\xFF\xFA${String.fromCharCode(GMCP_COMMAND_CODE)}${path} ${data}\xFF\xF0`;
-            this.socket.send(btoa(gmcpMessage));
+            this.transport.send({ kind: "gmcp", path, payload });
         } catch (error) {
-            console.error('Error sending GMCP message:', error);
-            this.emit('error', error);
+            console.error("Error sending GMCP message:", error);
+            const synthetic = new Event("error");
+            (synthetic as any).detail = error;
+            this.emit("error", synthetic);
         }
     }
 
     setConfig(payload: any, filename: string) {
-        const serialized = JSON.stringify(payload)
+        const serialized = JSON.stringify(payload);
         const data = {
             data: payload,
             md5: md5(serialized),
             compressed: false,
             filename: filename,
-        }
-        this.sendGmcp('client.conf.set', data)
+        };
+        this.sendGmcp('client.conf.set', data);
     }
 
-    private startPing() {
-        this.stopPing();
-        this.sendGmcp('core.ping');
-        this.pingTimer = window.setInterval(() => this.sendGmcp('core.ping'), 30000);
-    }
-
-    private stopPing() {
-        if (this.pingTimer !== null) {
-            clearInterval(this.pingTimer);
-            this.pingTimer = null;
-        }
-    }
-
-    /**
-     * Compatibility wrapper matching old client API
-     */
     sendCommand(command: string, echo: boolean = true): void {
         this.send(command, echo);
     }
 
     output(text?: string, type?: string) {
-        this.emit('message', text, type)
+        this.emit('message', text, type);
     }
 
-    //Should be done on all ouput
     parseAnsiPatterns(text: string) {
-        return parseAnsiPatterns(text)
-    }
-
-    /**
-     * Process incoming WebSocket data by removing telnet options
-     */
-    private processIncomingData(data: string) {
-        const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
-        const sanitized = leftOver.replace(/[ÿù]/g, "");
-        if (sanitized.length > 0) {
-            this.emit('message', sanitized)
-        }
-        this.flushMessageBuffer()
-    }
-
-    /**
-     * Parse telnet option from incoming data
-     */
-    private parseTelnetOption(optionData: string): string {
-        if (optionData.length === 3) {
-            //this.telnetNegotiator.parseOptionNegotiation(optionData)
-        } else {
-            this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
-        }
-        return "";
-    }
-
-    /**
-     * Parse telnet subnegotiation, specifically GMCP (Generic MUD Communication Protocol)
-     */
-    private parseTelnetSubnegotiation(data: string): void {
-        if (data.length === 0) return;
-
-        const firstChar = data.charCodeAt(0);
-        if (firstChar === MCCP_COMMAND_CODE) {
-            this.mccp = true;
-            console.log("MCCP enabled")
-        }
-
-        if (firstChar === GMCP_COMMAND_CODE) {
-            const gmcpData = data.substring(1);
-            if (!gmcpData.length) return;
-
-            const spaceIndex = gmcpData.indexOf(" ");
-            if (spaceIndex === -1) return;
-
-            const type = gmcpData.substring(0, spaceIndex).toLowerCase();
-            let payload = gmcpData.substring(spaceIndex + 1);
-
-            // Handle special case for gmcp_msgs
-            if (type === "gmcp_msgs") {
-                payload = payload.replace(//g, "\\u001B");
-            }
-
-            try {
-                const gmcp = JSON.parse(payload);
-                this.receivedFirstGmcp = this.receivedFirstGmcp || type === "char.info";
-                if (type === "gmcp_msgs") {
-                    let text = atob(gmcp.text)
-                    this.messageBuffer.push({text, type: gmcp.type})
-                } else if (type === "client.conf.get") {
-                    const data = JSON.parse(uncompress(gmcp.data))
-                    const filename = gmcp.filename
-                } else {
-                    this.emit(`gmcp.${type}`, gmcp);
-                    this.emit('gmcp', {path: type, value: gmcp});
-                }
-            } catch (error) {
-                console.error('Error parsing GMCP JSON:', error);
-            }
-        }
+        return parseAnsiPatterns(text);
     }
 
     flushMessageBuffer() {
-        let processed = [];
-        this.messageBuffer.forEach((message, i) => {
-            if (processed[processed.length - 1]?.type === message.type) {
-                processed[processed.length - 1].text += message.text
-            } else {
-                processed.push(message)
-            }
-        })
-        processed.forEach((message, i) => {
-            this.sendLine(message.text, message.type, i)
-        })
-        this.emit('output-sent', processed.length)
-        this.messageBuffer = []
-    }
-
-    private sendLine(text: string, type: string, i: number) {
-        text = window.clientExtension.onLine(text, type)
-        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        Output.send(parseAnsiPatterns(text), type);
-        this.emit('line-sent')
+        this.router.flushMessageBuffer();
     }
 
     startRecording(name: string) {
@@ -427,7 +278,26 @@ class ArkadiaClient implements ClientAdapter {
     replayRecordedMessagesTimed() {
         this.recorder.replayRecordedMessagesTimed();
     }
-
 }
 
-export default new ArkadiaClient();
+const defaultTransport = new WebSocketTransportAdapter();
+const defaultRouter = createRouter(defaultTransport);
+const legacyClient = new ArkadiaClient({ transport: defaultTransport, router: defaultRouter });
+
+export function configureArkadiaClient(deps: Partial<ArkadiaClientDependencies>) {
+    if (deps.transport || deps.router) {
+        const transport = deps.transport ?? defaultTransport;
+        const router = deps.router ?? createRouter(transport);
+        legacyClient.configure({ transport, router });
+    }
+    return legacyClient;
+}
+
+export function createArkadiaClient(deps?: Partial<ArkadiaClientDependencies>) {
+    const transport = deps?.transport ?? new WebSocketTransportAdapter();
+    const router = deps?.router ?? createRouter(transport);
+    return new ArkadiaClient({ transport, router });
+}
+
+export { ArkadiaClient };
+export default legacyClient;
