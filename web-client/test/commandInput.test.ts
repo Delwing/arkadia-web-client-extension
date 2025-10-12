@@ -12,7 +12,6 @@ describe("sendMessageFromInput", () => {
         dispatcher = {
             sendCommand: jest.fn(() => true),
             sendEvent: jest.fn(),
-            sendExtensionCommand: jest.fn(() => false),
         } as unknown as jest.Mocked<CommandDispatcher>;
         arkadiaClient = { hasReceivedFirstGmcp: jest.fn(() => true) };
         history = { history: [], index: -1, currentInput: "" };

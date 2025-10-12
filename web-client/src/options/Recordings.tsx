@@ -36,44 +36,34 @@ function Recordings() {
         };
     }, []);
 
-    function activeTabAction(msg: any) {
-        chrome.tabs?.query({ active: true, currentWindow: true }, tabs => {
-            if (tabs[0]?.id) {
-                chrome.tabs.sendMessage(tabs[0].id!, msg);
-            }
-        });
-    }
-
     async function handlePlay(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessages();
-        } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING', events });
+        const client = window.client;
+        if (!client) {
+            setMessage('Funkcje nagrań dostępne są tylko w kliencie Arkadia.');
+            return;
         }
+        await client.loadRecording(name);
+        client.replayRecordedMessages();
     }
 
     async function handlePlayTimed(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessagesTimed();
-        } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING_TIMED', events });
+        const client = window.client;
+        if (!client) {
+            setMessage('Funkcje nagrań dostępne są tylko w kliencie Arkadia.');
+            return;
         }
+        await client.loadRecording(name);
+        client.replayRecordedMessagesTimed();
     }
 
     async function handleDelete(name: string) {
-        if (window.client) {
-            await window.client.deleteRecording(name);
-            load();
+        const client = window.client;
+        if (client) {
+            await client.deleteRecording(name);
         } else {
             await deleteRecording(name);
-            load();
         }
+        load();
     }
 
     function createDownload(json: string, filename: string) {
@@ -142,21 +132,23 @@ function Recordings() {
     function start() {
         const name = recordingName.trim();
         if (!name) return;
-        if (window.client) {
-            window.client.startRecording(name);
-        } else {
-            activeTabAction({ type: 'START_RECORDING', name });
+        const client = window.client;
+        if (!client) {
+            setMessage('Funkcje nagrań dostępne są tylko w kliencie Arkadia.');
+            return;
         }
+        client.startRecording(name);
         setRecording(true);
     }
 
     async function stop(save: boolean) {
-        if (window.client) {
-            await window.client.stopRecording(save);
-            if (save) load();
-        } else {
-            activeTabAction({ type: 'STOP_RECORDING', save });
+        const client = window.client;
+        if (!client) {
+            setMessage('Funkcje nagrań dostępne są tylko w kliencie Arkadia.');
+            return;
         }
+        await client.stopRecording(save);
+        if (save) load();
         setRecording(false);
     }
 

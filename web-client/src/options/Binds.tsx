@@ -3,7 +3,6 @@ import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-boo
 import storage from "@client/src/storage";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
-import { useUiDispatch, useUiStore } from "../ui/store";
 
 interface Bind {
     key: string;
@@ -175,8 +174,6 @@ function Binds() {
     const [isParsingDb, setIsParsingDb] = useState(false);
     const [isRunningImport, setIsRunningImport] = useState(false);
     const [importProgress, setImportProgress] = useState<{ processed: number; total: number; eta: number | null } | null>(null);
-    const dispatch = useUiDispatch();
-    const commandDispatcher = useUiStore(state => state.commandDispatcher);
     const [importCancelled, setImportCancelled] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const cancelImportRef = useRef(false);
@@ -215,15 +212,11 @@ function Binds() {
             setMultibinds(normalizeMultibinds(detail));
         };
         window.addEventListener('multibindsStorage', handler as EventListener);
-        if (commandDispatcher) {
-            void dispatch({ type: 'extension/command', command: { type: 'MULTIBINDS_LOAD' } })
-                .catch(err => console.error('Failed to request multibinds from extension', err));
-        }
         return () => {
             active = false;
             window.removeEventListener('multibindsStorage', handler as EventListener);
         };
-    }, [dispatch, commandDispatcher]);
+    }, []);
 
     const importPlan = useMemo<ImportPlan | null>(() => {
         if (!importData) {
@@ -363,33 +356,8 @@ function Binds() {
         }
         const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
         try {
-            let usedFallback = true;
-            if (commandDispatcher) {
-                const posted = commandDispatcher.sendExtensionCommand({ type: 'MULTIBINDS_SAVE', value: finalList });
-                if (posted) {
-                    usedFallback = false;
-                    await new Promise<void>((resolve) => {
-                        let settled = false;
-                        const handler = () => {
-                            if (settled) return;
-                            settled = true;
-                            window.removeEventListener('multibindsStorage', handler as EventListener);
-                            resolve();
-                        };
-                        window.addEventListener('multibindsStorage', handler as EventListener, { once: true });
-                        setTimeout(() => {
-                            if (settled) return;
-                            settled = true;
-                            window.removeEventListener('multibindsStorage', handler as EventListener);
-                            resolve();
-                        }, 1500);
-                    });
-                }
-            }
-            if (usedFallback) {
-                const stored = await replaceMultibinds(finalList);
-                window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: stored }));
-            }
+            const stored = await replaceMultibinds(finalList);
+            window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: stored }));
             setMultibinds(finalList);
             setImportResult({
                 newCount,

@@ -11,7 +11,7 @@ import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/sr
 import type { DataCatalogEntryMetadata, DataCatalogReadyEvent, NpcDefinition } from "@client/src/runtime/data";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
-import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
+import type { CommandDispatcher } from "@client/src/runtime/command-dispatcher";
 import toTitleCase from "@client/src/utils/toTitleCase";
 import type Client from "@client/src/Client";
 import type MapHelper from "@client/src/MapHelper";
@@ -250,7 +250,6 @@ export interface UiStoreState {
     setClientBindings: (bindings: ClientBindings) => void;
     sendCommand: (command: string, options?: { echo?: boolean }) => boolean;
     sendEvent: (event: string, payload?: unknown) => void;
-    sendExtensionCommand: (command: ExtensionCommand) => boolean;
     dispatch: (intent: UiIntent) => Promise<void>;
     datasets: Record<string, CatalogDatasetSlice<unknown>>;
     loadDataset: (key: string, options?: CatalogLoadOptions) => Promise<void>;
@@ -261,8 +260,7 @@ export interface UiStoreState {
 export type UiIntent =
     | { type: "settings/update"; patch: Partial<SettingsSnapshot> }
     | { type: "command/send"; command: string; echo?: boolean }
-    | { type: "event/send"; event: string; payload?: unknown }
-    | { type: "extension/command"; command: ExtensionCommand };
+    | { type: "event/send"; event: string; payload?: unknown };
 
 export interface ClientBindings {
     client?: Client;
@@ -299,14 +297,6 @@ async function handleUiIntent(intent: UiIntent, get: () => UiStoreState): Promis
                 throw new Error("Command dispatcher not configured");
             }
             dispatcher.sendEvent(intent.event, intent.payload);
-            return;
-        }
-        case "extension/command": {
-            const dispatcher = get().commandDispatcher;
-            if (!dispatcher) {
-                throw new Error("Command dispatcher not configured");
-            }
-            dispatcher.sendExtensionCommand(intent.command);
             return;
         }
         default:
@@ -351,13 +341,6 @@ const store = createStore(
                 throw new Error("Command dispatcher not configured");
             }
             dispatcher.sendEvent(event, payload);
-        },
-        sendExtensionCommand: (command) => {
-            const dispatcher = get().commandDispatcher;
-            if (!dispatcher) {
-                throw new Error("Command dispatcher not configured");
-            }
-            return dispatcher.sendExtensionCommand(command);
         },
         dispatch: (intent) => handleUiIntent(intent, get),
         loadDataset: (key, options) => loadCatalogDataset(key, options),
