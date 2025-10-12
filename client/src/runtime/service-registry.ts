@@ -6,10 +6,16 @@ import { LocalStorageSettingsService } from './settings/local-storage-service';
 class ServiceRegistry {
     readonly settings: SettingsService;
     readonly dataCatalog: DataCatalog;
+    private readonly defaultCatalog: DefaultDataCatalog;
 
     constructor() {
         this.settings = new LocalStorageSettingsService();
-        this.dataCatalog = registerCoreLoaders({ catalog: new DefaultDataCatalog() });
+        this.defaultCatalog = new DefaultDataCatalog();
+        this.dataCatalog = registerCoreLoaders({ catalog: this.defaultCatalog });
+    }
+
+    get defaultDataCatalog(): DefaultDataCatalog {
+        return this.defaultCatalog;
     }
 }
 

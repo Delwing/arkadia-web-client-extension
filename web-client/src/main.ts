@@ -22,8 +22,6 @@ import LetterComposer from "./LetterComposer";
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
-import {loadMapData, loadColors} from "./mapDataLoader.ts";
-import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -50,7 +48,7 @@ import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
-import { bindUiStoreToClientEvents } from "./ui/store";
+import { bindUiStoreToClientEvents, loadCatalogEntry, selectCatalogEntry, uiStore } from "./ui/store";
 
 const transport = new WebSocketTransportAdapter();
 const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
@@ -125,14 +123,13 @@ function disableTabSleepPrevention() {
     updateWakeLockButton();
 }
 
-void (async () => {
-    try {
-        const npc = await loadNpcData();
+void loadCatalogEntry<unknown[]>(NPC_DATASET_KEY)
+    .then((npc) => {
         client.sendEvent("npc", npc);
-    } catch (error) {
+    })
+    .catch((error) => {
         console.error('Failed to load NPC data:', error);
-    }
-})();
+    });
 
 arkadiaClient.on('settings', (detail: any) => {
     if (detail?.binds?.directions) {
@@ -178,9 +175,12 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-const dataCatalog = services.dataCatalog;
-let mapStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(MAP_DATASET_KEY)?.status ?? 'idle';
-let colorStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(COLORS_DATASET_KEY)?.status ?? 'idle';
+const dataCatalog = services.defaultDataCatalog;
+const mapEntrySelector = selectCatalogEntry<MapData.Map>(MAP_DATASET_KEY);
+const colorEntrySelector = selectCatalogEntry<MapData.Env[]>(COLORS_DATASET_KEY);
+
+let mapStatus: DataCatalogEntryStatus = mapEntrySelector(uiStore.getState())?.metadata?.status ?? 'idle';
+let colorStatus: DataCatalogEntryStatus = colorEntrySelector(uiStore.getState())?.metadata?.status ?? 'idle';
 let progressMessageOverride: string | null = null;
 
 function refreshProgressDisplay() {
@@ -217,7 +217,28 @@ function refreshProgressDisplay() {
     progressBar.style.width = `${percent}%`;
 }
 
+const unsubscribeMapCatalog = uiStore.subscribe(
+    mapEntrySelector,
+    (entry) => {
+        mapStatus = entry?.metadata?.status ?? 'idle';
+        refreshProgressDisplay();
+    }
+);
+
+const unsubscribeColorCatalog = uiStore.subscribe(
+    colorEntrySelector,
+    (entry) => {
+        colorStatus = entry?.metadata?.status ?? 'idle';
+        refreshProgressDisplay();
+    }
+);
+
 refreshProgressDisplay();
+
+window.addEventListener('beforeunload', () => {
+    unsubscribeMapCatalog();
+    unsubscribeColorCatalog();
+});
 
 const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
@@ -275,18 +296,8 @@ outputWrapper.addEventListener('touchend', (e) => {
 
 outputWrapper.addEventListener('dblclick', closeHistoryScrollback);
 
-if (mapStatus !== 'ready') {
-    mapStatus = 'loading';
-}
-if (colorStatus !== 'ready') {
-    colorStatus = 'loading';
-}
-refreshProgressDisplay();
-
-const mapDataPromise = loadMapData()
+const mapDataPromise = loadCatalogEntry<MapData.Map>(MAP_DATASET_KEY)
     .then((mapData) => {
-        mapStatus = 'ready';
-
         const metadata = dataCatalog.metadataFor(MAP_DATASET_KEY);
         if (metadata?.source) {
             progressMessageOverride = metadata.source === 'cache'
@@ -302,20 +313,17 @@ const mapDataPromise = loadMapData()
         return mapData;
     })
     .catch((error) => {
-        mapStatus = 'error';
         progressMessageOverride = error instanceof Error ? error.message : String(error);
         refreshProgressDisplay();
         throw error;
     });
 
-const colorsPromise = loadColors()
+const colorsPromise = loadCatalogEntry<MapData.Env[]>(COLORS_DATASET_KEY)
     .then((colors) => {
-        colorStatus = 'ready';
         refreshProgressDisplay();
         return colors;
     })
     .catch((error) => {
-        colorStatus = 'error';
         progressMessageOverride = error instanceof Error ? error.message : String(error);
         refreshProgressDisplay();
         throw error;

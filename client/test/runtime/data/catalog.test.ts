@@ -9,6 +9,7 @@ import {
     NPC_DATASET_KEY,
     registerCoreLoaders,
 } from '../../../src/runtime/data/core-loaders';
+import { ensureDatasetReady } from '../../../src/runtime/data/catalog-helpers';
 import type { DataPersistenceAdapter } from '../../../src/runtime/data/persistence/types';
 
 describe('DefaultDataCatalog', () => {
@@ -151,5 +152,56 @@ describe('core data loaders', () => {
         expect(await mapAdapter.read()).toEqual({ zones: [] });
         expect(await npcAdapter.read()).toEqual({ npcs: [] });
         expect(await colorAdapter.read()).toEqual({ palette: [] });
+    });
+});
+
+describe('ensureDatasetReady', () => {
+    it('returns cached data when metadata is ready', async () => {
+        const catalog = new DefaultDataCatalog();
+        const datasetKey = 'cached-ready';
+        const payload = { foo: 'bar' };
+
+        catalog.register({
+            key: datasetKey,
+            loader: async () => payload,
+        });
+
+        await catalog.set(datasetKey, payload, 'cache');
+
+        await expect(ensureDatasetReady(catalog, datasetKey)).resolves.toEqual(payload);
+    });
+
+    it('triggers a load and resolves once the dataset is ready', async () => {
+        const catalog = new DefaultDataCatalog();
+        const datasetKey = 'load-me';
+        let loaderCalls = 0;
+
+        catalog.register({
+            key: datasetKey,
+            loader: async ({ persist }) => {
+                loaderCalls += 1;
+                const payload = { value: loaderCalls };
+                await persist(payload);
+                return payload;
+            },
+        });
+
+        await expect(ensureDatasetReady(catalog, datasetKey)).resolves.toEqual({ value: 1 });
+        expect(loaderCalls).toBe(1);
+    });
+
+    it('propagates loader failures', async () => {
+        const catalog = new DefaultDataCatalog();
+        const datasetKey = 'failing';
+        const failure = new Error('kaput');
+
+        catalog.register({
+            key: datasetKey,
+            loader: async () => {
+                throw failure;
+            },
+        });
+
+        await expect(ensureDatasetReady(catalog, datasetKey)).rejects.toBe(failure);
     });
 });

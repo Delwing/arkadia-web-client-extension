@@ -1,16 +1,26 @@
 import { createStore } from "zustand/vanilla";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useStore } from "zustand";
+import type { Subscription } from "rxjs";
 
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
+import type { DataCatalogEntryMetadata } from "@client/src/runtime/data";
+import { ensureDatasetReady } from "@client/src/runtime/data";
 
 import type { CharStateData } from "../CharState";
 
 type ListenerCleanup = () => void;
+
+export interface CatalogEntryState<T = unknown> {
+    data?: T;
+    metadata?: DataCatalogEntryMetadata;
+}
+
+type CatalogState = Record<string, CatalogEntryState>;
 
 export interface UiPreferences {
     emojiLabels: boolean | null;
@@ -27,6 +37,7 @@ export interface UiStoreState {
     charState: Partial<CharStateData>;
     charOptions: CharOptionsState;
     uiPreferences: UiPreferences;
+    dataCatalog: Record<string, CatalogEntryState>;
     dispatch: (intent: UiIntent) => Promise<void>;
 }
 
@@ -52,6 +63,7 @@ const baseState = {
     charState: {},
     charOptions: {},
     uiPreferences: { ...defaultPreferences },
+    dataCatalog: {} as Record<string, CatalogEntryState>,
 };
 
 const initialState: UiStoreState = {
@@ -65,6 +77,119 @@ const store = createStore(
         dispatch: handleUiIntent,
     }))
 );
+
+type UiStoreSubscribe = <T>(
+    selector: (state: UiStoreState) => T,
+    listener: (selectedState: T, previousSelectedState: T) => void,
+    options?: {
+        equalityFn?: (a: T, b: T) => boolean;
+        fireImmediately?: boolean;
+    }
+) => () => void;
+
+function updateCatalogEntry<T>(key: string, partial: CatalogEntryState<T>): void {
+    store.setState((current) => ({
+        dataCatalog: {
+            ...current.dataCatalog,
+            [key]: {
+                ...current.dataCatalog[key],
+                ...partial,
+            },
+        } as CatalogState,
+    }));
+}
+
+function refreshCatalogEntry(key: string): void {
+    const catalog = services.defaultDataCatalog;
+    const metadata = catalog.metadataFor(key);
+    const data = catalog.get(key);
+
+    updateCatalogEntry(key, {
+        data,
+        metadata,
+    });
+}
+
+let catalogSubscription: Subscription | null = null;
+const catalogKeys = new Set<string>();
+const pendingCatalogLoads = new Map<string, Promise<unknown>>();
+
+function subscribeToCatalog() {
+    if (catalogSubscription) {
+        return;
+    }
+
+    catalogSubscription = services.defaultDataCatalog.ready$().subscribe((event) => {
+        updateCatalogEntry(event.key, {
+            data: event.data,
+            metadata: event.metadata,
+        });
+    });
+}
+
+function ensureCatalogTracking(key: string): void {
+    subscribeToCatalog();
+    if (catalogKeys.has(key)) {
+        return;
+    }
+
+    catalogKeys.add(key);
+    refreshCatalogEntry(key);
+}
+
+export function selectCatalogEntry<T = unknown>(key: string) {
+    ensureCatalogTracking(key);
+    return (state: UiStoreState): CatalogEntryState<T> | undefined =>
+        state.dataCatalog[key] as CatalogEntryState<T> | undefined;
+}
+
+export function getCatalogEntrySnapshot<T = unknown>(key: string): CatalogEntryState<T> | undefined {
+    ensureCatalogTracking(key);
+    return store.getState().dataCatalog[key] as CatalogEntryState<T> | undefined;
+}
+
+export function loadCatalogEntry<T = unknown>(key: string): Promise<T> {
+    ensureCatalogTracking(key);
+
+    const catalog = services.defaultDataCatalog;
+    const metadata = catalog.metadataFor(key);
+    const cached = catalog.get<T>(key);
+
+    if (metadata?.status === "ready" && typeof cached !== "undefined") {
+        updateCatalogEntry(key, { data: cached, metadata });
+        return Promise.resolve(cached);
+    }
+
+    const pending = pendingCatalogLoads.get(key) as Promise<T> | undefined;
+    if (pending) {
+        return pending;
+    }
+
+    const loadPromise = ensureDatasetReady<T>(catalog, key)
+        .then((data) => {
+            refreshCatalogEntry(key);
+            return data;
+        })
+        .catch((error) => {
+            refreshCatalogEntry(key);
+            throw error;
+        });
+
+    pendingCatalogLoads.set(key, loadPromise);
+    refreshCatalogEntry(key);
+
+    void loadPromise.finally(() => {
+        pendingCatalogLoads.delete(key);
+    });
+
+    return loadPromise;
+}
+
+export async function clearCatalogEntry(key: string): Promise<void> {
+    ensureCatalogTracking(key);
+    await services.defaultDataCatalog.clear(key);
+    refreshCatalogEntry(key);
+}
 
 function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {
     const next: Partial<UiPreferences> = {};
@@ -185,7 +310,7 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
     };
 }
 
-export const uiStore = store;
+export const uiStore = store as typeof store & { subscribe: UiStoreSubscribe };
 
 export function resetUiStoreForTesting() {
     uiSettingsCleanup?.();
@@ -194,6 +319,10 @@ export function resetUiStoreForTesting() {
     lastClient = null;
     runtimeCleanup?.();
     runtimeCleanup = null;
+    catalogSubscription?.unsubscribe();
+    catalogSubscription = null;
+    catalogKeys.clear();
+    pendingCatalogLoads.clear();
     store.setState({ ...baseState, dispatch: handleUiIntent });
     subscribeToRuntime();
 }
