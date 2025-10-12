@@ -1,49 +1,45 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import type ArkadiaClient from "./ArkadiaClient.ts";
+import { uiStore } from "./ui/store";
 
 export default class FightTitle {
   private baseTitle: string;
   private readonly originalTitle: string;
-  private client: typeof ArkadiaClient;
-  private playerNum?: string;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
   private readonly idlePrefix = "ㅤ ";
   private enabled = true;
+  private unsubscribeAttack?: () => void;
+  private unsubscribePreferences?: () => void;
 
-  constructor(client: typeof ArkadiaClient) {
-    this.client = client;
+  constructor(_client: typeof ArkadiaClient) {
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
-    client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
-    client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
-    client.on("client.disconnect", () => this.reset());
-    (window as any).clientExtension?.eventTarget.addEventListener("uiSettings", (ev: CustomEvent) => {
-      if (typeof ev.detail?.fightTitleIcon === "boolean") {
-        this.enabled = ev.detail.fightTitleIcon;
-        this.updateTitle(this.isFighting, true);
-      }
-    });
-  }
-
-  private handleCharInfo(info: any) {
-    if (info && typeof info.object_num !== "undefined") {
-      this.playerNum = String(info.object_num);
+    const initialState = uiStore.getState();
+    if (typeof initialState.uiPreferences.fightTitleIcon === "boolean") {
+      this.enabled = initialState.uiPreferences.fightTitleIcon;
+      this.updateTitle(this.isFighting, true);
     }
-  }
 
-  private handleObjectsData(data: Record<string, any>) {
-    if (!this.playerNum) return;
-    const obj = data[this.playerNum];
-    if (!obj) return;
-    if (obj.attack_num === undefined) return;
-    const fighting = obj.attack_num !== false;
-    this.updateTitle(fighting);
-  }
+    this.unsubscribeAttack = uiStore.subscribe(
+      (state) => (state.charState as Record<string, unknown>).attack_num,
+      (attackNum) => {
+        const fighting = attackNum !== false && attackNum !== undefined;
+        this.updateTitle(fighting);
+      },
+      { fireImmediately: true },
+    );
 
-  private reset() {
-    this.playerNum = undefined;
-    this.updateTitle(false, true);
+    this.unsubscribePreferences = uiStore.subscribe(
+      (state) => state.uiPreferences.fightTitleIcon,
+      (next) => {
+        if (typeof next === "boolean") {
+          this.enabled = next;
+          this.updateTitle(this.isFighting, true);
+        }
+      },
+      { fireImmediately: true },
+    );
   }
 
   private updateTitle(fighting: boolean, force = false) {
