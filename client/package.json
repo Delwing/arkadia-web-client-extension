@@ -16,7 +16,6 @@
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.326",
     "@types/jest": "^29.5.5",
     "fake-indexeddb": "^6.0.1",
     "jest": "^30.0.4",

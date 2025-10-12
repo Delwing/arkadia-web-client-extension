@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Button, Table, Form } from 'react-bootstrap';
-import { getRecordingNames, deleteRecording, getRecording, saveRecording } from './recordingStorage';
+import { getRecordingNames, getRecording, saveRecording } from './recordingStorage';
 import { useUiStore } from '../ui/store';
 
 function Recordings() {
@@ -38,22 +38,12 @@ function Recordings() {
         };
     }, [client]);
 
-    function activeTabAction(msg: any) {
-        chrome.tabs?.query({ active: true, currentWindow: true }, tabs => {
-            if (tabs[0]?.id) {
-                chrome.tabs.sendMessage(tabs[0].id!, msg);
-            }
-        });
-    }
-
     async function handlePlay(name: string) {
         if (client) {
             await client.loadRecording(name);
             client.replayRecordedMessages();
         } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING', events });
+            setMessage('Brak aktywnego klienta. Nie można odtworzyć nagrania.');
         }
     }
 
@@ -62,18 +52,13 @@ function Recordings() {
             await client.loadRecording(name);
             client.replayRecordedMessagesTimed();
         } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING_TIMED', events });
+            setMessage('Brak aktywnego klienta. Nie można odtworzyć nagrania z opóźnieniem.');
         }
     }
 
     async function handleDelete(name: string) {
         if (client) {
             await client.deleteRecording(name);
-            load();
-        } else {
-            await deleteRecording(name);
             load();
         }
     }
@@ -147,7 +132,8 @@ function Recordings() {
         if (client) {
             client.startRecording(name);
         } else {
-            activeTabAction({ type: 'START_RECORDING', name });
+            setMessage('Brak aktywnego klienta. Nie można rozpocząć nagrywania.');
+            return;
         }
         setRecording(true);
     }
@@ -157,7 +143,8 @@ function Recordings() {
             await client.stopRecording(save);
             if (save) load();
         } else {
-            activeTabAction({ type: 'STOP_RECORDING', save });
+            setMessage('Brak aktywnego klienta. Nie można zatrzymać nagrywania.');
+            return;
         }
         setRecording(false);
     }
