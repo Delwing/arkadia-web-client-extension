@@ -14,13 +14,7 @@ export interface MessageRouterOptions {
     transformLine?: (text: string, type: string) => string;
 }
 
-const defaultTransformLine = (text: string, type: string) => {
-    const extension = (window as any).clientExtension;
-    if (extension && typeof extension.onLine === "function") {
-        return extension.onLine(text, type);
-    }
-    return text;
-};
+const defaultTransformLine: (text: string, type: string) => string = (text: string) => text;
 
 interface BufferedMessage {
     text: string;
@@ -34,7 +28,7 @@ export default class MessageRouter {
     private pendingGmcpMessages: { type: string; text: string }[] = [];
     private receivedFirstGmcp = false;
     private readonly parseAnsiPatterns: (text: string) => string;
-    private readonly transformLine: (text: string, type: string) => string;
+    private transformLine: (text: string, type: string) => string = defaultTransformLine;
     private readonly eventHub: EventHub<RuntimeEvents>;
 
     constructor(
@@ -43,9 +37,13 @@ export default class MessageRouter {
         options: MessageRouterOptions,
     ) {
         this.parseAnsiPatterns = options.parseAnsiPatterns;
-        this.transformLine = options.transformLine ?? defaultTransformLine;
+        this.setLineTransform(options.transformLine);
         this.eventHub = eventHub;
         this.subscribe(transport.messages$);
+    }
+
+    setLineTransform(transform?: (text: string, type: string) => string) {
+        this.transformLine = transform ?? defaultTransformLine;
     }
 
     private subscribe(observable: TransportObservable<TransportIn>) {

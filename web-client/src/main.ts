@@ -63,6 +63,7 @@ configureArkadiaClient({ transport, router });
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
 const client = new Client(arkadiaClient, new MockPort())
+router.setLineTransform(client.onLine.bind(client));
 const commandDispatcher = new ClientCommandDispatcher(client);
 uiStore.getState().setCommandDispatcher(commandDispatcher);
 window.clientExtension = client;
