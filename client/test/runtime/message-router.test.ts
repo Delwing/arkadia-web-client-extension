@@ -1,16 +1,13 @@
 import MessageRouter from "../../src/runtime/transport/message-router";
-import { EventHub, bridgeRuntimeEventsToLegacyEventBus, type RuntimeEvents } from "../../src/runtime/event-hub";
+import { EventHub, type RuntimeEvents } from "../../src/runtime/event-hub";
 import MockTransportAdapter from "../../src/runtime/transport/mock-adapter";
-import eventBus from "../../src/eventBus";
 
 describe("MessageRouter runtime event hub integration", () => {
     let eventHub: EventHub<RuntimeEvents>;
     let router: MessageRouter;
-    let teardownBridge: (() => void) | null = null;
 
     beforeEach(() => {
         eventHub = new EventHub<RuntimeEvents>();
-        teardownBridge = bridgeRuntimeEventsToLegacyEventBus(eventHub);
         router = new MessageRouter(new MockTransportAdapter({ emitLifecycle: false }), eventHub, {
             parseAnsiPatterns: (text) => text,
             transformLine: (text) => text,
@@ -19,10 +16,6 @@ describe("MessageRouter runtime event hub integration", () => {
 
     afterEach(() => {
         router.dispose();
-        if (teardownBridge) {
-            teardownBridge();
-            teardownBridge = null;
-        }
     });
 
     function processFrame(frame: string) {
@@ -41,21 +34,17 @@ describe("MessageRouter runtime event hub integration", () => {
         return `\u00FF\u00FA${gmcpData}\u00FF\u00F0`;
     }
 
-    test("forwards GMCP updates through the event hub and legacy event bus", () => {
+    test("emits GMCP updates through the event hub", () => {
         const gmcpUpdates: { path: string; value: unknown }[] = [];
         const subscription = eventHub.on("gmcp", (payload) => {
             gmcpUpdates.push(payload);
         });
-        const busListener = jest.fn();
-        eventBus.on("gmcp.char.info", busListener);
 
         processFrame(createGmcpFrame("char.info", { foo: "bar" }));
 
         expect(gmcpUpdates).toEqual([{ path: "char.info", value: { foo: "bar" } }]);
-        expect(busListener).toHaveBeenCalledWith({ foo: "bar" });
 
         subscription.unsubscribe();
-        eventBus.off("gmcp.char.info", busListener);
     });
 
     test("emits GMCP message events for decoded payloads", () => {
@@ -71,9 +60,6 @@ describe("MessageRouter runtime event hub integration", () => {
         const gmcpUpdateSubscription = eventHub.on("gmcp", (payload) => {
             gmcpUpdates.push(payload);
         });
-        const gmcpMsgListener = jest.fn();
-        eventBus.on("gmcp_msg.room.info", gmcpMsgListener);
-
         processFrame(createGmcpMessageFrame("room.info", "Look around"));
 
         expect(outputLines).toEqual([
@@ -90,8 +76,6 @@ describe("MessageRouter runtime event hub integration", () => {
                 text: "Look around",
             },
         ]);
-        expect(gmcpMsgListener).toHaveBeenCalledTimes(1);
-        expect(gmcpMsgListener).toHaveBeenCalledWith("Look around");
         expect(gmcpUpdates).toEqual([
             {
                 path: "gmcp_msgs",
@@ -102,7 +86,6 @@ describe("MessageRouter runtime event hub integration", () => {
         outputSubscription.unsubscribe();
         gmcpSubscription.unsubscribe();
         gmcpUpdateSubscription.unsubscribe();
-        eventBus.off("gmcp_msg.room.info", gmcpMsgListener);
     });
 
     test("decodes GMCP message payloads with lowercase base64 characters", () => {
@@ -152,16 +135,11 @@ describe("MessageRouter runtime event hub integration", () => {
         const subscription = eventHub.on("message", (payload) => {
             messages.push(payload);
         });
-        const busListener = jest.fn();
-        eventBus.on("message", busListener);
 
         processFrame("Hello adventurer!\n");
 
         expect(messages).toEqual(["Hello adventurer!\n"]);
-        expect(busListener).toHaveBeenCalledTimes(1);
-        expect(busListener).toHaveBeenCalledWith("Hello adventurer!\n");
 
         subscription.unsubscribe();
-        eventBus.off("message", busListener);
     });
 });
