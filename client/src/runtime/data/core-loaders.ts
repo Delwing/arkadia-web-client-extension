@@ -1,12 +1,10 @@
 import type { DataCatalog, DataLoader } from './catalog';
 import { DefaultDataCatalog } from './default-catalog';
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from './dataset-keys';
+export { MAP_DATASET_KEY, NPC_DATASET_KEY, COLORS_DATASET_KEY } from './dataset-keys';
 import type { DataPersistenceAdapter } from './persistence/types';
 import { IndexedDbPersistenceAdapter } from './persistence/indexeddb-adapter';
 import { LocalStoragePersistenceAdapter } from './persistence/local-storage-adapter';
-
-export const MAP_DATASET_KEY = 'maps';
-export const NPC_DATASET_KEY = 'npcs';
-export const COLORS_DATASET_KEY = 'colors';
 
 export type DataSource<T> = () => Promise<T>;
 

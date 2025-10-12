@@ -1,4 +1,5 @@
 import { Observable, ReplaySubject, Subject } from 'rxjs';
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from './dataset-keys';
 import type {
     DataCatalog,
     DataCatalogEntryMetadata,
@@ -7,6 +8,7 @@ import type {
     DataLoaderContext,
     DataLoaderRegistration,
 } from './catalog';
+import type { NpcDefinition } from './types';
 import type { DataPersistenceAdapter } from './persistence/types';
 
 interface CatalogEntry<T> {
@@ -22,6 +24,62 @@ export class DefaultDataCatalog implements DataCatalog {
     private readonly entries = new Map<string, CatalogEntry<unknown>>();
 
     private readonly globalReady$ = new Subject<DataCatalogReadyEvent<unknown>>();
+
+    getMapData(): MapData.Map | undefined {
+        return this.get<MapData.Map>(MAP_DATASET_KEY);
+    }
+
+    getNpcData(): readonly NpcDefinition[] | undefined {
+        return this.get<NpcDefinition[]>(NPC_DATASET_KEY);
+    }
+
+    getColorPalettes(): MapData.Env[] | undefined {
+        return this.get<MapData.Env[]>(COLORS_DATASET_KEY);
+    }
+
+    getMapMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(MAP_DATASET_KEY);
+    }
+
+    getNpcMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(NPC_DATASET_KEY);
+    }
+
+    getColorMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(COLORS_DATASET_KEY);
+    }
+
+    readyForMap$(): Observable<DataCatalogReadyEvent<MapData.Map>> {
+        return this.ready$<MapData.Map>(MAP_DATASET_KEY);
+    }
+
+    readyForNpc$(): Observable<DataCatalogReadyEvent<readonly NpcDefinition[]>> {
+        return this.ready$<readonly NpcDefinition[]>(NPC_DATASET_KEY);
+    }
+
+    readyForColors$(): Observable<DataCatalogReadyEvent<MapData.Env[]>> {
+        return this.ready$<MapData.Env[]>(COLORS_DATASET_KEY);
+    }
+
+    async loadMapData(): Promise<void> {
+        await this.load(MAP_DATASET_KEY);
+    }
+
+    async loadNpcData(): Promise<void> {
+        await this.load(NPC_DATASET_KEY);
+    }
+
+    async loadColorPalettes(): Promise<void> {
+        await this.load(COLORS_DATASET_KEY);
+    }
+
+    async clearNpcData(): Promise<void> {
+        await this.clear(NPC_DATASET_KEY);
+    }
+
+    async setNpcData(value: readonly NpcDefinition[], source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
+        await this.set(NPC_DATASET_KEY, [...value], source);
+    }
 
     register<T>(registration: DataLoaderRegistration<T>): void {
         if (this.entries.has(registration.key)) {

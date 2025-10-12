@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { createStore } from "zustand/vanilla";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useStore } from "zustand";
@@ -7,7 +8,7 @@ import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/src/runtime/data";
-import type { DataCatalogEntryMetadata, DataCatalogReadyEvent } from "@client/src/runtime/data";
+import type { DataCatalogEntryMetadata, DataCatalogReadyEvent, NpcDefinition } from "@client/src/runtime/data";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
 import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
@@ -430,6 +431,40 @@ export function selectCatalogDataset<T = unknown>(key: string) {
 
 export function useCatalogDataset<T = unknown>(key: string): CatalogDatasetSlice<T> | undefined {
     return useUiStore(selectCatalogDataset<T>(key));
+}
+
+export function useNpcDataset(): CatalogDatasetSlice<readonly NpcDefinition[]> | undefined {
+    return useCatalogDataset<readonly NpcDefinition[]>(NPC_DATASET_KEY);
+}
+
+export function useLoadNpcDataset(): (options?: CatalogLoadOptions) => Promise<void> {
+    const loadDataset = useUiStore((state) => state.loadDataset);
+    return useCallback((options?: CatalogLoadOptions) => loadDataset(NPC_DATASET_KEY, options), [loadDataset]);
+}
+
+export function useEnsureNpcDataset(): (options?: CatalogLoadOptions) => Promise<readonly NpcDefinition[]> {
+    const ensureDataset = useUiStore((state) => state.ensureDataset);
+    return useCallback(
+        (options?: CatalogLoadOptions) => ensureDataset<readonly NpcDefinition[]>(NPC_DATASET_KEY, options),
+        [ensureDataset],
+    );
+}
+
+export function useSyncNpcDataset(): () => void {
+    const syncDataset = useUiStore((state) => state.syncDataset);
+    return useCallback(() => syncDataset(NPC_DATASET_KEY), [syncDataset]);
+}
+
+export function ensureMapDataset(options?: CatalogLoadOptions): Promise<MapData.Map> {
+    return uiStore.getState().ensureDataset<MapData.Map>(MAP_DATASET_KEY, options);
+}
+
+export function ensureColorDataset(options?: CatalogLoadOptions): Promise<MapData.Env[]> {
+    return uiStore.getState().ensureDataset<MapData.Env[]>(COLORS_DATASET_KEY, options);
+}
+
+export function ensureNpcDataset(options?: CatalogLoadOptions): Promise<readonly NpcDefinition[]> {
+    return uiStore.getState().ensureDataset<readonly NpcDefinition[]>(NPC_DATASET_KEY, options);
 }
 
 export function useUiDispatch() {
