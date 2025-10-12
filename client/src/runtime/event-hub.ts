@@ -42,12 +42,4 @@ export type RuntimeEvents = {
     lineSent: { type: string };
 } & Record<`gmcp.${string}`, unknown>;
 
-type RuntimeEventHubGlobal = typeof globalThis & {
-    runtimeEventHub?: EventHub<RuntimeEvents>;
-};
-
-const runtimeEventHubGlobal = globalThis as RuntimeEventHubGlobal;
-
-export const runtimeEventHub =
-    runtimeEventHubGlobal.runtimeEventHub ??
-    (runtimeEventHubGlobal.runtimeEventHub = new EventHub<RuntimeEvents>());
+export const runtimeEventHub = new EventHub<RuntimeEvents>();
