@@ -228,4 +228,35 @@ describe('core data loaders', () => {
         expect(await npcAdapter.read()).toEqual({ npcs: [] });
         expect(await colorAdapter.read()).toEqual({ palette: [] });
     });
+
+    it('fails fast when fetching a dataset exceeds the timeout', async () => {
+        jest.useFakeTimers();
+        const originalFetch = global.fetch as typeof fetch | undefined;
+        const fetchMock = jest.fn(() => new Promise<Response>(() => {}));
+        (global as any).fetch = fetchMock as typeof fetch;
+
+        try {
+            const catalog = registerCoreLoaders({
+                catalog: new DefaultDataCatalog(),
+                fetchTimeoutMs: 5,
+                mapPersistence: new MemoryAdapter<unknown>(),
+                npcPersistence: new MemoryAdapter<unknown>(),
+                colorPersistence: new MemoryAdapter<unknown>(),
+            });
+
+            const loadPromise = catalog.load(MAP_DATASET_KEY);
+
+            jest.advanceTimersByTime(5);
+
+            await expect(loadPromise).rejects.toThrow(/Timed out loading dataset/);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        } finally {
+            if (originalFetch) {
+                (global as any).fetch = originalFetch;
+            } else {
+                delete (global as any).fetch;
+            }
+            jest.useRealTimers();
+        }
+    });
 });
