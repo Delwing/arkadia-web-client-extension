@@ -145,15 +145,12 @@ export default class MessageRouter {
         const type = gmcpData.substring(0, spaceIndex).toLowerCase();
         let payload = gmcpData.substring(spaceIndex + 1);
 
-        if (type === "gmcp_msgs") {
-            payload = payload.replace(/g/g, "\\u001B");
-        }
-
         try {
             const parsed = JSON.parse(payload);
             if (type === "gmcp_msgs") {
                 const text = atob(parsed.text);
                 this.messageBuffer.push({ text, type: parsed.type, gmcp: true });
+                this.eventHub.emit("gmcp", { path: type, value: { ...parsed, text } });
                 return;
             }
 
