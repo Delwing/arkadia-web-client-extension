@@ -25,13 +25,11 @@ const defaultTransformLine = (text: string, type: string) => {
 interface BufferedMessage {
     text: string;
     type: string;
-    gmcp?: boolean;
 }
 
 export default class MessageRouter {
     private subscription?: TransportSubscription;
     private messageBuffer: BufferedMessage[] = [];
-    private pendingGmcpMessages: { type: string; text: string }[] = [];
     private receivedFirstGmcp = false;
     private readonly parseAnsiPatterns: (text: string) => string;
     private readonly transformLine: (text: string, type: string) => string;
@@ -69,7 +67,6 @@ export default class MessageRouter {
     reset() {
         this.receivedFirstGmcp = false;
         this.messageBuffer = [];
-        this.pendingGmcpMessages = [];
     }
 
     get hasReceivedFirstGmcp() {
@@ -88,7 +85,7 @@ export default class MessageRouter {
         const merged: BufferedMessage[] = [];
         for (const entry of this.messageBuffer) {
             const last = merged[merged.length - 1];
-            if (last && last.type === entry.type && last.gmcp === entry.gmcp) {
+            if (last && last.type === entry.type) {
                 last.text += entry.text;
             } else {
                 merged.push({ ...entry });
@@ -97,12 +94,6 @@ export default class MessageRouter {
 
         merged.forEach((message, index) => this.sendLine(message, index));
         this.eventHub.emit("outputFlushed", { count: merged.length });
-        if (this.pendingGmcpMessages.length) {
-            for (const gmcpMessage of this.pendingGmcpMessages) {
-                this.eventHub.emit("gmcpMessage", gmcpMessage);
-            }
-            this.pendingGmcpMessages = [];
-        }
         this.messageBuffer = [];
     }
 
@@ -149,7 +140,8 @@ export default class MessageRouter {
             const parsed = JSON.parse(payload);
             if (type === "gmcp_msgs") {
                 const text = atob(parsed.text);
-                this.messageBuffer.push({ text, type: parsed.type, gmcp: true });
+                this.eventHub.emit("gmcpMessage", { type: parsed.type, text });
+                this.eventHub.emit("gmcp", { path: type, value: { ...parsed, text } });
                 return;
             }
 
@@ -171,9 +163,6 @@ export default class MessageRouter {
             type: message.type,
             index,
         });
-        if (message.gmcp) {
-            this.pendingGmcpMessages.push({ type: message.type, text: transformed });
-        }
 
         if (typeof (window as any).Output?.send === "function") {
             (window as any).Output.send(this.parseAnsiPatterns(transformed), message.type);

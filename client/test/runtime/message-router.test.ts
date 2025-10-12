@@ -58,77 +58,79 @@ describe("MessageRouter runtime event hub integration", () => {
         eventBus.off("gmcp.char.info", busListener);
     });
 
-    test("flushes buffered GMCP messages as output and gmcp_msg events", () => {
+    test("emits GMCP message events for decoded payloads", () => {
         const outputLines: RuntimeEvents["outputLine"][] = [];
         const gmcpMessages: RuntimeEvents["gmcpMessage"][] = [];
+        const gmcpUpdates: RuntimeEvents["gmcp"][] = [];
         const outputSubscription = eventHub.on("outputLine", (payload) => {
             outputLines.push(payload);
         });
         const gmcpSubscription = eventHub.on("gmcpMessage", (payload) => {
             gmcpMessages.push(payload);
         });
+        const gmcpUpdateSubscription = eventHub.on("gmcp", (payload) => {
+            gmcpUpdates.push(payload);
+        });
         const gmcpMsgListener = jest.fn();
-        const outputSentListener = jest.fn();
         eventBus.on("gmcp_msg.room.info", gmcpMsgListener);
-        eventBus.on("output-sent", outputSentListener);
 
         processFrame(createGmcpMessageFrame("room.info", "Look around"));
 
-        expect(outputLines).toEqual([
-            {
-                text: "Look around",
-                rawText: "Look around",
-                type: "room.info",
-                index: 0,
-            },
-        ]);
+        expect(outputLines).toEqual([]);
         expect(gmcpMessages).toEqual([
             {
                 type: "room.info",
                 text: "Look around",
             },
         ]);
-        expect(outputSentListener).toHaveBeenCalledWith(1);
+        expect(gmcpMsgListener).toHaveBeenCalledTimes(1);
         expect(gmcpMsgListener).toHaveBeenCalledWith("Look around");
-        const outputOrder = outputSentListener.mock.invocationCallOrder[0];
-        const gmcpOrder = gmcpMsgListener.mock.invocationCallOrder[0];
-        expect(outputOrder).toBeLessThan(gmcpOrder);
+        expect(gmcpUpdates).toEqual([
+            {
+                path: "gmcp_msgs",
+                value: { type: "room.info", text: "Look around" },
+            },
+        ]);
 
         outputSubscription.unsubscribe();
         gmcpSubscription.unsubscribe();
+        gmcpUpdateSubscription.unsubscribe();
         eventBus.off("gmcp_msg.room.info", gmcpMsgListener);
-        eventBus.off("output-sent", outputSentListener);
     });
 
     test("decodes GMCP message payloads with lowercase base64 characters", () => {
         const outputLines: RuntimeEvents["outputLine"][] = [];
         const gmcpMessages: RuntimeEvents["gmcpMessage"][] = [];
+        const gmcpUpdates: RuntimeEvents["gmcp"][] = [];
         const outputSubscription = eventHub.on("outputLine", (payload) => {
             outputLines.push(payload);
         });
         const gmcpSubscription = eventHub.on("gmcpMessage", (payload) => {
             gmcpMessages.push(payload);
         });
+        const gmcpUpdateSubscription = eventHub.on("gmcp", (payload) => {
+            gmcpUpdates.push(payload);
+        });
 
         processFrame(createGmcpMessageFrame("room.info", "foghorn"));
 
-        expect(outputLines).toEqual([
-            {
-                text: "foghorn",
-                rawText: "foghorn",
-                type: "room.info",
-                index: 0,
-            },
-        ]);
+        expect(outputLines).toEqual([]);
         expect(gmcpMessages).toEqual([
             {
                 type: "room.info",
                 text: "foghorn",
             },
         ]);
+        expect(gmcpUpdates).toEqual([
+            {
+                path: "gmcp_msgs",
+                value: { type: "room.info", text: "foghorn" },
+            },
+        ]);
 
         outputSubscription.unsubscribe();
         gmcpSubscription.unsubscribe();
+        gmcpUpdateSubscription.unsubscribe();
     });
 
     test("emits sanitized text messages", () => {
