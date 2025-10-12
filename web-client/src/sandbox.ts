@@ -2,6 +2,7 @@ import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { RuntimeEvents } from "@client/src/runtime/event-hub";
+import { uiStore } from "./ui/store";
 
 // Disable real network and echo commands locally
 arkadiaClient.connect = () => {
@@ -22,7 +23,8 @@ arkadiaClient.send = (message: string, echo: boolean = true) => {
 (arkadiaClient as any).receivedFirstGmcp = true;
 
 window.addEventListener('load', () => {
-    const client: any = (window as any).clientExtension;
+    const { client: runtimeClient, teamManager } = uiStore.getState().clientBindings;
+    const { sendEvent } = uiStore.getState();
     arkadiaClient.emit('client.connect');
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
@@ -35,7 +37,7 @@ window.addEventListener('load', () => {
     const hps = new Map<number, number>();
 
     function emitGmcp(path: string, value: unknown) {
-        client?.sendEvent?.(`gmcp.${path}`, value);
+        sendEvent(`gmcp.${path}`, value);
         runtimeEventHub.emit(`gmcp.${path}` as keyof RuntimeEvents, value as never);
         runtimeEventHub.emit('gmcp', { path, value } as RuntimeEvents['gmcp']);
     }
@@ -61,8 +63,9 @@ window.addEventListener('load', () => {
     function renderTeam() {
         if (!preview) return;
         preview.innerHTML = '';
-        const members: string[] = client.TeamManager?.getTeamMembers?.() ?? [];
-        const leader = client.TeamManager?.getLeader?.();
+        const manager = teamManager ?? runtimeClient?.TeamManager;
+        const members: string[] = manager?.getTeamMembers?.() ?? [];
+        const leader = manager?.getLeader?.();
         members.forEach((name) => {
             const li = document.createElement('li');
             li.className = 'sandbox-team-member';
@@ -95,7 +98,8 @@ window.addEventListener('load', () => {
     }
 
     function setLeader(name: string) {
-        const currentLeader = client.TeamManager?.getLeader?.();
+        const manager = teamManager ?? runtimeClient?.TeamManager;
+        const currentLeader = manager?.getLeader?.();
         if (currentLeader && currentLeader !== name) {
             sendTeam(currentLeader, false);
         }
@@ -112,7 +116,8 @@ window.addEventListener('load', () => {
             emitGmcp('objects.data', update);
             emitGmcp('objects.nums', Array.from(objectNums));
         }
-        client.TeamManager?.removeMember?.(name);
+        const manager: any = teamManager ?? runtimeClient?.TeamManager;
+        manager?.removeMember?.(name);
     }
 
     function addEnemy() {
@@ -129,7 +134,7 @@ window.addEventListener('load', () => {
         emitGmcp('objects.nums', Array.from(objectNums));
     }
 
-    client.addEventListener?.('teamChange', renderTeam);
+    runtimeClient?.addEventListener?.('teamChange', renderTeam);
 
     const playerName = 'Player';
     const charInfo = { name: playerName, object_num: id };

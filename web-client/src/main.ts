@@ -65,7 +65,15 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const { client, commandDispatcher, dataCatalog, catalogMetadata } = runtimeBootstrap;
 uiStore.getState().setCommandDispatcher(commandDispatcher);
-window.clientExtension = client;
+uiStore.getState().setClientBindings({
+    client,
+    outputHandler: client.OutputHandler,
+    map: client.Map,
+    triggers: client.Triggers,
+    teamManager: client.TeamManager,
+    enableNotifications: client.enableNotifications.bind(client),
+    notify: client.notify.bind(client),
+});
 bindUiStoreToClientEvents(client);
 registerScripts(client)
 client.connect(client.port, true)
@@ -231,7 +239,7 @@ let isSplitView = false;
 const STICKY_LINES = 15;
 
 function processSticky(count: number) {
-    const handler: any = (window as any).clientExtension?.OutputHandler;
+    const handler: any = client.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
         const prev = handler.output;
         handler.output = stickyArea;
@@ -516,10 +524,10 @@ document.addEventListener('keydown', (e) => {
     if (direction) {
         e.preventDefault();
         if (direction === 'special') {
-            const exits = (window as any).clientExtension?.Map.currentRoom?.specialExits ?? {};
+            const exits = client.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
-                (window as any).clientExtension.sendCommand(first);
+                commandDispatcher.sendCommand(first);
             }
         } else {
             client.sendCommand(direction);
@@ -750,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shareLocationButton && locationQrImage && locationShareModal) {
         shareLocationButton.addEventListener('click', () => {
-            const roomId = (window as any).clientExtension?.Map?.currentRoom?.id;
+            const roomId = client.Map?.currentRoom?.id;
             if (!roomId) {
                 return;
             }

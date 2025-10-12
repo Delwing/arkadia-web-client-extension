@@ -13,6 +13,11 @@ import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-ser
 import { defaultSettings } from "@client/src/defaultSettings";
 import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
 import toTitleCase from "@client/src/utils/toTitleCase";
+import type Client from "@client/src/Client";
+import type MapHelper from "@client/src/MapHelper";
+import type OutputHandler from "@client/src/OutputHandler";
+import type TeamManager from "@client/src/TeamManager";
+import type Triggers from "@client/src/Triggers";
 
 import type { CharStateData } from "../CharState";
 
@@ -233,6 +238,8 @@ export interface UiStoreState {
     attackQueue: readonly string[];
     commandDispatcher: CommandDispatcher | null;
     setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
+    clientBindings: ClientBindings;
+    setClientBindings: (bindings: ClientBindings) => void;
     sendCommand: (command: string, options?: { echo?: boolean }) => void;
     sendEvent: (event: string, payload?: unknown) => void;
     sendExtensionCommand: (command: ExtensionCommand) => boolean;
@@ -248,6 +255,16 @@ export type UiIntent =
     | { type: "command/send"; command: string; echo?: boolean }
     | { type: "event/send"; event: string; payload?: unknown }
     | { type: "extension/command"; command: ExtensionCommand };
+
+export interface ClientBindings {
+    client?: Client;
+    outputHandler?: OutputHandler;
+    map?: MapHelper;
+    triggers?: Triggers;
+    teamManager?: TeamManager;
+    enableNotifications?: () => void;
+    notify?: (message: string) => void;
+}
 
 const defaultPreferences: UiPreferences = {
     emojiLabels: null,
@@ -300,6 +317,7 @@ const baseState = {
     nearbyObjects: [] as NearbyObject[],
     teamStatus: { ...emptyTeamStatus },
     attackQueue: [] as string[],
+    clientBindings: {} as ClientBindings,
     datasets: {} as Record<string, CatalogDatasetSlice<unknown>>,
 };
 
@@ -308,6 +326,7 @@ const store = createStore(
         ...baseState,
         commandDispatcher: null,
         setCommandDispatcher: (dispatcher) => set({ commandDispatcher: dispatcher }),
+        setClientBindings: (bindings) => set({ clientBindings: bindings }),
         sendCommand: (command, options) => {
             const dispatcher = get().commandDispatcher;
             if (!dispatcher) {
@@ -808,6 +827,7 @@ export function resetUiStoreForTesting() {
         teamStatus: { ...emptyTeamStatus },
         attackQueue: [],
         commandDispatcher: null,
+        clientBindings: {},
     });
     subscribeToRuntime();
     subscribeToCatalog();
@@ -830,6 +850,8 @@ export const selectNearbyObjects = (state: UiStoreState) => state.nearbyObjects;
 export const selectTeamStatus = (state: UiStoreState) => state.teamStatus;
 
 export const selectAttackQueue = (state: UiStoreState) => state.attackQueue;
+
+export const selectClientBindings = (state: UiStoreState) => state.clientBindings;
 
 export function useNearbyObjects(): readonly NearbyObject[] {
     return useUiStore((state) => state.nearbyObjects);
