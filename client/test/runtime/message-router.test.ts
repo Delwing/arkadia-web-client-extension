@@ -15,7 +15,6 @@ describe("MessageRouter runtime event hub integration", () => {
 
     afterEach(() => {
         router.dispose();
-        delete (window as any).clientExtension;
     });
 
     function processFrame(frame: string) {
@@ -36,8 +35,6 @@ describe("MessageRouter runtime event hub integration", () => {
 
     test("uses an identity line transform by default", () => {
         const outputLines: RuntimeEvents["outputLine"][] = [];
-        const transformSpy = jest.fn();
-        (window as any).clientExtension = { onLine: transformSpy };
         const subscription = eventHub.on("outputLine", (payload) => {
             outputLines.push(payload);
         });
@@ -52,7 +49,6 @@ describe("MessageRouter runtime event hub integration", () => {
                 type: "room.info",
             },
         ]);
-        expect(transformSpy).not.toHaveBeenCalled();
 
         subscription.unsubscribe();
     });

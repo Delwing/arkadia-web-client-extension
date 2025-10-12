@@ -41,12 +41,8 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
-import MessageRouter from "@client/src/runtime/transport/message-router";
-import { runtimeEventHub } from "@client/src/runtime/event-hub";
-import services from "@client/src/runtime/service-registry";
+import createRuntimeBootstrap from "@client/src/runtime/createRuntimeBootstrap";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
-import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";
-import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
 import {
     bindUiStoreToClientEvents,
@@ -56,17 +52,28 @@ import {
     uiStore,
 } from "./ui/store";
 
-const transport = new WebSocketTransportAdapter();
-const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
-configureArkadiaClient({ transport, router });
+const runtimeBootstrap = createRuntimeBootstrap({
+    clientAdapter: arkadiaClient,
+    port: new MockPort(),
+    parseAnsiPatterns,
+    configureAdapter: ({ transport, router }) => {
+        configureArkadiaClient({ transport, router });
+    },
+});
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort(), runtimeEventHub)
-router.setLineTransform(client.onLine.bind(client));
-const commandDispatcher = new ClientCommandDispatcher(client);
+const { client, commandDispatcher, dataCatalog, catalogMetadata } = runtimeBootstrap;
 uiStore.getState().setCommandDispatcher(commandDispatcher);
-window.clientExtension = client;
+uiStore.getState().setClientBindings({
+    client,
+    outputHandler: client.OutputHandler,
+    map: client.Map,
+    triggers: client.Triggers,
+    teamManager: client.TeamManager,
+    enableNotifications: client.enableNotifications.bind(client),
+    notify: client.notify.bind(client),
+});
 bindUiStoreToClientEvents(client);
 registerScripts(client)
 client.connect(client.port, true)
@@ -185,9 +192,8 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-const dataCatalog = services.dataCatalog;
-let mapStatus: DataCatalogEntryStatus = dataCatalog.getMapMetadata()?.status ?? 'idle';
-let colorStatus: DataCatalogEntryStatus = dataCatalog.getColorMetadata()?.status ?? 'idle';
+let mapStatus: DataCatalogEntryStatus = catalogMetadata.map?.status ?? 'idle';
+let colorStatus: DataCatalogEntryStatus = catalogMetadata.colors?.status ?? 'idle';
 let progressMessageOverride: string | null = null;
 
 function refreshProgressDisplay() {
@@ -233,7 +239,7 @@ let isSplitView = false;
 const STICKY_LINES = 15;
 
 function processSticky(count: number) {
-    const handler: any = (window as any).clientExtension?.OutputHandler;
+    const handler: any = client.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
         const prev = handler.output;
         handler.output = stickyArea;
@@ -518,10 +524,10 @@ document.addEventListener('keydown', (e) => {
     if (direction) {
         e.preventDefault();
         if (direction === 'special') {
-            const exits = (window as any).clientExtension?.Map.currentRoom?.specialExits ?? {};
+            const exits = client.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
-                (window as any).clientExtension.sendCommand(first);
+                commandDispatcher.sendCommand(first);
             }
         } else {
             client.sendCommand(direction);
@@ -752,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shareLocationButton && locationQrImage && locationShareModal) {
         shareLocationButton.addEventListener('click', () => {
-            const roomId = (window as any).clientExtension?.Map?.currentRoom?.id;
+            const roomId = client.Map?.currentRoom?.id;
             if (!roomId) {
                 return;
             }

@@ -2,40 +2,7 @@ import storage, { setItemSync, getItemSync } from "@client/src/storage";
 import services from "@client/src/runtime/service-registry";
 import type { NpcDefinition } from "@client/src/runtime/data";
 import { readMultibinds, replaceMultibinds } from "./multibindStorage";
-
-const NPC_STORAGE_KEY = 'npc' as const;
-
-function normalizeNpcList(value: unknown): NpcDefinition[] {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .filter((entry): entry is NpcDefinition => Boolean(entry && typeof entry === 'object'))
-        .map((entry) => ({
-            name: String((entry as NpcDefinition).name ?? ''),
-            loc: Number((entry as NpcDefinition).loc ?? (entry as any).loc),
-        }))
-        .filter((entry) => entry.name.length > 0 && Number.isFinite(entry.loc));
-}
-
-function areNpcEntriesEqual(a: NpcDefinition, b: NpcDefinition): boolean {
-    return a.name === b.name && a.loc === b.loc;
-}
-
-function npcListsEqual(a: readonly NpcDefinition[], b: readonly NpcDefinition[]): boolean {
-    if (a.length !== b.length) {
-        return false;
-    }
-
-    for (let i = 0; i < a.length; i += 1) {
-        if (!areNpcEntriesEqual(a[i], b[i])) {
-            return false;
-        }
-    }
-
-    return true;
-}
+import { NPC_STORAGE_KEY, normalizeNpcList, npcListsEqual, areNpcEntriesEqual } from "./npcData";
 
 function getNpcCatalogData(): NpcDefinition[] {
     const current = services.dataCatalog.getNpcData();

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "@client/src/storage";
-import { useUiDispatch } from "../ui/store";
+import { uiStore, useUiDispatch } from "../ui/store";
 
 interface ShortcutEntry {
     key: string;
@@ -53,7 +53,7 @@ function Shortcuts() {
     }
 
     function useCurrent() {
-        const id = (window as any).clientExtension?.Map?.currentRoom?.id;
+        const id = uiStore.getState().clientBindings.map?.currentRoom?.id;
         if (id) {
             setLoc(String(id));
         }
