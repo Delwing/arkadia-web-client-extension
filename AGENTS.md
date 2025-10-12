@@ -7,12 +7,11 @@ Use `yarn --cwd web-client test` to run tests.
 
 Ensure that `yarn --cwd web-client build` doesn't end up with error.
 
-Always run tests!
+Always run tests and ensure that they are passing.
 
 ## Coding guidelines
 
 In Regexps don't add ever polish letters.
-Prefer creation of HTML elements in HTML files, when possible.
 
 ## Data directory
 
