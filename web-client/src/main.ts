@@ -42,7 +42,7 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import MessageRouter from "@client/src/runtime/transport/message-router";
-import { runtimeEventHub } from "@client/src/runtime/event-hub";
+import { runtimeEventHub as clientRuntimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";
@@ -57,12 +57,12 @@ import {
 } from "./ui/store";
 
 const transport = new WebSocketTransportAdapter();
-const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
+const router = new MessageRouter(transport, clientRuntimeEventHub, { parseAnsiPatterns });
 configureArkadiaClient({ transport, router });
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort(), runtimeEventHub)
+const client = new Client(arkadiaClient, new MockPort(), clientRuntimeEventHub)
 router.setLineTransform(client.onLine.bind(client));
 const commandDispatcher = new ClientCommandDispatcher(client);
 uiStore.getState().setCommandDispatcher(commandDispatcher);
@@ -70,7 +70,7 @@ window.clientExtension = client;
 bindUiStoreToClientEvents(client);
 const clientRuntime = createClientRuntime({
     client,
-    eventHub: runtimeEventHub,
+    eventHub: clientRuntimeEventHub,
     settingsService: services.settings,
     dataCatalog: services.dataCatalog,
     commandDispatcher,
