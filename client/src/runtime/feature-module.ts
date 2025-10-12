@@ -8,7 +8,6 @@ import type {
     MagicDataCatalog,
     MagicKeysDataCatalog,
     HerbsDataCatalog,
-    DataCatalogEntryMetadata,
 } from "./data";
 import type { EventHub, RuntimeEvents } from "./event-hub";
 import type { SettingsService } from "./settings/settings-service";
@@ -26,15 +25,6 @@ export interface FeatureModuleContext {
         magic: MagicDataCatalog;
         magicKeys: MagicKeysDataCatalog;
         herbs: HerbsDataCatalog;
-    };
-    catalogMetadata: {
-        map: DataCatalogEntryMetadata | undefined;
-        npc: DataCatalogEntryMetadata | undefined;
-        colors: DataCatalogEntryMetadata | undefined;
-        people: DataCatalogEntryMetadata | undefined;
-        magic: DataCatalogEntryMetadata | undefined;
-        magicKeys: DataCatalogEntryMetadata | undefined;
-        herbs: DataCatalogEntryMetadata | undefined;
     };
 }
 

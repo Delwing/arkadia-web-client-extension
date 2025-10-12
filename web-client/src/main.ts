@@ -65,7 +65,7 @@ const runtimeBootstrap = createRuntimeBootstrap({
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const { client, commandDispatcher, dataCatalog, catalogs, catalogMetadata } = runtimeBootstrap;
+const { client, commandDispatcher, dataCatalog, catalogs } = runtimeBootstrap;
 uiStore.getState().setCommandDispatcher(commandDispatcher);
 uiStore.getState().setClientBindings({
     client,
@@ -193,8 +193,8 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-let mapStatus: DataCatalogEntryStatus = catalogMetadata.map?.status ?? 'idle';
-let colorStatus: DataCatalogEntryStatus = catalogMetadata.colors?.status ?? 'idle';
+let mapStatus: DataCatalogEntryStatus = catalogs.map.getMapMetadata()?.status ?? 'idle';
+let colorStatus: DataCatalogEntryStatus = catalogs.map.getColorMetadata()?.status ?? 'idle';
 let progressMessageOverride: string | null = null;
 
 function refreshProgressDisplay() {

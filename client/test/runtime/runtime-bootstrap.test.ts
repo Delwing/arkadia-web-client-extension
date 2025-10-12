@@ -54,13 +54,13 @@ describe("createRuntimeBootstrap", () => {
         expect(bootstrap.catalogs.map).toBe(registry.mapCatalog);
         expect(bootstrap.catalogs.npc).toBe(registry.npcCatalog);
         expect(bootstrap.catalogs.people).toBe(registry.peopleCatalog);
-        expect(bootstrap.catalogMetadata.map?.status).toBe("idle");
-        expect(bootstrap.catalogMetadata.colors?.status).toBe("idle");
-        expect(bootstrap.catalogMetadata.npc?.status).toBe("idle");
-        expect(bootstrap.catalogMetadata.people?.status).toBe("idle");
-        expect(bootstrap.catalogMetadata.magic).toBeUndefined();
-        expect(bootstrap.catalogMetadata.magicKeys).toBeUndefined();
-        expect(bootstrap.catalogMetadata.herbs).toBeUndefined();
+        expect(bootstrap.catalogs.map.getMapMetadata()?.status).toBe("idle");
+        expect(bootstrap.catalogs.map.getColorMetadata()?.status).toBe("idle");
+        expect(bootstrap.catalogs.npc.getNpcMetadata()?.status).toBe("idle");
+        expect(bootstrap.catalogs.people.getPeopleMetadata()?.status).toBe("idle");
+        expect(bootstrap.catalogs.magic.getMagicMetadata()).toBeUndefined();
+        expect(bootstrap.catalogs.magicKeys.getMagicKeysMetadata()).toBeUndefined();
+        expect(bootstrap.catalogs.herbs.getHerbsMetadata()).toBeUndefined();
 
         const result = bootstrap.commandDispatcher.sendCommand("look", { echo: false });
         expect(result).toBe(true);
