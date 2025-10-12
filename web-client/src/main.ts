@@ -1136,9 +1136,6 @@ window.addEventListener('resize', () => {
     }
 });
 
-// @ts-ignore
-window.client = arkadiaClient
-
 // background communication disabled
 
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
