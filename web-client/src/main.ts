@@ -22,8 +22,6 @@ import LetterComposer from "./LetterComposer";
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
-import {loadMapData, loadColors} from "./mapDataLoader.ts";
-import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -127,7 +125,7 @@ function disableTabSleepPrevention() {
 
 void (async () => {
     try {
-        const npc = await loadNpcData();
+        const { data: npc } = await services.defaultDataCatalog.waitForReady(NPC_DATASET_KEY);
         client.sendEvent("npc", npc);
     } catch (error) {
         console.error('Failed to load NPC data:', error);
@@ -283,12 +281,12 @@ if (colorStatus !== 'ready') {
 }
 refreshProgressDisplay();
 
-const mapDataPromise = loadMapData()
-    .then((mapData) => {
-        mapStatus = 'ready';
+const mapDataPromise = services.defaultDataCatalog
+    .waitForReady<MapData.Map>(MAP_DATASET_KEY)
+    .then(({ data: mapData, metadata }) => {
+        mapStatus = metadata.status;
 
-        const metadata = dataCatalog.metadataFor(MAP_DATASET_KEY);
-        if (metadata?.source) {
+        if (metadata.source) {
             progressMessageOverride = metadata.source === 'cache'
                 ? 'Loaded map data from cache'
                 : 'Loaded map data';
@@ -308,9 +306,10 @@ const mapDataPromise = loadMapData()
         throw error;
     });
 
-const colorsPromise = loadColors()
-    .then((colors) => {
-        colorStatus = 'ready';
+const colorsPromise = services.defaultDataCatalog
+    .waitForReady<MapData.Env[]>(COLORS_DATASET_KEY)
+    .then(({ data: colors, metadata }) => {
+        colorStatus = metadata.status;
         refreshProgressDisplay();
         return colors;
     })

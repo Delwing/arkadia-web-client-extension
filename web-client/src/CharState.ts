@@ -1,7 +1,7 @@
 import type ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
 import { uiStore } from "./ui/store";
-import { shallow } from "zustand/shallow";
+import { shallow } from "./ui/zustand-lite";
 
 export interface CharStateData {
   hp: number;

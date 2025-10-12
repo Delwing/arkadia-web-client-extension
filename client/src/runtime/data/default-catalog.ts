@@ -22,6 +22,7 @@ export class DefaultDataCatalog implements DataCatalog {
     private readonly entries = new Map<string, CatalogEntry<unknown>>();
 
     private readonly globalReady$ = new Subject<DataCatalogReadyEvent<unknown>>();
+    private readonly activeLoads = new Map<string, Promise<void>>();
 
     register<T>(registration: DataLoaderRegistration<T>): void {
         if (this.entries.has(registration.key)) {
@@ -153,6 +154,76 @@ export class DefaultDataCatalog implements DataCatalog {
         return this.globalReady$.asObservable() as Observable<DataCatalogReadyEvent<T>>;
     }
 
+    async waitForReady<T>(key: string): Promise<DataCatalogReadyEvent<T>> {
+        const metadata = this.metadataFor(key);
+        const cached = this.get<T>(key);
+
+        if (metadata?.status === 'ready' && typeof cached !== 'undefined') {
+            return { key, data: cached, metadata };
+        }
+
+        return new Promise<DataCatalogReadyEvent<T>>((resolve, reject) => {
+            let settled = false;
+
+            const subscription = this.ready$<T>(key).subscribe({
+                next: (event) => {
+                    if (settled) {
+                        return;
+                    }
+
+                    settled = true;
+                    cleanup();
+                    resolve(event);
+                },
+                error: (error) => {
+                    if (settled) {
+                        return;
+                    }
+
+                    settled = true;
+                    cleanup();
+                    reject(error);
+                },
+            });
+
+            const cleanup = () => {
+                subscription.unsubscribe();
+            };
+
+            const handleError = (error: unknown) => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                cleanup();
+                reject(error instanceof Error ? error : new Error(String(error)));
+            };
+
+            this.ensureLoad(key)
+                .then(() => {
+                    if (settled) {
+                        return;
+                    }
+
+                    const data = this.get<T>(key);
+                    const entryMetadata = this.metadataFor(key);
+
+                    if (typeof data !== 'undefined' && entryMetadata?.status === 'ready') {
+                        settled = true;
+                        cleanup();
+                        resolve({ key, data, metadata: entryMetadata });
+                        return;
+                    }
+
+                    if (entryMetadata?.status === 'error') {
+                        handleError(new Error(entryMetadata.error ?? `Failed to load dataset "${key}".`));
+                    }
+                })
+                .catch(handleError);
+        });
+    }
+
     private ensureReadySubject<T>(key: string): ReplaySubject<DataCatalogReadyEvent<T>> {
         const entry = this.getEntry(key);
         return entry.ready$ as ReplaySubject<DataCatalogReadyEvent<T>>;
@@ -194,6 +265,17 @@ export class DefaultDataCatalog implements DataCatalog {
                 error: error instanceof Error ? error.message : String(error),
             };
         }
+    }
+
+    private ensureLoad(key: string): Promise<void> {
+        let pending = this.activeLoads.get(key);
+        if (!pending) {
+            pending = this.load(key).finally(() => {
+                this.activeLoads.delete(key);
+            });
+            this.activeLoads.set(key, pending);
+        }
+        return pending;
     }
 
     private getEntry<T>(key: string): CatalogEntry<T> {

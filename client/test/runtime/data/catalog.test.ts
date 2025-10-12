@@ -94,6 +94,67 @@ describe('DefaultDataCatalog', () => {
         expect(event.metadata.source).toBe('cache');
         expect(catalog.get('cached')).toEqual({ cached: true });
     });
+
+    it('waitForReady resolves cached data without triggering loaders again', async () => {
+        const catalog = new DefaultDataCatalog();
+        let loadCount = 0;
+
+        catalog.register({
+            key: 'cached-ready',
+            loader: async ({ persist }) => {
+                loadCount += 1;
+                const payload = { ready: true };
+                await persist(payload);
+                return payload;
+            },
+        });
+
+        await catalog.waitForReady('cached-ready');
+        expect(loadCount).toBe(1);
+
+        const second = await catalog.waitForReady<{ ready: boolean }>('cached-ready');
+        expect(loadCount).toBe(1);
+        expect(second.data).toEqual({ ready: true });
+        expect(second.metadata.status).toBe('ready');
+    });
+
+    it('deduplicates concurrent waitForReady calls', async () => {
+        const catalog = new DefaultDataCatalog();
+        let loadCount = 0;
+
+        catalog.register({
+            key: 'dedupe',
+            loader: async ({ persist }) => {
+                loadCount += 1;
+                const payload = { deduped: true };
+                await persist(payload);
+                return payload;
+            },
+        });
+
+        const [first, second] = await Promise.all([
+            catalog.waitForReady<{ deduped: boolean }>('dedupe'),
+            catalog.waitForReady<{ deduped: boolean }>('dedupe'),
+        ]);
+
+        expect(loadCount).toBe(1);
+        expect(first.data).toEqual({ deduped: true });
+        expect(second.data).toEqual({ deduped: true });
+    });
+
+    it('propagates loader errors through waitForReady', async () => {
+        const catalog = new DefaultDataCatalog();
+
+        catalog.register({
+            key: 'erroring',
+            loader: async () => {
+                throw new Error('nope');
+            },
+        });
+
+        await expect(catalog.waitForReady('erroring')).rejects.toThrow('nope');
+        expect(catalog.metadataFor('erroring')?.status).toBe('error');
+    });
 });
 
 describe('core data loaders', () => {

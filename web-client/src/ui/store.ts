@@ -1,12 +1,12 @@
-import { createStore } from "zustand/vanilla";
-import { subscribeWithSelector } from "zustand/middleware";
-import { useStore } from "zustand";
+import { createStore, subscribeWithSelector, useStore } from "./zustand-lite";
 
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
+import type { DataCatalogEntryMetadata } from "@client/src/runtime/data";
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/src/runtime/data";
 
 import type { CharStateData } from "../CharState";
 
@@ -27,7 +27,13 @@ export interface UiStoreState {
     charState: Partial<CharStateData>;
     charOptions: CharOptionsState;
     uiPreferences: UiPreferences;
+    datasets: Record<string, CatalogDatasetState>;
     dispatch: (intent: UiIntent) => Promise<void>;
+}
+
+export interface CatalogDatasetState<T = unknown> {
+    readonly data?: T;
+    readonly metadata?: DataCatalogEntryMetadata;
 }
 
 export type UiIntent =
@@ -52,6 +58,7 @@ const baseState = {
     charState: {},
     charOptions: {},
     uiPreferences: { ...defaultPreferences },
+    datasets: {} as Record<string, CatalogDatasetState>,
 };
 
 const store = createStore(
@@ -97,6 +104,22 @@ function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {
 let subscriptionsInitialised = false;
 let runtimeCleanup: ListenerCleanup | null = null;
 
+const CORE_DATASET_KEYS = [MAP_DATASET_KEY, COLORS_DATASET_KEY, NPC_DATASET_KEY];
+
+function updateDatasetSnapshot(key: string) {
+    const metadata = services.dataCatalog.metadataFor(key);
+    const data = services.dataCatalog.get(key);
+    store.setState((current) => ({
+        datasets: {
+            ...current.datasets,
+            [key]: {
+                data,
+                metadata,
+            },
+        },
+    }));
+}
+
 function subscribeToRuntime() {
     if (subscriptionsInitialised) {
         return;
@@ -132,9 +155,25 @@ function subscribeToRuntime() {
         }
     });
 
+    const datasetSubscriptions = CORE_DATASET_KEYS.map((key) => {
+        updateDatasetSnapshot(key);
+        return services.dataCatalog.ready$(key).subscribe((event) => {
+            store.setState((current) => ({
+                datasets: {
+                    ...current.datasets,
+                    [key]: {
+                        data: event.data,
+                        metadata: event.metadata,
+                    },
+                },
+            }));
+        });
+    });
+
     runtimeCleanup = () => {
         settingsSubscription.unsubscribe();
         gmcpSubscription.unsubscribe();
+        datasetSubscriptions.forEach((subscription) => subscription.unsubscribe());
         subscriptionsInitialised = false;
     };
 }
@@ -196,6 +235,17 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
 }
 
 export const uiStore = storeWithSelector;
+
+export function useUiSelector<Slice>(
+    selector: (state: UiStoreState) => Slice,
+    equalityFn?: (a: Slice, b: Slice) => boolean,
+): Slice {
+    return useStore(storeWithSelector, selector, equalityFn);
+}
+
+export function refreshCatalogDatasetSnapshot(key: string): void {
+    updateDatasetSnapshot(key);
+}
 
 export function resetUiStoreForTesting() {
     uiSettingsCleanup?.();
