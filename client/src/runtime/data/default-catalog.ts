@@ -119,7 +119,9 @@ export class DefaultDataCatalog implements DataCatalog {
         const persist = async (value: T): Promise<void> => {
             entry.data = value;
             if (entry.persistence) {
-                await entry.persistence.write(value);
+                void entry.persistence.write(value).catch((error) => {
+                    console.error(`Failed to persist dataset "${key}"`, error);
+                });
             }
         };
 
