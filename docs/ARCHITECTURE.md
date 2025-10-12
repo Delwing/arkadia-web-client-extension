@@ -155,6 +155,16 @@ graph TD
    - UI components (map, herb encyclopedia) subscribe to the same dataset stream
      via the `UIStore`, eliminating custom wiring.
 
+## Browser lifecycle considerations
+
+HUD widgets and React panels commonly subscribe to the shared UI store or other
+in-memory services. Manual clean-up through `unload`/`beforeunload` listeners is
+not required: browsers tear down event listeners, timers, and subscriptions
+whenever the document is reloaded or navigated away. New code should therefore
+avoid registering unload handlers solely to dispose of subscriptions—keeping the
+page lifecycle free of redundant listeners ensures simpler, more predictable
+teardown behaviour.
+
 ## Migration strategy
 
 1. **Introduce the EventHub** alongside the existing event bus, gradually

@@ -12,6 +12,9 @@ Always run tests and ensure that they are passing.
 ## Coding guidelines
 
 In Regexps don't add ever polish letters.
+Do not register `unload`/`beforeunload` handlers solely to clean up store
+subscriptions or other in-memory listeners—the browser tears them down during
+navigation and reloads, so manual cleanup is unnecessary.
 
 ## Data directory
 

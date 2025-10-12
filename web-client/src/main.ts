@@ -1057,12 +1057,13 @@ document.addEventListener('DOMContentLoaded', () => {
     new LetterComposer(arkadiaClient);
 
     // Initialize mobile direction buttons
-    new MobileDirectionButtons(client);
+    new MobileDirectionButtons(client, commandDispatcher);
 
     loadMobileButtonSettings().then(s => {
         const inTeam = !!client.TeamManager.isInAnyTeam?.();
         const isLeader = !!client.TeamManager.isLeader?.();
-        applyMobileButtonSettings(s, inTeam, isLeader);
+        const activeLayout = applyMobileButtonSettings(s, inTeam, isLeader);
+        uiStore.getState().sendEvent('mobileButtonsSettings', activeLayout.buttons);
     });
 
     initUiSettings();

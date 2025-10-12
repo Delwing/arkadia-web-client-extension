@@ -9,6 +9,9 @@ import {
 } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { getShortDir } from "@client/src/utils/directions.ts";
+import type { CommandDispatcher } from "@client/src/runtime/command-dispatcher";
+import { uiStore, selectNearbyObjects, selectTeamStatus } from "../ui/store";
+import type { NearbyObject, TeamStatus } from "../ui/store";
 
 const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
@@ -61,10 +64,16 @@ export default class MobileDirectionButtons {
     private leaderMode = false;
     private hapticEnabled = true;
     private dragLocked = false;
+    private dispatcher: CommandDispatcher | null;
+    private unsubscribeObjects: (() => void) | null = null;
+    private unsubscribeTeam: (() => void) | null = null;
+    private nearbyObjects: readonly NearbyObject[] = [];
+    private teamStatus: TeamStatus = { inTeam: false, isLeader: false };
 
 
-    constructor(client: Client) {
+    constructor(client: Client, dispatcher: CommandDispatcher | null = null) {
         this.client = client;
+        this.dispatcher = dispatcher ?? uiStore.getState().commandDispatcher;
         this.container = document.getElementById('mobile-direction-buttons') as HTMLDivElement;
         this.messageInput = document.getElementById('message-input') as HTMLInputElement;
         this.contentArea = document.getElementById('main_text_output_msg_wrapper');
@@ -100,13 +109,26 @@ export default class MobileDirectionButtons {
             if (btn) btn.dataset.direction = dir;
         });
 
+        this.nearbyObjects = uiStore.getState().nearbyObjects;
+        this.teamStatus = uiStore.getState().teamStatus;
+        this.unsubscribeObjects = uiStore.subscribe(selectNearbyObjects, (objects) => {
+            this.nearbyObjects = objects;
+            this.refreshVisibleLists();
+        });
+        this.unsubscribeTeam = uiStore.subscribe(selectTeamStatus, (status) => {
+            this.teamStatus = status;
+            this.applyTeamStatus(status);
+        });
+        // Subscriptions are allowed to live for the lifetime of the page; the
+        // host runtime resets on navigation, so there is nothing to clean up on
+        // unload.
+
         loadMobileButtonSettings().then(settings => {
             this.allSettings = settings;
             this.dragLocked = !!settings.locked;
             this.updateDragLock();
-            this.updateTeamMode();
+            this.applyTeamStatus(this.teamStatus, { forceApply: true });
             this.setupEventHandlers();
-            this.applyActiveSettings();
         });
         this.updateBracketRightButton();
         this.updateToggleButton();
@@ -120,32 +142,6 @@ export default class MobileDirectionButtons {
         });
 
         this.highlightExits([]);
-
-        const updateLists = () => {
-            if (this.zList && this.zList.style.display !== 'none') {
-                this.renderZList();
-            }
-            if (this.zasList && this.zasList.style.display !== 'none') {
-                this.renderZasList();
-            }
-            if (this.przeList && this.przeList.style.display !== 'none') {
-                this.renderPrzeList();
-            }
-            if (this.idzList && this.idzList.style.display !== 'none') {
-                this.renderIdzList();
-            }
-        };
-        this.client.addEventListener('gmcp.objects.nums', () => {
-            updateLists();
-            this.updateTeamMode();
-        });
-        this.client.addEventListener('gmcp.objects.data', () => {
-            updateLists();
-            this.updateTeamMode();
-        });
-        this.client.addEventListener('teamChange', () => {
-            this.updateTeamMode();
-        });
 
         // Listen for window resize to check if mobile view
         window.addEventListener('resize', () => {
@@ -196,11 +192,12 @@ export default class MobileDirectionButtons {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
                 if (b) this.applyConfigToButton(id, b);
             });
+            this.refreshVisibleLists();
             loadMobileButtonSettings().then(s => {
                 this.allSettings = s;
                 this.dragLocked = !!s.locked;
                 this.updateDragLock();
-                this.updateTeamMode();
+                this.applyTeamStatus(this.teamStatus, { forceApply: true });
             });
         });
 
@@ -553,6 +550,24 @@ export default class MobileDirectionButtons {
         this.updateToggleButton();
     }
 
+    private refreshVisibleLists() {
+        if (this.zList && this.zList.style.display !== 'none') {
+            this.renderZList();
+        }
+        if (this.zasList && this.zasList.style.display !== 'none') {
+            this.renderZasList();
+        }
+        if (this.wList && this.wList.style.display !== 'none') {
+            this.renderWList();
+        }
+        if (this.przeList && this.przeList.style.display !== 'none') {
+            this.renderPrzeList();
+        }
+        if (this.idzList && this.idzList.style.display !== 'none') {
+            this.renderIdzList();
+        }
+    }
+
     private highlightExits(exits: string[]) {
         const available = new Set(exits.map((e) => getShortDir(e)));
         const buttons = this.container.querySelectorAll<HTMLButtonElement>(
@@ -571,17 +586,20 @@ export default class MobileDirectionButtons {
     private renderList(target: HTMLDivElement | null, regex: RegExp, prefix: string) {
         if (!target) return;
         target.innerHTML = '';
-        const objects = (window as any).clientExtension?.ObjectManager?.getObjectsOnLocation?.() || [];
-        const values = Array.from(new Set(objects
-            .filter((o: any) => regex.test(o.shortcut))
-            .map((o: any) => o.shortcut)));
+        const values = Array.from(
+            new Set(
+                this.nearbyObjects
+                    .filter((obj) => typeof obj.shortcut === 'string' && regex.test(obj.shortcut))
+                    .map((obj) => obj.shortcut as string)
+            )
+        );
         values.forEach((v: string) => {
             const b = document.createElement('button');
             b.className = 'mobile-button';
             this.applyButtonSize(b);
             b.textContent = v;
             b.addEventListener('click', () => {
-                this.client.sendCommand(`/${prefix} ${v}`);
+                this.sendCommand(`/${prefix} ${v}`);
             });
             target.appendChild(b);
         });
@@ -619,17 +637,18 @@ export default class MobileDirectionButtons {
             this.applyButtonSize(b);
             b.style.width = '72px';
             b.textContent = c.label;
-            b.addEventListener('click', () => this.client.sendCommand(c.cmd));
+            b.addEventListener('click', () => this.sendCommand(c.cmd));
             this.idzList!.appendChild(b);
         });
     }
 
-    private updateTeamMode() {
-        const leader = !!this.client.TeamManager.isLeader?.();
-        const team = leader || !!this.client.TeamManager.isInAnyTeam?.();
-        if (team !== this.teamMode || leader !== this.leaderMode) {
-            this.teamMode = team;
-            this.leaderMode = leader;
+    private applyTeamStatus(status: TeamStatus, options: { forceApply?: boolean } = {}) {
+        const nextTeam = status.inTeam || status.isLeader;
+        const nextLeader = status.isLeader;
+        const changed = nextTeam !== this.teamMode || nextLeader !== this.leaderMode;
+        this.teamMode = nextTeam;
+        this.leaderMode = nextLeader;
+        if (changed || options.forceApply) {
             this.applyActiveSettings();
         }
     }
@@ -780,13 +799,13 @@ export default class MobileDirectionButtons {
                     this.toggleVisibility();
                     break;
                 case 'command':
-                    if (cfg.command) this.client.sendCommand(cfg.command);
+                    if (cfg.command) this.sendCommand(cfg.command);
                     break;
                 case 'kierunek':
                     if (cfg.command) {
-                        this.client.sendCommand(cfg.command);
+                        this.sendCommand(cfg.command);
                     } else if (cfg.direction) {
-                        this.client.sendCommand(cfg.direction);
+                        this.sendCommand(cfg.direction);
                     }
                     break;
                 case 'wesprzyj':
@@ -797,14 +816,14 @@ export default class MobileDirectionButtons {
                     const options = this.getMoveModeOptionsCount() || 1;
                     this.client.moveMode = (this.client.moveMode + 1) % options;
                     this.updateMoveModeButton(newBtn);
-                    this.client.sendEvent('moveModeChanged', this.client.moveMode);
+                    this.sendEvent('moveModeChanged', this.client.moveMode);
                     break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
                     const firstExit = Object.keys(specialExits)[0];
                     if (firstExit) {
-                        this.client.sendCommand(firstExit);
-                        }
+                        this.sendCommand(firstExit);
+                    }
                     break;
             }
         };
@@ -842,13 +861,32 @@ export default class MobileDirectionButtons {
         const safeMode = Math.max(0, Math.min(mode, maxIndex));
         if (safeMode !== this.client.moveMode) {
             this.client.moveMode = safeMode;
-            this.client.sendEvent('moveModeChanged', this.client.moveMode);
+            this.sendEvent('moveModeChanged', this.client.moveMode);
         }
         const prefix = button.dataset.moveModeLabel ?? '';
         const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];
         const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
         button.textContent = label;
         button.title = title;
+    }
+
+    private sendCommand(command: string, options?: { echo?: boolean }) {
+        if (!command) {
+            return;
+        }
+        if (this.dispatcher) {
+            this.dispatcher.sendCommand(command, options);
+        } else {
+            this.client.sendCommand(command, options?.echo ?? true);
+        }
+    }
+
+    private sendEvent(event: string, payload?: unknown) {
+        if (this.dispatcher) {
+            this.dispatcher.sendEvent(event, payload);
+        } else {
+            this.client.sendEvent(event, payload);
+        }
     }
 
 }

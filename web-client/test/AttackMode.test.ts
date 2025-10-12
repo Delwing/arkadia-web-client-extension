@@ -1,4 +1,5 @@
 import AttackMode from '../src/AttackMode';
+import { resetUiStoreForTesting, uiStore } from '../src/ui/store';
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),
@@ -20,11 +21,12 @@ describe('AttackMode', () => {
   let client: MockClient;
 
   beforeEach(() => {
+    resetUiStoreForTesting();
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
     (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => true) } };
+    uiStore.setState({ teamStatus: { inTeam: true, isLeader: true, leaderId: '1' } });
     new AttackMode(client as any);
   });
 
@@ -56,10 +58,11 @@ describe('AttackMode', () => {
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => false) } };
+    resetUiStoreForTesting();
+    uiStore.setState({ teamStatus: { inTeam: false, isLeader: false } });
     new AttackMode(client as any);
     expect(container.style.display).toBe('none');
-    (window as any).clientExtension.TeamManager.isLeader.mockReturnValue(true);
+    uiStore.setState({ teamStatus: { inTeam: true, isLeader: true, leaderId: '1' } });
     client.emit('teamChange');
     expect(container.style.display).toBe('block');
   });

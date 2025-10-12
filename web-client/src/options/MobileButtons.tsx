@@ -16,6 +16,7 @@ import {
 } from "../mobileButtonSettings";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
+import { useTeamStatus, useUiStore } from "../ui/store";
 
 const macroOptions: { value: MacroType; label: string }[] = [
     { value: "functional", label: "Bind funkcyjny" },
@@ -104,6 +105,8 @@ function MobileButtons() {
         leader: leaderRef,
     };
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
+    const teamStatus = useTeamStatus();
+    const sendEvent = useUiStore(state => state.sendEvent);
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -305,9 +308,9 @@ function MobileButtons() {
 
     function save() {
         saveSettings(settings);
-        const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
-        applySettings(settings, teamActive, leaderActive);
+        const { inTeam, isLeader } = teamStatus;
+        const activeSet = applySettings(settings, inTeam, isLeader);
+        sendEvent('mobileButtonsSettings', activeSet.buttons);
         window.dispatchEvent(new Event('close-options'));
     }
 
