@@ -48,9 +48,10 @@ import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
+import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
-import { bindUiStoreToClientEvents } from "./ui/store";
+import { bindUiStoreToClientEvents, uiStore } from "./ui/store";
 
 const transport = new WebSocketTransportAdapter();
 const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
@@ -59,6 +60,8 @@ configureArkadiaClient({ transport, router });
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
 const client = new Client(arkadiaClient, new MockPort())
+const commandDispatcher = new ClientCommandDispatcher(client);
+uiStore.getState().setCommandDispatcher(commandDispatcher);
 window.clientExtension = client;
 bindUiStoreToClientEvents(client);
 registerScripts(client)
@@ -440,7 +443,7 @@ arkadiaClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     updateConnectButtons();
-    window.clientExtension.sendEvent('refreshPositionWhenAble');
+    commandDispatcher.sendEvent('refreshPositionWhenAble');
     console.log('Client connected to Arkadia server.');
 });
 

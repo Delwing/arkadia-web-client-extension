@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "@client/src/storage";
+import { useUiDispatch } from "../ui/store";
 
 interface ShortcutEntry {
     key: string;
@@ -15,6 +16,7 @@ function Shortcuts() {
     const [key, setKey] = useState('');
     const [loc, setLoc] = useState('');
     const [label, setLabel] = useState('');
+    const dispatch = useUiDispatch();
 
     useEffect(() => {
         storage.getItem('shortcuts').then(res => {
@@ -89,7 +91,10 @@ function Shortcuts() {
                         <td>{item.id}</td>
                         <td>{item.label}</td>
                         <td className="d-flex gap-2">
-                            <Button size="sm" onClick={() => (window as any).clientExtension?.sendEvent('leadTo', item.id)}>Prowadź</Button>
+                            <Button
+                                size="sm"
+                                onClick={() => { void dispatch({ type: 'event/send', event: 'leadTo', payload: item.id }); }}
+                            >Prowadź</Button>
                             <Button size="sm" variant="danger" onClick={() => remove(item.key)}><TiDelete /></Button>
                         </td>
                     </tr>
