@@ -10,19 +10,15 @@ export default class AttackMode {
   private readonly container: HTMLElement | null;
   private index = 0;
   private teamStatus: TeamStatus;
-  private unsubscribeTeam: (() => void) | null = null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("attack-mode");
     this.teamStatus = uiStore.getState().teamStatus;
-    this.unsubscribeTeam = uiStore.subscribe(selectTeamStatus, (status, previous) => {
+    uiStore.subscribe(selectTeamStatus, (status, previous) => {
       this.teamStatus = status;
       if (!previous || status.isLeader !== previous.isLeader) {
         this.updateVisibility();
       }
     });
-    // We intentionally keep the subscription active until the page unloads; the
-    // browser tears down the runtime on navigation, so there is no need to
-    // manually unsubscribe.
     if (this.container) {
       this.container.addEventListener("click", () => {
         this.index = (this.index + 1) % MODES.length;
