@@ -2,6 +2,8 @@ import {colorStringInLine, findClosestColor, RESET} from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
+import services from "./runtime/service-registry";
+import type { DefaultDataCatalog, NpcDefinition } from "./runtime/data";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -36,6 +38,7 @@ const UNKNOWN_NPC_COLOR = findClosestColor('#aaaaaa');
 export default class PackageHelper {
 
     private client: Client
+    private readonly catalog: DefaultDataCatalog
     npc: Record<string, number> = {}
     enabled = false;
 
@@ -53,11 +56,12 @@ export default class PackageHelper {
     private pickTrigger: Trigger;
     private failTrigger: Trigger;
 
-    constructor(clientExtension: Client) {
+    constructor(clientExtension: Client, catalog: DefaultDataCatalog = services.dataCatalog) {
         this.client = clientExtension
-        this.client.addEventListener('npc', (event) => {
-            event.detail.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
-        })
+        this.catalog = catalog
+
+        this.subscribeToNpcCatalog()
+        this.applyInitialNpcData()
 
 
         this.client.addEventListener('settings', (event) => {
@@ -89,6 +93,30 @@ export default class PackageHelper {
             return colorStringInLine(rawLine, matches[1], colorCode)
         }, tag)
         this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
+    }
+
+    private subscribeToNpcCatalog() {
+        const ready$ = this.catalog.readyForNpc$()
+        ready$.subscribe(({ data }) => {
+            this.updateNpcData(data)
+        })
+    }
+
+    private applyInitialNpcData() {
+        const initial = this.catalog.getNpcData()
+        if (initial) {
+            this.updateNpcData(initial)
+        }
+    }
+
+    private updateNpcData(data: readonly NpcDefinition[]) {
+        this.npc = {}
+        data.forEach(({ name, loc }) => {
+            this.npc[name] = loc
+        })
+        if (this.currentPackage) {
+            this.leadToPackage(this.currentPackage.name)
+        }
     }
 
     private onPackageList() {
