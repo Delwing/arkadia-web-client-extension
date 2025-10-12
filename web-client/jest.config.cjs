@@ -3,7 +3,8 @@ module.exports = {
   roots: ['<rootDir>/src', '<rootDir>/test'],
   setupFiles: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
-    '^@client/(.*)$': '<rootDir>/../client/$1'
+    '^@client/(.*)$': '<rootDir>/../client/$1',
+    '^zustand/(.*)$': '<rootDir>/../node_modules/zustand/$1',
   },
   transform: {
     '^.+\\.tsx?$': [
