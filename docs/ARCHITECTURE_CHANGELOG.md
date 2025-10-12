@@ -31,8 +31,19 @@ This document captures progress toward the next-generation runtime described in 
 - Introduced a Zustand-based `uiStore` that subscribes to the runtime event hub and the modernised settings service, projecting GMCP updates and preference changes into a single UI state tree. The store can also bind to legacy DOM events so existing widgets continue to work during the transition. (see `web-client/src/ui/store.ts`).
 - Updated HUD behaviour to consume the shared store; for example, the fight title widget reacts to store state and preferences in tests, proving the end-to-end flow from store updates to DOM side effects. (see `web-client/test/FightTitle.test.ts`).
 
+### Team manager event hub adoption
+- Migrated `TeamManager` to subscribe directly to the typed runtime event hub for GMCP updates, eliminating its dependency on the legacy `eventBus` bridge and exercising the new hub in live gameplay flows such as target tracking and queue maintenance. (see `client/src/TeamManager.ts`).
+
+### Unified command dispatcher for UI intents
+- Introduced a `CommandDispatcher` abstraction with a `ClientCommandDispatcher` wrapper so UI surfaces can send text commands, custom events, and extension messages through a single runtime gateway. (see `client/src/runtime/command-dispatcher.ts`).
+- Updated the shared `uiStore` to require an injected dispatcher, and extended intent handling so React panels and legacy widgets dispatch through the same API. Jest verifies both the happy path and misconfiguration errors to ensure UI flows fail fast. (see `web-client/src/ui/store.ts`, `web-client/test/uiStore.test.ts`).
+
+### Data catalog consumption in the UI
+- Enhanced the `uiStore` to mirror catalog datasets, track load metadata, and expose `loadDataset` / `ensureDataset` helpers that deduplicate network work while keeping subscribers informed of status changes. (see `web-client/src/ui/store.ts`).
+- Refactored the map bootstrapper and NPC options panel to consume those helpers, surface progress feedback, and persist user edits back into the catalog cache so runtime and UI share a single source of truth. (see `web-client/src/main.ts`, `web-client/src/options/Npc.tsx`).
+
 ## Planned next steps
-- Replace legacy `eventBus` listeners in runtime modules with direct `EventHub` subscriptions so the bridge shim can be removed.
+- Continue migrating remaining runtime modules from the legacy `eventBus` to direct `EventHub` subscriptions so the bridge shim can eventually be removed.
 - Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
 - Migrate additional UI widgets and React panels to the shared `uiStore`, removing direct DOM manipulation and `window.clientExtension` dependencies.
 - Update runtime bootstrap code to construct transports, routers, and services through the new registry so we can phase out ad-hoc wiring in `web-client/src/main.ts` and `client/src/main.ts`.
