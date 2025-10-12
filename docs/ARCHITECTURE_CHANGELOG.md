@@ -42,6 +42,11 @@ This document captures progress toward the next-generation runtime described in 
 - Enhanced the `uiStore` to mirror catalog datasets, track load metadata, and expose `loadDataset` / `ensureDataset` helpers that deduplicate network work while keeping subscribers informed of status changes. (see `web-client/src/ui/store.ts`).
 - Refactored the map bootstrapper and NPC options panel to consume those helpers, surface progress feedback, and persist user edits back into the catalog cache so runtime and UI share a single source of truth. (see `web-client/src/main.ts`, `web-client/src/options/Npc.tsx`).
 
+### Combat-aware HUD state in the shared UI store
+- Extended the shared `uiStore` to normalise GMCP object updates, derive a combat-aware nearby object list, and expose computed `teamStatus` selectors so widgets can react without duplicating parsing logic. (see `web-client/src/ui/store.ts`).
+- Updated the classic `AttackMode` HUD widget to subscribe to the store and automatically toggle its visibility based on the derived leader flag rather than bespoke event wiring. (see `web-client/src/AttackMode.ts`).
+- Migrated mobile direction buttons and their React configuration panel to the same selectors, letting them adapt layouts and persistence flows to solo/team/leader contexts while relying on browser-managed teardown instead of manual unload listeners. (see `web-client/src/scripts/mobileDirectionButtons.ts`, `web-client/src/options/MobileButtons.tsx`).
+
 ## Planned next steps
 - Continue migrating remaining runtime modules from the legacy `eventBus` to direct `EventHub` subscriptions so the bridge shim can eventually be removed.
 - Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
