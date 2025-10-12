@@ -4,7 +4,8 @@ import type { Root } from "react-dom/client";
 
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
-import { resetUiStoreForTesting, uiStore } from "../src/ui/store";
+import { uiStore } from "../src/ui/store";
+import { resetUiStoreForTesting } from "../src/ui/store.testing";
 import CharState from "../src/CharState";
 import GuildsSettings from "../src/options/GuildsSettings";
 import guilds from "../src/options/guilds";

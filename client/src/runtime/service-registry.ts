@@ -1,20 +1,17 @@
-import { DefaultDataCatalog, registerCoreLoaders, registerPeopleLoader } from './data';
-import type { SettingsService } from './settings/settings-service';
-import { LocalStorageSettingsService } from './settings/local-storage-service';
-import type Client from "../Client";
-import { ClientCommandDispatcher } from "./command-dispatcher";
-import type { CommandDispatcher } from "./command-dispatcher";
-import { DefaultDataCatalog, registerCoreLoaders } from "./data";
+import { DefaultDataCatalog, registerCoreLoaders, registerPeopleLoader } from "./data";
 import type { DataCatalogEntryMetadata } from "./data";
 import type { EventHub } from "./event-hub";
 import { runtimeEventHub } from "./event-hub";
+import type { RuntimeEvents } from "./event-hub";
+import { ClientCommandDispatcher } from "./command-dispatcher";
+import type { CommandDispatcher } from "./command-dispatcher";
+import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import MessageRouter from "./transport/message-router";
 import type { MessageRouterOptions } from "./transport/message-router";
 import type { TransportAdapter } from "./transport/types";
-import WebSocketTransportAdapter from "./transport/websocket-adapter";
+import type Client from "../Client";
 import type { SettingsService } from "./settings/settings-service";
 import { LocalStorageSettingsService } from "./settings/local-storage-service";
-import type { RuntimeEvents } from "./event-hub";
 
 export type RouterConfiguration = Pick<MessageRouterOptions, "parseAnsiPatterns" | "transformLine">;
 type TransportFactory = () => TransportAdapter;

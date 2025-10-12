@@ -632,7 +632,7 @@ async function ensureCatalogDataset<T>(key: string, options: CatalogLoadOptions 
     return value;
 }
 
-function subscribeToCatalog(): void {
+export function subscribeToCatalog(): void {
     if (catalogSubscription) {
         return;
     }
@@ -685,7 +685,7 @@ function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {
 let subscriptionsInitialised = false;
 let runtimeCleanup: ListenerCleanup | null = null;
 
-function subscribeToRuntime() {
+export function subscribeToRuntime() {
     if (subscriptionsInitialised) {
         return;
     }
@@ -740,6 +740,36 @@ function subscribeToRuntime() {
 subscribeToRuntime();
 subscribeToCatalog();
 let clientEventCleanups: ListenerCleanup[] = [];
+
+export function clearUiStoreClientEventBindings() {
+    clientEventCleanups.forEach((cleanup) => cleanup());
+    clientEventCleanups = [];
+}
+
+export function resetUiStoreRuntimeCleanup() {
+    runtimeCleanup?.();
+    runtimeCleanup = null;
+}
+
+export function resetUiStoreCatalogTracking() {
+    catalogSubscription?.unsubscribe();
+    catalogSubscription = null;
+    pendingCatalogLoads.clear();
+}
+
+export function restoreUiStoreBaseState() {
+    store.setState({
+        ...baseState,
+        objectData: {},
+        objectNums: [],
+        playerObjectId: undefined,
+        nearbyObjects: [],
+        teamStatus: { ...emptyTeamStatus },
+        attackQueue: [],
+        commandDispatcher: null,
+        clientBindings: {},
+    });
+}
 
 type ClientLike = {
     addEventListener: (
@@ -809,29 +839,6 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
 }
 
 export const uiStore = storeWithSelector;
-
-export function resetUiStoreForTesting() {
-    clientEventCleanups.forEach((cleanup) => cleanup());
-    clientEventCleanups = [];
-    runtimeCleanup?.();
-    runtimeCleanup = null;
-    catalogSubscription?.unsubscribe();
-    catalogSubscription = null;
-    pendingCatalogLoads.clear();
-    store.setState({
-        ...baseState,
-        objectData: {},
-        objectNums: [],
-        playerObjectId: undefined,
-        nearbyObjects: [],
-        teamStatus: { ...emptyTeamStatus },
-        attackQueue: [],
-        commandDispatcher: null,
-        clientBindings: {},
-    });
-    subscribeToRuntime();
-    subscribeToCatalog();
-}
 
 export function useUiStore<T>(selector: (state: UiStoreState) => T): T {
     return useStore(storeWithSelector, selector);

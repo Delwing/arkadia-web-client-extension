@@ -3,8 +3,8 @@ import type {
     TransportConnectOptions,
     TransportIn,
     TransportOut,
-} from "./types";
-import { TransportSubject } from "./subject";
+} from "../../src/runtime/transport/types";
+import { TransportSubject } from "../../src/runtime/transport/subject";
 
 export interface MockTransportAdapterOptions {
     emitLifecycle?: boolean;

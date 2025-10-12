@@ -1,7 +1,8 @@
 import ObjectList from '../src/ObjectList';
 import { getItemSync, setItemSync } from '@client/src/storage';
 import type { NearbyObject } from '../src/ui/store';
-import { uiStore, resetUiStoreForTesting } from '../src/ui/store';
+import { uiStore } from "../src/ui/store";
+import { resetUiStoreForTesting } from "../src/ui/store.testing";
 import type { CommandDispatcher } from '@client/src/runtime/command-dispatcher';
 
 jest.mock('@client/src/storage', () => ({

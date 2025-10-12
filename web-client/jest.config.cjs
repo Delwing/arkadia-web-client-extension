@@ -3,6 +3,7 @@ const path = require('path');
 
 const moduleNameMapper = {
   '^@client/(.*)$': '<rootDir>/../client/$1',
+  'sql\\.js/dist/sql-wasm\\.wasm\\?url$': '<rootDir>/test/__mocks__/sqljs-wasm-url.ts',
 };
 
 const candidateZustandDirs = [
