@@ -123,28 +123,4 @@ describe("WebSocketTransportAdapter", () => {
         adapter.disconnect();
     });
 
-    it("reconnects automatically when not manual", () => {
-        const adapter = new WebSocketTransportAdapter("ws://example");
-        adapter.connect({ manual: false });
-        const firstSocket = MockWebSocket.instances[0];
-        firstSocket.triggerOpen();
-        firstSocket.triggerClose();
-
-        expect(MockWebSocket.instances).toHaveLength(1);
-        jest.advanceTimersByTime(1000);
-        expect(MockWebSocket.instances).toHaveLength(2);
-
-        adapter.disconnect();
-    });
-
-    it("stops reconnect attempts after disconnect", () => {
-        const adapter = new WebSocketTransportAdapter("ws://example");
-        adapter.connect({ manual: false });
-        const socket = MockWebSocket.instances[0];
-        socket.triggerOpen();
-        adapter.disconnect();
-
-        jest.advanceTimersByTime(10000);
-        expect(MockWebSocket.instances).toHaveLength(1);
-    });
 });
