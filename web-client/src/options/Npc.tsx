@@ -5,6 +5,7 @@ import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
 import services from "@client/src/runtime/service-registry";
 import { NPC_DATASET_KEY } from "@client/src/runtime/data";
+import { useUiDispatch } from "../ui/store";
 
 interface NpcProps {
     name: string;
@@ -15,6 +16,7 @@ function Npc() {
 
     const [npcs, setNpcs] = useState<NpcProps[]>([])
     const [filter, setFilter] = useState<string>('')
+    const dispatch = useUiDispatch();
 
     useEffect(() => {
         let cancelled = false;
@@ -55,7 +57,7 @@ function Npc() {
             await services.dataCatalog.load(NPC_DATASET_KEY);
             const data = await loadNpcData<NpcProps[]>();
             setNpcs(data);
-            ;(window as any).clientExtension?.sendEvent('npc', data);
+            void dispatch({ type: 'event/send', event: 'npc', payload: data });
         } catch (e) {
             console.error('Failed to update NPC data:', e);
         }
@@ -65,7 +67,7 @@ function Npc() {
         services.dataCatalog.clear(NPC_DATASET_KEY)
             .then(() => {
                 setNpcs([])
-                ;(window as any).clientExtension?.sendEvent('npc', [])
+                void dispatch({ type: 'event/send', event: 'npc', payload: [] });
             })
             .catch(e => console.error('Failed to clear NPC data:', e));
     }
@@ -85,7 +87,7 @@ function Npc() {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
         void saveNpcs(updated)
-        ;(window as any).clientExtension?.sendEvent('npc', updated)
+        void dispatch({ type: 'event/send', event: 'npc', payload: updated });
     }
 
     async function saveNpcs(list: NpcProps[]) {

@@ -7,6 +7,7 @@ import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
+import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
 
 import type { CharStateData } from "../CharState";
 
@@ -27,11 +28,16 @@ export interface UiStoreState {
     charState: Partial<CharStateData>;
     charOptions: CharOptionsState;
     uiPreferences: UiPreferences;
+    commandDispatcher: CommandDispatcher | null;
+    setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
     dispatch: (intent: UiIntent) => Promise<void>;
 }
 
 export type UiIntent =
-    | { type: "settings/update"; patch: Partial<SettingsSnapshot> };
+    | { type: "settings/update"; patch: Partial<SettingsSnapshot> }
+    | { type: "command/send"; command: string; echo?: boolean }
+    | { type: "event/send"; event: string; payload?: unknown }
+    | { type: "extension/command"; command: ExtensionCommand };
 
 const defaultPreferences: UiPreferences = {
     emojiLabels: null,
@@ -39,12 +45,38 @@ const defaultPreferences: UiPreferences = {
     fightTitleIcon: null,
 };
 
-async function handleUiIntent(intent: UiIntent): Promise<void> {
-    if (intent.type === "settings/update") {
-        await services.settings.update(intent.patch);
-        return;
+async function handleUiIntent(intent: UiIntent, get: () => UiStoreState): Promise<void> {
+    switch (intent.type) {
+        case "settings/update":
+            await services.settings.update(intent.patch);
+            return;
+        case "command/send": {
+            const dispatcher = get().commandDispatcher;
+            if (!dispatcher) {
+                throw new Error("Command dispatcher not configured");
+            }
+            dispatcher.sendCommand(intent.command, { echo: intent.echo });
+            return;
+        }
+        case "event/send": {
+            const dispatcher = get().commandDispatcher;
+            if (!dispatcher) {
+                throw new Error("Command dispatcher not configured");
+            }
+            dispatcher.sendEvent(intent.event, intent.payload);
+            return;
+        }
+        case "extension/command": {
+            const dispatcher = get().commandDispatcher;
+            if (!dispatcher) {
+                throw new Error("Command dispatcher not configured");
+            }
+            dispatcher.sendExtensionCommand(intent.command);
+            return;
+        }
+        default:
+            throw new Error(`Unhandled UI intent: ${JSON.stringify(intent)}`);
     }
-    throw new Error(`Unhandled UI intent: ${JSON.stringify(intent)}`);
 }
 
 const baseState = {
@@ -55,9 +87,11 @@ const baseState = {
 };
 
 const store = createStore(
-    subscribeWithSelector<UiStoreState>(() => ({
+    subscribeWithSelector<UiStoreState>((set, get) => ({
         ...baseState,
-        dispatch: handleUiIntent,
+        commandDispatcher: null,
+        setCommandDispatcher: (dispatcher) => set({ commandDispatcher: dispatcher }),
+        dispatch: (intent) => handleUiIntent(intent, get),
     }))
 );
 
@@ -204,7 +238,7 @@ export function resetUiStoreForTesting() {
     lastClient = null;
     runtimeCleanup?.();
     runtimeCleanup = null;
-    store.setState({ ...baseState, dispatch: handleUiIntent });
+    store.setState({ ...baseState, commandDispatcher: null });
     subscribeToRuntime();
 }
 
