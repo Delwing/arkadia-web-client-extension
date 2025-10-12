@@ -47,6 +47,10 @@ This document captures progress toward the next-generation runtime described in 
 - Updated the classic `AttackMode` HUD widget to subscribe to the store and automatically toggle its visibility based on the derived leader flag rather than bespoke event wiring. (see `web-client/src/AttackMode.ts`).
 - Migrated mobile direction buttons and their React configuration panel to the same selectors, letting them adapt layouts and persistence flows to solo/team/leader contexts while relying on browser-managed teardown instead of manual unload listeners. (see `web-client/src/scripts/mobileDirectionButtons.ts`, `web-client/src/options/MobileButtons.tsx`).
 
+### Object list migration to the shared UI store
+- Rebuilt the legacy object list controller so it binds directly to `uiStore` selectors for nearby objects and the attack queue, reuses the centralised command dispatcher, and keeps the DOM in sync across both the main HUD and the Picture-in-Picture surface. (see `web-client/src/ObjectList.ts`).
+- Extended the shared `uiStore` to surface the attack queue emitted by the legacy client bridge and expose a `selectAttackQueue` helper, allowing classic widgets to follow the unified state shape without bespoke events. (see `web-client/src/ui/store.ts`).
+
 ## Planned next steps
 - Continue migrating remaining runtime modules from the legacy `eventBus` to direct `EventHub` subscriptions so the bridge shim can eventually be removed.
 - Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
