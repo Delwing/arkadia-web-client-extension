@@ -2,7 +2,10 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
+import type { ClientEvents } from "@client/src/runtime/client-events";
+import { EventHub } from "@client/src/runtime/event-hub";
+import type { EventHubSubscription } from "@client/src/runtime/event-hub";
+import type { RuntimeEvents } from "@client/src/runtime/event-hub";
 import {md5} from 'js-md5';
 import type {
     TransportAdapter,
@@ -20,6 +23,7 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 export interface ArkadiaClientDependencies {
     transport: TransportAdapter;
     router: MessageRouter;
+    eventHub: EventHub<RuntimeEvents>;
 }
 
 function createRouter(transport: TransportAdapter) {
@@ -35,10 +39,15 @@ class ArkadiaClient implements ClientAdapter {
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
     private recorder: Recorder;
+    private readonly events = new EventHub<ClientEvents>();
+    private readonly listenerSubscriptions = new Map<keyof ClientEvents, Map<Function, EventHubSubscription>>();
+    private runtimeEventHub: EventHub<RuntimeEvents>;
+    private runtimeEventSubscriptions: EventHubSubscription[] = [];
 
     constructor(deps: ArkadiaClientDependencies) {
         this.transport = deps.transport;
         this.router = deps.router;
+        this.runtimeEventHub = deps.eventHub;
         this.router.attach(this.transport);
         this.transportSubscription = this.transport.messages$.subscribe(this.handleTransportMessage);
         this.recorder = new Recorder({
@@ -46,6 +55,8 @@ class ArkadiaClient implements ClientAdapter {
             sendCommand: (command, echo = true) => this.send(command, echo),
             emit: (event, ...args) => this.emit(event as keyof ClientEvents, ...(args as any)),
         });
+
+        this.subscribeToRuntimeEvents();
 
         addEventListener("beforeunload", (event) => {
             if (this.socketOpen) {
@@ -67,6 +78,10 @@ class ArkadiaClient implements ClientAdapter {
             this.router.dispose();
             this.router = deps.router;
             shouldResubscribe = true;
+        }
+
+        if (deps.eventHub && deps.eventHub !== this.runtimeEventHub) {
+            this.setRuntimeEventHub(deps.eventHub);
         }
 
         if (shouldResubscribe) {
@@ -104,16 +119,89 @@ class ArkadiaClient implements ClientAdapter {
         }
     };
 
+    private setRuntimeEventHub(eventHub: RuntimeEventHub<RuntimeEvents>) {
+        this.runtimeEventSubscriptions.forEach((subscription) => subscription.unsubscribe());
+        this.runtimeEventSubscriptions = [];
+        this.runtimeEventHub = eventHub;
+        this.subscribeToRuntimeEvents();
+    }
+
+    private subscribeToRuntimeEvents() {
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("message", (text) => {
+                this.emit("message", text);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("gmcp", ({ path, value }) => {
+                this.emit("gmcp", { path, value });
+                this.emit(`gmcp.${path}` as keyof ClientEvents, value as ClientEvents[keyof ClientEvents]);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("gmcpMessage", ({ type, text }) => {
+                this.emit(`gmcp_msg.${type}` as keyof ClientEvents, text as ClientEvents[keyof ClientEvents]);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("outputFlushed", ({ count }) => {
+                this.emit("output-sent", count as ClientEvents[keyof ClientEvents]);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("lineSent", () => {
+                this.emit("line-sent");
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            this.runtimeEventHub.on("command", (command) => {
+                this.emit("command", command as ClientEvents[keyof ClientEvents]);
+            }),
+        );
+    }
+
     on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.on(event, listener);
+        const wrappers = this.listenerSubscriptions.get(event) ?? new Map();
+        if (!this.listenerSubscriptions.has(event)) {
+            this.listenerSubscriptions.set(event, wrappers);
+        }
+
+        const subscription = this.events.on(event, (payload) => {
+            if (Array.isArray(payload)) {
+                (listener as (...params: unknown[]) => void)(...payload);
+                return;
+            }
+            if (payload !== undefined) {
+                (listener as (param: unknown) => void)(payload);
+                return;
+            }
+            (listener as () => void)();
+        });
+
+        wrappers.set(listener, subscription);
     }
 
     off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.off(event, listener);
+        const wrappers = this.listenerSubscriptions.get(event);
+        const subscription = wrappers?.get(listener);
+        if (!subscription) {
+            return;
+        }
+        subscription.unsubscribe();
+        wrappers!.delete(listener);
+        if (wrappers && wrappers.size === 0) {
+            this.listenerSubscriptions.delete(event);
+        }
     }
 
     emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
-        eventBus.emit(event, ...args);
+        const payload = args.length === 0 ? undefined : args.length === 1 ? args[0] : args;
+        this.events.emit(event, payload as ClientEvents[K]);
     }
 
     connect(options?: TransportConnectOptions | boolean): void {
@@ -283,7 +371,7 @@ class ArkadiaClient implements ClientAdapter {
 
 const defaultTransport = new WebSocketTransportAdapter();
 const defaultRouter = createRouter(defaultTransport);
-const legacyClient = new ArkadiaClient({ transport: defaultTransport, router: defaultRouter });
+const legacyClient = new ArkadiaClient({ transport: defaultTransport, router: defaultRouter, eventHub: runtimeEventHub });
 
 export function configureArkadiaClient(deps: Partial<ArkadiaClientDependencies>) {
     if (deps.transport || deps.router) {
@@ -291,13 +379,17 @@ export function configureArkadiaClient(deps: Partial<ArkadiaClientDependencies>)
         const router = deps.router ?? createRouter(transport);
         legacyClient.configure({ transport, router });
     }
+    if (deps.eventHub && deps.eventHub !== runtimeEventHub) {
+        legacyClient.configure({ eventHub: deps.eventHub });
+    }
     return legacyClient;
 }
 
 export function createArkadiaClient(deps?: Partial<ArkadiaClientDependencies>) {
     const transport = deps?.transport ?? new WebSocketTransportAdapter();
     const router = deps?.router ?? createRouter(transport);
-    return new ArkadiaClient({ transport, router });
+    const eventHub = deps?.eventHub ?? runtimeEventHub;
+    return new ArkadiaClient({ transport, router, eventHub });
 }
 
 export { ArkadiaClient };

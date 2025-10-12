@@ -20,11 +20,14 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import services from "./runtime/service-registry";
 import type { SettingsSnapshot } from "./runtime/settings/settings-service";
 import { settingsEventHub } from "./runtime/settings/settings-service";
+import type { EventHub } from "./runtime/event-hub";
+import type { RuntimeEvents } from "./runtime/event-hub";
+import type { EventHubSubscription } from "./runtime/event-hub";
+import { runtimeEventHub } from "./runtime/event-hub";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -41,7 +44,7 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
-    eventTarget = eventBus;
+    private readonly eventTarget = new EventTarget();
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
@@ -102,7 +105,13 @@ export default class Client {
     private readonly settingsService = services.settings;
 
 
-    constructor(clientAdapter: ClientAdapter, port: any) {
+    private readonly runtimeEventSubscriptions: EventHubSubscription[] = [];
+
+    constructor(
+        clientAdapter: ClientAdapter,
+        port: any,
+        runtimeEvents: EventHub<RuntimeEvents> = runtimeEventHub,
+    ) {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
@@ -308,6 +317,43 @@ export default class Client {
                 })
             }
         })
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("message", (text) => {
+                this.sendEvent("message", text);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("gmcp", ({ path, value }) => {
+                this.sendEvent("gmcp", { path, value });
+                this.sendEvent(`gmcp.${path}`, value);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("gmcpMessage", ({ type, text }) => {
+                this.sendEvent(`gmcp_msg.${type}`, text);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("outputFlushed", ({ count }) => {
+                this.sendEvent("output-sent", count);
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("lineSent", () => {
+                this.sendEvent("line-sent");
+            }),
+        );
+
+        this.runtimeEventSubscriptions.push(
+            runtimeEvents.on("command", (command) => {
+                this.sendEvent("command", command);
+            }),
+        );
     }
 
     setTempBind(index: number, command: string) {
