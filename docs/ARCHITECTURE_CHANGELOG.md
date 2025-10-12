@@ -56,6 +56,18 @@ This document captures progress toward the next-generation runtime described in 
 - Updated HUD helpers, modals, debug tooling, sandbox utilities, and trigger inspectors to resolve services via the store or the `CommandDispatcher`, eliminating direct global lookups. (see `web-client/src/debug.ts`, `web-client/src/embed.ts`, `web-client/src/options/Shortcuts.tsx`, `web-client/src/sandbox.ts`, `web-client/src/triggerFinder.ts`, `web-client/src/triggerTester.ts`).
 - Documented migration guidance for third-party scripts that previously depended on the global, highlighting the new `uiStore` selectors and dispatcher entry points for commands, events, and runtime helpers. (see `docs/ARCHITECTURE.md`).
 
+### Runtime bootstrap helper
+- Added a `createRuntimeBootstrap` factory that wires together the service registry, message router, event hub, and `Client` construction so entry points can spin up the runtime with a single call. The helper returns the command dispatcher and catalog metadata so bootstrappers can hydrate UI stores without duplicating registry internals. (see `client/src/runtime/createRuntimeBootstrap.ts`, `client/test/runtime/runtime-bootstrap.test.ts`).
+- Extended the service registry with `configureTransport`/`configureMessageRouter` hooks and catalog metadata accessors so the bootstrap helper can flexibly adjust transports, ANSI parsing, and loader status while keeping shared singletons behind the registry. (see `client/src/runtime/service-registry.ts`).
+
+### People dataset integration with the catalog
+- Replaced the bespoke people database cache/worker with a typed catalog loader that downloads, parses, persists, and caches guild metadata with a configurable TTL, bringing the people dataset in line with other runtime data sources. (see `client/src/runtime/data/people-loader.ts`, `client/src/runtime/data/default-catalog.ts`, `client/src/runtime/data/catalog.ts`).
+- Updated the legacy `People` feature module and invite/attack helpers to consume the catalog API, react to loader metadata, and surface load errors consistently through the shared registry instead of bespoke storage listeners. Jest now exercises the new flows through the catalog-ready streams. (see `client/src/People.ts`, `client/src/scripts/invite.ts`, `client/src/scripts/attackBeep.ts`, `client/test/people.test.ts`, `client/test/invite.test.ts`, `client/test/attackBeep.test.ts`).
+
+### NPC catalog bridge deduplication
+- Introduced a normalized comparison utility for NPC data and taught the sandbox `MockPort` to ignore redundant storage updates, preventing infinite broadcast loops when catalog sync writes back identical lists. (see `web-client/src/npcData.ts`, `web-client/src/MockPort.ts`).
+- Adjusted the NPC options panel to rely on the normalized dataset helpers so React panels and legacy HUD widgets observe consistent entries without extra manual de-duplication. (see `web-client/src/options/Npc.tsx`).
+
 ## Planned next steps
 - Continue migrating remaining runtime modules from the legacy `eventBus` to direct `EventHub` subscriptions so the bridge shim can eventually be removed.
 - Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
