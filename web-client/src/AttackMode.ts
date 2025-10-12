@@ -1,5 +1,7 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { getItemSync } from "@client/src/storage.ts";
+import { uiStore, selectTeamStatus } from "./ui/store";
+import type { TeamStatus } from "./ui/store";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];
@@ -7,8 +9,20 @@ type Mode = typeof MODES[number];
 export default class AttackMode {
   private readonly container: HTMLElement | null;
   private index = 0;
+  private teamStatus: TeamStatus;
+  private unsubscribeTeam: (() => void) | null = null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("attack-mode");
+    this.teamStatus = uiStore.getState().teamStatus;
+    this.unsubscribeTeam = uiStore.subscribe(selectTeamStatus, (status, previous) => {
+      this.teamStatus = status;
+      if (!previous || status.isLeader !== previous.isLeader) {
+        this.updateVisibility();
+      }
+    });
+    window.addEventListener('unload', () => {
+      this.unsubscribeTeam?.();
+    }, { once: true });
     if (this.container) {
       this.container.addEventListener("click", () => {
         this.index = (this.index + 1) % MODES.length;
@@ -20,11 +34,11 @@ export default class AttackMode {
       this.update();
       this.updateVisibility();
     });
-    client.on("teamChange", () => this.updateVisibility());
     const stored = getItemSync('attack_mode')?.attack_mode as Mode | undefined;
     if (stored && MODES.includes(stored)) {
       this.index = MODES.indexOf(stored);
     }
+    this.updateVisibility();
     client.emit("attackMode", MODES[this.index]);
   }
 
@@ -37,7 +51,6 @@ export default class AttackMode {
 
   private updateVisibility() {
     if (!this.container) return;
-    const leader = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
-    this.container.style.display = leader ? 'block' : 'none';
+    this.container.style.display = this.teamStatus.isLeader ? 'block' : 'none';
   }
 }

@@ -4,7 +4,7 @@ import type { Root } from "react-dom/client";
 
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
-import { resetUiStoreForTesting } from "../src/ui/store";
+import { resetUiStoreForTesting, uiStore } from "../src/ui/store";
 import CharState from "../src/CharState";
 import GuildsSettings from "../src/options/GuildsSettings";
 import guilds from "../src/options/guilds";
@@ -96,6 +96,28 @@ describe("UI store integration", () => {
         guildColors: expect.any(Object),
       }),
     );
+  });
+
+  test("nearby objects and team status are derived from gmcp", async () => {
+    expect(uiStore.getState().nearbyObjects).toHaveLength(0);
+
+    await act(async () => {
+      runtimeEventHub.emit("gmcp", { path: "char.info", value: { object_num: 1, name: "Tester" } });
+      runtimeEventHub.emit("gmcp", {
+        path: "objects.data",
+        value: {
+          "1": { team: true, team_leader: true, desc: "Tester" },
+          "2": { team: true, desc: "Ally" },
+        },
+      });
+      runtimeEventHub.emit("gmcp", { path: "objects.nums", value: ["1", "2"] });
+    });
+
+    const state = uiStore.getState();
+    expect(state.teamStatus.isLeader).toBe(true);
+    expect(state.teamStatus.inTeam).toBe(true);
+    expect(state.nearbyObjects.find(obj => obj.shortcut === "@")?.desc).toBe("Tester");
+    expect(state.nearbyObjects.find(obj => obj.shortcut === "A")?.desc).toBe("Ally");
   });
 });
 

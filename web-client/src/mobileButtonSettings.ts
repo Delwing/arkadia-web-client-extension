@@ -280,7 +280,7 @@ export function saveSettings(settings: Settings) {
     storage.setItem('mobileButtonSettings', settings);
 }
 
-export function applySettings(settings: Settings, inTeam = false, isLeader = false) {
+export function applySettings(settings: Settings, inTeam = false, isLeader = false): LayoutSettings {
     const set = isLeader ? settings.leader : inTeam ? settings.team : settings.solo;
     const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
     if (container) {
@@ -361,11 +361,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
-        );
-    }
+    return set;
 }
 
 
