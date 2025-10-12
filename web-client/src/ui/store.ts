@@ -1,10 +1,13 @@
 import { createStore } from "zustand/vanilla";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useStore } from "zustand";
+import type { Subscription } from "rxjs";
 
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/src/runtime/data";
+import type { DataCatalogEntryMetadata, DataCatalogReadyEvent } from "@client/src/runtime/data";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
 import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
@@ -12,6 +15,17 @@ import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/co
 import type { CharStateData } from "../CharState";
 
 type ListenerCleanup = () => void;
+
+const trackedCatalogKeys = [MAP_DATASET_KEY, COLORS_DATASET_KEY, NPC_DATASET_KEY];
+
+export interface CatalogDatasetSlice<T = unknown> {
+    readonly data?: T;
+    readonly metadata: DataCatalogEntryMetadata;
+}
+
+export interface CatalogLoadOptions {
+    readonly force?: boolean;
+}
 
 export interface UiPreferences {
     emojiLabels: boolean | null;
@@ -31,6 +45,10 @@ export interface UiStoreState {
     commandDispatcher: CommandDispatcher | null;
     setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
     dispatch: (intent: UiIntent) => Promise<void>;
+    datasets: Record<string, CatalogDatasetSlice<unknown>>;
+    loadDataset: (key: string, options?: CatalogLoadOptions) => Promise<void>;
+    ensureDataset: <T>(key: string, options?: CatalogLoadOptions) => Promise<T>;
+    syncDataset: (key: string) => void;
 }
 
 export type UiIntent =
@@ -84,6 +102,7 @@ const baseState = {
     charState: {},
     charOptions: {},
     uiPreferences: { ...defaultPreferences },
+    datasets: {} as Record<string, CatalogDatasetSlice<unknown>>,
 };
 
 const store = createStore(
@@ -92,8 +111,14 @@ const store = createStore(
         commandDispatcher: null,
         setCommandDispatcher: (dispatcher) => set({ commandDispatcher: dispatcher }),
         dispatch: (intent) => handleUiIntent(intent, get),
+        loadDataset: (key, options) => loadCatalogDataset(key, options),
+        ensureDataset: (key, options) => ensureCatalogDataset(key, options),
+        syncDataset: (key) => syncDatasetState(key),
     }))
 );
+
+const pendingCatalogLoads = new Map<string, Promise<void>>();
+let catalogSubscription: Subscription | null = null;
 
 type StoreWithSelector = typeof store & {
     subscribe: typeof store.subscribe & {
@@ -109,6 +134,154 @@ type StoreWithSelector = typeof store & {
 };
 
 const storeWithSelector = store as StoreWithSelector;
+
+function buildDatasetState(key: string): CatalogDatasetSlice<unknown> | undefined {
+    const metadata = services.dataCatalog.metadataFor(key);
+    if (!metadata) {
+        return undefined;
+    }
+
+    return {
+        data: services.dataCatalog.get(key),
+        metadata,
+    };
+}
+
+function syncDatasetState(key: string): void {
+    const dataset = buildDatasetState(key);
+    store.setState((current) => {
+        const nextDatasets = { ...current.datasets };
+        if (dataset) {
+            nextDatasets[key] = dataset;
+        } else {
+            delete nextDatasets[key];
+        }
+        return { datasets: nextDatasets };
+    });
+}
+
+async function loadCatalogDataset(key: string, options: CatalogLoadOptions = {}): Promise<void> {
+    const { force = false } = options;
+    const catalog = services.dataCatalog;
+    const existingMetadata = catalog.metadataFor(key);
+
+    if (!force) {
+        if (existingMetadata?.status === "ready") {
+            return;
+        }
+
+        const existingPending = pendingCatalogLoads.get(key);
+        if (existingPending) {
+            await existingPending;
+            return;
+        }
+    } else {
+        const existingPending = pendingCatalogLoads.get(key);
+        if (existingPending) {
+            await existingPending;
+        }
+    }
+
+    const loadingMetadata: DataCatalogEntryMetadata = {
+        ...(existingMetadata ?? { key, status: "idle" as const }),
+        status: "loading",
+        error: undefined,
+    };
+
+    store.setState((current) => ({
+        datasets: {
+            ...current.datasets,
+            [key]: {
+                data: current.datasets[key]?.data,
+                metadata: loadingMetadata,
+            },
+        },
+    }));
+
+    const loadPromise = (async () => {
+        try {
+            await catalog.load(key);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            const meta = catalog.metadataFor(key) ?? { key, status: "error" as const };
+            const errorMetadata: DataCatalogEntryMetadata = {
+                ...meta,
+                status: "error",
+                error: message,
+            };
+            store.setState((current) => ({
+                datasets: {
+                    ...current.datasets,
+                    [key]: {
+                        data: catalog.get(key),
+                        metadata: errorMetadata,
+                    },
+                },
+            }));
+            throw error;
+        }
+    })();
+
+    pendingCatalogLoads.set(key, loadPromise);
+
+    try {
+        await loadPromise;
+    } finally {
+        pendingCatalogLoads.delete(key);
+    }
+}
+
+async function ensureCatalogDataset<T>(key: string, options: CatalogLoadOptions = {}): Promise<T> {
+    const { force = false } = options;
+    const catalog = services.dataCatalog;
+    const metadata = catalog.metadataFor(key);
+    const cached = catalog.get<T>(key);
+
+    if (!force && metadata?.status === "ready" && typeof cached !== "undefined") {
+        return cached;
+    }
+
+    await loadCatalogDataset(key, options);
+
+    const value = catalog.get<T>(key);
+    if (typeof value === "undefined") {
+        throw new Error(`Dataset ${key} is unavailable after load.`);
+    }
+
+    return value;
+}
+
+function subscribeToCatalog(): void {
+    if (catalogSubscription) {
+        return;
+    }
+
+    const initialDatasets: Record<string, CatalogDatasetSlice<unknown>> = {};
+    for (const key of trackedCatalogKeys) {
+        const dataset = buildDatasetState(key);
+        if (dataset) {
+            initialDatasets[key] = dataset;
+        }
+    }
+
+    if (Object.keys(initialDatasets).length > 0) {
+        store.setState((current) => ({
+            datasets: { ...current.datasets, ...initialDatasets },
+        }));
+    }
+
+    catalogSubscription = services.dataCatalog.ready$().subscribe((event: DataCatalogReadyEvent) => {
+        store.setState((current) => ({
+            datasets: {
+                ...current.datasets,
+                [event.key]: {
+                    data: event.data,
+                    metadata: event.metadata,
+                },
+            },
+        }));
+    });
+}
 
 function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {
     const next: Partial<UiPreferences> = {};
@@ -174,6 +347,7 @@ function subscribeToRuntime() {
 }
 
 subscribeToRuntime();
+subscribeToCatalog();
 let uiSettingsCleanup: ListenerCleanup | null = null;
 let uiSettingsListener: EventListener | null = null;
 let lastClient: ClientLike | null = null;
@@ -238,12 +412,24 @@ export function resetUiStoreForTesting() {
     lastClient = null;
     runtimeCleanup?.();
     runtimeCleanup = null;
+    catalogSubscription?.unsubscribe();
+    catalogSubscription = null;
+    pendingCatalogLoads.clear();
     store.setState({ ...baseState, commandDispatcher: null });
     subscribeToRuntime();
+    subscribeToCatalog();
 }
 
 export function useUiStore<T>(selector: (state: UiStoreState) => T): T {
     return useStore(storeWithSelector, selector);
+}
+
+export function selectCatalogDataset<T = unknown>(key: string) {
+    return (state: UiStoreState) => state.datasets[key] as CatalogDatasetSlice<T> | undefined;
+}
+
+export function useCatalogDataset<T = unknown>(key: string): CatalogDatasetSlice<T> | undefined {
+    return useUiStore(selectCatalogDataset<T>(key));
 }
 
 export function useUiDispatch() {

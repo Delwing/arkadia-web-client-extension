@@ -22,8 +22,6 @@ import LetterComposer from "./LetterComposer";
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
-import {loadMapData, loadColors} from "./mapDataLoader.ts";
-import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -46,7 +44,7 @@ import "./triggerFinder"
 import MessageRouter from "@client/src/runtime/transport/message-router";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
-import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/src/runtime/data";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
@@ -130,7 +128,7 @@ function disableTabSleepPrevention() {
 
 void (async () => {
     try {
-        const npc = await loadNpcData();
+        const npc = await uiStore.getState().ensureDataset(NPC_DATASET_KEY);
         client.sendEvent("npc", npc);
     } catch (error) {
         console.error('Failed to load NPC data:', error);
@@ -182,6 +180,7 @@ const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
 const dataCatalog = services.dataCatalog;
+const ensureDataset = uiStore.getState().ensureDataset;
 let mapStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(MAP_DATASET_KEY)?.status ?? 'idle';
 let colorStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(COLORS_DATASET_KEY)?.status ?? 'idle';
 let progressMessageOverride: string | null = null;
@@ -286,7 +285,7 @@ if (colorStatus !== 'ready') {
 }
 refreshProgressDisplay();
 
-const mapDataPromise = loadMapData()
+const mapDataPromise = ensureDataset<MapData.Map>(MAP_DATASET_KEY)
     .then((mapData) => {
         mapStatus = 'ready';
 
@@ -311,7 +310,7 @@ const mapDataPromise = loadMapData()
         throw error;
     });
 
-const colorsPromise = loadColors()
+const colorsPromise = ensureDataset<MapData.Env[]>(COLORS_DATASET_KEY)
     .then((colors) => {
         colorStatus = 'ready';
         refreshProgressDisplay();
