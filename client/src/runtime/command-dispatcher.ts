@@ -1,4 +1,4 @@
-import type Client from "@client/src/Client";
+import type Client from "../Client";
 
 export interface MultibindPortRecord {
     roomId: number;

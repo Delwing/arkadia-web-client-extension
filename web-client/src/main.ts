@@ -19,7 +19,6 @@ import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
-import { createClientRuntime } from "@client/src/main.ts";
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {EmbeddedMap} from "./embed.ts"
@@ -41,8 +40,9 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
-import MessageRouter from "@client/src/runtime/transport/message-router";
+import { createClientRuntime } from "@client/src/main.ts";
 import { runtimeEventHub as clientRuntimeEventHub } from "@client/src/runtime/event-hub";
+import MessageRouter from "@client/src/runtime/transport/message-router";
 import services from "@client/src/runtime/service-registry";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";

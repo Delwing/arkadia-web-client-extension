@@ -1,11 +1,11 @@
+import { runtimeEventHub } from "@client/src/runtime/event-hub";
+import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import { useCallback } from "react";
 import { createStore } from "zustand/vanilla";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useStore } from "zustand";
 import type { Subscription } from "rxjs";
 
-import { runtimeEventHub } from "@client/src/runtime/event-hub";
-import type { EventHubSubscription } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from "@client/src/runtime/data";
 import type { DataCatalogEntryMetadata, DataCatalogReadyEvent, NpcDefinition } from "@client/src/runtime/data";

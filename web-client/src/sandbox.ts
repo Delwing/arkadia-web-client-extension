@@ -1,7 +1,7 @@
-import './sandbox.css';
-import arkadiaClient from "./ArkadiaClient.ts";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import type { RuntimeEvents } from "@client/src/runtime/event-hub";
+import './sandbox.css';
+import arkadiaClient from "./ArkadiaClient.ts";
 
 // Disable real network and echo commands locally
 arkadiaClient.connect = () => {

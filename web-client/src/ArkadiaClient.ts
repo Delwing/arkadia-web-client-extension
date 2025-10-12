@@ -1,11 +1,12 @@
+import { EventHub } from "@client/src/runtime/event-hub";
+import type { EventHubSubscription } from "@client/src/runtime/event-hub";
+import type { RuntimeEvents } from "@client/src/runtime/event-hub";
+import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import type { ClientEvents } from "@client/src/runtime/client-events";
-import { EventHub } from "@client/src/runtime/event-hub";
-import type { EventHubSubscription } from "@client/src/runtime/event-hub";
-import type { RuntimeEvents } from "@client/src/runtime/event-hub";
 import {md5} from 'js-md5';
 import type {
     TransportAdapter,
@@ -14,7 +15,6 @@ import type {
     TransportSubscription,
 } from "@client/src/runtime/transport/types";
 import MessageRouter from "@client/src/runtime/transport/message-router";
-import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
