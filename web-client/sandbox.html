@@ -543,6 +543,44 @@
     <ul id="sandbox-team-preview" class="sandbox-team-preview list-unstyled"></ul>
 </div>
 </div>
+<div id="letter-composer" class="letter-composer" hidden>
+    <div class="letter-composer-header">
+        <span>Nowy list</span>
+        <button type="button" class="btn-close btn-close-white" aria-label="Zamknij" data-letter-close></button>
+    </div>
+    <form class="letter-composer-form">
+        <div class="letter-composer-field">
+            <label for="letter-to" class="form-label">Do:</label>
+            <input id="letter-to" name="letter-to" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="letter-composer-field">
+            <label for="letter-cc" class="form-label">CC:</label>
+            <input id="letter-cc" name="letter-cc" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="letter-composer-field">
+            <label for="letter-subject" class="form-label">Temat:</label>
+            <input id="letter-subject" name="letter-subject" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="letter-composer-field">
+            <label for="letter-content" class="form-label">Treść:</label>
+            <textarea id="letter-content" name="letter-content" class="form-control" rows="10"></textarea>
+        </div>
+        <div class="letter-composer-actions">
+            <div class="letter-template-group">
+                <label for="letter-template" class="form-label mb-0">Szablon:</label>
+                <select id="letter-template" name="letter-template" class="form-select form-select-sm letter-template-select">
+                    <option value="none">No template</option>
+                    <option value="plain">Zwykly</option>
+                    <option value="parchment">Pergamin</option>
+                    <option value="parchment2">Pergamin II</option>
+                    <option value="parchment3">Pergamin III</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" data-letter-preview>Podgląd</button>
+            <button type="submit" class="btn btn-primary btn-sm">Wyślij</button>
+        </div>
+    </form>
+</div>
 <div id="context-menu" class="context-menu"></div>
 <script src="/pako.min.js"></script>
 <script type="module" src="/src/plugin.ts"></script>
