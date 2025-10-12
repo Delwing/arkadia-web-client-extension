@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
-import { DefaultDataCatalog } from '../../../src/runtime/data/default-catalog';
+import { GenericDataCatalog, MapDataCatalog, NpcDataCatalog } from '../../../src/runtime/data';
 import type { DataCatalogReadyEvent, NpcDefinition } from '../../../src/runtime/data';
 import {
     COLORS_DATASET_KEY,
@@ -11,7 +11,7 @@ import {
 } from '../../../src/runtime/data/core-loaders';
 import type { DataPersistenceAdapter } from '../../../src/runtime/data/persistence/types';
 
-describe('DefaultDataCatalog', () => {
+describe('GenericDataCatalog', () => {
     class MemoryAdapter<T> implements DataPersistenceAdapter<T> {
         constructor(private value?: T) {}
 
@@ -29,7 +29,7 @@ describe('DefaultDataCatalog', () => {
     }
 
     it('allows registering loaders and retrieving data', async () => {
-        const catalog = new DefaultDataCatalog();
+        const catalog = new GenericDataCatalog();
         const adapter = new MemoryAdapter<{ value: number }>();
 
         catalog.register({
@@ -50,7 +50,7 @@ describe('DefaultDataCatalog', () => {
     });
 
     it('emits ready events when loaders finish', async () => {
-        const catalog = new DefaultDataCatalog();
+        const catalog = new GenericDataCatalog();
         catalog.register({
             key: 'ready-test',
             loader: async ({ persist }) => {
@@ -76,7 +76,7 @@ describe('DefaultDataCatalog', () => {
 
     it('restores cached data and emits ready event on registration', async () => {
         const adapter = new MemoryAdapter({ cached: true });
-        const catalog = new DefaultDataCatalog();
+        const catalog = new GenericDataCatalog();
 
         catalog.register({
             key: 'cached',
@@ -96,7 +96,7 @@ describe('DefaultDataCatalog', () => {
     });
 
     it('marks loader errors in metadata when load fails', async () => {
-        const catalog = new DefaultDataCatalog();
+        const catalog = new GenericDataCatalog();
         catalog.register({
             key: 'failing',
             loader: async () => {
@@ -111,7 +111,7 @@ describe('DefaultDataCatalog', () => {
     });
 
     it('resets dataset metadata to idle after clearing', async () => {
-        const catalog = new DefaultDataCatalog();
+        const catalog = new GenericDataCatalog();
         catalog.register({
             key: 'to-clear',
             loader: async ({ persist }) => {
@@ -129,9 +129,11 @@ describe('DefaultDataCatalog', () => {
     });
 
     it('exposes dedicated helpers for core datasets', async () => {
-        const baseCatalog = new DefaultDataCatalog();
+        const mapCatalog = new MapDataCatalog();
+        const npcCatalog = new NpcDataCatalog();
         registerCoreLoaders({
-            catalog: baseCatalog,
+            mapCatalog,
+            npcCatalog,
             mapSource: async () => [
                 {
                     areaName: 'Test',
@@ -149,9 +151,9 @@ describe('DefaultDataCatalog', () => {
             ],
         });
 
-        await baseCatalog.loadAll();
+        await Promise.all([mapCatalog.loadAll(), npcCatalog.loadAll()]);
 
-        expect(baseCatalog.getMapData()).toEqual([
+        expect(mapCatalog.getMapData()).toEqual([
             {
                 areaName: 'Test',
                 areaId: 'test',
@@ -159,16 +161,16 @@ describe('DefaultDataCatalog', () => {
                 labels: [],
             },
         ]);
-        expect(baseCatalog.getNpcData()).toEqual([{ name: 'Npc', loc: 1 }]);
-        expect(baseCatalog.getColorPalettes()).toEqual([
+        expect(mapCatalog.getColorPalettes()).toEqual([
             {
                 envId: 'env',
                 colors: [],
             },
         ]);
-        expect(baseCatalog.getMapMetadata()).toMatchObject({ key: MAP_DATASET_KEY, status: 'ready' });
-        expect(baseCatalog.getNpcMetadata()).toMatchObject({ key: NPC_DATASET_KEY, status: 'ready' });
-        expect(baseCatalog.getColorMetadata()).toMatchObject({ key: COLORS_DATASET_KEY, status: 'ready' });
+        expect(npcCatalog.getNpcData()).toEqual([{ name: 'Npc', loc: 1 }]);
+        expect(mapCatalog.getMapMetadata()).toMatchObject({ key: MAP_DATASET_KEY, status: 'ready' });
+        expect(npcCatalog.getNpcMetadata()).toMatchObject({ key: NPC_DATASET_KEY, status: 'ready' });
+        expect(mapCatalog.getColorMetadata()).toMatchObject({ key: COLORS_DATASET_KEY, status: 'ready' });
     });
 });
 
@@ -193,8 +195,9 @@ describe('core data loaders', () => {
         const mapAdapter = new MemoryAdapter<unknown>();
         const npcAdapter = new MemoryAdapter<unknown>();
         const colorAdapter = new MemoryAdapter<unknown>();
-        const catalog = registerCoreLoaders({
-            catalog: new DefaultDataCatalog(),
+        const { mapCatalog, npcCatalog } = registerCoreLoaders({
+            mapCatalog: new MapDataCatalog(),
+            npcCatalog: new NpcDataCatalog(),
             mapPersistence: mapAdapter,
             npcPersistence: npcAdapter,
             colorPersistence: colorAdapter,
@@ -204,22 +207,22 @@ describe('core data loaders', () => {
         });
 
         const mapReady = firstValueFrom(
-            catalog
+            mapCatalog
                 .ready$(MAP_DATASET_KEY)
                 .pipe(timeout({ each: 1000 })),
         );
         const npcReady = firstValueFrom(
-            catalog
+            npcCatalog
                 .ready$(NPC_DATASET_KEY)
                 .pipe(timeout({ each: 1000 })),
         );
         const colorReady = firstValueFrom(
-            catalog
+            mapCatalog
                 .ready$(COLORS_DATASET_KEY)
                 .pipe(timeout({ each: 1000 })),
         );
 
-        await catalog.loadAll();
+        await Promise.all([mapCatalog.loadAll(), npcCatalog.loadAll()]);
 
         await expect(mapReady).resolves.toMatchObject({ key: MAP_DATASET_KEY });
         await expect(npcReady).resolves.toMatchObject({ key: NPC_DATASET_KEY });

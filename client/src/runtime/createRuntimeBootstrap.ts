@@ -2,7 +2,16 @@ import Client from "../Client";
 import type { ClientAdapter } from "../Client";
 
 import type { CommandDispatcher } from "./command-dispatcher";
-import type { DefaultDataCatalog, DataCatalogEntryMetadata } from "./data";
+import type {
+    CompositeDataCatalog,
+    MapDataCatalog,
+    NpcDataCatalog,
+    PeopleDataCatalog,
+    MagicDataCatalog,
+    MagicKeysDataCatalog,
+    HerbsDataCatalog,
+    DataCatalogEntryMetadata,
+} from "./data";
 import type { EventHub, RuntimeEvents } from "./event-hub";
 import type MessageRouter from "./transport/message-router";
 import type { TransportAdapter } from "./transport/types";
@@ -29,11 +38,23 @@ export interface RuntimeBootstrapResult {
     client: Client;
     eventHub: EventHub<RuntimeEvents>;
     commandDispatcher: CommandDispatcher;
-    dataCatalog: DefaultDataCatalog;
+    dataCatalog: CompositeDataCatalog;
+    catalogs: {
+        map: MapDataCatalog;
+        npc: NpcDataCatalog;
+        people: PeopleDataCatalog;
+        magic: MagicDataCatalog;
+        magicKeys: MagicKeysDataCatalog;
+        herbs: HerbsDataCatalog;
+    };
     catalogMetadata: {
         map: DataCatalogEntryMetadata | undefined;
         npc: DataCatalogEntryMetadata | undefined;
         colors: DataCatalogEntryMetadata | undefined;
+        people: DataCatalogEntryMetadata | undefined;
+        magic: DataCatalogEntryMetadata | undefined;
+        magicKeys: DataCatalogEntryMetadata | undefined;
+        herbs: DataCatalogEntryMetadata | undefined;
     };
 }
 
@@ -69,6 +90,14 @@ export function createRuntimeBootstrap(options: RuntimeBootstrapOptions): Runtim
         eventHub,
         commandDispatcher,
         dataCatalog: registry.dataCatalog,
+        catalogs: {
+            map: registry.mapCatalog,
+            npc: registry.npcCatalog,
+            people: registry.peopleCatalog,
+            magic: registry.magicCatalog,
+            magicKeys: registry.magicKeysCatalog,
+            herbs: registry.herbsCatalog,
+        },
         catalogMetadata: registry.getCatalogMetadata(),
     };
 }

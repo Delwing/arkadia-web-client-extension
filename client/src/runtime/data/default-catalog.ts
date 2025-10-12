@@ -1,16 +1,30 @@
-import { Observable, ReplaySubject, Subject } from 'rxjs';
-import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY, PEOPLE_DATASET_KEY } from './dataset-keys';
+import { EMPTY, Observable, ReplaySubject, Subject, merge } from 'rxjs';
+import {
+    COLORS_DATASET_KEY,
+    HERBS_DATASET_KEY,
+    MAGIC_DATASET_KEY,
+    MAGIC_KEYS_DATASET_KEY,
+    MAP_DATASET_KEY,
+    NPC_DATASET_KEY,
+    PEOPLE_DATASET_KEY,
+} from './dataset-keys';
 import type {
+    DataCatalog,
     DataCatalogEntryMetadata,
     DataCatalogReadyEvent,
-    PeopleDataCatalog,
     DataLoader,
     DataLoaderContext,
     DataLoaderRegistration,
+    HerbsDataCatalog,
+    MagicDataCatalog,
+    MagicKeysDataCatalog,
+    MapDataCatalog,
+    NpcDataCatalog,
+    PeopleDataCatalog,
 } from './catalog';
-import type { NpcDefinition } from './types';
-import type { DataPersistenceAdapter } from './persistence/types';
+import type { NpcDefinition, HerbsData } from './types';
 import type { PersonEntry } from '../../types/people';
+import type { DataPersistenceAdapter } from './persistence/types';
 
 interface CatalogEntry<T> {
     readonly key: string;
@@ -21,90 +35,14 @@ interface CatalogEntry<T> {
     readonly ready$: ReplaySubject<DataCatalogReadyEvent<T>>;
 }
 
-export class DefaultDataCatalog implements PeopleDataCatalog {
+export class GenericDataCatalog implements DataCatalog {
     private readonly entries = new Map<string, CatalogEntry<unknown>>();
 
     private readonly globalReady$ = new Subject<DataCatalogReadyEvent<unknown>>();
 
-    getMapData(): MapData.Map | undefined {
-        return this.get<MapData.Map>(MAP_DATASET_KEY);
-    }
-
-    getNpcData(): readonly NpcDefinition[] | undefined {
-        return this.get<NpcDefinition[]>(NPC_DATASET_KEY);
-    }
-
-    getColorPalettes(): MapData.Env[] | undefined {
-        return this.get<MapData.Env[]>(COLORS_DATASET_KEY);
-    }
-
-    getPeopleData(): readonly PersonEntry[] | undefined {
-        return this.get<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
-    }
-
-    getMapMetadata(): DataCatalogEntryMetadata | undefined {
-        return this.metadataFor(MAP_DATASET_KEY);
-    }
-
-    getNpcMetadata(): DataCatalogEntryMetadata | undefined {
-        return this.metadataFor(NPC_DATASET_KEY);
-    }
-
-    getColorMetadata(): DataCatalogEntryMetadata | undefined {
-        return this.metadataFor(COLORS_DATASET_KEY);
-    }
-
-    getPeopleMetadata(): DataCatalogEntryMetadata | undefined {
-        return this.metadataFor(PEOPLE_DATASET_KEY);
-    }
-
-    readyForMap$(): Observable<DataCatalogReadyEvent<MapData.Map>> {
-        return this.ready$<MapData.Map>(MAP_DATASET_KEY);
-    }
-
-    readyForNpc$(): Observable<DataCatalogReadyEvent<readonly NpcDefinition[]>> {
-        return this.ready$<readonly NpcDefinition[]>(NPC_DATASET_KEY);
-    }
-
-    readyForColors$(): Observable<DataCatalogReadyEvent<MapData.Env[]>> {
-        return this.ready$<MapData.Env[]>(COLORS_DATASET_KEY);
-    }
-
-    readyForPeople$(): Observable<DataCatalogReadyEvent<readonly PersonEntry[]>> {
-        return this.ready$<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
-    }
-
-    async loadMapData(): Promise<void> {
-        await this.load(MAP_DATASET_KEY);
-    }
-
-    async loadNpcData(): Promise<void> {
-        await this.load(NPC_DATASET_KEY);
-    }
-
-    async loadColorPalettes(): Promise<void> {
-        await this.load(COLORS_DATASET_KEY);
-    }
-
-    async loadPeopleData(): Promise<void> {
-        await this.load(PEOPLE_DATASET_KEY);
-    }
-
-    async clearNpcData(): Promise<void> {
-        await this.clear(NPC_DATASET_KEY);
-    }
-
-    async setNpcData(value: readonly NpcDefinition[], source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
-        await this.set(NPC_DATASET_KEY, [...value], source);
-    }
-
-    async setPeopleData(value: readonly PersonEntry[], source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
-        await this.set(PEOPLE_DATASET_KEY, [...value], source);
-    }
-
     register<T>(registration: DataLoaderRegistration<T>): void {
         if (this.entries.has(registration.key)) {
-            throw new Error(`Data loader with key \"${registration.key}\" already registered.`);
+            throw new Error(`Data loader with key "${registration.key}" already registered.`);
         }
 
         const metadata: DataCatalogEntryMetadata = {
@@ -157,7 +95,7 @@ export class DefaultDataCatalog implements PeopleDataCatalog {
             }
 
             if (typeof entry.data === 'undefined') {
-                throw new Error(`Loader for \"${key}\" did not provide any data.`);
+                throw new Error(`Loader for "${key}" did not provide any data.`);
             }
 
             entry.metadata = {
@@ -232,12 +170,12 @@ export class DefaultDataCatalog implements PeopleDataCatalog {
         return this.globalReady$.asObservable() as Observable<DataCatalogReadyEvent<T>>;
     }
 
-    private ensureReadySubject<T>(key: string): ReplaySubject<DataCatalogReadyEvent<T>> {
+    protected ensureReadySubject<T>(key: string): ReplaySubject<DataCatalogReadyEvent<T>> {
         const entry = this.getEntry(key);
         return entry.ready$ as ReplaySubject<DataCatalogReadyEvent<T>>;
     }
 
-    private emitReady<T>(entry: CatalogEntry<T>): void {
+    protected emitReady<T>(entry: CatalogEntry<T>): void {
         const event: DataCatalogReadyEvent<T> = {
             key: entry.key,
             data: entry.data as T,
@@ -283,3 +221,257 @@ export class DefaultDataCatalog implements PeopleDataCatalog {
         return entry;
     }
 }
+
+class MapDataCatalogImpl extends GenericDataCatalog implements MapDataCatalog {
+    getMapData(): MapData.Map | undefined {
+        return this.get<MapData.Map>(MAP_DATASET_KEY);
+    }
+
+    getMapMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(MAP_DATASET_KEY);
+    }
+
+    readyForMap$(): Observable<DataCatalogReadyEvent<MapData.Map>> {
+        return this.ready$<MapData.Map>(MAP_DATASET_KEY);
+    }
+
+    async loadMapData(): Promise<void> {
+        await this.load(MAP_DATASET_KEY);
+    }
+
+    getColorPalettes(): MapData.Env[] | undefined {
+        return this.get<MapData.Env[]>(COLORS_DATASET_KEY);
+    }
+
+    getColorMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(COLORS_DATASET_KEY);
+    }
+
+    readyForColors$(): Observable<DataCatalogReadyEvent<MapData.Env[]>> {
+        return this.ready$<MapData.Env[]>(COLORS_DATASET_KEY);
+    }
+
+    async loadColorPalettes(): Promise<void> {
+        await this.load(COLORS_DATASET_KEY);
+    }
+}
+
+class NpcDataCatalogImpl extends GenericDataCatalog implements NpcDataCatalog {
+    getNpcData(): readonly NpcDefinition[] | undefined {
+        return this.get<readonly NpcDefinition[]>(NPC_DATASET_KEY);
+    }
+
+    getNpcMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(NPC_DATASET_KEY);
+    }
+
+    readyForNpc$(): Observable<DataCatalogReadyEvent<readonly NpcDefinition[]>> {
+        return this.ready$<readonly NpcDefinition[]>(NPC_DATASET_KEY);
+    }
+
+    async loadNpcData(): Promise<void> {
+        await this.load(NPC_DATASET_KEY);
+    }
+
+    async clearNpcData(): Promise<void> {
+        await this.clear(NPC_DATASET_KEY);
+    }
+
+    async setNpcData(
+        value: readonly NpcDefinition[],
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        await this.set(NPC_DATASET_KEY, [...value], source);
+    }
+}
+
+class PeopleDataCatalogImpl extends GenericDataCatalog implements PeopleDataCatalog {
+    getPeopleData(): readonly PersonEntry[] | undefined {
+        return this.get<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
+    }
+
+    getPeopleMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(PEOPLE_DATASET_KEY);
+    }
+
+    readyForPeople$(): Observable<DataCatalogReadyEvent<readonly PersonEntry[]>> {
+        return this.ready$<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
+    }
+
+    async loadPeopleData(): Promise<void> {
+        await this.load(PEOPLE_DATASET_KEY);
+    }
+
+    async setPeopleData(
+        value: readonly PersonEntry[],
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        await this.set(PEOPLE_DATASET_KEY, [...value], source);
+    }
+}
+
+class MagicDataCatalogImpl extends GenericDataCatalog implements MagicDataCatalog {
+    getMagicPatterns(): readonly string[] | undefined {
+        return this.get<readonly string[]>(MAGIC_DATASET_KEY);
+    }
+
+    getMagicMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(MAGIC_DATASET_KEY);
+    }
+
+    readyForMagic$(): Observable<DataCatalogReadyEvent<readonly string[]>> {
+        return this.ready$<readonly string[]>(MAGIC_DATASET_KEY);
+    }
+
+    async loadMagicData(): Promise<void> {
+        await this.load(MAGIC_DATASET_KEY);
+    }
+
+    async setMagicPatterns(
+        value: readonly string[],
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        await this.set(MAGIC_DATASET_KEY, [...value], source);
+    }
+}
+
+class MagicKeysDataCatalogImpl extends GenericDataCatalog implements MagicKeysDataCatalog {
+    getMagicKeys(): readonly string[] | undefined {
+        return this.get<readonly string[]>(MAGIC_KEYS_DATASET_KEY);
+    }
+
+    getMagicKeysMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(MAGIC_KEYS_DATASET_KEY);
+    }
+
+    readyForMagicKeys$(): Observable<DataCatalogReadyEvent<readonly string[]>> {
+        return this.ready$<readonly string[]>(MAGIC_KEYS_DATASET_KEY);
+    }
+
+    async loadMagicKeys(): Promise<void> {
+        await this.load(MAGIC_KEYS_DATASET_KEY);
+    }
+
+    async setMagicKeys(
+        value: readonly string[],
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        await this.set(MAGIC_KEYS_DATASET_KEY, [...value], source);
+    }
+}
+
+class HerbsDataCatalogImpl extends GenericDataCatalog implements HerbsDataCatalog {
+    getHerbsData(): HerbsData | undefined {
+        return this.get<HerbsData>(HERBS_DATASET_KEY);
+    }
+
+    getHerbsMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(HERBS_DATASET_KEY);
+    }
+
+    readyForHerbs$(): Observable<DataCatalogReadyEvent<HerbsData>> {
+        return this.ready$<HerbsData>(HERBS_DATASET_KEY);
+    }
+
+    async loadHerbsData(): Promise<void> {
+        await this.load(HERBS_DATASET_KEY);
+    }
+
+    async setHerbsData(
+        value: HerbsData,
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        await this.set(HERBS_DATASET_KEY, value, source);
+    }
+}
+
+export class CompositeDataCatalog implements DataCatalog {
+    private readonly keyToCatalog = new Map<string, DataCatalog>();
+
+    constructor(mappings: Array<{ readonly keys: readonly string[]; readonly catalog: DataCatalog }> = []) {
+        for (const mapping of mappings) {
+            this.includeCatalog(mapping.keys, mapping.catalog);
+        }
+    }
+
+    includeCatalog(keys: readonly string[], catalog: DataCatalog): void {
+        for (const key of keys) {
+            this.keyToCatalog.set(key, catalog);
+        }
+    }
+
+    register<T>(registration: DataLoaderRegistration<T>): void {
+        const catalog = this.getCatalogOrThrow(registration.key);
+        catalog.register(registration);
+    }
+
+    async load(key: string): Promise<void> {
+        const catalog = this.getCatalogOrThrow(key);
+        await catalog.load(key);
+    }
+
+    async loadAll(): Promise<void> {
+        const catalogs = this.uniqueCatalogs();
+        await Promise.all(catalogs.map((catalog) => catalog.loadAll()));
+    }
+
+    async clear(key: string): Promise<void> {
+        const catalog = this.getCatalogOrThrow(key);
+        await catalog.clear(key);
+    }
+
+    async set<T>(
+        key: string,
+        value: T,
+        source: DataCatalogEntryMetadata['source'] = 'loader',
+    ): Promise<void> {
+        const catalog = this.getCatalogOrThrow(key);
+        await catalog.set(key, value, source);
+    }
+
+    get<T>(key: string): T | undefined {
+        return this.getCatalogForKey(key)?.get<T>(key);
+    }
+
+    metadataFor(key: string): DataCatalogEntryMetadata | undefined {
+        return this.getCatalogForKey(key)?.metadataFor(key);
+    }
+
+    ready$<T = unknown>(key?: string): Observable<DataCatalogReadyEvent<T>> {
+        if (key) {
+            return this.getCatalogOrThrow(key).ready$<T>(key);
+        }
+
+        const catalogs = this.uniqueCatalogs();
+        if (catalogs.length === 0) {
+            return EMPTY as Observable<DataCatalogReadyEvent<T>>;
+        }
+
+        return merge(...catalogs.map((catalog) => catalog.ready$<T>()));
+    }
+
+    private getCatalogForKey(key: string): DataCatalog | undefined {
+        return this.keyToCatalog.get(key);
+    }
+
+    private getCatalogOrThrow(key: string): DataCatalog {
+        const catalog = this.getCatalogForKey(key);
+        if (!catalog) {
+            throw new Error(`Unknown data catalog key: ${key}`);
+        }
+        return catalog;
+    }
+
+    private uniqueCatalogs(): DataCatalog[] {
+        return Array.from(new Set(this.keyToCatalog.values()));
+    }
+}
+
+export {
+    MapDataCatalogImpl as MapDataCatalog,
+    NpcDataCatalogImpl as NpcDataCatalog,
+    PeopleDataCatalogImpl as PeopleDataCatalog,
+    MagicDataCatalogImpl as MagicDataCatalog,
+    MagicKeysDataCatalogImpl as MagicKeysDataCatalog,
+    HerbsDataCatalogImpl as HerbsDataCatalog,
+};

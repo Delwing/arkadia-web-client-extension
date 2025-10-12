@@ -1,6 +1,6 @@
 import type { DataLoader, PeopleDataCatalog } from './catalog';
 import { PEOPLE_DATASET_KEY } from './dataset-keys';
-import { DefaultDataCatalog } from './default-catalog';
+import { PeopleDataCatalog as PeopleDataCatalogImpl } from './default-catalog';
 import type { DataPersistenceAdapter } from './persistence/types';
 import { IndexedDbPersistenceAdapter } from './persistence/indexeddb-adapter';
 import type { PersonEntry } from '../../types/people';
@@ -41,7 +41,7 @@ export interface RegisterPeopleLoaderOptions extends CreatePeopleLoaderOptions {
 }
 
 export function registerPeopleLoader(options: RegisterPeopleLoaderOptions = {}): PeopleDataCatalog {
-    const catalog = options.catalog ?? new DefaultDataCatalog();
+    const catalog = options.catalog ?? new PeopleDataCatalogImpl();
     const loader = options.loader ?? createPeopleLoader(options);
     const persistence = options.persistence ?? new IndexedDbPersistenceAdapter<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
 

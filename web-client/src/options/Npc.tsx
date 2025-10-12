@@ -45,14 +45,14 @@ function Npc() {
         const handler = (ev: Event) => {
             const detail = (ev as CustomEvent).detail;
             const normalized = normalizeNpcList(detail);
-            const current = services.dataCatalog.getNpcData();
+            const current = services.npcCatalog.getNpcData();
             const currentList = Array.isArray(current) ? current : [];
 
             if (npcListsEqual(currentList, normalized)) {
                 return;
             }
 
-            void services.dataCatalog
+            void services.npcCatalog
                 .setNpcData(normalized, 'cache')
                 .catch((error) => console.error('Failed to persist NPC event data:', error));
         };
@@ -66,7 +66,7 @@ function Npc() {
     async function downloadNpcs() {
         try {
             await loadDataset({ force: true });
-            const data = services.dataCatalog.getNpcData() ?? [];
+            const data = services.npcCatalog.getNpcData() ?? [];
             void dispatch({ type: 'event/send', event: 'npc', payload: data });
         } catch (e) {
             console.error('Failed to update NPC data:', e);
@@ -75,7 +75,7 @@ function Npc() {
 
     async function clearNpcs() {
         try {
-            await services.dataCatalog.clearNpcData();
+            await services.npcCatalog.clearNpcData();
             syncDataset();
             void dispatch({ type: 'event/send', event: 'npc', payload: [] });
         } catch (e) {
@@ -102,7 +102,7 @@ function Npc() {
 
     async function saveNpcs(list: readonly NpcDefinition[]) {
         try {
-            await services.dataCatalog.setNpcData(list, 'cache')
+            await services.npcCatalog.setNpcData(list, 'cache')
             syncDataset();
         } catch (e) {
             console.error('Failed to save NPC list:', e)

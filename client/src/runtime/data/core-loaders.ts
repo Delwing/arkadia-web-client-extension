@@ -1,5 +1,9 @@
-import type { DataCatalog, DataLoader } from './catalog';
-import { DefaultDataCatalog } from './default-catalog';
+import type {
+    DataLoader,
+    MapDataCatalog as MapDataCatalogContract,
+    NpcDataCatalog as NpcDataCatalogContract,
+} from './catalog';
+import { MapDataCatalog as MapDataCatalogImpl, NpcDataCatalog as NpcDataCatalogImpl } from './default-catalog';
 import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from './dataset-keys';
 export { MAP_DATASET_KEY, NPC_DATASET_KEY, COLORS_DATASET_KEY } from './dataset-keys';
 import type { DataPersistenceAdapter } from './persistence/types';
@@ -15,7 +19,13 @@ export interface CoreLoaderOptions {
     readonly mapPersistence?: DataPersistenceAdapter<unknown>;
     readonly npcPersistence?: DataPersistenceAdapter<unknown>;
     readonly colorPersistence?: DataPersistenceAdapter<unknown>;
-    readonly catalog?: DataCatalog;
+    readonly mapCatalog?: MapDataCatalogContract;
+    readonly npcCatalog?: NpcDataCatalogContract;
+}
+
+export interface CoreLoaderResult {
+    readonly mapCatalog: MapDataCatalogContract;
+    readonly npcCatalog: NpcDataCatalogContract;
 }
 
 export function createJsonLoader<T>(source: DataSource<T>): DataLoader<T> {
@@ -26,8 +36,9 @@ export function createJsonLoader<T>(source: DataSource<T>): DataLoader<T> {
     };
 }
 
-export function registerCoreLoaders(options: CoreLoaderOptions = {}): DataCatalog {
-    const catalog = options.catalog ?? new DefaultDataCatalog();
+export function registerCoreLoaders(options: CoreLoaderOptions = {}): CoreLoaderResult {
+    const mapCatalog = options.mapCatalog ?? new MapDataCatalogImpl();
+    const npcCatalog = options.npcCatalog ?? new NpcDataCatalogImpl();
     const mapPersistence = options.mapPersistence ?? new IndexedDbPersistenceAdapter(MAP_DATASET_KEY);
     const npcPersistence = options.npcPersistence ?? new LocalStoragePersistenceAdapter(NPC_DATASET_KEY);
     const colorPersistence = options.colorPersistence ?? new LocalStoragePersistenceAdapter(COLORS_DATASET_KEY);
@@ -42,25 +53,28 @@ export function registerCoreLoaders(options: CoreLoaderOptions = {}): DataCatalo
         options.colorSource ?? createFetchJsonSource('https://delwing.github.io/arkadia-mapa/data/colors.json'),
     );
 
-    catalog.register({
+    mapCatalog.register({
         key: MAP_DATASET_KEY,
         loader: mapLoader,
         persistence: mapPersistence,
     });
 
-    catalog.register({
-        key: NPC_DATASET_KEY,
-        loader: npcLoader,
-        persistence: npcPersistence,
-    });
-
-    catalog.register({
+    mapCatalog.register({
         key: COLORS_DATASET_KEY,
         loader: colorLoader,
         persistence: colorPersistence,
     });
 
-    return catalog;
+    npcCatalog.register({
+        key: NPC_DATASET_KEY,
+        loader: npcLoader,
+        persistence: npcPersistence,
+    });
+
+    return {
+        mapCatalog,
+        npcCatalog,
+    };
 }
 
 function createFetchJsonSource<T>(resourceUrl: string): DataSource<T> {

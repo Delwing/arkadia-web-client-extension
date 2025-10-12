@@ -3,7 +3,7 @@ import type { PersonEntry } from '../types/people';
 import services from "../runtime/service-registry";
 import type { PeopleDataCatalog } from "../runtime/data";
 
-export default function initInvite(client: Client, catalog: PeopleDataCatalog = services.dataCatalog) {
+export default function initInvite(client: Client, catalog: PeopleDataCatalog = services.peopleCatalog) {
     const tag = "invite"; 
     let enemyGuilds: string[] = [];
     let peopleCache: readonly PersonEntry[] = catalog.getPeopleData() ?? [];
