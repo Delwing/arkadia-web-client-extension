@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "@client/src/storage";
+import { useUiStore } from "../ui/store";
+import { getCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 
 interface ShortcutEntry {
     key: string;
@@ -15,6 +17,7 @@ function Shortcuts() {
     const [key, setKey] = useState('');
     const [loc, setLoc] = useState('');
     const [label, setLabel] = useState('');
+    const currentRoomId = useUiStore((state) => state.map.currentRoomId);
 
     useEffect(() => {
         storage.getItem('shortcuts').then(res => {
@@ -51,9 +54,8 @@ function Shortcuts() {
     }
 
     function useCurrent() {
-        const id = (window as any).clientExtension?.Map?.currentRoom?.id;
-        if (id) {
-            setLoc(String(id));
+        if (currentRoomId != null) {
+            setLoc(String(currentRoomId));
         }
     }
 
@@ -89,7 +91,7 @@ function Shortcuts() {
                         <td>{item.id}</td>
                         <td>{item.label}</td>
                         <td className="d-flex gap-2">
-                            <Button size="sm" onClick={() => (window as any).clientExtension?.sendEvent('leadTo', item.id)}>Prowadź</Button>
+                            <Button size="sm" onClick={() => getCommandDispatcher().sendEvent('leadTo', item.id)}>Prowadź</Button>
                             <Button size="sm" variant="danger" onClick={() => remove(item.key)}><TiDelete /></Button>
                         </td>
                     </tr>

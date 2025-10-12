@@ -47,6 +47,7 @@ import MessageRouter from "@client/src/runtime/transport/message-router";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
 import services from "@client/src/runtime/service-registry";
 import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
+import { setCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
@@ -60,6 +61,10 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
+setCommandDispatcher({
+    sendCommand: (command, options) => client.sendCommand(command, options?.echo ?? true),
+    sendEvent: (type, payload) => client.sendEvent(type, payload),
+});
 bindUiStoreToClientEvents(client);
 registerScripts(client)
 client.connect(client.port, true)

@@ -1,4 +1,5 @@
 import storage from "@client/src/storage";
+import { getCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 
 export type MacroType =
     | 'functional'
@@ -361,11 +362,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
-        );
-    }
+    getCommandDispatcher().sendEvent('mobileButtonsSettings', set.buttons);
 }
 
 

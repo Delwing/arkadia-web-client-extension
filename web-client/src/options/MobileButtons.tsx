@@ -14,6 +14,8 @@ import {
     defaultBackground,
     defaultFontColor,
 } from "../mobileButtonSettings";
+import { useUiStore } from "../ui/store";
+import { shallow } from "../ui/shallow";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
 
@@ -104,6 +106,10 @@ function MobileButtons() {
         leader: leaderRef,
     };
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
+    const { inTeam, isLeader } = useUiStore(
+        (state) => ({ inTeam: state.teamStatus.inTeam, isLeader: state.teamStatus.isLeader }),
+        shallow,
+    );
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -305,9 +311,7 @@ function MobileButtons() {
 
     function save() {
         saveSettings(settings);
-        const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
-        applySettings(settings, teamActive, leaderActive);
+        applySettings(settings, inTeam, isLeader);
         window.dispatchEvent(new Event('close-options'));
     }
 

@@ -5,6 +5,7 @@ import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
 import services from "@client/src/runtime/service-registry";
 import { NPC_DATASET_KEY } from "@client/src/runtime/data";
+import { getCommandDispatcher } from "@client/src/runtime/command-dispatcher";
 
 interface NpcProps {
     name: string;
@@ -55,7 +56,7 @@ function Npc() {
             await services.dataCatalog.load(NPC_DATASET_KEY);
             const data = await loadNpcData<NpcProps[]>();
             setNpcs(data);
-            ;(window as any).clientExtension?.sendEvent('npc', data);
+            getCommandDispatcher().sendEvent('npc', data);
         } catch (e) {
             console.error('Failed to update NPC data:', e);
         }
@@ -65,7 +66,7 @@ function Npc() {
         services.dataCatalog.clear(NPC_DATASET_KEY)
             .then(() => {
                 setNpcs([])
-                ;(window as any).clientExtension?.sendEvent('npc', [])
+                getCommandDispatcher().sendEvent('npc', [])
             })
             .catch(e => console.error('Failed to clear NPC data:', e));
     }
@@ -85,7 +86,7 @@ function Npc() {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
         void saveNpcs(updated)
-        ;(window as any).clientExtension?.sendEvent('npc', updated)
+        getCommandDispatcher().sendEvent('npc', updated)
     }
 
     async function saveNpcs(list: NpcProps[]) {

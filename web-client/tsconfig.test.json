@@ -2,7 +2,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "module": "CommonJS",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "types": ["jest"],
     "resolveJsonModule": true,
     "esModuleInterop": true

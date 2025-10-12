@@ -1,5 +1,5 @@
 import type ArkadiaClient from "./ArkadiaClient.ts";
-import { uiStore } from "./ui/store";
+import { subscribeToUiStore, uiStore } from "./ui/store";
 
 export default class FightTitle {
   private baseTitle: string;
@@ -21,7 +21,7 @@ export default class FightTitle {
       this.updateTitle(this.isFighting, true);
     }
 
-    this.unsubscribeAttack = uiStore.subscribe(
+    this.unsubscribeAttack = subscribeToUiStore(
       (state) => (state.charState as Record<string, unknown>).attack_num,
       (attackNum) => {
         const fighting = attackNum !== false && attackNum !== undefined;
@@ -30,7 +30,7 @@ export default class FightTitle {
       { fireImmediately: true },
     );
 
-    this.unsubscribePreferences = uiStore.subscribe(
+    this.unsubscribePreferences = subscribeToUiStore(
       (state) => state.uiPreferences.fightTitleIcon,
       (next) => {
         if (typeof next === "boolean") {

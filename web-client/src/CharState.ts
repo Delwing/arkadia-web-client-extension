@@ -1,7 +1,7 @@
 import type ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
-import { uiStore } from "./ui/store";
-import { shallow } from "zustand/shallow";
+import { subscribeToUiStore, uiStore } from "./ui/store";
+import { shallow } from "./ui/shallow";
 
 export interface CharStateData {
   hp: number;
@@ -170,7 +170,7 @@ export default class CharState {
     if (initialState.charOptions) {
       this.options = { ...this.options, ...initialState.charOptions };
     }
-    this.unsubscribeCharState = uiStore.subscribe(
+    this.unsubscribeCharState = subscribeToUiStore(
       (state) => state.charState,
       (next) => {
         if (next && Object.keys(next).length > 0) {
@@ -179,7 +179,7 @@ export default class CharState {
       },
     );
 
-    this.unsubscribeOptions = uiStore.subscribe(
+    this.unsubscribeOptions = subscribeToUiStore(
       (state) => state.charOptions,
       (options) => {
         if (options && Object.keys(options).length > 0) {
@@ -190,7 +190,7 @@ export default class CharState {
       { equalityFn: shallow },
     );
 
-    this.unsubscribePreferences = uiStore.subscribe(
+    this.unsubscribePreferences = subscribeToUiStore(
       (state) => state.uiPreferences,
       (preferences, previous) => {
         if (
