@@ -9,8 +9,6 @@ import { TransportSubject } from "./subject";
 const WEBSOCKET_URL = "wss://arkadia.rpg.pl/wss";
 const GMCP_COMMAND_CODE = 201;
 const MCCP_COMMAND_CODE = 86;
-const MAX_RECONNECT_DELAY = 10000;
-const BASE_RECONNECT_DELAY = 1000;
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - pako is provided globally by the client bootstrap
@@ -64,22 +62,13 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
     private mccp = false;
     private inflator: InflateInstance = createInflator();
     private pingTimer: number | null = null;
-    private reconnectTimer: number | null = null;
-    private reconnectAttempts = 0;
-    private autoReconnect = false;
-    private explicitDisconnect = false;
     private readonly url: string;
 
     constructor(url: string = WEBSOCKET_URL) {
         this.url = url;
     }
 
-    connect(options?: TransportConnectOptions): void {
-        const autoReconnect = options?.manual === false;
-        this.autoReconnect = autoReconnect;
-        this.explicitDisconnect = false;
-        this.reconnectAttempts = 0;
-        this.clearReconnectTimer();
+    connect(_options?: TransportConnectOptions): void {
         this.mccp = false;
         this.resetInflator();
 
@@ -91,9 +80,6 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
     }
 
     disconnect(): void {
-        this.autoReconnect = false;
-        this.explicitDisconnect = true;
-        this.clearReconnectTimer();
         this.stopPing();
 
         if (!this.socket) {
@@ -159,10 +145,8 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
                 if (this.socket !== socket) {
                     return;
                 }
-                this.clearReconnectTimer();
                 this.subject.next({ type: "open", event });
                 this.startPing();
-                this.reconnectAttempts = 0;
             };
 
             const handleError = (event: Event) => {
@@ -182,9 +166,6 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
                 this.socket = null;
                 this.mccp = false;
                 this.resetInflator();
-                if (this.autoReconnect && !this.explicitDisconnect) {
-                    this.scheduleReconnect();
-                }
             };
 
             const handleMessage = (event: MessageEvent<string>) => {
@@ -209,9 +190,6 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
             const synthetic = new Event("error");
             (synthetic as any).detail = error;
             this.subject.next({ type: "error", event: synthetic });
-            if (this.autoReconnect && !this.explicitDisconnect) {
-                this.scheduleReconnect();
-            }
         }
     }
 
@@ -234,28 +212,6 @@ export default class WebSocketTransportAdapter implements TransportAdapter {
         if (this.pingTimer !== null) {
             clearInterval(this.pingTimer);
             this.pingTimer = null;
-        }
-    }
-
-    private scheduleReconnect() {
-        if (this.reconnectTimer !== null) {
-            return;
-        }
-        const attempt = this.reconnectAttempts++;
-        const delay = Math.min(BASE_RECONNECT_DELAY * 2 ** attempt, MAX_RECONNECT_DELAY);
-        this.reconnectTimer = window.setTimeout(() => {
-            this.reconnectTimer = null;
-            if (!this.autoReconnect || this.explicitDisconnect) {
-                return;
-            }
-            this.openSocket();
-        }, delay);
-    }
-
-    private clearReconnectTimer() {
-        if (this.reconnectTimer !== null) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
         }
     }
 
