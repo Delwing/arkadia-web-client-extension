@@ -41,12 +41,8 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
-import MessageRouter from "@client/src/runtime/transport/message-router";
-import { runtimeEventHub } from "@client/src/runtime/event-hub";
-import services from "@client/src/runtime/service-registry";
+import createRuntimeBootstrap from "@client/src/runtime/createRuntimeBootstrap";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
-import { ClientCommandDispatcher } from "@client/src/runtime/command-dispatcher";
-import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
 import {
     bindUiStoreToClientEvents,
@@ -56,15 +52,18 @@ import {
     uiStore,
 } from "./ui/store";
 
-const transport = new WebSocketTransportAdapter();
-const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
-configureArkadiaClient({ transport, router });
+const runtimeBootstrap = createRuntimeBootstrap({
+    clientAdapter: arkadiaClient,
+    port: new MockPort(),
+    parseAnsiPatterns,
+    configureAdapter: ({ transport, router }) => {
+        configureArkadiaClient({ transport, router });
+    },
+});
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort(), runtimeEventHub)
-router.setLineTransform(client.onLine.bind(client));
-const commandDispatcher = new ClientCommandDispatcher(client);
+const { client, commandDispatcher, dataCatalog, catalogMetadata } = runtimeBootstrap;
 uiStore.getState().setCommandDispatcher(commandDispatcher);
 window.clientExtension = client;
 bindUiStoreToClientEvents(client);
@@ -185,9 +184,8 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-const dataCatalog = services.dataCatalog;
-let mapStatus: DataCatalogEntryStatus = dataCatalog.getMapMetadata()?.status ?? 'idle';
-let colorStatus: DataCatalogEntryStatus = dataCatalog.getColorMetadata()?.status ?? 'idle';
+let mapStatus: DataCatalogEntryStatus = catalogMetadata.map?.status ?? 'idle';
+let colorStatus: DataCatalogEntryStatus = catalogMetadata.colors?.status ?? 'idle';
 let progressMessageOverride: string | null = null;
 
 function refreshProgressDisplay() {
