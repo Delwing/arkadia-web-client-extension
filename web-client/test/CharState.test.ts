@@ -1,6 +1,6 @@
 import CharState from '../src/CharState';
 import { runtimeEventHub } from '@client/src/runtime/event-hub';
-import { resetUiStoreForTesting } from '../src/ui/store';
+import { resetUiStoreForTesting } from './utils/uiStoreTestUtils';
 
 describe('CharState', () => {
   beforeEach(() => {
