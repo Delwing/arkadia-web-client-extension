@@ -230,6 +230,7 @@ export interface UiStoreState {
     playerObjectId?: string;
     nearbyObjects: readonly NearbyObject[];
     teamStatus: TeamStatus;
+    attackQueue: readonly string[];
     commandDispatcher: CommandDispatcher | null;
     setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
     sendCommand: (command: string, options?: { echo?: boolean }) => void;
@@ -298,6 +299,7 @@ const baseState = {
     playerObjectId: defaultObjectsState.playerId,
     nearbyObjects: [] as NearbyObject[],
     teamStatus: { ...emptyTeamStatus },
+    attackQueue: [] as string[],
     datasets: {} as Record<string, CatalogDatasetSlice<unknown>>,
 };
 
@@ -718,9 +720,7 @@ function subscribeToRuntime() {
 
 subscribeToRuntime();
 subscribeToCatalog();
-let uiSettingsCleanup: ListenerCleanup | null = null;
-let uiSettingsListener: EventListener | null = null;
-let lastClient: ClientLike | null = null;
+let clientEventCleanups: ListenerCleanup[] = [];
 
 type ClientLike = {
     addEventListener: (
@@ -740,9 +740,12 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
         return;
     }
 
-    uiSettingsCleanup?.();
+    clientEventCleanups.forEach((cleanup) => cleanup());
+    clientEventCleanups = [];
 
-    const listener: EventListener = (event: Event) => {
+    const cleanups: ListenerCleanup[] = [];
+
+    const handleUiSettings: EventListener = (event: Event) => {
         const detail = (event as CustomEvent).detail ?? {};
         const next: Partial<UiPreferences> = {};
         if (typeof detail.emojiLabels === "boolean") {
@@ -761,25 +764,36 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
         }
     };
 
-    client.addEventListener("uiSettings", listener);
-    uiSettingsListener = listener;
-    lastClient = client;
-    uiSettingsCleanup = () => {
+    client.addEventListener("uiSettings", handleUiSettings);
+    cleanups.push(() => {
         if (typeof client.removeEventListener === "function") {
-            client.removeEventListener("uiSettings", listener);
+            client.removeEventListener("uiSettings", handleUiSettings);
         }
-        uiSettingsListener = null;
-        lastClient = null;
+    });
+
+    const handleAttackQueueChange: EventListener = (event: Event) => {
+        const detail = (event as CustomEvent).detail;
+        if (Array.isArray(detail)) {
+            const normalized = detail.map((entry) => String(entry));
+            store.setState({ attackQueue: normalized });
+        }
     };
+
+    client.addEventListener("attackQueueChange", handleAttackQueueChange);
+    cleanups.push(() => {
+        if (typeof client.removeEventListener === "function") {
+            client.removeEventListener("attackQueueChange", handleAttackQueueChange);
+        }
+    });
+
+    clientEventCleanups = cleanups;
 }
 
 export const uiStore = storeWithSelector;
 
 export function resetUiStoreForTesting() {
-    uiSettingsCleanup?.();
-    uiSettingsCleanup = null;
-    uiSettingsListener = null;
-    lastClient = null;
+    clientEventCleanups.forEach((cleanup) => cleanup());
+    clientEventCleanups = [];
     runtimeCleanup?.();
     runtimeCleanup = null;
     catalogSubscription?.unsubscribe();
@@ -792,6 +806,7 @@ export function resetUiStoreForTesting() {
         playerObjectId: undefined,
         nearbyObjects: [],
         teamStatus: { ...emptyTeamStatus },
+        attackQueue: [],
         commandDispatcher: null,
     });
     subscribeToRuntime();
@@ -813,6 +828,8 @@ export function useCatalogDataset<T = unknown>(key: string): CatalogDatasetSlice
 export const selectNearbyObjects = (state: UiStoreState) => state.nearbyObjects;
 
 export const selectTeamStatus = (state: UiStoreState) => state.teamStatus;
+
+export const selectAttackQueue = (state: UiStoreState) => state.attackQueue;
 
 export function useNearbyObjects(): readonly NearbyObject[] {
     return useUiStore((state) => state.nearbyObjects);

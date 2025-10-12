@@ -1,9 +1,39 @@
-import Client from "@client/src/Client";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
+import type { UiStoreState, NearbyObject } from "./ui/store";
+import { uiStore, selectNearbyObjects, selectAttackQueue } from "./ui/store";
+
+type ObjectListStore = {
+    getState: () => UiStoreState;
+    subscribe: typeof uiStore.subscribe;
+};
+
+interface ObjectListDependencies {
+    store?: ObjectListStore;
+}
+
+function areStringArraysEqual(a: readonly string[], b: readonly string[] | undefined): boolean {
+    if (!Array.isArray(b)) {
+        return false;
+    }
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i += 1) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
 export default class ObjectList {
-    private client: Client;
+    private readonly store: ObjectListStore;
+    private readonly sendCommand: UiStoreState["sendCommand"];
+    private nearbyObjects: readonly NearbyObject[];
+    private attackQueue: readonly string[];
+    private unsubscribeNearby?: () => void;
+    private unsubscribeAttackQueue?: () => void;
     private readonly container: HTMLElement | null;
     private readonly content: HTMLElement | null;
     private isDragging = false;
@@ -20,8 +50,11 @@ export default class ObjectList {
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
 
-    constructor(client: Client) {
-        this.client = client;
+    constructor({ store = uiStore }: ObjectListDependencies = {}) {
+        this.store = store;
+        this.sendCommand = this.store.getState().sendCommand;
+        this.nearbyObjects = this.store.getState().nearbyObjects;
+        this.attackQueue = this.store.getState().attackQueue;
         this.container = document.getElementById("objects-list");
         this.content = this.setupContainer();
         this.isMobile = this.isMobileBrowser();
@@ -30,10 +63,28 @@ export default class ObjectList {
             this.container?.addEventListener("click", this.onClick);
         }
         window.addEventListener("resize", this.clampToViewport);
-        this.client.addEventListener("attackQueueChange", () => this.render());
-        this.client.addEventListener("gmcp.objects.nums", () => this.render());
-        this.client.addEventListener("gmcp.objects.data", () => this.render());
-        this.client.addEventListener("gmcp.char.state", () => this.render());
+        this.unsubscribeNearby = this.store.subscribe(
+            selectNearbyObjects,
+            (objects, previous) => {
+                if (objects === previous) {
+                    return;
+                }
+                this.nearbyObjects = objects;
+                this.render();
+            },
+            { fireImmediately: false },
+        );
+        this.unsubscribeAttackQueue = this.store.subscribe(
+            selectAttackQueue,
+            (queue, previous) => {
+                if (areStringArraysEqual(queue, previous)) {
+                    return;
+                }
+                this.attackQueue = queue;
+                this.render();
+            },
+            { fireImmediately: false },
+        );
         this.render();
     }
 
@@ -189,7 +240,7 @@ export default class ObjectList {
         if (numEl) {
             const num = numEl.getAttribute("data-object-num");
             if (num) {
-                this.client.sendCommand(`/z ${num}`);
+                this.sendCommand(`/z ${num}`);
             }
             return;
         }
@@ -199,34 +250,29 @@ export default class ObjectList {
         if (descEl) {
             const num = descEl.getAttribute("data-object-num");
             if (num) {
-                this.client.sendCommand(`/za ${num}`);
+                this.sendCommand(`/za ${num}`);
             }
         }
     };
 
     private render() {
         if (!this.container || !this.content) return;
-        const manager = this.client.ObjectManager;
-        if (!manager) return;
-        const objects = manager.getObjectsOnLocation();
-        const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+        const objects = this.nearbyObjects;
+        const descWidth = Math.max(0, ...objects.map((obj) => (obj.desc ?? "").length));
+        const nextQueuedId = this.attackQueue[0];
         const nextQueuedIdString = typeof nextQueuedId === "undefined" ? undefined : String(nextQueuedId);
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        const teamAttacking = objects.some((obj) => {
+            return obj.team && obj.attackNum !== false && typeof obj.attackNum !== "undefined";
         });
-        const inCombat = objects.some(
-            (o: any) => o.attack_num !== false && o.attack_num !== undefined
-        );
 
-        const lines = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
+        const lines = objects.map((obj) => {
+            const shortcut = typeof obj.shortcut === "string" ? obj.shortcut : String(obj.shortcut ?? "");
+            const num = shortcut;
+            const isPlayer = shortcut === "@";
             let prefix = "  ";
-            if (obj.attack_target) {
+            if (obj.attackTarget) {
                 prefix = `<span style="color:orangered">>></span>`;
-            } else if (obj.defense_target) {
+            } else if (obj.defenseTarget) {
                 prefix = `<span style="color:greenyellow">>></span>`;
             }
             const isNextQueued =
@@ -242,13 +288,13 @@ export default class ObjectList {
             const numLabel = isPlayer
                 ? `${prefix}${num}`
                 : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle}>${num}</span>`;
-            const rawDesc = obj.desc || "";
+            const rawDesc = obj.desc ?? "";
             let coloredDesc = rawDesc;
             if (!isPlayer) {
-                if (obj.avatar_target) {
+                if (obj.avatarTarget) {
                     coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
-                } else if (tm?.isInTeam?.(rawDesc)) {
-                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+                } else if (obj.team) {
+                    const isAttacking = obj.attackNum !== false && typeof obj.attackNum !== "undefined";
                     let style = "color:springgreen";
                     const classes = [] as string[];
                     if (teamAttacking && !isAttacking) {
@@ -258,14 +304,14 @@ export default class ObjectList {
                     coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
                 } else if (
                     typeof obj.state === "number" &&
-                    obj.attack_num !== false &&
-                    obj.attack_num !== undefined
+                    obj.attackNum !== false &&
+                    typeof obj.attackNum !== "undefined"
                 ) {
                     coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
                 }
             }
             const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
-            const isTeammate = tm?.isInTeam?.(rawDesc) ? "true" : "false";
+            const isTeammate = obj.team ? "true" : "false";
             const desc = isPlayer
                 ? `${rawDesc}${padding}`
                 : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
@@ -279,8 +325,23 @@ export default class ObjectList {
                 bar = `[<span style="color:${color}">${filled}${empty}</span>]`;
             }
             const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => o.shortcut);
+                .filter((entry) => {
+                    if (entry === obj) {
+                        return false;
+                    }
+                    if (typeof entry.attackNum === "undefined" || entry.attackNum === false) {
+                        return false;
+                    }
+                    if (typeof obj.num === "undefined") {
+                        return false;
+                    }
+                    if (typeof entry.attackNum === "number" || typeof entry.attackNum === "string") {
+                        return String(entry.attackNum) === String(obj.num);
+                    }
+                    return false;
+                })
+                .map((entry) => entry.shortcut)
+                .filter((value): value is string => typeof value === "string");
             const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
             return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
         });
