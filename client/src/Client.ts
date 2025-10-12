@@ -22,6 +22,9 @@ import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
+import services from "./runtime/service-registry";
+import type { SettingsSnapshot } from "./runtime/settings/settings-service";
+import { settingsEventHub } from "./runtime/settings/settings-service";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -95,6 +98,8 @@ export default class Client {
     moveMode = 0;
     carriageMode = false;
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
+
+    private readonly settingsService = services.settings;
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {
@@ -233,13 +238,28 @@ export default class Client {
             }
         }
 
-        this.addEventListener('settings', (ev: CustomEvent) => {
-            applyBinds(ev.detail?.binds)
-        })
-
         this.addEventListener('binds', (ev: CustomEvent) => {
             applyBinds(ev.detail)
         })
+
+        let awaitingInitialDispatch = true;
+        this.settingsService.settings$.subscribe((settings: SettingsSnapshot) => {
+            const binds = (settings as any)?.binds;
+            if (binds) {
+                applyBinds(binds);
+            }
+            const dispatch = () => this.sendEvent('settings', settings);
+            if (awaitingInitialDispatch) {
+                awaitingInitialDispatch = false;
+                Promise.resolve().then(dispatch);
+            } else {
+                dispatch();
+            }
+        });
+
+        settingsEventHub.on('settings.error', (error) => {
+            console.error('Failed to update settings', error);
+        });
 
         this.addEventListener('uiSettings', (ev: CustomEvent) => {
             if (ev.detail?.xtermPalette) {
