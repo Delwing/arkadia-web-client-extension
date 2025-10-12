@@ -36,6 +36,8 @@ export interface DataCatalog {
     register<T>(registration: DataLoaderRegistration<T>): void;
     load(key: string): Promise<void>;
     loadAll(): Promise<void>;
+    clear(key: string): Promise<void>;
+    set<T>(key: string, value: T, source?: DataCatalogEntryMetadata['source']): Promise<void>;
     get<T>(key: string): T | undefined;
     metadataFor(key: string): DataCatalogEntryMetadata | undefined;
     ready$<T = unknown>(key?: string): Observable<DataCatalogReadyEvent<T>>;

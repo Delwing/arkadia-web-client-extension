@@ -1,12 +1,10 @@
 import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
-import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache.ts";
 import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
-
-const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
-const NPC_URL = 'https://delwing.github.io/arkadia-mapa/data/npc.json';
+import services from "@client/src/runtime/service-registry";
+import { NPC_DATASET_KEY } from "@client/src/runtime/data";
 
 interface NpcProps {
     name: string;
@@ -19,9 +17,24 @@ function Npc() {
     const [filter, setFilter] = useState<string>('')
 
     useEffect(() => {
-        loadNpcData().then((data: NpcProps[]) => {
-            setNpcs(data)
-        })
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const data = await loadNpcData<NpcProps[]>();
+                if (!cancelled) {
+                    setNpcs(data);
+                }
+            } catch (error) {
+                console.error('Failed to load NPC data:', error);
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
@@ -37,17 +50,19 @@ function Npc() {
         }
     }, [])
 
-    function downloadNpcs() {
-        updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
-            .then(data => {
-                setNpcs(data)
-                ;(window as any).clientExtension?.sendEvent('npc', data)
-            })
-            .catch(e => console.error('Failed to update NPC data:', e));
+    async function downloadNpcs() {
+        try {
+            await services.dataCatalog.load(NPC_DATASET_KEY);
+            const data = await loadNpcData<NpcProps[]>();
+            setNpcs(data);
+            ;(window as any).clientExtension?.sendEvent('npc', data);
+        } catch (e) {
+            console.error('Failed to update NPC data:', e);
+        }
     }
 
     function clearNpcs() {
-        clearIndexedDB(DB_CONFIG)
+        services.dataCatalog.clear(NPC_DATASET_KEY)
             .then(() => {
                 setNpcs([])
                 ;(window as any).clientExtension?.sendEvent('npc', [])
@@ -69,37 +84,16 @@ function Npc() {
     function deleteNpc(npc: NpcProps) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
-        saveNpcs(updated)
+        void saveNpcs(updated)
         ;(window as any).clientExtension?.sendEvent('npc', updated)
     }
 
     async function saveNpcs(list: NpcProps[]) {
         try {
-            const db = await openDb()
-            await new Promise<void>((resolve, reject) => {
-                const tx = db.transaction([DB_CONFIG.storeName], 'readwrite')
-                const store = tx.objectStore(DB_CONFIG.storeName)
-                const req = store.put({ id: DB_CONFIG.key, data: list, timestamp: Date.now() })
-                req.onsuccess = () => resolve()
-                req.onerror = () => reject(new Error('Failed to store data'))
-            })
+            await services.dataCatalog.set(NPC_DATASET_KEY, list, 'cache')
         } catch (e) {
             console.error('Failed to save NPC list:', e)
         }
-    }
-
-    function openDb(): Promise<IDBDatabase> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_CONFIG.dbName, 1)
-            request.onupgradeneeded = () => {
-                const db = request.result
-                if (!db.objectStoreNames.contains(DB_CONFIG.storeName)) {
-                    db.createObjectStore(DB_CONFIG.storeName, { keyPath: 'id' })
-                }
-            }
-            request.onsuccess = () => resolve(request.result)
-            request.onerror = () => reject(new Error('Failed to open IndexedDB'))
-        })
     }
 
     return (

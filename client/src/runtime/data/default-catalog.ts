@@ -103,6 +103,39 @@ export class DefaultDataCatalog implements DataCatalog {
         await Promise.all(Array.from(this.entries.keys()).map((key) => this.load(key)));
     }
 
+    async clear<T>(key: string): Promise<void> {
+        const entry = this.getEntry<T>(key);
+
+        entry.data = undefined;
+        entry.metadata = {
+            key,
+            status: 'idle',
+        };
+
+        if (entry.persistence) {
+            await entry.persistence.clear();
+        }
+    }
+
+    async set<T>(key: string, value: T, source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
+        const entry = this.getEntry<T>(key);
+
+        entry.data = value;
+
+        if (entry.persistence) {
+            await entry.persistence.write(value);
+        }
+
+        entry.metadata = {
+            key,
+            status: 'ready',
+            updatedAt: Date.now(),
+            source,
+        };
+
+        this.emitReady(entry);
+    }
+
     get<T>(key: string): T | undefined {
         const entry = this.entries.get(key);
         return entry?.data as T | undefined;

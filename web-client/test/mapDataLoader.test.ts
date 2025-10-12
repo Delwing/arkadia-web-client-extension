@@ -26,6 +26,8 @@ describe('mapDataLoader', () => {
       register: jest.fn(),
       load: jest.fn(),
       loadAll: jest.fn(),
+      clear: jest.fn(),
+      set: jest.fn(),
       get: jest.fn((key: string) => dataByKey.get(key)),
       metadataFor: jest.fn((key: string) => metadataByKey.get(key)),
       ready$: jest.fn((key?: string) => {
