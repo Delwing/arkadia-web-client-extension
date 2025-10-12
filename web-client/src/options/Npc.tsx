@@ -4,6 +4,7 @@ import {Button, Form, Table} from 'react-bootstrap';
 import {TiDelete} from "react-icons/ti";
 import services from "@client/src/runtime/service-registry";
 import type { NpcDefinition } from "@client/src/runtime/data";
+import { normalizeNpcList, npcListsEqual } from "../npcData";
 import {
     useEnsureNpcDataset,
     useLoadNpcDataset,
@@ -43,11 +44,17 @@ function Npc() {
     useEffect(() => {
         const handler = (ev: Event) => {
             const detail = (ev as CustomEvent).detail;
-            if (Array.isArray(detail)) {
-                void services.dataCatalog
-                    .setNpcData(detail as NpcDefinition[], 'cache')
-                    .catch((error) => console.error('Failed to persist NPC event data:', error));
+            const normalized = normalizeNpcList(detail);
+            const current = services.dataCatalog.getNpcData();
+            const currentList = Array.isArray(current) ? current : [];
+
+            if (npcListsEqual(currentList, normalized)) {
+                return;
             }
+
+            void services.dataCatalog
+                .setNpcData(normalized, 'cache')
+                .catch((error) => console.error('Failed to persist NPC event data:', error));
         };
 
         window.addEventListener('npc', handler as EventListener);
