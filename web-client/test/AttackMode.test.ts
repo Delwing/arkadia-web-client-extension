@@ -1,5 +1,5 @@
 import AttackMode from '../src/AttackMode';
-import { resetUiStoreForTesting, uiStore } from '../src/ui/store';
+import { resetUiStoreForTesting, uiStore } from './utils/uiStoreTestUtils';
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),

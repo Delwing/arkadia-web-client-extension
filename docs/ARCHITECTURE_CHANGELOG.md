@@ -25,7 +25,7 @@ This document captures progress toward the next-generation runtime described in 
 - Added a production-ready `WebSocketTransportAdapter` that encapsulates Arkadia-specific protocol details such as GMCP framing, MCCP decompression, periodic pings, and exponential backoff reconnect logic. Unit tests simulate socket lifecycles to confirm reconnection, encoding, and ping behaviour. (see `client/src/runtime/transport/websocket-adapter.ts`, `client/test/runtime/transport/websocket-adapter.test.ts`).
 
 ### Mock transport adapter and test subject
-- Implemented a `MockTransportAdapter` plus a minimal `TransportSubject` so runtime components can be exercised without a real socket. The message-router tests rely on this adapter to simulate GMCP frames and lifecycle events deterministically. (see `client/src/runtime/transport/mock-adapter.ts`, `client/src/runtime/transport/subject.ts`, `client/test/runtime/message-router.test.ts`).
+- Implemented a `MockTransportAdapter` plus a minimal `TransportSubject` so runtime components can be exercised without a real socket. The message-router tests rely on this adapter to simulate GMCP frames and lifecycle events deterministically. (see `client/test/runtime/transport/mock-transport-adapter.ts`, `client/src/runtime/transport/subject.ts`, `client/test/runtime/message-router.test.ts`).
 
 ### Shared UI store integration
 - Introduced a Zustand-based `uiStore` that subscribes to the runtime event hub and the modernised settings service, projecting GMCP updates and preference changes into a single UI state tree. The store can also bind to legacy DOM events so existing widgets continue to work during the transition. (see `web-client/src/ui/store.ts`).

@@ -810,7 +810,7 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
 
 export const uiStore = storeWithSelector;
 
-export function resetUiStoreForTesting() {
+function resetUiStoreForTesting() {
     clientEventCleanups.forEach((cleanup) => cleanup());
     clientEventCleanups = [];
     runtimeCleanup?.();
@@ -832,6 +832,17 @@ export function resetUiStoreForTesting() {
     subscribeToRuntime();
     subscribeToCatalog();
 }
+
+const globalProcess = typeof globalThis !== "undefined"
+    ? (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    : undefined;
+const isTestEnvironment = globalProcess?.env?.NODE_ENV === "test";
+
+export const __uiStoreTestApi = isTestEnvironment
+    ? {
+          resetUiStoreForTesting,
+      }
+    : undefined;
 
 export function useUiStore<T>(selector: (state: UiStoreState) => T): T {
     return useStore(storeWithSelector, selector);

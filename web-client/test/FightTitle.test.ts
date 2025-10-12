@@ -1,5 +1,5 @@
 import FightTitle from "../src/FightTitle";
-import { resetUiStoreForTesting, uiStore } from "../src/ui/store";
+import { resetUiStoreForTesting, uiStore } from "./utils/uiStoreTestUtils";
 
 describe("FightTitle", () => {
   beforeEach(() => {

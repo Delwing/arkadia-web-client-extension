@@ -6,7 +6,7 @@ jest.mock("mudlet-map-renderer", () => ({
 import type { ClientAdapter } from "../../src/Client";
 import createRuntimeBootstrap from "../../src/runtime/createRuntimeBootstrap";
 import { ServiceRegistry } from "../../src/runtime/service-registry";
-import MockTransportAdapter from "../../src/runtime/transport/mock-adapter";
+import MockTransportAdapter from "./transport/mock-transport-adapter";
 
 function createClientAdapter(): ClientAdapter {
     return {

@@ -1,5 +1,5 @@
 import type { CommandDispatcher, ExtensionCommand } from "@client/src/runtime/command-dispatcher";
-import { resetUiStoreForTesting, uiStore } from "../src/ui/store";
+import { resetUiStoreForTesting, uiStore } from "./utils/uiStoreTestUtils";
 
 describe("ui store command dispatcher", () => {
     afterEach(() => {

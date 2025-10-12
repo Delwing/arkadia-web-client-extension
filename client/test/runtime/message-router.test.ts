@@ -1,6 +1,6 @@
 import MessageRouter from "../../src/runtime/transport/message-router";
 import { EventHub, type RuntimeEvents } from "../../src/runtime/event-hub";
-import MockTransportAdapter from "../../src/runtime/transport/mock-adapter";
+import MockTransportAdapter from "./transport/mock-transport-adapter";
 
 describe("MessageRouter runtime event hub integration", () => {
     let eventHub: EventHub<RuntimeEvents>;
