@@ -19,7 +19,7 @@ import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
-import "@client/src/main.ts"
+import { registerLegacyModules } from "@client/src/runtime/modules";
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {EmbeddedMap} from "./embed.ts"
@@ -59,6 +59,7 @@ const runtimeBootstrap = createRuntimeBootstrap({
     configureAdapter: ({ transport, router }) => {
         configureArkadiaClient({ transport, router });
     },
+    registerModules: registerLegacyModules,
 });
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
@@ -75,7 +76,6 @@ uiStore.getState().setClientBindings({
     notify: client.notify.bind(client),
 });
 bindUiStoreToClientEvents(client);
-registerScripts(client)
 client.connect(client.port, true)
 
 
@@ -1154,4 +1154,3 @@ window.client = arkadiaClient
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
-import {registerScripts} from "@client/src/main.ts";
