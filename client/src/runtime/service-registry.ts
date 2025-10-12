@@ -1,3 +1,6 @@
+import { DefaultDataCatalog, registerCoreLoaders, registerPeopleLoader } from './data';
+import type { SettingsService } from './settings/settings-service';
+import { LocalStorageSettingsService } from './settings/local-storage-service';
 import type Client from "../Client";
 import { ClientCommandDispatcher } from "./command-dispatcher";
 import type { CommandDispatcher } from "./command-dispatcher";
@@ -43,6 +46,7 @@ class ServiceRegistry {
         this.settings = new LocalStorageSettingsService();
         this.catalog = new DefaultDataCatalog();
         registerCoreLoaders({ catalog: this.catalog });
+        registerPeopleLoader({ catalog: this.catalog });
 
         this.internalEventHub = options.eventHub ?? runtimeEventHub;
         this.transportFactory = options.transportFactory ?? (() => new WebSocketTransportAdapter());

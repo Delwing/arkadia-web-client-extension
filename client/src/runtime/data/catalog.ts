@@ -1,5 +1,6 @@
 import type { Observable } from 'rxjs';
 import type { DataPersistenceAdapter } from './persistence/types';
+import type { PersonEntry } from '../../types/people';
 
 export type DataCatalogEntryStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -41,4 +42,12 @@ export interface DataCatalog {
     get<T>(key: string): T | undefined;
     metadataFor(key: string): DataCatalogEntryMetadata | undefined;
     ready$<T = unknown>(key?: string): Observable<DataCatalogReadyEvent<T>>;
+}
+
+export interface PeopleDataCatalog extends DataCatalog {
+    getPeopleData(): readonly PersonEntry[] | undefined;
+    getPeopleMetadata(): DataCatalogEntryMetadata | undefined;
+    readyForPeople$(): Observable<DataCatalogReadyEvent<readonly PersonEntry[]>>;
+    loadPeopleData(): Promise<void>;
+    setPeopleData(value: readonly PersonEntry[], source?: DataCatalogEntryMetadata['source']): Promise<void>;
 }

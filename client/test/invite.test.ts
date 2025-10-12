@@ -1,19 +1,24 @@
+import type Client from '../src/Client';
 import initInvite from '../src/scripts/invite';
-import Client from '../src/Client';
-import { loadPeople } from '../src/peopleLoader';
+import type { PersonEntry } from '../src/types/people';
+import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
-jest.mock('../src/peopleLoader', () => ({
-    loadPeople: jest.fn(),
-}));
-
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
-
-const MOCK_PEOPLE = [
+const MOCK_PEOPLE: PersonEntry[] = [
     { name: 'Mordimer', description: 'templariusz', guild: 'Templariusze' },
     { name: 'Vesper', description: 'mag', guild: 'Magowie' },
     { name: 'Pablo', description: 'rycerz', guild: 'Rycerze' },
     { name: 'Gandalf', description: 'czarodziej', guild: 'Czarodzieje' },
 ];
+
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
+    const catalog = new DefaultDataCatalog();
+    registerPeopleLoader({
+        catalog,
+        loader: async () => people,
+    });
+    await catalog.setPeopleData(people, 'loader');
+    return catalog;
+}
 
 describe('Invite functionality', () => {
     let client: Client;
@@ -25,13 +30,12 @@ describe('Invite functionality', () => {
     let mockSendCommand: jest.Mock;
 
     beforeEach(async () => {
-        loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
         mockTriggers = {
-            registerTrigger: jest.fn()
+            registerTrigger: jest.fn(),
         };
 
         mockFunctionalBind = {
-            set: jest.fn()
+            set: jest.fn(),
         };
 
         mockPrintln = jest.fn();
@@ -40,10 +44,10 @@ describe('Invite functionality', () => {
 
         mockTeamManager = {
             getAccumulatedObjectsData: jest.fn().mockReturnValue({
-                "1": { desc: "Vesper", living: true, team: true },
-                "2": { desc: "Pablo", living: true, team: true },
-                "3": { desc: "Gandalf", living: true, team: true }
-            })
+                '1': { desc: 'Vesper', living: true, team: true },
+                '2': { desc: 'Pablo', living: true, team: true },
+                '3': { desc: 'Gandalf', living: true, team: true },
+            }),
         };
 
         client = {
@@ -52,71 +56,56 @@ describe('Invite functionality', () => {
             println: mockPrintln,
             sendCommand: mockSendCommand,
             addEventListener: mockAddEventListener,
-            TeamManager: mockTeamManager
+            TeamManager: mockTeamManager,
         } as any;
 
-        initInvite(client);
-        await loadPeopleMock.mock.results[0]?.value;
+        const catalog = await createCatalogWithPeople(MOCK_PEOPLE);
+        initInvite(client, catalog);
     });
 
-    test('should register invite trigger', async () => {
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+    test('should register invite trigger', () => {
         expect(mockTriggers.registerTrigger).toHaveBeenCalledWith(
             expect.any(RegExp),
             expect.any(Function),
-            'invite'
+            'invite',
         );
     });
 
-    test('should block invite from enemy guild member', async () => {
-        // Set up enemy guilds
+    test('should block invite from enemy guild member', () => {
         const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
+            (call: any[]) => call[0] === 'settings',
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite from enemy guild member
         const result = triggerHandler(
             '[Mordimer] zaprasza cie do swojej druzyny.',
             '[Mordimer] zaprasza cie do swojej druzyny.',
-            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer']
+            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer'],
         );
 
         expect(result).toBe('');
     });
 
-    test('should allow invite from non-enemy guild member and execute two commands', async () => {
-        // Set up enemy guilds
+    test('should allow invite from non-enemy guild member and execute two commands', () => {
         const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
+            (call: any[]) => call[0] === 'settings',
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite from non-enemy guild member
         const result = triggerHandler(
             '[Vesper] zaprasza cie do swojej druzyny.',
             '[Vesper] zaprasza cie do swojej druzyny.',
-            ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper']
+            ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'],
         );
 
         expect(mockFunctionalBind.set).toHaveBeenCalledWith(
             'Przyjmij zaproszenie od Vesper',
-            expect.any(Function)
+            expect.any(Function),
         );
         expect(result).toBe('[Vesper] zaprasza cie do swojej druzyny.');
 
-        // Test that the functional bind executes both commands
         const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
         functionalBindCallback();
 
@@ -125,23 +114,17 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).toHaveBeenCalledTimes(2);
     });
 
-    test('should allow invite from unknown person and fallback to old command', async () => {
-        // Set up enemy guilds
+    test('should allow invite from unknown person and fallback to old command', () => {
         const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
+            (call: any[]) => call[0] === 'settings',
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite from unknown person
         const result = triggerHandler(
             '[UnknownPlayer] zaprasza cie do swojej druzyny.',
             '[UnknownPlayer] zaprasza cie do swojej druzyny.',
-            ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer']
+            ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer'],
         );
 
         expect(mockFunctionalBind.set).not.toHaveBeenCalled();
@@ -149,23 +132,17 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
-    test('should allow all invites when no enemy guilds are set and fallback to old command', async () => {
-        // Set up empty enemy guilds
+    test('should allow all invites when no enemy guilds are set and fallback to old command', () => {
         const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
+            (call: any[]) => call[0] === 'settings',
         )[1];
         settingsHandler({ detail: { enemyGuilds: [] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite from guild member that would be enemy if configured
         const result = triggerHandler(
             '[Mordimer] zaprasza cie do swojej druzyny.',
             '[Mordimer] zaprasza cie do swojej druzyny.',
-            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer']
+            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer'],
         );
 
         expect(mockFunctionalBind.set).not.toHaveBeenCalled();
@@ -173,23 +150,17 @@ describe('Invite functionality', () => {
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
-    test('should handle invite pattern without brackets', async () => {
-        // Set up enemy guilds
+    test('should handle invite pattern without brackets', () => {
         const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
+            (call: any[]) => call[0] === 'settings',
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Czarodzieje'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite without brackets
         const result = triggerHandler(
             'Gandalf zaprasza cie do swojej druzyny.',
             'Gandalf zaprasza cie do swojej druzyny.',
-            ['Gandalf zaprasza cie do swojej druzyny.', 'Gandalf']
+            ['Gandalf zaprasza cie do swojej druzyny.', 'Gandalf'],
         );
 
         expect(result).toBe('');

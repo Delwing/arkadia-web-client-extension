@@ -1,17 +1,12 @@
 import initAttackBeep from '../src/scripts/attackBeep';
 import Triggers, {stripAnsiCodes} from '../src/Triggers';
 import {findClosestColor} from '../src/Colors';
-import {loadPeople} from '../src/peopleLoader';
 import services from '../src/runtime/service-registry';
 import { setCurrentCharacter } from '../src/storage';
+import type { PersonEntry } from '../src/types/people';
+import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
-jest.mock('../src/peopleLoader', () => ({
-  loadPeople: jest.fn(),
-}));
-
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
-
-const MOCK_PEOPLE = [
+const MOCK_PEOPLE: PersonEntry[] = [
   { name: 'Intia', description: 'wojowniczka', guild: 'CKN' },
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
 ];
@@ -22,22 +17,29 @@ class FakeClient {
   addEventListener = jest.fn();
 }
 
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
+  const catalog = new DefaultDataCatalog();
+  registerPeopleLoader({
+    catalog,
+    loader: async () => people,
+  });
+  await catalog.setPeopleData(people, 'loader');
+  return catalog;
+}
+
 describe('attack beep triggers', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    const catalog = await createCatalogWithPeople(MOCK_PEOPLE);
+    client = new FakeClient();
     localStorage.clear();
     setCurrentCharacter('');
     await services.settings.update({ enemyGuilds: [] } as any);
-    client = new FakeClient();
-    initAttackBeep((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    initAttackBeep((client as unknown) as any, catalog);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     await services.settings.update({ enemyGuilds: ['CKN'] } as any);
-    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-    await lastCall?.value;
     jest.clearAllMocks();
   });
 

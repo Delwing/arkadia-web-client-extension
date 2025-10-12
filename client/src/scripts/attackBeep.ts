@@ -1,7 +1,8 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
-import {loadPeople, type PersonEntry} from '../peopleLoader';
+import type { PersonEntry } from '../types/people';
 import services from "../runtime/service-registry";
+import type { PeopleDataCatalog } from "../runtime/data";
 
 const RED = findClosestColor("#ff0000");
 
@@ -18,32 +19,40 @@ function highlightPhrase(line: string) {
     return colored.replace(phrase, phrase.toUpperCase());
 }
 
-export default function initAttackBeep(client: Client) {
+export default function initAttackBeep(client: Client, catalog: PeopleDataCatalog = services.dataCatalog) {
     const tag = "attackBeep";
     let enemyGuilds: string[] = [];
-    let peopleCache: PersonEntry[] = [];
-    let loadPromise: Promise<PersonEntry[]> | null = null;
+    let peopleCache: readonly PersonEntry[] = catalog.getPeopleData() ?? [];
+    let loadPromise: Promise<void> | null = null;
 
     function ensurePeopleLoaded() {
+        const metadata = catalog.getPeopleMetadata();
+        if (metadata?.status === 'ready') {
+            return Promise.resolve();
+        }
+        if (metadata?.status === 'loading' && loadPromise) {
+            return loadPromise;
+        }
+
         if (!loadPromise) {
-            loadPromise = loadPeople()
-                .then(people => {
-                    peopleCache = people;
-                    return people;
-                })
+            loadPromise = catalog
+                .loadPeopleData()
                 .catch(error => {
                     console.warn('Failed to load people database', error);
                     peopleCache = [];
-                    return [] as PersonEntry[];
                 })
                 .finally(() => {
                     loadPromise = null;
                 });
         }
-        return loadPromise;
+        return loadPromise ?? Promise.resolve();
     }
 
     ensurePeopleLoaded().catch(() => undefined);
+
+    catalog.readyForPeople$().subscribe((event) => {
+        peopleCache = event.data;
+    });
 
     // Function to find a person's guild by their name
     function findPersonGuild(name: string): string | null {

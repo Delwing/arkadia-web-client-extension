@@ -1,15 +1,16 @@
 import { Observable, ReplaySubject, Subject } from 'rxjs';
-import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY } from './dataset-keys';
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY, NPC_DATASET_KEY, PEOPLE_DATASET_KEY } from './dataset-keys';
 import type {
-    DataCatalog,
     DataCatalogEntryMetadata,
     DataCatalogReadyEvent,
+    PeopleDataCatalog,
     DataLoader,
     DataLoaderContext,
     DataLoaderRegistration,
 } from './catalog';
 import type { NpcDefinition } from './types';
 import type { DataPersistenceAdapter } from './persistence/types';
+import type { PersonEntry } from '../../types/people';
 
 interface CatalogEntry<T> {
     readonly key: string;
@@ -20,7 +21,7 @@ interface CatalogEntry<T> {
     readonly ready$: ReplaySubject<DataCatalogReadyEvent<T>>;
 }
 
-export class DefaultDataCatalog implements DataCatalog {
+export class DefaultDataCatalog implements PeopleDataCatalog {
     private readonly entries = new Map<string, CatalogEntry<unknown>>();
 
     private readonly globalReady$ = new Subject<DataCatalogReadyEvent<unknown>>();
@@ -37,6 +38,10 @@ export class DefaultDataCatalog implements DataCatalog {
         return this.get<MapData.Env[]>(COLORS_DATASET_KEY);
     }
 
+    getPeopleData(): readonly PersonEntry[] | undefined {
+        return this.get<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
+    }
+
     getMapMetadata(): DataCatalogEntryMetadata | undefined {
         return this.metadataFor(MAP_DATASET_KEY);
     }
@@ -47,6 +52,10 @@ export class DefaultDataCatalog implements DataCatalog {
 
     getColorMetadata(): DataCatalogEntryMetadata | undefined {
         return this.metadataFor(COLORS_DATASET_KEY);
+    }
+
+    getPeopleMetadata(): DataCatalogEntryMetadata | undefined {
+        return this.metadataFor(PEOPLE_DATASET_KEY);
     }
 
     readyForMap$(): Observable<DataCatalogReadyEvent<MapData.Map>> {
@@ -61,6 +70,10 @@ export class DefaultDataCatalog implements DataCatalog {
         return this.ready$<MapData.Env[]>(COLORS_DATASET_KEY);
     }
 
+    readyForPeople$(): Observable<DataCatalogReadyEvent<readonly PersonEntry[]>> {
+        return this.ready$<readonly PersonEntry[]>(PEOPLE_DATASET_KEY);
+    }
+
     async loadMapData(): Promise<void> {
         await this.load(MAP_DATASET_KEY);
     }
@@ -73,12 +86,20 @@ export class DefaultDataCatalog implements DataCatalog {
         await this.load(COLORS_DATASET_KEY);
     }
 
+    async loadPeopleData(): Promise<void> {
+        await this.load(PEOPLE_DATASET_KEY);
+    }
+
     async clearNpcData(): Promise<void> {
         await this.clear(NPC_DATASET_KEY);
     }
 
     async setNpcData(value: readonly NpcDefinition[], source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
         await this.set(NPC_DATASET_KEY, [...value], source);
+    }
+
+    async setPeopleData(value: readonly PersonEntry[], source: DataCatalogEntryMetadata['source'] = 'loader'): Promise<void> {
+        await this.set(PEOPLE_DATASET_KEY, [...value], source);
     }
 
     register<T>(registration: DataLoaderRegistration<T>): void {

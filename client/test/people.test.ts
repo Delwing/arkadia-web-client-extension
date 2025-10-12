@@ -1,20 +1,15 @@
 import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { color, RESET, findClosestColor } from '../src/Colors';
-import { loadPeople } from '../src/peopleLoader';
+import type { PersonEntry } from '../src/types/people';
+import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
-jest.mock('../src/peopleLoader', () => ({
-  loadPeople: jest.fn(),
-}));
-
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
-
-const MOCK_PEOPLE = [
+const MOCK_PEOPLE: PersonEntry[] = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
   { name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
   { name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
   { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
-  { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
+  { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' },
 ];
 
 class FakeClient {
@@ -22,22 +17,29 @@ class FakeClient {
   addEventListener = jest.fn();
 }
 
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
+  const catalog = new DefaultDataCatalog();
+  registerPeopleLoader({
+    catalog,
+    loader: async () => people,
+  });
+  await catalog.setPeopleData(people, 'loader');
+  return catalog;
+}
+
 describe('people triggers enemy highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    const catalog = await createCatalogWithPeople(MOCK_PEOPLE);
     client = new FakeClient();
-    new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    new People((client as unknown) as any, catalog);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     const handler = client.addEventListener.mock.calls[0]?.[1];
     if (handler) {
       handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
     }
-    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-    await lastCall?.value;
   });
 
   test('colors enemy description red', () => {
@@ -85,14 +87,11 @@ describe('people triggers guild highlight', () => {
   let settingsHandler: ((event: SettingsEvent) => void) | undefined;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    const catalog = await createCatalogWithPeople(MOCK_PEOPLE);
     client = new FakeClient();
-    new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    new People((client as unknown) as any, catalog);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
-    const lastGuildCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-    await lastGuildCall?.value;
   });
 
   const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {

@@ -1,7 +1,9 @@
-import { loadPeople, type PersonEntry } from './peopleLoader';
+import type { PersonEntry } from './types/people';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
 import {stripAnsiCodes} from './Triggers';
+import services from './runtime/service-registry';
+import type { PeopleDataCatalog } from './runtime/data';
 
 export default class People {
 
@@ -13,9 +15,23 @@ export default class People {
     people: PersonEntry[] = []
     private loadErrorLogged = false
     private peopleLoadPromise: Promise<void> | null = null
+    private readonly catalog: PeopleDataCatalog
 
-    constructor(clientExtension: Client) {
+    constructor(clientExtension: Client, catalog: PeopleDataCatalog = services.dataCatalog) {
         this.client = clientExtension
+        this.catalog = catalog
+
+        const existingPeople = this.catalog.getPeopleData()
+        if (existingPeople) {
+            this.people = [...existingPeople]
+        }
+
+        this.catalog.readyForPeople$().subscribe((event) => {
+            this.people = [...event.data]
+            this.loadErrorLogged = false
+            this.registerPeopleTriggers()
+        })
+
         this.client.addEventListener('settings', (event: CustomEvent) => {
             this.guildFilter = event.detail.guilds || []
             this.enemyGuilds = event.detail.enemyGuilds || []
@@ -28,18 +44,17 @@ export default class People {
     private ensurePeopleTriggers(forceRefresh = false) {
         if (!forceRefresh && this.people.length > 0) {
             this.registerPeopleTriggers()
-        }
-
-        if (this.peopleLoadPromise && !forceRefresh) {
             return
         }
 
-        this.peopleLoadPromise = loadPeople(forceRefresh)
-            .then(people => {
-                this.people = people
-                this.loadErrorLogged = false
-                this.registerPeopleTriggers()
-            })
+        const metadata = this.catalog.getPeopleMetadata()
+        const isLoading = metadata?.status === 'loading'
+        if (!forceRefresh && (isLoading || this.peopleLoadPromise)) {
+            return
+        }
+
+        this.peopleLoadPromise = this.catalog
+            .loadPeopleData()
             .catch(error => {
                 this.handleLoadError(error)
             })
