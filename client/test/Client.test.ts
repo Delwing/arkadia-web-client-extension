@@ -132,10 +132,10 @@ test('addEventListener allows removal', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const handler = jest.fn();
   const remove = client.addEventListener('foo', handler);
-  client.eventTarget.dispatchEvent(new CustomEvent('foo', { detail: 'bar' }));
+  client.sendEvent('foo', 'bar');
   expect(handler).toHaveBeenCalledTimes(1);
   remove();
-  client.eventTarget.dispatchEvent(new CustomEvent('foo', { detail: 'bar' }));
+  client.sendEvent('foo', 'bar');
   expect(handler).toHaveBeenCalledTimes(1);
 });
 
