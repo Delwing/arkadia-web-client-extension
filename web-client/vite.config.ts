@@ -17,6 +17,14 @@ export default defineConfig({
         __COMMIT_SHA__: JSON.stringify(commitSha),
         __COMMIT_DATE__: JSON.stringify(commitDate),
     },
+    resolve: {
+        alias: [
+            { find: 'zustand/shallow', replacement: resolve('src/vendor/zustand/shallow.ts') },
+            { find: 'zustand/vanilla', replacement: resolve('src/vendor/zustand/vanilla.ts') },
+            { find: 'zustand/middleware', replacement: resolve('src/vendor/zustand/middleware.ts') },
+            { find: 'zustand', replacement: resolve('src/vendor/zustand/index.ts') },
+        ],
+    },
     build: {
         minify: true,
         sourcemap: true,

@@ -43,12 +43,20 @@ import "./triggerTester"
 import "./triggerFinder"
 import MessageRouter from "@client/src/runtime/transport/message-router";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
-import services from "@client/src/runtime/service-registry";
-import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
 import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
-import { bindUiStoreToClientEvents, loadCatalogEntry, selectCatalogEntry, uiStore } from "./ui/store";
+import {
+    bindUiStoreToClientEvents,
+    getMapCatalogEntrySnapshot,
+    loadColorCatalogEntry,
+    loadMapCatalogEntry,
+    loadNpcCatalogEntry,
+    selectColorCatalogEntry,
+    selectMapCatalogEntry,
+    uiStore,
+} from "./ui/store";
+import type { NpcRecord } from "./ui/store";
 
 const transport = new WebSocketTransportAdapter();
 const router = new MessageRouter(transport, runtimeEventHub, { parseAnsiPatterns });
@@ -123,8 +131,8 @@ function disableTabSleepPrevention() {
     updateWakeLockButton();
 }
 
-void loadCatalogEntry<unknown[]>(NPC_DATASET_KEY)
-    .then((npc) => {
+void loadNpcCatalogEntry()
+    .then((npc: NpcRecord[]) => {
         client.sendEvent("npc", npc);
     })
     .catch((error) => {
@@ -175,9 +183,8 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-const dataCatalog = services.defaultDataCatalog;
-const mapEntrySelector = selectCatalogEntry<MapData.Map>(MAP_DATASET_KEY);
-const colorEntrySelector = selectCatalogEntry<MapData.Env[]>(COLORS_DATASET_KEY);
+const mapEntrySelector = selectMapCatalogEntry;
+const colorEntrySelector = selectColorCatalogEntry;
 
 let mapStatus: DataCatalogEntryStatus = mapEntrySelector(uiStore.getState())?.metadata?.status ?? 'idle';
 let colorStatus: DataCatalogEntryStatus = colorEntrySelector(uiStore.getState())?.metadata?.status ?? 'idle';
@@ -296,9 +303,9 @@ outputWrapper.addEventListener('touchend', (e) => {
 
 outputWrapper.addEventListener('dblclick', closeHistoryScrollback);
 
-const mapDataPromise = loadCatalogEntry<MapData.Map>(MAP_DATASET_KEY)
+const mapDataPromise = loadMapCatalogEntry()
     .then((mapData) => {
-        const metadata = dataCatalog.metadataFor(MAP_DATASET_KEY);
+        const metadata = getMapCatalogEntrySnapshot()?.metadata;
         if (metadata?.source) {
             progressMessageOverride = metadata.source === 'cache'
                 ? 'Loaded map data from cache'
@@ -318,7 +325,7 @@ const mapDataPromise = loadCatalogEntry<MapData.Map>(MAP_DATASET_KEY)
         throw error;
     });
 
-const colorsPromise = loadCatalogEntry<MapData.Env[]>(COLORS_DATASET_KEY)
+const colorsPromise = loadColorCatalogEntry()
     .then((colors) => {
         refreshProgressDisplay();
         return colors;

@@ -9,7 +9,12 @@ import services from "@client/src/runtime/service-registry";
 import type { SettingsSnapshot } from "@client/src/runtime/settings/settings-service";
 import { defaultSettings } from "@client/src/defaultSettings";
 import type { DataCatalogEntryMetadata } from "@client/src/runtime/data";
-import { ensureDatasetReady } from "@client/src/runtime/data";
+import {
+    COLORS_DATASET_KEY,
+    MAP_DATASET_KEY,
+    NPC_DATASET_KEY,
+    ensureDatasetReady,
+} from "@client/src/runtime/data";
 
 import type { CharStateData } from "../CharState";
 
@@ -21,6 +26,7 @@ export interface CatalogEntryState<T = unknown> {
 }
 
 type CatalogState = Record<string, CatalogEntryState>;
+type CatalogEntrySource = DataCatalogEntryMetadata["source"];
 
 export interface UiPreferences {
     emojiLabels: boolean | null;
@@ -137,18 +143,18 @@ function ensureCatalogTracking(key: string): void {
     refreshCatalogEntry(key);
 }
 
-export function selectCatalogEntry<T = unknown>(key: string) {
+function selectCatalogEntryInternal<T = unknown>(key: string) {
     ensureCatalogTracking(key);
     return (state: UiStoreState): CatalogEntryState<T> | undefined =>
         state.dataCatalog[key] as CatalogEntryState<T> | undefined;
 }
 
-export function getCatalogEntrySnapshot<T = unknown>(key: string): CatalogEntryState<T> | undefined {
+function getCatalogEntrySnapshotInternal<T = unknown>(key: string): CatalogEntryState<T> | undefined {
     ensureCatalogTracking(key);
     return store.getState().dataCatalog[key] as CatalogEntryState<T> | undefined;
 }
 
-export function loadCatalogEntry<T = unknown>(key: string): Promise<T> {
+function loadCatalogEntryInternal<T = unknown>(key: string): Promise<T> {
     ensureCatalogTracking(key);
 
     const catalog = services.defaultDataCatalog;
@@ -185,10 +191,67 @@ export function loadCatalogEntry<T = unknown>(key: string): Promise<T> {
     return loadPromise;
 }
 
-export async function clearCatalogEntry(key: string): Promise<void> {
+async function clearCatalogEntryInternal(key: string): Promise<void> {
     ensureCatalogTracking(key);
     await services.defaultDataCatalog.clear(key);
     refreshCatalogEntry(key);
+}
+
+async function setCatalogEntryInternal<T>(
+    key: string,
+    value: T,
+    source?: CatalogEntrySource,
+): Promise<void> {
+    ensureCatalogTracking(key);
+    await services.defaultDataCatalog.set(key, value, source);
+    refreshCatalogEntry(key);
+}
+
+function createCatalogSelector<T = unknown>(key: string) {
+    return selectCatalogEntryInternal<T>(key);
+}
+
+export const selectMapCatalogEntry = createCatalogSelector<MapData.Map>(MAP_DATASET_KEY);
+
+export function getMapCatalogEntrySnapshot(): CatalogEntryState<MapData.Map> | undefined {
+    return getCatalogEntrySnapshotInternal<MapData.Map>(MAP_DATASET_KEY);
+}
+
+export function loadMapCatalogEntry(): Promise<MapData.Map> {
+    return loadCatalogEntryInternal<MapData.Map>(MAP_DATASET_KEY);
+}
+
+export const selectColorCatalogEntry = createCatalogSelector<MapData.Env[]>(COLORS_DATASET_KEY);
+
+export function loadColorCatalogEntry(): Promise<MapData.Env[]> {
+    return loadCatalogEntryInternal<MapData.Env[]>(COLORS_DATASET_KEY);
+}
+
+export function clearColorCatalogEntry(): Promise<void> {
+    return clearCatalogEntryInternal(COLORS_DATASET_KEY);
+}
+
+export interface NpcRecord {
+    name: string;
+    loc: number;
+}
+
+export const selectNpcCatalogEntry = createCatalogSelector<NpcRecord[]>(NPC_DATASET_KEY);
+
+export function loadNpcCatalogEntry(): Promise<NpcRecord[]> {
+    return loadCatalogEntryInternal<NpcRecord[]>(NPC_DATASET_KEY);
+}
+
+export function getNpcCatalogEntrySnapshot(): CatalogEntryState<NpcRecord[]> | undefined {
+    return getCatalogEntrySnapshotInternal<NpcRecord[]>(NPC_DATASET_KEY);
+}
+
+export function clearNpcCatalogEntry(): Promise<void> {
+    return clearCatalogEntryInternal(NPC_DATASET_KEY);
+}
+
+export function setNpcCatalogEntry(data: NpcRecord[], source?: CatalogEntrySource): Promise<void> {
+    return setCatalogEntryInternal(NPC_DATASET_KEY, data, source);
 }
 
 function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {

@@ -27,6 +27,18 @@
       "@client/*": [
         "../client/*"
       ],
+      "zustand": [
+        "./src/vendor/zustand/index.ts"
+      ],
+      "zustand/vanilla": [
+        "./src/vendor/zustand/vanilla.ts"
+      ],
+      "zustand/middleware": [
+        "./src/vendor/zustand/middleware.ts"
+      ],
+      "zustand/shallow": [
+        "./src/vendor/zustand/shallow.ts"
+      ]
     }
   },
   "include": [

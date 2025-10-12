@@ -2,23 +2,23 @@ import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
 import {TiDelete} from "react-icons/ti";
-import services from "@client/src/runtime/service-registry";
-import { NPC_DATASET_KEY } from "@client/src/runtime/data";
-import { clearCatalogEntry, loadCatalogEntry, selectCatalogEntry, useUiStore } from "../ui/store";
-
-interface NpcProps {
-    name: string;
-    loc: number
-}
+import {
+    clearNpcCatalogEntry,
+    loadNpcCatalogEntry,
+    selectNpcCatalogEntry,
+    setNpcCatalogEntry,
+    useUiStore,
+} from "../ui/store";
+import type { NpcRecord } from "../ui/store";
 
 function Npc() {
 
     const [filter, setFilter] = useState<string>('')
-    const npcEntry = useUiStore(selectCatalogEntry<NpcProps[]>(NPC_DATASET_KEY))
+    const npcEntry = useUiStore(selectNpcCatalogEntry)
     const npcs = npcEntry?.data ?? []
 
     useEffect(() => {
-        loadCatalogEntry<NpcProps[]>(NPC_DATASET_KEY).catch((error) => {
+        loadNpcCatalogEntry().catch((error) => {
             console.error('Failed to load NPC data:', error);
         });
     }, []);
@@ -27,7 +27,7 @@ function Npc() {
         const handler = (ev: Event) => {
             const detail = (ev as CustomEvent).detail
             if (Array.isArray(detail)) {
-                void services.defaultDataCatalog.set(NPC_DATASET_KEY, detail, 'cache').catch((error) => {
+                void setNpcCatalogEntry(detail as NpcRecord[], 'cache').catch((error) => {
                     console.error('Failed to synchronise NPC data:', error);
                 });
             }
@@ -40,7 +40,7 @@ function Npc() {
 
     async function downloadNpcs() {
         try {
-            const data = await loadCatalogEntry<NpcProps[]>(NPC_DATASET_KEY);
+            const data = await loadNpcCatalogEntry();
             ;(window as any).clientExtension?.sendEvent('npc', data);
         } catch (e) {
             console.error('Failed to update NPC data:', e);
@@ -48,7 +48,7 @@ function Npc() {
     }
 
     function clearNpcs() {
-        clearCatalogEntry(NPC_DATASET_KEY)
+        clearNpcCatalogEntry()
             .then(() => {
                 ;(window as any).clientExtension?.sendEvent('npc', [])
             })
@@ -66,15 +66,15 @@ function Npc() {
         URL.revokeObjectURL(url)
     }
 
-    function deleteNpc(npc: NpcProps) {
+    function deleteNpc(npc: NpcRecord) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         void saveNpcs(updated)
         ;(window as any).clientExtension?.sendEvent('npc', updated)
     }
 
-    async function saveNpcs(list: NpcProps[]) {
+    async function saveNpcs(list: NpcRecord[]) {
         try {
-            await services.defaultDataCatalog.set(NPC_DATASET_KEY, list, 'cache')
+            await setNpcCatalogEntry(list, 'cache')
         } catch (e) {
             console.error('Failed to save NPC list:', e)
         }
