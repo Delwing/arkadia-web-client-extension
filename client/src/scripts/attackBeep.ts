@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {loadPeople, type PersonEntry} from '../peopleLoader';
+import services from "../runtime/service-registry";
 
 const RED = findClosestColor("#ff0000");
 
@@ -74,11 +75,10 @@ export default function initAttackBeep(client: Client) {
         return highlightAttack(raw, upper);
     };
 
-    // Listen for settings changes
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail || {};
-        if (Array.isArray(settings.enemyGuilds)) {
-            enemyGuilds = [...settings.enemyGuilds];
+    services.settings.settings$.subscribe((settings) => {
+        const snapshot = settings as { enemyGuilds?: unknown };
+        if (Array.isArray(snapshot.enemyGuilds)) {
+            enemyGuilds = [...snapshot.enemyGuilds];
         }
         ensurePeopleLoaded().catch(() => undefined);
     });

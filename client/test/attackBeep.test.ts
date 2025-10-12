@@ -2,6 +2,8 @@ import initAttackBeep from '../src/scripts/attackBeep';
 import Triggers, {stripAnsiCodes} from '../src/Triggers';
 import {findClosestColor} from '../src/Colors';
 import {loadPeople} from '../src/peopleLoader';
+import services from '../src/runtime/service-registry';
+import { setCurrentCharacter } from '../src/storage';
 
 jest.mock('../src/peopleLoader', () => ({
   loadPeople: jest.fn(),
@@ -26,18 +28,21 @@ describe('attack beep triggers', () => {
 
   beforeEach(async () => {
     loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    localStorage.clear();
+    setCurrentCharacter('');
+    await services.settings.update({ enemyGuilds: [] } as any);
     client = new FakeClient();
     initAttackBeep((client as unknown) as any);
     await loadPeopleMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    // initialize with enemy guilds so beeping is enabled only for configured guilds
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { enemyGuilds: ['CKN'] } } as any);
-    }
+    await services.settings.update({ enemyGuilds: ['CKN'] } as any);
     const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
     await lastCall?.value;
     jest.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    await services.settings.update({ enemyGuilds: [] } as any);
   });
 
   test('beeps and highlights on attack', () => {
