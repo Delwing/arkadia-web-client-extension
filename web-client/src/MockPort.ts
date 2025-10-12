@@ -5,12 +5,12 @@ import { readMultibinds, replaceMultibinds } from "./multibindStorage";
 import { NPC_STORAGE_KEY, normalizeNpcList, npcListsEqual, areNpcEntriesEqual } from "./npcData";
 
 function getNpcCatalogData(): NpcDefinition[] {
-    const current = services.dataCatalog.getNpcData();
+    const current = services.npcCatalog.getNpcData();
     return Array.isArray(current) ? [...current] : [];
 }
 
 async function persistNpcCatalogData(list: readonly NpcDefinition[]): Promise<void> {
-    await services.dataCatalog.setNpcData(list, 'cache');
+    await services.npcCatalog.setNpcData(list, 'cache');
 }
 
 export default class MockPort {
@@ -48,7 +48,7 @@ export default class MockPort {
             this.broadcastNpc(initialNpc);
         }
 
-        services.dataCatalog.readyForNpc$().subscribe(({ data }) => {
+        services.npcCatalog.readyForNpc$().subscribe(({ data }) => {
             this.broadcastNpc(normalizeNpcList(data));
         });
     }

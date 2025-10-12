@@ -4,18 +4,29 @@ import { Subject } from "rxjs";
 jest.mock("@client/src/runtime/service-registry", () => {
   const { Subject } = jest.requireActual("rxjs");
   let readySubject = new Subject();
-  const dataCatalog = {
+  const npcCatalog = {
     readyForNpc$: jest.fn(() => readySubject.asObservable()),
     getNpcData: jest.fn(),
     setNpcData: jest.fn(() => Promise.resolve()),
+    clearNpcData: jest.fn(() => Promise.resolve()),
+  };
+  const dataCatalog = {
+    ready$: jest.fn(),
+    load: jest.fn(),
+    loadAll: jest.fn(),
+    clear: jest.fn(),
+    set: jest.fn(),
+    get: jest.fn(),
+    metadataFor: jest.fn(),
   };
 
   return {
     __esModule: true,
     default: {
       dataCatalog,
+      npcCatalog,
     },
-    __dataCatalogMock: dataCatalog,
+    __npcCatalogMock: npcCatalog,
     __setReadySubject: (nextSubject: typeof readySubject) => {
       readySubject = nextSubject;
     },
@@ -52,7 +63,7 @@ const servicesModule = jest.requireMock("@client/src/runtime/service-registry") 
 const storageModule = jest.requireMock("@client/src/storage") as any;
 
 function setCatalogData(data: readonly NpcDefinition[]) {
-  servicesModule.__dataCatalogMock.getNpcData.mockReturnValue([...data]);
+  servicesModule.__npcCatalogMock.getNpcData.mockReturnValue([...data]);
 }
 
 describe("MockPort NPC catalog integration", () => {
@@ -68,7 +79,7 @@ describe("MockPort NPC catalog integration", () => {
 
     port.postMessage({ type: "NEW_NPC", name: "New", loc: 20 });
 
-    expect(servicesModule.__dataCatalogMock.setNpcData).toHaveBeenCalledWith(
+    expect(servicesModule.__npcCatalogMock.setNpcData).toHaveBeenCalledWith(
       [{ name: "Existing", loc: 10 }, { name: "New", loc: 20 }],
       "cache",
     );
@@ -80,7 +91,7 @@ describe("MockPort NPC catalog integration", () => {
 
     port.postMessage({ type: "NEW_NPC", name: "Existing", loc: 10 });
 
-    expect(servicesModule.__dataCatalogMock.setNpcData).not.toHaveBeenCalled();
+    expect(servicesModule.__npcCatalogMock.setNpcData).not.toHaveBeenCalled();
   });
 
   test("dispatches NPC data when catalog emits readiness", () => {
@@ -115,7 +126,7 @@ describe("MockPort NPC catalog integration", () => {
 
     listener({ npc: { newValue: [{ name: "Sync", loc: 99 }] } });
 
-    expect(servicesModule.__dataCatalogMock.setNpcData).toHaveBeenCalledWith(
+    expect(servicesModule.__npcCatalogMock.setNpcData).toHaveBeenCalledWith(
       [{ name: "Sync", loc: 99 }],
       "cache",
     );

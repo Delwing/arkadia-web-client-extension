@@ -1,7 +1,7 @@
 import type Client from '../src/Client';
 import initInvite from '../src/scripts/invite';
 import type { PersonEntry } from '../src/types/people';
-import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
+import { PeopleDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
 const MOCK_PEOPLE: PersonEntry[] = [
     { name: 'Mordimer', description: 'templariusz', guild: 'Templariusze' },
@@ -10,8 +10,8 @@ const MOCK_PEOPLE: PersonEntry[] = [
     { name: 'Gandalf', description: 'czarodziej', guild: 'Czarodzieje' },
 ];
 
-async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
-    const catalog = new DefaultDataCatalog();
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<PeopleDataCatalog> {
+    const catalog = new PeopleDataCatalog();
     registerPeopleLoader({
         catalog,
         loader: async () => people,

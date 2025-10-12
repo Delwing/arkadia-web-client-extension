@@ -17,7 +17,7 @@ export default class People {
     private peopleLoadPromise: Promise<void> | null = null
     private readonly catalog: PeopleDataCatalog
 
-    constructor(clientExtension: Client, catalog: PeopleDataCatalog = services.dataCatalog) {
+    constructor(clientExtension: Client, catalog: PeopleDataCatalog = services.peopleCatalog) {
         this.client = clientExtension
         this.catalog = catalog
 

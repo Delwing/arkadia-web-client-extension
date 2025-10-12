@@ -2,9 +2,22 @@ import type Client from "../Client";
 import { ClientCommandDispatcher } from "./command-dispatcher";
 import type { CommandDispatcher } from "./command-dispatcher";
 import {
-    DefaultDataCatalog,
+    CompositeDataCatalog,
+    MapDataCatalog,
+    NpcDataCatalog,
+    PeopleDataCatalog,
+    MagicDataCatalog,
+    MagicKeysDataCatalog,
+    HerbsDataCatalog,
     registerCoreLoaders,
     registerPeopleLoader,
+    MAP_DATASET_KEY,
+    COLORS_DATASET_KEY,
+    NPC_DATASET_KEY,
+    PEOPLE_DATASET_KEY,
+    MAGIC_DATASET_KEY,
+    MAGIC_KEYS_DATASET_KEY,
+    HERBS_DATASET_KEY,
 } from "./data";
 import type { DataCatalogEntryMetadata } from "./data";
 import type { EventHub } from "./event-hub";
@@ -30,7 +43,13 @@ export interface ServiceRegistryOptions {
 
 class ServiceRegistry {
     readonly settings: SettingsService;
-    private readonly catalog: DefaultDataCatalog;
+    private readonly catalog: CompositeDataCatalog;
+    private readonly mapCatalogInstance: MapDataCatalog;
+    private readonly npcCatalogInstance: NpcDataCatalog;
+    private readonly peopleCatalogInstance: PeopleDataCatalog;
+    private readonly magicCatalogInstance: MagicDataCatalog;
+    private readonly magicKeysCatalogInstance: MagicKeysDataCatalog;
+    private readonly herbsCatalogInstance: HerbsDataCatalog;
     private readonly internalEventHub: EventHub<RuntimeEvents>;
 
     private transportFactory: TransportFactory;
@@ -45,9 +64,27 @@ class ServiceRegistry {
 
     constructor(options: ServiceRegistryOptions = {}) {
         this.settings = new LocalStorageSettingsService();
-        this.catalog = new DefaultDataCatalog();
-        registerCoreLoaders({ catalog: this.catalog });
-        registerPeopleLoader({ catalog: this.catalog });
+        this.mapCatalogInstance = new MapDataCatalog();
+        this.npcCatalogInstance = new NpcDataCatalog();
+        this.peopleCatalogInstance = new PeopleDataCatalog();
+        this.magicCatalogInstance = new MagicDataCatalog();
+        this.magicKeysCatalogInstance = new MagicKeysDataCatalog();
+        this.herbsCatalogInstance = new HerbsDataCatalog();
+
+        this.catalog = new CompositeDataCatalog([
+            { keys: [MAP_DATASET_KEY, COLORS_DATASET_KEY], catalog: this.mapCatalogInstance },
+            { keys: [NPC_DATASET_KEY], catalog: this.npcCatalogInstance },
+            { keys: [PEOPLE_DATASET_KEY], catalog: this.peopleCatalogInstance },
+            { keys: [MAGIC_DATASET_KEY], catalog: this.magicCatalogInstance },
+            { keys: [MAGIC_KEYS_DATASET_KEY], catalog: this.magicKeysCatalogInstance },
+            { keys: [HERBS_DATASET_KEY], catalog: this.herbsCatalogInstance },
+        ]);
+
+        registerCoreLoaders({
+            mapCatalog: this.mapCatalogInstance,
+            npcCatalog: this.npcCatalogInstance,
+        });
+        registerPeopleLoader({ catalog: this.peopleCatalogInstance });
 
         this.internalEventHub = options.eventHub ?? runtimeEventHub;
         this.transportFactory = options.transportFactory ?? (() => new WebSocketTransportAdapter());
@@ -58,8 +95,32 @@ class ServiceRegistry {
         this.commandDispatcherFactory = options.commandDispatcherFactory ?? ((client) => new ClientCommandDispatcher(client));
     }
 
-    get dataCatalog(): DefaultDataCatalog {
+    get dataCatalog(): CompositeDataCatalog {
         return this.catalog;
+    }
+
+    get mapCatalog(): MapDataCatalog {
+        return this.mapCatalogInstance;
+    }
+
+    get npcCatalog(): NpcDataCatalog {
+        return this.npcCatalogInstance;
+    }
+
+    get peopleCatalog(): PeopleDataCatalog {
+        return this.peopleCatalogInstance;
+    }
+
+    get magicCatalog(): MagicDataCatalog {
+        return this.magicCatalogInstance;
+    }
+
+    get magicKeysCatalog(): MagicKeysDataCatalog {
+        return this.magicKeysCatalogInstance;
+    }
+
+    get herbsCatalog(): HerbsDataCatalog {
+        return this.herbsCatalogInstance;
     }
 
     get eventHub(): EventHub<RuntimeEvents> {
@@ -122,11 +183,19 @@ class ServiceRegistry {
         map: DataCatalogEntryMetadata | undefined;
         npc: DataCatalogEntryMetadata | undefined;
         colors: DataCatalogEntryMetadata | undefined;
+        people: DataCatalogEntryMetadata | undefined;
+        magic: DataCatalogEntryMetadata | undefined;
+        magicKeys: DataCatalogEntryMetadata | undefined;
+        herbs: DataCatalogEntryMetadata | undefined;
     } {
         return {
-            map: this.catalog.getMapMetadata(),
-            npc: this.catalog.getNpcMetadata(),
-            colors: this.catalog.getColorMetadata(),
+            map: this.mapCatalogInstance.getMapMetadata(),
+            npc: this.npcCatalogInstance.getNpcMetadata(),
+            colors: this.mapCatalogInstance.getColorMetadata(),
+            people: this.peopleCatalogInstance.getPeopleMetadata(),
+            magic: this.magicCatalogInstance.getMagicMetadata(),
+            magicKeys: this.magicKeysCatalogInstance.getMagicKeysMetadata(),
+            herbs: this.herbsCatalogInstance.getHerbsMetadata(),
         };
     }
 }

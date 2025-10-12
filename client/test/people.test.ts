@@ -2,7 +2,7 @@ import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { color, RESET, findClosestColor } from '../src/Colors';
 import type { PersonEntry } from '../src/types/people';
-import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
+import { PeopleDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
 const MOCK_PEOPLE: PersonEntry[] = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
@@ -17,8 +17,8 @@ class FakeClient {
   addEventListener = jest.fn();
 }
 
-async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
-  const catalog = new DefaultDataCatalog();
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<PeopleDataCatalog> {
+  const catalog = new PeopleDataCatalog();
   registerPeopleLoader({
     catalog,
     loader: async () => people,

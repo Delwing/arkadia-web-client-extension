@@ -3,7 +3,7 @@ import Client from "./Client";
 import { Trigger } from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import services from "./runtime/service-registry";
-import type { DefaultDataCatalog, NpcDefinition } from "./runtime/data";
+import type { NpcDataCatalog, NpcDefinition } from "./runtime/data";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -38,7 +38,7 @@ const UNKNOWN_NPC_COLOR = findClosestColor('#aaaaaa');
 export default class PackageHelper {
 
     private client: Client
-    private readonly catalog: DefaultDataCatalog
+    private readonly catalog: NpcDataCatalog
     npc: Record<string, number> = {}
     enabled = false;
 
@@ -56,7 +56,7 @@ export default class PackageHelper {
     private pickTrigger: Trigger;
     private failTrigger: Trigger;
 
-    constructor(clientExtension: Client, catalog: DefaultDataCatalog = services.dataCatalog) {
+    constructor(clientExtension: Client, catalog: NpcDataCatalog = services.npcCatalog) {
         this.client = clientExtension
         this.catalog = catalog
 

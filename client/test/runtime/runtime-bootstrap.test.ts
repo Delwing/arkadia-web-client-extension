@@ -46,9 +46,16 @@ describe("createRuntimeBootstrap", () => {
         expect(bootstrap.client).toBeDefined();
         expect(bootstrap.eventHub).toBe(registry.eventHub);
         expect(bootstrap.dataCatalog).toBe(registry.dataCatalog);
+        expect(bootstrap.catalogs.map).toBe(registry.mapCatalog);
+        expect(bootstrap.catalogs.npc).toBe(registry.npcCatalog);
+        expect(bootstrap.catalogs.people).toBe(registry.peopleCatalog);
         expect(bootstrap.catalogMetadata.map?.status).toBe("idle");
         expect(bootstrap.catalogMetadata.colors?.status).toBe("idle");
         expect(bootstrap.catalogMetadata.npc?.status).toBe("idle");
+        expect(bootstrap.catalogMetadata.people?.status).toBe("idle");
+        expect(bootstrap.catalogMetadata.magic).toBeUndefined();
+        expect(bootstrap.catalogMetadata.magicKeys).toBeUndefined();
+        expect(bootstrap.catalogMetadata.herbs).toBeUndefined();
 
         bootstrap.commandDispatcher.sendCommand("look", { echo: false });
         expect(clientAdapter.send).toHaveBeenCalledWith("look", false);

@@ -19,7 +19,7 @@ function highlightPhrase(line: string) {
     return colored.replace(phrase, phrase.toUpperCase());
 }
 
-export default function initAttackBeep(client: Client, catalog: PeopleDataCatalog = services.dataCatalog) {
+export default function initAttackBeep(client: Client, catalog: PeopleDataCatalog = services.peopleCatalog) {
     const tag = "attackBeep";
     let enemyGuilds: string[] = [];
     let peopleCache: readonly PersonEntry[] = catalog.getPeopleData() ?? [];

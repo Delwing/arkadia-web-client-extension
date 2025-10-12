@@ -4,7 +4,7 @@ import {findClosestColor} from '../src/Colors';
 import services from '../src/runtime/service-registry';
 import { setCurrentCharacter } from '../src/storage';
 import type { PersonEntry } from '../src/types/people';
-import { DefaultDataCatalog, registerPeopleLoader } from '../src/runtime/data';
+import { PeopleDataCatalog, registerPeopleLoader } from '../src/runtime/data';
 
 const MOCK_PEOPLE: PersonEntry[] = [
   { name: 'Intia', description: 'wojowniczka', guild: 'CKN' },
@@ -17,8 +17,8 @@ class FakeClient {
   addEventListener = jest.fn();
 }
 
-async function createCatalogWithPeople(people: PersonEntry[]): Promise<DefaultDataCatalog> {
-  const catalog = new DefaultDataCatalog();
+async function createCatalogWithPeople(people: PersonEntry[]): Promise<PeopleDataCatalog> {
+  const catalog = new PeopleDataCatalog();
   registerPeopleLoader({
     catalog,
     loader: async () => people,

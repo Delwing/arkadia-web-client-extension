@@ -63,7 +63,7 @@ const runtimeBootstrap = createRuntimeBootstrap({
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const { client, commandDispatcher, dataCatalog, catalogMetadata } = runtimeBootstrap;
+const { client, commandDispatcher, dataCatalog, catalogs, catalogMetadata } = runtimeBootstrap;
 uiStore.getState().setCommandDispatcher(commandDispatcher);
 uiStore.getState().setClientBindings({
     client,
@@ -300,7 +300,7 @@ const mapDataPromise = ensureMapDataset()
     .then((mapData) => {
         mapStatus = 'ready';
 
-        const metadata = dataCatalog.getMapMetadata();
+        const metadata = catalogs.map.getMapMetadata();
         if (metadata?.source) {
             progressMessageOverride = metadata.source === 'cache'
                 ? 'Loaded map data from cache'
