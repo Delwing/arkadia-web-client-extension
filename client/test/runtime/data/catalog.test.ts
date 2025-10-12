@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { DefaultDataCatalog } from '../../../src/runtime/data/default-catalog';
-import type { DataCatalogReadyEvent } from '../../../src/runtime/data';
+import type { DataCatalogReadyEvent, NpcDefinition } from '../../../src/runtime/data';
 import {
     COLORS_DATASET_KEY,
     MAP_DATASET_KEY,
@@ -126,6 +126,49 @@ describe('DefaultDataCatalog', () => {
 
         expect(catalog.get('to-clear')).toBeUndefined();
         expect(catalog.metadataFor('to-clear')).toMatchObject({ key: 'to-clear', status: 'idle' });
+    });
+
+    it('exposes dedicated helpers for core datasets', async () => {
+        const baseCatalog = new DefaultDataCatalog();
+        registerCoreLoaders({
+            catalog: baseCatalog,
+            mapSource: async () => [
+                {
+                    areaName: 'Test',
+                    areaId: 'test',
+                    rooms: [],
+                    labels: [],
+                },
+            ],
+            npcSource: async () => [{ name: 'Npc', loc: 1 }] as NpcDefinition[],
+            colorSource: async () => [
+                {
+                    envId: 'env',
+                    colors: [],
+                },
+            ],
+        });
+
+        await baseCatalog.loadAll();
+
+        expect(baseCatalog.getMapData()).toEqual([
+            {
+                areaName: 'Test',
+                areaId: 'test',
+                rooms: [],
+                labels: [],
+            },
+        ]);
+        expect(baseCatalog.getNpcData()).toEqual([{ name: 'Npc', loc: 1 }]);
+        expect(baseCatalog.getColorPalettes()).toEqual([
+            {
+                envId: 'env',
+                colors: [],
+            },
+        ]);
+        expect(baseCatalog.getMapMetadata()).toMatchObject({ key: MAP_DATASET_KEY, status: 'ready' });
+        expect(baseCatalog.getNpcMetadata()).toMatchObject({ key: NPC_DATASET_KEY, status: 'ready' });
+        expect(baseCatalog.getColorMetadata()).toMatchObject({ key: COLORS_DATASET_KEY, status: 'ready' });
     });
 });
 
