@@ -66,8 +66,25 @@ This document captures progress toward the next-generation runtime described in 
 - Introduced a normalized comparison utility for NPC data and taught the sandbox `MockPort` to ignore redundant storage updates, preventing infinite broadcast loops when catalog sync writes back identical lists. (see `web-client/src/npcData.ts`, `web-client/src/MockPort.ts`).
 - Adjusted the NPC options panel to rely on the normalized dataset helpers so React panels and legacy HUD widgets observe consistent entries without extra manual de-duplication. (see `web-client/src/options/Npc.tsx`).
 
+### Web client runtime bootstrap adoption
+- Updated the web client entry point to construct the runtime exclusively through `createRuntimeBootstrap`, wiring the adapter hand-off, registry-managed catalogs, and transport configuration via `configureArkadiaClient`. (see `web-client/src/main.ts`, `client/src/runtime/createRuntimeBootstrap.ts`).
+- Bound the shared `uiStore` to the bootstrapped runtime by injecting the command dispatcher, client bindings, and dataset metadata immediately after creation so HUD widgets and panels observe a single reactive source. (see `web-client/src/main.ts`, `web-client/src/ui/store.ts`).
+- Normalised NPC dataset synchronisation by awaiting `ensureNpcDataset()` during bootstrap and forwarding the loaded snapshot through the runtime so both the legacy client and UI share the catalog results. (see `web-client/src/main.ts`).
+
 ## Planned next steps
-- Continue migrating remaining runtime modules from the legacy `eventBus` to direct `EventHub` subscriptions so the bridge shim can eventually be removed.
-- Expose the shared data catalog to feature modules and UI consumers, retiring bespoke loaders such as `mapDataLoader` and `npcDataLoader`.
-- Migrate additional UI widgets and React panels to the shared `uiStore`, removing direct DOM manipulation and `window.clientExtension` dependencies.
-- Update runtime bootstrap code to construct transports, routers, and services through the new registry so we can phase out ad-hoc wiring in `web-client/src/main.ts` and `client/src/main.ts`.
+
+### Decouple legacy bootstrap scripts
+- `client/src/main.ts` still instantiates dozens of imperative feature bootstraps directly on the `Client`. Break these into typed runtime modules that subscribe to the event hub and resolve settings/data via the service registry so we can delete the monolithic registration function.
+- Audit the remaining helpers that call `client.sendCommand` or access `client.Map` directly during setup and replace them with command dispatcher usage to align with the unified intent API.
+
+### Expand catalog-driven data flows
+- Replace bespoke NPC/map loader utilities with calls to the shared catalog, eliminating manual `client.sendEvent("npc", ...)` rebroadcasts in `web-client/src/main.ts` once feature modules consume catalog updates themselves.
+- Wire additional datasets (magic, magic keys, herbs) into HUD widgets and React panels through the `uiStore`, ensuring selectors expose catalog metadata parity with maps/NPCs.
+
+### Complete UI store migration
+- Port remaining HUD widgets that still mutate the DOM directly (see `web-client/src/main.ts` imports such as `LampTimer`, `CoverTimer`, `ZaskTimer`) to derived state selectors so they can be tested alongside `uiStore` consumers.
+- Migrate options panels that still depend on ad-hoc storage helpers to the shared settings service and dispatcher, enabling the eventual removal of legacy bootstrap glue in `web-client/src/options`.
+
+### Retire compatibility shims
+- Remove any residual uses of the legacy `eventBus` bridge once feature modules have native event hub subscriptions, allowing the compatibility layer in `client/src/Client.ts` to be deleted.
+- Fold the runtime bootstrap helper into the extension/background entry points so every surface relies on the registry-managed lifecycle rather than bespoke wiring.
