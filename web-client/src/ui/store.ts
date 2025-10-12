@@ -57,6 +57,11 @@ export interface TeamStatus {
     readonly leaderId?: string;
 }
 
+export interface ZaskTimerState {
+    readonly seconds: number;
+    readonly ok: boolean;
+}
+
 interface ObjectsState {
     readonly data: Record<string, RuntimeObjectData>;
     readonly nums: readonly string[];
@@ -236,6 +241,9 @@ export interface UiStoreState {
     nearbyObjects: readonly NearbyObject[];
     teamStatus: TeamStatus;
     attackQueue: readonly string[];
+    lampTimer: number | null;
+    coverTimer: number | null;
+    zaskTimer: ZaskTimerState | null;
     commandDispatcher: CommandDispatcher | null;
     setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
     clientBindings: ClientBindings;
@@ -317,6 +325,9 @@ const baseState = {
     nearbyObjects: [] as NearbyObject[],
     teamStatus: { ...emptyTeamStatus },
     attackQueue: [] as string[],
+    lampTimer: null as number | null,
+    coverTimer: null as number | null,
+    zaskTimer: null as ZaskTimerState | null,
     clientBindings: {} as ClientBindings,
     datasets: {} as Record<string, CatalogDatasetSlice<unknown>>,
 };
@@ -754,6 +765,34 @@ type ClientLike = {
     ) => void;
 };
 
+function normalizeTimerValue(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+    return null;
+}
+
+function parseZaskTimerPayload(detail: unknown): ZaskTimerState | null {
+    if (!detail || typeof detail !== "object") {
+        return null;
+    }
+    const data = detail as { seconds?: unknown; ok?: unknown };
+    if (typeof data.ok !== "boolean" || typeof data.seconds !== "number" || !Number.isFinite(data.seconds)) {
+        return null;
+    }
+    return { seconds: data.seconds, ok: data.ok };
+}
+
+function zaskTimerEquals(a: ZaskTimerState | null, b: ZaskTimerState | null): boolean {
+    if (a === b) {
+        return true;
+    }
+    if (!a || !b) {
+        return false;
+    }
+    return a.seconds === b.seconds && a.ok === b.ok;
+}
+
 export function bindUiStoreToClientEvents(client: ClientLike | null | undefined) {
     if (!client || typeof client.addEventListener !== "function") {
         return;
@@ -802,6 +841,42 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
     cleanups.push(() => {
         if (typeof client.removeEventListener === "function") {
             client.removeEventListener("attackQueueChange", handleAttackQueueChange);
+        }
+    });
+
+    const handleLampTimer: EventListener = (event: Event) => {
+        const seconds = normalizeTimerValue((event as CustomEvent).detail);
+        store.setState((current) => (current.lampTimer === seconds ? {} : { lampTimer: seconds }));
+    };
+
+    client.addEventListener("lampTimer", handleLampTimer);
+    cleanups.push(() => {
+        if (typeof client.removeEventListener === "function") {
+            client.removeEventListener("lampTimer", handleLampTimer);
+        }
+    });
+
+    const handleCoverTimer: EventListener = (event: Event) => {
+        const seconds = normalizeTimerValue((event as CustomEvent).detail);
+        store.setState((current) => (current.coverTimer === seconds ? {} : { coverTimer: seconds }));
+    };
+
+    client.addEventListener("coverTimer", handleCoverTimer);
+    cleanups.push(() => {
+        if (typeof client.removeEventListener === "function") {
+            client.removeEventListener("coverTimer", handleCoverTimer);
+        }
+    });
+
+    const handleZaskTimer: EventListener = (event: Event) => {
+        const next = parseZaskTimerPayload((event as CustomEvent).detail);
+        store.setState((current) => (zaskTimerEquals(current.zaskTimer, next) ? {} : { zaskTimer: next }));
+    };
+
+    client.addEventListener("zaskTimer", handleZaskTimer);
+    cleanups.push(() => {
+        if (typeof client.removeEventListener === "function") {
+            client.removeEventListener("zaskTimer", handleZaskTimer);
         }
     });
 
@@ -861,6 +936,12 @@ export const selectNearbyObjects = (state: UiStoreState) => state.nearbyObjects;
 export const selectTeamStatus = (state: UiStoreState) => state.teamStatus;
 
 export const selectAttackQueue = (state: UiStoreState) => state.attackQueue;
+
+export const selectLampTimer = (state: UiStoreState) => state.lampTimer;
+
+export const selectCoverTimer = (state: UiStoreState) => state.coverTimer;
+
+export const selectZaskTimer = (state: UiStoreState) => state.zaskTimer;
 
 export const selectClientBindings = (state: UiStoreState) => state.clientBindings;
 

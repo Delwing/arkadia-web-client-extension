@@ -1,20 +1,15 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
-
-interface ZaskTimerPayload {
-  seconds: number;
-  ok: boolean;
-}
+import { uiStore, selectZaskTimer } from "./ui/store";
+import type { ZaskTimerState } from "./ui/store";
 
 export default class ZaskTimer {
   private container: HTMLElement | null;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor() {
     this.container = document.getElementById("zask-timer");
-    client.on("zaskTimer", (payload: ZaskTimerPayload | null) => this.update(payload));
-    this.update(null);
+    uiStore.subscribe(selectZaskTimer, (payload) => this.update(payload), { fireImmediately: true });
   }
 
-  private update(payload: ZaskTimerPayload | null) {
+  private update(payload: ZaskTimerState | null) {
     if (!this.container) return;
 
     if (!payload) {

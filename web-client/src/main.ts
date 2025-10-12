@@ -1050,9 +1050,9 @@ document.addEventListener('DOMContentLoaded', () => {
     new MultiBinds(arkadiaClient);
     new CharState(arkadiaClient);
     new CharStateInfo(arkadiaClient);
-    new LampTimer(arkadiaClient);
-    new CoverTimer(arkadiaClient);
-    new ZaskTimer(arkadiaClient);
+    new LampTimer();
+    new CoverTimer();
+    new ZaskTimer();
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
     new AttackMode(arkadiaClient);
