@@ -13,6 +13,9 @@ Always run tests!
 
 In Regexps don't add ever polish letters.
 Prefer creation of HTML elements in HTML files, when possible.
+Do not register `unload`/`beforeunload` handlers solely to clean up store
+subscriptions or other in-memory listeners—the browser tears them down during
+navigation and reloads, so manual cleanup is unnecessary.
 
 ## Data directory
 
