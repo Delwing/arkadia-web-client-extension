@@ -45,6 +45,9 @@ import "./triggerTester"
 import "./triggerFinder"
 import MessageRouter from "@client/src/runtime/transport/message-router";
 import { runtimeEventHub } from "@client/src/runtime/event-hub";
+import services from "@client/src/runtime/service-registry";
+import { COLORS_DATASET_KEY, MAP_DATASET_KEY } from "@client/src/runtime/data";
+import type { DataCatalogEntryStatus } from "@client/src/runtime/data";
 import WebSocketTransportAdapter from "./transport/websocket-adapter";
 import {parseAnsiPatterns} from "./ansiParser";
 import { bindUiStoreToClientEvents } from "./ui/store";
@@ -170,7 +173,46 @@ updateMapLayoutOffsets()
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
 
-progressContainer.style.display = 'none';
+const dataCatalog = services.dataCatalog;
+let mapStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(MAP_DATASET_KEY)?.status ?? 'idle';
+let colorStatus: DataCatalogEntryStatus = dataCatalog.metadataFor(COLORS_DATASET_KEY)?.status ?? 'idle';
+let progressMessageOverride: string | null = null;
+
+function refreshProgressDisplay() {
+    if (mapStatus === 'ready' && colorStatus === 'ready') {
+        progressContainer.style.display = 'none';
+        progressBar.textContent = '';
+        progressBar.style.width = '100%';
+        return;
+    }
+
+    progressContainer.style.display = 'block';
+
+    const messages: string[] = [];
+    if (progressMessageOverride) {
+        messages.push(progressMessageOverride);
+    } else {
+        if (mapStatus === 'error') {
+            messages.push('Failed to load map data');
+        } else if (mapStatus !== 'ready') {
+            messages.push('Loading map data…');
+        }
+
+        if (colorStatus === 'error') {
+            messages.push('Failed to load map colors');
+        } else if (colorStatus !== 'ready') {
+            messages.push('Loading map colors…');
+        }
+    }
+
+    progressBar.textContent = messages.join(' ');
+
+    const loadingStates = [mapStatus, colorStatus].filter((status) => status === 'loading').length;
+    const percent = loadingStates > 0 ? 60 : 100;
+    progressBar.style.width = `${percent}%`;
+}
+
+refreshProgressDisplay();
 
 const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
@@ -228,32 +270,62 @@ outputWrapper.addEventListener('touchend', (e) => {
 
 outputWrapper.addEventListener('dblclick', closeHistoryScrollback);
 
-function updateProgress(p: number, loaded?: number, total?: number) {
-    progressContainer.style.display = 'block';
-    progressBar.style.width = `${p}%`;
-    if (loaded !== undefined && total !== undefined && total > 0) {
-        const loadedKb = Math.floor(loaded / 1024);
-        const totalKb = Math.ceil(total / 1024);
-        progressBar.textContent = `${loadedKb} / ${totalKb} KB`;
-    } else {
-        progressBar.textContent = `${Math.floor(p)}%`;
-    }
+if (mapStatus !== 'ready') {
+    mapStatus = 'loading';
 }
+if (colorStatus !== 'ready') {
+    colorStatus = 'loading';
+}
+refreshProgressDisplay();
 
-// Load map data and colors asynchronously
-let mapDataPromise = loadMapData(updateProgress);
-let colorsPromise = loadColors();
+const mapDataPromise = loadMapData()
+    .then((mapData) => {
+        mapStatus = 'ready';
+
+        const metadata = dataCatalog.metadataFor(MAP_DATASET_KEY);
+        if (metadata?.source) {
+            progressMessageOverride = metadata.source === 'cache'
+                ? 'Loaded map data from cache'
+                : 'Loaded map data';
+            refreshProgressDisplay();
+            progressMessageOverride = null;
+            refreshProgressDisplay();
+        } else {
+            refreshProgressDisplay();
+        }
+
+        return mapData;
+    })
+    .catch((error) => {
+        mapStatus = 'error';
+        progressMessageOverride = error instanceof Error ? error.message : String(error);
+        refreshProgressDisplay();
+        throw error;
+    });
+
+const colorsPromise = loadColors()
+    .then((colors) => {
+        colorStatus = 'ready';
+        refreshProgressDisplay();
+        return colors;
+    })
+    .catch((error) => {
+        colorStatus = 'error';
+        progressMessageOverride = error instanceof Error ? error.message : String(error);
+        refreshProgressDisplay();
+        throw error;
+    });
 
 // When both are loaded, dispatch events
 Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
-        progressContainer.style.display = 'none';
+        refreshProgressDisplay();
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
         (window as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
     })
     .catch(error => {
-        progressContainer.style.display = 'none';
+        refreshProgressDisplay();
         console.error('Failed to load map data or colors:', error);
     });
 
