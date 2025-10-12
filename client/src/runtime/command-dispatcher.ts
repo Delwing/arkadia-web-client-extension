@@ -11,7 +11,7 @@ export type ExtensionCommand =
     | { type: "MULTIBINDS_SAVE"; value: MultibindPortRecord[] };
 
 export interface CommandDispatcher {
-    sendCommand(command: string, options?: { echo?: boolean }): void;
+    sendCommand(command: string, options?: { echo?: boolean }): boolean;
     sendEvent(type: string, payload?: unknown): void;
     sendExtensionCommand(command: ExtensionCommand): boolean;
 }
@@ -19,9 +19,9 @@ export interface CommandDispatcher {
 export class ClientCommandDispatcher implements CommandDispatcher {
     constructor(private readonly client: Client) {}
 
-    sendCommand(command: string, options?: { echo?: boolean }): void {
+    sendCommand(command: string, options?: { echo?: boolean }): boolean {
         const echo = options?.echo ?? true;
-        this.client.sendCommand(command, echo);
+        return this.client.sendCommand(command, echo);
     }
 
     sendEvent(type: string, payload?: unknown): void {

@@ -870,15 +870,14 @@ export default class MobileDirectionButtons {
         button.title = title;
     }
 
-    private sendCommand(command: string, options?: { echo?: boolean }) {
+    private sendCommand(command: string, options?: { echo?: boolean }): boolean {
         if (!command) {
-            return;
+            return false;
         }
         if (this.dispatcher) {
-            this.dispatcher.sendCommand(command, options);
-        } else {
-            this.client.sendCommand(command, options?.echo ?? true);
+            return this.dispatcher.sendCommand(command, options);
         }
+        return this.client.sendCommand(command, options?.echo ?? true);
     }
 
     private sendEvent(event: string, payload?: unknown) {

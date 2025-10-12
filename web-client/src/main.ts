@@ -51,6 +51,7 @@ import {
     ensureNpcDataset,
     uiStore,
 } from "./ui/store";
+import { sendMessageFromInput, type CommandHistoryState } from "./commandInput";
 
 const runtimeBootstrap = createRuntimeBootstrap({
     clientAdapter: arkadiaClient,
@@ -530,7 +531,7 @@ document.addEventListener('keydown', (e) => {
                 commandDispatcher.sendCommand(first);
             }
         } else {
-            client.sendCommand(direction);
+            commandDispatcher.sendCommand(direction);
         }
     }
 });
@@ -880,75 +881,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Command history implementation
-    const commandHistory: string[] = [];
-    let historyIndex = -1;
-    let currentInput = '';
+    const historyState: CommandHistoryState = {
+        history: [],
+        index: -1,
+        currentInput: '',
+    };
 
     function navigateHistory(direction: 'up' | 'down') {
         // Only allow command history navigation if we've received the first GMCP event
         if (!arkadiaClient.hasReceivedFirstGmcp()) return;
-        if (commandHistory.length === 0) return;
+        const entries = historyState.history;
+        if (entries.length === 0) return;
 
         const wasFocused = document.activeElement === messageInput;
 
-        if (historyIndex === -1) {
-            currentInput = messageInput.value;
+        if (historyState.index === -1) {
+            historyState.currentInput = messageInput.value;
             // Skip the just sent command if the input wasn't modified
             if (
                 direction === 'up' &&
-                commandHistory.length > 1 &&
-                messageInput.value === commandHistory[commandHistory.length - 1]
+                entries.length > 1 &&
+                messageInput.value === entries[entries.length - 1]
             ) {
-                historyIndex = 1;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                historyState.index = 1;
+                messageInput.value = entries[entries.length - 1 - historyState.index];
                 if (wasFocused) messageInput.select();
                 return;
             }
         }
 
         if (direction === 'up') {
-            if (historyIndex < commandHistory.length - 1) {
-                historyIndex++;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+            if (historyState.index < entries.length - 1) {
+                historyState.index += 1;
+                messageInput.value = entries[entries.length - 1 - historyState.index];
                 if (wasFocused) messageInput.select();
             }
         } else {
-            if (historyIndex > 0) {
-                historyIndex--;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+            if (historyState.index > 0) {
+                historyState.index -= 1;
+                messageInput.value = entries[entries.length - 1 - historyState.index];
                 if (wasFocused) messageInput.select();
-            } else if (historyIndex === 0) {
-                historyIndex = -1;
-                messageInput.value = currentInput;
+            } else if (historyState.index === 0) {
+                historyState.index = -1;
+                messageInput.value = historyState.currentInput;
                 if (wasFocused) messageInput.select();
             }
         }
     }
 
     function sendMessage(focus = true) {
-        const message = messageInput.value.trim();
-        if (message) {
-            // Only add command to history if we've received the first GMCP event
-            if (arkadiaClient.hasReceivedFirstGmcp()) {
-                // Add command to history if it's different from the last one
-                if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== message) {
-                    commandHistory.push(message);
-                }
-                // Reset history index
-                historyIndex = -1;
-                currentInput = '';
-
-                client.sendCommand(message);
-                if (focus) messageInput.select();
-            } else {
-                // If we haven't received the first GMCP event yet, clear the input field
-                client.sendCommand(message);
-                messageInput.value = '';
-            }
-        } else {
-            client.sendCommand('');
-            if (focus) messageInput.select();
-        }
+        sendMessageFromInput(
+            messageInput,
+            {
+                dispatcher: commandDispatcher,
+                arkadiaClient,
+                history: historyState,
+            },
+            focus,
+        );
     }
 
     sendButton.addEventListener('click', () => sendMessage(false));

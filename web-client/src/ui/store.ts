@@ -248,7 +248,7 @@ export interface UiStoreState {
     setCommandDispatcher: (dispatcher: CommandDispatcher | null) => void;
     clientBindings: ClientBindings;
     setClientBindings: (bindings: ClientBindings) => void;
-    sendCommand: (command: string, options?: { echo?: boolean }) => void;
+    sendCommand: (command: string, options?: { echo?: boolean }) => boolean;
     sendEvent: (event: string, payload?: unknown) => void;
     sendExtensionCommand: (command: ExtensionCommand) => boolean;
     dispatch: (intent: UiIntent) => Promise<void>;
@@ -343,7 +343,7 @@ const store = createStore(
             if (!dispatcher) {
                 throw new Error("Command dispatcher not configured");
             }
-            dispatcher.sendCommand(command, options);
+            return dispatcher.sendCommand(command, options);
         },
         sendEvent: (event, payload) => {
             const dispatcher = get().commandDispatcher;

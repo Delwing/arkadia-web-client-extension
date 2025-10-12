@@ -4,7 +4,7 @@ describe('Recorder playback', () => {
   test('replayRecordedMessagesTimed echoes outgoing commands', () => {
     const hooks = {
       processIncomingData: jest.fn(),
-      sendCommand: jest.fn(),
+      sendCommand: jest.fn(() => true),
       emit: jest.fn(),
     };
     const recorder = new Recorder(hooks as any);

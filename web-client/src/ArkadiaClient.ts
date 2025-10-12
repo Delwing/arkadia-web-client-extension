@@ -292,8 +292,9 @@ class ArkadiaClient implements ClientAdapter {
         this.sendGmcp('client.conf.set', data);
     }
 
-    sendCommand(command: string, echo: boolean = true): void {
+    sendCommand(command: string, echo: boolean = true): boolean {
         this.send(command, echo);
+        return true;
     }
 
     output(text?: string, type?: string) {
