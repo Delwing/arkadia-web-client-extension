@@ -1,9 +1,21 @@
+import { Subject } from 'rxjs';
 import PackageHelper from '../src/PackageHelper';
 import { colorStringInLine, findClosestColor } from '../src/Colors';
+import type { DataCatalogReadyEvent, NpcDefinition } from '../src/runtime/data';
 
 describe('PackageHelper', () => {
   let helper: any;
   let client: any;
+  let catalog: any;
+  let npcReady$: Subject<DataCatalogReadyEvent<readonly NpcDefinition[]>>;
+
+  const emitNpcData = (defs: readonly NpcDefinition[]) => {
+    npcReady$.next({
+      key: 'npc',
+      data: defs,
+      metadata: { key: 'npc', status: 'ready' },
+    } as DataCatalogReadyEvent<readonly NpcDefinition[]>);
+  };
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
@@ -36,9 +48,29 @@ describe('PackageHelper', () => {
       FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
       sendCommand: jest.fn(),
     };
-    helper = new PackageHelper(client);
+    npcReady$ = new Subject<DataCatalogReadyEvent<readonly NpcDefinition[]>>();
+    catalog = {
+      readyForNpc$: jest.fn(() => npcReady$.asObservable()),
+      getNpcData: jest.fn(() => undefined),
+    };
+    helper = new PackageHelper(client, catalog);
     client.Triggers.registerTrigger.mockClear();
     client.Triggers.registerMultilineTrigger.mockClear();
+  });
+
+  test('updates NPC data and leads to current package when catalog emits event', () => {
+    helper.currentPackage = { name: 'Bob' } as any;
+    helper['packages'] = [{ name: 'Bob', time: undefined, distance: 7 }];
+    const leadSpy = jest.spyOn(helper as any, 'leadToPackage');
+
+    emitNpcData([
+      { name: 'Bob', loc: 123 },
+    ]);
+
+    expect(helper.npc).toEqual({ Bob: 123 });
+    expect(helper['packages'][0].distance).toBe(7);
+    expect(leadSpy).toHaveBeenCalledWith('Bob');
+    expect(client.addEventListener).not.toHaveBeenCalledWith('npc', expect.any(Function));
   });
 
   test('constructor initializes helper by default', () => {
@@ -63,7 +95,12 @@ describe('PackageHelper', () => {
       FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
       sendCommand: jest.fn(),
     };
-    const h = new PackageHelper(c as any);
+    const ready = new Subject<DataCatalogReadyEvent<readonly NpcDefinition[]>>();
+    const cat = {
+      readyForNpc$: jest.fn(() => ready.asObservable()),
+      getNpcData: jest.fn(() => undefined),
+    };
+    const h = new PackageHelper(c as any, cat as any);
     expect(c.Triggers.registerTrigger).toHaveBeenCalled();
     expect(h.enabled).toBe(true);
   });
@@ -152,6 +189,20 @@ describe('PackageHelper', () => {
     expect(registerSpy).toHaveBeenCalled();
   });
 
+  test('label trigger highlights known NPCs from catalog data', () => {
+    helper.init();
+    emitNpcData([{ name: 'Bob', loc: 123 }]);
+    const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
+    const raw = 'Wypisano na niej duzymi literami: Bob';
+    const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
+    const match = raw.match(regex)!;
+
+    const result = trigger(raw, '', match);
+
+    const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#63ba41'));
+    expect(result).toBe(expectedColor);
+  });
+
   test('label trigger does not overwrite current package when name matches', () => {
     helper.init();
     helper.currentPackage = { name: 'Bob', time: '5' } as any;
@@ -198,8 +249,10 @@ describe('PackageHelper', () => {
     client.contentWidth = 50;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
 
-    helper.npc['Bob'] = 123;
-    helper.npc['Tom'] = 456;
+    emitNpcData([
+      { name: 'Bob', loc: 123 },
+      { name: 'Tom', loc: 456 },
+    ]);
     const cb = helper['packageTableCallback']();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
@@ -228,8 +281,10 @@ describe('PackageHelper', () => {
     const originalUA = navigator.userAgent;
     Object.defineProperty(navigator, 'userAgent', { value: 'Android', configurable: true });
 
-    helper.npc['Bob'] = 123;
-    helper.npc['Tom'] = 456;
+    emitNpcData([
+      { name: 'Bob', loc: 123 },
+      { name: 'Tom', loc: 456 },
+    ]);
     const cb = helper['packageTableCallback']();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
@@ -257,8 +312,10 @@ describe('PackageHelper', () => {
     client.contentWidth = 120;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
 
-    helper.npc['Borgaf Kriegmann'] = 123;
-    helper.npc['Georg Blaskovitz'] = 456;
+    emitNpcData([
+      { name: 'Borgaf Kriegmann', loc: 123 },
+      { name: 'Georg Blaskovitz', loc: 456 },
+    ]);
     const cb = helper['packageTableCallback']();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
@@ -313,7 +370,9 @@ describe('PackageHelper', () => {
   test('packageTableCallback keeps custom borders aligned', () => {
     client.contentWidth = 140;
     client.OutputHandler.makeClickable.mockImplementation(l => l);
-    helper.npc['Borgaf Kriegmann'] = 123;
+    emitNpcData([
+      { name: 'Borgaf Kriegmann', loc: 123 },
+    ]);
 
     const cb = helper['packageTableCallback']();
     const raw =
