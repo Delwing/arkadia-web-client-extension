@@ -4,7 +4,8 @@ export {
     registerCoreLoaders,
     createJsonLoader,
 } from './core-loaders';
-export { MAP_DATASET_KEY, NPC_DATASET_KEY, COLORS_DATASET_KEY } from './dataset-keys';
+export { MAP_DATASET_KEY, NPC_DATASET_KEY, COLORS_DATASET_KEY, PEOPLE_DATASET_KEY } from './dataset-keys';
+export { registerPeopleLoader, createPeopleLoader } from './people-loader';
 export type { DataSource } from './core-loaders';
 export { IndexedDbPersistenceAdapter } from './persistence/indexeddb-adapter';
 export { LocalStoragePersistenceAdapter } from './persistence/local-storage-adapter';

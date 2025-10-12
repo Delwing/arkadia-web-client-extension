@@ -1,4 +1,4 @@
-import { DefaultDataCatalog, registerCoreLoaders } from './data';
+import { DefaultDataCatalog, registerCoreLoaders, registerPeopleLoader } from './data';
 import type { SettingsService } from './settings/settings-service';
 import { LocalStorageSettingsService } from './settings/local-storage-service';
 
@@ -10,6 +10,7 @@ class ServiceRegistry {
         this.settings = new LocalStorageSettingsService();
         this.catalog = new DefaultDataCatalog();
         registerCoreLoaders({ catalog: this.catalog });
+        registerPeopleLoader({ catalog: this.catalog });
     }
 
     get dataCatalog(): DefaultDataCatalog {
