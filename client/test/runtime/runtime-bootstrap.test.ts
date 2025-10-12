@@ -57,7 +57,8 @@ describe("createRuntimeBootstrap", () => {
         expect(bootstrap.catalogMetadata.magicKeys).toBeUndefined();
         expect(bootstrap.catalogMetadata.herbs).toBeUndefined();
 
-        bootstrap.commandDispatcher.sendCommand("look", { echo: false });
+        const result = bootstrap.commandDispatcher.sendCommand("look", { echo: false });
+        expect(result).toBe(true);
         expect(clientAdapter.send).toHaveBeenCalledWith("look", false);
 
         expect(registry.transport).toBe(transport);

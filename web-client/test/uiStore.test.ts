@@ -8,7 +8,7 @@ describe("ui store command dispatcher", () => {
 
     test("forwards extension commands when dispatcher configured", async () => {
         const dispatcher: CommandDispatcher = {
-            sendCommand: jest.fn(),
+            sendCommand: jest.fn(() => true),
             sendEvent: jest.fn(),
             sendExtensionCommand: jest.fn<ReturnType<CommandDispatcher["sendExtensionCommand"]>, [ExtensionCommand]>(() => true),
         };

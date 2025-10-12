@@ -161,7 +161,8 @@ test('createButton creates button attached to panel', () => {
 
 test('sendCommand dispatches event and splits commands', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('foo#bar');
+  const result = client.sendCommand('foo#bar');
+  expect(result).toBe(true);
   expect(parseCommand).toHaveBeenCalledWith('foo#bar');
   expect(parseCommand).toHaveBeenCalledWith('parsed:foo');
   expect(parseCommand).toHaveBeenCalledWith('bar');
@@ -171,7 +172,8 @@ test('sendCommand dispatches event and splits commands', () => {
 
 test('sendCommand allows empty command', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('');
+  const result = client.sendCommand('');
+  expect(result).toBe(true);
   expect(parseCommand).toHaveBeenCalledWith('');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true);
 });
@@ -179,7 +181,8 @@ test('sendCommand allows empty command', () => {
 test('sendCommand splits commands returned by parseCommand', () => {
   parseCommand.mockImplementationOnce(() => 'foo;bar');
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('e');
+  const result = client.sendCommand('e');
+  expect(result).toBe(true);
   expect(parseCommand).toHaveBeenCalledWith('e');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true);
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true);
@@ -189,7 +192,8 @@ test('sendCommand prints echo commands locally', () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const printSpy = jest.spyOn(client, 'print').mockImplementation();
-  client.sendCommand('echo <red> text');
+  const result = client.sendCommand('echo <red> text');
+  expect(result).toBe(true);
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
   expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
 });

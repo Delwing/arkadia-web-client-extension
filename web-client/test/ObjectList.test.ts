@@ -19,7 +19,7 @@ function setAttackQueue(queue: string[]) {
 
 function createDispatcher(): CommandDispatcher {
   return {
-    sendCommand: jest.fn(),
+    sendCommand: jest.fn(() => true),
     sendEvent: jest.fn(),
     sendExtensionCommand: jest.fn().mockReturnValue(false),
   };
