@@ -3,6 +3,7 @@ const path = require('path');
 
 const moduleNameMapper = {
   '^@client/(.*)$': '<rootDir>/../client/$1',
+  '\\.(?:wasm)\\?url$': '<rootDir>/../client/test/__mocks__/wasmUrlMock.js',
 };
 
 const candidateZustandDirs = [
