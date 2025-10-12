@@ -1,5 +1,5 @@
 import Client from "./Client";
-import { EventHub, EventHubSubscription, RuntimeEvents, runtimeEventHub } from "./runtime/event-hub";
+import { EventHub, RuntimeEvents, runtimeEventHub } from "./runtime/event-hub";
 
 interface ObjectData {
     attack_num: boolean | number
@@ -34,7 +34,6 @@ interface AccumulatedObjectData {
 
 export default class TeamManager {
     private client: Client;
-    private subscriptions: EventHubSubscription[] = [];
     private members: Set<string> = new Set();
     private joined = false;
     private leader?: string;
@@ -53,38 +52,28 @@ export default class TeamManager {
     constructor(client: Client, eventHub: EventHub<RuntimeEvents> = runtimeEventHub) {
         this.client = client;
 
-        this.subscriptions.push(
-            eventHub.on('gmcp', ({ path, value }) => {
-                switch (path) {
-                    case 'objects.data':
-                        if (value && typeof value === 'object') {
-                            this.handleObjectsData(value as Record<string, AccumulatedObjectData>);
-                        }
-                        break;
-                    case 'objects.nums':
-                        this.handleObjectsNums(value);
-                        break;
-                    case 'char.info':
-                        if (value && typeof value === 'object' && 'object_num' in (value as any)) {
-                            this.playerNum = String((value as any).object_num);
-                        }
-                        break;
-                    case 'room.info':
-                        this.handleRoomInfo(value);
-                        break;
-                    default:
-                        break;
-                }
-            })
-        );
+        eventHub.on('gmcp.objects.data', value => {
+            if (value && typeof value === 'object') {
+                this.handleObjectsData(value as Record<string, AccumulatedObjectData>);
+            }
+        });
+
+        eventHub.on('gmcp.objects.nums', value => {
+            this.handleObjectsNums(value);
+        });
+
+        eventHub.on('gmcp.char.info', value => {
+            if (value && typeof value === 'object' && 'object_num' in (value as any)) {
+                this.playerNum = String((value as any).object_num);
+            }
+        });
+
+        eventHub.on('gmcp.room.info', value => {
+            this.handleRoomInfo(value);
+        });
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
         }
-    }
-
-    dispose() {
-        this.subscriptions.forEach(subscription => subscription.unsubscribe());
-        this.subscriptions = [];
     }
 
     private handleObjectsData(data: Record<string, AccumulatedObjectData>) {

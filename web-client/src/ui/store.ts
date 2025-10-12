@@ -54,17 +54,27 @@ const baseState = {
     uiPreferences: { ...defaultPreferences },
 };
 
-const initialState: UiStoreState = {
-    ...baseState,
-    dispatch: handleUiIntent,
-};
-
 const store = createStore(
     subscribeWithSelector<UiStoreState>(() => ({
         ...baseState,
         dispatch: handleUiIntent,
     }))
 );
+
+type StoreWithSelector = typeof store & {
+    subscribe: typeof store.subscribe & {
+        <Slice>(
+            selector: (state: UiStoreState) => Slice,
+            listener: (selectedState: Slice, previousSelectedState: Slice) => void,
+            options?: {
+                equalityFn?: (a: Slice, b: Slice) => boolean;
+                fireImmediately?: boolean;
+            },
+        ): () => void;
+    };
+};
+
+const storeWithSelector = store as StoreWithSelector;
 
 function updatePreferencesFromSnapshot(snapshot: SettingsSnapshot) {
     const next: Partial<UiPreferences> = {};
@@ -185,7 +195,7 @@ export function bindUiStoreToClientEvents(client: ClientLike | null | undefined)
     };
 }
 
-export const uiStore = store;
+export const uiStore = storeWithSelector;
 
 export function resetUiStoreForTesting() {
     uiSettingsCleanup?.();
@@ -199,10 +209,10 @@ export function resetUiStoreForTesting() {
 }
 
 export function useUiStore<T>(selector: (state: UiStoreState) => T): T {
-    return useStore(store, selector);
+    return useStore(storeWithSelector, selector);
 }
 
 export function useUiDispatch() {
-    return useStore(store, (state) => state.dispatch);
+    return useStore(storeWithSelector, (state) => state.dispatch);
 }
 

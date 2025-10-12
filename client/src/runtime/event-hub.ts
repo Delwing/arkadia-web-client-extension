@@ -34,7 +34,7 @@ export class EventHub<Events extends Record<string, any>> {
     }
 }
 
-export interface RuntimeEvents {
+export type RuntimeEvents = {
     message: string;
     command: string;
     gmcp: { path: string; value: unknown };
@@ -42,7 +42,7 @@ export interface RuntimeEvents {
     outputLine: { text: string; rawText: string; type: string; index: number };
     outputFlushed: { count: number };
     lineSent: { type: string };
-}
+} & Record<`gmcp.${string}`, unknown>;
 
 export const runtimeEventHub = new EventHub<RuntimeEvents>();
 

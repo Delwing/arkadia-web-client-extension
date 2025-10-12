@@ -149,8 +149,11 @@ export default class MessageRouter {
             const parsed = JSON.parse(payload);
             if (type === "gmcp_msgs") {
                 const text = atob(parsed.text);
+                const enriched = { ...parsed, text };
                 this.messageBuffer.push({ text, type: parsed.type, gmcp: true });
-                this.eventHub.emit("gmcp", { path: type, value: { ...parsed, text } });
+                const eventName = `gmcp.${type}` as keyof RuntimeEvents;
+                this.eventHub.emit(eventName, enriched as RuntimeEvents[typeof eventName]);
+                this.eventHub.emit("gmcp", { path: type, value: enriched });
                 return;
             }
 
@@ -158,6 +161,8 @@ export default class MessageRouter {
                 this.receivedFirstGmcp = true;
             }
 
+            const eventName = `gmcp.${type}` as keyof RuntimeEvents;
+            this.eventHub.emit(eventName, parsed as RuntimeEvents[typeof eventName]);
             this.eventHub.emit("gmcp", { path: type, value: parsed });
         } catch (error) {
             console.error("Error parsing GMCP JSON:", (error as Error).message);
