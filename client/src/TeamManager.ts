@@ -1,4 +1,5 @@
 import Client from "./Client";
+import { EventHub, EventHubSubscription, RuntimeEvents, runtimeEventHub } from "./runtime/event-hub";
 
 interface ObjectData {
     attack_num: boolean | number
@@ -33,6 +34,7 @@ interface AccumulatedObjectData {
 
 export default class TeamManager {
     private client: Client;
+    private subscriptions: EventHubSubscription[] = [];
     private members: Set<string> = new Set();
     private joined = false;
     private leader?: string;
@@ -48,23 +50,41 @@ export default class TeamManager {
     private missingEnemyCounts: Map<string, number> = new Map();
     private currentLocationSignature?: string;
 
-    constructor(client: Client) {
+    constructor(client: Client, eventHub: EventHub<RuntimeEvents> = runtimeEventHub) {
         this.client = client;
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.handleObjectsData(e.detail);
-        });
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
-            this.handleObjectsNums(e.detail);
-        });
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            this.playerNum = String(e.detail.object_num);
-        });
-        this.client.addEventListener('gmcp.room.info', (e: CustomEvent) => {
-            this.handleRoomInfo(e.detail);
-        });
+
+        this.subscriptions.push(
+            eventHub.on('gmcp', ({ path, value }) => {
+                switch (path) {
+                    case 'objects.data':
+                        if (value && typeof value === 'object') {
+                            this.handleObjectsData(value as Record<string, AccumulatedObjectData>);
+                        }
+                        break;
+                    case 'objects.nums':
+                        this.handleObjectsNums(value);
+                        break;
+                    case 'char.info':
+                        if (value && typeof value === 'object' && 'object_num' in (value as any)) {
+                            this.playerNum = String((value as any).object_num);
+                        }
+                        break;
+                    case 'room.info':
+                        this.handleRoomInfo(value);
+                        break;
+                    default:
+                        break;
+                }
+            })
+        );
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
         }
+    }
+
+    dispose() {
+        this.subscriptions.forEach(subscription => subscription.unsubscribe());
+        this.subscriptions = [];
     }
 
     private handleObjectsData(data: Record<string, AccumulatedObjectData>) {
