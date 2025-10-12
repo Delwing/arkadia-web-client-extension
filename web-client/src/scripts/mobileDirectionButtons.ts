@@ -119,10 +119,9 @@ export default class MobileDirectionButtons {
             this.teamStatus = status;
             this.applyTeamStatus(status);
         });
-        window.addEventListener('unload', () => {
-            this.unsubscribeObjects?.();
-            this.unsubscribeTeam?.();
-        }, { once: true });
+        // Subscriptions are allowed to live for the lifetime of the page; the
+        // host runtime resets on navigation, so there is nothing to clean up on
+        // unload.
 
         loadMobileButtonSettings().then(settings => {
             this.allSettings = settings;

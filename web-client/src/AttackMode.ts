@@ -20,9 +20,9 @@ export default class AttackMode {
         this.updateVisibility();
       }
     });
-    window.addEventListener('unload', () => {
-      this.unsubscribeTeam?.();
-    }, { once: true });
+    // We intentionally keep the subscription active until the page unloads; the
+    // browser tears down the runtime on navigation, so there is no need to
+    // manually unsubscribe.
     if (this.container) {
       this.container.addEventListener("click", () => {
         this.index = (this.index + 1) % MODES.length;
