@@ -1,6 +1,7 @@
 import TeamManager from '../src/TeamManager';
 import Triggers from '../src/Triggers';
 import { EventEmitter } from 'events';
+import { EventHub, RuntimeEvents } from '../src/runtime/event-hub';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -21,22 +22,32 @@ class FakeClient {
 describe('TeamManager', () => {
   let client: FakeClient;
   let manager: TeamManager;
+  let eventHub: EventHub<RuntimeEvents>;
+
+  const emitGmcp = (path: string, value: unknown) => {
+    eventHub.emit('gmcp', { path, value });
+  };
 
   beforeEach(() => {
     client = new FakeClient();
-    manager = new TeamManager((client as unknown) as any);
-    client.sendEvent('gmcp.char.info', { object_num: '99' });
+    eventHub = new EventHub<RuntimeEvents>();
+    manager = new TeamManager((client as unknown) as any, eventHub);
+    emitGmcp('char.info', { object_num: '99' });
+  });
+
+  afterEach(() => {
+    manager.dispose();
   });
 
   test('adds member from gmcp objects', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Pablo', living: true, team: true },
     });
     expect(manager.isInTeam('Pablo')).toBe(true);
   });
 
   test('removes member on leave message', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Vesper', living: true, team: true },
     });
     client.Triggers.parseLine('Vesper porzuca twoja druzyne.', '');
@@ -44,7 +55,7 @@ describe('TeamManager', () => {
   });
 
   test('clears team on clear message', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Bob', living: true, team: true },
     });
     client.Triggers.parseLine('Nie jestes w zadnej druzynie.', '');
@@ -60,7 +71,7 @@ describe('TeamManager', () => {
   });
 
   test('returns leader id when available', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
     });
     expect(manager.getLeaderId()).toBe('5');
@@ -69,7 +80,7 @@ describe('TeamManager', () => {
   test('emits event when leader attacks different target', () => {
     const callback = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', callback);
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': {
         desc: 'Eamon',
         living: true,
@@ -85,7 +96,7 @@ describe('TeamManager', () => {
   test('emits event when leader attacks and avatar does not', () => {
     const callback = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', callback);
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': {
         desc: 'Eamon',
         living: true,
@@ -103,7 +114,7 @@ describe('TeamManager', () => {
     const avatar = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', noAvatar);
     client.addEventListener('teamLeaderTargetAvatar', avatar);
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': {
         desc: 'Eamon',
         living: true,
@@ -128,23 +139,23 @@ describe('TeamManager', () => {
       attack_num: '3',
     };
     const player = { desc: 'You', living: true, team: true, attack_num: '2' };
-    client.sendEvent('gmcp.objects.data', { '1': data, '99': player });
-    client.sendEvent('gmcp.objects.data', { '1': data, '99': player });
+    emitGmcp('objects.data', { '1': data, '99': player });
+    emitGmcp('objects.data', { '1': data, '99': player });
     expect(callback).toHaveBeenCalledTimes(2);
   });
 
   test('emits event again after target changes', () => {
     const callback = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', callback);
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
     });
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '2' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
     });
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
     });
@@ -154,11 +165,11 @@ describe('TeamManager', () => {
   test('emits event again when leader number changes', () => {
     const callback = jest.fn();
     client.addEventListener('teamLeaderTargetNoAvatar', callback);
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
     });
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '2': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
     });
@@ -166,7 +177,7 @@ describe('TeamManager', () => {
   });
 
   test('stores attack and defense target ids', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '1': { desc: 'Bob', living: true, team: true, attack_target: true },
       '2': { desc: 'Alice', living: true, team: true, defense_target: true },
     });
@@ -175,7 +186,7 @@ describe('TeamManager', () => {
   });
 
   test('returns avatar attack target id', () => {
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '99': { desc: 'You', living: true, team: true, attack_num: '4' },
     });
     expect(manager.getAvatarAttackTargetId()).toBe('4');
@@ -192,40 +203,40 @@ describe('TeamManager', () => {
   test('removes enemies missing from gmcp objects nums after repeated updates', () => {
     manager.addEnemyToQueue('5');
     manager.addEnemyToQueue('6');
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
+    emitGmcp('objects.nums', { nums: ['6'] });
     expect(manager.getEnemyQueue()).toEqual(['5', '6']);
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
+    emitGmcp('objects.nums', { nums: ['6'] });
     expect(manager.getEnemyQueue()).toEqual(['6']);
   });
 
   test('restores pending removal when enemy reappears in gmcp objects nums', () => {
     manager.addEnemyToQueue('5');
     manager.addEnemyToQueue('6');
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
-    client.sendEvent('gmcp.objects.nums', { nums: ['5', '6'] });
+    emitGmcp('objects.nums', { nums: ['6'] });
+    emitGmcp('objects.nums', { nums: ['5', '6'] });
     expect(manager.getEnemyQueue()).toEqual(['5', '6']);
   });
 
   test('clears attack queue on new location', () => {
     manager.addEnemyToQueue('7');
-    client.sendEvent('gmcp.room.info', { num: 123 });
+    emitGmcp('room.info', { num: 123 });
     expect(manager.getEnemyQueue()).toEqual([]);
   });
 
   test('removes enemy from queue when marked as not living', () => {
     manager.addEnemyToQueue('8');
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
+    emitGmcp('objects.data', { '8': { living: false } });
     expect(manager.getEnemyQueue()).toEqual([]);
   });
 
   test('notifies about next enemy in queue when the current one dies', () => {
     manager.addEnemyToQueue('8');
     manager.addEnemyToQueue('9');
-    client.sendEvent('gmcp.objects.data', {
+    emitGmcp('objects.data', {
       '9': { desc: 'Drugi przeciwnik', living: true },
     });
     client.println.mockClear();
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
+    emitGmcp('objects.data', { '8': { living: false } });
     expect(client.println).toHaveBeenCalledWith(
       '<span style="color:orange">/nn zeby zaatakowac nastepny cel: Drugi przeciwnik</span>',
     );
@@ -235,10 +246,28 @@ describe('TeamManager', () => {
     manager.addEnemyToQueue('8');
     manager.addEnemyToQueue('10');
     client.println.mockClear();
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
+    emitGmcp('objects.data', { '8': { living: false } });
     expect(client.println).toHaveBeenCalledWith(
       '<span style="color:orange">/nn zeby zaatakowac nastepny cel: ob_10</span>',
     );
+  });
+
+  test('dispose removes gmcp listeners', () => {
+    const callback = jest.fn();
+    client.addEventListener('teamChange', callback);
+
+    emitGmcp('objects.data', {
+      '1': { desc: 'Alice', living: true, team: true },
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    manager.dispose();
+    emitGmcp('objects.data', {
+      '2': { desc: 'Bob', living: true, team: true },
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 
 });

@@ -116,6 +116,7 @@ export default class Client {
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
         this.addEventListener('uiSettings', () => this.updateContentWidth())
+        window.addEventListener('beforeunload', () => this.dispose())
 
         Object.values(this.sounds).forEach((sound) => sound.load())
 
@@ -591,5 +592,9 @@ export default class Client {
             this.contentWidth = Math.floor(width / charWidth)
             this.sendEvent('contentWidth', this.contentWidth)
         }
+    }
+
+    dispose() {
+        this.TeamManager.dispose?.()
     }
 }
