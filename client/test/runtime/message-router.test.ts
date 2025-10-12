@@ -100,6 +100,37 @@ describe("MessageRouter runtime event hub integration", () => {
         eventBus.off("output-sent", outputSentListener);
     });
 
+    test("decodes GMCP message payloads with lowercase base64 characters", () => {
+        const outputLines: RuntimeEvents["outputLine"][] = [];
+        const gmcpMessages: RuntimeEvents["gmcpMessage"][] = [];
+        const outputSubscription = eventHub.on("outputLine", (payload) => {
+            outputLines.push(payload);
+        });
+        const gmcpSubscription = eventHub.on("gmcpMessage", (payload) => {
+            gmcpMessages.push(payload);
+        });
+
+        processFrame(createGmcpMessageFrame("room.info", "foghorn"));
+
+        expect(outputLines).toEqual([
+            {
+                text: "foghorn",
+                rawText: "foghorn",
+                type: "room.info",
+                index: 0,
+            },
+        ]);
+        expect(gmcpMessages).toEqual([
+            {
+                type: "room.info",
+                text: "foghorn",
+            },
+        ]);
+
+        outputSubscription.unsubscribe();
+        gmcpSubscription.unsubscribe();
+    });
+
     test("emits sanitized text messages", () => {
         const messages: string[] = [];
         const subscription = eventHub.on("message", (payload) => {
