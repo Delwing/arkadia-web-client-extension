@@ -84,6 +84,11 @@ graph TD
   to transport events, and issues outgoing commands. Instead of touching
   `window`, it receives dependencies through the constructor (transport,
   services, event hub).
+- **Module loader** composes feature modules during bootstrap. A thin registry
+  (`registerModules`) receives a `FeatureModuleContext` exposing the command
+  dispatcher, service registry catalogs, and typed event hub so each module can
+  self-register its listeners without mutating globals or duplicating bootstrap
+  wiring.
 - **EventHub** replaces the legacy event bus + `window` mirroring. It offers
   typed topics (e.g., `gmcp.char.vitals`, `output.chunk`, `settings.updated`).
   Both runtime modules and UI listeners subscribe through the same API, keeping

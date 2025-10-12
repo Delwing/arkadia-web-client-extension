@@ -71,11 +71,17 @@ This document captures progress toward the next-generation runtime described in 
 - Bound the shared `uiStore` to the bootstrapped runtime by injecting the command dispatcher, client bindings, and dataset metadata immediately after creation so HUD widgets and panels observe a single reactive source. (see `web-client/src/main.ts`, `web-client/src/ui/store.ts`).
 - Normalised NPC dataset synchronisation by awaiting `ensureNpcDataset()` during bootstrap and forwarding the loaded snapshot through the runtime so both the legacy client and UI share the catalog results. (see `web-client/src/main.ts`).
 
+### Legacy bootstrap modularisation
+- Extracted a `FeatureModule` contract and `FeatureModuleContext` that surfaces the command dispatcher, service registry catalogs, and typed event hub so legacy bootstrap logic can be encapsulated behind modular entry points instead of living directly in `client/src/main.ts`. (see `client/src/runtime/feature-module.ts`).
+- Introduced a `createModuleLoader` helper with `registerLegacyModules` default wiring to register the existing movement, combat, inventory, community, and extension bootstrap scripts as discrete modules while keeping the legacy feature behaviours intact. (see `client/src/runtime/modules/index.ts`, `client/src/runtime/modules/legacy/*.ts`).
+- Taught `createRuntimeBootstrap` to accept an optional `registerModules` hook (defaulting to the legacy loader) so alternative module registries can be composed in tests and future surfaces. Jest coverage asserts the integration path registers triggers, aliases, and listeners during bootstrap. (see `client/src/runtime/createRuntimeBootstrap.ts`, `client/test/runtime/modules/legacy-modules.test.ts`).
+
 ## Planned next steps
 
-### Decouple legacy bootstrap scripts
-- `client/src/main.ts` still instantiates dozens of imperative feature bootstraps directly on the `Client`. Break these into typed runtime modules that subscribe to the event hub and resolve settings/data via the service registry so we can delete the monolithic registration function.
-- Audit the remaining helpers that call `client.sendCommand` or access `client.Map` directly during setup and replace them with command dispatcher usage to align with the unified intent API.
+### Modularise remaining legacy features
+- Incrementally port each legacy feature bootstrap (e.g., timers, HUD toggles, sandbox helpers) into dedicated `FeatureModule`s that request dependencies through `FeatureModuleContext` instead of mutating the client singleton directly.
+- Provide typed adapters for legacy helpers that still depend on `client.Map`, `client.sendCommand`, or raw GMCP payloads so modules can publish derived state through the event hub.
+- Remove the ad-hoc bootstrap glue in `client/src/main.ts` once all features are hosted behind the module loader.
 
 ### Expand catalog-driven data flows
 - Replace bespoke NPC/map loader utilities with calls to the shared catalog, eliminating manual `client.sendEvent("npc", ...)` rebroadcasts in `web-client/src/main.ts` once feature modules consume catalog updates themselves.
