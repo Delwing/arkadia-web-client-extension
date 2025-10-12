@@ -1,5 +1,7 @@
 import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
+import { runtimeEventHub } from "@client/src/runtime/event-hub";
+import type { RuntimeEvents } from "@client/src/runtime/event-hub";
 
 // Disable real network and echo commands locally
 arkadiaClient.connect = () => {
@@ -32,6 +34,12 @@ window.addEventListener('load', () => {
     const objectNums = new Set<number>();
     const hps = new Map<number, number>();
 
+    function emitGmcp(path: string, value: unknown) {
+        client?.sendEvent?.(`gmcp.${path}`, value);
+        runtimeEventHub.emit(`gmcp.${path}` as keyof RuntimeEvents, value as never);
+        runtimeEventHub.emit('gmcp', { path, value } as RuntimeEvents['gmcp']);
+    }
+
     function sendTeam(name: string, leaderFlag: boolean) {
         let memberId = ids.get(name);
         if (!memberId) {
@@ -46,8 +54,8 @@ window.addEventListener('load', () => {
         const obj: any = {};
         obj[memberId] = { desc: name, team: true, team_leader: leaderFlag, state: hp, hp };
         objectNums.add(memberId);
-        client.sendEvent('gmcp.objects.data', obj);
-        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+        emitGmcp('objects.data', obj);
+        emitGmcp('objects.nums', Array.from(objectNums));
     }
 
     function renderTeam() {
@@ -99,7 +107,10 @@ window.addEventListener('load', () => {
         if (memberId) {
             objectNums.delete(memberId);
             hps.delete(memberId);
-            client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+            const update: Record<number, { team: boolean; team_leader: boolean }> = {};
+            update[memberId] = { team: false, team_leader: false };
+            emitGmcp('objects.data', update);
+            emitGmcp('objects.nums', Array.from(objectNums));
         }
         client.TeamManager?.removeMember?.(name);
     }
@@ -114,14 +125,15 @@ window.addEventListener('load', () => {
         const hp = Math.floor(Math.random() * 7);
         const obj: any = {};
         obj[enemyId] = { desc: enemyName, state: hp, hp };
-        client.sendEvent('gmcp.objects.data', obj);
-        client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
+        emitGmcp('objects.data', obj);
+        emitGmcp('objects.nums', Array.from(objectNums));
     }
 
     client.addEventListener?.('teamChange', renderTeam);
 
     const playerName = 'Player';
-    client.sendEvent('gmcp.char.info', { name: playerName, object_num: id });
+    const charInfo = { name: playerName, object_num: id };
+    emitGmcp('char.info', charInfo);
     ids.set(playerName, id++);
     addMember(playerName);
 
