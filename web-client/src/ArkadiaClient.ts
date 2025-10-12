@@ -100,7 +100,6 @@ class ArkadiaClient implements ClientAdapter {
                 break;
             case "data":
                 this.recorder.handleIncoming(message.payload);
-                this.router.processFrame(message.payload);
                 break;
         }
     };
