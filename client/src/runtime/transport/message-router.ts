@@ -110,7 +110,7 @@ export default class MessageRouter {
         const withoutOptions = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption);
         const sanitized = withoutOptions.replace(/[ÿù]/g, "");
         if (sanitized.trim().length > 0) {
-            this.eventHub.emit("message", sanitized);
+            this.messageBuffer.push({ text: sanitized, type: "text" });
         }
         this.flushMessageBuffer();
     }

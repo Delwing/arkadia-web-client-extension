@@ -101,19 +101,29 @@ describe("MessageRouter runtime event hub integration", () => {
     });
 
     test("emits sanitized text messages", () => {
-        const messages: string[] = [];
-        const subscription = eventHub.on("message", (payload) => {
-            messages.push(payload);
+        const outputLines: RuntimeEvents["outputLine"][] = [];
+        const outputSubscription = eventHub.on("outputLine", (payload) => {
+            outputLines.push(payload);
         });
-        const busListener = jest.fn();
-        eventBus.on("message", busListener);
+        const outputSentListener = jest.fn();
+        eventBus.on("output-sent", outputSentListener);
+        (window as any).Output = { send: jest.fn() };
 
         processFrame("Hello adventurer!\n");
 
-        expect(messages.at(-1)).toBe("Hello adventurer!\n");
-        expect(busListener).toHaveBeenCalledWith("Hello adventurer!\n");
+        expect(outputLines).toEqual([
+            {
+                text: "Hello adventurer!\n",
+                rawText: "Hello adventurer!\n",
+                type: "text",
+                index: 0,
+            },
+        ]);
+        expect((window as any).Output.send).toHaveBeenCalledWith("Hello adventurer!\n", "text");
+        expect(outputSentListener).toHaveBeenCalledWith(1);
 
-        subscription.unsubscribe();
-        eventBus.off("message", busListener);
+        outputSubscription.unsubscribe();
+        eventBus.off("output-sent", outputSentListener);
+        delete (window as any).Output;
     });
 });
