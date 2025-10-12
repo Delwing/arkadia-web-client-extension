@@ -2,10 +2,9 @@ import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
 import {TiDelete} from "react-icons/ti";
-import {loadNpcData} from "../npcDataLoader.ts";
 import services from "@client/src/runtime/service-registry";
 import { NPC_DATASET_KEY } from "@client/src/runtime/data";
-import { useUiDispatch } from "../ui/store";
+import { useCatalogDataset, useUiDispatch, useUiStore } from "../ui/store";
 
 interface NpcProps {
     name: string;
@@ -13,63 +12,67 @@ interface NpcProps {
 }
 
 function Npc() {
-
-    const [npcs, setNpcs] = useState<NpcProps[]>([])
-    const [filter, setFilter] = useState<string>('')
+    const dataset = useCatalogDataset<NpcProps[]>(NPC_DATASET_KEY);
+    const loadDataset = useUiStore((state) => state.loadDataset);
+    const ensureDataset = useUiStore((state) => state.ensureDataset);
+    const syncDataset = useUiStore((state) => state.syncDataset);
+    const [filter, setFilter] = useState<string>('');
     const dispatch = useUiDispatch();
 
+    const npcs = Array.isArray(dataset?.data) ? dataset.data : [];
+
     useEffect(() => {
+        if (dataset?.metadata.status === "ready" || dataset?.metadata.status === "loading") {
+            return;
+        }
+
         let cancelled = false;
 
-        const load = async () => {
-            try {
-                const data = await loadNpcData<NpcProps[]>();
-                if (!cancelled) {
-                    setNpcs(data);
-                }
-            } catch (error) {
+        void ensureDataset<NpcProps[]>(NPC_DATASET_KEY).catch((error) => {
+            if (!cancelled) {
                 console.error('Failed to load NPC data:', error);
             }
-        };
-
-        void load();
+        });
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [dataset?.metadata.status, ensureDataset]);
 
     useEffect(() => {
         const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail
+            const detail = (ev as CustomEvent).detail;
             if (Array.isArray(detail)) {
-                setNpcs(detail)
+                void services.dataCatalog
+                    .set(NPC_DATASET_KEY, detail as NpcProps[], 'cache')
+                    .catch((error) => console.error('Failed to persist NPC event data:', error));
             }
-        }
-        window.addEventListener('npc', handler as EventListener)
+        };
+
+        window.addEventListener('npc', handler as EventListener);
         return () => {
-            window.removeEventListener('npc', handler as EventListener)
-        }
-    }, [])
+            window.removeEventListener('npc', handler as EventListener);
+        };
+    }, []);
 
     async function downloadNpcs() {
         try {
-            await services.dataCatalog.load(NPC_DATASET_KEY);
-            const data = await loadNpcData<NpcProps[]>();
-            setNpcs(data);
+            await loadDataset(NPC_DATASET_KEY, { force: true });
+            const data = services.dataCatalog.get<NpcProps[]>(NPC_DATASET_KEY) ?? [];
             void dispatch({ type: 'event/send', event: 'npc', payload: data });
         } catch (e) {
             console.error('Failed to update NPC data:', e);
         }
     }
 
-    function clearNpcs() {
-        services.dataCatalog.clear(NPC_DATASET_KEY)
-            .then(() => {
-                setNpcs([])
-                void dispatch({ type: 'event/send', event: 'npc', payload: [] });
-            })
-            .catch(e => console.error('Failed to clear NPC data:', e));
+    async function clearNpcs() {
+        try {
+            await services.dataCatalog.clear(NPC_DATASET_KEY);
+            syncDataset(NPC_DATASET_KEY);
+            void dispatch({ type: 'event/send', event: 'npc', payload: [] });
+        } catch (e) {
+            console.error('Failed to clear NPC data:', e);
+        }
     }
 
     function exportNpcs() {
@@ -85,7 +88,6 @@ function Npc() {
 
     function deleteNpc(npc: NpcProps) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
-        setNpcs(updated)
         void saveNpcs(updated)
         void dispatch({ type: 'event/send', event: 'npc', payload: updated });
     }
@@ -93,6 +95,7 @@ function Npc() {
     async function saveNpcs(list: NpcProps[]) {
         try {
             await services.dataCatalog.set(NPC_DATASET_KEY, list, 'cache')
+            syncDataset(NPC_DATASET_KEY);
         } catch (e) {
             console.error('Failed to save NPC list:', e)
         }

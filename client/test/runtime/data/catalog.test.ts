@@ -94,6 +94,39 @@ describe('DefaultDataCatalog', () => {
         expect(event.metadata.source).toBe('cache');
         expect(catalog.get('cached')).toEqual({ cached: true });
     });
+
+    it('marks loader errors in metadata when load fails', async () => {
+        const catalog = new DefaultDataCatalog();
+        catalog.register({
+            key: 'failing',
+            loader: async () => {
+                throw new Error('boom');
+            },
+        });
+
+        await expect(catalog.load('failing')).rejects.toThrow('boom');
+        const metadata = catalog.metadataFor('failing');
+        expect(metadata?.status).toBe('error');
+        expect(metadata?.error).toBe('boom');
+    });
+
+    it('resets dataset metadata to idle after clearing', async () => {
+        const catalog = new DefaultDataCatalog();
+        catalog.register({
+            key: 'to-clear',
+            loader: async ({ persist }) => {
+                const payload = { value: 1 };
+                await persist(payload);
+                return payload;
+            },
+        });
+
+        await catalog.load('to-clear');
+        await catalog.clear('to-clear');
+
+        expect(catalog.get('to-clear')).toBeUndefined();
+        expect(catalog.metadataFor('to-clear')).toMatchObject({ key: 'to-clear', status: 'idle' });
+    });
 });
 
 describe('core data loaders', () => {
