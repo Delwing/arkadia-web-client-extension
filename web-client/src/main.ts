@@ -1,6 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
-import arkadiaClient from "./ArkadiaClient.ts";
+import arkadiaClient, {configureArkadiaClient} from "./ArkadiaClient.ts";
 import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -43,6 +43,13 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
+import MessageRouter from "@client/src/runtime/transport/message-router";
+import WebSocketTransportAdapter from "./transport/websocket-adapter";
+import {parseAnsiPatterns} from "./ansiParser";
+
+const transport = new WebSocketTransportAdapter();
+const router = new MessageRouter(transport, { parseAnsiPatterns });
+configureArkadiaClient({ transport, router });
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
