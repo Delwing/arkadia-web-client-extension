@@ -8,6 +8,7 @@ import {
   MagicKeysCollection,
   MapColors,
   MapExportData,
+  MultibindsCollection,
   NpcCollection,
   PeopleCollection,
 } from './entities';
@@ -21,6 +22,7 @@ const STORE_NAMES = {
   keys: 'magicKeys',
   herbs: 'herbs',
   people: 'people',
+  multibinds: 'multibinds',
 } as const;
 
 type StoreNameKey = keyof typeof STORE_NAMES;
@@ -107,6 +109,15 @@ const peopleEntry = new DataCatalogEntry<PeopleCollection>({
   ),
 });
 
+const multibindsEntry = new DataCatalogEntry<MultibindsCollection>({
+  key: 'multibinds',
+  ttl: Number.POSITIVE_INFINITY,
+  storeName: STORE_NAMES.multibinds,
+  persistenceKey: 'multibinds',
+  persistenceAdapter: sharedPersistenceAdapter,
+  initialData: [],
+});
+
 catalog.register('mapData', mapDataEntry);
 catalog.register('colors', colorsEntry);
 catalog.register('npcs', npcsEntry);
@@ -114,6 +125,7 @@ catalog.register('magic', magicsEntry);
 catalog.register('keys', magicKeysEntry);
 catalog.register('herbs', herbsEntry);
 catalog.register('people', peopleEntry);
+catalog.register('multibinds', multibindsEntry);
 
 export type CatalogEntityKey = StoreNameKey;
 export const dataCatalog = catalog;

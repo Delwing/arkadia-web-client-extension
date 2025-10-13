@@ -1,14 +1,12 @@
 import Client from "../Client";
-import {getMultibindLabel, MULTIBIND_KEYS} from "../multibindKeys";
+import {dataCatalog} from "../dataCatalog/catalogInstance";
+import type {MultibindsCollection} from "../dataCatalog/entities";
 import appEventBus from "../events/app-event-bus";
+import {getMultibindLabel, MULTIBIND_KEYS} from "../multibindKeys";
 
 const MAX_BINDS = 4;
 
-interface StoredMultibind {
-    roomId: number;
-    index: number;
-    action: string;
-}
+type StoredMultibind = MultibindsCollection[number];
 
 interface DisplayMultibind {
     index: number;
@@ -22,8 +20,9 @@ function isValidIndex(index: number) {
 
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const data = new Map<number, Map<number, string>>();
+    const store = dataCatalog.getMultibindsStore();
 
-    function serialize(): StoredMultibind[] {
+    function serialize(): MultibindsCollection {
         const entries: StoredMultibind[] = [];
         data.forEach((roomMap, roomId) => {
             roomMap.forEach((action, index) => {
@@ -35,7 +34,9 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function persist() {
         const payload = serialize();
-        //TODO save multbinds
+        store.storeData(payload).catch((error) => {
+            console.error('Failed to store multibinds', error);
+        });
     }
 
     function set(roomId: number, index: number, action: string) {
@@ -202,7 +203,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         run(roomId, index);
     }
 
-    function applyStored(list: StoredMultibind[]) {
+    function applyStored(list: MultibindsCollection) {
         data.clear();
         list.forEach(item => {
             const roomId = Number(item.roomId);
@@ -219,7 +220,10 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         sendUpdate(Number.isNaN(event.id) ? null : event.id);
     });
 
-    //TODO apply stored multibinds
+    store.addListener(applyStored);
+    store.getData().catch((error) => {
+        console.error('Failed to load multibinds data', error);
+    });
 
     window.addEventListener('keydown', (ev) => {
         if (ev.repeat) {
