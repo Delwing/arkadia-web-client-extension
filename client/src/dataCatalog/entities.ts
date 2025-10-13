@@ -49,3 +49,11 @@ export type MagicsCollection = MagicsFile;
 export type MagicKeysCollection = MagicKeysFile;
 export type HerbsCollection = HerbsData;
 export type PeopleCollection = Person[];
+
+export interface MultibindRecord {
+  roomId: number;
+  index: number;
+  action: string;
+}
+
+export type MultibindsCollection = MultibindRecord[];

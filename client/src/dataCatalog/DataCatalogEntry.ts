@@ -6,8 +6,9 @@ interface DataCatalogEntryOptions<T> {
   ttl: number;
   storeName: string;
   persistenceAdapter: IndexedDBPersistenceAdapter;
-  dataSource: DataSource<T>;
+  dataSource?: DataSource<T>;
   persistenceKey?: string;
+  initialData?: T;
 }
 
 export class DataCatalogEntry<T> {
@@ -19,11 +20,41 @@ export class DataCatalogEntry<T> {
 
   constructor(private readonly options: DataCatalogEntryOptions<T>) {
     this.persistenceKey = options.persistenceKey ?? options.key;
+    if (options.initialData !== undefined) {
+      this.data = options.initialData ?? null;
+      this.timestamp = Date.now();
+    }
   }
 
   async getData(forceReload = false): Promise<T> {
     if (!forceReload && this.data !== null && !this.isExpired()) {
       return this.data;
+    }
+
+    let persisted: T | null = null;
+    if (!forceReload) {
+      persisted = await this.safeLoadFromPersistence();
+      if (persisted !== null) {
+        return persisted;
+      }
+    }
+
+    if (!this.options.dataSource) {
+      if (forceReload) {
+        persisted = await this.safeLoadFromPersistence();
+      }
+
+      if (persisted !== null) {
+        return persisted;
+      }
+
+      if (this.data !== null) {
+        return this.data;
+      }
+
+      throw new Error(
+        `DataCatalog entry with key ${this.options.key} has no data source and no stored data`,
+      );
     }
 
     if (this.loadingPromise) {
@@ -53,12 +84,31 @@ export class DataCatalogEntry<T> {
   }
 
   async invalidate(): Promise<void> {
+    await this.clearData();
+  }
+
+  async storeData(data: T, options?: { persist?: boolean; timestamp?: number }): Promise<void> {
+    const timestamp = options?.timestamp ?? Date.now();
+    this.updateMemory(data, timestamp);
+    if (options?.persist === false) {
+      return;
+    }
+
+    await this.persist(data, timestamp);
+  }
+
+  async clearData(): Promise<void> {
     this.data = null;
     this.timestamp = 0;
+    this.loadingPromise = null;
     await this.options.persistenceAdapter.delete(this.options.storeName, this.persistenceKey);
   }
 
   private async loadData(forceReload: boolean): Promise<T> {
+    if (!this.options.dataSource) {
+      throw new Error(`No data source configured for ${this.options.key}`);
+    }
+
     if (!forceReload) {
       const persisted = await this.safeLoadFromPersistence();
       if (persisted) {
@@ -96,17 +146,17 @@ export class DataCatalogEntry<T> {
 
   private async safeLoadFromSource(): Promise<T> {
     try {
-      return await this.options.dataSource.load();
+      return await this.options.dataSource!.load();
     } catch (error) {
       console.error(`Failed to load data from source for ${this.options.key}`, error);
       throw error;
     }
   }
 
-  private async persist(data: T): Promise<void> {
+  private async persist(data: T, timestamp: number = Date.now()): Promise<void> {
     const record: PersistenceRecord<T> = {
       data,
-      timestamp: Date.now(),
+      timestamp,
     };
 
     try {
