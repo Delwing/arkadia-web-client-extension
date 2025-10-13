@@ -2,6 +2,7 @@ import Client from "../Client";
 import { colorString, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
 import { getCurrentCharacter, getItemSync } from "../storage";
+import appEventBus from "../events/app-event-bus";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
 const SECTION_COLOR = findClosestColor("#ffa500");
@@ -127,43 +128,31 @@ export default class ImproveCounter {
         this.client = client;
         this.killCounter = killCounter;
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === ImproveCounter.STORAGE_KEY) {
-                this.load(event.detail.value ?? {});
-                this.loaded = true;
-                if (this.pendingLevel !== undefined) {
-                    const level = this.pendingLevel;
-                    this.pendingLevel = undefined;
-                    this.handleLevel(level);
-                }
-            }
-            if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
-                this.loadLifetime(event.detail.value ?? {});
-                this.lifetimeLoaded = true;
-                if (this.pendingLifetime.length) {
-                    for (const p of this.pendingLifetime) {
-                        this.addToLifetime(p.count, p.time);
-                    }
-                    this.pendingLifetime = [];
-                }
-            }
-        });
+        const session = getItemSync(ImproveCounter.STORAGE_KEY)
+        this.load(session || {});
+        this.loaded = true;
+        if (this.pendingLevel !== undefined) {
+            const level = this.pendingLevel;
+            this.pendingLevel = undefined;
+            this.handleLevel(level);
+        }
 
-        this.client.addEventListener("reset", () => this.reset());
+       const lifetime = getItemSync(ImproveCounter.LIFETIME_KEY)
+        this.loadLifetime(lifetime || {});
+        this.lifetimeLoaded = true;
+        if (this.pendingLifetime.length) {
+            for (const p of this.pendingLifetime) {
+                this.addToLifetime(p.count, p.time);
+            }
+            this.pendingLifetime = [];
+        }
+
+        appEventBus.on("reset", () => this.reset());
 
         window.addEventListener("beforeunload", this.persist);
 
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-        });
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-        });
-
-        this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
-            const level = ev.detail?.improve;
+        appEventBus.on("gmcp.char.state", (event) => {
+            const level = event.improve;
             if (typeof level === "number") {
                 this.handleLevel(level);
             }

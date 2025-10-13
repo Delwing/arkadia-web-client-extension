@@ -1,11 +1,11 @@
 import { DataSource } from './types';
 
 export class APIDataSource<T> implements DataSource<T> {
-  constructor(private readonly url: string, private readonly fetchFn: typeof fetch = fetch) {}
+  constructor(private readonly url: string) {}
 
   async load(): Promise<T> {
     try {
-      const response = await this.fetchFn(this.url, {
+      const response = await fetch(this.url, {
         headers: {
           Accept: 'application/json',
         },

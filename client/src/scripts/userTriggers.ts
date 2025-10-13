@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import {getItemSync} from "../storage";
 
 function toUpperSafe(text: string) {
     return text.split(/(\x1B\[[0-9;]*m)/g).map((seg, i) => i % 2 === 0 ? seg.toUpperCase() : seg).join('');
@@ -69,15 +70,5 @@ export default function initUserTriggers(client: Client) {
         });
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            apply(Array.isArray(ev.detail.value) ? ev.detail.value : []);
-        }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    apply(getItemSync(STORAGE_KEY) || []);
 }

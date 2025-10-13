@@ -1,10 +1,11 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class CoverTimer {
   private container: HTMLElement | null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("cover-timer");
-    client.on("coverTimer", (sec: number | null) => this.update(sec));
+    appEventBus.on("coverTimer", (sec: number | null) => this.update(sec));
     this.update(null);
   }
 

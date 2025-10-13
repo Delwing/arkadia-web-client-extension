@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
+import appEventBus from "../events/app-event-bus";
 
 export interface ShopOptions {
     normalWidth: number;
@@ -55,9 +56,9 @@ export function formatItem(
 
 export default function initShop(client: Client, opts: ShopOptions) {
     let width = client.contentWidth;
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
-    });
+    appEventBus.on("contentWidth", _width => {
+        width = _width;
+    })
 
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - stripAnsiCodes(str).length));
 

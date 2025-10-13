@@ -1,8 +1,8 @@
-import Client from "../Client";
+import {getItemSync, setItemSync} from "../storage";
 
 const STORAGE_KEY = "scripts";
 
-export default function initExternalScripts(client: Client) {
+export default function initExternalScripts() {
     const loaded: Record<string, HTMLScriptElement> = {};
     let known: string[] = [];
 
@@ -31,11 +31,7 @@ export default function initExternalScripts(client: Client) {
         handled = true;
         if (!known.includes(param)) {
             known.push(param);
-            client.port?.postMessage({
-                type: "SET_STORAGE",
-                key: STORAGE_KEY,
-                value: known,
-            });
+            setItemSync(STORAGE_KEY, known);
             apply(known);
         }
         const params = new URLSearchParams(window.location.search);
@@ -45,14 +41,8 @@ export default function initExternalScripts(client: Client) {
         window.location.replace(rest ? `${base}?${rest}` : base);
     };
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            known = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(known);
-        }
-    });
+    const scripts = getItemSync(STORAGE_KEY) || []
+    apply(scripts.scripts);
 
-    client.addEventListener("port-connected", () => {
-        checkParam();
-    })
+    window.addEventListener("load", checkParam);
 }

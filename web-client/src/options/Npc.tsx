@@ -1,13 +1,8 @@
 import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
-import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache.ts";
 import {TiDelete} from "react-icons/ti";
-import {loadNpcData} from "../npcDataLoader.ts";
-import eventBus from "@client/src/eventBus.ts";
-
-const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
-const NPC_URL = 'https://delwing.github.io/arkadia-mapa/data/npc.json';
+import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";
 
 interface NpcProps {
     name: string;
@@ -20,55 +15,38 @@ function Npc() {
     const [filter, setFilter] = useState<string>('')
 
     useEffect(() => {
-        loadNpcData().then((data: NpcProps[]) => {
-            setNpcs(data)
-        })
+        dataCatalog.getNpcStore().getData().then(
+            (data: NpcProps[]) => {
+                setNpcs(data)
+            },
+            (e) => {
+                console.error('Failed to load NPC data:', e)
+            }
+        )
     }, []);
 
     useEffect(() => {
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail
-            if (Array.isArray(detail)) {
-                setNpcs(detail)
-            }
-        }
-
-        const removeClientListener = (window as any).clientExtension?.addEventListener?.('npc', handler as (event: CustomEvent) => void)
-
-        if (!removeClientListener) {
-            eventBus.addEventListener('npc', handler as EventListener)
-        }
-
-        return () => {
-            if (typeof removeClientListener === 'function') {
-                removeClientListener()
-            } else {
-                eventBus.removeEventListener('npc', handler as EventListener)
-            }
-        }
+        //TODO download on demand only
+        dataCatalog.getNpcStore().getData().then(npc => setNpcs(npc))
     }, [])
 
     function downloadNpcs() {
-        updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
-            .then(data => {
-                setNpcs(data)
-                ;(window as any).clientExtension?.sendEvent('npc', data)
+        dataCatalog.getNpcStore().getData({forceReload: true})
+            .then(npc => {
+                setNpcs(npc)
             })
             .catch(e => console.error('Failed to update NPC data:', e));
     }
 
     function clearNpcs() {
-        clearIndexedDB(DB_CONFIG)
-            .then(() => {
-                setNpcs([])
-                ;(window as any).clientExtension?.sendEvent('npc', [])
-            })
-            .catch(e => console.error('Failed to clear NPC data:', e));
+        dataCatalog.getNpcStore().invalidate().then(() => {
+            setNpcs([])
+        })
     }
 
     function exportNpcs() {
         const json = JSON.stringify(npcs, null, 2)
-        const blob = new Blob([json], { type: 'application/json' })
+        const blob = new Blob([json], {type: 'application/json'})
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -80,37 +58,7 @@ function Npc() {
     function deleteNpc(npc: NpcProps) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
-        saveNpcs(updated)
-        ;(window as any).clientExtension?.sendEvent('npc', updated)
-    }
-
-    async function saveNpcs(list: NpcProps[]) {
-        try {
-            const db = await openDb()
-            await new Promise<void>((resolve, reject) => {
-                const tx = db.transaction([DB_CONFIG.storeName], 'readwrite')
-                const store = tx.objectStore(DB_CONFIG.storeName)
-                const req = store.put({ id: DB_CONFIG.key, data: list, timestamp: Date.now() })
-                req.onsuccess = () => resolve()
-                req.onerror = () => reject(new Error('Failed to store data'))
-            })
-        } catch (e) {
-            console.error('Failed to save NPC list:', e)
-        }
-    }
-
-    function openDb(): Promise<IDBDatabase> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_CONFIG.dbName, 1)
-            request.onupgradeneeded = () => {
-                const db = request.result
-                if (!db.objectStoreNames.contains(DB_CONFIG.storeName)) {
-                    db.createObjectStore(DB_CONFIG.storeName, { keyPath: 'id' })
-                }
-            }
-            request.onsuccess = () => resolve(request.result)
-            request.onerror = () => reject(new Error('Failed to open IndexedDB'))
-        })
+        //TODO persist deletion
     }
 
     return (

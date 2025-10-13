@@ -8,6 +8,7 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -353,7 +354,7 @@ export default function registerLuaGagTriggers(client: Client) {
 
 
     (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
-    client.addEventListener("playBeep", () => {
+    appEventBus.on("playBeep", () => {
         client.playSound("beep")
     })
 

@@ -5,6 +5,7 @@ import loadMagicKeys from "./magicKeyLoader";
 import {KEYS_COLOR} from "./magicKeys";
 import loadMagics from "./magicsLoader";
 import {MAGICS_COLOR} from "./magics";
+import appEventBus from "../events/app-event-bus";
 
 const GROUP_NAME_COLOR = findClosestColor('#557C99');
 const MITHRIL_COLOR = findClosestColor('#afeeee');
@@ -434,9 +435,9 @@ export default function initContainers(client: Client) {
     let columns = 1;
     let width = client.contentWidth;
 
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
-    });
+    appEventBus.on('contentWidth', _width => {
+        width = _width;
+    })
 
     const register = () => {
         client.Triggers.removeByTag(tag);
@@ -447,9 +448,9 @@ export default function initContainers(client: Client) {
         });
     };
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        columns = ev.detail.containerColumns ?? columns;
-        const shouldEnable = !!ev.detail.prettyContainers;
+    appEventBus.on('settings', (settings) => {
+        columns = settings.containerColumns ?? columns;
+        const shouldEnable = settings.prettyContainers;
         if (shouldEnable && !enabled) {
             enabled = true;
             register();

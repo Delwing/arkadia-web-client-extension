@@ -15,7 +15,11 @@ export interface Settings {
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
+    guilds: string[];
     enemyGuilds: string[];
+    binds: any;//TODO type
+    autoWalkDelay: string;
+    guildColors: any | undefined;//TODO type
 }
 
 export const defaultSettings: Settings = {
@@ -35,5 +39,9 @@ export const defaultSettings: Settings = {
     fullHpMessage: false,
     lowHpAlert: 2,
     letterLineWidth: 72,
-    enemyGuilds: []
+    guilds: [],
+    enemyGuilds: [],
+    binds: {},
+    autoWalkDelay: "1",
+    guildColors: undefined,
 };

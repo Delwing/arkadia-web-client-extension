@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface ZaskTimerPayload {
   seconds: number;
@@ -10,7 +11,7 @@ export default class ZaskTimer {
 
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("zask-timer");
-    client.on("zaskTimer", (payload: ZaskTimerPayload | null) => this.update(payload));
+    appEventBus.on("zaskTimer", (payload: ZaskTimerPayload | null) => this.update(payload));
     this.update(null);
   }
 

@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {getItemSync} from "../storage";
 
 export interface UserAlias {
     pattern: string;
@@ -35,16 +36,5 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
         mapped.forEach(a => list.push(a));
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            const value = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(value);
-        }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    apply(getItemSync(STORAGE_KEY) || []);
 }

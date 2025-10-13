@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import {getItemSync, setItemSync} from "../storage";
 
 export interface ShortcutEntry {
     key: string;
@@ -29,21 +30,12 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
     }
 
     function persist() {
+        setItemSync(STORAGE_KEY, Object.values(shortcuts));
         client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: Object.values(shortcuts) });
     }
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            const value = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(value);
-        }
-    });
+    apply(getItemSync(STORAGE_KEY) || [])
 
-    client.addEventListener("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
     function printShortcuts() {
         const lines: string[] = [];

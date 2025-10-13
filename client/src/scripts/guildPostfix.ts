@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import appEventBus from "../events/app-event-bus";
 
 const SLATE_BLUE = findClosestColor("#6a5acd");
 
@@ -9,8 +10,8 @@ export default function initGuildPostfix(client: Client) {
     const tag = "guildPostfix";
     let guildColors: GuildColorMap = {};
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const colors: Record<string, string | undefined> = ev.detail.guildColors || {};
+    appEventBus.on('settings', (settings) => {
+        const colors: Record<string, string | undefined> = settings.guildColors || {};
         guildColors = {};
         Object.entries(colors).forEach(([g, hex]) => {
             if (hex) {

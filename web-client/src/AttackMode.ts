@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { getItemSync } from "@client/src/storage.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];
@@ -12,20 +13,20 @@ export default class AttackMode {
     if (this.container) {
       this.container.addEventListener("click", () => {
         this.index = (this.index + 1) % MODES.length;
-        client.emit("attackMode", MODES[this.index]);
+        appEventBus.emit("attackMode", MODES[this.index]);
       });
     }
-    client.on("attackMode", (mode: Mode) => {
+    appEventBus.on("attackMode", (mode: Mode) => {
       this.index = MODES.indexOf(mode);
       this.update();
       this.updateVisibility();
     });
-    client.on("teamChange", () => this.updateVisibility());
+    appEventBus.on("teamChange", () => this.updateVisibility());
     const stored = getItemSync('attack_mode')?.attack_mode as Mode | undefined;
     if (stored && MODES.includes(stored)) {
       this.index = MODES.indexOf(stored);
     }
-    client.emit("attackMode", MODES[this.index]);
+    appEventBus.emit("attackMode", MODES[this.index]);
   }
 
   private update() {

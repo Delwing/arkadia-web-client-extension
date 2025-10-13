@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface StatusData {
   recipient: string | null;
@@ -9,7 +10,7 @@ export default class PackageStatus {
   private container: HTMLElement | null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("package-status");
-    client.on("packageStatus", (data: StatusData | null) => this.update(data));
+    appEventBus.on("packageStatus", (data: StatusData | null) => this.update(data));
   }
 
   private update(data: StatusData | null) {

@@ -1,32 +1,17 @@
 import Client from "../Client";
-import {loadPeople, type PersonEntry} from '../peopleLoader';
+import appEventBus from "../events/app-event-bus";
+import {dataCatalog} from "../dataCatalog/catalogInstance";
+import {PersonEntry} from "../types/people";
 
 export default function initInvite(client: Client) {
     const tag = "invite";
     let enemyGuilds: string[] = [];
     let peopleCache: PersonEntry[] = [];
-    let loadPromise: Promise<PersonEntry[]> | null = null;
 
-    function ensurePeopleLoaded() {
-        if (!loadPromise) {
-            loadPromise = loadPeople()
-                .then(people => {
-                    peopleCache = people;
-                    return people;
-                })
-                .catch(error => {
-                    console.warn('Failed to load people database', error);
-                    peopleCache = [];
-                    return [] as PersonEntry[];
-                })
-                .finally(() => {
-                    loadPromise = null;
-                });
-        }
-        return loadPromise;
-    }
+    dataCatalog.getPeopleStore().getData().then(people => {
+        peopleCache = people
+    })
 
-    ensurePeopleLoaded().catch(() => undefined);
 
     // Function to find a person's guild by their name
     function findPersonGuild(name: string): string | null {
@@ -55,12 +40,10 @@ export default function initInvite(client: Client) {
     }
 
     // Listen for settings updates to get enemy guilds list
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail;
+    appEventBus.on('settings', (settings) => {
         if (Array.isArray(settings.enemyGuilds)) {
             enemyGuilds = [...settings.enemyGuilds];
         }
-        ensurePeopleLoaded().catch(() => undefined);
     });
 
     // Register trigger for invite pattern

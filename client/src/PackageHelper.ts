@@ -2,6 +2,9 @@ import {colorStringInLine, findClosestColor, RESET} from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
+import appEventBus from "./events/app-event-bus";
+import {Handler} from "./events/event-bus";
+import {dataCatalog} from "./dataCatalog/catalogInstance";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -44,7 +47,7 @@ export default class PackageHelper {
     private timer: number | undefined
     private remover = () => {
     };
-    private locationListener;
+    private locationListener: Handler<{ id: number; room: any }>
 
     private pick: number
     private currentPackage: { name: string; time?: string; distance?: number };
@@ -55,13 +58,16 @@ export default class PackageHelper {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        this.client.addEventListener('npc', (event) => {
-            event.detail.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
+
+        dataCatalog.getNpcStore().getData().then(npc => {
+            this.npc = npc.reduce((acc, npc) => {
+                acc[npc.name] = npc.loc
+                return acc
+            }, {})
         })
 
-
-        this.client.addEventListener('settings', (event) => {
-            const setting = event.detail?.packageHelper
+        appEventBus.on('settings', (settings) => {
+            const setting = settings.packageHelper
             const shouldEnable = setting === undefined ? true : setting
             if (!this.enabled && shouldEnable) {
                 this.init()
@@ -100,7 +106,9 @@ export default class PackageHelper {
             this.client.sendEvent('packageStatus', null)
         }
         this.remover();
-        this.remover = this.client.addEventListener("command", ({detail: command}) => this.handleCommand(command));
+        this.remover = appEventBus.on("command", (command) => {
+            this.handleCommand(command)
+        })
     }
 
     private handleCommand(command: string) {
@@ -347,19 +355,19 @@ export default class PackageHelper {
             this.client.sendEvent('leadTo', location)
         }
         if (this.locationListener) {
-            this.client.removeEventListener('enterLocation', this.locationListener)
+            appEventBus.off('enterLocation', this.locationListener)
         }
-        this.locationListener = ({detail: {id: roomId}}) => {
+        this.locationListener = ({id: roomId}) => {
             if (roomId === location) {
-                this.client.removeEventListener('enterLocation', this.locationListener)
-                this.client.addEventListener('gmcp_msg.room.exits', () => {
+                appEventBus.on('enterLocation', this.locationListener)
+                appEventBus.once('gmcp_msg.room.exits', () => {
                     this.client.FunctionalBind.set('oddaj paczke', () => {
                         return this.client.sendCommand('oddaj paczke');
                     })
-                }, {once: true})
+                })
             }
         }
-        this.client.addEventListener('enterLocation', this.locationListener)
+        appEventBus.on('enterLocation', this.locationListener)
     }
 
     private findNpcLocation(name: string): number | undefined {

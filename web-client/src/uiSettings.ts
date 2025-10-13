@@ -14,7 +14,7 @@ const mapPositions = [
 
 type MapPosition = (typeof mapPositions)[number];
 
-interface UiSettings {
+export interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
     buttonSize: number;
@@ -33,6 +33,8 @@ interface UiSettings {
     labelRenderMode: 'image' | 'data';
     transparentLabels: boolean;
     outputBackground: string;
+    mobileDirectionButtons: boolean
+    mobileButtonsSettings: Record<string, ButtonSetting>
 }
 
 const defaultSettings: UiSettings = {
@@ -54,6 +56,8 @@ const defaultSettings: UiSettings = {
     labelRenderMode: 'data',
     transparentLabels: true,
     outputBackground: '#242424',
+    mobileDirectionButtons: true,
+    mobileButtonsSettings: {},
 };
 
 function apply(settings: UiSettings) {
@@ -135,26 +139,14 @@ function apply(settings: UiSettings) {
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', {
-                detail: {
-                    mobileDirectionButtons: settings.showButtons,
-                    hapticFeedback: settings.hapticFeedback,
-                    emojiLabels: settings.emojiLabels,
-                    xtermPalette: settings.xtermPalette,
-                    footerMode: settings.footerMode,
-                    fightTitleIcon: settings.fightTitleIcon,
-                },
-            })
-        );
-    }
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('map-position-change'));
-    }
+
+    appEventBus.emit("uiSettings", settings)
+    appEventBus.emit("map-position-change")
 }
 
 import storage from "@client/src/storage";
+import {ButtonSetting} from "./mobileButtonSettings.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 async function load(): Promise<UiSettings> {
     try {
@@ -345,6 +337,8 @@ export default async function initUiSettings() {
             labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
+            mobileDirectionButtons: showButtonsInput.checked,
+            mobileButtonsSettings: {}, //TODO this might be in wrong place
         };
     }
 

@@ -1,5 +1,5 @@
-import Client from "./Client";
 import toTitleCase from "./utils/toTitleCase";
+import appEventBus from "./events/app-event-bus";
 
 export interface ObjectData {
     desc?: string;
@@ -13,24 +13,22 @@ export interface ObjectData {
 }
 
 export default class ObjectManager {
-    private client: Client;
     private nums: string[] = [];
     private data: Record<string, ObjectData> = {};
     private playerNum?: string;
 
-    constructor(client: Client) {
-        this.client = client;
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
-            this.handleNums(e.detail);
+    constructor() {
+        appEventBus.on('gmcp.objects.nums', (event) => {
+            this.handleNums(event);
         });
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.handleData(e.detail);
+        appEventBus.on('gmcp.objects.data', (event) => {
+            this.handleData(event);
         });
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            this.handleCharInfo(e.detail);
+        appEventBus.on('gmcp.char.info', (event) => {
+            this.handleCharInfo(event);
         });
-        this.client.addEventListener('gmcp.char.state', (e: CustomEvent) => {
-            this.handleCharState(e.detail);
+        appEventBus.on('gmcp.char.state', (event) => {
+            this.handleCharState(event);
         });
     }
 

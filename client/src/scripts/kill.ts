@@ -2,6 +2,7 @@ import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {stripAnsiCodes} from "../Triggers";
 import appEventBus from "../events/app-event-bus";
+import {getItemSync} from "../storage";
 
 type KillEntry = {
     mySession: number;
@@ -229,22 +230,16 @@ class KillCounter {
     constructor(client: Client) {
         this.client = client;
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === STORAGE_KEY) {
-                this.loadTotals(event.detail.value ?? {});
-            }
-            if (event.detail.key === SESSION_STORAGE_KEY) {
-                this.loadSession(event.detail.value ?? {});
-            }
-        });
+        this.loadTotals(getItemSync(STORAGE_KEY))
+        this.loadSession(getItemSync(SESSION_STORAGE_KEY))
 
-        this.client.addEventListener("reset", () => this.resetSession());
+        appEventBus.on("reset", () => this.resetSession());
 
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
 
         const myKillRegex = /^[ >]*(Zabil(?:es|as) (?<name>[A-Za-z ()!,]+))\.$/;
-        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?:a)? (?<name>[a-zA-Z (),!]+)\.$/;
+        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabila? (?<name>[a-zA-Z (),!]+)\.$/;
 
         this.client.Triggers.registerTrigger(
             myKillRegex,
@@ -400,4 +395,3 @@ export function initKillCounter(
     return counter;
 }
 
-export default KillCounter;

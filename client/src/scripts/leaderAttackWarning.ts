@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import { formatLabel } from "./functionalBind";
+import appEventBus from "../events/app-event-bus";
 
 export default function initLeaderAttackWarning(client: Client) {
     const RED = findClosestColor("#ff0000");
@@ -43,6 +44,6 @@ export default function initLeaderAttackWarning(client: Client) {
         }
     }
 
-    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => startPrinting(e.detail));
-    client.addEventListener('teamLeaderTargetAvatar', stopPrinting);
+    appEventBus.on('teamLeaderTargetNoAvatar', (targetId) => startPrinting(targetId));
+    appEventBus.on('teamLeaderTargetAvatar', stopPrinting);
 }

@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 export default function initZaznaczaj(
     client: Client,
@@ -11,11 +12,10 @@ export default function initZaznaczaj(
         client.sendEvent('highlights', Array.from(highlights));
     };
 
-    client.addEventListener('enterLocation', (ev: CustomEvent<{ id: number }>) => {
+    appEventBus.on('enterLocation', ({id}) => {
         if (!active) {
             return;
         }
-        const id = ev.detail?.id;
         if (typeof id !== 'number') {
             return;
         }

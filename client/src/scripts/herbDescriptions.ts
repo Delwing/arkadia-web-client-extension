@@ -2,7 +2,8 @@ import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {color, RESET, findClosestColor} from "../Colors";
 import {stripAnsiCodes} from "../Triggers";
-import { openHerbContextMenu } from "../contextMenus";
+import {openHerbContextMenu} from "../contextMenus";
+import appEventBus from "../events/app-event-bus";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -10,14 +11,9 @@ export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const st = ev.detail || {};
-        preUseCommands = typeof st.herbPreUseCommand === 'string'
-            ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
-            : [];
-        postUseCommands = typeof st.herbPostUseCommand === 'string'
-            ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
-            : [];
+    appEventBus.on('settings', (settings) => {
+        preUseCommands = settings.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+        postUseCommands = settings.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
     });
     try {
         const herbs = await loadHerbs();

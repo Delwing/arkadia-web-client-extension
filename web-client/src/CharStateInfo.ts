@@ -1,10 +1,11 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class CharStateInfo {
   private container: HTMLElement | null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("state-info");
-    client.on("gmcp.char.state", (state: any) => this.update(state));
+    appEventBus.on("gmcp.char.state", (state: any) => this.update(state));
   }
 
   private update(state: any) {

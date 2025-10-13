@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface Data {
   text: string;
@@ -28,7 +29,7 @@ export default class BreakItemWarning {
         this.update(null);
       });
     }
-    client.on("breakItem", (data: Data) => this.update(data));
+    appEventBus.on("breakItem", (data: Data) => this.update(data));
   }
 
   private update(data: Data | null) {

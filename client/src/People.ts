@@ -1,7 +1,8 @@
-import { loadPeople, type PersonEntry } from './peopleLoader';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
 import {stripAnsiCodes} from './Triggers';
+import appEventBus from "./events/app-event-bus";
+import {dataCatalog} from "./dataCatalog/catalogInstance";
 
 export default class People {
 
@@ -10,93 +11,60 @@ export default class People {
     guildFilter: string[] = []
     enemyGuilds: string[] = []
     guildColors: Record<string, string | undefined> = {}
-    people: PersonEntry[] = []
-    private loadErrorLogged = false
-    private peopleLoadPromise: Promise<void> | null = null
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        this.client.addEventListener('settings', (event: CustomEvent) => {
-            this.guildFilter = event.detail.guilds || []
-            this.enemyGuilds = event.detail.enemyGuilds || []
-            this.guildColors = event.detail.guildColors || {}
-            this.ensurePeopleTriggers()
-        })
-        this.ensurePeopleTriggers()
-    }
-
-    private ensurePeopleTriggers(forceRefresh = false) {
-        if (!forceRefresh && this.people.length > 0) {
+        appEventBus.on('settings', (settings) => {
+            this.guildFilter = settings.guilds
+            this.enemyGuilds = settings.enemyGuilds
+            this.guildColors = settings.guildColors
             this.registerPeopleTriggers()
-        }
-
-        if (this.peopleLoadPromise && !forceRefresh) {
-            return
-        }
-
-        this.peopleLoadPromise = loadPeople(forceRefresh)
-            .then(people => {
-                this.people = people
-                this.loadErrorLogged = false
-                this.registerPeopleTriggers()
-            })
-            .catch(error => {
-                this.handleLoadError(error)
-            })
-            .finally(() => {
-                this.peopleLoadPromise = null
-            })
-    }
-
-    private handleLoadError(error: unknown) {
-        if (!this.loadErrorLogged) {
-            console.warn('Failed to load people database', error)
-            this.loadErrorLogged = true
-        }
-        if (this.people.length === 0) {
-            this.client.Triggers.removeByTag(this.tag)
-        }
+        })
+        this.registerPeopleTriggers()
     }
 
     private registerPeopleTriggers() {
         this.client.Triggers.removeByTag(this.tag)
         const RED = findClosestColor('#ff0000')
         const addedNames = new Set<string>()
-        this.people.forEach(replacement => {
-            const state = this.shouldHighlight(replacement)
-            if (!state) {
-                return
-            }
-
-            const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-                const index = matches.index || 0
-                const token = matches[0]
-                const suffix = rawLine.substring(index + token.length)
-                const nextWord = stripAnsiCodes(suffix)
-                    .toLowerCase()
-                    .replace(/^\s+/, '')
-                if (nextWord.startsWith('chaosu')) {
-                    return rawLine
+        dataCatalog.getPeopleStore().getData().then(people => {
+            people.forEach(replacement => {
+                const state = this.shouldHighlight(replacement)
+                if (!state) {
+                    return
                 }
-                return this.buildDescHighlight(rawLine, token, index, replacement, state, RED)
-            }
 
-            this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
-
-            if (state.isEnemy || (state.inGuild && state.guildColor !== undefined)) {
-                const key = `${replacement.name}|${replacement.guild}`
-                if (!addedNames.has(key) && replacement.name.length > 2) {
-                    const chosenColor = state.isEnemy ? RED : state.guildColor!
-                    const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-                        const index = matches.index || 0
-                        const token = matches[0]
-                        return this.buildNameHighlight(rawLine, token, index, chosenColor)
+                const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
+                    const index = matches.index || 0
+                    const token = matches[0]
+                    const suffix = rawLine.substring(index + token.length)
+                    const nextWord = stripAnsiCodes(suffix)
+                        .toLowerCase()
+                        .replace(/^\s+/, '')
+                    if (nextWord.startsWith('chaosu')) {
+                        return rawLine
                     }
-                    this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
-                    addedNames.add(key)
+                    return this.buildDescHighlight(rawLine, token, index, replacement, state, RED)
                 }
-            }
+
+                this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
+
+                if (state.isEnemy || (state.inGuild && state.guildColor !== undefined)) {
+                    const key = `${replacement.name}|${replacement.guild}`
+                    if (!addedNames.has(key) && replacement.name.length > 2) {
+                        const chosenColor = state.isEnemy ? RED : state.guildColor!
+                        const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
+                            const index = matches.index || 0
+                            const token = matches[0]
+                            return this.buildNameHighlight(rawLine, token, index, chosenColor)
+                        }
+                        this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
+                        addedNames.add(key)
+                    }
+                }
+            })
         })
+
     }
 
     private shouldHighlight(replacement: { guild: string }) {

@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import appEventBus from "../events/app-event-bus";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = findClosestColor("#ffa500");
@@ -16,8 +17,7 @@ export default function initHpAlert(client: Client) {
     let prev = Infinity;
     let alertLevel = 2;
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const settings = ev.detail || {};
+    appEventBus.on('settings', (settings) => {
         if (typeof settings.lowHpAlert === 'boolean') {
             alertLevel = settings.lowHpAlert ? 2 : 0;
             return;
@@ -31,8 +31,8 @@ export default function initHpAlert(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.state', (ev: CustomEvent) => {
-        let hp = ev.detail?.hp;
+    appEventBus.on('gmcp.char.state', (event) => {
+        let hp = event.hp;
         if (typeof hp !== 'number') return;
         hp++;
         if (alertLevel <= 0) {

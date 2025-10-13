@@ -2,6 +2,7 @@ import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {gmcp} from "../gmcp";
 import { getItemSync, setItemSync } from "../storage";
+import appEventBus from "../events/app-event-bus";
 
 export default function initObjectAliases(
     client: Client,
@@ -86,17 +87,16 @@ export default function initObjectAliases(
     let releaseGuard = true;
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
-    client.sendEvent('releaseGuard', releaseGuard);
-    client.addEventListener('releaseGuard', (event: CustomEvent<boolean>) => {
-        releaseGuard = event.detail;
+    appEventBus.emit('releaseGuard', releaseGuard);
+    appEventBus.on('releaseGuard', (release) => {
+        releaseGuard = release
     });
 
     let attackMode: 'A' | 'AW' | 'AWR' = getItemSync('attack_mode')?.attack_mode ?? 'A';
-    client.addEventListener('attackMode', (event: CustomEvent<'A' | 'AW' | 'AWR'>) => {
-        attackMode = event.detail;
+    appEventBus.on('attackMode', (attackMode) => {;
         setItemSync('attack_mode', attackMode);
     });
-    client.sendEvent('attackMode', attackMode);
+    appEventBus.emit('attackMode', attackMode);
 
 
     if (aliases) {

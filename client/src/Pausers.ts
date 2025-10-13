@@ -1,4 +1,5 @@
 import Client from "./Client";
+import appEventBus from "./events/app-event-bus";
 
 interface OwnData {
     paralyzed?: boolean;
@@ -14,14 +15,16 @@ export default class Pausers {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            if (e.detail?.object_num !== undefined) {
-                this.playerId = String(e.detail.object_num);
+        appEventBus.on("gmcp.char.info", event => {
+            if (event.object_num !== undefined) {
+                this.playerId = String(event.object_num);
             }
-        });
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.check(e.detail as Record<string, OwnData>);
-        });
+        })
+
+
+        appEventBus.on("gmcp.objects.data", event => {
+            this.check(event as Record<string, OwnData>);
+        })
     }
 
     private check(data: Record<string, OwnData>) {

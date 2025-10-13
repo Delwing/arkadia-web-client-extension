@@ -49,73 +49,19 @@ export default class MockPort {
     listeners: Array<(msg: any) => void> = [];
     onMessage = {
         addListener: (cb: (msg: any) => void) => {
-            this.listeners.push(cb);
+            console.warn('Add listener called');
         }
     };
 
-    constructor() {
-        storage.onChanged?.addListener(changes => {
-            Object.entries(changes).forEach(([key, {newValue}]) => {
-                this.dispatch({storage: {key, value: newValue}});
-                if (key === 'settings' || key === 'npc' || key === 'uiSettings' || key === 'binds') {
-                    this.dispatch({[key]: newValue});
-                }
-            });
-        });
-    }
-
     private dispatch(message: any) {
-        this.listeners.forEach(l => l(message));
+        console.warn('Add listener called');
     }
 
     postMessage(message: any) {
-        if (message.type === 'NEW_NPC') {
-            getNpcs().then(async npc => {
-                npc = Array.isArray(npc) ? npc : [];
-                if (!npc.some((n: any) => n.name === message.name && n.loc === message.loc)) {
-                    npc.push({ name: message.name, loc: message.loc });
-                    await saveNpcs(npc);
-                }
-                this.dispatch({ npc });
-                this.dispatch({ storage: { key: 'npc', value: npc } });
-            }).catch(e => console.error('Failed to add NPC:', e));
-            return;
-        }
-        if (message.type === 'MULTIBINDS_LOAD') {
-            readMultibinds()
-                .then(list => {
-                    this.dispatch({ multibindsStorage: list });
-                })
-                .catch(e => console.error('Failed to load multibinds:', e));
-            return;
-        }
-        if (message.type === 'MULTIBINDS_SAVE') {
-            const list = Array.isArray(message.value) ? message.value : [];
-            replaceMultibinds(list)
-                .then((normalized) => {
-                    this.dispatch({ multibindsStorage: normalized });
-                })
-                .catch(e => console.error('Failed to save multibinds:', e));
-            return;
-        }
-        if (message.type === 'SET_STORAGE') {
-            setItemSync(message.key, message.value);
-            this.dispatch({storage: {key: message.key, value: message.value}});
-            if (message.key === 'settings' || message.key === 'npc' || message.key === 'uiSettings' || message.key === 'binds') {
-                this.dispatch({[message.key]: message.value});
-            }
-        }
-        if (message.type === 'GET_STORAGE') {
-            this.sendStorage(message.key);
-        }
+        console.warn('Post message called');
     }
 
     private sendStorage(key: string) {
-        const data = getItemSync(key);
-        const value = data ? data[key] : {};
-        this.dispatch({ storage: { key, value } });
-        if (key === 'settings' || key === 'npc' || key === 'uiSettings' || key === 'binds') {
-            this.dispatch({ [key]: value });
-        }
+      console.warn('Send storage called with key:', key);
     };
 }

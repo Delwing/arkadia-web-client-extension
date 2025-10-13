@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export interface CharStateData {
   hp: number;
@@ -69,7 +70,6 @@ const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
 };
 
 export default class CharState {
-  private client: typeof ArkadiaClient;
   private container: HTMLElement | null;
   private text: HTMLElement | null;
   private bars: HTMLElement | null;
@@ -150,23 +150,17 @@ export default class CharState {
   }
 
   constructor(
-    client: typeof ArkadiaClient,
     overrides?: Partial<
       Record<keyof CharStateData, Partial<CharStateConfig>>
     >,
   ) {
-    this.client = client;
     this.config = { ...DEFAULT_CONFIG };
     this.applyOverrides(overrides);
     this.initDOM();
 
-    this.client.on('settings', (ev: any) => {
-      if (typeof ev.detail?.emojiLabels === 'boolean') {
-        this.applyLabelMode(ev.detail.emojiLabels);
-      }
-      if (typeof ev.detail?.footerMode === 'number') {
-        this.applyMode(ev.detail.footerMode);
-      }
+    appEventBus.on('uiSettings', (settings) => {
+      this.applyLabelMode(settings.emojiLabels);
+      this.applyMode(settings.footerMode);
     });
 
     const ext: any = (window as any).clientExtension;
@@ -181,12 +175,12 @@ export default class CharState {
       });
     }
 
-    this.client.on(
+    appEventBus.on(
       "gmcp.char.state",
       (state: Partial<CharStateData>) => this.update(state),
     );
 
-    this.client.on('gmcp.char.options', (options: any) => {
+    appEventBus.on('gmcp.char.options', (options: any) => {
       this.options = { ...this.options, ...options };
       this.update({});
     });

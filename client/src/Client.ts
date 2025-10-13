@@ -44,7 +44,7 @@ export default class Client {
     Pausers = new Pausers(this);
     OutputHandler = new OutputHandler(this);
     TeamManager = new TeamManager(this);
-    ObjectManager = new ObjectManager(this);
+    ObjectManager = new ObjectManager();
     inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
@@ -94,7 +94,7 @@ export default class Client {
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
 
 
-    constructor(clientAdapter: ClientAdapter, port: any) {
+    constructor(clientAdapter: ClientAdapter) {
         this.clientAdapter = clientAdapter
 
         this.updateContentWidth()
@@ -222,34 +222,34 @@ export default class Client {
             }
         }
 
-        this.addEventListener('settings', (ev: CustomEvent) => {
-            applyBinds(ev.detail?.binds)
+        //TODO check whether this applyBinds is required on both events
+        appEventBus.on("settings", (settings) => {
+            applyBinds(settings.binds)
         })
 
-        this.addEventListener('binds', (ev: CustomEvent) => {
-            applyBinds(ev.detail)
+        appEventBus.on("binds", (binds) => {
+            applyBinds(binds)
         })
 
-        this.addEventListener('uiSettings', (ev: CustomEvent) => {
-            if (ev.detail?.xtermPalette) {
-                setXtermPalette(ev.detail.xtermPalette);
-            }
+        appEventBus.on('uiSettings', (uiSettings) => {
+            setXtermPalette(uiSettings.xtermPalette);
         })
 
         appEventBus.on('gmcp.char.info', event => {
             if (event.name) {
                 setCurrentCharacter(event.name);
-                if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
-                        this.port!.postMessage({type: 'GET_STORAGE', key: k});
-                    });
-                }
+                // if (this.port) {
+                //     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
+                //         this.port!.postMessage({type: 'GET_STORAGE', key: k});
+                //     });
+                // }
+                //TODO initial settings load
             }
             if (typeof event.object_num !== 'undefined') {
                 const newNum = String(event.object_num);
                 const stored = getItemSync('object_num')?.object_num;
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
-                    appEventBus.on('reset');
+                    appEventBus.emit('reset');
                 }
                 setItemSync('object_num', newNum);
             }
@@ -266,19 +266,6 @@ export default class Client {
         appEventBus.on("output-sent", () => {
             this.flushBuffer()
         })
-
-        this.port = port
-        port.onMessage.addListener((message) => {
-            if (message && typeof message.type === 'string') {
-                this.sendEvent(message.type, message.data)
-                return
-            }
-            if (message && typeof message === 'object') {
-                Object.entries(message).forEach(([key, value]) => {
-                    this.sendEvent(key, value)
-                })
-            }
-        })
     }
 
     setTempBind(index: number, command: string) {
@@ -294,15 +281,6 @@ export default class Client {
         } else {
             this.println(`Tymczasowe przypisanie ${index + 1} (${label}) zostalo wyczyszczone.`)
         }
-    }
-
-    connect(port: any, initial: boolean) {
-        if (initial) {
-            port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
-        }
-        this.port = port
-        this.sendEvent('port-connected')
-        console.log("Client connected to background service.")
     }
 
     send(command: string, echo: boolean = true) {
@@ -445,7 +423,6 @@ export default class Client {
         const emittedCount = this.buffer.length
         this.buffer.forEach(item => {
             const parsed = this.parseClickableTags(item.out)
-            this.clientAdapter.output(parsed.output, item.type, parsed.clickCallbacks)
             this.sendEvent('output', {
                 message: parsed.output,
                 type: item.type,
@@ -454,7 +431,6 @@ export default class Client {
         })
         this.buffer = []
         if (emittedCount > 0) {
-            this.OutputHandler.processOutput(new CustomEvent('output-sent', {detail: emittedCount}))
             this.sendEvent('output-sent', emittedCount)
         }
     }

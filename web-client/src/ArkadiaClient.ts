@@ -1,5 +1,4 @@
 import {parseAnsiPatterns} from './ansiParser';
-import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import type {ClickCallbackMap} from "@client/src/OutputHandler.ts";
@@ -8,15 +7,13 @@ import {uncompress} from "./compression.ts";
 import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
 import appEventBus from "@client/src/events/app-event-bus.ts";
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
-
 // WebSocket configuration
 const GMCP_COMMAND_CODE = 201;
 const MCCP_COMMAND_CODE = 86;
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 
 
-class ArkadiaClient implements ClientAdapter {
+export default class ArkadiaClient implements ClientAdapter {
     private websocketAdapter: WebSocketTransportAdapter;
     private receivedFirstGmcp: boolean = false;
     private mccp: boolean = false;
@@ -42,7 +39,10 @@ class ArkadiaClient implements ClientAdapter {
                     break
             }
         })
-        //TODO register recorder
+
+        appEventBus.on('output', (event) => {
+            this.output(event.message, event.type, event.clickCallbacks)
+        })
     }
 
     /**
@@ -124,7 +124,7 @@ class ArkadiaClient implements ClientAdapter {
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
-            appEventBus.emit('message', sanitized)
+            appEventBus.emit('message', {text: sanitized, type: "raw"})
         }
         this.flushMessageBuffer()
     }
@@ -205,5 +205,3 @@ class ArkadiaClient implements ClientAdapter {
 
 }
 
-const websocketAdapter = new WebSocketTransportAdapter()
-export default new ArkadiaClient(websocketAdapter);

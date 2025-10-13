@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class ReleaseGuard {
   private container: HTMLElement | null;
@@ -7,10 +8,10 @@ export default class ReleaseGuard {
     this.container = document.getElementById("release-guard");
     if (this.container) {
       this.container.addEventListener("click", () => {
-        client.emit("releaseGuard", !this.state);
+        appEventBus.emit("releaseGuard", !this.state);
       });
     }
-    client.on("releaseGuard", (state: boolean) => {
+    appEventBus.on("releaseGuard", (state: boolean) => {
       this.state = state;
       this.update(state);
     });

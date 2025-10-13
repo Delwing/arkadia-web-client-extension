@@ -3,7 +3,9 @@ import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
-import { openHerbContextMenu } from "../contextMenus";
+import {openHerbContextMenu} from "../contextMenus";
+import appEventBus from "../events/app-event-bus";
+import {getItemSync} from "../storage";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -105,27 +107,21 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let loading: Promise<void> | null = null;
     const herbMap: Record<string, string> = {};
     let width = client.contentWidth;
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
+    appEventBus.on('contentWidth', (_width) => {
+        width = _width;
     });
+
+
     let storedBags: Record<number, Record<string, number>> = {};
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            storedBags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
-        }
-    });
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+
+    storedBags = getItemSync(STORAGE_KEY)
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const st = ev.detail || {};
-        preUseCommands = typeof st.herbPreUseCommand === 'string'
-            ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
-            : [];
-        postUseCommands = typeof st.herbPostUseCommand === 'string'
-            ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
-            : [];
+    appEventBus.on('settings', (settings) => {
+        console.log(settings)
+        preUseCommands = settings.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
+        postUseCommands = settings.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
     });
 
     async function ensureData() {
@@ -140,7 +136,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                             });
                         });
                     }
-                }).finally(() => { loading = null; });
+                }).finally(() => {
+                    loading = null;
+                });
             }
             if (loading) {
                 await loading;
@@ -235,7 +233,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         storedBags = structuredClone(bagTotals);
         const lines = buildSummary(storedBags);
         client.println(lines.join('\n'));
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags });
+        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags});
         awaiting = false;
         left = 0;
         Object.keys(totals).forEach(k => delete totals[k]);
@@ -317,31 +315,30 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (contents[herb] <= 0) delete contents[herb];
             leftToTake -= toTake;
         }
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags });
+        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags});
     }
 
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
-                const listener = (ev: CustomEvent) => {
-                    if (ev.detail.key === STORAGE_KEY) {
-                        const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
-                        const lines = buildSummary(bags, false);
-                        if (lines.length > 0) {
-                            client.println(lines.join('\n'));
-                        } else {
-                            client.println('Brak podsumowania.');
-                        }
-                        client.removeEventListener('storage', listener);
-                    }
-                };
-                client.addEventListener('storage', listener);
-                client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+                const bags = getItemSync(STORAGE_KEY) || {};
+                const lines = buildSummary(bags, false);
+                if (lines.length > 0) {
+                    client.println(lines.join('\n'));
+                } else {
+                    client.println('Brak podsumowania.');
+                }
             }
         });
-        aliases.push({ pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10)) });
-        aliases.push({ pattern: /^\/wezz ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1) });
+        aliases.push({
+            pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10))
+        });
+        aliases.push({
+            pattern: /^\/wezz ([a-zA-Z_]+)$/,
+            callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1)
+        });
         aliases.push({
             pattern: /^\/zi (\w+) (\w+)$/,
             callback: async (m: RegExpMatchArray) => {

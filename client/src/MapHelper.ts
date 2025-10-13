@@ -3,6 +3,7 @@ import { getItemSync, setItemSync } from "./storage";
 import { getLongDir, getShortDir, longToShort } from "./utils/directions";
 import Room = MapData.Room;
 import { MapReader, PathFinder } from "mudlet-map-renderer"
+import appEventBus from "./events/app-event-bus";
 
 const STORAGE_KEY = 'mapperRoomId';
 
@@ -48,33 +49,32 @@ export default class MapHelper {
         if (saved) {
             this.savedRoomId = parseInt(saved);
         }
-        this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
+        appEventBus.on("enterLocation", (event) => {
+            this.handleNewLocation(event)
+        })
 
-        this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
+        appEventBus.on("gmcp.room.info", (event) => {
             this.setBlockable(false);
-            this.gmcpPosition = event.detail.map;
+            this.gmcpPosition = event.map;
             if (this.refreshPosition) {
                 this.setMapPosition(this.gmcpPosition)
                 this.refreshPosition = false
             }
         })
 
-        this.client.addEventListener('refreshPositionWhenAble', () => {
+        appEventBus.on("refreshPositionWhenAble", () => {
             this.refreshPosition = true;
-        });
+        })
 
-        this.client.addEventListener('gmcp.char.info', () => {
-            const listener = (event: CustomEvent) => {
-                if (event.detail.key === STORAGE_KEY) {
-                    const value = parseInt(event.detail.value);
-                    if (!isNaN(value)) {
-                        this.savedRoomId = value;
-                        this.setMapRoomById(this.savedRoomId);
-                    }
-                }
-            };
-            this.client.addEventListener('storage', listener);
-        });
+
+        appEventBus.on("gmcp.char.info", () => {
+            const value = parseInt(getItemSync(STORAGE_KEY))
+            if (!isNaN(value)) {
+                this.savedRoomId = value;
+                this.setMapRoomById(this.savedRoomId);
+            }
+
+        })
 
         this.client.sendEvent('refreshPositionWhenAble');
     }
@@ -327,13 +327,13 @@ export default class MapHelper {
     }
 
     handleNewLocation({room: room}) {
-        this.client.addEventListener('output-sent', () => {
+        appEventBus.once('output-sent', () => {
             if (room.userData?.bind) {
                 this.client.FunctionalBind.set(room.userData?.bind, () => this.client.sendCommand(room.userData?.bind))
             } else if (room.userData?.drinkable) {
                 this.client.FunctionalBind.set("napij sie do syta wody", () => this.client.sendCommand("napij sie do syta wody"))
             }
-        }, {once: true})
+        })
     }
 
     getAreaName(id: string) {

@@ -1,4 +1,5 @@
 import storage, { getItemSync } from "@client/src/storage";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
@@ -72,8 +73,9 @@ export default async function initSessionLogger(client: Client) {
     return;
   }
 
-  client.on('message', (text?: string, type?: string) => {
+  appEventBus.on('message', (event) => {
     if (!loggingEnabled) return;
+    let { text, type } = event;
     if (text) {
       if (text === "\n") {
         text = "";

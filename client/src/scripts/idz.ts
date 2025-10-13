@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { longToShort } from "../MapHelper";
 import { getShortcut } from "./shortcuts";
+import appEventBus from "../events/app-event-bus";
 
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -18,8 +19,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
     const isWalking = () => !paused && path.length > 0;
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        settings = ev.detail || {};
+    appEventBus.on('settings', (settings) => {
         const value = parseFloat(settings.autoWalkDelay);
         if (!isNaN(value)) {
             lastDelay = value;
@@ -133,16 +133,16 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
 
 
-    client.addEventListener('stepBack', stopWalk);
-    client.addEventListener('mapMove', stopWalk);
-    client.addEventListener('pauserStart', () => {
+    appEventBus.on('stepBack', stopWalk);
+    appEventBus.on('mapMove', stopWalk);
+    appEventBus.on('pauserStart', () => {
         if (!paused && path.length > 0) {
             paused = true;
             pausedByPauser = true;
             clearTimer();
         }
     });
-    client.addEventListener('pauserEnd', () => {
+    appEventBus.on('pauserEnd', () => {
         if (pausedByPauser) {
             paused = false;
             pausedByPauser = false;

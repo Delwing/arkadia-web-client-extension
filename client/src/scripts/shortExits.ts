@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 import { getShortDir } from "../utils/directions";
+import appEventBus from "../events/app-event-bus";
 
 const ORANGE = findClosestColor('#ffa500');
 
@@ -48,9 +49,8 @@ const EXIT_PATTERNS: RegExp[] = [
 export default function initShortExits(client: Client) {
     let enabled = false;
 
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail || {};
-        enabled = !!settings.shortenExits;
+    appEventBus.on('settings', (settings) => {
+        enabled = settings.shortenExits;
     });
 
     const callback = (_r: string, _l: string, m: RegExpMatchArray) => {

@@ -1,8 +1,14 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { Button, Table, Form } from 'react-bootstrap';
-import { getRecordingNames, deleteRecording, getRecording, saveRecording } from './recordingStorage';
+import {ChangeEvent, useEffect, useRef, useState} from 'react';
+import {Button, Table, Form} from 'react-bootstrap';
+import {getRecordingNames, deleteRecording, getRecording, saveRecording} from './recordingStorage';
+import appEventBus from "@client/src/events/app-event-bus.ts";
+import Recorder from "../Recorder.ts";
 
-function Recordings() {
+interface Props {
+    recorder: Recorder
+}
+
+function Recordings({recorder}: Props) {
     const [names, setNames] = useState<string[]>([]);
     const [recordingName, setRecordingName] = useState('');
     const [recording, setRecording] = useState(false);
@@ -16,8 +22,6 @@ function Recordings() {
     useEffect(load, []);
 
     useEffect(() => {
-        if (!window.client) return;
-
         const startHandler = (name: string) => {
             setRecordingName(name);
             setRecording(true);
@@ -28,56 +32,32 @@ function Recordings() {
             if (save) load();
         };
 
-        window.client.on('recording.start', startHandler);
-        window.client.on('recording.stop', stopHandler);
+        appEventBus.on('recording.start', startHandler);
+        appEventBus.on('recording.stop', stopHandler);
         return () => {
-            window.client.off('recording.start', startHandler);
-            window.client.off('recording.stop', stopHandler);
+            appEventBus.off('recording.start', startHandler);
+            appEventBus.off('recording.stop', stopHandler);
         };
     }, []);
 
-    function activeTabAction(msg: any) {
-        chrome.tabs?.query({ active: true, currentWindow: true }, tabs => {
-            if (tabs[0]?.id) {
-                chrome.tabs.sendMessage(tabs[0].id!, msg);
-            }
-        });
-    }
-
     async function handlePlay(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessages();
-        } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING', events });
-        }
+        await recorder.loadRecording(name);
+        recorder.replayRecordedMessages();
+
     }
 
     async function handlePlayTimed(name: string) {
-        if (window.client) {
-            await window.client.loadRecording(name);
-            window.client.replayRecordedMessagesTimed();
-        } else {
-            const events = await getRecording(name);
-            if (!events) return;
-            activeTabAction({ type: 'PLAY_RECORDING_TIMED', events });
-        }
+        await recorder.loadRecording(name);
+        recorder.replayRecordedMessagesTimed()
     }
 
     async function handleDelete(name: string) {
-        if (window.client) {
-            await window.client.deleteRecording(name);
-            load();
-        } else {
-            await deleteRecording(name);
-            load();
-        }
+        await recorder.deleteRecording(name);
+        load();
     }
 
     function createDownload(json: string, filename: string) {
-        const blob = new Blob([json], { type: 'application/json' });
+        const blob = new Blob([json], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -102,7 +82,7 @@ function Recordings() {
         const events = await getRecording(name);
         if (!events) return;
 
-        const json = JSON.stringify({ [name]: events }, null, 2);
+        const json = JSON.stringify({[name]: events}, null, 2);
         const safeName = name.replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
         createDownload(json, `arkadia-recording-${safeName}.json`);
     }
@@ -110,12 +90,12 @@ function Recordings() {
     async function uploadRecordings(event: ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
         if (!file) return;
-        
+
         try {
             const text = await file.text();
             const data = JSON.parse(text);
             if (typeof data !== 'object' || data === null) throw new Error('Invalid JSON structure');
-            
+
             const entries = Object.entries<any[]>(data);
             for (const [name, events] of entries) {
                 if (Array.isArray(events)) {
@@ -142,21 +122,14 @@ function Recordings() {
     function start() {
         const name = recordingName.trim();
         if (!name) return;
-        if (window.client) {
-            window.client.startRecording(name);
-        } else {
-            activeTabAction({ type: 'START_RECORDING', name });
-        }
+        recorder.startRecording(name);
+
         setRecording(true);
     }
 
     async function stop(save: boolean) {
-        if (window.client) {
-            await window.client.stopRecording(save);
-            if (save) load();
-        } else {
-            activeTabAction({ type: 'STOP_RECORDING', save });
-        }
+        await recorder.stopRecording(save);
+        if (save) load();
         setRecording(false);
     }
 
@@ -170,7 +143,7 @@ function Recordings() {
                     value={recordingName}
                     onChange={e => setRecordingName(e.target.value)}
                     disabled={recording}
-                    style={{ maxWidth: '10rem' }}
+                    style={{maxWidth: '10rem'}}
                 />
                 {recording ? (
                     <>
@@ -203,7 +176,7 @@ function Recordings() {
                     ref={fileInput}
                     type="file"
                     accept="application/json"
-                    style={{ display: 'none' }}
+                    style={{display: 'none'}}
                     onChange={uploadRecordings}
                 />
             </div>

@@ -211,7 +211,7 @@ export function registerScripts(client: Client) {
     initShortcuts(client, aliases)
     initLetter(client, aliases)
     initShortExits(client)
-    initExternalScripts(client)
+    initExternalScripts()
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initWeaponEvaluation(client)

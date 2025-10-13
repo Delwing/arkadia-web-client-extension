@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import type { PersonEntry } from './types/people';
+import type { PersonEntry } from '@client/src/types/people';
 import { parsePeopleDatabase } from './peopleParser';
 import { downloadPeopleDatabase } from './peopleDownload';
 
@@ -7,6 +7,12 @@ interface LoadRequest {
     id: number;
     type: 'loadPeople';
 }
+
+/*
+workerInstance = new Worker(new URL('./peopleWorker.ts', import.meta.url), {
+    type: 'module',
+});
+ */
 
 type WorkerRequest = LoadRequest;
 

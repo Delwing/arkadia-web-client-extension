@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 const SAFE_THRESHOLD_SECONDS = 30;
 
@@ -50,7 +51,7 @@ export default function initZaskTimer(client: Client) {
         timer = window.setInterval(updateTimer, 1000);
     }
 
-    client.addEventListener('gmcp.room.info', () => {
+    appEventBus.on('gmcp.room.info', () => {
         if (client.moveMode > 0) {
             startTimer();
         } else {
@@ -58,8 +59,8 @@ export default function initZaskTimer(client: Client) {
         }
     });
 
-    client.addEventListener('moveModeChanged', (event: CustomEvent<number>) => {
-        if (event.detail === 0) {
+    appEventBus.on('moveModeChanged', (mode) => {
+        if (mode === 0) {
             stopTimer();
         }
     });

@@ -1,4 +1,5 @@
 import Client from "./Client";
+import appEventBus from "./events/app-event-bus";
 
 interface ObjectData {
     attack_num: boolean | number
@@ -50,17 +51,17 @@ export default class TeamManager {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.handleObjectsData(e.detail);
+        appEventBus.on('gmcp.objects.data', (event) => {
+            this.handleObjectsData(event);
         });
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
-            this.handleObjectsNums(e.detail);
+        appEventBus.on('gmcp.objects.nums', (event) => {
+            this.handleObjectsNums(event);
         });
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            this.playerNum = String(e.detail.object_num);
+        appEventBus.on('gmcp.char.info', (event) => {
+            this.playerNum = String(event.object_num);
         });
-        this.client.addEventListener('gmcp.room.info', (e: CustomEvent) => {
-            this.handleRoomInfo(e.detail);
+        appEventBus.on('gmcp.room.info', (event) => {
+            this.handleRoomInfo(event);
         });
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
@@ -69,7 +70,7 @@ export default class TeamManager {
 
     private handleObjectsData(data: Record<string, AccumulatedObjectData>) {
         Object.entries(data).forEach(([id, obj]) => {
-            this.accumulatedObjectsData[id] = { ...(this.accumulatedObjectsData[id] ?? {}), ...obj };
+            this.accumulatedObjectsData[id] = {...(this.accumulatedObjectsData[id] ?? {}), ...obj};
 
             if (typeof obj.attack_target === 'boolean') {
                 if (obj.attack_target) {
@@ -101,7 +102,7 @@ export default class TeamManager {
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
             this.client.sendEvent('teamLeaderTargetNoAvatar', this.leaderAttackTargetId);
-        } else  {
+        } else {
             this.client.sendEvent('teamLeaderTargetAvatar');
         }
     }
@@ -368,7 +369,7 @@ export default class TeamManager {
 
     private notifyAttackQueueChange() {
         if (typeof this.client?.sendEvent === "function") {
-            this.client.sendEvent("attackQueueChange", this.getEnemyQueue());
+            appEventBus.on("attackQueueChange", this.getEnemyQueue)
         }
     }
 }

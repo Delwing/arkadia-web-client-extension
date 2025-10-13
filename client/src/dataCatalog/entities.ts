@@ -40,8 +40,8 @@ export interface HerbsData {
 export interface Person {
   id: string;
   name: string;
-  health: number;
-  inventory: string[];
+  description: string;
+  guild: string
 }
 
 export type NpcCollection = NpcEntry[];

@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import FightTitle from "./FightTitle.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class HpTitle {
   private client: typeof ArkadiaClient;
@@ -10,8 +11,8 @@ export default class HpTitle {
     this.client = client;
     this.fightTitle = fightTitle;
     this.originalTitle = fightTitle.getOriginalTitle();
-    this.client.on("gmcp.char.state", (state: any) => this.handleState(state));
-    this.client.on("client.disconnect", () => this.reset());
+    appEventBus.on("gmcp.char.state", (state: any) => this.handleState(state));
+    appEventBus.on("client.disconnect", () => this.reset());
   }
 
   private reset() {

@@ -1,4 +1,4 @@
-import ArkadiaClient from "./ArkadiaClient";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface DisplayMultibind {
   index: number;
@@ -9,9 +9,9 @@ interface DisplayMultibind {
 export default class MultiBinds {
   private container: HTMLElement | null;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor() {
     this.container = document.getElementById("multi-binds");
-    client.on(
+    appEventBus.on(
       "multibinds",
       (payload: { list?: DisplayMultibind[] } = { list: [] }) => {
         const list = Array.isArray(payload.list) ? payload.list : [];

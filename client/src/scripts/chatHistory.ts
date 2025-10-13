@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 const HISTORY_LIMIT = 20;
 
@@ -44,13 +45,13 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         client.print(lines.join("\n"));
     }
 
-    client.addEventListener("gmcp_msg.comm", (ev: CustomEvent<string>) => {
-        const text = ev.detail;
+    appEventBus.on("gmcp_msg.comm", (event) => {
+        const text = event
         if (typeof text !== "string" || !text.trim()) return;
         addEntry(text);
     });
 
-    client.addEventListener("client.disconnect", () => {
+    appEventBus.on("client.disconnect", () => {
         history.length = 0;
     });
 

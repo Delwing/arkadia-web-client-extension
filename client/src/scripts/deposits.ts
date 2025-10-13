@@ -2,6 +2,8 @@ import Client from "../Client";
 import { stripAnsiCodes } from "../Triggers";
 import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
 import { colorString, findClosestColor } from "../Colors";
+import {getItemSync, setItemSync} from "../storage";
+import appEventBus from "../events/app-event-bus";
 
 interface DepositInfo {
     name: string;
@@ -21,25 +23,20 @@ function isBankRoom(room: any): boolean {
 }
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail.key === STORAGE_KEY && event.detail.value) {
-            Object.assign(deposits, event.detail.value);
-        }
-    });
 
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+    Object.assign(deposits, getItemSync(STORAGE_KEY));
 
     const persist = () => {
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: deposits });
+        setItemSync(STORAGE_KEY, deposits)
     };
 
     let columns = 1;
     let width = client.contentWidth;
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        columns = ev.detail.containerColumns ?? columns;
+    appEventBus.on('settings', (settings) => {
+        columns = settings.containerColumns ?? columns;
     });
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
+    appEventBus.on('contentWidth', (_width) => {
+        width = _width;
     });
 
     function update(items: ContainerItem[] | null) {

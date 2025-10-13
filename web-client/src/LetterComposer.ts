@@ -6,6 +6,7 @@ import {
     type LetterSubmitPayload,
     type LetterTemplate,
 } from "@client/src/types/letter";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface LetterComposerState {
     hasCustomPosition: boolean;
@@ -47,7 +48,7 @@ export default class LetterComposer {
         this.applyTemplateSelection(this.templateSelection);
 
         this.attachListeners();
-        this.client.on("letterComposer", () => this.show());
+        appEventBus.on("letterComposer", () => this.show());
     }
 
     private getPayload(): SubmitPayload {
@@ -68,7 +69,7 @@ export default class LetterComposer {
             this.form.addEventListener("submit", ev => {
                 ev.preventDefault();
                 const payload = this.getPayload();
-                this.client.emit("letterComposer.submit", payload);
+                appEventBus.emit("letterComposer.submit", payload);
                 this.hide();
                 this.form?.reset();
                 this.applyTemplateSelection(this.templateSelection);
@@ -83,7 +84,7 @@ export default class LetterComposer {
             this.previewButton.addEventListener("click", ev => {
                 ev.preventDefault();
                 const payload = this.getPayload();
-                this.client.emit("letterComposer.preview", payload);
+                appEventBus.emit("letterComposer.preview", payload);
             });
         }
 

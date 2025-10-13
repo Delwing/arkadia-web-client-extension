@@ -2,8 +2,12 @@ import {EventBus} from "./event-bus";
 import type {ClickCallbackMap} from "../OutputHandler";
 import type {LetterSubmitPayload} from "../types/letter";
 import {Settings} from "../defaultSettings";
+import {UiSettings} from "sandbox-react/src/uiSettings";
+import {ButtonSetting} from "sandbox-react/src/mobileButtonSettings";
 
 type AppEvents = {
+    "attackQueueChange": string[];
+    "binds": any; //TODO type and check whether this is needed
     'client.disconnect': void;
     'client.connect': void;
     'command': string;
@@ -18,17 +22,17 @@ type AppEvents = {
     'mapMove': void;
     'stepBack': void;
     'leadTo': number | void;
-    'notify': { text: string };
+    'notify': { text: string, time?: number };
     'lampTimer': number | null;
     'coverTimer': number | null;
     'breakItem': { text: string; command?: string };
     'packageStatus': { recipient: string; seconds?: number } | null;
     'releaseGuard': boolean;
-    'attackMode': string;
+    'attackMode': 'A' | 'AW' | 'AWR';
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'highlights': number[];
-    'killed': { mob: string, isTeamKill: boolean};
+    'killed': { mob: string, isTeamKill: boolean };
     'pauserStart': void;
     'pauserEnd': void;
     'multibinds': { list: { index: number; action: string; label: string }[] };
@@ -40,7 +44,7 @@ type AppEvents = {
     'moveModeChanged': number;
     'line': { text: string, type: string };
     'line-start': void;
-    'message': string | {text: string, type: string, callbackMap: ClickCallbackMap };
+    'message': { text: string, type: string, callbackMap?: ClickCallbackMap };
     'gmcp': { path: string; value: any };
     'refreshPositionWhenAble': void;
     'teamLeaderTargetNoAvatar': string;
@@ -52,10 +56,13 @@ type AppEvents = {
     'playback.stop': void;
     'playback.pause': void;
     'playback.resume': void;
-    'playback.index': [number, number];
+    'playback.index': { current: number, total: number };
     'reset': void;
     'settings': Settings
-    'uiSettings': void
+    'uiSettings': UiSettings,
+    playBeep: void
+    mobileButtonsSettings: Record<string, ButtonSetting>
+    'map-position-change': void
 }
 
 export type ClientEvents = AppEvents & {

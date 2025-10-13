@@ -1,13 +1,9 @@
 import {saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent} from './recordingStorage';
 import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
-
-export interface RecorderHooks {
-    send(command: string, echo?: boolean): void;
-    emit(event: string, ...args: any[]): void;
-    processIncomingData(data: string): void;
-}
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class Recorder {
+    private webSocketAdapter: WebSocketTransportAdapter;
     private isRecording = false;
     private recordedMessages: RecordedEvent[] = [];
     private currentRecordingName: string | null = null;
@@ -19,9 +15,9 @@ export default class Recorder {
     private isPlaying = false;
     private paused = false;
 
-    constructor(private hooks: RecorderHooks, private websocketAdapter: WebSocketTransportAdapter) {
-
-        websocketAdapter.messages$.subscribe((message) => {
+    constructor(websocketAdapter: WebSocketTransportAdapter) {
+        this.webSocketAdapter = websocketAdapter;
+        this.webSocketAdapter.messages$.subscribe((message) => {
             switch (message.type) {
                 case "rawData":
                     this.handleIncoming(message.payload)
@@ -33,7 +29,6 @@ export default class Recorder {
                     break
             }
         })
-
     }
 
     handleIncoming(message: string) {
@@ -60,7 +55,7 @@ export default class Recorder {
         this.recordedMessages = [];
         this.currentRecordingName = name;
         this.isRecording = true;
-        this.hooks.emit('recording.start', name);
+        appEventBus.emit('recording.start', name);
     }
 
     async stopRecording(save?: boolean) {
@@ -68,7 +63,7 @@ export default class Recorder {
         if (save && this.currentRecordingName) {
             await saveRecording(this.currentRecordingName, this.recordedMessages);
         }
-        this.hooks.emit('recording.stop', save);
+        appEventBus.emit('recording.stop', save);
         this.currentRecordingName = null;
     }
 
@@ -93,7 +88,7 @@ export default class Recorder {
         this.isPlaying = false;
         this.paused = false;
         this.playbackIndex = 0;
-        this.hooks.emit('playback.stop');
+        appEventBus.emit('playback.stop');
     }
 
     pausePlayback() {
@@ -104,14 +99,14 @@ export default class Recorder {
             this.pausedDelay = Math.max(0, this.playbackDelay - (Date.now() - this.playbackStart));
         }
         this.paused = true;
-        this.hooks.emit('playback.pause');
+        appEventBus.emit('playback.pause');
     }
 
     resumePlayback() {
         if (!this.isPlaying || !this.paused) return;
         this.paused = false;
         this.scheduleNext(this.pausedDelay);
-        this.hooks.emit('playback.resume');
+        appEventBus.emit('playback.resume');
     }
 
     stepForward() {
@@ -157,16 +152,16 @@ export default class Recorder {
         if (this.recordedMessages.length === 0) return;
         this.stopPlayback();
         this.isPlaying = true;
-        this.hooks.emit('playback.start');
-        Output.send('== Playback start ==');
+        appEventBus.emit('playback.start');
+        appEventBus.emit('message', {text: '== Playback start ==', type: 'raw'});
         this.recordedMessages.forEach(ev => {
             if (ev.direction === 'in') {
-                this.hooks.processIncomingData(ev.message);
+                this.webSocketAdapter.messages$.next({type: 'data', payload: ev.message});
             } else {
-                Output.send('→ ' + ev.message);
+                appEventBus.emit('message', {text: '→ ' + ev.message, type: 'raw'});
             }
         });
-        Output.send('== Playback end ==');
+        appEventBus.emit('message', {text: '== Playback end ==', type: 'raw'});
         this.stopPlayback();
     }
 
@@ -176,39 +171,40 @@ export default class Recorder {
         this.isPlaying = true;
         this.paused = false;
         this.playbackIndex = 0;
-        this.hooks.emit('playback.start', this.recordedMessages.length);
-        Output.send('== Playback start ==');
-        this.hooks.emit('playback.index', 0, this.recordedMessages.length);
+        appEventBus.emit('playback.start', this.recordedMessages.length);
+        appEventBus.emit("message", {text: "== Playback start ==", type: "raw"});
+        appEventBus.emit('playback.index', {current: 0, total: this.recordedMessages.length});
         this.scheduleNext(0);
     }
 
     private playEvent(ev: RecordedEvent) {
         if (ev.direction === 'in') {
-            this.hooks.processIncomingData(ev.message);
+            this.webSocketAdapter.messages$.next({type: 'data', payload: ev.message});
         } else {
-            Output.send('→ ' + ev.message);
-            window.clientExtension.sendCommand(ev.message, false);
-            this.hooks.send(ev.message, false);
+            appEventBus.emit('message', {text: '→ ' + ev.message, type: 'command'});
+            //window.clientExtension.sendCommand(ev.message, false); //TODO send command via aliases
+            //this.hooks.send(ev.message, false);
         }
     }
 
     private executeCurrent() {
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+            appEventBus.emit('message', {text: '== Playback end ==', type: 'raw'});
             this.stopPlayback();
             return;
         }
         this.playEvent(ev);
         this.playbackIndex++;
-        this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+        appEventBus.emit('playback.index', {current: this.playbackIndex, total: this.recordedMessages.length});
     }
 
     private scheduleNext(initialDelay: number) {
         if (!this.isPlaying) return;
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+
+            appEventBus.emit('message', {text: '== Playback end ==', type: 'raw'});
             this.stopPlayback();
             return;
         }

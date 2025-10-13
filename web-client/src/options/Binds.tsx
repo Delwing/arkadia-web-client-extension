@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
-import eventBus from "@client/src/eventBus";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
 import appEventBus from "@client/src/events/app-event-bus.ts";

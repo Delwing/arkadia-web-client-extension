@@ -1,6 +1,7 @@
 import Client from "@client/src/Client";
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class ObjectList {
     private client: Client;
@@ -30,10 +31,10 @@ export default class ObjectList {
             this.container?.addEventListener("click", this.onClick);
         }
         window.addEventListener("resize", this.clampToViewport);
-        this.client.addEventListener("attackQueueChange", () => this.render());
-        this.client.addEventListener("gmcp.objects.nums", () => this.render());
-        this.client.addEventListener("gmcp.objects.data", () => this.render());
-        this.client.addEventListener("gmcp.char.state", () => this.render());
+        appEventBus.on("attackQueueChange", () => this.render());
+        appEventBus.on("gmcp.objects.nums", () => this.render());
+        appEventBus.on("gmcp.objects.data", () => this.render());
+        appEventBus.on("gmcp.char.state", () => this.render());
         this.render();
     }
 

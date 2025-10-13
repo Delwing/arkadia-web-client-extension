@@ -1,4 +1,5 @@
 import storage from "@client/src/storage";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export type MacroType =
     | 'functional'
@@ -361,11 +362,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
-        );
-    }
+    appEventBus.emit('mobileButtonsSettings', set.buttons);
 }
 
 

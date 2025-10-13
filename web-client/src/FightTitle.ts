@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class FightTitle {
   private baseTitle: string;
@@ -15,14 +16,12 @@ export default class FightTitle {
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
-    client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
-    client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
-    client.on("client.disconnect", () => this.reset());
-    (window as any).clientExtension?.eventTarget.addEventListener("uiSettings", (ev: CustomEvent) => {
-      if (typeof ev.detail?.fightTitleIcon === "boolean") {
-        this.enabled = ev.detail.fightTitleIcon;
-        this.updateTitle(this.isFighting, true);
-      }
+    appEventBus.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
+    appEventBus.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
+    appEventBus.on("client.disconnect", () => this.reset());
+    appEventBus.on("uiSettings", (settings: any) => {
+      this.enabled = settings.fightTitleIcon;
+      this.updateTitle(this.isFighting, true);
     });
   }
 

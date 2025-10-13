@@ -2,6 +2,7 @@ import Client from "../Client";
 import { defaultSettings } from "../defaultSettings";
 import type { LetterSubmitPayload, LetterTemplate } from "../types/letter";
 import { LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate } from "../types/letter";
+import appEventBus from "../events/app-event-bus";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
@@ -378,12 +379,12 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         });
     }
 
-    client.addEventListener("settings", (event: CustomEvent<Partial<{ letterLineWidth?: number }>>) => {
-        updateLineWidth(event.detail?.letterLineWidth);
+    appEventBus.on("settings", (settings) => {
+        updateLineWidth(settings.letterLineWidth);
     });
 
-    client.addEventListener("letterComposer.submit", (event: CustomEvent<LetterSubmitPayload>) => {
-        const { to, cc, subject, content, template: rawTemplate } = event.detail;
+    appEventBus.on("letterComposer.submit", (payload) => {
+        const { to, cc, subject, content, template: rawTemplate } = payload
         const recipient = to.trim();
         const carbonCopy = cc.trim();
         const subjectLine = subject.trim();
@@ -411,9 +412,9 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         client.sendCommand(carbonCopy);
     });
 
-    client.addEventListener("letterComposer.preview", (event: CustomEvent<LetterSubmitPayload>) => {
-        const template = normalizeTemplate(event.detail.template);
-        const { lines, hasContent } = renderLetter(event.detail.content, template);
+    appEventBus.on("letterComposer.preview", (payload) => {
+        const template = normalizeTemplate(payload.template);
+        const { lines, hasContent } = renderLetter(payload.content, template);
         printPreview(client, lines, template, hasContent);
     });
 }

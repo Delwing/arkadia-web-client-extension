@@ -1,6 +1,6 @@
 import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail, LabelRenderMode} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
-import eventBus, {ClientEvents} from "@client/src/eventBus";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -81,21 +81,21 @@ export class EmbeddedMap {
         this.pathFinder = pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
-        const handlePauseStart = () => {
+
+        appEventBus.on("pauserStart", () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = false;
             }
-        };
-        this.subscribeToEvent('pauserStart', handlePauseStart);
+        })
 
-        const handlePauseEnd = () => {
+        appEventBus.on("pauserEnd", () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = true;
             }
-        };
-        this.subscribeToEvent('pauserEnd', handlePauseEnd);
+        })
+
         let zoom = 0.30;
         let explorationMode = false;
         let instantMove = true;
@@ -148,32 +148,25 @@ export class EmbeddedMap {
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
 
-        const handleEnterLocation = ({id}: ClientEvents['enterLocation']) => {
+        appEventBus.on('enterLocation', ({id}) => {
             this.visited.add(id);
             this.reader.addVisitedRoom(id);
             setItemSync(STORAGE_KEY, id.toString());
             saveVisitedRooms(Array.from(this.visited));
             this.renderRoomById(id);
-        };
-        this.subscribeToEvent('enterLocation', handleEnterLocation);
+        });
 
-        const handleLeadTo = (destination: ClientEvents['leadTo']) => {
-            this.leadTo(destination);
-        };
-        this.subscribeToEvent('leadTo', handleLeadTo);
+        appEventBus.on("leadTo", (id) => {
+            if (!id) return
+            this.leadTo(id);
+        });
 
-        const handleHighlights = (highlights: ClientEvents['highlights']) => {
+        appEventBus.on("highlights", (highlights) => {
             this.highlights = highlights ?? [];
             this.refresh();
-        };
-        this.subscribeToEvent('highlights', handleHighlights);
+        });
 
         this.initVisitedRooms(initialRoom);
-    }
-
-    private subscribeToEvent<K extends keyof ClientEvents>(event: K, listener: (payload: ClientEvents[K]) => void) {
-        eventBus.on(event, listener as any);
-        this.eventUnsubscribes.push(() => eventBus.off(event, listener as any));
     }
 
     private async initVisitedRooms(initialRoom: number) {

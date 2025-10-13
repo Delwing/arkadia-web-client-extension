@@ -1,4 +1,6 @@
 import Client from "../Client";
+import {getItemSync} from "../storage";
+import appEventBus from "../events/app-event-bus";
 
 function escapeRegExp(str: string) {
     return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -10,20 +12,8 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     const STORAGE_KEY = 'lastLang';
     let currentLang = 'potoczna';
     let adjective = '';
-    let lastLang = '';
+    let lastLang = getItemSync(STORAGE_KEY)
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
-
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            lastLang = ev.detail.value || '';
-        }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 
     function setLanguage(lang: string) {
         if (lang !== lastLang && lang !== 'potoczna') {
@@ -32,7 +22,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     }
 
     function say(lang: string, adj: string, msg: string) {
-       setLanguage(lang);
+        setLanguage(lang);
         if (lang === 'potoczna' && adj === '') {
             client.send("'" + msg, false);
         } else {
@@ -48,7 +38,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         callback: (matches: RegExpMatchArray) => {
             client.send('justaw ' + matches[1], false);
             lastLang = matches[1];
-            client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
+            client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang});
         }
     })
 
@@ -73,11 +63,10 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         customAliases.forEach(a => aliases.push(a));
     };
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const detail = ev.detail || {};
-        currentLang = detail.language || 'potoczna';
-        adjective = detail.languageAdjective || '';
-        applyAliases(detail.languageAliases || []);
+    appEventBus.on('settings', (settings) => {
+        currentLang = settings.language || 'potoczna';
+        adjective = settings.languageAdjective || '';
+        applyAliases(settings.languageAliases || []);
     });
 
     aliases.push({
