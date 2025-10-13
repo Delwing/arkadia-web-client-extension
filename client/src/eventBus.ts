@@ -1,13 +1,19 @@
 import type { LetterSubmitPayload } from "./types/letter";
+import type { ClickCallbackMap } from "./OutputHandler";
 
 export interface KnownEvents {
     'command': string;
     'port-connected': void;
-    'output-sent': number;
-    'buffer-sent': number;
+    'output-sent': number | null | void;
+    'buffer-sent': number | void;
+    'output': {
+        message: string;
+        type?: string;
+        clickCallbacks?: ClickCallbackMap;
+    };
     'mapMove': void;
     'stepBack': void;
-    'leadTo': number | undefined;
+    'leadTo': number | void;
     'notify': { text: string };
     'lampTimer': number | null;
     'coverTimer': number | null;
@@ -27,6 +33,21 @@ export interface KnownEvents {
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
+    'line': [string, string | undefined];
+    'line-start': void;
+    'message': string | [string, string | undefined, ClickCallbackMap | undefined];
+    'gmcp': { path: string; value: any };
+    'refreshPositionWhenAble': void;
+    'teamLeaderTargetNoAvatar': string;
+    'teamLeaderTargetAvatar': void;
+    'teamChange': void;
+    'recording.start': string;
+    'recording.stop': boolean | undefined;
+    'playback.start': number | void;
+    'playback.stop': void;
+    'playback.pause': void;
+    'playback.resume': void;
+    'playback.index': [number, number];
 }
 
 export type ClientEvents = KnownEvents & {
@@ -35,11 +56,51 @@ export type ClientEvents = KnownEvents & {
     [key: string]: any;
 };
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+export type Params<T> = T extends void
+    ? []
+    : T extends any[]
+        ? T
+        : [T];
+export type EventParams<Events extends Record<string, any>, K extends keyof Events> = Params<Events[K]>;
 type Handler<T> = (...args: Params<T>) => void;
+
+type EventDetail<T> = T extends void
+    ? undefined
+    : T extends any[]
+        ? T
+        : T;
+
+const BRIDGE_EVENT_NAME = "arkadia.client.bridge";
+
+interface BridgeEventPayload {
+    origin: string;
+    type: string;
+    detail: unknown;
+}
 
 class EventBus<Events extends Record<string, any>> extends EventTarget {
     private wrappers = new WeakMap<Handler<any>, EventListener>();
+    private readonly origin = `bus-${Math.random().toString(36).slice(2)}`;
+    private bridging = false;
+
+    constructor() {
+        super();
+
+        if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+            window.addEventListener(BRIDGE_EVENT_NAME, (rawEvent: Event) => {
+                const payload = (rawEvent as CustomEvent<BridgeEventPayload>).detail;
+                if (!payload || payload.origin === this.origin) {
+                    return;
+                }
+                this.bridging = true;
+                try {
+                    this.dispatchLocal(payload.type as keyof Events, payload.detail);
+                } finally {
+                    this.bridging = false;
+                }
+            });
+        }
+    }
 
     on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean): () => void {
         const wrapper: EventListener = (ev: Event) => {

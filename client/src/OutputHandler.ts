@@ -22,6 +22,17 @@ export default class OutputHandler {
         document.addEventListener('click', this.hideContextMenu)
     }
 
+    processOutput = (event: CustomEvent<number | null | void>) => {
+        const wrapper = this.output
+        if (!wrapper) {
+            return
+        }
+        const count = typeof event.detail === 'number' && event.detail > 0 ? event.detail : 1
+        const messages = Array.from(wrapper.querySelectorAll<HTMLElement>('.output_msg_text'))
+        const toProcess = count >= messages.length ? messages : messages.slice(-count)
+        toProcess.forEach(msg => this.applyClickListeners(msg))
+    }
+
     private hideContextMenu = () => {
         if (this.contextMenu) {
             this.contextMenu.classList.remove('show')

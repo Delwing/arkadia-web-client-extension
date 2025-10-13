@@ -31,7 +31,7 @@ describe('OutputHandler clickable text', () => {
     const split = document.getElementById('split-bottom')!;
     wrapper.insertBefore(div, split);
 
-    handler['processOutput']!(new CustomEvent('output-sent', { detail: 1 }));
+    handler.processOutput(new CustomEvent('output-sent', { detail: 1 }));
 
     const span = msg.querySelector('span') as HTMLSpanElement | null;
     expect(span).not.toBeNull();
@@ -57,7 +57,7 @@ describe('OutputHandler clickable text', () => {
     const split = document.getElementById('split-bottom')!;
     wrapper.insertBefore(div, split);
 
-    handler['processOutput']!(new CustomEvent('output-sent', { detail: 1 }));
+    handler.processOutput(new CustomEvent('output-sent', { detail: 1 }));
 
     const span = msg.querySelector('span') as HTMLSpanElement | null;
     expect(span).not.toBeNull();
@@ -84,7 +84,7 @@ describe('OutputHandler clickable text', () => {
     const split = document.getElementById('split-bottom')!;
     wrapper.insertBefore(div, split);
 
-    handler['processOutput']!(new CustomEvent('output-sent', { detail: 1 }));
+    handler.processOutput(new CustomEvent('output-sent', { detail: 1 }));
 
     const span = msg.querySelector('span') as HTMLSpanElement | null;
     expect(span).not.toBeNull();
@@ -122,7 +122,7 @@ describe('OutputHandler clickable text', () => {
     (handler as any).output = prev;
 
     // process original line
-    handler['processOutput']!(new CustomEvent('output-sent', { detail: 1 }));
+    handler.processOutput(new CustomEvent('output-sent', { detail: 1 }));
 
     const stickyMsg = sticky.querySelector('.output_msg_text') as HTMLElement;
     const span = stickyMsg.querySelector('span') as HTMLSpanElement | null;
