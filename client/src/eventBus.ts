@@ -62,8 +62,43 @@ export type Params<T> = T extends void
 export type EventParams<Events extends Record<string, any>, K extends keyof Events> = Params<Events[K]>;
 type Handler<T> = (...args: Params<T>) => void;
 
+type EventDetail<T> = T extends void
+    ? undefined
+    : T extends any[]
+        ? T
+        : T;
+
+const BRIDGE_EVENT_NAME = "arkadia.client.bridge";
+
+interface BridgeEventPayload {
+    origin: string;
+    type: string;
+    detail: unknown;
+}
+
 class EventBus<Events extends Record<string, any>> extends EventTarget {
     private wrappers = new WeakMap<Handler<any>, EventListener>();
+    private readonly origin = `bus-${Math.random().toString(36).slice(2)}`;
+    private bridging = false;
+
+    constructor() {
+        super();
+
+        if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+            window.addEventListener(BRIDGE_EVENT_NAME, (rawEvent: Event) => {
+                const payload = (rawEvent as CustomEvent<BridgeEventPayload>).detail;
+                if (!payload || payload.origin === this.origin) {
+                    return;
+                }
+                this.bridging = true;
+                try {
+                    this.dispatchLocal(payload.type as keyof Events, payload.detail);
+                } finally {
+                    this.bridging = false;
+                }
+            });
+        }
+    }
 
     on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean) {
         const wrapper: EventListener = (ev: Event) => {
@@ -89,8 +124,33 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
     }
 
     emit<K extends keyof Events>(event: K, ...args: Params<Events[K]>) {
-        const detail = args.length === 1 ? args[0] : args;
-        this.dispatchEvent(new CustomEvent(event as string, { detail }));
+        const detail = (args.length === 0
+            ? undefined
+            : args.length === 1
+                ? args[0]
+                : args) as EventDetail<Events[K]>;
+
+        this.dispatchLocal(event, detail);
+
+        if (!this.bridging && typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+            const payload: BridgeEventPayload = {
+                origin: this.origin,
+                type: event as string,
+                detail,
+            };
+            try {
+                window.dispatchEvent(new CustomEvent(BRIDGE_EVENT_NAME, { detail: payload }));
+            } catch {
+                // Some payloads (e.g. functions) cannot cross realms; ignore bridging errors.
+            }
+        }
+    }
+
+    private dispatchLocal(event: keyof Events, detail: unknown) {
+        super.dispatchEvent(new CustomEvent(event as string, { detail }));
+        if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+            window.dispatchEvent(new CustomEvent(event as string, { detail }));
+        }
     }
 }
 

@@ -20,7 +20,7 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import eventBus, { type ClientEvents, type EventParams } from "./eventBus";
+import eventBus, { type ClientEvents, type EventParams, type Handler } from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
@@ -501,14 +501,17 @@ export default class Client {
         return { output, clickCallbacks }
     }
 
+    on<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>, options?: AddEventListenerOptions | boolean) {
+        eventBus.on(type, listener, options)
+        return () => eventBus.off(type, listener)
+    }
+
+    off<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>) {
+        eventBus.off(type, listener)
+    }
+
     sendEvent<K extends keyof ClientEvents>(type: K, ...args: EventParams<ClientEvents, K>) {
         eventBus.emit(type, ...(args as EventParams<ClientEvents, K>))
-        const detail = args.length === 0
-            ? undefined
-            : args.length === 1
-                ? args[0]
-                : args
-        window.dispatchEvent(new CustomEvent(type as string, {detail}))
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {
