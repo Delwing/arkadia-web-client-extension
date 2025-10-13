@@ -34,7 +34,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function persist() {
         const payload = serialize();
-        store.storeData(payload).catch((error) => {
+        store.storeData(payload, {persist: true}).catch((error) => {
             console.error('Failed to store multibinds', error);
         });
     }

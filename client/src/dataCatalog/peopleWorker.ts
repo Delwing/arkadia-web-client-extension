@@ -1,46 +1,51 @@
 /// <reference lib="webworker" />
-import type { PersonEntry } from '@client/src/types/people';
+
 import { parsePeopleDatabase } from './peopleParser';
 import { downloadPeopleDatabase } from './peopleDownload';
+import { PeopleCollection } from './entities';
 
-interface LoadRequest {
-    id: number;
-    type: 'loadPeople';
+interface WorkerRequest {
+    type: 'load';
 }
 
-/*
-workerInstance = new Worker(new URL('./peopleWorker.ts', import.meta.url), {
-    type: 'module',
-});
- */
+interface WorkerSuccessResponse<T> {
+    type: 'success';
+    payload: T;
+}
 
-type WorkerRequest = LoadRequest;
+interface WorkerErrorResponse {
+    type: 'error';
+    message: string;
+}
 
-type WorkerResponse =
-    | { id: number; status: 'success'; people: PersonEntry[] }
-    | { id: number; status: 'error'; error: string };
+type WorkerResponse<T> = WorkerSuccessResponse<T> | WorkerErrorResponse;
 
-async function handleLoadPeople(id: number): Promise<WorkerResponse> {
+const getPeople = async (): Promise<PeopleCollection> => {
+
     const buffer = await downloadPeopleDatabase();
-    const people = await parsePeopleDatabase(buffer);
-    return { id, status: 'success', people };
-}
+    return parsePeopleDatabase(buffer);
+};
 
-self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
-    const { data } = event;
-    if (!data || data.type !== 'loadPeople') {
+const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
+
+ctx.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
+    const message = event.data;
+    if (message?.type !== 'load') {
         return;
     }
 
-    handleLoadPeople(data.id)
-        .then((response) => {
-            self.postMessage(response as WorkerResponse);
-        })
-        .catch((error: unknown) => {
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            const response: WorkerResponse = { id: data.id, status: 'error', error: message };
-            self.postMessage(response);
-        });
+    try {
+        const people = await getPeople();
+        const response: WorkerResponse<PeopleCollection> = { type: 'success', payload: people };
+        ctx.postMessage(response);
+    } catch (error) {
+        const response: WorkerErrorResponse = {
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Unknown worker error',
+        };
+        ctx.postMessage(response);
+    }
 });
 
 export {};
+

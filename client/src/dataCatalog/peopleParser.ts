@@ -1,8 +1,8 @@
 import type { SqlJsStatic } from 'sql.js';
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import type { PersonEntry } from './types/people';
 import { resolveGuild } from './peopleGuilds';
+import {PeopleCollection} from "./entities";
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
@@ -22,12 +22,12 @@ async function getSql(): Promise<SqlJsStatic> {
     return sqlPromise;
 }
 
-export async function parsePeopleDatabase(buffer: ArrayBuffer): Promise<PersonEntry[]> {
+export async function parsePeopleDatabase(buffer: ArrayBuffer): Promise<PeopleCollection> {
     const SQL = await getSql();
     const db = new SQL.Database(new Uint8Array(buffer));
     try {
         const stmt = db.prepare('SELECT name, short, guild FROM people');
-        const people: PersonEntry[] = [];
+        const people: PeopleCollection = []
         while (stmt.step()) {
             const row = stmt.getAsObject() as Record<string, unknown>;
             const name = normalizeText(row.name);
@@ -36,7 +36,7 @@ export async function parsePeopleDatabase(buffer: ArrayBuffer): Promise<PersonEn
             if (!name || !description) {
                 continue;
             }
-            people.push({ name, description, guild });
+            people.push({ id: `${name}-${description}`, name, description, guild });
         }
         stmt.free();
         return people;

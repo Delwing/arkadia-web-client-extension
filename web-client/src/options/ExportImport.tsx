@@ -1,10 +1,10 @@
 import {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Button, Form, Spinner} from "react-bootstrap";
 import storage from "@client/src/storage";
-import type {StoredMultibindRecord} from "../multibindStorage";
-import {readMultibinds, replaceMultibinds} from "../multibindStorage";
 import type {RecordedEvent} from "./recordingStorage";
 import {getRecording, getRecordingNames} from "./recordingStorage";
+import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";
+import {MultibindsCollection} from "@client/src/dataCatalog/entities.ts";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
@@ -117,7 +117,7 @@ interface ExportPayload {
     characters: string[];
     localStorage: ExportedLocalStorage;
     indexedDB: {
-        multibinds: StoredMultibindRecord[];
+        multibinds: MultibindsCollection;
         recordings: ExportedRecording[];
         visitedRooms: ExportedVisitedRoomsEntry[];
     };
@@ -357,9 +357,9 @@ async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise
 
 async function buildExport(selectedCharacters: string[]): Promise<ExportPayload> {
     const [multibinds, recordings, visitedRooms] = await Promise.all([
-        readMultibinds().catch(err => {
+        dataCatalog.getMultibindsStore().getData().catch(err => {
             console.error("Failed to export multibinds", err);
-            return [] as StoredMultibindRecord[];
+            return [] as MultibindsCollection[];
         }),
         exportRecordings(),
         exportVisitedRooms(selectedCharacters),
@@ -666,7 +666,7 @@ function ExportImport() {
     const applyImportedData = useCallback(async (payload: ExportPayload) => {
         applyLocalStorageImport(payload.localStorage);
         if (typeof indexedDB !== "undefined") {
-            await replaceMultibinds(payload.indexedDB.multibinds ?? []);
+            await dataCatalog.getMultibindsStore().storeData(payload.indexedDB.multibinds ?? [], {persist: true});
         }
         await importRecordings(payload.indexedDB.recordings ?? []);
         await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);

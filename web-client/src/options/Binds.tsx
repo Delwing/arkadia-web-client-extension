@@ -4,6 +4,7 @@ import storage from "@client/src/storage";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
 import appEventBus from "@client/src/events/app-event-bus.ts";
+import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";
 
 interface Bind {
     key: string;
@@ -203,19 +204,13 @@ function Binds() {
 
     useEffect(() => {
         let active = true;
-        readMultibinds().then(list => {
+        dataCatalog.getMultibindsStore().getData().then(data => {
             if (active) {
-                setMultibinds(list);
+                setMultibinds(normalizeMultibinds(data));
             }
-        });
-        const handler = (detail: unknown) => {
-            setMultibinds(normalizeMultibinds(detail));
-        };
-
-        const unsubscribe = appEventBus.on('multibindsStorage', handler);
+        })
         return () => {
             active = false;
-            unsubscribe();
         };
     }, []);
 
@@ -357,31 +352,7 @@ function Binds() {
         }
         const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
         try {
-            if (window.clientExtension?.port) {
-                await new Promise<void>((resolve) => {
-                    let settled = false;
-                    let unsubscribe: (() => void) | undefined;
-                    let timeout: ReturnType<typeof setTimeout>;
-                    const handler = () => {
-                        if (settled) return;
-                        settled = true;
-                        clearTimeout(timeout);
-                        unsubscribe?.();
-                        resolve();
-                    };
-                    timeout = setTimeout(() => {
-                        if (settled) return;
-                        settled = true;
-                        unsubscribe?.();
-                        resolve();
-                    }, 1500);
-                    unsubscribe = eventBus.on('multibindsStorage', handler, { once: true });
-                    window.clientExtension.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
-                });
-            } else {
-                await replaceMultibinds(finalList);
-                eventBus.emit('multibindsStorage', finalList);
-            }
+
             setMultibinds(finalList);
             setImportResult({
                 newCount,

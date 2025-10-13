@@ -238,6 +238,10 @@ export default class Client {
         appEventBus.on('gmcp.char.info', event => {
             if (event.name) {
                 setCurrentCharacter(event.name);
+                const settings = getItemSync("settings")
+                if (settings) {
+                    appEventBus.emit("settings", )
+                }
                 // if (this.port) {
                 //     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                 //         this.port!.postMessage({type: 'GET_STORAGE', key: k});
