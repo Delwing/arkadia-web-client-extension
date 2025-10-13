@@ -94,7 +94,18 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
     }
 }
 
-const eventBus = new EventBus<ClientEvents>();
+const GLOBAL_EVENT_BUS_KEY = Symbol.for("arkadia.client.eventBus");
+type GlobalWithEventBus = typeof globalThis & {
+    [GLOBAL_EVENT_BUS_KEY]?: EventBus<ClientEvents>;
+};
+
+const globalWithEventBus = globalThis as GlobalWithEventBus;
+
+if (!globalWithEventBus[GLOBAL_EVENT_BUS_KEY]) {
+    globalWithEventBus[GLOBAL_EVENT_BUS_KEY] = new EventBus<ClientEvents>();
+}
+
+const eventBus = globalWithEventBus[GLOBAL_EVENT_BUS_KEY]!;
 export default eventBus;
 export { EventBus };
 export type { Handler };
