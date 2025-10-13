@@ -4,6 +4,7 @@ import {Button, Form, Table} from 'react-bootstrap';
 import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache.ts";
 import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
+import eventBus from "@client/src/eventBus.ts";
 
 const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
 const NPC_URL = 'https://delwing.github.io/arkadia-mapa/data/npc.json';
@@ -31,9 +32,19 @@ function Npc() {
                 setNpcs(detail)
             }
         }
-        window.addEventListener('npc', handler as EventListener)
+
+        const removeClientListener = (window as any).clientExtension?.addEventListener?.('npc', handler as (event: CustomEvent) => void)
+
+        if (!removeClientListener) {
+            eventBus.addEventListener('npc', handler as EventListener)
+        }
+
         return () => {
-            window.removeEventListener('npc', handler as EventListener)
+            if (typeof removeClientListener === 'function') {
+                removeClientListener()
+            } else {
+                eventBus.removeEventListener('npc', handler as EventListener)
+            }
         }
     }, [])
 
