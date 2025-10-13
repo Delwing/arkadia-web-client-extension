@@ -272,6 +272,10 @@ export default class Client {
             this.onLine(line, type)
         })
 
+        this.addEventListener('output-sent', () => {
+            this.flushBuffer()
+        })
+
 
         this.port = port
         port.onMessage.addListener((message) => {
@@ -523,6 +527,9 @@ export default class Client {
         }
         // @ts-ignore
         this.buffer.push({out: printable})
+        if (!this.inLineProcess) {
+            this.flushBuffer()
+        }
     }
 
     println(printable: string) {

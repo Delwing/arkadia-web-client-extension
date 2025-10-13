@@ -19,13 +19,6 @@ export default class OutputHandler {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        this.client.addEventListener('output-sent', (event: CustomEvent) => {
-            this.processOutput(event);
-        })
-        this.client.addEventListener('buffer-sent', (event: CustomEvent) => {
-                this.processOutput(event);
-            }
-        )
         document.addEventListener('click', this.hideContextMenu)
     }
 
@@ -261,23 +254,6 @@ export default class OutputHandler {
         }
 
         Array.from(msg.childNodes).forEach(processNode)
-    }
-
-    private processOutput(event: CustomEvent) {
-        if (!this.output.children) {
-            return
-        }
-        const offset = this.output.querySelector('#split-bottom') ? 2 : 1
-        for (let i = 0; i < event.detail; i++) {
-            const element = this.output.children[this.output.children.length - offset - i]
-            if (!element) {
-                return;
-            }
-            const msg = element.querySelector(".output_msg_text") as HTMLElement | null
-            if (msg) {
-                this.applyClickListeners(msg)
-            }
-        }
     }
 
     makeStringClickable(string: string, callback: Function, title?: string) {

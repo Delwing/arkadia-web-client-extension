@@ -233,6 +233,7 @@ class ArkadiaClient implements ClientAdapter {
             this.emit('line', message.text, message.type)
         })
         this.messageBuffer = []
+        this.emit('output-sent', null)
     }
 
 }
