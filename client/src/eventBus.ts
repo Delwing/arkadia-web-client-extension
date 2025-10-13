@@ -67,10 +67,22 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
 
     emit<K extends keyof Events>(event: K, ...args: Params<Events[K]>) {
         const detail = args.length === 1 ? args[0] : args;
-        this.dispatchEvent(new CustomEvent(event as string, { detail }));
+        super.dispatchEvent(new CustomEvent(event as string, { detail }));
     }
 }
+const GLOBAL_EVENT_BUS_KEY = "__arkadia_event_bus__";
 
-const eventBus = new EventBus<ClientEvents>();
+type GlobalWithEventBus = typeof globalThis & {
+    [GLOBAL_EVENT_BUS_KEY]?: EventBus<ClientEvents>;
+};
+
+const globalObject = globalThis as GlobalWithEventBus;
+
+if (!globalObject[GLOBAL_EVENT_BUS_KEY]) {
+    globalObject[GLOBAL_EVENT_BUS_KEY] = new EventBus<ClientEvents>();
+}
+
+const eventBus = globalObject[GLOBAL_EVENT_BUS_KEY]!;
+
 export default eventBus;
-export { EventBus };
+export { EventBus, GLOBAL_EVENT_BUS_KEY };

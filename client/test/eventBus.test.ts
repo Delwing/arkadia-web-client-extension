@@ -1,4 +1,4 @@
-import { EventBus } from '../src/eventBus';
+import eventBusSingleton, { EventBus, GLOBAL_EVENT_BUS_KEY } from '../src/eventBus';
 
 type TestEvents = {
   single: number;
@@ -37,5 +37,14 @@ describe('EventBus', () => {
     bus.off('single', handler);
     bus.emit('single', 1);
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  test('exports shared singleton via global key', () => {
+    const globalBus = (globalThis as typeof globalThis & {
+      [GLOBAL_EVENT_BUS_KEY]?: EventBus<TestEvents>;
+    })[GLOBAL_EVENT_BUS_KEY];
+
+    expect(eventBusSingleton).toBeDefined();
+    expect(globalBus).toBe(eventBusSingleton);
   });
 });
