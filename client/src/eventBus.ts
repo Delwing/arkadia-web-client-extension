@@ -1,13 +1,19 @@
 import type { LetterSubmitPayload } from "./types/letter";
+import type { ClickCallbackMap } from "./OutputHandler";
 
 export interface KnownEvents {
     'command': string;
     'port-connected': void;
-    'output-sent': number;
-    'buffer-sent': number;
+    'output-sent': number | null | void;
+    'buffer-sent': number | void;
+    'output': {
+        message: string;
+        type?: string;
+        clickCallbacks?: ClickCallbackMap;
+    };
     'mapMove': void;
     'stepBack': void;
-    'leadTo': number;
+    'leadTo': number | void;
     'notify': { text: string };
     'lampTimer': number | null;
     'coverTimer': number | null;
@@ -25,6 +31,21 @@ export interface KnownEvents {
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
+    'line': [string, string | undefined];
+    'line-start': void;
+    'message': string | [string, string | undefined, ClickCallbackMap | undefined];
+    'gmcp': { path: string; value: any };
+    'refreshPositionWhenAble': void;
+    'teamLeaderTargetNoAvatar': string;
+    'teamLeaderTargetAvatar': void;
+    'teamChange': void;
+    'recording.start': string;
+    'recording.stop': boolean | undefined;
+    'playback.start': number | void;
+    'playback.stop': void;
+    'playback.pause': void;
+    'playback.resume': void;
+    'playback.index': [number, number];
 }
 
 export type ClientEvents = KnownEvents & {
@@ -33,7 +54,12 @@ export type ClientEvents = KnownEvents & {
     [key: string]: any;
 };
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+export type Params<T> = T extends void
+    ? []
+    : T extends any[]
+        ? T
+        : [T];
+export type EventParams<Events extends Record<string, any>, K extends keyof Events> = Params<Events[K]>;
 type Handler<T> = (...args: Params<T>) => void;
 
 class EventBus<Events extends Record<string, any>> extends EventTarget {
@@ -71,3 +97,4 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
 const eventBus = new EventBus<ClientEvents>();
 export default eventBus;
 export { EventBus };
+export type { Handler };

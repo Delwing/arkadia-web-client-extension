@@ -20,7 +20,7 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import eventBus from "./eventBus";
+import eventBus, { type ClientEvents, type EventParams } from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
@@ -96,13 +96,6 @@ export default class Client {
     constructor(clientAdapter: ClientAdapter, port: any) {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
-
-        window.addEventListener('extension-message', (ev: Event) => {
-            const data: any = (ev as CustomEvent).detail;
-            if (data && data.data !== undefined) {
-                this.eventTarget.dispatchEvent(new CustomEvent(data.type, {detail: data.data}))
-            }
-        })
 
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
@@ -311,18 +304,18 @@ export default class Client {
             port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
         }
         this.port = port
-        this.eventTarget.dispatchEvent(new CustomEvent('port-connected'))
+        this.sendEvent('port-connected')
         console.log("Client connected to background service.")
     }
 
-    addEventListener(event: string, listener: (arg: CustomEvent) => void, options?: AddEventListenerOptions | boolean) {
-        const reference = listener
-        this.eventTarget.addEventListener(event, reference, options)
-        return () => this.eventTarget.removeEventListener(event, reference, options)
+    addEventListener<K extends keyof ClientEvents>(event: K, listener: (arg: CustomEvent<ClientEvents[K]>) => void, options?: AddEventListenerOptions | boolean) {
+        const reference = listener as EventListener
+        this.eventTarget.addEventListener(event as string, reference, options)
+        return () => this.eventTarget.removeEventListener(event as string, reference, options)
     }
 
-    removeEventListener(event: string, listener: EventListenerOrEventListenerObject | null) {
-        this.eventTarget.removeEventListener(event, listener)
+    removeEventListener<K extends keyof ClientEvents>(event: K, listener: EventListenerOrEventListenerObject | null) {
+        this.eventTarget.removeEventListener(event as string, listener)
     }
 
     send(command: string, echo: boolean = true) {
@@ -349,7 +342,7 @@ export default class Client {
         if (command) {
             command = stripPolishCharacters(command)
         }
-        this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
+        this.sendEvent('command', command)
 
         let preparse = command
         command = this.Map.parseCommand(command)
@@ -416,7 +409,7 @@ export default class Client {
 
     onLine(line: string, type: string) {
         this.inLineProcess = true
-        this.eventTarget.dispatchEvent(new CustomEvent(LINE_START_EVENT))
+        this.sendEvent(LINE_START_EVENT)
         const ansiRegex = /\x1b\[[0-9;]*m/g
 
         line = this.Triggers.parseMultiline(line, type)
@@ -462,18 +455,21 @@ export default class Client {
     flushBuffer() {
         if (this.buffer.length == 0) return
 
+        const emittedCount = this.buffer.length
         this.buffer.forEach(item => {
             const parsed = this.parseClickableTags(item.out)
             this.clientAdapter.output(parsed.output, item.type, parsed.clickCallbacks)
-            this.eventTarget.dispatchEvent(new CustomEvent('output', {
-                detail: {
-                    message: parsed.output,
-                    type: item.type,
-                    clickCallbacks: parsed.clickCallbacks,
-                }
-            }))
+            this.sendEvent('output', {
+                message: parsed.output,
+                type: item.type,
+                clickCallbacks: parsed.clickCallbacks,
+            })
         })
         this.buffer = []
+        if (emittedCount > 0) {
+            this.OutputHandler.processOutput(new CustomEvent('output-sent', { detail: emittedCount }))
+            this.sendEvent('output-sent', emittedCount)
+        }
     }
 
     private parseClickableTags(line: string): { output: string; clickCallbacks?: ClickCallbackMap } {
@@ -505,9 +501,14 @@ export default class Client {
         return { output, clickCallbacks }
     }
 
-    sendEvent(type: string, payload?: any) {
-        this.eventTarget.dispatchEvent(new CustomEvent(type, {detail: payload}))
-        window.dispatchEvent(new CustomEvent(type, {detail: payload}))
+    sendEvent<K extends keyof ClientEvents>(type: K, ...args: EventParams<ClientEvents, K>) {
+        eventBus.emit(type, ...(args as EventParams<ClientEvents, K>))
+        const detail = args.length === 0
+            ? undefined
+            : args.length === 1
+                ? args[0]
+                : args
+        window.dispatchEvent(new CustomEvent(type as string, {detail}))
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {
