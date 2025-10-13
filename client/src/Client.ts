@@ -97,6 +97,37 @@ export default class Client {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
+        window.addEventListener('extension-message', (ev: Event) => {
+            const data: any = (ev as CustomEvent).detail;
+            if (!data) {
+                return;
+            }
+
+            if (typeof data.type === 'string') {
+                const payload = data.data;
+                if (Array.isArray(payload)) {
+                    this.sendEvent(data.type as keyof ClientEvents, ...(payload as any[]));
+                } else if (payload !== undefined) {
+                    this.sendEvent(data.type as keyof ClientEvents, payload as any);
+                } else {
+                    this.sendEvent(data.type as keyof ClientEvents);
+                }
+                return;
+            }
+
+            if (typeof data === 'object') {
+                Object.entries(data as Record<string, any>).forEach(([type, payload]) => {
+                    if (Array.isArray(payload)) {
+                        this.sendEvent(type as keyof ClientEvents, ...(payload as any[]));
+                    } else if (payload !== undefined) {
+                        this.sendEvent(type as keyof ClientEvents, payload as any);
+                    } else {
+                        this.sendEvent(type as keyof ClientEvents);
+                    }
+                });
+            }
+        })
+
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
         this.addEventListener('uiSettings', () => this.updateContentWidth())
