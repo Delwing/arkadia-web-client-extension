@@ -20,7 +20,6 @@ export default class OutputHandler {
     constructor(clientExtension: Client) {
         this.client = clientExtension
         document.addEventListener('click', this.hideContextMenu)
-        this.client.addEventListener('output-sent', this.processOutput as any)
     }
 
     private hideContextMenu = () => {
