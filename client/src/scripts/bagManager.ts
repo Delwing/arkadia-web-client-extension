@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {stripAnsiCodes} from "../Triggers";
 import {colorString, findClosestColor} from "../Colors";
+import {getItemSync, setItemSync} from "../storage";
 
 const STORAGE_KEY = "containers";
 
@@ -69,20 +70,20 @@ function getBagForms(bag: string) {
     };
 }
 
-function saveConfig(client: Client) {
-    client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: containerConfig });
+function saveConfig() {
+    setItemSync(STORAGE_KEY, containerConfig);
 }
 
 function setContainer(type: keyof ContainerConfig, bag: string, client: Client) {
     containerConfig[type] = bag;
     client.print(`Ustawiono ${bag} jako pojemnik na '${type}'.`);
-    saveConfig(client);
+    saveConfig();
 }
 
 function setAll(bag: string, client: Client) {
     availableTypes.forEach((t) => (containerConfig[t] = bag));
     client.print(`Ustawiono ${bag} jako pojemnik na wszystkie typy.`);
-    saveConfig(client);
+    saveConfig();
 }
 
 export function containerAction(
@@ -198,13 +199,9 @@ export default function initBagManager(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY && ev.detail.value) {
-            Object.assign(containerConfig, ev.detail.value);
-        }
-    });
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
-    window.addEventListener("beforeunload", () => saveConfig(client));
+
+    Object.assign(containerConfig, getItemSync("storage"))
+    window.addEventListener("beforeunload", () => saveConfig());
 
     if (aliases) {
         aliases.push({ pattern: /\/pojemnik$/, callback: () => configure(client) });

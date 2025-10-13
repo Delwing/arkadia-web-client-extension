@@ -1,7 +1,8 @@
 import Client from "../Client";
 import {containerAction, getContainer, ContainerType} from "./bagManager";
+import appEventBus from "../events/app-event-bus";
 
-export default class ItemCollector {
+class ItemCollector {
     private client: Client;
     private checkBody = false;
 
@@ -24,16 +25,23 @@ export default class ItemCollector {
     constructor(client: Client) {
         this.client = client;
         this.client.FunctionalBind.set(null, () => this.keyPressed(true));
-        this.client.addEventListener("settings", (ev: CustomEvent) => {
-            const s = ev.detail || {};
-            if (typeof s.collectMode === "number") {
-                this.setMode(s.collectMode);
+        appEventBus.on("settings", settings => {
+            if (typeof settings.collectMode === "number") {
+                this.setMode(settings.collectMode);
             }
-            if (typeof s.collectMoneyType === "number") {
-                this.setMoneyMode(s.collectMoneyType);
+            if (typeof settings.collectMoneyType === "number") {
+                this.setMoneyMode(settings.collectMoneyType);
             }
-            if (Array.isArray(s.collectExtra)) {
-                this.extra = [...s.collectExtra];
+            if (Array.isArray(settings.collectExtra)) {
+                this.extra = [...settings.collectExtra];
+            }
+        })
+
+        appEventBus.on('killed', (event) => {
+            if (!event.isTeamKill) {
+                this.killedAction();
+            } else {
+                this.teamKilledAction();
             }
         });
     }

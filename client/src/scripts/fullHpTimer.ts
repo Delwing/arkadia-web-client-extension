@@ -1,5 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
+import {colorString, findClosestColor} from "../Colors";
+import appEventBus from "../events/app-event-bus";
 
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
@@ -28,16 +29,15 @@ export default function initFullHpTimer(client: Client) {
         }, 180000);
     }
 
-    client.addEventListener("settings", (ev: CustomEvent) => {
-        const settings = ev.detail || {};
+    appEventBus.on("settings", (settings) => {
         enabled = !!settings.fullHpMessage;
         if (!enabled) {
             clearTimer();
         }
     });
 
-    client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
-        const hp = ev.detail?.hp;
+    appEventBus.on("gmcp.char.state", event => {
+        const hp = event?.hp;
         if (typeof hp !== "number") {
             previousHp = null;
             return;
@@ -50,25 +50,26 @@ export default function initFullHpTimer(client: Client) {
             clearTimer();
         }
         previousHp = hp;
-    });
+    })
 
-    client.addEventListener("gmcp.char.info", (ev: CustomEvent) => {
-        const info = ev.detail || {};
+
+    appEventBus.on("gmcp.char.info", event => {
+        const info = event;
         if (info && typeof info.object_num !== "undefined") {
             playerNum = String(info.object_num);
         }
     });
 
-    client.addEventListener("gmcp.objects.data", (ev: CustomEvent) => {
+    appEventBus.on("gmcp.objects.data", event => {
         if (!playerNum) return;
-        const obj = ev.detail?.[playerNum];
+        const obj = event[playerNum];
         if (!obj || obj.attack_num === undefined) return;
         if (obj.attack_num !== false) {
             clearTimer();
         }
     });
 
-    client.addEventListener("client.disconnect", () => {
+    appEventBus.on("client.disconnect", () => {
         playerNum = undefined;
         clearTimer();
         previousHp = null;

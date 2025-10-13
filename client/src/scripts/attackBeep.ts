@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {loadPeople, type PersonEntry} from '../peopleLoader';
+import appEventBus from "../events/app-event-bus";
 
 const RED = findClosestColor("#ff0000");
 
@@ -75,8 +76,7 @@ export default function initAttackBeep(client: Client) {
     };
 
     // Listen for settings changes
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail || {};
+    appEventBus.on("settings", (settings) => {
         if (Array.isArray(settings.enemyGuilds)) {
             enemyGuilds = [...settings.enemyGuilds];
         }

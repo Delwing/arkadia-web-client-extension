@@ -1,6 +1,7 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "../Colors";
-import { stripAnsiCodes } from "../Triggers";
+import {colorString, findClosestColor} from "../Colors";
+import {stripAnsiCodes} from "../Triggers";
+import appEventBus from "../events/app-event-bus";
 
 type KillEntry = {
     mySession: number;
@@ -147,7 +148,7 @@ function formatSessionTable(counts: KillCounts): string {
     lines.push(header("Licznik zabitych"));
     lines.push(pad());
     lines.push(pad(colorString("JA", MY_COLOR)));
-    entries.forEach(([name, { mySession }]) => {
+    entries.forEach(([name, {mySession}]) => {
         lines.push(mobLine(name, mySession));
     });
     lines.push(pad());
@@ -219,7 +220,7 @@ function formatLifetimeTable(counts: KillCounts): string {
     return lines.join("\n");
 }
 
-export { parseName, formatSessionTable, formatLifetimeTable };
+export {parseName, formatSessionTable, formatLifetimeTable};
 
 class KillCounter {
     private client: Client;
@@ -250,7 +251,7 @@ class KillCounter {
             (rawLine, _line, matches): string => {
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
-                (this.client as any).ItemCollector?.killedAction();
+                appEventBus.emit('killed', {mob, isTeamKill: false})
                 return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
             }
         );
@@ -264,14 +265,14 @@ class KillCounter {
                     ? this.recordKill(mob, false)
                     : null;
                 if (entry) {
-                    (this.client as any).ItemCollector?.teamKilledAction();
+                    appEventBus.emit('killed', {mob, isTeamKill: true})
                 }
                 return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
             }
         );
 
-        this.client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
-        this.client.port?.postMessage({ type: "GET_STORAGE", key: SESSION_STORAGE_KEY });
+        this.client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY});
+        this.client.port?.postMessage({type: "GET_STORAGE", key: SESSION_STORAGE_KEY});
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -300,7 +301,7 @@ class KillCounter {
 
     private loadSession(session: Record<string, { mySession: number; teamSession: number }> = {}): void {
         Object.entries(session).forEach(([name, data]) => {
-            const entry = this.kills[name] ?? { mySession: 0, myTotal: 0, teamSession: 0 };
+            const entry = this.kills[name] ?? {mySession: 0, myTotal: 0, teamSession: 0};
             entry.mySession = data.mySession ?? 0;
             entry.teamSession = data.teamSession ?? 0;
             this.kills[name] = entry;
@@ -311,7 +312,7 @@ class KillCounter {
         const sessions: Record<string, { mySession: number; teamSession: number }> = {};
         Object.entries(this.kills).forEach(([name, entry]) => {
             if (entry.mySession || entry.teamSession) {
-                sessions[name] = { mySession: entry.mySession, teamSession: entry.teamSession };
+                sessions[name] = {mySession: entry.mySession, teamSession: entry.teamSession};
             }
         });
         this.client.port?.postMessage({
@@ -323,7 +324,7 @@ class KillCounter {
 
     private ensureEntry(name: string): KillEntry {
         if (!this.kills[name]) {
-            this.kills[name] = { mySession: 0, myTotal: 0, teamSession: 0 };
+            this.kills[name] = {mySession: 0, myTotal: 0, teamSession: 0};
         }
         return this.kills[name];
     }
@@ -342,7 +343,7 @@ class KillCounter {
     }
 
     getSessionTotals() {
-        const totals = { my: 0, team: 0 };
+        const totals = {my: 0, team: 0};
         Object.values(this.kills).forEach((e) => {
             totals.my += e.mySession;
             totals.team += e.teamSession;
@@ -392,9 +393,9 @@ export function initKillCounter(
 ): KillCounter {
     const counter = new KillCounter(client);
     if (aliases) {
-        aliases.push({ pattern: /\/zabici$/, callback: () => counter.showSession() });
-        aliases.push({ pattern: /\/zabici2$/, callback: () => counter.showLifetime() });
-        aliases.push({ pattern: /\/zabici_reset$/, callback: () => counter.resetSession() });
+        aliases.push({pattern: /\/zabici$/, callback: () => counter.showSession()});
+        aliases.push({pattern: /\/zabici2$/, callback: () => counter.showLifetime()});
+        aliases.push({pattern: /\/zabici_reset$/, callback: () => counter.resetSession()});
     }
     return counter;
 }

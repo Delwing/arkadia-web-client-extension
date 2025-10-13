@@ -1,5 +1,5 @@
 import Client from "../Client";
-import initShop, { ShopOptions, formatItem } from "./shop";
+import initShop, {formatItem, ShopOptions} from "./shop";
 
 export default function initArmorShop(client: Client) {
     const options: ShopOptions = {
@@ -10,8 +10,7 @@ export default function initArmorShop(client: Client) {
         itemReg: /^\|\s*(.+?)\s*\|\s*(\d*)\s*\|\s*(\d*)\s*\|\s*(\d*)\s*\|\s*(\d*)\s*\|$/,
         makeSplit: (width) => "-".repeat(Math.max(0, width)),
         makeHeader: (width, pad) => {
-            const nameLine = `| ${pad('Nazwa towaru', width - 3)}|`;
-            return nameLine
+            return `| ${pad('Nazwa towaru', width - 3)}|`
         },
         makeItem: (width, pad, m) => formatItem(width, pad, m)
     };

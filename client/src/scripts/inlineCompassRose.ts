@@ -1,7 +1,8 @@
 import Client from "../Client";
-import { color, findClosestColor } from "../Colors";
-import { gmcp } from "../gmcp";
-import { getShortDir, longToShort } from "../utils/directions";
+import {color, findClosestColor} from "../Colors";
+import {gmcp} from "../gmcp";
+import {getShortDir, longToShort} from "../utils/directions";
+import appEventBus from "../events/app-event-bus";
 
 const SPRING_GREEN = findClosestColor("#00ff7f");
 const DIM_GRAY = findClosestColor("#696969");
@@ -21,26 +22,26 @@ export default class InlineCompassRose {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener("settings", (event: CustomEvent) => {
-            const enabled = !!event.detail.inlineCompassRose;
+        appEventBus.on("settings", settings => {
+            const enabled = settings.inlineCompassRose;
             if (enabled) {
                 this.enable();
             } else {
                 this.disable();
             }
-        });
+        })
     }
 
     enable() {
         if (this.enabled) return;
         this.enabled = true;
-        this.client.addEventListener("gmcp_msg.room.exits", this.listener);
+        appEventBus.on("gmcp_msg.room.exits", this.listener)
     }
 
     disable() {
         if (!this.enabled) return;
         this.enabled = false;
-        this.client.removeEventListener("gmcp_msg.room.exits", this.listener);
+        appEventBus.off("gmcp_msg.room.exits", this.listener);
     }
 
     private parseExits(detail: any): string[] {

@@ -4,6 +4,7 @@ import storage from "@client/src/storage";
 import eventBus from "@client/src/eventBus";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 interface Bind {
     key: string;
@@ -211,8 +212,8 @@ function Binds() {
         const handler = (detail: unknown) => {
             setMultibinds(normalizeMultibinds(detail));
         };
-        const unsubscribe = eventBus.on('multibindsStorage', handler);
-        window.clientExtension?.port?.postMessage?.({ type: 'MULTIBINDS_LOAD' });
+
+        const unsubscribe = appEventBus.on('multibindsStorage', handler);
         return () => {
             active = false;
             unsubscribe();

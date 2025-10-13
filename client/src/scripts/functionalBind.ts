@@ -1,5 +1,6 @@
 import {color} from "../Colors";
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 export const LINE_START_EVENT = 'line-start';
 
@@ -65,7 +66,7 @@ export class FunctionalBind {
             }
         })
 
-        this.client.addEventListener(LINE_START_EVENT, () => this.newMessage());
+        appEventBus.on(LINE_START_EVENT, () => this.newMessage());
     }
 
     newMessage() {
@@ -103,12 +104,10 @@ export class FunctionalBind {
         }
         this.currentPrintable = printable;
         this.printedInMessage = true;
-        this.button?.remove();
         if (printable) {
             const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
             const clickable = this.client.OutputHandler.makeClickable(line, printable, this.functionalBind);
             this.client.println(clickable);
-            this.button = this.client.createButton(printable, this.functionalBind);
         }
     }
 

@@ -1,5 +1,6 @@
 import Client from "../Client";
-import { getMultibindLabel, MULTIBIND_KEYS } from "../multibindKeys";
+import {getMultibindLabel, MULTIBIND_KEYS} from "../multibindKeys";
+import appEventBus from "../events/app-event-bus";
 
 const MAX_BINDS = 4;
 
@@ -26,7 +27,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         const entries: StoredMultibind[] = [];
         data.forEach((roomMap, roomId) => {
             roomMap.forEach((action, index) => {
-                entries.push({ roomId, index, action });
+                entries.push({roomId, index, action});
             });
         });
         return entries;
@@ -34,7 +35,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function persist() {
         const payload = serialize();
-        client.port?.postMessage({ type: 'MULTIBINDS_SAVE', value: payload });
+        //TODO save multbinds
     }
 
     function set(roomId: number, index: number, action: string) {
@@ -71,12 +72,12 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             return [];
         }
         return Array.from(roomMap.entries())
-            .map(([index, action]) => ({ roomId, index, action }))
+            .map(([index, action]) => ({roomId, index, action}))
             .sort((a, b) => a.index - b.index);
     }
 
     function toDisplay(roomId: number): DisplayMultibind[] {
-        return getForRoom(roomId).map(({ index, action }) => ({
+        return getForRoom(roomId).map(({index, action}) => ({
             index,
             action,
             label: getMultibindLabel(index),
@@ -85,7 +86,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function sendUpdate(roomId: number | null) {
         const payload = roomId === null ? [] : toDisplay(roomId);
-        client.sendEvent('multibinds', { list: payload });
+        client.sendEvent('multibinds', {list: payload});
     }
 
     function log(message: string) {
@@ -169,7 +170,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         if (list.length === 0) {
             lines.push('Brak.');
         } else {
-            list.forEach(({ label, action }) => {
+            list.forEach(({label, action}) => {
                 lines.push(`[${label}] - ${action}`);
             });
         }
@@ -214,23 +215,11 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         sendUpdate(getRoomId());
     }
 
-    client.addEventListener('enterLocation', (ev: CustomEvent) => {
-        const roomId = typeof ev.detail?.id === 'number' ? ev.detail.id : Number(ev.detail?.id);
-        sendUpdate(Number.isNaN(roomId) ? null : roomId);
+    appEventBus.on('enterLocation', event => {
+        sendUpdate(Number.isNaN(event.id) ? null : event.id);
     });
 
-    client.addEventListener('multibindsStorage', (ev: CustomEvent) => {
-        const list = Array.isArray(ev.detail) ? ev.detail as StoredMultibind[] : [];
-        applyStored(list);
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'MULTIBINDS_LOAD' });
-    });
-
-    if (client.port) {
-        client.port.postMessage({ type: 'MULTIBINDS_LOAD' });
-    }
+    //TODO apply stored multibinds
 
     window.addEventListener('keydown', (ev) => {
         if (ev.repeat) {

@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 const LABELS = ["zwykly", "prz", "prz dr"];
 const TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
@@ -26,33 +27,10 @@ function clampMoveMode(client: Client) {
 }
 
 export default function initMoveMode(client: Client) {
-    const button = client.createButton(`Ruch: ${LABELS[0]}`, () => toggle(false));
-    button.title = `Ruch: ${TITLES[0]}`;
-    client.moveModeButton = button;
     let playerNum: string | undefined;
 
     function update() {
         clampMoveMode(client);
-        const mode = client.moveMode;
-        const valueLabel = `Ruch: ${LABELS[mode]}`;
-        const valueTitle = `Ruch: ${TITLES[mode]}`;
-
-        button.value = valueLabel;
-        button.title = valueTitle;
-
-        const assignedButton = client.moveModeButton;
-        if (assignedButton && assignedButton !== button) {
-            if (assignedButton instanceof HTMLInputElement) {
-                assignedButton.value = valueLabel;
-                assignedButton.title = valueTitle;
-            } else {
-                const prefix = assignedButton.dataset.moveModeLabel;
-                const textLabel = prefix ? `${prefix} ${LABELS[mode]}` : valueLabel;
-                const textTitle = prefix ? `${prefix} ${TITLES[mode]}` : valueTitle;
-                assignedButton.textContent = textLabel;
-                assignedButton.title = textTitle;
-            }
-        }
     }
 
     function emitChange() {
@@ -90,29 +68,29 @@ export default function initMoveMode(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
-        const detail = ev.detail || {};
+    appEventBus.on('gmcp.char.info', event => {
+        const detail = event.detail || {};
         if (detail && typeof detail.object_num !== 'undefined') {
             playerNum = String(detail.object_num);
         }
-    });
+    })
 
-    client.addEventListener('gmcp.objects.data', (ev: CustomEvent<Record<string, { attack_num?: boolean | number | string }>>) => {
+    appEventBus.on('gmcp.objects.data', (event: Record<string, { attack_num?: boolean | number | string }>) => {
         if (!playerNum) return;
-        const detail = ev.detail;
+        const detail = event.detail;
         if (!detail || typeof detail !== 'object') return;
         const obj = detail[playerNum];
         if (!obj || obj.attack_num === undefined) return;
         if (obj.attack_num !== false) {
             resetToNormal();
         }
-    });
+    })
 
-    client.addEventListener('client.disconnect', () => {
+    appEventBus.on('client.disconnect', () => {
         playerNum = undefined;
     });
 
-    client.addEventListener('teamChange', () => {
+    appEventBus.on('teamChange', () => {
         const changed = clampMoveMode(client);
         update();
         if (changed) {

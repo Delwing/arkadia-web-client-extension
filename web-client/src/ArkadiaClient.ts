@@ -2,14 +2,13 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import type { ClickCallbackMap } from "@client/src/OutputHandler.ts";
-import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
+import type {ClickCallbackMap} from "@client/src/OutputHandler.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
 import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
-type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
 // WebSocket configuration
 const GMCP_COMMAND_CODE = 201;
@@ -29,10 +28,10 @@ class ArkadiaClient implements ClientAdapter {
         this.websocketAdapter.messages$.subscribe((message) => {
             switch (message.type) {
                 case 'close':
-                    this.emit('client.disconnect');
+                    appEventBus.emit('client.disconnect')
                     break
                 case "open":
-                    this.emit('client.connect');
+                    appEventBus.emit('client.connect')
                     this.receivedFirstGmcp = false;
                     break
                 case "data":
@@ -43,38 +42,7 @@ class ArkadiaClient implements ClientAdapter {
                     break
             }
         })
-        this.recorder = new Recorder({
-            send: (command: string, echo?: boolean) => {
-                this.send(command, echo)
-            },
-            emit: (event: string, ...args: any[]) => {
-                this.emit(event, ...args)
-            },
-            processIncomingData: (data: string) => {
-                this.processIncomingData(data)
-            },
-        }, websocketAdapter);
-    }
-
-    /**
-     * Register an event listener
-     */
-    on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.on(event, listener);
-    }
-
-    /**
-     * Remove an event listener
-     */
-    off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
-        eventBus.off(event, listener);
-    }
-
-    /**
-     * Emit an event to all registered listeners
-     */
-    emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
-        eventBus.emit(event, ...args);
+        //TODO register recorder
     }
 
     /**
@@ -88,7 +56,7 @@ class ArkadiaClient implements ClientAdapter {
      * Disconnect from the WebSocket server
      */
     disconnect(): void {
-       this.websocketAdapter.disconnect()
+        this.websocketAdapter.disconnect()
     }
 
     /**
@@ -106,7 +74,7 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     sendRaw(message: string): void {
-       this.websocketAdapter.send(message)
+        this.websocketAdapter.send(message)
     }
 
     /**
@@ -121,7 +89,6 @@ class ArkadiaClient implements ClientAdapter {
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            this.emit('error', error);
         }
     }
 
@@ -142,7 +109,7 @@ class ArkadiaClient implements ClientAdapter {
 
     output(text?: string, type?: string, clickCallbacks?: ClickCallbackMap) {
         const parsed = typeof text === 'string' ? this.parseAnsiPatterns(text) : text
-        this.emit('message', parsed, type, clickCallbacks)
+        appEventBus.emit('message', {text: parsed, type: type, callbackMap: clickCallbacks})
     }
 
     //Should be done on all ouput
@@ -157,7 +124,7 @@ class ArkadiaClient implements ClientAdapter {
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
-            this.emit('message', sanitized)
+            appEventBus.emit('message', sanitized)
         }
         this.flushMessageBuffer()
     }
@@ -211,8 +178,8 @@ class ArkadiaClient implements ClientAdapter {
                     const data = JSON.parse(uncompress(gmcp.data))
                     const filename = gmcp.filename
                 } else {
-                    this.emit(`gmcp.${type}`, gmcp);
-                    this.emit('gmcp', {path: type, value: gmcp});
+                    appEventBus.emit(`gmcp.${type}`, gmcp);
+                    appEventBus.emit('gmcp', {path: type, value: gmcp});
                 }
             } catch (error) {
                 console.error('Error parsing GMCP JSON:', error);
@@ -221,19 +188,19 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     flushMessageBuffer() {
-        let processed = [];
-        this.messageBuffer.forEach((message, i) => {
+        let processed: { text: string, type: string }[] = [];
+        this.messageBuffer.forEach((message) => {
             if (processed[processed.length - 1]?.type === message.type) {
                 processed[processed.length - 1].text += message.text
             } else {
                 processed.push(message)
             }
         })
-        processed.forEach((message, i) => {
-            this.emit('line', message.text, message.type)
+        processed.forEach((message) => {
+            appEventBus.emit('line', message)
         })
         this.messageBuffer = []
-        this.emit('output-sent', null)
+        appEventBus.emit('output-sent')
     }
 
 }

@@ -168,12 +168,7 @@ export function registerScripts(client: Client) {
     initFollowSpecialExits(client)
     initMountain(client)
     initMultibinds(client, aliases)
-
-
-    const itemCollector = initItemCollector(client, aliases);
-    (client as any).ItemCollector = itemCollector;
-
-
+    initItemCollector(client, aliases);
     initContainers(client)
     initBagManager(client, aliases)
     initDeposits(client, aliases)

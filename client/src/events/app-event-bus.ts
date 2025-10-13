@@ -1,8 +1,11 @@
 import {EventBus} from "./event-bus";
 import type {ClickCallbackMap} from "../OutputHandler";
 import type {LetterSubmitPayload} from "../types/letter";
+import {Settings} from "../defaultSettings";
 
 type AppEvents = {
+    'client.disconnect': void;
+    'client.connect': void;
     'command': string;
     'port-connected': void;
     'output-sent': number | null | void;
@@ -25,6 +28,7 @@ type AppEvents = {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'highlights': number[];
+    'killed': { mob: string, isTeamKill: boolean};
     'pauserStart': void;
     'pauserEnd': void;
     'multibinds': { list: { index: number; action: string; label: string }[] };
@@ -34,9 +38,9 @@ type AppEvents = {
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
-    'line': [string, string | undefined];
+    'line': { text: string, type: string };
     'line-start': void;
-    'message': string | [string, string | undefined, ClickCallbackMap | undefined];
+    'message': string | {text: string, type: string, callbackMap: ClickCallbackMap };
     'gmcp': { path: string; value: any };
     'refreshPositionWhenAble': void;
     'teamLeaderTargetNoAvatar': string;
@@ -49,6 +53,8 @@ type AppEvents = {
     'playback.pause': void;
     'playback.resume': void;
     'playback.index': [number, number];
+    'reset': void;
+    'settings': Settings
     'uiSettings': void
 }
 

@@ -15,6 +15,7 @@ export interface Settings {
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
+    enemyGuilds: string[];
 }
 
 export const defaultSettings: Settings = {
@@ -34,4 +35,5 @@ export const defaultSettings: Settings = {
     fullHpMessage: false,
     lowHpAlert: 2,
     letterLineWidth: 72,
+    enemyGuilds: []
 };

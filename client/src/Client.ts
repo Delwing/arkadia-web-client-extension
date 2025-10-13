@@ -236,39 +236,36 @@ export default class Client {
             }
         })
 
-        this.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
-            if (ev.detail?.name) {
-                setCurrentCharacter(ev.detail.name);
+        appEventBus.on('gmcp.char.info', event => {
+            if (event.name) {
+                setCurrentCharacter(event.name);
                 if (this.port) {
                     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                         this.port!.postMessage({type: 'GET_STORAGE', key: k});
                     });
                 }
             }
-            if (typeof ev.detail?.object_num !== 'undefined') {
-                const newNum = String(ev.detail.object_num);
+            if (typeof event.object_num !== 'undefined') {
+                const newNum = String(event.object_num);
                 const stored = getItemSync('object_num')?.object_num;
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
-                    this.sendEvent('reset');
+                    appEventBus.on('reset');
                 }
                 setItemSync('object_num', newNum);
             }
         })
 
-        this.addEventListener('gmcp.char.colors', (ev: CustomEvent) => {
-            this.defaultColor = ev.detail.text ?? 255
+        appEventBus.on('gmcp.char.colors', event => {
+            this.defaultColor = event.text ?? 255;
         })
 
-        this.addEventListener('line', (ev: CustomEvent) => {
-            const line = ev.detail[0]
-            const type = ev.detail[1]
-            this.onLine(line, type)
+        appEventBus.on('line', event => {
+            this.onLine(event.text, event.type);
         })
 
-        this.addEventListener('output-sent', () => {
+        appEventBus.on("output-sent", () => {
             this.flushBuffer()
         })
-
 
         this.port = port
         port.onMessage.addListener((message) => {
