@@ -7,7 +7,7 @@ export interface KnownEvents {
     'buffer-sent': number;
     'mapMove': void;
     'stepBack': void;
-    'leadTo': number;
+    'leadTo': number | undefined;
     'notify': { text: string };
     'lampTimer': number | null;
     'coverTimer': number | null;
@@ -18,6 +18,8 @@ export interface KnownEvents {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'highlights': number[];
+    'pauserStart': void;
+    'pauserEnd': void;
     'multibinds': { list: { index: number; action: string; label: string }[] };
     'letterComposer': { open: boolean };
     'letterComposer.submit': LetterSubmitPayload;

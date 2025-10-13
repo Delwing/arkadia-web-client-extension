@@ -1,5 +1,6 @@
 import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail, LabelRenderMode} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
+import eventBus, {ClientEvents} from "@client/src/eventBus";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -63,12 +64,13 @@ export class EmbeddedMap {
     private renderer: Renderer;
     private currentRoom: any;
     private destinations: number[] = [];
-    private highlights: number[] = []
+    private highlights: number[] = [];
     private zoom: number;
     private explorationMode = false;
     private highlightCurrentRoom = true;
     private visited = new Set<number>();
     private totalRooms: number;
+    private eventUnsubscribes: Array<() => void> = [];
 
     constructor(reader: MapReader, pathFinder: PathFinder, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
@@ -79,18 +81,21 @@ export class EmbeddedMap {
         this.pathFinder = pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
-        window.addEventListener('pauserStart', () => {
+        const handlePauseStart = () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = false;
             }
-        });
-        window.addEventListener('pauserEnd', () => {
+        };
+        this.subscribeToEvent('pauserStart', handlePauseStart);
+
+        const handlePauseEnd = () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = true;
             }
-        });
+        };
+        this.subscribeToEvent('pauserEnd', handlePauseEnd);
         let zoom = 0.30;
         let explorationMode = false;
         let instantMove = true;
@@ -143,25 +148,32 @@ export class EmbeddedMap {
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
 
-        window.addEventListener('enterLocation', async (ev: any) => {
-            const id = ev.detail.id;
+        const handleEnterLocation = ({id}: ClientEvents['enterLocation']) => {
             this.visited.add(id);
             this.reader.addVisitedRoom(id);
             setItemSync(STORAGE_KEY, id.toString());
             saveVisitedRooms(Array.from(this.visited));
-            this.renderRoomById(parseInt(id));
-        });
+            this.renderRoomById(id);
+        };
+        this.subscribeToEvent('enterLocation', handleEnterLocation);
 
-        window.addEventListener('leadTo', (ev: any) => {
-            this.leadTo(ev.detail);
-        });
+        const handleLeadTo = (destination: ClientEvents['leadTo']) => {
+            this.leadTo(destination);
+        };
+        this.subscribeToEvent('leadTo', handleLeadTo);
 
-        window.addEventListener('highlights', (ev: any) => {
-            this.highlights = ev.detail;
+        const handleHighlights = (highlights: ClientEvents['highlights']) => {
+            this.highlights = highlights ?? [];
             this.refresh();
-        })
+        };
+        this.subscribeToEvent('highlights', handleHighlights);
 
         this.initVisitedRooms(initialRoom);
+    }
+
+    private subscribeToEvent<K extends keyof ClientEvents>(event: K, listener: (payload: ClientEvents[K]) => void) {
+        eventBus.on(event, listener as any);
+        this.eventUnsubscribes.push(() => eventBus.off(event, listener as any));
     }
 
     private async initVisitedRooms(initialRoom: number) {
@@ -306,11 +318,21 @@ export class EmbeddedMap {
         this.renderRoom(this.currentRoom);
     }
 
-    leadTo(id?: string) {
-        if (id) {
-            this.destinations = [parseInt(id)];
+    destroy() {
+        this.eventUnsubscribes.forEach(unsubscribe => unsubscribe());
+        this.eventUnsubscribes = [];
+    }
+
+    leadTo(id?: number | string) {
+        if (typeof id !== 'undefined' && id !== null) {
+            const destId = typeof id === 'number' ? id : parseInt(id);
+            if (!isNaN(destId)) {
+                this.destinations = [destId];
+            } else {
+                this.destinations = [];
+            }
         } else {
-            this.destinations = [];6
+            this.destinations = [];
         }
         this.refresh();
     }
