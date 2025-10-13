@@ -1,9 +1,10 @@
-import { saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent } from './recordingStorage';
+import {saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent} from './recordingStorage';
+import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
 
 export interface RecorderHooks {
-    processIncomingData(data: string): void;
-    sendCommand(command: string, echo?: boolean): void;
+    send(command: string, echo?: boolean): void;
     emit(event: string, ...args: any[]): void;
+    processIncomingData(data: string): void;
 }
 
 export default class Recorder {
@@ -18,7 +19,22 @@ export default class Recorder {
     private isPlaying = false;
     private paused = false;
 
-    constructor(private hooks: RecorderHooks) {}
+    constructor(private hooks: RecorderHooks, private websocketAdapter: WebSocketTransportAdapter) {
+
+        websocketAdapter.messages$.subscribe((message) => {
+            switch (message.type) {
+                case "rawData":
+                    this.handleIncoming(message.payload)
+                    break
+                case "command":
+                    if (message.payload.kind == "text") {
+                        this.handleOutgoing(message.payload.payload)
+                    }
+                    break
+            }
+        })
+
+    }
 
     handleIncoming(message: string) {
         if (this.isRecording) {
@@ -172,7 +188,7 @@ export default class Recorder {
         } else {
             Output.send('→ ' + ev.message);
             window.clientExtension.sendCommand(ev.message, false);
-            this.hooks.sendCommand(ev.message, false);
+            this.hooks.send(ev.message, false);
         }
     }
 

@@ -29,10 +29,6 @@ export interface ClientAdapter {
     output(text?: string, type?: string): void
 
     sendGmcp(type: string, payload?: any): void
-
-    parseAnsiPatterns(text: string): string;
-
-    flushMessageBuffer(): void
 }
 
 export default class Client {
@@ -270,12 +266,12 @@ export default class Client {
             this.defaultColor = ev.detail.text ?? 255
         })
 
-        this.addEventListener('output-sent', () => {
-            if (this.buffer.length == 0) return
-            this.buffer.forEach(item => this.clientAdapter.output(item.out, item.type))
-            this.sendEvent('buffer-sent', this.buffer.length)
-            this.buffer = []
+        this.addEventListener('line', (ev: CustomEvent) => {
+            const line = ev.detail[0]
+            const type = ev.detail[1]
+            this.onLine(line, type)
         })
+
 
         this.port = port
         port.onMessage.addListener((message) => {
@@ -454,8 +450,19 @@ export default class Client {
         })
         let index = 0
         result = result.replace(/\x1b\[0m/g, () => restore[index++] || '\x1b[0m')
-        this.inLineProcess = false
-        return result
+        this.buffer.unshift({out: result, type: type})
+        this.flushBuffer();
+    }
+
+    flushBuffer() {
+        if (this.buffer.length == 0) return
+        this.buffer.forEach(item => this.eventTarget.dispatchEvent(new CustomEvent('output', {
+            detail: {
+                message: item.out,
+                type: item.type
+            }
+        })))
+        this.buffer = []
     }
 
     sendEvent(type: string, payload?: any) {
@@ -479,11 +486,7 @@ export default class Client {
             printable = JSON.stringify(printable)
         }
         // @ts-ignore
-        const text = Text.parse_patterns(printable)
-        this.buffer.push({out: text})
-        if (!this.inLineProcess) {
-            this.sendEvent('output-sent', 1)
-        }
+        this.buffer.push({out: printable})
     }
 
     println(printable: string) {

@@ -137,8 +137,8 @@ export default class OutputHandler {
     }
 
     private parseClickTags(msg: HTMLElement) {
-        const openReg = /\{clickOpen:(\d+)(?::([^}]+))?\}/
-        const closeReg = /\{clickClose\}/
+        const openReg = /\{clickOpen:(\d+)(?::([^}]+))?}/
+        const closeReg = /\{clickClose}/
         let currentIndex: number | null = null
         let currentTitle: string | undefined
 

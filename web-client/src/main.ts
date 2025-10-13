@@ -51,6 +51,10 @@ window.clientExtension = client;
 registerScripts(client)
 client.connect(client.port, true)
 
+client.addEventListener('output', (ev: CustomEvent) => {
+    arkadiaClient.output(parseAnsiPatterns(ev.detail.message), ev.detail.type);
+})
+
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
 const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
@@ -367,11 +371,18 @@ arkadiaClient.on('client.disconnect', () => {
 
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && arkadiaClient.isSocketOpen()) {
+    if (!document.hidden && arkadiaClient.isConnected()) {
         isConnected = true;
         updateConnectButtons();
     }
 });
+
+window.addEventListener("beforeunload", (event) => {
+    if (arkadiaClient.isConnected()) {
+        event.preventDefault();
+    }
+})
+
 
 
 // Numpad key mapping for directions (standard orientation)
@@ -671,41 +682,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {
-            arkadiaClient.stopRecording(true);
+            arkadiaClient.recorder.stopRecording(true);
         });
     }
 
     if (playbackPause) {
         playbackPause.addEventListener('click', () => {
             if (playbackPause.textContent === 'Pause') {
-                arkadiaClient.pausePlayback();
+                arkadiaClient.recorder.pausePlayback();
             } else {
-                arkadiaClient.resumePlayback();
+                arkadiaClient.recorder.resumePlayback();
             }
         });
     }
 
     if (playbackStop) {
         playbackStop.addEventListener('click', () => {
-            arkadiaClient.stopPlayback();
+            arkadiaClient.recorder.stopPlayback();
         });
     }
 
     if (playbackReplay) {
         playbackReplay.addEventListener('click', () => {
-            arkadiaClient.replayLast();
+            arkadiaClient.recorder.replayLast();
         });
     }
 
     if (playbackStepBack) {
         playbackStepBack.addEventListener('click', () => {
-            arkadiaClient.stepBack();
+            arkadiaClient.recorder.stepBack();
         });
     }
 
     if (playbackStep) {
         playbackStep.addEventListener('click', () => {
-            arkadiaClient.stepForward();
+            arkadiaClient.recorder.stepForward();
         });
     }
 
@@ -757,10 +768,6 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
-
-            // Password persistence removed
-            arkadiaClient.setStoredPassword(password || null);
-            arkadiaClient.setStoredCharacter(character || null);
 
             const sendCreds = () => {
                 if (character) client.send(character);
@@ -1054,3 +1061,4 @@ import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
+import {parseAnsiPatterns} from "./ansiParser.ts";
