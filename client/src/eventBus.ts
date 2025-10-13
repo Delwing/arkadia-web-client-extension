@@ -39,7 +39,7 @@ type Handler<T> = (...args: Params<T>) => void;
 class EventBus<Events extends Record<string, any>> extends EventTarget {
     private wrappers = new WeakMap<Handler<any>, EventListener>();
 
-    on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean) {
+    on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean): () => void {
         const wrapper: EventListener = (ev: Event) => {
             const detail = (ev as CustomEvent).detail;
             if (Array.isArray(detail)) {
@@ -52,6 +52,7 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
         };
         this.wrappers.set(listener, wrapper);
         this.addEventListener(event as string, wrapper, options);
+        return () => this.off(event, listener);
     }
 
     off<K extends keyof Events>(event: K, listener: Handler<Events[K]>) {
