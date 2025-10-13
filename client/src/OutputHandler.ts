@@ -20,6 +20,7 @@ export default class OutputHandler {
     constructor(clientExtension: Client) {
         this.client = clientExtension
         document.addEventListener('click', this.hideContextMenu)
+        this.client.addEventListener('output-sent', this.processOutput as any)
     }
 
     private hideContextMenu = () => {
@@ -81,6 +82,30 @@ export default class OutputHandler {
         menu.style.left = `${left}px`
         menu.style.top = `${top}px`
         menu.style.visibility = ''
+    }
+
+    processOutput = (event: CustomEvent<number | undefined>) => {
+        const count = typeof event.detail === 'number' ? event.detail : 0
+
+        const applyToContainer = (container: HTMLElement | null) => {
+            if (!container) {
+                return
+            }
+
+            const messages = Array.from(container.querySelectorAll<HTMLElement>('.output_msg'))
+            const startIndex = count > 0 ? Math.max(0, messages.length - count) : 0
+            for (const message of messages.slice(startIndex)) {
+                const text = message.querySelector<HTMLElement>('.output_msg_text')
+                this.applyClickListeners(text)
+            }
+        }
+
+        applyToContainer(this.output as HTMLElement | null)
+
+        const stickyArea = document.getElementById('sticky-area') as HTMLElement | null
+        if (stickyArea && stickyArea !== this.output) {
+            applyToContainer(stickyArea)
+        }
     }
 
     applyClickListeners(element: HTMLElement | null) {
