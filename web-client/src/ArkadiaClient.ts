@@ -2,6 +2,7 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
+import type { ClickCallbackMap } from "@client/src/OutputHandler.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
@@ -139,8 +140,9 @@ class ArkadiaClient implements ClientAdapter {
         this.sendGmcp('client.conf.set', data)
     }
 
-    output(text?: string, type?: string) {
-        this.emit('message', text, type)
+    output(text?: string, type?: string, clickCallbacks?: ClickCallbackMap) {
+        const parsed = typeof text === 'string' ? this.parseAnsiPatterns(text) : text
+        this.emit('message', parsed, type, clickCallbacks)
     }
 
     //Should be done on all ouput

@@ -1,10 +1,20 @@
 import Client from "./Client";
 
+export type ClickCallback =
+    | (() => void)
+    | {
+        left?: (ev: MouseEvent) => void;
+        right?: (ev: MouseEvent) => void;
+    };
+
+export type ClickCallbackMap = Record<number, ClickCallback>;
+
 export default class OutputHandler {
 
     client: Client
     output = document.getElementById("main_text_output_msg_wrapper")
     clickerCallbacks: any[] = [];
+    private activeClickCallbacks = new Map<number, any>();
     private contextMenu = document.getElementById('context-menu') as HTMLElement | null;
 
     constructor(clientExtension: Client) {
@@ -80,16 +90,66 @@ export default class OutputHandler {
         menu.style.visibility = ''
     }
 
+    applyClickListeners(element: HTMLElement | null) {
+        if (!element) {
+            return
+        }
+
+        if (element.innerHTML.includes('{clickOpen:')) {
+            this.parseClickTags(element)
+            return
+        }
+
+        const spans = element.querySelectorAll<HTMLElement>('[data-click-index]')
+        spans.forEach(span => {
+            const indexAttr = span.getAttribute('data-click-index')
+            if (!indexAttr) {
+                return
+            }
+            const index = parseInt(indexAttr, 10)
+            if (Number.isNaN(index)) {
+                return
+            }
+            const titleAttr = span.getAttribute('data-click-title') || undefined
+            this.decorateClickable(span, index, titleAttr ?? undefined)
+        })
+    }
+
+    private getClickCallback(cbIndex: number): ClickCallback | undefined {
+        let cb = this.clickerCallbacks[cbIndex]
+        if (cb !== undefined) {
+            this.clickerCallbacks[cbIndex] = undefined as any
+            this.activeClickCallbacks.set(cbIndex, cb)
+        } else {
+            cb = this.activeClickCallbacks.get(cbIndex)
+        }
+        return cb
+    }
+
+    getCallbacksForIndices(indices: Iterable<number>): ClickCallbackMap {
+        const mapping: ClickCallbackMap = {}
+        for (const index of indices) {
+            const cb = this.getClickCallback(index)
+            if (cb) {
+                mapping[index] = cb
+            }
+        }
+        return mapping
+    }
+
     private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
         span.style.cursor = "pointer"
         span.style.textDecoration = " underline"
         span.style.textDecorationStyle = "dotted"
         span.style.textDecorationSkipInk = "auto"
+        span.dataset.clickIndex = cbIndex.toString()
         if (title) {
             span.title = title
+            span.dataset.clickTitle = title
+        } else {
+            span.removeAttribute('data-click-title')
         }
-        const cb = this.clickerCallbacks[cbIndex]
-        this.clickerCallbacks[cbIndex] = undefined as any
+        const cb = this.getClickCallback(cbIndex)
         if (cb) {
             if (typeof cb === 'function') {
                 span.onclick = () => {
@@ -215,7 +275,7 @@ export default class OutputHandler {
             }
             const msg = element.querySelector(".output_msg_text") as HTMLElement | null
             if (msg) {
-                this.parseClickTags(msg)
+                this.applyClickListeners(msg)
             }
         }
     }
