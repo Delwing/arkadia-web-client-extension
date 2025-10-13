@@ -1,5 +1,5 @@
 import Triggers from "./Triggers";
-import { stripAnsiCodes } from "./stripAnsiCodes";
+import {stripAnsiCodes} from "./stripAnsiCodes";
 import PackageHelper from "./PackageHelper";
 import MapHelper from "./MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
@@ -11,17 +11,18 @@ import {
     LINE_START_EVENT,
     formatLabel,
 } from "./scripts/functionalBind";
-import OutputHandler, { ClickCallbackMap } from "./OutputHandler";
+import OutputHandler, {ClickCallbackMap} from "./OutputHandler";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
-import {attachGmcpListener} from "./gmcp";
-import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
+import "./gmcp";
+import {setCurrentCharacter, getItemSync, setItemSync} from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import eventBus, { type ClientEvents, type EventParams, type Handler } from "./eventBus";
-import { openMapContextMenu } from "./contextMenus";
+import {openMapContextMenu} from "./contextMenus";
+import appEventBus, {ClientEvents} from "./events/app-event-bus";
+import {Handler} from "./events/event-bus";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -34,7 +35,7 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
-    eventTarget = eventBus;
+    eventTarget = appEventBus;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
@@ -80,8 +81,8 @@ export default class Client {
     };
     customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
     tempBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string | null }[] = [
-        { key: 'F4', command: null },
-        { key: 'F5', command: null },
+        {key: 'F4', command: null},
+        {key: 'F5', command: null},
     ];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
@@ -95,11 +96,10 @@ export default class Client {
 
     constructor(clientAdapter: ClientAdapter, port: any) {
         this.clientAdapter = clientAdapter
-        attachGmcpListener(this);
 
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
-        this.addEventListener('uiSettings', () => this.updateContentWidth())
+        appEventBus.on('uiSettings', () => this.updateContentWidth())
 
         Object.values(this.sounds).forEach((sound) => sound.load())
 
@@ -174,19 +174,19 @@ export default class Client {
             }
             const lamp = b?.lamp
             if (lamp) {
-                this.lampBind = { ...lamp }
+                this.lampBind = {...lamp}
             }
             const attack = b?.attack
             if (attack) {
-                this.attackBind = { ...attack }
+                this.attackBind = {...attack}
             }
             const support = b?.support
             if (support) {
-                this.supportBind = { ...support }
+                this.supportBind = {...support}
             }
             const moveMode = b?.moveMode
             if (moveMode) {
-                this.moveModeBind = { ...moveMode }
+                this.moveModeBind = {...moveMode}
             }
             const temp = b?.temp
             if (Array.isArray(temp)) {
@@ -241,7 +241,7 @@ export default class Client {
                 setCurrentCharacter(ev.detail.name);
                 if (this.port) {
                     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
-                        this.port!.postMessage({ type: 'GET_STORAGE', key: k });
+                        this.port!.postMessage({type: 'GET_STORAGE', key: k});
                     });
                 }
             }
@@ -306,16 +306,6 @@ export default class Client {
         this.port = port
         this.sendEvent('port-connected')
         console.log("Client connected to background service.")
-    }
-
-    addEventListener<K extends keyof ClientEvents>(event: K, listener: (arg: CustomEvent<ClientEvents[K]>) => void, options?: AddEventListenerOptions | boolean) {
-        const reference = listener as EventListener
-        this.eventTarget.addEventListener(event as string, reference, options)
-        return () => this.eventTarget.removeEventListener(event as string, reference, options)
-    }
-
-    removeEventListener<K extends keyof ClientEvents>(event: K, listener: EventListenerOrEventListenerObject | null) {
-        this.eventTarget.removeEventListener(event as string, listener)
     }
 
     send(command: string, echo: boolean = true) {
@@ -467,7 +457,7 @@ export default class Client {
         })
         this.buffer = []
         if (emittedCount > 0) {
-            this.OutputHandler.processOutput(new CustomEvent('output-sent', { detail: emittedCount }))
+            this.OutputHandler.processOutput(new CustomEvent('output-sent', {detail: emittedCount}))
             this.sendEvent('output-sent', emittedCount)
         }
     }
@@ -498,20 +488,20 @@ export default class Client {
         const callbacks = indices.size ? this.OutputHandler.getCallbacksForIndices(indices) : undefined
         const clickCallbacks = callbacks && Object.keys(callbacks).length ? callbacks : undefined
 
-        return { output, clickCallbacks }
+        return {output, clickCallbacks}
     }
 
-    on<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>, options?: AddEventListenerOptions | boolean) {
-        eventBus.on(type, listener, options)
-        return () => eventBus.off(type, listener)
+    on<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>) {
+        appEventBus.on(type, listener)
+        return () => appEventBus.off(type, listener)
     }
 
     off<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>) {
-        eventBus.off(type, listener)
+        appEventBus.off(type, listener)
     }
 
-    sendEvent<K extends keyof ClientEvents>(type: K, ...args: EventParams<ClientEvents, K>) {
-        eventBus.emit(type, ...(args as EventParams<ClientEvents, K>))
+    sendEvent<K extends keyof ClientEvents>(type: K, payload?: ClientEvents[K]) {
+        appEventBus.emit(type, payload)
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {
@@ -574,7 +564,8 @@ export default class Client {
             return
         }
         if ('serviceWorker' in navigator && navigator.serviceWorker) {
-            navigator.serviceWorker.register('sw.js').catch(() => {})
+            navigator.serviceWorker.register('sw.js').catch(() => {
+            })
         }
         if (Notification.permission === 'default') {
             Notification.requestPermission()
@@ -589,7 +580,8 @@ export default class Client {
             if ('serviceWorker' in navigator && navigator.serviceWorker) {
                 navigator.serviceWorker.ready
                     .then((reg) => reg.showNotification(message))
-                    .catch(() => {})
+                    .catch(() => {
+                    })
             } else {
                 new Notification(message)
             }

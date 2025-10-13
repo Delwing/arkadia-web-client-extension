@@ -1,4 +1,12 @@
+import appEventBus from "./events/app-event-bus";
+
 export const gmcp: Record<string, any> = (window as any).gmcp || ((window as any).gmcp = {});
+
+
+appEventBus.on("gmcp", (event) => {
+    if (typeof event.path !== 'string') return;
+    setGmcp(event.path, event.value);
+});
 
 export function setGmcp(path: string, value: any) {
     const parts = path.split('.');
@@ -7,13 +15,4 @@ export function setGmcp(path: string, value: any) {
         obj = obj[parts[i]] = obj[parts[i]] || {};
     }
     obj[parts[parts.length - 1]] = value;
-}
-
-export function attachGmcpListener(target: { addEventListener: Function }) {
-    target.addEventListener('gmcp', (event: CustomEvent<{ path: string; value: any }>) => {
-        const { path, value } = event.detail || {};
-        if (typeof path === 'string') {
-            setGmcp(path, value);
-        }
-    });
 }
