@@ -15,7 +15,15 @@ export default class BreakItemWarning {
     if (this.container) {
       this.container.addEventListener("click", () => {
         if (this.command) {
-          this.client.send(this.command);
+          const clientWithSendCommand = this.client as unknown as {
+            sendCommand?: (command: string) => void;
+            send: (command: string) => void;
+          };
+          if (typeof clientWithSendCommand.sendCommand === "function") {
+            clientWithSendCommand.sendCommand(this.command);
+          } else {
+            this.client.send(this.command);
+          }
         }
         this.update(null);
       });

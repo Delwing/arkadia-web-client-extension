@@ -1,6 +1,7 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import arkadiaClient from "./ArkadiaClient.ts";
+import type { ClickCallbackMap, ClickCallback } from "@client/src/OutputHandler.ts";
 import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -50,11 +51,6 @@ const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
 registerScripts(client)
 client.connect(client.port, true)
-
-client.addEventListener('output', (ev: CustomEvent) => {
-    arkadiaClient.output(parseAnsiPatterns(ev.detail.message), ev.detail.type);
-})
-
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
 const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
@@ -172,7 +168,102 @@ const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 let isSplitView = false;
 const STICKY_LINES = 15;
 
-function processSticky(count: number) {
+function decorateClickableSpan(span: HTMLElement, callback: ClickCallback) {
+    span.style.cursor = "pointer";
+    span.style.textDecoration = " underline";
+    span.style.textDecorationStyle = "dotted";
+    span.style.textDecorationSkipInk = "auto";
+    const titleAttr = span.getAttribute('data-click-title') || undefined;
+    if (titleAttr) {
+        span.title = titleAttr;
+    } else {
+        span.removeAttribute('title');
+    }
+
+    if (typeof callback === 'function') {
+        span.onclick = () => {
+            callback?.();
+        };
+        span.oncontextmenu = null;
+    } else {
+        if (callback.left) {
+            span.onclick = (ev) => {
+                callback.left?.(ev);
+            };
+        } else {
+            span.onclick = null;
+        }
+
+        if (callback.right) {
+            span.oncontextmenu = (ev) => {
+                ev.preventDefault();
+                callback.right?.(ev);
+            };
+
+            let timer: number | undefined;
+            const clear = () => {
+                if (timer !== undefined) {
+                    clearTimeout(timer);
+                    timer = undefined;
+                }
+            };
+
+            span.addEventListener('touchstart', (ev: TouchEvent) => {
+                clear();
+                timer = window.setTimeout(() => {
+                    const t = ev.touches && ev.touches[0];
+                    if (t) {
+                        const me = new MouseEvent('contextmenu', {
+                            bubbles: true,
+                            cancelable: true,
+                            clientX: t.clientX,
+                            clientY: t.clientY,
+                        });
+                        callback.right?.(me);
+                    }
+                }, 500);
+            }, { passive: true });
+            span.addEventListener('touchend', clear, { passive: true });
+            span.addEventListener('touchcancel', clear, { passive: true });
+            span.addEventListener('touchmove', clear, { passive: true });
+        } else {
+            span.oncontextmenu = null;
+        }
+    }
+}
+
+function applyClickCallbacks(element: HTMLElement | null, callbacks?: ClickCallbackMap) {
+    if (!element || !callbacks) {
+        return;
+    }
+
+    const spans = element.querySelectorAll<HTMLElement>('[data-click-index]');
+    spans.forEach(span => {
+        const indexAttr = span.getAttribute('data-click-index');
+        if (!indexAttr) {
+            return;
+        }
+        const index = parseInt(indexAttr, 10);
+        if (Number.isNaN(index)) {
+            return;
+        }
+        const callback = callbacks[index];
+        if (callback) {
+            decorateClickableSpan(span, callback);
+        }
+    });
+}
+
+function processSticky(count: number, clickCallbacks?: ClickCallbackMap) {
+    if (clickCallbacks) {
+        const elements = Array.from(stickyArea.children).slice(-count);
+        elements.forEach(node => {
+            const msg = (node as HTMLElement).querySelector('.output_msg_text') as HTMLElement | null;
+            applyClickCallbacks(msg, clickCallbacks);
+        });
+        return;
+    }
+
     const handler: any = (window as any).clientExtension?.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
         const prev = handler.output;
@@ -253,7 +344,7 @@ Promise.all([mapDataPromise, colorsPromise])
 
 
 // Set up message event listener for UI updates
-arkadiaClient.on('message', (message: string, type?: string) => {
+arkadiaClient.on('message', (message: string, type?: string, clickCallbacks?: ClickCallbackMap) => {
     if (message === "") {
         return; //TODO investigate
     }
@@ -270,6 +361,7 @@ arkadiaClient.on('message', (message: string, type?: string) => {
     messageDiv.style.whiteSpace = 'pre-wrap';
 
     wrapper.appendChild(messageDiv);
+    applyClickCallbacks(messageDiv, clickCallbacks);
     outputWrapper.insertBefore(wrapper, splitBottom);
 
     const maxElements = 1000;
@@ -291,7 +383,7 @@ arkadiaClient.on('message', (message: string, type?: string) => {
 
     if (isSplitView) {
         stickyArea.appendChild(wrapper.cloneNode(true));
-        processSticky(1);
+        processSticky(1, clickCallbacks);
         while (stickyArea.childElementCount > STICKY_LINES) {
             const firstSticky = stickyArea.firstElementChild;
             if (firstSticky) {
@@ -1061,4 +1153,3 @@ import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
-import {parseAnsiPatterns} from "./ansiParser.ts";

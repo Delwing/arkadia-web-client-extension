@@ -39,7 +39,16 @@ jest.mock('../src/Triggers', () => ({
   })),
 }));
 jest.mock('../src/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('../src/OutputHandler', () => ({ __esModule: true, default: jest.fn() }));
+const outputHandlerMock = {
+  processOutput: jest.fn(),
+  applyClickListeners: jest.fn(),
+  getCallbacksForIndices: jest.fn(() => ({})),
+};
+
+jest.mock('../src/OutputHandler', () => ({
+  __esModule: true,
+  default: jest.fn(() => outputHandlerMock),
+}));
 jest.mock('../src/scripts/functionalBind', () => ({
   FunctionalBind: jest.fn().mockImplementation(() => ({
     set: jest.fn(),
@@ -67,6 +76,10 @@ beforeEach(() => {
   (window as any).dispatchEvent = jest.fn();
   (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
+  outputHandlerMock.processOutput.mockReset();
+  outputHandlerMock.applyClickListeners.mockReset();
+  outputHandlerMock.getCallbacksForIndices.mockReset();
+  outputHandlerMock.getCallbacksForIndices.mockReturnValue({});
 });
 
 test('requests notification permission on demand', () => {
@@ -214,7 +227,7 @@ test('onLine sends printed messages after line and restores Output.send', () => 
   client.sendEvent('output-sent');
 
   expect(originalOutputSend).toHaveBeenNthCalledWith(1, expected);
-  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', undefined);
+  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', undefined, undefined);
 });
 
 test('onLine replaces reset sequences with preceding ANSI code', () => {
@@ -280,6 +293,34 @@ test('onLine preserves final reset at line end', () => {
   const result = client.onLine(line, '');
 
   expect(result).toBe(line);
+});
+
+test('flushBuffer emits click callback mapping with output event', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const listener = jest.fn();
+  client.addEventListener('output', listener);
+  const callback = jest.fn();
+  outputHandlerMock.getCallbacksForIndices.mockReturnValue({ 3: callback });
+  client.OutputHandler.clickerCallbacks = [() => undefined, () => undefined, () => undefined, callback];
+  client.buffer.push({ out: '{clickOpen:3:Opis}Klik{clickClose}', type: 'info' });
+
+  client.flushBuffer();
+
+  expect(outputHandlerMock.getCallbacksForIndices).toHaveBeenCalledTimes(1);
+  const [[indicesArg]] = outputHandlerMock.getCallbacksForIndices.mock.calls as any;
+  expect(indicesArg).toEqual(new Set([3]));
+  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith(
+    expect.stringContaining('<span data-click-index="3" data-click-title="Opis">Klik</span>'),
+    'info',
+    { 3: callback }
+  );
+
+  expect(listener).toHaveBeenCalledTimes(1);
+  const event = listener.mock.calls[0][0] as CustomEvent;
+  const { message, type, clickCallbacks } = event.detail as any;
+  expect(message).toContain('<span data-click-index="3" data-click-title="Opis">Klik</span>');
+  expect(type).toBe('info');
+  expect(clickCallbacks).toEqual({ 3: callback });
 });
 
 test('playSound restarts sound when called twice', () => {

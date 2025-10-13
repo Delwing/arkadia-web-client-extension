@@ -11,7 +11,7 @@ import {
     LINE_START_EVENT,
     formatLabel,
 } from "./scripts/functionalBind";
-import OutputHandler from "./OutputHandler";
+import OutputHandler, { ClickCallbackMap } from "./OutputHandler";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {beepSound} from "./sounds";
@@ -26,7 +26,7 @@ import { openMapContextMenu } from "./contextMenus";
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
 
-    output(text?: string, type?: string): void
+    output(text?: string, type?: string, clickCallbacks?: ClickCallbackMap): void
 
     sendGmcp(type: string, payload?: any): void
 }
@@ -272,6 +272,10 @@ export default class Client {
             this.onLine(line, type)
         })
 
+        this.addEventListener('output-sent', () => {
+            this.flushBuffer()
+        })
+
 
         this.port = port
         port.onMessage.addListener((message) => {
@@ -452,17 +456,53 @@ export default class Client {
         result = result.replace(/\x1b\[0m/g, () => restore[index++] || '\x1b[0m')
         this.buffer.unshift({out: result, type: type})
         this.flushBuffer();
+        return result
     }
 
     flushBuffer() {
         if (this.buffer.length == 0) return
-        this.buffer.forEach(item => this.eventTarget.dispatchEvent(new CustomEvent('output', {
-            detail: {
-                message: item.out,
-                type: item.type
-            }
-        })))
+
+        this.buffer.forEach(item => {
+            const parsed = this.parseClickableTags(item.out)
+            this.clientAdapter.output(parsed.output, item.type, parsed.clickCallbacks)
+            this.eventTarget.dispatchEvent(new CustomEvent('output', {
+                detail: {
+                    message: parsed.output,
+                    type: item.type,
+                    clickCallbacks: parsed.clickCallbacks,
+                }
+            }))
+        })
         this.buffer = []
+    }
+
+    private parseClickableTags(line: string): { output: string; clickCallbacks?: ClickCallbackMap } {
+        const openReg = /\{clickOpen:(\d+)(?::([^}]+))?}/g
+        const closeReg = /\{clickClose}/g
+        const indices = new Set<number>()
+
+        const escapeAttribute = (value: string) => value
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+
+        const withOpenTags = line.replace(openReg, (_match, index: string, title?: string) => {
+            const parsedIndex = parseInt(index, 10)
+            if (!Number.isNaN(parsedIndex)) {
+                indices.add(parsedIndex)
+            }
+            const attrs = [`data-click-index="${index}"`]
+            if (title) {
+                attrs.push(`data-click-title="${escapeAttribute(title)}"`)
+            }
+            return `<span ${attrs.join(' ')}>`
+        })
+        const output = withOpenTags.replace(closeReg, '</span>')
+        const callbacks = indices.size ? this.OutputHandler.getCallbacksForIndices(indices) : undefined
+        const clickCallbacks = callbacks && Object.keys(callbacks).length ? callbacks : undefined
+
+        return { output, clickCallbacks }
     }
 
     sendEvent(type: string, payload?: any) {
@@ -487,6 +527,9 @@ export default class Client {
         }
         // @ts-ignore
         this.buffer.push({out: printable})
+        if (!this.inLineProcess) {
+            this.flushBuffer()
+        }
     }
 
     println(printable: string) {
