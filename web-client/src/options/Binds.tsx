@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
+import eventBus from "@client/src/eventBus";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
 
@@ -207,15 +208,14 @@ function Binds() {
                 setMultibinds(list);
             }
         });
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail;
+        const handler = (detail: unknown) => {
             setMultibinds(normalizeMultibinds(detail));
         };
-        window.addEventListener('multibindsStorage', handler as EventListener);
+        const unsubscribe = eventBus.on('multibindsStorage', handler);
         window.clientExtension?.port?.postMessage?.({ type: 'MULTIBINDS_LOAD' });
         return () => {
             active = false;
-            window.removeEventListener('multibindsStorage', handler as EventListener);
+            unsubscribe();
         };
     }, []);
 
@@ -360,24 +360,27 @@ function Binds() {
             if (window.clientExtension?.port) {
                 await new Promise<void>((resolve) => {
                     let settled = false;
+                    let unsubscribe: (() => void) | undefined;
+                    let timeout: ReturnType<typeof setTimeout>;
                     const handler = () => {
                         if (settled) return;
                         settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
+                        clearTimeout(timeout);
+                        unsubscribe?.();
                         resolve();
                     };
-                    window.addEventListener('multibindsStorage', handler as EventListener, { once: true });
-                    window.clientExtension.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
-                    setTimeout(() => {
+                    timeout = setTimeout(() => {
                         if (settled) return;
                         settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
+                        unsubscribe?.();
                         resolve();
                     }, 1500);
+                    unsubscribe = eventBus.on('multibindsStorage', handler, { once: true });
+                    window.clientExtension.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
                 });
             } else {
                 await replaceMultibinds(finalList);
-                window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: finalList }));
+                eventBus.emit('multibindsStorage', finalList);
             }
             setMultibinds(finalList);
             setImportResult({

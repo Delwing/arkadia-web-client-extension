@@ -24,6 +24,8 @@ export interface KnownEvents {
     'contentWidth': number;
     'enterLocation': { id: number; room: any };
     'highlights': number[];
+    'pauserStart': void;
+    'pauserEnd': void;
     'multibinds': { list: { index: number; action: string; label: string }[] };
     'letterComposer': { open: boolean };
     'letterComposer.submit': LetterSubmitPayload;
@@ -100,7 +102,7 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
         }
     }
 
-    on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean) {
+    on<K extends keyof Events>(event: K, listener: Handler<Events[K]>, options?: AddEventListenerOptions | boolean): () => void {
         const wrapper: EventListener = (ev: Event) => {
             const detail = (ev as CustomEvent).detail;
             if (Array.isArray(detail)) {
@@ -113,6 +115,7 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
         };
         this.wrappers.set(listener, wrapper);
         this.addEventListener(event as string, wrapper, options);
+        return () => this.off(event, listener);
     }
 
     off<K extends keyof Events>(event: K, listener: Handler<Events[K]>) {
@@ -124,48 +127,23 @@ class EventBus<Events extends Record<string, any>> extends EventTarget {
     }
 
     emit<K extends keyof Events>(event: K, ...args: Params<Events[K]>) {
-        const detail = (args.length === 0
-            ? undefined
-            : args.length === 1
-                ? args[0]
-                : args) as EventDetail<Events[K]>;
-
-        this.dispatchLocal(event, detail);
-
-        if (!this.bridging && typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-            const payload: BridgeEventPayload = {
-                origin: this.origin,
-                type: event as string,
-                detail,
-            };
-            try {
-                window.dispatchEvent(new CustomEvent(BRIDGE_EVENT_NAME, { detail: payload }));
-            } catch {
-                // Some payloads (e.g. functions) cannot cross realms; ignore bridging errors.
-            }
-        }
-    }
-
-    private dispatchLocal(event: keyof Events, detail: unknown) {
+        const detail = args.length === 1 ? args[0] : args;
         super.dispatchEvent(new CustomEvent(event as string, { detail }));
-        if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-            window.dispatchEvent(new CustomEvent(event as string, { detail }));
-        }
     }
 }
+const GLOBAL_EVENT_BUS_KEY = "__arkadia_event_bus__";
 
-const GLOBAL_EVENT_BUS_KEY = Symbol.for("arkadia.client.eventBus");
 type GlobalWithEventBus = typeof globalThis & {
     [GLOBAL_EVENT_BUS_KEY]?: EventBus<ClientEvents>;
 };
 
-const globalWithEventBus = globalThis as GlobalWithEventBus;
+const globalObject = globalThis as GlobalWithEventBus;
 
-if (!globalWithEventBus[GLOBAL_EVENT_BUS_KEY]) {
-    globalWithEventBus[GLOBAL_EVENT_BUS_KEY] = new EventBus<ClientEvents>();
+if (!globalObject[GLOBAL_EVENT_BUS_KEY]) {
+    globalObject[GLOBAL_EVENT_BUS_KEY] = new EventBus<ClientEvents>();
 }
 
-const eventBus = globalWithEventBus[GLOBAL_EVENT_BUS_KEY]!;
+const eventBus = globalObject[GLOBAL_EVENT_BUS_KEY]!;
+
 export default eventBus;
-export { EventBus };
-export type { Handler };
+export { EventBus, GLOBAL_EVENT_BUS_KEY };
