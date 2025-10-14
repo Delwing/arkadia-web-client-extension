@@ -1,7 +1,13 @@
 import { initKillCounter, parseName, formatSessionTable, formatLifetimeTable } from '../src/scripts/kill';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
+import appEventBus from '../src/events/app-event-bus';
 
 import { EventEmitter } from 'events';
+
+beforeEach(() => {
+  localStorage.clear();
+  appEventBus.clear();
+});
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -28,8 +34,6 @@ describe('kill counter team kills', () => {
   beforeEach(() => {
     client = new FakeClient();
     initKillCounter((client as unknown) as any, []);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
   });
 
   const parse = (line: string) => {
@@ -61,7 +65,7 @@ describe('kill counter team kills', () => {
     let result = parse('> Eamon zabil smoka chaosu.');
     expect(stripAnsiCodes(result)).toContain('(0 / 1)');
 
-    client.dispatch('storage', { key: 'kill_counter', value: { 'smoka chaosu': 1 } });
+    localStorage.setItem('kill_counter', JSON.stringify({ 'smoka chaosu': 1 }));
 
     result = parse('> Eamon zabil smoka chaosu.');
     expect(stripAnsiCodes(result)).toContain('(0 / 2)');
@@ -78,8 +82,6 @@ describe('kill counter scenario', () => {
     aliases = [];
     client = new FakeClient();
     initKillCounter((client as unknown) as any, aliases);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     // alias[0] corresponds to the /zabici command which prints
@@ -118,7 +120,7 @@ describe('kill counter scenario', () => {
     parse('Zabiles smoka chaosu.');
     printSessionTable();
     client.print.mockClear();
-    client.dispatch('reset', undefined);
+    appEventBus.emit('reset');
     printSessionTable();
     const printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
     expect(printed).not.toMatch(/smoka chaosu/);
