@@ -159,9 +159,16 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
       try {
         transaction = db.transaction(storeName, mode);
       } catch (error) {
-        if (allowRetry && this.isMissingStoreError(error)) {
-          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
-          return;
+        if (allowRetry) {
+          if (this.isMissingStoreError(error)) {
+            this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
+
+          if (this.isDatabaseClosingError(error)) {
+            this.retryAfterDatabaseReconnect(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
         }
 
         reject(error);
@@ -172,9 +179,16 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
       try {
         store = transaction.objectStore(storeName);
       } catch (error) {
-        if (allowRetry && this.isMissingStoreError(error)) {
-          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
-          return;
+        if (allowRetry) {
+          if (this.isMissingStoreError(error)) {
+            this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
+
+          if (this.isDatabaseClosingError(error)) {
+            this.retryAfterDatabaseReconnect(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
         }
 
         reject(error);
@@ -185,6 +199,11 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
       try {
         request = createRequest(store);
       } catch (error) {
+        if (allowRetry && this.isDatabaseClosingError(error)) {
+          this.retryAfterDatabaseReconnect(storeName, mode, createRequest, transform, resolve, reject);
+          return;
+        }
+
         reject(error);
         return;
       }
@@ -199,9 +218,16 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
 
       request.onerror = () => {
         const error = request.error;
-        if (allowRetry && this.isMissingStoreError(error)) {
-          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
-          return;
+        if (allowRetry) {
+          if (this.isMissingStoreError(error)) {
+            this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
+
+          if (this.isDatabaseClosingError(error)) {
+            this.retryAfterDatabaseReconnect(storeName, mode, createRequest, transform, resolve, reject);
+            return;
+          }
         }
 
         reject(error ?? new Error('IndexedDB request failed'));
@@ -218,10 +244,45 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
     reject: (reason?: unknown) => void,
   ): void {
     this.storeStatus.delete(storeName);
+    this.resetDatabase();
     this.runWithStore(storeName, mode, createRequest, transform, false).then(resolve).catch(reject);
   }
 
   private isMissingStoreError(error: unknown): boolean {
     return error instanceof DOMException && error.name === 'NotFoundError';
+  }
+
+  private isDatabaseClosingError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === 'InvalidStateError';
+  }
+
+  private retryAfterDatabaseReconnect<TRequest, TResult>(
+    storeName: string,
+    mode: IDBTransactionMode,
+    createRequest: (store: IDBObjectStore) => IDBRequest<TRequest>,
+    transform: (value: TRequest) => TResult,
+    resolve: (value: TResult | PromiseLike<TResult>) => void,
+    reject: (reason?: unknown) => void,
+  ): void {
+    this.resetDatabase();
+    this.runWithStore(storeName, mode, createRequest, transform, false).then(resolve).catch(reject);
+  }
+
+  private resetDatabase(): void {
+    const previousPromise = this.dbPromise;
+    this.dbPromise = (async () => {
+      try {
+        const db = await previousPromise;
+        try {
+          db.close();
+        } catch (closeError) {
+          console.error('IndexedDB close failed', closeError);
+        }
+      } catch (error) {
+        console.error('IndexedDB reset failed to retrieve previous database', error);
+      }
+
+      return this.openDatabase();
+    })();
   }
 }
