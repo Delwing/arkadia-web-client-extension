@@ -1,24 +1,31 @@
 import Recorder from '../src/Recorder';
+import appEventBus from '@client/src/events/app-event-bus';
 
 describe('Recorder playback', () => {
   test('replayRecordedMessagesTimed echoes outgoing commands', () => {
-    const hooks = {
-      processIncomingData: jest.fn(),
-      send: jest.fn(),
-      emit: jest.fn(),
-    };
     const adapter = {
-      messages$: { subscribe: jest.fn() },
+      messages$: {
+        subscribe: jest.fn(),
+        next: jest.fn(),
+      },
     };
-    const recorder = new Recorder(hooks as any, adapter as any);
-    (window as any).clientExtension = { sendCommand: jest.fn() };
-    (window as any).Output = { send: jest.fn() };
+    appEventBus.clear();
+    const emitSpy = jest.spyOn(appEventBus, 'emit');
+    const recorder = new Recorder(adapter as any);
     recorder.setRecordedMessages([
       { message: 'look', timestamp: 0, direction: 'out' },
     ]);
     jest.useFakeTimers();
-    recorder.replayRecordedMessagesTimed();
-    jest.runAllTimers();
-    expect((window as any).Output.send).toHaveBeenCalledWith('→ look');
+    try {
+      recorder.replayRecordedMessagesTimed();
+      jest.runAllTimers();
+      expect(emitSpy.mock.calls).toContainEqual([
+        'message',
+        expect.objectContaining({ text: '→ look', type: 'command' }),
+      ]);
+    } finally {
+      emitSpy.mockRestore();
+      jest.useRealTimers();
+    }
   });
 });
