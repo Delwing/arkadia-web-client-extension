@@ -170,7 +170,7 @@ class LocalStorage implements Storage {
             }
         }
         if (key === 'settings') {
-            return Promise.resolve({[key]: {...defaultSettings}});
+            return Promise.resolve({...defaultSettings});
         }
         return Promise.resolve();
     }
@@ -220,6 +220,9 @@ export function getItemSync(key: string): any {
         } catch {
             return value
         }
+    }
+    if (key === 'settings') {
+        return {...defaultSettings};
     }
     return undefined;
 }
