@@ -218,10 +218,29 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
     reject: (reason?: unknown) => void,
   ): void {
     this.storeStatus.delete(storeName);
+    this.resetDatabase();
     this.runWithStore(storeName, mode, createRequest, transform, false).then(resolve).catch(reject);
   }
 
   private isMissingStoreError(error: unknown): boolean {
     return error instanceof DOMException && error.name === 'NotFoundError';
+  }
+
+  private resetDatabase(): void {
+    const previousPromise = this.dbPromise;
+    this.dbPromise = (async () => {
+      try {
+        const db = await previousPromise;
+        try {
+          db.close();
+        } catch (closeError) {
+          console.error('IndexedDB close failed', closeError);
+        }
+      } catch (error) {
+        console.error('IndexedDB reset failed to retrieve previous database', error);
+      }
+
+      return this.openDatabase();
+    })();
   }
 }
