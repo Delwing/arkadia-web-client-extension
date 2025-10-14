@@ -1,4 +1,5 @@
 import initMoveMode from '../src/scripts/moveMode';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient extends EventTarget {
   moveMode = 0;
@@ -22,6 +23,11 @@ class FakeClient extends EventTarget {
 describe('move mode default bind', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+    appEventBus.clear();
+  });
+
+  afterEach(() => {
+    appEventBus.clear();
   });
 
   test('backquote cycles move mode and respects carriage mode', () => {
@@ -52,30 +58,28 @@ describe('move mode default bind', () => {
     expect(client.println).toHaveBeenCalledWith('Tryb ruchu: przemknij');
   });
 
-  test('button toggles move mode without printing', () => {
+  test('team change clamps move mode when not leader', () => {
     const client = new FakeClient();
     initMoveMode((client as unknown) as any);
-    client.moveModeButton!.click();
-    expect(client.moveMode).toBe(1);
-    expect(client.println).not.toHaveBeenCalled();
-  });
+    const emitSpy = jest.spyOn(appEventBus, 'emit');
+    client.moveMode = 2;
 
-  test('move mode button skips team sneak when not leader', () => {
-    const client = new FakeClient();
-    initMoveMode((client as unknown) as any);
-    client.moveModeButton!.click();
+    appEventBus.emit('teamChange');
+
     expect(client.moveMode).toBe(1);
-    client.moveModeButton!.click();
-    expect(client.moveMode).toBe(0);
+    expect(emitSpy).toHaveBeenCalledWith('moveModeChanged', 1);
+    emitSpy.mockRestore();
   });
 
   test('leader can cycle through team sneak mode', () => {
     const client = new FakeClient();
     client.leader = true;
     initMoveMode((client as unknown) as any);
-    client.moveModeButton!.click();
-    expect(client.moveMode).toBe(1);
-    client.moveModeButton!.click();
+    const ev = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev);
+    const ev2 = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev2);
+
     expect(client.moveMode).toBe(2);
   });
 
@@ -83,55 +87,44 @@ describe('move mode default bind', () => {
     const client = new FakeClient();
     client.leader = true;
     initMoveMode((client as unknown) as any);
-    client.moveModeButton!.click();
-    client.moveModeButton!.click();
+    const ev = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev);
+    const ev2 = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev2);
     expect(client.moveMode).toBe(2);
-    client.sendEvent.mockClear();
+
+    const emitSpy = jest.spyOn(appEventBus, 'emit');
+    emitSpy.mockClear();
 
     client.leader = false;
-    client.dispatchEvent(new Event('teamChange'));
+    appEventBus.emit('teamChange');
 
     expect(client.moveMode).toBe(1);
-    expect(client.moveModeButton!.value).toBe('Ruch: prz');
-    expect(client.sendEvent).toHaveBeenLastCalledWith('moveModeChanged', 1);
+    expect(emitSpy).toHaveBeenCalledWith('moveModeChanged', 1);
+    emitSpy.mockRestore();
   });
 
   test('combat gmcp resets move mode to normal', () => {
     const client = new FakeClient();
     client.leader = true;
     initMoveMode((client as unknown) as any);
-    client.moveModeButton!.click();
-    client.moveModeButton!.click();
+    const ev = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev);
+    const ev2 = new KeyboardEvent('keydown', { key: '`', code: 'Backquote', cancelable: true });
+    window.dispatchEvent(ev2);
     expect(client.moveMode).toBe(2);
-    client.sendEvent.mockClear();
+    client.println.mockClear();
+    const emitSpy = jest.spyOn(appEventBus, 'emit');
+    emitSpy.mockClear();
 
-    client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 5 } }));
-    client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: false } } }));
+    appEventBus.emit('gmcp.char.info', { detail: { object_num: 5 } } as any);
+    appEventBus.emit('gmcp.objects.data', { detail: { '5': { attack_num: false } } } as any);
     expect(client.moveMode).toBe(2);
 
-    client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: true } } }));
+    appEventBus.emit('gmcp.objects.data', { detail: { '5': { attack_num: true } } } as any);
     expect(client.moveMode).toBe(0);
-    expect(client.moveModeButton!.value).toBe('Ruch: zwykly');
-    expect(client.sendEvent).toHaveBeenLastCalledWith('moveModeChanged', 0);
+    expect(emitSpy).toHaveBeenCalledWith('moveModeChanged', 0);
     expect(client.println).not.toHaveBeenCalled();
-  });
-
-  test('combat gmcp resets move mode mobile button label', () => {
-    const client = new FakeClient();
-    client.leader = true;
-    initMoveMode((client as unknown) as any);
-    const mobileButton = document.createElement('button');
-    mobileButton.dataset.moveModeLabel = 'Tryb ruchu';
-    mobileButton.textContent = 'Tryb ruchu prz dr';
-    mobileButton.title = 'Tryb ruchu przemknij z druzyna';
-    client.moveModeButton = mobileButton;
-    client.moveMode = 2;
-    client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 7 } }));
-
-    client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '7': { attack_num: true } } }));
-
-    expect(client.moveMode).toBe(0);
-    expect(mobileButton.textContent).toBe('Tryb ruchu zwykly');
-    expect(mobileButton.title).toBe('Tryb ruchu zwykly');
+    emitSpy.mockRestore();
   });
 });
