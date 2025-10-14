@@ -1,8 +1,12 @@
 import { gmcp, setGmcp } from '../src/gmcp';
+import appEventBus from '../src/events/app-event-bus';
 
 describe('setGmcp', () => {
   beforeEach(() => {
-    (window as any).gmcp = {};
+    Object.keys(gmcp).forEach((key) => {
+      delete (gmcp as Record<string, unknown>)[key];
+    });
+    (window as any).gmcp = gmcp;
   });
 
   test('sets nested value', () => {
@@ -21,5 +25,10 @@ describe('setGmcp', () => {
     setGmcp('room.time', { daylight: true });
     expect(gmcp.room.info).toEqual({ id: 1 });
     expect(gmcp.room.time).toEqual({ daylight: true });
+  });
+
+  test('gmcp event updates gmcp data', () => {
+    appEventBus.emit('gmcp', { path: 'room.info', value: { id: 5 } });
+    expect(gmcp.room.info).toEqual({ id: 5 });
   });
 });
