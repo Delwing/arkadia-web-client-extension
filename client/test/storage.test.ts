@@ -24,7 +24,7 @@ describe('storage character scoping', () => {
     storage.onChanged?.addListener(listener);
     setItemSync('settings', { bar: 2 });
     expect(localStorage.getItem('Bob:settings')).toBe(JSON.stringify({ bar: 2 }));
-    expect(getItemSync('settings')).toEqual({ settings: { bar: 2 } });
+    expect(getItemSync('settings')).toEqual({ bar: 2 });
     expect(listener).toHaveBeenCalledWith({ settings: { oldValue: undefined, newValue: { bar: 2 } } });
     storage.onChanged?.removeListener(listener);
   });
