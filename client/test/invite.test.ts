@@ -1,12 +1,20 @@
 import initInvite from '../src/scripts/invite';
 import Client from '../src/Client';
-import { loadPeople } from '../src/peopleLoader';
+import appEventBus from '../src/events/app-event-bus';
+import { PersonEntry } from '../src/types/people';
 
-jest.mock('../src/peopleLoader', () => ({
-    loadPeople: jest.fn(),
+const mockGetPeopleData = jest.fn<Promise<PersonEntry[]>, []>();
+
+jest.mock('../src/dataCatalog/catalogInstance', () => ({
+    __esModule: true,
+    dataCatalog: {
+        getPeopleStore: () => ({
+            getData: mockGetPeopleData,
+        }),
+    },
 }));
 
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+const flushPromises = () => new Promise<void>((resolve) => queueMicrotask(resolve));
 
 const MOCK_PEOPLE = [
     { name: 'Mordimer', description: 'templariusz', guild: 'Templariusze' },
@@ -20,12 +28,12 @@ describe('Invite functionality', () => {
     let mockTriggers: any;
     let mockFunctionalBind: any;
     let mockPrintln: jest.Mock;
-    let mockAddEventListener: jest.Mock;
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
 
     beforeEach(async () => {
-        loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+        appEventBus.clear();
+        mockGetPeopleData.mockReset().mockResolvedValue(MOCK_PEOPLE);
         mockTriggers = {
             registerTrigger: jest.fn()
         };
@@ -35,7 +43,6 @@ describe('Invite functionality', () => {
         };
 
         mockPrintln = jest.fn();
-        mockAddEventListener = jest.fn();
         mockSendCommand = jest.fn();
 
         mockTeamManager = {
@@ -51,17 +58,15 @@ describe('Invite functionality', () => {
             FunctionalBind: mockFunctionalBind,
             println: mockPrintln,
             sendCommand: mockSendCommand,
-            addEventListener: mockAddEventListener,
             TeamManager: mockTeamManager
         } as any;
 
         initInvite(client);
-        await loadPeopleMock.mock.results[0]?.value;
+        await flushPromises();
     });
 
     test('should register invite trigger', async () => {
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        await flushPromises();
         expect(mockTriggers.registerTrigger).toHaveBeenCalledWith(
             expect.any(RegExp),
             expect.any(Function),
@@ -71,12 +76,8 @@ describe('Invite functionality', () => {
 
     test('should block invite from enemy guild member', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        appEventBus.emit('settings', { enemyGuilds: ['Templariusze'] } as any);
+        await flushPromises();
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -93,12 +94,8 @@ describe('Invite functionality', () => {
 
     test('should allow invite from non-enemy guild member and execute two commands', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        appEventBus.emit('settings', { enemyGuilds: ['Templariusze'] } as any);
+        await flushPromises();
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -127,12 +124,8 @@ describe('Invite functionality', () => {
 
     test('should allow invite from unknown person and fallback to old command', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        appEventBus.emit('settings', { enemyGuilds: ['Templariusze'] } as any);
+        await flushPromises();
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -151,12 +144,8 @@ describe('Invite functionality', () => {
 
     test('should allow all invites when no enemy guilds are set and fallback to old command', async () => {
         // Set up empty enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: [] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        appEventBus.emit('settings', { enemyGuilds: [] } as any);
+        await flushPromises();
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
@@ -175,12 +164,8 @@ describe('Invite functionality', () => {
 
     test('should handle invite pattern without brackets', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Czarodzieje'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
+        appEventBus.emit('settings', { enemyGuilds: ['Czarodzieje'] } as any);
+        await flushPromises();
 
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
