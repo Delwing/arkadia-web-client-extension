@@ -4,6 +4,7 @@ import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { colorString, findClosestColor } from '../src/Colors';
 import { EventEmitter } from 'events';
 import { setItemSync } from '../src/storage';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -26,6 +27,14 @@ class FakeClient {
 }
 
 describe('improve counter', () => {
+  type SetupOptions = {
+    improveCounter?: any;
+    improveCounterLifetime?: any;
+    objectNum?: number;
+    killCounter?: any;
+    killCounterSession?: any;
+  };
+
   let client: FakeClient;
   let parse: (line: string) => string;
   let show: () => void;
@@ -33,32 +42,45 @@ describe('improve counter', () => {
   let reset: () => void;
   let aliases: { pattern: RegExp; callback: any }[];
 
-  beforeEach(() => {
-    jest.useFakeTimers();
+  const setup = (options: SetupOptions = {}) => {
+    appEventBus.clear();
     localStorage.clear();
-    setItemSync('object_num', '1');
+    setItemSync('object_num', { object_num: options.objectNum ?? 1 });
+    setItemSync('kill_counter', options.killCounter ?? {});
+    setItemSync('kill_counter_session', options.killCounterSession ?? {});
+    setItemSync('improve_counter', options.improveCounter ?? {});
+    setItemSync('improve_counter_lifetime', options.improveCounterLifetime ?? {});
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     aliases = [];
     initImproveCounter((client as unknown) as any, killCounter, aliases);
-    client.dispatch('storage', { key: 'improve_counter', value: {} });
-    client.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    show = aliases[0].callback;
-    reset = aliases[1].callback;
-    showLifetime = aliases[2].callback;
-    // reset state using alias
+    const findAlias = (pattern: RegExp) =>
+      aliases.find((a) => a.pattern.toString() === pattern.toString())?.callback;
+    show = findAlias(/\/postepy$/)!;
+    reset = findAlias(/\/postepy_reset$/)!;
+    showLifetime = findAlias(/\/postepy2$/)!;
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    setup();
     reset();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+    appEventBus.clear();
+    localStorage.clear();
+  });
+
   test('records state changes, prints notification and table', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3 });
+    appEventBus.emit('gmcp.char.state', { improve: 3 });
     const orange = findClosestColor('#ffa500');
     const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
@@ -70,14 +92,14 @@ describe('improve counter', () => {
   });
 
   test('does nothing when level does not change', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     client.println.mockClear();
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     expect(client.println).not.toHaveBeenCalled();
   });
 
   test('counts initial level above zero as multiple improvements', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- bardzo male/);
@@ -85,13 +107,13 @@ describe('improve counter', () => {
   });
 
   test('reset event clears entries', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3 });
+    appEventBus.emit('gmcp.char.state', { improve: 3 });
     show();
     client.print.mockClear();
-    client.dispatch('reset', undefined);
+    appEventBus.emit('reset');
     show();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/Dzisiaj: 0/);
@@ -99,10 +121,10 @@ describe('improve counter', () => {
   });
 
   test('lifetime list persists', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
-    client.dispatch('gmcp.char.state', { improve: 3 });
+    appEventBus.emit('gmcp.char.state', { improve: 3 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/\[\s*1\]/);
@@ -145,9 +167,9 @@ describe('improve counter', () => {
   });
 
   test('ignores duplicate improvements for same level', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
-    client.dispatch('gmcp.char.state', { improve: 2 });
-    client.dispatch('gmcp.char.state', { improve: 3 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 3 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- male/);
@@ -155,8 +177,8 @@ describe('improve counter', () => {
   });
 
   test('handles improvement delta', () => {
-    client.dispatch('gmcp.char.state', { improve: 2 });
-    client.dispatch('gmcp.char.state', { improve: 4 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 4 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- nieduze/);
@@ -164,44 +186,37 @@ describe('improve counter', () => {
   });
 
   test('adds initial improvement when not yet recorded', () => {
-    client.dispatch('storage', { key: 'improve_counter', value: { level: 0 } });
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    setup({ improveCounter: { level: 0 } });
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    reset();
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // duplicate state should not add again
-    client.dispatch('gmcp.char.state', { improve: 2 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
   test('adds missed improvements on login before lifetime loads', () => {
-    jest.useFakeTimers();
-    const c = new FakeClient();
-    const kill = initKillCounter((c as unknown) as any, []);
-    c.dispatch('storage', { key: 'kill_counter', value: {} });
-    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
-    const als: { pattern: RegExp; callback: any }[] = [];
-    initImproveCounter((c as unknown) as any, kill, als);
-    c.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
-    });
-    c.dispatch('gmcp.char.state', { improve: 4 });
-    c.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
-    const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
+    setup({ improveCounter: { level: 2, lastObjNum: 1 }, improveCounterLifetime: {} });
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    reset();
+    appEventBus.emit('gmcp.char.state', { improve: 4 });
+    const showLife = aliases.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
-    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
-    expect(c.println).not.toHaveBeenCalled();
+    expect(client.println).not.toHaveBeenCalled();
   });
 
   test('counts improvement without object number', () => {
-    client.dispatch('gmcp.char.state', { improve: 1 });
+    appEventBus.emit('gmcp.char.state', { improve: 1 });
     show();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/Dzisiaj: 1/);
@@ -212,66 +227,52 @@ describe('improve counter', () => {
   });
 
   test('counts offline improvements and new gains after login', () => {
-    client.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
+    setup({
+      improveCounter: { level: 2, lastObjNum: 1 },
+      improveCounterLifetime: { entries: [{ date: '1970/1/1', count: 2 }] },
     });
-    client.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 2 }] },
-    });
-    client.dispatch('gmcp.char.state', { improve: 4 });
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    reset();
+    appEventBus.emit('gmcp.char.state', { improve: 4 });
     showLifetime();
     let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
     client.print.mockClear();
-    client.dispatch('gmcp.char.state', { improve: 5 });
-    client.dispatch('gmcp.char.state', { improve: 6 });
+    appEventBus.emit('gmcp.char.state', { improve: 5 });
+    appEventBus.emit('gmcp.char.state', { improve: 6 });
     showLifetime();
     printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 6 postepow/);
   });
 
   test('accumulates improvements across sessions with object numbers', () => {
-    client.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 3, lastObjNum: 1 },
+    setup({
+      improveCounter: { level: 3, lastObjNum: 1 },
+      improveCounterLifetime: { entries: [{ date: '1970/1/1', count: 3 }] },
+      objectNum: 2,
     });
-    client.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 3 }] },
-    });
-    setItemSync('object_num', '2');
-    client.dispatch('gmcp.char.state', { improve: 6 });
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    reset();
+    appEventBus.emit('gmcp.char.state', { improve: 6 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
   });
 
   test('does not re-add improvements when reconnecting with same object number', () => {
-    // simulate existing data: level 2 already recorded for object 1
-    const c = new FakeClient();
-    const kill = initKillCounter((c as unknown) as any, []);
-    c.dispatch('storage', { key: 'kill_counter', value: {} });
-    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
-    const als: { pattern: RegExp; callback: any }[] = [];
-    initImproveCounter((c as unknown) as any, kill, als);
-    c.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
+    setup({
+      improveCounter: { level: 2, lastObjNum: 1 },
+      improveCounterLifetime: { entries: [{ date: '1970/1/1', count: 2 }] },
+      objectNum: 1,
     });
-    c.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 2 }] },
-    });
-    // same object number reports same level again
-    setItemSync('object_num', '1');
+    jest.setSystemTime(new Date('1970-01-01T00:00:00Z'));
+    reset();
     // server replays improvements from 1 to 2 on reconnect
-    c.dispatch('gmcp.char.state', { improve: 1 });
-    c.dispatch('gmcp.char.state', { improve: 2 });
-    const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
+    appEventBus.emit('gmcp.char.state', { improve: 1 });
+    appEventBus.emit('gmcp.char.state', { improve: 2 });
+    const showLife = aliases.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
-    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 });
