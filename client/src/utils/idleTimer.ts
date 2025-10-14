@@ -1,7 +1,6 @@
-import Client from "../Client";
 import appEventBus from "../events/app-event-bus";
 
-export default function createIdleTimer(client: Client, timeout = 120000) {
+export default function createIdleTimer(timeout = 120000) {
     let lastActivity = Date.now();
 
     const reset = () => {

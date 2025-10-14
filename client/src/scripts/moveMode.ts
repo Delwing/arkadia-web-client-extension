@@ -34,7 +34,7 @@ export default function initMoveMode(client: Client) {
     }
 
     function emitChange() {
-        client.sendEvent('moveModeChanged', client.moveMode);
+        appEventBus.emit('moveModeChanged', client.moveMode);
     }
 
     function resetToNormal() {

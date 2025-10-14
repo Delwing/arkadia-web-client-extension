@@ -1,5 +1,6 @@
 import type Client from "./Client";
-import type { HerbUse } from "./scripts/herbsLoader";
+import {HerbUse} from "./dataCatalog/entities";
+import appEventBus from "./events/app-event-bus";
 
 export interface ContextMenuItem {
     label: string;
@@ -84,7 +85,7 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
         },
         {
             label: 'Prowadź do lokacji',
-            action: () => client.sendEvent('leadTo', roomId),
+            action: () => appEventBus.emit('leadTo', roomId),
         },
         {
             label: 'Idź do lokacji',

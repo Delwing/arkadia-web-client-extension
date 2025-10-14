@@ -1,5 +1,5 @@
-import storage from "@client/src/storage";
 import appEventBus from "@client/src/events/app-event-bus.ts";
+import storage from "@client/src/storage.ts";
 
 export type MacroType =
     | 'functional'

@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 interface Localizer {
     pattern: RegExp;
@@ -8,7 +9,7 @@ interface Localizer {
 function createHandler(client: Client, roomId: number) {
     return () => {
         client.Map.setMapRoomById(roomId);
-        client.sendEvent('notify', { text: `Map Sync: ship ${roomId}` });
+        appEventBus.emit('notify', { text: `Map Sync: ship ${roomId}` });
         return undefined;
     };
 }

@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {getItemSync} from "../storage";
+import {getItemSync, setItemSync} from "../storage";
 import appEventBus from "../events/app-event-bus";
 
 function escapeRegExp(str: string) {
@@ -38,7 +38,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         callback: (matches: RegExpMatchArray) => {
             client.send('justaw ' + matches[1], false);
             lastLang = matches[1];
-            client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang});
+            setItemSync(STORAGE_KEY, lastLang);
         }
     })
 

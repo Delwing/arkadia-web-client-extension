@@ -1,5 +1,6 @@
 import './sandbox.css';
-import arkadiaClient from "./ArkadiaClient.ts";
+import ArkadiaClient from "./ArkadiaClient.ts";
+
 
 // Disable real network and echo commands locally
 arkadiaClient.connect = () => {

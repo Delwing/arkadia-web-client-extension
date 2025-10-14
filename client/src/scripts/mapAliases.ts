@@ -33,7 +33,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/prowadz-$/,
             callback: () => {
-                client.sendEvent('leadTo');
+                appEventBus.emit('leadTo');
             }
         },
         {
@@ -86,7 +86,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     const lines = topMatches.map(match => {
                         const paddedId = String(match.id).padStart(maxIdLength, ' ');
                         const clickable = client.OutputHandler.makeStringClickable(`${match.name} (${match.area})`, () => {
-                            client.sendEvent('leadTo', match.id);
+                            appEventBus.emit('leadTo', match.id);
                         });
                         return `${paddedId} ${clickable}`;
                     });

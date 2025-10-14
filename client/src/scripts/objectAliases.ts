@@ -162,7 +162,7 @@ export default function initObjectAliases(
                 const color = releaseGuard ? ON_COLOR : OFF_COLOR;
                 const state = releaseGuard ? 'ON' : 'OFF';
                 client.print(colorString(`Puszczanie zaslon: ${state}`, color));
-                client.sendEvent('releaseGuard', releaseGuard);
+                appEventBus.emit('releaseGuard', releaseGuard);
             }
         });
         aliases.push({

@@ -45,7 +45,7 @@ export default class Pausers {
             this.client.Map.setPaused(shouldPause);
             if (shouldPause !== this.active) {
                 this.active = shouldPause;
-                this.client.sendEvent(shouldPause ? 'pauserStart' : 'pauserEnd');
+                appEventBus.emit(shouldPause ? 'pauserStart' : 'pauserEnd');
             }
         }
     }

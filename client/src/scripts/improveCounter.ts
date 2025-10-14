@@ -1,7 +1,7 @@
 import Client from "../Client";
-import { colorString, findClosestColor, RESET } from "../Colors";
-import { stripAnsiCodes } from "../Triggers";
-import { getCurrentCharacter, getItemSync } from "../storage";
+import {colorString, findClosestColor, RESET} from "../Colors";
+import {stripAnsiCodes} from "../Triggers";
+import {getCurrentCharacter, getItemSync, setItemSync} from "../storage";
 import appEventBus from "../events/app-event-bus";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
@@ -115,7 +115,7 @@ export default class ImproveCounter {
     private lifetimeLoaded = false;
     private pendingLifetime: { count: number; time: number }[] = [];
     private lastTime: number = 0;
-    private lastKills = { my: 0, team: 0 };
+    private lastKills = {my: 0, team: 0};
     private level: number = -1;
     private lastObjNum?: number;
     private loaded = false;
@@ -137,7 +137,7 @@ export default class ImproveCounter {
             this.handleLevel(level);
         }
 
-       const lifetime = getItemSync(ImproveCounter.LIFETIME_KEY)
+        const lifetime = getItemSync(ImproveCounter.LIFETIME_KEY)
         this.loadLifetime(lifetime || {});
         this.lifetimeLoaded = true;
         if (this.pendingLifetime.length) {
@@ -163,7 +163,7 @@ export default class ImproveCounter {
         if (this.killCounter && typeof this.killCounter.getSessionTotals === "function") {
             return this.killCounter.getSessionTotals();
         }
-        return { my: 0, team: 0 };
+        return {my: 0, team: 0};
     }
 
     reset() {
@@ -183,8 +183,8 @@ export default class ImproveCounter {
             typeof objStored === "string"
                 ? parseInt(objStored, 10)
                 : typeof objStored === "number"
-                ? objStored
-                : undefined;
+                    ? objStored
+                    : undefined;
         const newObj =
             objNum !== undefined &&
             this.lastObjNum !== undefined &&
@@ -242,14 +242,14 @@ export default class ImproveCounter {
     private addToLifetime(count: number, time: number) {
         if (!this.lifetimeEnabled) return;
         if (!this.lifetimeLoaded) {
-            this.pendingLifetime.push({ count, time });
+            this.pendingLifetime.push({count, time});
             return;
         }
         const d = new Date(time);
         const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
         let day = this.lifetime[this.lifetime.length - 1];
         if (!day || day.date !== date) {
-            day = { date, count: 0 };
+            day = {date, count: 0};
             this.lifetime.push(day);
         }
         day.count += count;
@@ -304,7 +304,7 @@ export default class ImproveCounter {
                 const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
                 let day = result.find((x) => x.date === date);
                 if (!day) {
-                    day = { date, count: 0 };
+                    day = {date, count: 0};
                     result.push(day);
                 }
                 day.count += 1;
@@ -312,7 +312,7 @@ export default class ImproveCounter {
             return result;
         };
         const convertStates = (arr: any[]) =>
-            arr.map((e) => ({ date: e.date, count: Array.isArray(e.states) ? e.states.length : 0 }));
+            arr.map((e) => ({date: e.date, count: Array.isArray(e.states) ? e.states.length : 0}));
         if (Array.isArray(data)) {
             this.lifetime = convertLegacy(data);
             this.lifetimeEnabled = true;
@@ -330,24 +330,18 @@ export default class ImproveCounter {
     }
 
     private persist = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-            value: {
-                entries: this.entries,
-                lastTime: this.lastTime,
-                lastKills: this.lastKills,
-                level: this.level,
-                lastObjNum: this.lastObjNum,
-            },
-        });
+        setItemSync(ImproveCounter.STORAGE_KEY, {
+            entries: this.entries,
+            lastTime: this.lastTime,
+            lastKills: this.lastKills,
+            level: this.level,
+            lastObjNum: this.lastObjNum,
+        })
     };
-    
+
     private persistLifetime = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-            value: { entries: this.lifetime, enabled: this.lifetimeEnabled },
+        setItemSync(ImproveCounter.LIFETIME_KEY, {
+            entries: this.lifetime, enabled: this.lifetimeEnabled
         });
     };
 
@@ -363,7 +357,7 @@ export default class ImproveCounter {
             const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
             let day = this.lifetime[this.lifetime.length - 1];
             if (!day || day.date !== date) {
-                day = { date, count: 0 };
+                day = {date, count: 0};
                 this.lifetime.push(day);
             }
             day.count += toAdd;
@@ -530,17 +524,29 @@ export function initImproveCounter(
 ): ImproveCounter {
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
-        aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
-        aliases.push({ pattern: /\/postepy_reset$/, callback: () => counter.reset() });
-        aliases.push({ pattern: /\/postepy2$/, callback: () => counter.showLifetime() });
-        aliases.push({ pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime() });
-        aliases.push({ pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false) });
-        aliases.push({ pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true) });
-        aliases.push({ pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1) });
-        aliases.push({ pattern: /\/postepy2\+ ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2\+ ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[2], 10), parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2- ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2- ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10), parseInt(m[2], 10)) });
+        aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
+        aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
+        aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
+        aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});
+        aliases.push({pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false)});
+        aliases.push({pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true)});
+        aliases.push({pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1)});
+        aliases.push({
+            pattern: /\/postepy2\+ ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2\+ ([0-9]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[2], 10), parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2- ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2- ([0-9]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10), parseInt(m[2], 10))
+        });
     }
     return counter;
 }

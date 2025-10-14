@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import appEventBus from "../events/app-event-bus";
 
 export default function initBreakItem(client: Client) {
     const COLOR = findClosestColor("#ff6347");
@@ -22,7 +23,7 @@ export default function initBreakItem(client: Client) {
     entries.forEach(({ pattern, command }) => {
         client.Triggers.registerTrigger(pattern, (_raw, line) => {
             client.playSound("beep");
-            client.sendEvent('breakItem', { text: line, command });
+            appEventBus.emit('breakItem', { text: line, command });
             const label = command ? ` >> ${command}` : " >> Sprzet zniszczony";
             client.FunctionalBind.set(label, () => {
                 if (command) {

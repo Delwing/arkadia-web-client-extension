@@ -1,5 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import storage from "@client/src/storage";
+import {ButtonSetting} from "./mobileButtonSettings.ts";
+import appEventBus from "@client/src/events/app-event-bus.ts";
 
 const mapPositions = [
     'top-overlay',
@@ -143,10 +146,6 @@ function apply(settings: UiSettings) {
     appEventBus.emit("uiSettings", settings)
     appEventBus.emit("map-position-change")
 }
-
-import storage from "@client/src/storage";
-import {ButtonSetting} from "./mobileButtonSettings.ts";
-import appEventBus from "@client/src/events/app-event-bus.ts";
 
 async function load(): Promise<UiSettings> {
     try {

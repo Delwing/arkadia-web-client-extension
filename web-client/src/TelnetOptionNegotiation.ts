@@ -2,7 +2,7 @@ import ArkadiaClient from "./ArkadiaClient.ts";
 
 export default class TelnetOptionNegotiation {
 
-    client: typeof ArkadiaClient;
+    client: ArkadiaClient;
 
     IAC = String.fromCharCode(255);
     WILL = String.fromCharCode(251);
@@ -18,7 +18,7 @@ export default class TelnetOptionNegotiation {
         opt_mccp: false
     }
 
-    constructor(client: typeof ArkadiaClient) {
+    constructor(client: ArkadiaClient) {
         this.client = client;
     }
 

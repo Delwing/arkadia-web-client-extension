@@ -63,6 +63,7 @@ type AppEvents = {
     playBeep: void
     mobileButtonsSettings: Record<string, ButtonSetting>
     'map-position-change': void
+    systemRebirth: number | undefined
 }
 
 export type ClientEvents = AppEvents & {

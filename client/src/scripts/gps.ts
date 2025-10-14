@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 
 interface GpsEntry {
@@ -53,7 +54,7 @@ export default function initGps(client: Client) {
                             if (lines.length === 1) {
                                 if (client.Map.currentRoom?.id !== room.id) {
                                     client.Map.setMapRoomById(room.id);
-                                    client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                    appEventBus.emit('notify', { text: `Map Sync: gps ${gpsId}` });
                                 }
                             } else {
                                 current = 0;
@@ -73,7 +74,7 @@ export default function initGps(client: Client) {
                                 if (current === lines.length) {
                                     if (client.Map.currentRoom?.id !== room.id) {
                                         client.Map.setMapRoomById(room.id);
-                                        client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                        appEventBus.emit('notify', { text: `Map Sync: gps ${gpsId}` });
                                     }
                                     current = 1;
                                 }

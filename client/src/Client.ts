@@ -21,8 +21,7 @@ import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import {openMapContextMenu} from "./contextMenus";
-import appEventBus, {ClientEvents} from "./events/app-event-bus";
-import {Handler} from "./events/event-bus";
+import appEventBus from "./events/app-event-bus";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -34,8 +33,6 @@ export interface ClientAdapter {
 
 export default class Client {
     clientAdapter: ClientAdapter;
-    port?: any;
-    eventTarget = appEventBus;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
@@ -311,7 +308,7 @@ export default class Client {
         if (command) {
             command = stripPolishCharacters(command)
         }
-        this.sendEvent('command', command)
+        appEventBus.emit('command', command)
 
         let preparse = command
         command = this.Map.parseCommand(command)
@@ -378,7 +375,7 @@ export default class Client {
 
     onLine(line: string, type: string) {
         this.inLineProcess = true
-        this.sendEvent(LINE_START_EVENT)
+        appEventBus.emit(LINE_START_EVENT)
         const ansiRegex = /\x1b\[[0-9;]*m/g
 
         line = this.Triggers.parseMultiline(line, type)
@@ -426,7 +423,7 @@ export default class Client {
 
         this.buffer.forEach(item => {
             const parsed = this.parseClickableTags(item.out)
-            this.sendEvent('output', {
+            appEventBus.emit('output', {
                 message: parsed.output,
                 type: item.type,
                 clickCallbacks: parsed.clickCallbacks,
@@ -462,19 +459,6 @@ export default class Client {
         const clickCallbacks = callbacks && Object.keys(callbacks).length ? callbacks : undefined
 
         return {output, clickCallbacks}
-    }
-
-    on<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>) {
-        appEventBus.on(type, listener)
-        return () => appEventBus.off(type, listener)
-    }
-
-    off<K extends keyof ClientEvents>(type: K, listener: Handler<ClientEvents[K]>) {
-        appEventBus.off(type, listener)
-    }
-
-    sendEvent<K extends keyof ClientEvents>(type: K, payload?: ClientEvents[K]) {
-        appEventBus.emit(type, payload)
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {
@@ -584,7 +568,7 @@ export default class Client {
         const width = content.clientWidth - paddingLeft - paddingRight
         if (charWidth > 0 && width > 0) {
             this.contentWidth = Math.floor(width / charWidth)
-            this.sendEvent('contentWidth', this.contentWidth)
+            appEventBus.emit('contentWidth', this.contentWidth)
         }
     }
 }

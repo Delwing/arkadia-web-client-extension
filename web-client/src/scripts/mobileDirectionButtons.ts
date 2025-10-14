@@ -792,7 +792,7 @@ export default class MobileDirectionButtons {
                     const options = this.getMoveModeOptionsCount() || 1;
                     this.client.moveMode = (this.client.moveMode + 1) % options;
                     this.updateMoveModeButton(newBtn);
-                    this.client.sendEvent('moveModeChanged', this.client.moveMode);
+                    appEventBus.emit('moveModeChanged', this.client.moveMode);
                     break;
                 case 'specialExit':
                     const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
@@ -837,7 +837,7 @@ export default class MobileDirectionButtons {
         const safeMode = Math.max(0, Math.min(mode, maxIndex));
         if (safeMode !== this.client.moveMode) {
             this.client.moveMode = safeMode;
-            this.client.sendEvent('moveModeChanged', this.client.moveMode);
+            appEventBus.emit('moveModeChanged', this.client.moveMode);
         }
         const prefix = button.dataset.moveModeLabel ?? '';
         const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];

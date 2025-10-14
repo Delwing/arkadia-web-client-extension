@@ -41,9 +41,9 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
                 path = [];
                 const reached = target;
                 target = null;
-                client.sendEvent('leadTo');
+                appEventBus.emit('leadTo');
                 if (reached !== null) {
-                    client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
+                    appEventBus.emit('notify', { text: `[WALK] reached ${reached}` });
                 }
             }
             return;
@@ -53,7 +53,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         if (!current) {
             clearTimer();
             path = [];
-            client.sendEvent('leadTo');
+            appEventBus.emit('leadTo');
             return;
         }
         const nextId = path[index + 1];
@@ -62,7 +62,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         if (!dir) {
             clearTimer();
             path = [];
-            client.sendEvent('leadTo');
+            appEventBus.emit('leadTo');
             return;
         }
 
@@ -98,9 +98,9 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
         paused = false;
         target = targetId;
-        client.sendEvent('leadTo', targetId);
+        appEventBus.emit('leadTo', targetId);
         clearTimer();
-        client.sendEvent('notify', { text: `[WALK] ${info} → ${targetId} (${delay.toFixed(2)}s)` });
+        appEventBus.emit('notify', { text: `[WALK] ${info} → ${targetId} (${delay.toFixed(2)}s)` });
         scheduleStep();
     };
 
@@ -109,8 +109,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         paused = true;
         clearTimer();
         if (wasWalking) {
-            client.sendEvent('leadTo');
-            client.sendEvent('notify', { text: `[WALK] stopped` });
+            appEventBus.emit('leadTo');
+            appEventBus.emit('notify', { text: `[WALK] stopped` });
         }
     };
 
@@ -201,8 +201,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, parseFloat(m[1]));
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            setItemSync('settings', settings)
+            appEventBus.emit('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 
@@ -212,8 +212,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, lastDelay - 0.5);
             delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            setItemSync('settings', settings)
+            appEventBus.emit('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 
@@ -223,8 +223,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay += 0.5;
             delay += 0.5;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            setItemSync('settings', settings)
+            appEventBus.emit('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
 }

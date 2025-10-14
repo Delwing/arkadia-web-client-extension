@@ -21,7 +21,6 @@ import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
 import NoSleep from 'nosleep.js';
-import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -47,10 +46,9 @@ initSessionLogger(appEventBus).catch(err => console.error('Logger init failed', 
 const websocketAdapter = new WebSocketTransportAdapter()
 const arkadiaClient = new ArkadiaClient(websocketAdapter);
 const client = new Client(arkadiaClient)
-window.clientExtension = client;
 registerScripts(client)
 
-appEventBus.emit('settings', getItemSync('settings'));
+appEventBus.emit('settings', Object.assign(defaultSettings, getItemSync('settings')))
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
 const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
@@ -313,19 +311,20 @@ outputWrapper.addEventListener('touchend', (e) => {
 outputWrapper.addEventListener('dblclick', closeHistoryScrollback);
 
 function updateProgress(p: number, loaded?: number, total?: number) {
+    const percentage = Math.round(p * 100);
     progressContainer.style.display = 'block';
-    progressBar.style.width = `${p}%`;
+    progressBar.style.width = `${percentage}%`;
     if (loaded !== undefined && total !== undefined && total > 0) {
         const loadedKb = Math.floor(loaded / 1024);
         const totalKb = Math.ceil(total / 1024);
         progressBar.textContent = `${loadedKb} / ${totalKb} KB`;
     } else {
-        progressBar.textContent = `${Math.floor(p)}%`;
+        progressBar.textContent = `${Math.floor(percentage)}%`;
     }
 }
 
-// Load map data and colors asynchronously
-let mapDataPromise = dataCatalog.getMapDataStore().getData()
+// Load map data and colors asynchronously //TODO progress for map download
+let mapDataPromise = dataCatalog.getMapDataStore().getData({onProgress: updateProgress})
 let colorsPromise = dataCatalog.getMapColorsStore().getData()
 
 // When both are loaded, dispatch events
@@ -448,7 +447,7 @@ appEventBus.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     updateConnectButtons();
-    window.clientExtension.sendEvent('refreshPositionWhenAble');
+    appEventBus.emit("refreshPositionWhenAble")
     console.log('Client connected to Arkadia server.');
 });
 
@@ -1154,3 +1153,4 @@ import Recorder from "./Recorder.ts";
 import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
 import {getItemSync} from "@client/src/storage.ts";
 import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";
+import {defaultSettings} from "./options/defaultSettings.ts";

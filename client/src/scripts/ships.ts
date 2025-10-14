@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {isType} from "../Triggers";
+import appEventBus from "../events/app-event-bus";
 
 const BOARD_CMDS = [
     "wem",
@@ -14,7 +15,7 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
         client.playSound("beep");
     }
     client.FunctionalBind.set(label, () => {
-        client.sendEvent("refreshPositionWhenAble");
+        appEventBus.emit("refreshPositionWhenAble");
         commands.forEach(cmd => client.sendCommand(cmd));
     });
 }

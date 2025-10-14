@@ -44,7 +44,7 @@ export class APIDataSource<T> implements DataSource<T> {
         }
 
         if (value) {
-          receivedLength += value.byteLength;
+          receivedLength += value.length;
           jsonText += decoder.decode(value, { stream: true });
 
           if (hasTotalLength && totalLength > 0) {

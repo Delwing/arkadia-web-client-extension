@@ -1,4 +1,5 @@
 import Client from "../Client";
+import appEventBus from "../events/app-event-bus";
 
 export default function initCoverTimer(client: Client) {
     const tag = 'cover-timer';
@@ -27,7 +28,7 @@ export default function initCoverTimer(client: Client) {
             clearInterval(timer);
             timer = null;
         }
-        client.sendEvent('coverTimer', null);
+        appEventBus.emit('coverTimer');
     }
 
     function update() {
@@ -35,7 +36,7 @@ export default function initCoverTimer(client: Client) {
         if (left <= 0) {
             stopTimer();
         } else {
-            client.sendEvent('coverTimer', left / 1000);
+            appEventBus.emit('coverTimer', left / 1000);
         }
     }
 

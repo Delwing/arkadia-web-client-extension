@@ -4,7 +4,7 @@ import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 import {openHerbContextMenu} from "../contextMenus";
 import appEventBus from "../events/app-event-bus";
-import {getItemSync} from "../storage";
+import {getItemSync, setItemSync} from "../storage";
 import {dataCatalog} from "../dataCatalog/catalogInstance";
 import {HerbsData} from "../dataCatalog/entities";
 
@@ -233,7 +233,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         storedBags = structuredClone(bagTotals);
         const lines = buildSummary(storedBags);
         client.println(lines.join('\n'));
-        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags});
+        setItemSync(STORAGE_KEY, storedBags);
         awaiting = false;
         left = 0;
         Object.keys(totals).forEach(k => delete totals[k]);
@@ -315,7 +315,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (contents[herb] <= 0) delete contents[herb];
             leftToTake -= toTake;
         }
-        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags});
+        setItemSync(STORAGE_KEY, storedBags);
     }
 
     if (aliases) {

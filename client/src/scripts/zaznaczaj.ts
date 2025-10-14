@@ -9,7 +9,7 @@ export default function initZaznaczaj(
     const highlights = new Set<number>();
 
     const sendHighlights = () => {
-        client.sendEvent('highlights', Array.from(highlights));
+        appEventBus.emit('highlights', Array.from(highlights));
     };
 
     appEventBus.on('enterLocation', ({id}) => {

@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { takeFromBag } from "./bagManager";
+import appEventBus from "../events/app-event-bus";
 
 export default function initLamp(client: Client) {
     const tag = 'lamp'
@@ -18,7 +19,7 @@ export default function initLamp(client: Client) {
 
     function processCounter() {
         seconds -= 1
-        client.sendEvent('lampTimer', seconds)
+        appEventBus.emit('lampTimer', seconds)
         if (WARNING_TIMES.includes(seconds)) {
             client.println(` >> W lampie zostalo oleju na ${secondsToClock(seconds)}.`)
         }
@@ -41,7 +42,7 @@ export default function initLamp(client: Client) {
         if (timer != null) {
             clearInterval(timer)
             timer = null
-            client.sendEvent('lampTimer', null)
+            appEventBus.emit('lampTimer', null)
         }
     }
 

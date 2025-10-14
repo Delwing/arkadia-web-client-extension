@@ -101,9 +101,9 @@ export default class TeamManager {
             }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
-            this.client.sendEvent('teamLeaderTargetNoAvatar', this.leaderAttackTargetId);
+            appEventBus.emit('teamLeaderTargetNoAvatar', this.leaderAttackTargetId);
         } else {
-            this.client.sendEvent('teamLeaderTargetAvatar');
+            appEventBus.emit('teamLeaderTargetAvatar');
         }
     }
 
@@ -178,7 +178,7 @@ export default class TeamManager {
             this.leader = obj.desc;
             this.leaderId = id;
             if (changed) {
-                this.client.sendEvent('teamChange');
+                appEventBus.emit('teamChange');
             }
         }
 
@@ -186,7 +186,7 @@ export default class TeamManager {
             this.leader = undefined;
             this.leaderId = undefined;
             this.joined = false;
-            this.client.sendEvent('teamChange');
+            appEventBus.emit('teamChange');
         }
     }
 
@@ -227,7 +227,7 @@ export default class TeamManager {
             this.joined = true;
             this.client.sendGMCP("objects.nums")
             this.client.sendGMCP("objects.data")
-            this.client.sendEvent('teamChange');
+            appEventBus.emit('teamChange');
         })
     }
 
@@ -240,7 +240,7 @@ export default class TeamManager {
         this.members.add(name);
         this.joined = true;
         if (this.members.size !== size) {
-            this.client.sendEvent('teamChange');
+            appEventBus.emit('teamChange');
         }
     }
 
@@ -250,7 +250,7 @@ export default class TeamManager {
             this.leader = undefined;
         }
         if (hadMember || this.leader === undefined) {
-            this.client.sendEvent('teamChange');
+            appEventBus.emit('teamChange');
         }
         if (this.members.size === 0) {
             this.joined = false;
@@ -287,7 +287,7 @@ export default class TeamManager {
         this.leader = undefined;
         this.joined = false;
         if (hadMembers) {
-            this.client.sendEvent('teamChange');
+            appEventBus.emit('teamChange');
         }
         this.clearEnemyQueue();
     }
@@ -368,8 +368,6 @@ export default class TeamManager {
     }
 
     private notifyAttackQueueChange() {
-        if (typeof this.client?.sendEvent === "function") {
-            appEventBus.on("attackQueueChange", this.getEnemyQueue)
-        }
+        appEventBus.on("attackQueueChange", this.getEnemyQueue)
     }
 }

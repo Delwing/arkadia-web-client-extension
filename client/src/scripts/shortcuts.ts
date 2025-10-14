@@ -31,7 +31,6 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
 
     function persist() {
         setItemSync(STORAGE_KEY, Object.values(shortcuts));
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: Object.values(shortcuts) });
     }
 
     apply(getItemSync(STORAGE_KEY) || [])

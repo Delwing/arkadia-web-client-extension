@@ -21,7 +21,7 @@ export default function initZaskTimer(client: Client) {
     }
 
     function emit(payload: ZaskTimerPayload | null) {
-        client.sendEvent('zaskTimer', payload);
+        appEventBus.emit('zaskTimer', payload);
     }
 
     function stopTimer() {

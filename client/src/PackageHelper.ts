@@ -87,7 +87,7 @@ export default class PackageHelper {
             if (!this.currentPackage || this.currentPackage.name !== name) {
                 this.currentPackage = { name }
             }
-            this.client.sendEvent('packageStatus', { recipient: name })
+            appEventBus.emit('packageStatus', { recipient: name })
             if (!this.deliveryTrigger) {
                 this.registerDeliveryTrigger()
             }
@@ -103,7 +103,7 @@ export default class PackageHelper {
         if (this.timer) {
             clearInterval(this.timer)
             this.timer = undefined
-            this.client.sendEvent('packageStatus', null)
+            appEventBus.emit('packageStatus', null)
         }
         this.remover();
         this.remover = appEventBus.on("command", (command) => {
@@ -306,14 +306,14 @@ export default class PackageHelper {
             clearInterval(this.timer)
         }
         if (hours == null) {
-            this.client.sendEvent('packageStatus', {recipient: this.currentPackage.name})
+            appEventBus.emit('packageStatus', {recipient: this.currentPackage.name})
             this.timer = undefined
             return
         }
         const total = hours * 120
         const update = () => {
             const left = total - Math.floor((Date.now() - this.listTime) / 1000)
-            this.client.sendEvent('packageStatus', {recipient: this.currentPackage!.name, seconds: left})
+            appEventBus.emit('packageStatus', {recipient: this.currentPackage!.name, seconds: left})
             if (left <= 0 && this.timer) {
                 clearInterval(this.timer)
                 this.timer = undefined
@@ -328,7 +328,7 @@ export default class PackageHelper {
             clearInterval(this.timer)
             this.timer = undefined
         }
-        this.client.sendEvent('packageStatus', null)
+        appEventBus.emit('packageStatus', null)
     }
 
     private registerDeliveryTrigger() {
@@ -336,11 +336,12 @@ export default class PackageHelper {
             if (matches[1] === 'Oddajesz') {
                 if (!this.npc[this.currentPackage.name]) {
                     this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
-                    this.client.port.postMessage({
-                        type: 'NEW_NPC',
-                        name: this.currentPackage.name,
-                        loc: this.client.Map.currentRoom.id
-                    })
+                    // this.client.port.postMessage({
+                    //     type: 'NEW_NPC',
+                    //     name: this.currentPackage.name,
+                    //     loc: this.client.Map.currentRoom.id
+                    // })
+                    //TODO persist via datastore
                 }
             }
             this.currentPackage = undefined;
@@ -352,7 +353,7 @@ export default class PackageHelper {
     private leadToPackage(name: string) {
         const location = this.findNpcLocation(name)
         if (location) {
-            this.client.sendEvent('leadTo', location)
+            appEventBus.emit('leadTo', location)
         }
         if (this.locationListener) {
             appEventBus.off('enterLocation', this.locationListener)
@@ -387,12 +388,8 @@ export default class PackageHelper {
         if (!location || !currentRoom?.id) {
             return undefined
         }
-        const findPath = this.client.Map.findPath?.bind(this.client.Map)
-        if (!findPath) {
-            return undefined
-        }
         try {
-            const path = findPath(currentRoom.id, location)
+            const path = this.client.Map.findPath(currentRoom.id, location)
             if (!path || path.length === 0) {
                 return undefined
             }

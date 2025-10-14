@@ -2,7 +2,7 @@ import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {stripAnsiCodes} from "../Triggers";
 import appEventBus from "../events/app-event-bus";
-import {getItemSync} from "../storage";
+import {getItemSync, setItemSync} from "../storage";
 
 type KillEntry = {
     mySession: number;
@@ -265,9 +265,6 @@ class KillCounter {
                 return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
             }
         );
-
-        this.client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY});
-        this.client.port?.postMessage({type: "GET_STORAGE", key: SESSION_STORAGE_KEY});
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -287,11 +284,7 @@ class KillCounter {
         Object.entries(this.kills).forEach(([name, entry]) => {
             totals[name] = entry.myTotal;
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY,
-            value: totals,
-        });
+        setItemSync(STORAGE_KEY, totals);
     };
 
     private loadSession(session: Record<string, { mySession: number; teamSession: number }> = {}): void {
@@ -310,11 +303,7 @@ class KillCounter {
                 sessions[name] = {mySession: entry.mySession, teamSession: entry.teamSession};
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: SESSION_STORAGE_KEY,
-            value: sessions,
-        });
+        setItemSync(SESSION_STORAGE_KEY, sessions);
     };
 
     private ensureEntry(name: string): KillEntry {

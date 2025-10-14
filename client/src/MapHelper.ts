@@ -76,7 +76,7 @@ export default class MapHelper {
 
         })
 
-        this.client.sendEvent('refreshPositionWhenAble');
+        appEventBus.emit('refreshPositionWhenAble');
     }
 
     setBlockable(isBlockable: boolean) {
@@ -198,7 +198,7 @@ export default class MapHelper {
                 this.locationHistory.push(locationId)
                 this.renderRoomById(locationId, true);
                 if (!this.client.suppressMapMoveEvent) {
-                    this.client.sendEvent('mapMove')
+                    appEventBus.emit('mapMove')
                 } else {
                     this.client.suppressMapMoveEvent = false
                 }
@@ -273,7 +273,7 @@ export default class MapHelper {
         this.locationHistory = [room]
         this.renderRoomById(room);
         if (!this.client.suppressMapMoveEvent) {
-            this.client.sendEvent('mapMove')
+            appEventBus.emit('mapMove')
         } else {
             this.client.suppressMapMoveEvent = false
         }
@@ -282,13 +282,13 @@ export default class MapHelper {
     moveBack() {
         this.locationHistory.pop()
         if (!this.locationHistory[this.locationHistory.length - 1]) {
-            this.client.sendEvent('stepBack')
+            appEventBus.emit('stepBack')
             return
         }
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1])
-        this.client.sendEvent('stepBack')
+        appEventBus.emit('stepBack')
         if (!this.client.suppressMapMoveEvent) {
-            this.client.sendEvent('mapMove')
+            appEventBus.emit('mapMove')
         } else {
             this.client.suppressMapMoveEvent = false
         }
@@ -303,7 +303,7 @@ export default class MapHelper {
         this.savedRoomId = id;
         setItemSync(STORAGE_KEY, id.toString())
         if (sendEvent) {
-            this.client.sendEvent('enterLocation', {id: id, room: this.currentRoom});
+            appEventBus.emit('enterLocation', {id: id, room: this.currentRoom});
         }
     }
 
@@ -341,7 +341,6 @@ export default class MapHelper {
     }
 
     findPath(fromId: number, targetId: number) {
-        console.log("findPath", fromId, targetId)
         return this.pathFinder.findPath(fromId, targetId)
     }
 

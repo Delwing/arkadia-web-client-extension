@@ -48,9 +48,9 @@ export class DataCatalogEntry<T, Persisted = T> {
   }
 
   async getData(
-    forceReloadOrOptions?: boolean | DataStoreGetOptions,
+    options?: DataStoreGetOptions,
   ): Promise<T> {
-    const { forceReload, onProgress } = this.normalizeGetDataOptions(forceReloadOrOptions);
+    const { forceReload, onProgress } = this.normalizeGetDataOptions(options);
 
     if (!forceReload && this.data !== null && !this.isExpired()) {
       onProgress?.(1);
@@ -118,15 +118,12 @@ export class DataCatalogEntry<T, Persisted = T> {
   }
 
   private normalizeGetDataOptions(
-    forceReloadOrOptions?: boolean | DataStoreGetOptions,
+    forceReloadOrOptions?: DataStoreGetOptions,
   ): { forceReload: boolean; onProgress?: DataStoreProgressListener } {
-    if (typeof forceReloadOrOptions === 'boolean' || forceReloadOrOptions === undefined) {
-      return { forceReload: forceReloadOrOptions ?? false };
-    }
 
     return {
-      forceReload: forceReloadOrOptions.forceReload ?? false,
-      onProgress: forceReloadOrOptions.onProgress,
+      forceReload: forceReloadOrOptions?.forceReload ?? false,
+      onProgress: forceReloadOrOptions?.onProgress,
     };
   }
 

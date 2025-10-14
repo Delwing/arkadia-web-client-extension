@@ -24,7 +24,7 @@ export default function initFullHpTimer(client: Client) {
             const msg = colorString(plain, SPRING_GREEN);
             client.println(`\n${msg}\n`);
             client.notify(plain);
-            client.sendEvent("notify", { text: plain });
+            appEventBus.emit("notify", {text: plain })
             timer = null;
         }, 180000);
     }

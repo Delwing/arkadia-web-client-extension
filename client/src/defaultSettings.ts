@@ -19,7 +19,7 @@ export interface Settings {
     enemyGuilds: string[];
     binds: any;//TODO type
     autoWalkDelay: string;
-    guildColors: any | undefined;//TODO type
+    guildColors: any;//TODO type
 }
 
 export const defaultSettings: Settings = {
@@ -43,5 +43,5 @@ export const defaultSettings: Settings = {
     enemyGuilds: [],
     binds: {},
     autoWalkDelay: "1",
-    guildColors: undefined,
+    guildColors: [],
 };

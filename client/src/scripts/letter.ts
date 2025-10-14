@@ -374,7 +374,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         aliases.push({
             pattern: /^\/list$/,
             callback: () => {
-                client.sendEvent("letterComposer", { open: true });
+                appEventBus.emit("letterComposer", { open: true });
             }
         });
     }
