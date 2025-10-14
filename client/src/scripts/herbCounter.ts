@@ -113,9 +113,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
 
-    let storedBags: Record<number, Record<string, number>> = {};
-
-    storedBags = getItemSync(STORAGE_KEY)
+    let storedBags: Record<number, Record<string, number>> = getItemSync(STORAGE_KEY) || {};
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];

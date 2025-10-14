@@ -220,11 +220,6 @@ export default class Client {
                 if (settings) {
                     appEventBus.emit("settings", settings)
                 }
-                // if (this.port) {
-                //     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
-                //         this.port!.postMessage({type: 'GET_STORAGE', key: k});
-                //     });
-                // }
                 //TODO check if anything else should be loaded at the start
             }
             if (typeof event.object_num !== 'undefined') {

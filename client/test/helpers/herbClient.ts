@@ -1,22 +1,10 @@
-import { EventEmitter } from 'events';
 import initHerbCounter from '../../src/scripts/herbCounter';
 
 export class FakeClient {
-  private emitter = new EventEmitter();
   aliases: { pattern: RegExp; callback: Function }[] = [];
   Triggers = { registerTrigger: jest.fn() } as any;
   sendCommand = jest.fn();
   println = jest.fn();
-  port = { postMessage: jest.fn() } as any;
-  addEventListener(event: string, cb: any) {
-    this.emitter.on(event, cb);
-  }
-  removeEventListener(event: string, cb: any) {
-    this.emitter.off(event, cb);
-  }
-  dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
-  }
 }
 
 export const defaultHerbData = {
@@ -35,7 +23,7 @@ export const defaultHerbData = {
 };
 
 export function initHerbClient(
-  client: { aliases: { pattern: RegExp; callback: Function }[]; dispatch(event: string, detail: any): void },
+  client: { aliases: { pattern: RegExp; callback: Function }[] },
   herbCounts: Record<number, Record<string, number>> = {},
   herbData: any = defaultHerbData,
   aliases = client.aliases
@@ -50,6 +38,5 @@ export function initHerbClient(
   }
   localStorage.setItem('herb_counts', JSON.stringify(herbCounts));
   initHerbCounter((client as unknown) as any, aliases);
-  client.dispatch('storage', { key: 'herb_counts', value: herbCounts });
 }
 
