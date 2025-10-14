@@ -1,5 +1,5 @@
 import Pausers from '../src/Pausers';
-import { EventEmitter } from 'events';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeMap {
   paused = false;
@@ -9,14 +9,14 @@ class FakeMap {
 }
 
 class FakeClient {
-  private emitter = new EventEmitter();
   Map = new FakeMap();
+
   addEventListener(event: string, cb: any, _options?: any) {
-    this.emitter.on(event, cb);
-    return () => this.emitter.off(event, cb);
+    return appEventBus.on(event as any, cb);
   }
+
   sendEvent(type: string, detail?: any) {
-    this.emitter.emit(type, { detail });
+    appEventBus.emit(type as any, detail);
   }
 }
 
@@ -24,6 +24,7 @@ describe('Pausers', () => {
   let client: FakeClient;
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     new Pausers((client as unknown) as any);
     client.sendEvent('gmcp.char.info', { object_num: '1' });
