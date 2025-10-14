@@ -1,5 +1,6 @@
 import initObjectAliases from '../src/scripts/objectAliases';
 import { gmcp } from '../src/gmcp';
+import appEventBus from '../src/events/app-event-bus';
 
 jest.mock('../src/storage', () => ({
   getItemSync: jest.fn(() => ({})),
@@ -44,9 +45,9 @@ describe('object aliases', () => {
   let orderShieldTarget: () => void;
   let markAttack: (m: RegExpMatchArray) => void;
   let markDefense: (m: RegExpMatchArray) => void;
-  let setAttackMode: (ev: { detail: 'A' | 'AW' | 'AWR' }) => void;
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initObjectAliases((client as unknown) as any, aliases);
@@ -71,9 +72,6 @@ describe('object aliases', () => {
     gmcp.char = { options: { group_cover: 1 } } as any;
 
     (setItemSync as jest.Mock).mockClear();
-
-    const attackModeCall = client.addEventListener.mock.calls.find(c => c[0] === 'attackMode');
-    setAttackMode = attackModeCall && attackModeCall[1];
   });
 
   test('kill alias sends zabij with object number', () => {
@@ -84,7 +82,7 @@ describe('object aliases', () => {
 
   test('kill alias in AW mode marks target', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AW' });
+    appEventBus.emit('attackMode', 'AW');
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AW');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
@@ -93,7 +91,7 @@ describe('object aliases', () => {
 
   test('kill alias in AWR mode orders attack', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AWR' });
+    appEventBus.emit('attackMode', 'AWR');
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AWR');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
@@ -104,7 +102,7 @@ describe('object aliases', () => {
   test('kill alias in AW mode without leadership only sends zabij', () => {
     client.TeamManager.isLeader.mockReturnValue(false);
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AW' });
+    appEventBus.emit('attackMode', 'AW');
     client.sendCommand.mockClear();
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
@@ -113,7 +111,7 @@ describe('object aliases', () => {
 
   test('kill alias resumes extra commands when becoming leader again', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AWR' });
+    appEventBus.emit('attackMode', 'AWR');
     client.TeamManager.isLeader.mockReturnValue(false);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledTimes(1);

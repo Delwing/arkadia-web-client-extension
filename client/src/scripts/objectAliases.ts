@@ -93,8 +93,9 @@ export default function initObjectAliases(
     });
 
     let attackMode: 'A' | 'AW' | 'AWR' = getItemSync('attack_mode')?.attack_mode ?? 'A';
-    appEventBus.on('attackMode', (attackMode) => {;
-        setItemSync('attack_mode', attackMode);
+    appEventBus.on('attackMode', (mode) => {
+        attackMode = mode;
+        setItemSync('attack_mode', mode);
     });
     appEventBus.emit('attackMode', attackMode);
 
