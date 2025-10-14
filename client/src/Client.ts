@@ -229,7 +229,10 @@ export default class Client {
             }
             if (typeof event.object_num !== 'undefined') {
                 const newNum = String(event.object_num);
-                const stored = getItemSync('object_num')?.object_num;
+                const storedItem = getItemSync('object_num');
+                const stored = (storedItem && typeof storedItem === 'object'
+                    ? (storedItem as { object_num?: unknown }).object_num
+                    : storedItem);
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
                     appEventBus.emit('reset');
                 }

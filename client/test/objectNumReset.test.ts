@@ -1,5 +1,6 @@
 import Client from '../src/Client';
-import { getItemSync } from '../src/storage';
+import appEventBus from '../src/events/app-event-bus';
+import { getItemSync, setItemSync } from '../src/storage';
 
 (window as any).Input = { send: jest.fn() };
 (window as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
@@ -53,6 +54,7 @@ jest.mock('../src/MapHelper', () => ({
 
 describe('object_num persistence and reset event', () => {
   let client: Client;
+  const cleanups: (() => void)[] = [];
 
   beforeEach(() => {
     localStorage.clear();
@@ -62,23 +64,43 @@ describe('object_num persistence and reset event', () => {
     (window as any).dispatchEvent = jest.fn();
     (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
     (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
-    client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+    appEventBus.clear();
+    client = new Client((global as any).clientAdapterMock as any);
+  });
+
+  afterEach(() => {
+    cleanups.splice(0).forEach((cleanup) => cleanup());
+    appEventBus.clear();
   });
 
   test('stores object_num and emits reset when changed', () => {
     let resets = 0;
-    client.addEventListener('reset', () => { resets++; });
+    cleanups.push(appEventBus.on('reset', () => { resets++; }));
 
-    client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 1 });
-    expect(getItemSync('object_num')?.object_num).toBe('1');
+    expect(client).toBeInstanceOf(Client);
+    appEventBus.emit('gmcp.char.info', { name: 'Hero', object_num: 1 });
+    expect(getItemSync('object_num')).toBe('1');
     expect(resets).toBe(0);
 
-    client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 1 });
+    appEventBus.emit('gmcp.char.info', { name: 'Hero', object_num: 1 });
     expect(resets).toBe(0);
 
-    client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 2 });
+    appEventBus.emit('gmcp.char.info', { name: 'Hero', object_num: 2 });
     expect(resets).toBe(1);
-    expect(getItemSync('object_num')?.object_num).toBe('2');
+    expect(getItemSync('object_num')).toBe('2');
+  });
+
+  test('handles legacy storage wrapper format', () => {
+    setItemSync('object_num', { object_num: '5' });
+    let resets = 0;
+    cleanups.push(appEventBus.on('reset', () => { resets++; }));
+
+    appEventBus.emit('gmcp.char.info', { name: 'Hero', object_num: 5 });
+    expect(resets).toBe(0);
+
+    appEventBus.emit('gmcp.char.info', { name: 'Hero', object_num: 6 });
+    expect(resets).toBe(1);
+    expect(getItemSync('object_num')).toBe('6');
   });
 });
 
