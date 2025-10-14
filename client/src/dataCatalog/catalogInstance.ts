@@ -8,9 +8,12 @@ import {
   MagicKeysCollection,
   MapColors,
   MapExportData,
+  MultibindRecord,
   MultibindsCollection,
   NpcCollection,
+  NpcEntry,
   PeopleCollection,
+  Person,
 } from './entities';
 import { WorkerDataSource } from './WorkerDataSource';
 
@@ -55,7 +58,10 @@ const colorsEntry = new DataCatalogEntry<MapColors>({
   ),
 });
 
-const npcsEntry = new DataCatalogEntry<NpcCollection>({
+type PersistedMultibindRecord = MultibindRecord & { key: string };
+type PersistedNpcEntry = NpcEntry & { key: string };
+
+const npcsEntry = new DataCatalogEntry<NpcCollection, PersistedNpcEntry>({
   key: 'npcs',
   ttl: DAY_IN_MS,
   storeName: STORE_NAMES.npcs,
@@ -64,6 +70,21 @@ const npcsEntry = new DataCatalogEntry<NpcCollection>({
   dataSource: new APIDataSource<NpcCollection>(
     'https://delwing.github.io/arkadia-mapa/data/npc.json',
   ),
+  collection: {
+    toPersistenceItems: (collection) =>
+      collection.map((entry) => ({
+        ...entry,
+        key: `${entry.loc}:${entry.name}`,
+      })),
+    fromPersistenceItems: (items) =>
+      items.map(({ key: _ignored, name, loc, cmd, body }) => ({
+        name,
+        loc: Number(loc),
+        cmd,
+        body,
+      })),
+    getPersistenceKey: (entry) => entry.key,
+  },
 });
 
 const magicsEntry = new DataCatalogEntry<MagicsCollection>({
@@ -99,7 +120,7 @@ const herbsEntry = new DataCatalogEntry<HerbsCollection>({
   ),
 });
 
-const peopleEntry = new DataCatalogEntry<PeopleCollection>({
+const peopleEntry = new DataCatalogEntry<PeopleCollection, Person>({
   key: 'people',
   ttl: 5 * 60_000,
   storeName: STORE_NAMES.people,
@@ -107,15 +128,41 @@ const peopleEntry = new DataCatalogEntry<PeopleCollection>({
   dataSource: new WorkerDataSource<PeopleCollection>(() =>
     new Worker(new URL('./peopleWorker.ts', import.meta.url), { type: 'module' }),
   ),
+  collection: {
+    toPersistenceItems: (collection) => collection.map((person) => ({ ...person })),
+    fromPersistenceItems: (items) => items.map((person) => ({ ...person })),
+    getPersistenceKey: (person) => person.id,
+  },
 });
 
-const multibindsEntry = new DataCatalogEntry<MultibindsCollection>({
+const multibindsEntry = new DataCatalogEntry<MultibindsCollection, PersistedMultibindRecord>({
   key: 'multibinds',
   ttl: Number.POSITIVE_INFINITY,
   storeName: STORE_NAMES.multibinds,
   persistenceKey: 'multibinds',
   persistenceAdapter: sharedPersistenceAdapter,
   initialData: [],
+  collection: {
+    toPersistenceItems: (collection) =>
+      collection.map((entry) => {
+        const roomId = Number(entry.roomId);
+        const index = Number(entry.index);
+        const key = `${roomId}:${index}`;
+        return {
+          roomId,
+          index,
+          action: typeof entry.action === 'string' ? entry.action : String(entry.action ?? ''),
+          key,
+        };
+      }),
+    fromPersistenceItems: (items) =>
+      items.map(({ key: _ignored, roomId, index, action }) => ({
+        roomId: Number(roomId),
+        index: Number(index),
+        action: typeof action === 'string' ? action : String(action ?? ''),
+      })),
+    getPersistenceKey: (entry) => entry.key,
+  },
 });
 
 catalog.register('mapData', mapDataEntry);

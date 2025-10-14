@@ -1,7 +1,13 @@
 import { IndexedDBPersistenceAdapter } from './IndexedDBPersistenceAdapter';
 import { DataSource, DataStoreListener, PersistenceRecord } from './types';
 
-interface DataCatalogEntryOptions<T> {
+interface CollectionPersistenceOptions<T, Persisted> {
+  toPersistenceItems(data: T): Persisted[];
+  fromPersistenceItems(items: Persisted[]): T;
+  getPersistenceKey(item: Persisted): string;
+}
+
+interface DataCatalogEntryOptions<T, Persisted = T> {
   key: string;
   ttl: number;
   storeName: string;
@@ -9,16 +15,23 @@ interface DataCatalogEntryOptions<T> {
   dataSource?: DataSource<T>;
   persistenceKey?: string;
   initialData?: T;
+  collection?: CollectionPersistenceOptions<T, Persisted>;
 }
 
-export class DataCatalogEntry<T> {
+interface CollectionIndexRecord {
+  keys: string[];
+}
+
+const COLLECTION_INDEX_SUFFIX = '__collection_index__';
+
+export class DataCatalogEntry<T, Persisted = T> {
   private data: T | null = null;
   private timestamp = 0;
   private loadingPromise: Promise<T> | null = null;
   private readonly listeners = new Set<DataStoreListener<T>>();
   private readonly persistenceKey: string;
 
-  constructor(private readonly options: DataCatalogEntryOptions<T>) {
+  constructor(private readonly options: DataCatalogEntryOptions<T, Persisted>) {
     this.persistenceKey = options.persistenceKey ?? options.key;
     if (options.initialData !== undefined) {
       this.data = options.initialData ?? null;
@@ -101,7 +114,12 @@ export class DataCatalogEntry<T> {
     this.data = null;
     this.timestamp = 0;
     this.loadingPromise = null;
-    await this.options.persistenceAdapter.delete(this.options.storeName, this.persistenceKey);
+    if (!this.options.collection) {
+      await this.options.persistenceAdapter.delete(this.options.storeName, this.persistenceKey);
+      return;
+    }
+
+    await this.clearCollectionPersistence();
   }
 
   private async loadData(forceReload: boolean): Promise<T> {
@@ -124,6 +142,10 @@ export class DataCatalogEntry<T> {
 
   private async safeLoadFromPersistence(): Promise<T | null> {
     try {
+      if (this.options.collection) {
+        return await this.safeLoadCollectionFromPersistence();
+      }
+
       const record = await this.options.persistenceAdapter.load<T>(
         this.options.storeName,
         this.persistenceKey,
@@ -154,6 +176,11 @@ export class DataCatalogEntry<T> {
   }
 
   private async persist(data: T, timestamp: number = Date.now()): Promise<void> {
+    if (this.options.collection) {
+      await this.persistCollection(data, timestamp);
+      return;
+    }
+
     const record: PersistenceRecord<T> = {
       data,
       timestamp,
@@ -191,6 +218,136 @@ export class DataCatalogEntry<T> {
       } catch (error) {
         console.error(`Data listener for ${this.options.key} failed`, error);
       }
+    }
+  }
+
+  private getCollectionIndexKey(): string {
+    return `${this.persistenceKey}::${COLLECTION_INDEX_SUFFIX}`;
+  }
+
+  private async safeLoadCollectionFromPersistence(): Promise<T | null> {
+    const options = this.options.collection;
+    if (!options) {
+      return null;
+    }
+
+    try {
+      const indexRecord = await this.options.persistenceAdapter.load<CollectionIndexRecord>(
+        this.options.storeName,
+        this.getCollectionIndexKey(),
+      );
+      if (!indexRecord) {
+        return null;
+      }
+
+      if (this.isRecordExpired(indexRecord)) {
+        return null;
+      }
+
+      const keys = Array.isArray(indexRecord.data?.keys)
+        ? indexRecord.data.keys.filter((value): value is string => typeof value === 'string')
+        : [];
+
+      const items: Persisted[] = [];
+      for (const key of keys) {
+        try {
+          const record = await this.options.persistenceAdapter.load<Persisted>(
+            this.options.storeName,
+            key,
+          );
+          if (!record) {
+            continue;
+          }
+          if (this.isRecordExpired(record)) {
+            continue;
+          }
+          items.push(record.data);
+        } catch (error) {
+          console.error(`Failed to read persisted item for ${this.options.key}:${key}`, error);
+        }
+      }
+
+      const data = options.fromPersistenceItems(items);
+      this.updateMemory(data, indexRecord.timestamp);
+      return data;
+    } catch (error) {
+      console.error(`Failed to read persisted collection data for ${this.options.key}`, error);
+      return null;
+    }
+  }
+
+  private async persistCollection(data: T, timestamp: number): Promise<void> {
+    const options = this.options.collection;
+    if (!options) {
+      return;
+    }
+
+    const items = options.toPersistenceItems(data);
+    const uniqueItems = new Map<string, Persisted>();
+    for (const item of items) {
+      const key = options.getPersistenceKey(item);
+      if (typeof key !== 'string' || !key) {
+        continue;
+      }
+      uniqueItems.set(key, item);
+    }
+
+    const keys = Array.from(uniqueItems.keys());
+
+    try {
+      const previousIndex = await this.options.persistenceAdapter.load<CollectionIndexRecord>(
+        this.options.storeName,
+        this.getCollectionIndexKey(),
+      );
+      const previousKeys = Array.isArray(previousIndex?.data?.keys)
+        ? previousIndex.data.keys.filter((value): value is string => typeof value === 'string')
+        : [];
+
+      await Promise.all(
+        keys.map((key) =>
+          this.options.persistenceAdapter.save(this.options.storeName, key, {
+            data: uniqueItems.get(key)!,
+            timestamp,
+          }),
+        ),
+      );
+
+      const keysToDelete = previousKeys.filter((key) => !uniqueItems.has(key));
+      await Promise.all(
+        keysToDelete.map((key) =>
+          this.options.persistenceAdapter.delete(this.options.storeName, key),
+        ),
+      );
+
+      await this.options.persistenceAdapter.save(this.options.storeName, this.getCollectionIndexKey(), {
+        data: { keys },
+        timestamp,
+      });
+    } catch (error) {
+      console.error(`Failed to persist collection data for ${this.options.key}`, error);
+    }
+  }
+
+  private async clearCollectionPersistence(): Promise<void> {
+    try {
+      const indexRecord = await this.options.persistenceAdapter.load<CollectionIndexRecord>(
+        this.options.storeName,
+        this.getCollectionIndexKey(),
+      );
+      const keys = Array.isArray(indexRecord?.data?.keys)
+        ? indexRecord.data.keys.filter((value): value is string => typeof value === 'string')
+        : [];
+
+      await Promise.all(
+        keys.map((key) => this.options.persistenceAdapter.delete(this.options.storeName, key)),
+      );
+
+      await this.options.persistenceAdapter.delete(
+        this.options.storeName,
+        this.getCollectionIndexKey(),
+      );
+    } catch (error) {
+      console.error(`Failed to clear persisted collection data for ${this.options.key}`, error);
     }
   }
 }

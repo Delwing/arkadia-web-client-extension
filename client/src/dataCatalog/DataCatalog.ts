@@ -21,15 +21,15 @@ export interface DataCatalogStore<T> {
 }
 
 export class DataCatalog {
-  private readonly entries = new Map<string, DataCatalogEntry<unknown>>();
+  private readonly entries = new Map<string, DataCatalogEntry<unknown, unknown>>();
   private readonly stores = new Map<string, DataCatalogStore<unknown>>();
 
-  register<T>(key: string, entry: DataCatalogEntry<T>): void {
+  register<T>(key: string, entry: DataCatalogEntry<T, unknown>): void {
     if (this.entries.has(key)) {
       throw new Error(`DataCatalog entry with key ${key} is already registered`);
     }
 
-    this.entries.set(key, entry as DataCatalogEntry<unknown>);
+    this.entries.set(key, entry as DataCatalogEntry<unknown, unknown>);
   }
 
   async getData<T>(key: string, options?: { forceReload?: boolean }): Promise<T> {
@@ -80,13 +80,13 @@ export class DataCatalog {
     return store;
   }
 
-  protected getEntry<T>(key: string): DataCatalogEntry<T> {
+  protected getEntry<T>(key: string): DataCatalogEntry<T, unknown> {
     const entry = this.entries.get(key);
     if (!entry) {
       throw new Error(`DataCatalog entry with key ${key} is not registered`);
     }
 
-    return entry as DataCatalogEntry<T>;
+    return entry as DataCatalogEntry<T, unknown>;
   }
 }
 
