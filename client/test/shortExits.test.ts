@@ -1,6 +1,8 @@
 import initShortExits, { parseExitString, toShort } from '../src/scripts/shortExits';
 import Triggers from '../src/Triggers';
 import { colorString, findClosestColor } from '../src/Colors';
+import appEventBus from '../src/events/app-event-bus';
+import { defaultSettings } from '../src/defaultSettings';
 
 const ORANGE = findClosestColor('#ffa500');
 
@@ -15,13 +17,11 @@ describe('short exits trigger', () => {
   let parse: (line: string) => string;
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     initShortExits(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { shortenExits: true } } as any);
-    }
+    appEventBus.emit('settings', { ...defaultSettings, shortenExits: true });
     jest.clearAllMocks();
   });
 
