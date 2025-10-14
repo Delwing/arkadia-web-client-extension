@@ -38,7 +38,6 @@ export class FunctionalBind {
     private client: Client;
     private functionalBind = () => {
     };
-    private button?: HTMLInputElement;
     private currentPrintable: string | null = null;
     private printedInMessage = false;
     private key: string;
@@ -90,9 +89,6 @@ export class FunctionalBind {
             };
         }
 
-        if (this.button) {
-            this.button.onclick = this.functionalBind;
-        }
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
                 const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
@@ -116,7 +112,6 @@ export class FunctionalBind {
         };
         this.currentPrintable = null;
         this.printedInMessage = false;
-        this?.button?.remove();
     }
 
     updateOptions(options: FunctionalBindOptions = {}) {
