@@ -189,6 +189,7 @@ export default class ArkadiaClient implements ClientAdapter {
 
     flushMessageBuffer() {
         let processed: { text: string, type: string }[] = [];
+        //todo maybe add to buffer here
         this.messageBuffer.forEach((message) => {
             if (processed[processed.length - 1]?.type === message.type) {
                 processed[processed.length - 1].text += message.text
@@ -198,6 +199,7 @@ export default class ArkadiaClient implements ClientAdapter {
         })
         processed.forEach((message) => {
             appEventBus.emit('line', message)
+            appEventBus.once('output-sent', () => appEventBus.emit(`gmcp_msg.${message.type}`, message.text))
         })
         this.messageBuffer = []
         appEventBus.emit('output-sent')

@@ -21,7 +21,7 @@ type AppEvents = {
     };
     'mapMove': void;
     'stepBack': void;
-    'leadTo': number | void;
+    'leadTo': number | string;
     'notify': { text: string, time?: number };
     'lampTimer': number | null;
     'coverTimer': number | null;

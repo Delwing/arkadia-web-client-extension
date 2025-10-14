@@ -1,11 +1,12 @@
 import Client from "../Client";
 import {parseItems} from "./prettyContainers";
-import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 import {openHerbContextMenu} from "../contextMenus";
 import appEventBus from "../events/app-event-bus";
 import {getItemSync} from "../storage";
+import {dataCatalog} from "../dataCatalog/catalogInstance";
+import {HerbsData} from "../dataCatalog/entities";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -119,7 +120,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
     appEventBus.on('settings', (settings) => {
-        console.log(settings)
         preUseCommands = settings.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
         postUseCommands = settings.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
     });
@@ -127,7 +127,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     async function ensureData() {
         if (!herbs) {
             if (!loading) {
-                loading = loadHerbs().then(data => {
+                loading = dataCatalog.getHerbsStore().getData().then(data => {
                     herbs = data;
                     if (herbs) {
                         Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {

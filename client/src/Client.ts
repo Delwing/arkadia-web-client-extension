@@ -240,14 +240,14 @@ export default class Client {
                 setCurrentCharacter(event.name);
                 const settings = getItemSync("settings")
                 if (settings) {
-                    appEventBus.emit("settings", )
+                    appEventBus.emit("settings", settings)
                 }
                 // if (this.port) {
                 //     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                 //         this.port!.postMessage({type: 'GET_STORAGE', key: k});
                 //     });
                 // }
-                //TODO initial settings load
+                //TODO check if anything else should be loaded at the start
             }
             if (typeof event.object_num !== 'undefined') {
                 const newNum = String(event.object_num);
@@ -424,7 +424,6 @@ export default class Client {
     flushBuffer() {
         if (this.buffer.length == 0) return
 
-        const emittedCount = this.buffer.length
         this.buffer.forEach(item => {
             const parsed = this.parseClickableTags(item.out)
             this.sendEvent('output', {
@@ -434,9 +433,6 @@ export default class Client {
             })
         })
         this.buffer = []
-        if (emittedCount > 0) {
-            this.sendEvent('output-sent', emittedCount)
-        }
     }
 
     private parseClickableTags(line: string): { output: string; clickCallbacks?: ClickCallbackMap } {

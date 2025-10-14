@@ -3,11 +3,11 @@ import FightTitle from "./FightTitle.ts";
 import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class HpTitle {
-  private client: typeof ArkadiaClient;
+  private client: ArkadiaClient;
   private fightTitle: FightTitle;
   private readonly originalTitle: string;
 
-  constructor(client: typeof ArkadiaClient, fightTitle: FightTitle) {
+  constructor(client: ArkadiaClient, fightTitle: FightTitle) {
     this.client = client;
     this.fightTitle = fightTitle;
     this.originalTitle = fightTitle.getOriginalTitle();

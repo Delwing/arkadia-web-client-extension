@@ -1,9 +1,9 @@
 import Client from "../Client";
-import loadHerbs from "./herbsLoader";
 import {color, RESET, findClosestColor} from "../Colors";
 import {stripAnsiCodes} from "../Triggers";
 import {openHerbContextMenu} from "../contextMenus";
 import appEventBus from "../events/app-event-bus";
+import {dataCatalog} from "../dataCatalog/catalogInstance";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -16,7 +16,7 @@ export default async function initHerbDescriptions(client: Client) {
         postUseCommands = settings.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
     });
     try {
-        const herbs = await loadHerbs();
+        const herbs = await dataCatalog.getHerbsStore().getData()
         if (!herbs) return;
 
         const showHerbActions = (herbId: string, ev: MouseEvent) => {

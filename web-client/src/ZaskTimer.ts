@@ -9,7 +9,7 @@ interface ZaskTimerPayload {
 export default class ZaskTimer {
   private container: HTMLElement | null;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.container = document.getElementById("zask-timer");
     appEventBus.on("zaskTimer", (payload: ZaskTimerPayload | null) => this.update(payload));
     this.update(null);

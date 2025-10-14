@@ -8,9 +8,9 @@ interface Data {
 
 export default class BreakItemWarning {
   private container: HTMLElement | null;
-  private client: typeof ArkadiaClient;
+  private client: ArkadiaClient;
   private command: string | null = null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.client = client;
     this.container = document.getElementById("break-item-warning");
     if (this.container) {

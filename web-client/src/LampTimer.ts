@@ -3,7 +3,7 @@ import appEventBus from "@client/src/events/app-event-bus.ts";
 
 export default class LampTimer {
   private container: HTMLElement | null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.container = document.getElementById("lamp-timer");
     appEventBus.on("lampTimer", (seconds: number | null) => this.update(seconds));
   }

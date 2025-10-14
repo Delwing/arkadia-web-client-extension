@@ -1,11 +1,11 @@
-import { defaultSettings } from './defaultSettings';
+import {defaultSettings} from './defaultSettings';
 
 interface Storage {
     getItem(key: string): Promise<any>;
 
     setItem(key: string, value: any): Promise<any>;
 
-    downloadItem(url: string, ttl: number): Promise<{value: any, cacheTime: number, ttl: number }>;
+    downloadItem(url: string, ttl: number): Promise<{ value: any, cacheTime: number, ttl: number }>;
 
     onChanged?: {
         addListener: (listener: (changes: { [key: string]: { oldValue: any, newValue: any } }) => void) => void;
@@ -54,10 +54,22 @@ function notifyCharacterChange(prev: string | null) {
         }
         let oldValue: any = undefined;
         let newValue: any;
-        if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
-        { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+        if (oldRaw !== null) {
+            try {
+                oldValue = JSON.parse(oldRaw);
+            } catch {
+                oldValue = oldRaw;
+            }
+        }
+        {
+            try {
+                newValue = JSON.parse(newRaw);
+            } catch {
+                newValue = newRaw;
+            }
+        }
         const changes: { [key: string]: { oldValue: any, newValue: any } } = {
-            [key]: { oldValue, newValue }
+            [key]: {oldValue, newValue}
         };
         (storage as any).listeners?.forEach?.((l: any) => l(changes));
     });
@@ -127,13 +139,21 @@ class LocalStorage implements Storage {
             const changes: { [key: string]: { oldValue: any, newValue: any } } = {};
             let oldValue: any = undefined;
             if (ev.oldValue !== null) {
-                try { oldValue = JSON.parse(ev.oldValue); } catch { oldValue = ev.oldValue; }
+                try {
+                    oldValue = JSON.parse(ev.oldValue);
+                } catch {
+                    oldValue = ev.oldValue;
+                }
             }
             let newValue: any = undefined;
             if (ev.newValue !== null) {
-                try { newValue = JSON.parse(ev.newValue); } catch { newValue = ev.newValue; }
+                try {
+                    newValue = JSON.parse(ev.newValue);
+                } catch {
+                    newValue = ev.newValue;
+                }
             }
-            changes[baseKey] = { oldValue, newValue };
+            changes[baseKey] = {oldValue, newValue};
             this.listeners.forEach(l => l(changes));
         });
     }
@@ -150,7 +170,7 @@ class LocalStorage implements Storage {
             }
         }
         if (key === 'settings') {
-            return Promise.resolve({ [key]: { ...defaultSettings } });
+            return Promise.resolve({[key]: {...defaultSettings}});
         }
         return Promise.resolve();
     }
@@ -160,11 +180,15 @@ class LocalStorage implements Storage {
         const oldRaw = localStorage.getItem(realKey);
         let oldValue: any = undefined;
         if (oldRaw !== null) {
-            try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; }
+            try {
+                oldValue = JSON.parse(oldRaw);
+            } catch {
+                oldValue = oldRaw;
+            }
         }
         localStorage.setItem(realKey, JSON.stringify(value));
         const changes: { [key: string]: { oldValue: any, newValue: any } } = {
-            [key]: { oldValue, newValue: value }
+            [key]: {oldValue, newValue: value}
         };
         this.listeners.forEach(l => l(changes));
         return Promise.resolve();
@@ -191,10 +215,11 @@ export function getItemSync(key: string): any {
     const realKey = applyCharacterScope(key);
     const value = localStorage.getItem(realKey);
     if (value !== null) {
-        try { return { [key]: JSON.parse(value) }; } catch { return { [key]: value }; }
-    }
-    if (key === 'settings') {
-        return { [key]: { ...defaultSettings } };
+        try {
+            return JSON.parse(value);
+        } catch {
+            return value
+        }
     }
     return undefined;
 }
@@ -204,11 +229,15 @@ export function setItemSync(key: string, value: any) {
     const oldRaw = localStorage.getItem(realKey);
     let oldValue: any = undefined;
     if (oldRaw !== null) {
-        try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; }
+        try {
+            oldValue = JSON.parse(oldRaw);
+        } catch {
+            oldValue = oldRaw;
+        }
     }
     localStorage.setItem(realKey, JSON.stringify(value));
     const changes: { [key: string]: { oldValue: any, newValue: any } } = {
-        [key]: { oldValue, newValue: value }
+        [key]: {oldValue, newValue: value}
     };
     (storage as any).listeners?.forEach?.((l: any) => l(changes));
 }

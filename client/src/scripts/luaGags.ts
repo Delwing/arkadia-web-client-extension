@@ -306,7 +306,8 @@ export default function registerLuaGagTriggers(client: Client) {
                 selection = [startIndex, startIndex + string.length]
             },
             raiseEvent(event: string, ...args: any[]) {
-                client.sendEvent(event, args)
+                // @ts-ignore normally I don't want to allow unknow events
+                appEventBus.on(event, args)
             },
             setFgColor(rgb: number[]) {
                 global.color = rgb.join(",")

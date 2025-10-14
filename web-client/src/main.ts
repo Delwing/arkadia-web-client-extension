@@ -20,10 +20,8 @@ import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
-import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
-import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -51,6 +49,8 @@ const arkadiaClient = new ArkadiaClient(websocketAdapter);
 const client = new Client(arkadiaClient)
 window.clientExtension = client;
 registerScripts(client)
+
+appEventBus.emit('settings', getItemSync('settings'));
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
 const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
@@ -111,10 +111,6 @@ function disableTabSleepPrevention() {
     wakeLockEnabled = false;
     updateWakeLockButton();
 }
-
-loadNpcData().then(npc => {
-    client.sendEvent("npc", npc)
-})
 
 appEventBus.on('settings', (settings) => {
     console.log('Settings updated:', settings);
@@ -329,8 +325,8 @@ function updateProgress(p: number, loaded?: number, total?: number) {
 }
 
 // Load map data and colors asynchronously
-let mapDataPromise = loadMapData(updateProgress);
-let colorsPromise = loadColors();
+let mapDataPromise = dataCatalog.getMapDataStore().getData()
+let colorsPromise = dataCatalog.getMapColorsStore().getData()
 
 // When both are loaded, dispatch events
 Promise.all([mapDataPromise, colorsPromise])
@@ -1047,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Display character state and lamp timer
     new MultiBinds();
-    new CharState(arkadiaClient);
+    new CharState();
     new CharStateInfo(arkadiaClient);
     new LampTimer(arkadiaClient);
     new CoverTimer(arkadiaClient);
@@ -1156,3 +1152,5 @@ import {registerScripts} from "@client/src/main.ts";
 import appEventBus from "@client/src/events/app-event-bus.ts";
 import Recorder from "./Recorder.ts";
 import WebSocketTransportAdapter from "@client/src/transport/websocket-adapter.ts";
+import {getItemSync} from "@client/src/storage.ts";
+import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";

@@ -32,7 +32,7 @@ export default class LetterComposer {
     private state: LetterComposerState = { hasCustomPosition: false };
     private templateSelection: LetterTemplate = LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
 
-    constructor(private client: typeof ArkadiaClient) {
+    constructor(private client: ArkadiaClient) {
         this.container = document.getElementById("letter-composer");
         this.header = this.container?.querySelector<HTMLElement>(".letter-composer-header");
         this.form = this.container?.querySelector<HTMLFormElement>("form");

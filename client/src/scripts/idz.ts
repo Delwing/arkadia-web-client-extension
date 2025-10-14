@@ -2,6 +2,7 @@ import Client from "../Client";
 import { longToShort } from "../MapHelper";
 import { getShortcut } from "./shortcuts";
 import appEventBus from "../events/app-event-bus";
+import {setItemSync} from "../storage";
 
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -91,7 +92,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, d);
             lastDelay = delay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            setItemSync('settings', settings)
         } else {
             delay = Math.max(0.5, lastDelay);
         }

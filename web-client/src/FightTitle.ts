@@ -4,14 +4,14 @@ import appEventBus from "@client/src/events/app-event-bus.ts";
 export default class FightTitle {
   private baseTitle: string;
   private readonly originalTitle: string;
-  private client: typeof ArkadiaClient;
+  private client: ArkadiaClient;
   private playerNum?: string;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
   private readonly idlePrefix = "ㅤ ";
   private enabled = true;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.client = client;
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;

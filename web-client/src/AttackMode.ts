@@ -8,7 +8,7 @@ type Mode = typeof MODES[number];
 export default class AttackMode {
   private readonly container: HTMLElement | null;
   private index = 0;
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.container = document.getElementById("attack-mode");
     if (this.container) {
       this.container.addEventListener("click", () => {

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { defaultSettings } from "../defaultSettings";
-import type { LetterSubmitPayload, LetterTemplate } from "../types/letter";
+import type { LetterTemplate } from "../types/letter";
 import { LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate } from "../types/letter";
 import appEventBus from "../events/app-event-bus";
 

@@ -8,7 +8,7 @@ interface StatusData {
 
 export default class PackageStatus {
   private container: HTMLElement | null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: ArkadiaClient) {
     this.container = document.getElementById("package-status");
     appEventBus.on("packageStatus", (data: StatusData | null) => this.update(data));
   }
