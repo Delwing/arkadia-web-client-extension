@@ -1,5 +1,5 @@
 import { DataCatalogEntry } from './DataCatalogEntry';
-import { DataStoreListener } from './types';
+import { DataStoreGetOptions, DataStoreListener } from './types';
 
 import {
   HerbsCollection,
@@ -13,7 +13,7 @@ import {
 } from './entities';
 
 export interface DataCatalogStore<T> {
-  getData(options?: { forceReload?: boolean }): Promise<T>;
+  getData(options?: DataStoreGetOptions): Promise<T>;
   addListener(listener: DataStoreListener<T>): () => void;
   invalidate(): Promise<void>;
   storeData(data: T, options?: { persist?: boolean; timestamp?: number }): Promise<void>;
@@ -32,9 +32,9 @@ export class DataCatalog {
     this.entries.set(key, entry as DataCatalogEntry<unknown, unknown>);
   }
 
-  async getData<T>(key: string, options?: { forceReload?: boolean }): Promise<T> {
+  async getData<T>(key: string, options?: DataStoreGetOptions): Promise<T> {
     const entry = this.getEntry<T>(key);
-    return entry.getData(options?.forceReload);
+    return entry.getData(options);
   }
 
   addListener<T>(key: string, listener: DataStoreListener<T>): () => void {
@@ -68,7 +68,7 @@ export class DataCatalog {
 
     const entry = this.getEntry<T>(key);
     const store: DataCatalogStore<T> = {
-      getData: (options) => entry.getData(options?.forceReload),
+      getData: (options) => entry.getData(options),
       addListener: (listener) => entry.addListener(listener),
       invalidate: () => entry.invalidate(),
       storeData: (data, options) => entry.storeData(data, options),

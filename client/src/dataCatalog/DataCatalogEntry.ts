@@ -1,5 +1,11 @@
 import { IndexedDBPersistenceAdapter } from './IndexedDBPersistenceAdapter';
-import { DataSource, DataStoreListener, PersistenceRecord } from './types';
+import {
+  DataSource,
+  DataStoreGetOptions,
+  DataStoreListener,
+  DataStoreProgressListener,
+  PersistenceRecord,
+} from './types';
 
 interface CollectionPersistenceOptions<T, Persisted> {
   toPersistenceItems(data: T): Persisted[];
@@ -30,6 +36,8 @@ export class DataCatalogEntry<T, Persisted = T> {
   private loadingPromise: Promise<T> | null = null;
   private readonly listeners = new Set<DataStoreListener<T>>();
   private readonly persistenceKey: string;
+  private loadProgressListeners: Set<DataStoreProgressListener> | null = null;
+  private currentProgress = 0;
 
   constructor(private readonly options: DataCatalogEntryOptions<T, Persisted>) {
     this.persistenceKey = options.persistenceKey ?? options.key;
@@ -39,14 +47,19 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
   }
 
-  async getData(forceReload = false): Promise<T> {
+  async getData(
+    forceReloadOrOptions?: boolean | DataStoreGetOptions,
+  ): Promise<T> {
+    const { forceReload, onProgress } = this.normalizeGetDataOptions(forceReloadOrOptions);
+
     if (!forceReload && this.data !== null && !this.isExpired()) {
+      onProgress?.(1);
       return this.data;
     }
 
     let persisted: T | null = null;
     if (!forceReload) {
-      persisted = await this.safeLoadFromPersistence();
+      persisted = await this.safeLoadFromPersistence(onProgress);
       if (persisted !== null) {
         return persisted;
       }
@@ -54,7 +67,7 @@ export class DataCatalogEntry<T, Persisted = T> {
 
     if (!this.options.dataSource) {
       if (forceReload) {
-        persisted = await this.safeLoadFromPersistence();
+        persisted = await this.safeLoadFromPersistence(onProgress);
       }
 
       if (persisted !== null) {
@@ -62,6 +75,7 @@ export class DataCatalogEntry<T, Persisted = T> {
       }
 
       if (this.data !== null) {
+        onProgress?.(1);
         return this.data;
       }
 
@@ -71,20 +85,83 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
 
     if (this.loadingPromise) {
+      if (onProgress) {
+        this.addProgressListener(onProgress);
+      }
       return this.loadingPromise;
     }
 
-    this.loadingPromise = this.loadData(forceReload)
+    this.loadProgressListeners = new Set();
+    this.currentProgress = 0;
+    if (onProgress) {
+      this.addProgressListener(onProgress);
+    }
+
+    const progressCallback: DataStoreProgressListener = (progress) => {
+      this.notifyProgressListeners(progress);
+    };
+
+    this.loadingPromise = this.loadData(forceReload, progressCallback)
+      .then((value) => {
+        this.notifyProgressListeners(1);
+        this.loadingPromise = null;
+        this.clearProgressListeners();
+        return value;
+      })
       .catch((error) => {
         this.loadingPromise = null;
+        this.clearProgressListeners();
         throw error;
-      })
-      .then((value) => {
-        this.loadingPromise = null;
-        return value;
       });
 
     return this.loadingPromise;
+  }
+
+  private normalizeGetDataOptions(
+    forceReloadOrOptions?: boolean | DataStoreGetOptions,
+  ): { forceReload: boolean; onProgress?: DataStoreProgressListener } {
+    if (typeof forceReloadOrOptions === 'boolean' || forceReloadOrOptions === undefined) {
+      return { forceReload: forceReloadOrOptions ?? false };
+    }
+
+    return {
+      forceReload: forceReloadOrOptions.forceReload ?? false,
+      onProgress: forceReloadOrOptions.onProgress,
+    };
+  }
+
+  private addProgressListener(listener: DataStoreProgressListener): void {
+    if (!this.loadProgressListeners) {
+      this.loadProgressListeners = new Set();
+    }
+
+    this.loadProgressListeners.add(listener);
+
+    try {
+      listener(this.currentProgress);
+    } catch (error) {
+      console.error(`Data progress listener for ${this.options.key} failed`, error);
+    }
+  }
+
+  private notifyProgressListeners(progress: number): void {
+    this.currentProgress = progress;
+    if (!this.loadProgressListeners || this.loadProgressListeners.size === 0) {
+      return;
+    }
+
+    for (const listener of this.loadProgressListeners) {
+      try {
+        listener(progress);
+      } catch (error) {
+        console.error(`Data progress listener for ${this.options.key} failed`, error);
+      }
+    }
+  }
+
+  private clearProgressListeners(): void {
+    this.loadProgressListeners = null;
+    this.currentProgress = 0;
   }
 
   addListener(listener: DataStoreListener<T>): () => void {
@@ -114,6 +191,7 @@ export class DataCatalogEntry<T, Persisted = T> {
     this.data = null;
     this.timestamp = 0;
     this.loadingPromise = null;
+    this.clearProgressListeners();
     if (!this.options.collection) {
       await this.options.persistenceAdapter.delete(this.options.storeName, this.persistenceKey);
       return;
@@ -122,28 +200,33 @@ export class DataCatalogEntry<T, Persisted = T> {
     await this.clearCollectionPersistence();
   }
 
-  private async loadData(forceReload: boolean): Promise<T> {
+  private async loadData(
+    forceReload: boolean,
+    onProgress?: DataStoreProgressListener,
+  ): Promise<T> {
     if (!this.options.dataSource) {
       throw new Error(`No data source configured for ${this.options.key}`);
     }
 
     if (!forceReload) {
-      const persisted = await this.safeLoadFromPersistence();
+      const persisted = await this.safeLoadFromPersistence(onProgress);
       if (persisted) {
         return persisted;
       }
     }
 
-    const freshData = await this.safeLoadFromSource();
+    const freshData = await this.safeLoadFromSource(onProgress);
     await this.persist(freshData);
     this.updateMemory(freshData);
     return freshData;
   }
 
-  private async safeLoadFromPersistence(): Promise<T | null> {
+  private async safeLoadFromPersistence(
+    onProgress?: DataStoreProgressListener,
+  ): Promise<T | null> {
     try {
       if (this.options.collection) {
-        return await this.safeLoadCollectionFromPersistence();
+        return await this.safeLoadCollectionFromPersistence(onProgress);
       }
 
       const record = await this.options.persistenceAdapter.load<T>(
@@ -159,6 +242,7 @@ export class DataCatalogEntry<T, Persisted = T> {
       }
 
       this.updateMemory(record.data, record.timestamp);
+      onProgress?.(1);
       return record.data;
     } catch (error) {
       console.error(`Failed to read persisted data for ${this.options.key}`, error);
@@ -166,9 +250,11 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
   }
 
-  private async safeLoadFromSource(): Promise<T> {
+  private async safeLoadFromSource(
+    onProgress?: DataStoreProgressListener,
+  ): Promise<T> {
     try {
-      return await this.options.dataSource!.load();
+      return await this.options.dataSource!.load(onProgress);
     } catch (error) {
       console.error(`Failed to load data from source for ${this.options.key}`, error);
       throw error;
@@ -225,7 +311,9 @@ export class DataCatalogEntry<T, Persisted = T> {
     return `${this.persistenceKey}::${COLLECTION_INDEX_SUFFIX}`;
   }
 
-  private async safeLoadCollectionFromPersistence(): Promise<T | null> {
+  private async safeLoadCollectionFromPersistence(
+    onProgress?: DataStoreProgressListener,
+  ): Promise<T | null> {
     const options = this.options.collection;
     if (!options) {
       return null;
@@ -266,6 +354,7 @@ export class DataCatalogEntry<T, Persisted = T> {
 
       const data = options.fromPersistenceItems(items);
       this.updateMemory(data, indexRecord.timestamp);
+      onProgress?.(1);
       return data;
     } catch (error) {
       console.error(`Failed to read persisted collection data for ${this.options.key}`, error);
