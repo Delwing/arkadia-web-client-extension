@@ -1,209 +1,69 @@
+import { IndexedDBPersistenceAdapter } from "../dataCatalog/IndexedDBPersistenceAdapter";
+
 export interface IndexedDBConfig {
     dbName: string;
     storeName: string;
     key: string;
 }
 
-interface MetadataRecord {
-    id: string;
-    timestamp: number;
-}
-
-interface EntryRecord<T = unknown> {
-    id: string;
-    data: T;
-}
-
-const DB_VERSION = 2;
-
 function isIndexedDBSupported() {
     return typeof indexedDB !== "undefined";
 }
 
-const dbCache: Record<string, Promise<IDBDatabase>> = {};
+const adapterCache = new Map<string, IndexedDBPersistenceAdapter>();
 
-function getMetadataStoreName(config: IndexedDBConfig): string {
-    return `${config.storeName}_metadata`;
-}
-
-async function getDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
-    if (!dbCache[config.dbName]) {
-        dbCache[config.dbName] = new Promise((resolve, reject) => {
-            if (!isIndexedDBSupported()) {
-                reject(new Error('IndexedDB is not supported'));
-                return;
-            }
-
-            const request = indexedDB.open(config.dbName, DB_VERSION);
-            request.onupgradeneeded = (event) => {
-                const db = request.result;
-                const metadataStoreName = getMetadataStoreName(config);
-
-                if (!db.objectStoreNames.contains(config.storeName)) {
-                    db.createObjectStore(config.storeName, { keyPath: 'id' });
-                }
-
-                if (!db.objectStoreNames.contains(metadataStoreName)) {
-                    db.createObjectStore(metadataStoreName, { keyPath: 'id' });
-                }
-
-                if ((event.oldVersion ?? 0) < DB_VERSION) {
-                    migrateToNormalizedStore(request.transaction, config.storeName, metadataStoreName);
-                }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(new Error('Failed to open IndexedDB'));
-        });
+function getAdapter(dbName: string): IndexedDBPersistenceAdapter {
+    let adapter = adapterCache.get(dbName);
+    if (!adapter) {
+        adapter = new IndexedDBPersistenceAdapter(dbName);
+        adapterCache.set(dbName, adapter);
     }
-    return dbCache[config.dbName];
-}
-
-function migrateToNormalizedStore(
-    transaction: IDBTransaction | null,
-    storeName: string,
-    metadataStoreName: string,
-) {
-    if (!transaction) {
-        return;
-    }
-
-    try {
-        const entriesStore = transaction.objectStore(storeName);
-        const metadataStore = transaction.objectStore(metadataStoreName);
-        const cursorRequest = entriesStore.openCursor();
-
-        cursorRequest.onsuccess = () => {
-            const cursor = cursorRequest.result as IDBCursorWithValue | null;
-            if (!cursor) {
-                return;
-            }
-
-            const value = cursor.value as Partial<EntryRecord> & { timestamp?: number };
-            const recordId = (cursor.key as string) ?? value?.id;
-
-            if (recordId) {
-                const timestamp = value?.timestamp ?? Date.now();
-                metadataStore.put({ id: recordId, timestamp });
-
-                if (value && 'data' in value && value.data !== undefined) {
-                    cursor.update({ id: recordId, data: value.data });
-                }
-            }
-
-            cursor.continue();
-        };
-    } catch (error) {
-        console.error('Failed to migrate IndexedDB store to normalized structure', error);
-    }
-}
-
-async function getStores(config: IndexedDBConfig, mode: IDBTransactionMode) {
-    const db = await getDatabase(config);
-    const metadataStoreName = getMetadataStoreName(config);
-    const transaction = db.transaction([config.storeName, metadataStoreName], mode);
-
-    return {
-        transaction,
-        entriesStore: transaction.objectStore(config.storeName),
-        metadataStore: transaction.objectStore(metadataStoreName),
-    };
-}
-
-async function getEntriesStore(config: IndexedDBConfig, mode: IDBTransactionMode): Promise<IDBObjectStore> {
-    const db = await getDatabase(config);
-    return db.transaction(config.storeName, mode).objectStore(config.storeName);
-}
-
-async function getMetadataStore(config: IndexedDBConfig, mode: IDBTransactionMode): Promise<IDBObjectStore> {
-    const db = await getDatabase(config);
-    return db
-        .transaction(getMetadataStoreName(config), mode)
-        .objectStore(getMetadataStoreName(config));
-}
-
-function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'));
-    });
-}
-
-function waitForTransaction(transaction: IDBTransaction): Promise<void> {
-    return new Promise((resolve, reject) => {
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB transaction failed'));
-        transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
-    });
+    return adapter;
 }
 
 export async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
-    try {
-        const { transaction, entriesStore, metadataStore } = await getStores(config, 'readwrite');
-        const timestamp = Date.now();
+    if (!isIndexedDBSupported()) {
+        throw new Error('IndexedDB is not supported');
+    }
 
-        await requestToPromise(entriesStore.put({ id: config.key, data }));
-        await requestToPromise(metadataStore.put({ id: config.key, timestamp }));
-        await waitForTransaction(transaction);
+    try {
+        const adapter = getAdapter(config.dbName);
+        await adapter.save(config.storeName, config.key, { data, timestamp: Date.now() });
     } catch {
         throw new Error('Failed to store data in IndexedDB');
     }
 }
 
-async function readEntryRecord<T>(config: IndexedDBConfig): Promise<EntryRecord<T> | null> {
-    const entriesStore = await getEntriesStore(config, 'readonly');
-    const request = entriesStore.get(config.key);
-    try {
-        const result = (await requestToPromise(request)) as EntryRecord<T> | undefined;
-        return result ?? null;
-    } catch {
-        throw new Error('Failed to get data from IndexedDB');
-    }
-}
-
-async function readMetadataRecord(config: IndexedDBConfig): Promise<MetadataRecord | null> {
-    const metadataStore = await getMetadataStore(config, 'readonly');
-    const request = metadataStore.get(config.key);
-    try {
-        const result = (await requestToPromise(request)) as MetadataRecord | undefined;
-        return result ?? null;
-    } catch {
-        throw new Error('Failed to get data from IndexedDB');
-    }
-}
-
 export async function getFromIndexedDB<T = any>(config: IndexedDBConfig, ttl?: number): Promise<T | null> {
+    if (!isIndexedDBSupported()) {
+        throw new Error('IndexedDB is not supported');
+    }
+
     try {
-        const entry = await readEntryRecord<T>(config);
-        if (!entry) {
+        const adapter = getAdapter(config.dbName);
+        const record = await adapter.load<T>(config.storeName, config.key);
+        if (!record) {
             return null;
         }
 
-        let metadata = await readMetadataRecord(config);
-
-        if (!metadata) {
-            // Fallback for legacy entries where timestamp lived with the data
-            const legacyTimestamp = (entry as unknown as { timestamp?: number }).timestamp;
-            if (legacyTimestamp) {
-                metadata = { id: config.key, timestamp: legacyTimestamp };
-            }
-        }
-
-        if (ttl && metadata && metadata.timestamp + ttl <= Date.now()) {
+        if (ttl && record.timestamp + ttl <= Date.now()) {
             return null;
         }
 
-        return entry.data as T;
+        return record.data as T;
     } catch {
         throw new Error('Failed to get data from IndexedDB');
     }
 }
 
 export async function clearIndexedDB(config: IndexedDBConfig): Promise<void> {
+    if (!isIndexedDBSupported()) {
+        throw new Error('IndexedDB is not supported');
+    }
+
     try {
-        const { transaction, entriesStore, metadataStore } = await getStores(config, 'readwrite');
-        await requestToPromise(entriesStore.delete(config.key));
-        await requestToPromise(metadataStore.delete(config.key));
-        await waitForTransaction(transaction);
+        const adapter = getAdapter(config.dbName);
+        await adapter.delete(config.storeName, config.key);
     } catch {
         throw new Error('Failed to clear IndexedDB');
     }
@@ -219,7 +79,6 @@ export async function updateIndexedDB<T>(config: IndexedDBConfig, url: string): 
         throw new Error('Failed to update IndexedDB');
     }
 }
-
 
 export interface LoadOptions {
     url: string;
