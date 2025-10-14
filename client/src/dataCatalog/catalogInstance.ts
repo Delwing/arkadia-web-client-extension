@@ -137,6 +137,7 @@ const peopleEntry = new DataCatalogEntry<PeopleCollection, Person>({
   storeName: STORE_NAMES.people,
   persistenceAdapter: sharedPersistenceAdapter,
   dataSource: new WorkerDataSource<PeopleCollection>(() =>
+    // @ts-ignore -- import.meta is supported by the bundler, but tests compile with CommonJS modules.
     new Worker(new URL('./peopleWorker.ts', import.meta.url), { type: 'module' }),
   ),
   collection: {

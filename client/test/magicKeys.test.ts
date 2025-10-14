@@ -1,3 +1,14 @@
+jest.mock('../src/dataCatalog/catalogInstance', () => ({
+    dataCatalog: {
+        getMagicKeysStore: () => ({
+            getData: jest.fn(async () => {
+                const response = await (globalThis.fetch as any)('magic_keys');
+                return response.json();
+            }),
+        }),
+    },
+}));
+
 import initMagicKeys, { KEYS_COLOR } from '../src/scripts/magicKeys';
 import { colorTokenInLine } from '../src/Colors';
 
