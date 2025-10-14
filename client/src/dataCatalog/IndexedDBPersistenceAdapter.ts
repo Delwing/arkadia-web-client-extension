@@ -14,57 +14,75 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
   }
 
   async load<T>(storeName: string, key: string): Promise<PersistenceRecord<T> | null> {
-    await this.ensureStore(storeName);
-    const db = await this.dbPromise;
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.get(key);
-
-      request.onsuccess = () => {
-        resolve((request.result as PersistenceRecord<T> | undefined) ?? null);
-      };
-
-      request.onerror = () => {
-        console.error(`IndexedDB load failed for ${storeName}:${key}`, request.error);
-        reject(request.error);
-      };
-    });
+    try {
+      return await this.runWithStore(
+        storeName,
+        'readonly',
+        (store) => store.get(key),
+        (result) => (result as PersistenceRecord<T> | undefined) ?? null,
+      );
+    } catch (error) {
+      console.error(`IndexedDB load failed for ${storeName}:${key}`, error);
+      throw error;
+    }
   }
 
   async save<T>(storeName: string, key: string, record: PersistenceRecord<T>): Promise<void> {
-    await this.ensureStore(storeName);
-    const db = await this.dbPromise;
+    try {
+      await this.runWithStore(storeName, 'readwrite', (store) => store.put(record, key), () => undefined);
+    } catch (error) {
+      console.error(`IndexedDB save failed for ${storeName}:${key}`, error);
+      throw error;
+    }
+  }
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(record, key);
+  async loadRaw<T>(storeName: string, key: string): Promise<T | null> {
+    try {
+      return await this.runWithStore(
+        storeName,
+        'readonly',
+        (store) => store.get(key),
+        (result) => {
+          if (result === undefined) {
+            return null;
+          }
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => {
-        console.error(`IndexedDB save failed for ${storeName}:${key}`, request.error);
-        reject(request.error);
-      };
-    });
+          const value = result as PersistenceRecord<T> | T;
+          if (
+            value &&
+            typeof value === 'object' &&
+            'data' in value &&
+            'timestamp' in value &&
+            typeof (value as PersistenceRecord<T>).timestamp === 'number'
+          ) {
+            return (value as PersistenceRecord<T>).data;
+          }
+
+          return value as T;
+        },
+      );
+    } catch (error) {
+      console.error(`IndexedDB load failed for ${storeName}:${key}`, error);
+      throw error;
+    }
+  }
+
+  async saveRaw<T>(storeName: string, key: string, value: T): Promise<void> {
+    try {
+      await this.runWithStore(storeName, 'readwrite', (store) => store.put(value, key), () => undefined);
+    } catch (error) {
+      console.error(`IndexedDB save failed for ${storeName}:${key}`, error);
+      throw error;
+    }
   }
 
   async delete(storeName: string, key: string): Promise<void> {
-    await this.ensureStore(storeName);
-    const db = await this.dbPromise;
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.delete(key);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => {
-        console.error(`IndexedDB delete failed for ${storeName}:${key}`, request.error);
-        reject(request.error);
-      };
-    });
+    try {
+      await this.runWithStore(storeName, 'readwrite', (store) => store.delete(key), () => undefined);
+    } catch (error) {
+      console.error(`IndexedDB delete failed for ${storeName}:${key}`, error);
+      throw error;
+    }
   }
 
   private async ensureStore(storeName: string): Promise<void> {
@@ -124,5 +142,86 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
         reject(request.error);
       };
     });
+  }
+
+  private async runWithStore<TRequest, TResult>(
+    storeName: string,
+    mode: IDBTransactionMode,
+    createRequest: (store: IDBObjectStore) => IDBRequest<TRequest>,
+    transform: (value: TRequest) => TResult,
+    allowRetry = true,
+  ): Promise<TResult> {
+    await this.ensureStore(storeName);
+    const db = await this.dbPromise;
+
+    return new Promise<TResult>((resolve, reject) => {
+      let transaction: IDBTransaction;
+      try {
+        transaction = db.transaction(storeName, mode);
+      } catch (error) {
+        if (allowRetry && this.isMissingStoreError(error)) {
+          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+          return;
+        }
+
+        reject(error);
+        return;
+      }
+
+      let store: IDBObjectStore;
+      try {
+        store = transaction.objectStore(storeName);
+      } catch (error) {
+        if (allowRetry && this.isMissingStoreError(error)) {
+          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+          return;
+        }
+
+        reject(error);
+        return;
+      }
+
+      let request: IDBRequest<TRequest>;
+      try {
+        request = createRequest(store);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+
+      request.onsuccess = () => {
+        try {
+          resolve(transform(request.result));
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      request.onerror = () => {
+        const error = request.error;
+        if (allowRetry && this.isMissingStoreError(error)) {
+          this.retryWithFreshStore(storeName, mode, createRequest, transform, resolve, reject);
+          return;
+        }
+
+        reject(error ?? new Error('IndexedDB request failed'));
+      };
+    });
+  }
+
+  private retryWithFreshStore<TRequest, TResult>(
+    storeName: string,
+    mode: IDBTransactionMode,
+    createRequest: (store: IDBObjectStore) => IDBRequest<TRequest>,
+    transform: (value: TRequest) => TResult,
+    resolve: (value: TResult | PromiseLike<TResult>) => void,
+    reject: (reason?: unknown) => void,
+  ): void {
+    this.storeStatus.delete(storeName);
+    this.runWithStore(storeName, mode, createRequest, transform, false).then(resolve).catch(reject);
+  }
+
+  private isMissingStoreError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === 'NotFoundError';
   }
 }

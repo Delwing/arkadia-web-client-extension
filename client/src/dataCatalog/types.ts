@@ -12,5 +12,7 @@ export interface PersistenceRecord<T> {
 export interface PersistenceAdapter {
   load<T>(storeName: string, key: string): Promise<PersistenceRecord<T> | null>;
   save<T>(storeName: string, key: string, record: PersistenceRecord<T>): Promise<void>;
+  loadRaw<T>(storeName: string, key: string): Promise<T | null>;
+  saveRaw<T>(storeName: string, key: string, value: T): Promise<void>;
   delete(storeName: string, key: string): Promise<void>;
 }
