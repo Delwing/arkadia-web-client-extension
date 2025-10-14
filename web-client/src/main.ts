@@ -323,7 +323,7 @@ function updateProgress(p: number, loaded?: number, total?: number) {
     }
 }
 
-// Load map data and colors asynchronously //TODO progress for map download
+// Load map data and colors asynchronously
 let mapDataPromise = dataCatalog.getMapDataStore().getData({onProgress: updateProgress})
 let colorsPromise = dataCatalog.getMapColorsStore().getData()
 
