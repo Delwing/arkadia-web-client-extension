@@ -8,9 +8,33 @@ jest.mock('howler', () => ({
     state: jest.fn(() => 'loaded'),
   })),
 }));
+jest.mock('../src/dataCatalog/catalogInstance', () => {
+  const createStore = () => ({
+    getData: jest.fn(() => Promise.resolve([])),
+    addListener: jest.fn(),
+    invalidate: jest.fn(() => Promise.resolve()),
+    storeData: jest.fn(() => Promise.resolve()),
+    clearData: jest.fn(() => Promise.resolve()),
+  });
+
+  return {
+    dataCatalog: {
+      getNpcStore: jest.fn(createStore),
+      getMagicsStore: jest.fn(createStore),
+      getMagicKeysStore: jest.fn(createStore),
+      getHerbsStore: jest.fn(createStore),
+      getPeopleStore: jest.fn(createStore),
+      getMultibindsStore: jest.fn(createStore),
+      getMapDataStore: jest.fn(createStore),
+      getMapColorsStore: jest.fn(createStore),
+    },
+    gameDataStores: {},
+  };
+});
 
 import Client from '../src/Client';
 import initTempBinds from '../src/scripts/tempBinds';
+import appEventBus from '../src/events/app-event-bus';
 
 describe('temp binds', () => {
   function createClient() {
@@ -22,11 +46,7 @@ describe('temp binds', () => {
       parseAnsiPatterns: jest.fn((text: string) => text),
       flushMessageBuffer: jest.fn(),
     } as any;
-    const port = {
-      postMessage: jest.fn(),
-      onMessage: { addListener: jest.fn() },
-    } as any;
-    const client = new Client(adapter, port);
+    const client = new Client(adapter);
     (client as any).println = jest.fn();
     return client;
   }
@@ -49,7 +69,7 @@ describe('temp binds', () => {
   test('bind settings event updates key and triggers stored command', () => {
     const client = createClient();
     (client as any).sendCommand = jest.fn();
-    client.sendEvent('binds', { temp: [{ key: 'F6', ctrl: true }] });
+    appEventBus.emit('binds', { temp: [{ key: 'F6', ctrl: true }] });
     expect(client.tempBinds[0].key).toBe('F6');
     expect(client.tempBinds[0].ctrl).toBe(true);
     (client.println as jest.Mock).mockClear();
