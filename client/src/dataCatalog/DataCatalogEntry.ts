@@ -251,17 +251,14 @@ export class DataCatalogEntry<T, Persisted = T> {
       const items: Persisted[] = [];
       for (const key of keys) {
         try {
-          const record = await this.options.persistenceAdapter.load<Persisted>(
+          const value = await this.options.persistenceAdapter.loadRaw<Persisted>(
             this.options.storeName,
             key,
           );
-          if (!record) {
+          if (value === null) {
             continue;
           }
-          if (this.isRecordExpired(record)) {
-            continue;
-          }
-          items.push(record.data);
+          items.push(value);
         } catch (error) {
           console.error(`Failed to read persisted item for ${this.options.key}:${key}`, error);
         }
@@ -305,10 +302,11 @@ export class DataCatalogEntry<T, Persisted = T> {
 
       await Promise.all(
         keys.map((key) =>
-          this.options.persistenceAdapter.save(this.options.storeName, key, {
-            data: uniqueItems.get(key)!,
-            timestamp,
-          }),
+          this.options.persistenceAdapter.saveRaw(
+            this.options.storeName,
+            key,
+            uniqueItems.get(key)!,
+          ),
         ),
       );
 

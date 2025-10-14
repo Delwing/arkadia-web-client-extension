@@ -50,6 +50,60 @@ export class IndexedDBPersistenceAdapter implements PersistenceAdapter {
     });
   }
 
+  async loadRaw<T>(storeName: string, key: string): Promise<T | null> {
+    await this.ensureStore(storeName);
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        if (request.result === undefined) {
+          resolve(null);
+          return;
+        }
+
+        const value = request.result as PersistenceRecord<T> | T;
+        if (
+          value &&
+          typeof value === 'object' &&
+          'data' in value &&
+          'timestamp' in value &&
+          typeof (value as PersistenceRecord<T>).timestamp === 'number'
+        ) {
+          resolve((value as PersistenceRecord<T>).data);
+          return;
+        }
+
+        resolve(value as T);
+      };
+
+      request.onerror = () => {
+        console.error(`IndexedDB load failed for ${storeName}:${key}`, request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async saveRaw<T>(storeName: string, key: string, value: T): Promise<void> {
+    await this.ensureStore(storeName);
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.put(value, key);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error(`IndexedDB save failed for ${storeName}:${key}`, request.error);
+        reject(request.error);
+      };
+    });
+  }
+
   async delete(storeName: string, key: string): Promise<void> {
     await this.ensureStore(storeName);
     const db = await this.dbPromise;
