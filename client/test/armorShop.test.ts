@@ -1,21 +1,10 @@
 import initArmorShop from '../src/scripts/armorShop';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
-import { EventEmitter } from 'events';
+import appEventBus from "../src/events/app-event-bus";
 
 class FakeClient {
-  private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   contentWidth = 40;
-
-  addEventListener(event: string, cb: any) {
-    this.emitter.on(event, cb);
-  }
-  removeEventListener(event: string, cb: any) {
-    this.emitter.off(event, cb);
-  }
-  dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
-  }
 }
 
 describe('armor shop width adjustments', () => {
@@ -49,7 +38,7 @@ describe('armor shop width adjustments', () => {
 
   test('keeps item on one line when there is room', () => {
     client.contentWidth = 50;
-    client.dispatch('contentWidth', 50);
+    appEventBus.emit('contentWidth', 50);
     const result = parse(item);
     expect(result).not.toMatch(/\n/);
     expect(stripAnsiCodes(result)).toMatch(/0\/2\/7\/6/);
@@ -57,7 +46,7 @@ describe('armor shop width adjustments', () => {
 
   test('leaves lines unchanged when wide enough', () => {
     client.contentWidth = 80;
-    client.dispatch('contentWidth', 80);
+    appEventBus.emit('contentWidth', 80);
     expect(parse(header)).toBe(header);
     expect(parse(item)).toBe(item);
   });

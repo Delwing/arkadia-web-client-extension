@@ -1,21 +1,10 @@
 import initHerbShop from '../src/scripts/herbShop';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
-import { EventEmitter } from 'events';
+import appEventBus from "../src/events/app-event-bus";
 
 class FakeClient {
-  private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   contentWidth = 40;
-
-  addEventListener(event: string, cb: any) {
-    this.emitter.on(event, cb);
-  }
-  removeEventListener(event: string, cb: any) {
-    this.emitter.off(event, cb);
-  }
-  dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
-  }
 }
 
 describe('herb shop width adjustments', () => {
@@ -50,7 +39,7 @@ describe('herb shop width adjustments', () => {
 
   test('keeps item on one line when there is room', () => {
     client.contentWidth = 70;
-    client.dispatch('contentWidth', 70);
+    appEventBus.emit('contentWidth', 70);
     const result = parse(item);
     expect(result).not.toMatch(/\n/);
     const stripped = stripAnsiCodes(result);
@@ -60,7 +49,7 @@ describe('herb shop width adjustments', () => {
 
   test('leaves lines unchanged when wide enough', () => {
     client.contentWidth = 90;
-    client.dispatch('contentWidth', 90);
+    appEventBus.emit('contentWidth', 90);
     expect(parse(header)).toBe(header);
     expect(parse(item)).toBe(item);
   });
