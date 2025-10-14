@@ -1,3 +1,5 @@
+import type {BindSettings} from "./types/binds";
+
 export interface Settings {
     packageHelper: boolean;
     inlineCompassRose: boolean;
@@ -17,9 +19,9 @@ export interface Settings {
     letterLineWidth: number;
     guilds: string[];
     enemyGuilds: string[];
-    binds: any;//TODO type
+    binds: BindSettings;
     autoWalkDelay: string;
-    guildColors: any;//TODO type
+    guildColors: Record<string, string | undefined>;
 }
 
 export const defaultSettings: Settings = {
@@ -43,5 +45,5 @@ export const defaultSettings: Settings = {
     enemyGuilds: [],
     binds: {},
     autoWalkDelay: "1",
-    guildColors: [],
+    guildColors: {},
 };
