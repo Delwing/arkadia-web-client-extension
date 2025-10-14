@@ -1,24 +1,18 @@
 import ReleaseGuard from '../src/ReleaseGuard';
-
-class MockClient {
-  private events: Record<string, Function[]> = {};
-  on(event: string, listener: Function) {
-    (this.events[event] ||= []).push(listener);
-  }
-  emit = jest.fn((event: string, ...args: any[]) => {
-    (this.events[event] || []).forEach(fn => fn(...args));
-  });
-}
+import appEventBus from '@client/src/events/app-event-bus.ts';
 
 describe('ReleaseGuard', () => {
   let container: HTMLElement;
-  let client: MockClient;
 
   beforeEach(() => {
+    appEventBus.clear();
     document.body.innerHTML = '<span id="release-guard"></span>';
     container = document.getElementById('release-guard')!;
-    client = new MockClient();
-    new ReleaseGuard(client as any);
+    new ReleaseGuard({} as any);
+  });
+
+  afterEach(() => {
+    appEventBus.clear();
   });
 
   test('updates state display', () => {
@@ -27,18 +21,22 @@ describe('ReleaseGuard', () => {
     expect(container.style.display).toBe('block');
     expect(container.className).toBe('on');
 
-    client.emit('releaseGuard', false);
+    appEventBus.emit('releaseGuard', false);
     expect(container.textContent).toBe('Pusc zas: off');
     expect(container.className).toBe('off');
   });
 
   test('click toggles state and emits event', () => {
+    const emitSpy = jest.spyOn(appEventBus, 'emit');
+
     container.click();
-    expect(client.emit).toHaveBeenLastCalledWith('releaseGuard', false);
+    expect(emitSpy).toHaveBeenNthCalledWith(1, 'releaseGuard', false);
     expect(container.textContent).toBe('Pusc zas: off');
 
     container.click();
-    expect(client.emit).toHaveBeenLastCalledWith('releaseGuard', true);
+    expect(emitSpy).toHaveBeenNthCalledWith(2, 'releaseGuard', true);
     expect(container.textContent).toBe('Pusc zas: on');
+
+    emitSpy.mockRestore();
   });
 });
