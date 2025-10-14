@@ -1,3 +1,8 @@
+jest.mock('../src/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue([]));
+jest.mock('../src/scripts/magicsLoader', () => jest.fn().mockResolvedValue([]));
+jest.mock('../src/scripts/magicKeys', () => ({ KEYS_COLOR: '#00ff7f', default: jest.fn() }));
+jest.mock('../src/scripts/magics', () => ({ MAGICS_COLOR: '#ff0000', default: jest.fn() }));
+
 jest.mock('../src/scripts/prettyContainers', () => {
   const actual = jest.requireActual('../src/scripts/prettyContainers');
   return { ...actual, prettyPrintContainer: jest.fn(() => 'table') };
@@ -7,6 +12,7 @@ import initDeposits, { deposits } from '../src/scripts/deposits';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { prettyPrintContainer } from '../src/scripts/prettyContainers';
 import { EventEmitter } from 'events';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -121,7 +127,7 @@ describe('deposits', () => {
   });
 
   test('uses column setting for pretty print', () => {
-    client.dispatch('settings', { containerColumns: 3 });
+    appEventBus.emit('settings', { containerColumns: 3 } as any);
     parse('Twoj depozyt zawiera miecz.');
     expect(prettyPrintContainer).toHaveBeenCalledWith(expect.anything(), 3, 'DEPOZYT', 5, client.contentWidth);
   });
