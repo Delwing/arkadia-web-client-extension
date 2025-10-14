@@ -7,6 +7,7 @@ export interface NpcEntry {
   loc: number;
   cmd?: string;
   body?: string;
+  custom?: boolean;
 }
 
 export interface MagicsFile {

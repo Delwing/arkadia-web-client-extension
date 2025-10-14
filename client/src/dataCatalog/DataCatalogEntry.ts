@@ -11,6 +11,7 @@ interface CollectionPersistenceOptions<T, Persisted> {
   toPersistenceItems(data: T): Persisted[];
   fromPersistenceItems(items: Persisted[]): T;
   getPersistenceKey(item: Persisted): string;
+  shouldPreserveItem?: (item: Persisted) => boolean;
 }
 
 interface DataCatalogEntryOptions<T, Persisted = T> {
@@ -181,7 +182,10 @@ export class DataCatalogEntry<T, Persisted = T> {
       return;
     }
 
-    await this.persist(data, timestamp);
+    const persistedData = await this.persist(data, timestamp);
+    if (persistedData !== data) {
+      this.updateMemory(persistedData, timestamp);
+    }
   }
 
   async clearData(): Promise<void> {
@@ -213,9 +217,9 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
 
     const freshData = await this.safeLoadFromSource(onProgress);
-    await this.persist(freshData);
-    this.updateMemory(freshData);
-    return freshData;
+    const persistedData = await this.persist(freshData);
+    this.updateMemory(persistedData);
+    return persistedData;
   }
 
   private async safeLoadFromPersistence(
@@ -258,10 +262,9 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
   }
 
-  private async persist(data: T, timestamp: number = Date.now()): Promise<void> {
+  private async persist(data: T, timestamp: number = Date.now()): Promise<T> {
     if (this.options.collection) {
-      await this.persistCollection(data, timestamp);
-      return;
+      return this.persistCollection(data, timestamp);
     }
 
     const record: PersistenceRecord<T> = {
@@ -278,6 +281,8 @@ export class DataCatalogEntry<T, Persisted = T> {
     } catch (error) {
       console.error(`Failed to persist data for ${this.options.key}`, error);
     }
+
+    return data;
   }
 
   private updateMemory(data: T, timestamp: number = Date.now()): void {
@@ -290,7 +295,7 @@ export class DataCatalogEntry<T, Persisted = T> {
     return Date.now() - this.timestamp > this.options.ttl;
   }
 
-  private isRecordExpired(record: PersistenceRecord<T>): boolean {
+  private isRecordExpired(record: PersistenceRecord<unknown>): boolean {
     return Date.now() - record.timestamp > this.options.ttl;
   }
 
@@ -333,22 +338,7 @@ export class DataCatalogEntry<T, Persisted = T> {
         ? indexRecord.data.keys.filter((value): value is string => typeof value === 'string')
         : [];
 
-      const items: Persisted[] = [];
-      for (const key of keys) {
-        try {
-          const value = await this.options.persistenceAdapter.loadRaw<Persisted>(
-            this.options.storeName,
-            key,
-          );
-          if (value === null) {
-            continue;
-          }
-          items.push(value);
-        } catch (error) {
-          console.error(`Failed to read persisted item for ${this.options.key}:${key}`, error);
-        }
-      }
-
+      const items = await this.loadPersistedCollectionItems<Persisted>(keys);
       const data = options.fromPersistenceItems(items);
       this.updateMemory(data, indexRecord.timestamp);
       onProgress?.(1);
@@ -359,10 +349,30 @@ export class DataCatalogEntry<T, Persisted = T> {
     }
   }
 
-  private async persistCollection(data: T, timestamp: number): Promise<void> {
+  private async loadPersistedCollectionItems<PersistedItem>(keys: string[]): Promise<PersistedItem[]> {
+    const items: PersistedItem[] = [];
+    for (const key of keys) {
+      try {
+        const value = await this.options.persistenceAdapter.loadRaw<PersistedItem>(
+          this.options.storeName,
+          key,
+        );
+        if (value === null) {
+          continue;
+        }
+        items.push(value);
+      } catch (error) {
+        console.error(`Failed to read persisted item for ${this.options.key}:${key}`, error);
+      }
+    }
+
+    return items;
+  }
+
+  private async persistCollection(data: T, timestamp: number): Promise<T> {
     const options = this.options.collection;
     if (!options) {
-      return;
+      return data;
     }
 
     const items = options.toPersistenceItems(data);
@@ -375,17 +385,39 @@ export class DataCatalogEntry<T, Persisted = T> {
       uniqueItems.set(key, item);
     }
 
-    const keys = Array.from(uniqueItems.keys());
-
+    let previousKeys: string[] = [];
     try {
       const previousIndex = await this.options.persistenceAdapter.load<CollectionIndexRecord>(
         this.options.storeName,
         this.getCollectionIndexKey(),
       );
-      const previousKeys = Array.isArray(previousIndex?.data?.keys)
+      previousKeys = Array.isArray(previousIndex?.data?.keys)
         ? previousIndex.data.keys.filter((value): value is string => typeof value === 'string')
         : [];
+    } catch (error) {
+      console.error(`Failed to read persisted collection index for ${this.options.key}`, error);
+    }
 
+    if (options.shouldPreserveItem && previousKeys.length > 0) {
+      const persistedItems = await this.loadPersistedCollectionItems<Persisted>(previousKeys);
+      for (const item of persistedItems) {
+        const key = options.getPersistenceKey(item);
+        if (uniqueItems.has(key)) {
+          continue;
+        }
+        try {
+          if (options.shouldPreserveItem(item)) {
+            uniqueItems.set(key, item);
+          }
+        } catch (error) {
+          console.error(`Failed to evaluate preservation for ${this.options.key}:${key}`, error);
+        }
+      }
+    }
+
+    const keys = Array.from(uniqueItems.keys());
+
+    try {
       await Promise.all(
         keys.map((key) =>
           this.options.persistenceAdapter.saveRaw(
@@ -410,6 +442,8 @@ export class DataCatalogEntry<T, Persisted = T> {
     } catch (error) {
       console.error(`Failed to persist collection data for ${this.options.key}`, error);
     }
+
+    return options.fromPersistenceItems(Array.from(uniqueItems.values()));
   }
 
   private async clearCollectionPersistence(): Promise<void> {
