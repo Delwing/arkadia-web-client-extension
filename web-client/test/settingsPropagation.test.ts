@@ -3,6 +3,7 @@ import initShortExits from '@client/src/scripts/shortExits';
 import Triggers from '@client/src/Triggers';
 import { colorString, findClosestColor } from '@client/src/Colors';
 import { defaultSettings } from '@client/src/defaultSettings';
+import appEventBus from '@client/src/events/app-event-bus';
 
 const ORANGE = findClosestColor('#ffa500');
 
@@ -21,6 +22,7 @@ class FakeClient {
 describe('settings propagation to scripts', () => {
   beforeEach(() => {
     localStorage.clear();
+    appEventBus.clear();
   });
 
   test('shortenExits setting affects script', async () => {
@@ -32,7 +34,8 @@ describe('settings propagation to scripts', () => {
 
     storage.onChanged?.addListener(changes => {
       if (changes.settings) {
-        client.dispatch('settings', changes.settings.newValue);
+        const merged = { ...defaultSettings, ...changes.settings.newValue };
+        appEventBus.emit('settings', merged as any);
       }
     });
 

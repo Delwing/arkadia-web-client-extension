@@ -1,7 +1,7 @@
 import ObjectList from '../src/ObjectList';
 import { getItemSync, setItemSync } from '@client/src/storage';
 import ObjectManager from '@client/src/ObjectManager';
-import { EventEmitter } from 'events';
+import appEventBus from '@client/src/events/app-event-bus';
 
 jest.mock('@client/src/storage', () => ({
   getItemSync: jest.fn(),
@@ -22,6 +22,7 @@ describe('ObjectList', () => {
     document.body.innerHTML = '';
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
     Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+    appEventBus.clear();
   });
 
   test('non team members not fighting are not purple', () => {
@@ -197,25 +198,18 @@ describe('ObjectList', () => {
   test('moves non-combat objects to the end with shortcuts starting at 50', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     class TestClient {
-      private emitter = new EventEmitter();
-      ObjectManager = new ObjectManager(this as any);
+      ObjectManager = new ObjectManager();
       TeamManager = { isInTeam: (_d: string) => false };
       sendCommand = jest.fn();
-      addEventListener(event: string, cb: any) {
-        this.emitter.on(event, cb);
-      }
-      sendEvent(type: string, detail?: any) {
-        this.emitter.emit(type, { detail });
-      }
     }
     const client = new TestClient();
     new ObjectList(client as any);
-    client.sendEvent('gmcp.objects.data', {
+    appEventBus.emit('gmcp.objects.data', {
       '1': { desc: 'Fighter', attack_num: true },
       '2': { desc: 'Rock' },
       '3': { desc: 'Tree' },
     });
-    client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    appEventBus.emit('gmcp.objects.nums', ['1', '2', '3']);
     const html = (
       document.querySelector('#objects-list .objects-list-content') as HTMLElement
     ).innerHTML.split('<br>');
