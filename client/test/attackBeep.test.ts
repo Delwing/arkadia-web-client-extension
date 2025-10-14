@@ -1,17 +1,23 @@
 import initAttackBeep from '../src/scripts/attackBeep';
 import Triggers, {stripAnsiCodes} from '../src/Triggers';
 import {findClosestColor} from '../src/Colors';
-import {loadPeople} from '../src/peopleLoader';
+import {dataCatalog} from '../src/dataCatalog/catalogInstance';
+import {DataCatalogStore} from '../src/dataCatalog/DataCatalog';
+import {PeopleCollection} from '../src/dataCatalog/entities';
+import appEventBus from '../src/events/app-event-bus';
 
-jest.mock('../src/peopleLoader', () => ({
-  loadPeople: jest.fn(),
+jest.mock('../src/dataCatalog/catalogInstance', () => ({
+  dataCatalog: {
+    getPeopleStore: jest.fn(),
+  },
 }));
 
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+const dataCatalogMock = dataCatalog as jest.Mocked<typeof dataCatalog>;
+const getPeopleStoreMock = dataCatalogMock.getPeopleStore;
 
-const MOCK_PEOPLE = [
-  { name: 'Intia', description: 'wojowniczka', guild: 'CKN' },
-  { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
+const MOCK_PEOPLE: PeopleCollection = [
+  { id: '1', name: 'Intia', description: 'wojowniczka', guild: 'CKN' },
+  { id: '2', name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
 ];
 
 class FakeClient {
@@ -23,21 +29,32 @@ class FakeClient {
 describe('attack beep triggers', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
+  let getDataMock: jest.Mock<Promise<PeopleCollection>, [unknown?]>;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    getDataMock = jest.fn().mockResolvedValue(MOCK_PEOPLE);
+    const peopleStore: jest.Mocked<DataCatalogStore<PeopleCollection>> = {
+      getData: getDataMock,
+      addListener: jest.fn(),
+      invalidate: jest.fn(),
+      storeData: jest.fn(),
+      clearData: jest.fn(),
+    };
+    getPeopleStoreMock.mockReset().mockReturnValue(peopleStore);
     client = new FakeClient();
     initAttackBeep((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    await getDataMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     // initialize with enemy guilds so beeping is enabled only for configured guilds
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { enemyGuilds: ['CKN'] } } as any);
-    }
-    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    appEventBus.emit('settings', { enemyGuilds: ['CKN'] } as any);
+    const lastCall = getDataMock.mock.results[getDataMock.mock.results.length - 1];
     await lastCall?.value;
+    await Promise.resolve();
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    appEventBus.clear();
   });
 
   test('beeps and highlights on attack', () => {
