@@ -1,5 +1,6 @@
 import initGps from '../src/scripts/gps';
 import Triggers from '../src/Triggers';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
@@ -12,6 +13,7 @@ describe('gps triggers', () => {
   let parse: (line: string) => string;
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     const mapData = [
       {
@@ -45,19 +47,37 @@ describe('gps triggers', () => {
     client.Map.currentRoom.id = 1;
   });
 
+  afterEach(() => {
+    appEventBus.clear();
+  });
+
   test('gps lines set map location when different from current', () => {
+    const notifications: Array<{ text: string }> = [];
+    const off = appEventBus.on('notify', payload => {
+      notifications.push(payload as { text: string });
+    });
+
     parse('l1');
     parse('l2');
+
+    off();
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(10);
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: gps 10_0' });
+    expect(notifications).toEqual([{ text: 'Map Sync: gps 10_0' }]);
   });
 
   test('gps lines do not update when already at location', () => {
     jest.clearAllMocks();
     client.Map.currentRoom.id = 10;
+    const notifications: Array<{ text: string }> = [];
+    const off = appEventBus.on('notify', payload => {
+      notifications.push(payload as { text: string });
+    });
+
     parse('l1');
     parse('l2');
+
+    off();
     expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
-    expect(client.sendEvent).not.toHaveBeenCalled();
+    expect(notifications).toEqual([]);
   });
 });

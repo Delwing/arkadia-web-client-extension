@@ -368,6 +368,6 @@ export default class TeamManager {
     }
 
     private notifyAttackQueueChange() {
-        appEventBus.on("attackQueueChange", this.getEnemyQueue)
+        appEventBus.emit("attackQueueChange", this.getEnemyQueue())
     }
 }
