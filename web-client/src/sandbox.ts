@@ -1,28 +1,16 @@
 import './sandbox.css';
+import SandboxTransportAdapter from "./SandboxTransportAdapter.ts";
 import ArkadiaClient from "./ArkadiaClient.ts";
 
-
-// Disable real network and echo commands locally
-arkadiaClient.connect = () => {
-    console.log('Sandbox mode: connection disabled');
-};
+const sandboxAdapter = new SandboxTransportAdapter();
+const arkadiaClient = new ArkadiaClient(sandboxAdapter);
 arkadiaClient.sendGmcp = () => {};
-arkadiaClient.send = (message: string, echo: boolean = true) => {
-    arkadiaClient.recorder?.handleOutgoing?.(message);
-    if ((arkadiaClient as any).receivedFirstGmcp && message) {
-        const formatted = `→ ${message}`;
-        if (echo) {
-            arkadiaClient.output(formatted, 'command');
-        } else {
-            arkadiaClient.output(`<i>${formatted}</i>`, 'command');
-        }
-    }
-};
+arkadiaClient.connect();
 (arkadiaClient as any).receivedFirstGmcp = true;
+window.client = arkadiaClient;
 
 window.addEventListener('load', () => {
     const client: any = (window as any).clientExtension;
-    arkadiaClient.emit('client.connect');
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;
     const addEnemyButton = document.getElementById('sandbox-add-enemy') as HTMLButtonElement | null;
