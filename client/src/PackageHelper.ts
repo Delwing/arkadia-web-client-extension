@@ -42,6 +42,8 @@ export default class PackageHelper {
     npc: Record<string, number> = {}
     enabled = false;
 
+    private npcStore = dataCatalog.getNpcStore();
+
     private packages: { name: string; time?: string; distance?: number }[] = []
     private listTime = 0
     private timer: number | undefined
@@ -59,11 +61,14 @@ export default class PackageHelper {
     constructor(clientExtension: Client) {
         this.client = clientExtension
 
-        dataCatalog.getNpcStore().getData().then(npc => {
-            this.npc = npc.reduce((acc, npc) => {
-                acc[npc.name] = npc.loc
-                return acc
-            }, {})
+        this.npcStore.getData().then(npc => {
+            this.updateNpcCache(npc)
+        }).catch(error => {
+            console.error('Failed to load NPC data', error)
+        })
+
+        this.npcStore.addListener(npc => {
+            this.updateNpcCache(npc)
         })
 
         appEventBus.on('settings', (settings) => {
@@ -334,19 +339,48 @@ export default class PackageHelper {
     private registerDeliveryTrigger() {
         this.deliveryTrigger = this.client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (_, __, matches): undefined => {
             if (matches[1] === 'Oddajesz') {
-                if (!this.npc[this.currentPackage.name]) {
-                    this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
-                    // this.client.port.postMessage({
-                    //     type: 'NEW_NPC',
-                    //     name: this.currentPackage.name,
-                    //     loc: this.client.Map.currentRoom.id
-                    // })
-                    //TODO persist via datastore
+                const name = this.currentPackage?.name
+                const location = this.client.Map.currentRoom?.id
+                if (!name || typeof location !== 'number') {
+                    this.currentPackage = undefined
+                    this.stopTimer()
+                    this.deliveryTrigger = undefined
+                    return
+                }
+                const knownLocation = this.findNpcLocation(name)
+                if (knownLocation === undefined) {
+                    this.client.println(`Nowy adresat: ${name} | ${location}`)
+                    this.npc[name] = location
+                    this.persistDiscoveredNpc(name, location)
                 }
             }
             this.currentPackage = undefined;
             this.stopTimer();
             this.deliveryTrigger = undefined;
+        })
+    }
+
+    private updateNpcCache(npcList: { name: string; loc: number }[]) {
+        this.npc = npcList.reduce((acc, npc) => {
+            if (typeof npc.loc === 'number') {
+                acc[npc.name] = npc.loc
+            }
+            return acc
+        }, {} as Record<string, number>)
+    }
+
+    private persistDiscoveredNpc(name: string, location: number) {
+        this.npcStore.getData().then(npcs => {
+            const exists = npcs.some(npc => npc.name === name && npc.loc === location)
+            if (exists) {
+                return
+            }
+            const updated = [...npcs, { name, loc: location, custom: true }]
+            return this.npcStore.storeData(updated).catch(error => {
+                console.error(`Failed to persist NPC ${name}`, error)
+            })
+        }).catch(error => {
+            console.error('Failed to load NPC data for persistence', error)
         })
     }
 

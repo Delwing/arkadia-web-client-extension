@@ -1,11 +1,64 @@
-import PackageHelper from '../src/PackageHelper';
 import { colorStringInLine, findClosestColor } from '../src/Colors';
+import appEventBus from '../src/events/app-event-bus';
+
+const npcListeners: Array<(data: any) => void> = [];
+const mockGetData = jest.fn().mockResolvedValue([]);
+const mockStoreData = jest.fn().mockResolvedValue(undefined);
+const mockAddListener = jest.fn(
+  (listener: (data: any) => void) => {
+    npcListeners.push(listener);
+    return () => {
+      const index = npcListeners.indexOf(listener);
+      if (index !== -1) {
+        npcListeners.splice(index, 1);
+      }
+    };
+  },
+);
+
+const npcStore = {
+  getData: mockGetData,
+  addListener: mockAddListener,
+  storeData: mockStoreData,
+};
+
+const mockGetNpcStore = jest.fn(() => npcStore);
+
+jest.mock('../src/dataCatalog/catalogInstance', () => ({
+  __esModule: true,
+  dataCatalog: {
+    getNpcStore: mockGetNpcStore,
+  },
+}));
+
+import PackageHelper from '../src/PackageHelper';
+
+const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('PackageHelper', () => {
   let helper: any;
   let client: any;
+  let emitSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    npcListeners.length = 0;
+    mockGetData.mockReset();
+    mockStoreData.mockReset();
+    mockAddListener.mockReset();
+    mockGetNpcStore.mockReset();
+    mockGetData.mockResolvedValue([]);
+    mockStoreData.mockResolvedValue(undefined);
+    mockAddListener.mockImplementation((listener: (data: any) => void) => {
+      npcListeners.push(listener);
+      return () => {
+        const index = npcListeners.indexOf(listener);
+        if (index !== -1) {
+          npcListeners.splice(index, 1);
+        }
+      };
+    });
+    mockGetNpcStore.mockImplementation(() => npcStore);
+
     (global as any).Input = { send: jest.fn() };
     client = {
       Triggers: {
@@ -39,6 +92,12 @@ describe('PackageHelper', () => {
     helper = new PackageHelper(client);
     client.Triggers.registerTrigger.mockClear();
     client.Triggers.registerMultilineTrigger.mockClear();
+    client.Triggers.registerOneTimeTrigger.mockClear();
+    emitSpy = jest.spyOn(appEventBus, 'emit');
+  });
+
+  afterEach(() => {
+    emitSpy.mockRestore();
   });
 
   test('constructor initializes helper by default', () => {
@@ -133,6 +192,44 @@ describe('PackageHelper', () => {
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('pickTrigger');
   });
 
+  test('registerDeliveryTrigger persists newly discovered NPCs', async () => {
+    mockGetData.mockClear();
+    mockStoreData.mockClear();
+    helper.currentPackage = { name: 'Nowy Odbiorca' } as any;
+    helper.npc = {};
+
+    helper['registerDeliveryTrigger']();
+    const deliveryCb = client.Triggers.registerOneTimeTrigger.mock.calls[0][1];
+
+    await deliveryCb('', '', ['','Oddajesz'] as any);
+    await flushPromises();
+
+    expect(mockGetData).toHaveBeenCalledTimes(1);
+    expect(mockStoreData).toHaveBeenCalledWith([
+      { name: 'Nowy Odbiorca', loc: 123, custom: true },
+    ]);
+    expect(helper.npc['Nowy Odbiorca']).toBe(123);
+    expect(client.println).toHaveBeenCalledWith('Nowy adresat: Nowy Odbiorca | 123');
+  });
+
+  test('registerDeliveryTrigger skips persistence for known NPCs', async () => {
+    mockGetData.mockClear();
+    mockStoreData.mockClear();
+    helper.currentPackage = { name: 'Znany Odbiorca' } as any;
+    helper.npc = {};
+    mockGetData.mockResolvedValueOnce([
+      { name: 'Znany Odbiorca', loc: 123, custom: true },
+    ]);
+
+    helper['registerDeliveryTrigger']();
+    const deliveryCb = client.Triggers.registerOneTimeTrigger.mock.calls[0][1];
+
+    await deliveryCb('', '', ['','Oddajesz'] as any);
+    await flushPromises();
+
+    expect(mockStoreData).not.toHaveBeenCalled();
+  });
+
   test('label trigger updates package status without starting timer', () => {
     helper.init();
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
@@ -145,7 +242,7 @@ describe('PackageHelper', () => {
     const result = trigger(raw, '', match);
 
     expect(helper.currentPackage).toEqual({ name: 'Bob' });
-    expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
+    expect(emitSpy).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
     const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00'));
     expect(result).toBe(expectedColor);
     expect(startSpy).not.toHaveBeenCalled();
@@ -163,7 +260,7 @@ describe('PackageHelper', () => {
     trigger(raw, '', match);
 
     expect(helper.currentPackage).toEqual({ name: 'Bob', time: '5' });
-    expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
+    expect(emitSpy).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
   });
 
   test('label trigger skips registering delivery trigger when already registered', () => {
@@ -191,7 +288,7 @@ describe('PackageHelper', () => {
     trigger(raw, '', match);
 
     expect(helper.currentPackage).toEqual({ name: 'Tom' });
-    expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Tom' });
+    expect(emitSpy).toHaveBeenCalledWith('packageStatus', { recipient: 'Tom' });
   });
 
   test('packageTableCallback simplifies output when width is small', () => {

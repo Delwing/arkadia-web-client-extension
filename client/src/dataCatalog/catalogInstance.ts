@@ -77,13 +77,24 @@ const npcsEntry = new DataCatalogEntry<NpcCollection, PersistedNpcEntry>({
         key: `${entry.loc}:${entry.name}`,
       })),
     fromPersistenceItems: (items) =>
-      items.map(({ key: _ignored, name, loc, cmd, body }) => ({
-        name,
-        loc: Number(loc),
-        cmd,
-        body,
-      })),
+      items.map(({ key: _ignored, name, loc, cmd, body, custom }) => {
+        const entry: NpcEntry = {
+          name,
+          loc: Number(loc),
+        };
+        if (cmd !== undefined) {
+          entry.cmd = cmd;
+        }
+        if (body !== undefined) {
+          entry.body = body;
+        }
+        if (custom === true) {
+          entry.custom = true;
+        }
+        return entry;
+      }),
     getPersistenceKey: (entry) => entry.key,
+    shouldPreserveItem: (entry) => entry.custom === true,
   },
 });
 
