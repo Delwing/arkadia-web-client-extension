@@ -1,20 +1,26 @@
 import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { color, RESET, findClosestColor } from '../src/Colors';
-import { loadPeople } from '../src/peopleLoader';
+import { dataCatalog } from '../src/dataCatalog/catalogInstance';
+import { DataCatalogStore } from '../src/dataCatalog/DataCatalog';
+import { PeopleCollection } from '../src/dataCatalog/entities';
+import appEventBus from '../src/events/app-event-bus';
 
-jest.mock('../src/peopleLoader', () => ({
-  loadPeople: jest.fn(),
+jest.mock('../src/dataCatalog/catalogInstance', () => ({
+  dataCatalog: {
+    getPeopleStore: jest.fn(),
+  },
 }));
 
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+const dataCatalogMock = dataCatalog as jest.Mocked<typeof dataCatalog>;
+const getPeopleStoreMock = dataCatalogMock.getPeopleStore;
 
-const MOCK_PEOPLE = [
-  { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
-  { name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
-  { name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
-  { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
-  { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
+const MOCK_PEOPLE: PeopleCollection = [
+  { id: '1', name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
+  { id: '2', name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
+  { id: '3', name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
+  { id: '4', name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
+  { id: '5', name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
 ];
 
 class FakeClient {
@@ -25,19 +31,30 @@ class FakeClient {
 describe('people triggers enemy highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
+  let getDataMock: jest.MockedFunction<DataCatalogStore<PeopleCollection>['getData']>;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    appEventBus.clear();
+    getDataMock = jest.fn().mockResolvedValue(MOCK_PEOPLE);
+    const peopleStore: jest.Mocked<DataCatalogStore<PeopleCollection>> = {
+      getData: getDataMock,
+      addListener: jest.fn(),
+      invalidate: jest.fn(),
+      storeData: jest.fn(),
+      clearData: jest.fn(),
+    };
+    getPeopleStoreMock.mockReset().mockReturnValue(peopleStore);
     client = new FakeClient();
     new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    await getDataMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
-    }
-    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    appEventBus.emit('settings', { guilds: [], enemyGuilds: ['CKN'], guildColors: {} } as any);
+    const lastCall = getDataMock.mock.results[getDataMock.mock.results.length - 1];
     await lastCall?.value;
+  });
+
+  afterEach(() => {
+    appEventBus.clear();
   });
 
   test('colors enemy description red', () => {
@@ -81,26 +98,37 @@ describe('people triggers enemy highlight', () => {
 describe('people triggers guild highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
-  type SettingsEvent = { detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> } };
-  let settingsHandler: ((event: SettingsEvent) => void) | undefined;
+  let getDataMock: jest.MockedFunction<DataCatalogStore<PeopleCollection>['getData']>;
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    appEventBus.clear();
+    getDataMock = jest.fn().mockResolvedValue(MOCK_PEOPLE);
+    const peopleStore: jest.Mocked<DataCatalogStore<PeopleCollection>> = {
+      getData: getDataMock,
+      addListener: jest.fn(),
+      invalidate: jest.fn(),
+      storeData: jest.fn(),
+      clearData: jest.fn(),
+    };
+    getPeopleStoreMock.mockReset().mockReturnValue(peopleStore);
     client = new FakeClient();
     new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    await getDataMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
-    const lastGuildCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-    await lastGuildCall?.value;
   });
 
-  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
-    settingsHandler?.({ detail } as any);
+  afterEach(() => {
+    appEventBus.clear();
+  });
+
+  const emitSettings = async (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
+    appEventBus.emit('settings', detail as any);
+    const lastCall = getDataMock.mock.results[getDataMock.mock.results.length - 1];
+    await lastCall?.value;
   };
 
-  test('adds name after description without red color', () => {
-    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+  test('adds name after description without red color', async () => {
+    await emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna tutaj.');
     const red = findClosestColor('#ff0000');
     const green = findClosestColor('#00ff00');
@@ -109,8 +137,8 @@ describe('people triggers guild highlight', () => {
     expect(stripAnsiCodes(result)).toContain('(Eamon CKN)');
   });
 
-  test('adds names for two guild members in the same sentence', () => {
-    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+  test('adds names for two guild members in the same sentence', async () => {
+    await emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna oraz krepy lysy krasnolud.');
     const green = findClosestColor('#00ff00');
     const highlight = color(green);
@@ -120,16 +148,16 @@ describe('people triggers guild highlight', () => {
     expect(stripped).toContain('(Krasn CKN)');
   });
 
-  test('colors enemy guild member in red', () => {
-    emitSettings({ guilds: [], enemyGuilds: ['CKN'], guildColors: {} });
+  test('colors enemy guild member in red', async () => {
+    await emitSettings({ guilds: [], enemyGuilds: ['CKN'], guildColors: {} });
     const result = parse('Widzisz wysoki mezczyzna tutaj.');
     const red = findClosestColor('#ff0000');
     expect(result).toContain(color(red) + 'wysoki mezczyzna' + RESET);
     expect(result).toContain(color(red) + '(Eamon CKN)' + RESET);
   });
 
-  test('colors two enemy guild members in one sentence', () => {
-    emitSettings({ guilds: [], enemyGuilds: ['CKN', 'GP'], guildColors: {} });
+  test('colors two enemy guild members in one sentence', async () => {
+    await emitSettings({ guilds: [], enemyGuilds: ['CKN', 'GP'], guildColors: {} });
     const result = parse('Widzisz wysoki mezczyzna i koscisty mezczyzna obok siebie.');
     const red = findClosestColor('#ff0000');
     const stripped = stripAnsiCodes(result);
@@ -138,8 +166,8 @@ describe('people triggers guild highlight', () => {
     expect(result.split(color(red)).length - 1).toBeGreaterThanOrEqual(4);
   });
 
-  test('colors ally and enemy differently when they appear together', () => {
-    emitSettings({ guilds: ['CKN'], enemyGuilds: ['GP'], guildColors: { CKN: '#00ff00' } });
+  test('colors ally and enemy differently when they appear together', async () => {
+    await emitSettings({ guilds: ['CKN'], enemyGuilds: ['GP'], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna oraz koscisty mezczyzna.');
     const red = findClosestColor('#ff0000');
     const green = findClosestColor('#00ff00');

@@ -1,26 +1,27 @@
 import initFullHpTimer from '../src/scripts/fullHpTimer';
-import { EventEmitter } from 'events';
+import appEventBus from '../src/events/app-event-bus';
 import { colorString, findClosestColor } from '../src/Colors';
 
 describe('full hp timer', () => {
   class FakeClient {
-    private emitter = new EventEmitter();
     notify = jest.fn();
     println = jest.fn();
     addEventListener(event: string, cb: any) {
-      this.emitter.on(event, cb);
+      appEventBus.on(event as any, (detail: any) => cb({ detail }));
     }
     sendEvent(type: string, detail?: any) {
-      this.emitter.emit(type, { detail });
+      appEventBus.emit(type as any, detail);
     }
   }
 
   beforeEach(() => {
     jest.useFakeTimers();
+    appEventBus.clear();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    appEventBus.clear();
   });
 
   function enable(client: FakeClient) {
