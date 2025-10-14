@@ -1,4 +1,4 @@
-import { DataSource } from './types';
+import { DataSource, DataStoreProgressListener } from './types';
 
 interface WorkerRequest {
   type: 'load';
@@ -24,7 +24,7 @@ export class WorkerDataSource<T> implements DataSource<T> {
 
   constructor(private readonly createWorker: WorkerFactory) {}
 
-  async load(): Promise<T> {
+  async load(onProgress?: DataStoreProgressListener): Promise<T> {
     const worker = await this.getWorker();
 
     return new Promise<T>((resolve, reject) => {
@@ -36,6 +36,7 @@ export class WorkerDataSource<T> implements DataSource<T> {
 
         cleanup();
         if (data.type === 'success') {
+          onProgress?.(1);
           resolve(data.payload);
         } else {
           reject(new Error(data.message));
@@ -55,6 +56,7 @@ export class WorkerDataSource<T> implements DataSource<T> {
 
       worker.addEventListener('message', messageListener);
       worker.addEventListener('error', errorListener);
+      onProgress?.(0);
       const request: WorkerRequest = { type: 'load' };
       worker.postMessage(request);
     });

@@ -1,8 +1,15 @@
+export type DataStoreProgressListener = (progress: number) => void;
+
 export interface DataSource<T> {
-  load(): Promise<T>;
+  load(onProgress?: DataStoreProgressListener): Promise<T>;
 }
 
 export type DataStoreListener<T> = (data: T) => void;
+
+export interface DataStoreGetOptions {
+  forceReload?: boolean;
+  onProgress?: DataStoreProgressListener;
+}
 
 export interface PersistenceRecord<T> {
   data: T;
