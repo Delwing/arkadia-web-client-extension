@@ -2,6 +2,7 @@ import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import ArkadiaClient from "./ArkadiaClient.ts";
 import type { ClickCallbackMap, ClickCallback } from "@client/src/OutputHandler.ts";
+import type {DirectionBindMap} from "@client/src/types/binds.ts";
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";
@@ -490,12 +491,12 @@ const numpadDirections: { [key: string]: string } = {
     'Numpad5': 'zerknij'
 };
 
-function applyDirectionBinds(dirs: any) {
+function applyDirectionBinds(dirs: DirectionBindMap | undefined) {
     Object.keys(numpadDirections).forEach(k => {
         if (!['NumpadDivide', 'Numpad0', 'Numpad5'].includes(k)) delete numpadDirections[k];
     });
-    Object.entries(dirs || {}).forEach(([dir, bind]: any) => {
-        if (bind && bind.key) {
+    Object.entries(dirs || {}).forEach(([dir, bind]) => {
+        if (bind?.key) {
             numpadDirections[bind.key] = dir;
         }
     });

@@ -2,12 +2,13 @@ import {EventBus} from "./event-bus";
 import type {ClickCallbackMap} from "../OutputHandler";
 import type {LetterSubmitPayload} from "../types/letter";
 import {Settings} from "../defaultSettings";
+import type {BindSettings} from "../types/binds";
 import {UiSettings} from "sandbox-react/src/uiSettings";
 import {ButtonSetting} from "sandbox-react/src/mobileButtonSettings";
 
 type AppEvents = {
     "attackQueueChange": string[];
-    "binds": any; //TODO type and check whether this is needed
+    "binds": BindSettings;
     'client.disconnect': void;
     'client.connect': void;
     'command': string;

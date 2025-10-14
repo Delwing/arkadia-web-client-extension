@@ -22,6 +22,7 @@ import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import {openMapContextMenu} from "./contextMenus";
 import appEventBus from "./events/app-event-bus";
+import type {BindSettings, CustomKeyBind, KeyBind} from "./types/binds";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean): void;
@@ -52,31 +53,11 @@ export default class Client {
         }),
     };
     aliases: { pattern: RegExp; callback: Function }[] = [];
-    lampBind = {key: "Digit4", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    attackBind = {key: "Digit1", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    supportBind = {key: "KeyQ", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    moveModeBind = {key: "Backquote"} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
+    lampBind: KeyBind = {key: "Digit4", ctrl: true};
+    attackBind: KeyBind = {key: "Digit1", ctrl: true};
+    supportBind: KeyBind = {key: "KeyQ", ctrl: true};
+    moveModeBind: KeyBind = {key: "Backquote"};
+    customBinds: CustomKeyBind[] = [];
     tempBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string | null }[] = [
         {key: 'F4', command: null},
         {key: 'F5', command: null},
@@ -158,7 +139,7 @@ export default class Client {
             })
         })
 
-        const applyBinds = (b: any) => {
+        const applyBinds = (b: BindSettings | undefined) => {
             const bind = b?.main
             if (bind) {
                 this.FunctionalBind.updateOptions({

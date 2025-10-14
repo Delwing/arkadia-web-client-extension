@@ -25,11 +25,6 @@ function Npc() {
         )
     }, []);
 
-    useEffect(() => {
-        //TODO download on demand only
-        dataCatalog.getNpcStore().getData().then(npc => setNpcs(npc))
-    }, [])
-
     function downloadNpcs() {
         dataCatalog.getNpcStore().getData({forceReload: true})
             .then(npc => {
@@ -58,7 +53,8 @@ function Npc() {
     function deleteNpc(npc: NpcProps) {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
-        //TODO persist deletion
+        dataCatalog.getNpcStore().storeData(updated)
+            .catch(e => console.error('Failed to persist NPC deletion:', e))
     }
 
     return (

@@ -5,33 +5,13 @@ import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImp
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
 import appEventBus from "@client/src/events/app-event-bus.ts";
 import {dataCatalog} from "@client/src/dataCatalog/catalogInstance.ts";
+import type {BindSettings as StoredBindSettings, CustomKeyBind, DirectionKey, KeyBind} from "@client/src/types/binds.ts";
 
-interface Bind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
+type Bind = KeyBind;
+type CustomBind = CustomKeyBind;
+type DirectionBinds = Record<DirectionKey, Bind>;
 
-interface CustomBind extends Bind {
-    command: string;
-}
-
-interface DirectionBinds {
-    n: Bind;
-    s: Bind;
-    w: Bind;
-    e: Bind;
-    nw: Bind;
-    ne: Bind;
-    sw: Bind;
-    se: Bind;
-    u: Bind;
-    d: Bind;
-    special: Bind;
-}
-
-interface BindSettings {
+type FullBindSettings = StoredBindSettings & {
     main: Bind;
     lamp: Bind;
     attack: Bind;
@@ -40,9 +20,11 @@ interface BindSettings {
     directions: DirectionBinds;
     custom: CustomBind[];
     temp: Bind[];
-}
+};
 
-const defaultBinds: BindSettings = {
+type CapturableBindKey = 'main' | 'lamp' | 'attack' | 'support' | 'moveMode';
+
+const defaultBinds: FullBindSettings = {
     main: { key: 'BracketRight' },
     lamp: { key: 'Digit4', ctrl: true },
     attack: { key: 'Digit1', ctrl: true },
@@ -165,7 +147,7 @@ function label(bind: Bind) {
 }
 
 function Binds() {
-    const [binds, setBinds] = useState<BindSettings>(defaultBinds);
+    const [binds, setBinds] = useState<FullBindSettings>(defaultBinds);
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const [importData, setImportData] = useState<ImportData | null>(null);
     const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
@@ -386,7 +368,7 @@ function Binds() {
         setImportResult(null);
     }
 
-    function handleCapture(name: keyof BindSettings, ev: React.KeyboardEvent) {
+    function handleCapture(name: CapturableBindKey, ev: React.KeyboardEvent) {
         ev.preventDefault();
         const { code, ctrlKey, altKey, shiftKey } = ev;
         setBinds(prev => ({ ...prev, [name]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } }));
