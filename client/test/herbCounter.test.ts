@@ -2,6 +2,23 @@ import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
 
+jest.mock('../src/dataCatalog/catalogInstance', () => {
+  const { defaultHerbData } = require('./helpers/herbClient');
+  let herbData = defaultHerbData;
+
+  return {
+    __esModule: true,
+    dataCatalog: {
+      getHerbsStore: () => ({
+        getData: () => Promise.resolve(herbData)
+      })
+    },
+    __setHerbData: (data: any) => {
+      herbData = data;
+    }
+  };
+});
+
 class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
@@ -94,10 +111,9 @@ describe('herb counter', () => {
 
   test('prints summary from storage', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
-    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+    initHerbClient((client as unknown) as any, { 1: { deliona: 2 } }, defaultHerbData, aliases);
     const show = aliases[1].callback as any;
     show();
-    client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
     const printed = client.println.mock.calls[0][0];
     expect(printed).toMatch(/2/);
     expect(printed).toMatch(/deliona/);
