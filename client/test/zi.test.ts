@@ -1,4 +1,14 @@
-import { FakeClient, initHerbClient } from './helpers/herbClient';
+import { FakeClient, initHerbClient, defaultHerbData } from './helpers/herbClient';
+
+jest.mock('../src/dataCatalog/catalogInstance', () => {
+  return {
+    dataCatalog: {
+      getHerbsStore: () => ({
+        getData: jest.fn().mockResolvedValue(defaultHerbData)
+      })
+    }
+  };
+});
 
 beforeEach(() => {
   jest.clearAllMocks();

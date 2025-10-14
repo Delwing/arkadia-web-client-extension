@@ -44,6 +44,7 @@ export function initHerbClient(
     ok: true,
     json: () => Promise.resolve(herbData)
   });
+  localStorage.setItem('herb_counts', JSON.stringify(herbCounts));
   initHerbCounter((client as unknown) as any, aliases);
   client.dispatch('storage', { key: 'herb_counts', value: herbCounts });
 }
