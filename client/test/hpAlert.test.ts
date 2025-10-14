@@ -1,18 +1,11 @@
 import initHpAlert from '../src/scripts/hpAlert';
 import { colorString, findClosestColor } from '../src/Colors';
-import { EventEmitter } from 'events';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
-  private emitter = new EventEmitter();
   println = jest.fn();
   playSound = jest.fn();
   notify = jest.fn();
-  addEventListener(event: string, cb: any) {
-    this.emitter.on(event, cb);
-  }
-  sendEvent(type: string, detail?: any) {
-    this.emitter.emit(type, { detail });
-  }
 }
 
 describe('hp alert', () => {
@@ -20,14 +13,19 @@ describe('hp alert', () => {
   const color = findClosestColor('#ffa500');
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     initHpAlert((client as unknown) as any);
     jest.clearAllMocks();
-    client.sendEvent('settings', { lowHpAlert: 2 });
+    sendSettings(2);
   });
 
   function send(hp: number) {
-    client.sendEvent('gmcp.char.state', { hp });
+    appEventBus.emit('gmcp.char.state', { hp } as any);
+  }
+
+  function sendSettings(lowHpAlert: number) {
+    appEventBus.emit('settings', { lowHpAlert } as any);
   }
 
   test('beeps and prints when hp drops to configured threshold', () => {
@@ -65,7 +63,7 @@ describe('hp alert', () => {
   });
 
   test('disabling alert prevents notifications', () => {
-    client.sendEvent('settings', { lowHpAlert: 0 });
+    sendSettings(0);
     send(3);
     send(1);
     expect(client.playSound).not.toHaveBeenCalled();
@@ -74,7 +72,7 @@ describe('hp alert', () => {
   });
 
   test('higher threshold expands alert range', () => {
-    client.sendEvent('settings', { lowHpAlert: 3 });
+    sendSettings(3);
     send(4);
     send(2);
     expect(client.playSound).toHaveBeenCalledTimes(1);
