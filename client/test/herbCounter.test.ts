@@ -1,6 +1,6 @@
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
-import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
+import appEventBus from '../src/events/app-event-bus';
 
 jest.mock('../src/dataCatalog/catalogInstance', () => {
   const { defaultHerbData } = require('./helpers/herbClient');
@@ -20,7 +20,6 @@ jest.mock('../src/dataCatalog/catalogInstance', () => {
 });
 
 class FakeClient {
-  private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
   println = jest.fn();
@@ -33,9 +32,6 @@ class FakeClient {
   } as any;
   FunctionalBind = { set: jest.fn() } as any;
   contentWidth = 80;
-  addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
-  removeEventListener(event: string, cb: any) { this.emitter.off(event, cb); }
-  dispatch(event: string, detail: any) { this.emitter.emit(event, { detail }); }
 }
 
 describe('herb counter', () => {
@@ -44,6 +40,7 @@ describe('herb counter', () => {
   let start: () => void;
 
   beforeEach(() => {
+    appEventBus.clear();
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
@@ -68,7 +65,7 @@ describe('herb counter', () => {
 
   test('splits summary when width is limited', async () => {
     client.contentWidth = 40;
-    client.dispatch('contentWidth', 40);
+    appEventBus.emit('contentWidth', 40);
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient(
       (client as unknown) as any,

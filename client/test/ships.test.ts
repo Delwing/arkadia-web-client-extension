@@ -1,24 +1,36 @@
 import initShips from '../src/scripts/ships';
 import Triggers from '../src/Triggers';
+import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
   playSound = jest.fn();
-  sendEvent = jest.fn();
   sendCommand = jest.fn();
 }
 
 describe('ships triggers', () => {
   let client: FakeClient;
   let parse: (line: string, type?: string) => string;
+  let events: any[];
+  let off: () => void;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
+    appEventBus.clear();
     client = new FakeClient();
     initShips((client as unknown) as any);
     parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, line, type);
     jest.clearAllMocks();
+    events = [];
+    off = appEventBus.on('refreshPositionWhenAble', payload => {
+      events.push(payload);
+    });
+  });
+
+  afterEach(() => {
+    off();
+    appEventBus.clear();
   });
 
   test('boarding trigger binds command and beeps', () => {
@@ -62,14 +74,14 @@ describe('ships triggers', () => {
     boardCallback();
     client.FunctionalBind.set.mockClear();
     client.sendCommand.mockClear();
-    client.sendEvent.mockClear();
+    events.length = 0;
     parse('Marynarze sprawnie cumuja');
     const [label, callback] = client.FunctionalBind.set.mock.calls.pop()!;
     expect(label).toBe('zejdz ze statku');
     callback();
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
     expect(client.sendCommand).toHaveBeenCalledWith('zejdz ze statku');
-    expect(client.sendEvent).toHaveBeenCalledWith('refreshPositionWhenAble');
+    expect(events).toEqual([undefined]);
   });
 
   test('disembark message starting with Jakis binds only when on ship', () => {
@@ -78,7 +90,7 @@ describe('ships triggers', () => {
     boardCallback();
     client.FunctionalBind.set.mockClear();
     client.sendCommand.mockClear();
-    client.sendEvent.mockClear();
+    events.length = 0;
     parse('Jakis mezczyzna krzyczy na galeonie: Doplynelismy do przystani w Urbimo! Mozna wysiadac!');
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });

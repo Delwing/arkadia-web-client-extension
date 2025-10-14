@@ -32,3 +32,16 @@ if (typeof globalThis.fetch !== 'function') {
     });
   }
 }
+
+jest.mock('./src/dataCatalog/createPeopleWorker', () => {
+  class MockWorker {
+    postMessage = jest.fn();
+    addEventListener = jest.fn();
+    removeEventListener = jest.fn();
+    terminate = jest.fn();
+  }
+
+  return {
+    createPeopleWorker: () => new MockWorker(),
+  };
+});

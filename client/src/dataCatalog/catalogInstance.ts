@@ -16,6 +16,7 @@ import {
   Person,
 } from './entities';
 import { WorkerDataSource } from './WorkerDataSource';
+import { createPeopleWorker } from './createPeopleWorker';
 
 const STORE_NAMES = {
   mapData: 'mapData',
@@ -136,10 +137,7 @@ const peopleEntry = new DataCatalogEntry<PeopleCollection, Person>({
   ttl: 5 * 60_000,
   storeName: STORE_NAMES.people,
   persistenceAdapter: sharedPersistenceAdapter,
-  dataSource: new WorkerDataSource<PeopleCollection>(() =>
-    // @ts-ignore -- import.meta is supported by the bundler, but tests compile with CommonJS modules.
-    new Worker(new URL('./peopleWorker.ts', import.meta.url), { type: 'module' }),
-  ),
+  dataSource: new WorkerDataSource<PeopleCollection>(() => createPeopleWorker()),
   collection: {
     toPersistenceItems: (collection) => collection.map((person) => ({ ...person })),
     fromPersistenceItems: (items) => items.map((person) => ({ ...person })),

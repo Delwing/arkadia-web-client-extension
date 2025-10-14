@@ -1,61 +1,53 @@
 import initZaskTimer from "../src/scripts/zaskTimer";
+import appEventBus from "../src/events/app-event-bus";
 
 describe("zask timer", () => {
-  class FakeClient extends EventTarget {
+  class FakeClient {
     moveMode = 0;
-    sendEvent = jest.fn((type: string, detail?: any) => {
-      super.dispatchEvent(new CustomEvent(type, { detail }));
-    });
-
-    addEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-      options?: AddEventListenerOptions | boolean,
-    ) {
-      super.addEventListener(type, listener as EventListener, options);
-      return () => super.removeEventListener(type, listener as EventListener, options as any);
-    }
-
-    removeEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject | null,
-      options?: EventListenerOptions,
-    ) {
-      if (listener) {
-        super.removeEventListener(type, listener as EventListener, options);
-      }
-    }
   }
 
   beforeEach(() => {
     jest.useFakeTimers();
+    appEventBus.clear();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    appEventBus.clear();
   });
 
   test("counts seconds in sneak mode and reports ok after threshold", () => {
     const client = new FakeClient();
+    const events: any[] = [];
+    const off = appEventBus.on("zaskTimer", payload => {
+      events.push(payload);
+    });
+
     initZaskTimer((client as unknown) as any);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", null);
-    client.sendEvent.mockClear();
+    expect(events.at(-1)).toBeNull();
+    events.length = 0;
 
     client.moveMode = 1;
-    client.dispatchEvent(new CustomEvent("gmcp.room.info"));
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", { seconds: 0, ok: false });
+    appEventBus.emit("gmcp.room.info", undefined);
+    expect(events.at(-1)).toEqual({ seconds: 0, ok: false });
+    events.length = 0;
 
     jest.advanceTimersByTime(29000);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", { seconds: 29, ok: false });
+    expect(events.at(-1)).toEqual({ seconds: 29, ok: false });
+    events.length = 0;
 
     jest.advanceTimersByTime(1000);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", expect.objectContaining({ ok: true }));
+    expect(events.at(-1)).toEqual(expect.objectContaining({ ok: true }));
+    events.length = 0;
 
-    client.dispatchEvent(new CustomEvent("moveModeChanged", { detail: 0 }));
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", null);
+    appEventBus.emit("moveModeChanged", 0);
+    expect(events.at(-1)).toBeNull();
+    events.length = 0;
 
-    const callCount = client.sendEvent.mock.calls.length;
+    const callCount = events.length;
     jest.advanceTimersByTime(2000);
-    expect(client.sendEvent.mock.calls.length).toBe(callCount);
+    expect(events.length).toBe(callCount);
+
+    off();
   });
 });
