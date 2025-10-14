@@ -1,13 +1,16 @@
 import initIdz from '../src/scripts/idz';
+import appEventBus from '../src/events/app-event-bus';
 
 jest.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
 describe('idz walking', () => {
   beforeEach(() => {
+    appEventBus.clear();
     jest.useFakeTimers();
   });
 
   afterEach(() => {
+    appEventBus.clear();
     jest.useRealTimers();
   });
 
@@ -39,12 +42,18 @@ describe('idz walking', () => {
     const match = '/idz 2'.match(alias!.pattern);
     expect(match).not.toBeNull();
 
+    const leadToEvents: Array<number | undefined> = [];
+    const off = appEventBus.on('leadTo', value => {
+      leadToEvents.push(value as number | undefined);
+    });
+
     alias!.callback(match);
+
+    off();
 
     expect(client.Map.findPath).toHaveBeenCalledWith(1, 2);
     expect(client.Map.getRoomById).toHaveBeenCalled();
     expect(client.sendCommand).not.toHaveBeenCalled();
-    expect(client.sendEvent).toHaveBeenCalledWith('leadTo', 2);
-    expect(client.sendEvent).toHaveBeenCalledWith('leadTo');
+    expect(leadToEvents).toEqual([2, undefined]);
   });
 });
