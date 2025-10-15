@@ -20,10 +20,9 @@ export const colorCodes = {
 
 const palette = (() => {
     try {
-        const ui = getItemSync('uiSettings');
-        const raw = ui?.uiSettings;
-        if (raw) {
-            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const uiSettings = getItemSync('uiSettings');
+        if (uiSettings) {
+            const parsed = typeof uiSettings === 'string' ? JSON.parse(uiSettings) : uiSettings;
             return parsed.xtermPalette === 'proper' ? 'proper' : 'arkadia';
         }
     } catch {}
