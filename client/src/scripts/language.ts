@@ -37,6 +37,9 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
             client.send("'" + msg, false);
         } else {
             const verb = lang === 'potoczna' ? 'ppowiedz' : 'jppowiedz';
+            if (msg.trim().length == 0) {
+                client.send("'");
+            }
             const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
             client.sendCommand(cmd, false);
         }
