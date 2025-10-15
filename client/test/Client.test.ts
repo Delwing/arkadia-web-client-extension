@@ -180,10 +180,23 @@ test('sendCommand lowercases non speech commands', () => {
 
 test('sendCommand keeps casing for speech commands', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  parseCommand.mockClear();
-  client.sendCommand("'SHOUT");
-  expect(parseCommand).toHaveBeenCalledTimes(1);
-  expect(parseCommand).toHaveBeenCalledWith("'SHOUT");
+  const speechCommands = [
+    "'SHOUT",
+    'powiedz HELLO',
+    "j'HELLO",
+    'jpowiedz HELLO',
+    'krzyknij HELLO',
+    'jkrzyknij HELLO',
+    'szepnij HELLO',
+    'jszepnij HELLO',
+  ];
+
+  speechCommands.forEach((command) => {
+    parseCommand.mockClear();
+    client.sendCommand(command);
+    expect(parseCommand).toHaveBeenCalledTimes(1);
+    expect(parseCommand).toHaveBeenCalledWith(command);
+  });
 });
 
 test('sendCommand allows empty command', () => {

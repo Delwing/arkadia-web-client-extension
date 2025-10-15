@@ -351,7 +351,16 @@ export default class Client {
 
             const trimmedCommand = command.trimStart()
             if (trimmedCommand) {
-                const skipLowercasePrefixes = ["'", "powiedz", "j'", "jpowiedz"]
+                const skipLowercasePrefixes = [
+                    "'",
+                    "powiedz",
+                    "j'",
+                    "jpowiedz",
+                    "krzyknij",
+                    "jkrzyknij",
+                    "szepnij",
+                    "jszepnij",
+                ]
                 const shouldLowercase = !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
                 if (shouldLowercase) {
                     const leadingWhitespaceLength = command.length - trimmedCommand.length
