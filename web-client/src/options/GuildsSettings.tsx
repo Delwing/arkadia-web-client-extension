@@ -105,19 +105,21 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
     }, [registerSave, selected, enemySelected, colors]);
 
     return (
-        <div className="p-2">
+        <div className="p-2 h-100">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
-                <GuildSection
-                    selected={selected}
-                    enemySelected={enemySelected}
-                    colors={colors}
-                    defaultColors={defaultColors}
-                    onChange={onChange}
-                    onEnemyChange={onEnemyChange}
-                    onColorChange={onColorChange}
-                    onChangeAll={onChangeAll}
-                    onChangeAllEnemy={onChangeAllEnemy}
-                />
+                <div className="character-settings-layout">
+                    <GuildSection
+                        selected={selected}
+                        enemySelected={enemySelected}
+                        colors={colors}
+                        defaultColors={defaultColors}
+                        onChange={onChange}
+                        onEnemyChange={onEnemyChange}
+                        onColorChange={onColorChange}
+                        onChangeAll={onChangeAll}
+                        onChangeAllEnemy={onChangeAllEnemy}
+                    />
+                </div>
             </fieldset>
         </div>
     );

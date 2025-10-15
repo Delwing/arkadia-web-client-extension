@@ -90,35 +90,37 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
     };
 
     return (
-        <div className="p-2">
+        <div className="p-2 h-100">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
-                <div className="mb-4 border rounded p-3">
-                    <h5 className="fw-bold mb-3">Ustawienia walki</h5>
-                    <div className="d-flex flex-column gap-3">
-                        {LUA_GAG_LINE_TYPES.map(key => (
-                            <Form.Group
-                                key={key}
-                                className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                                controlId={`luaGag-${key}`}
-                            >
-                                <Form.Label className="mb-0 me-2">{labels[key]}</Form.Label>
-                                <Form.Select
-                                    size="sm"
-                                    className="w-auto"
-                                    value={deleteLines[key]}
-                                    onChange={event =>
-                                        handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
-                                    }
+                <div className="character-settings-layout">
+                    <section className="character-settings-section character-settings-section--full">
+                        <h5 className="character-settings-section-title">Ustawienia walki</h5>
+                        <div className="character-settings-stack">
+                            {LUA_GAG_LINE_TYPES.map(key => (
+                                <Form.Group
+                                    key={key}
+                                    className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                    controlId={`luaGag-${key}`}
                                 >
-                                    {selectOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        ))}
-                    </div>
+                                    <Form.Label className="mb-0 me-2">{labels[key]}</Form.Label>
+                                    <Form.Select
+                                        size="sm"
+                                        className="w-auto"
+                                        value={deleteLines[key]}
+                                        onChange={event =>
+                                            handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
+                                        }
+                                    >
+                                        {selectOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </fieldset>
         </div>
