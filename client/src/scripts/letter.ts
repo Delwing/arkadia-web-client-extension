@@ -396,7 +396,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
             () => {
                 lines.forEach(line => {
                     if (line.length > 0) {
-                        client.sendCommand(line);
+                        client.sendCommand(line, true, { preserveCase: true });
                     }
                 });
                 client.sendCommand("**");
@@ -406,9 +406,9 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         );
 
         client.sendCommand("napisz list");
-        client.sendCommand(recipient);
-        client.sendCommand(subjectLine);
-        client.sendCommand(carbonCopy);
+        client.sendCommand(recipient, true, { preserveCase: true });
+        client.sendCommand(subjectLine, true, { preserveCase: true });
+        client.sendCommand(carbonCopy, true, { preserveCase: true });
     });
 
     client.addEventListener("letterComposer.preview", (event: CustomEvent<LetterSubmitPayload>) => {
