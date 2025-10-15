@@ -128,7 +128,7 @@ function CharacterSettings() {
                         className={`btn btn-sm ${tab === "luaGags" ? "btn-primary" : "btn-secondary"}`}
                         onClick={() => changeTab("luaGags")}
                     >
-                        Lua gagi
+                        Walka
                     </button>
                 </div>
             </div>

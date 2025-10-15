@@ -93,7 +93,7 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
         <div className="p-2">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <div className="mb-4 border rounded p-3">
-                    <h5 className="fw-bold mb-3">Lua gagi - usuwanie prefixow</h5>
+                    <h5 className="fw-bold mb-3">Ustawienia walki</h5>
                     <div className="d-flex flex-column gap-3">
                         {LUA_GAG_LINE_TYPES.map(key => (
                             <Form.Group
