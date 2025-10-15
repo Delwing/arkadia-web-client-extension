@@ -76,9 +76,24 @@ function registerTrigger(container: Triggers | Trigger, triggerPatterns: (RegExp
         : (parent as Triggers).registerTrigger(triggerPatterns, callback, node.name);
 }
 
+const deleteLines = {
+    moje_ciosy: false,
+    moje_spece: false,
+    innych_ciosy: false,
+    innych_ciosy_we_mnie: false,
+    innych_spece: false,
+    moje_uniki: false,
+    innych_uniki: false,
+    moje_parowanie: false,
+    innych_parowanie: false,
+    zaslony_udane: false,
+    zaslony_nieudane: false,
+    bron: false,
+    npc: false,
+    npc_spece: false
+}
+
 export default function registerLuaGagTriggers(client: Client) {
-
-
     function toPattern(p: PatternObj) {
         if (p.type === 1) {
             return new RegExp(p.pattern);
@@ -169,6 +184,10 @@ export default function registerLuaGagTriggers(client: Client) {
                 gags.gag_prefix(null, `${value}/${totalValue}`, type)
             },
             gag_prefix: (_, prefix: string, type: string) => {
+                if (deleteLines[type]) {
+                    global.line = ""
+                    return
+                }
                 global.line = colorString(`[${prefix}] `, gagColorCodes[type]) + global.line
             },
             gag_own_spec: (_, power: string, maxPower: string) => {
@@ -191,7 +210,11 @@ export default function registerLuaGagTriggers(client: Client) {
                 const target = gags.who_hits()
                 gags.gag_prefix(null, gags.fin_prefix, target)
             },
-            delete_line: () => {
+            delete_line: (_, type: string) => {
+                if (deleteLines[type]) {
+                    global.line = ""
+                    return true
+                }
                 return false
             },
             is_type: (_, type: string) => {
