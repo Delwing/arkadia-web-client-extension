@@ -104,26 +104,25 @@ export class EmbeddedMap {
         let transparentLabels = true;
         let initialRoom = startId ?? 1;
         try {
-            const data = getItemSync('uiSettings');
-            const parsed = data?.uiSettings as any;
-            if (parsed) {
-                if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
-                    zoom = parsed.mapScale;
+            const uiSettings = getItemSync('uiSettings');
+            if (uiSettings) {
+                if (typeof uiSettings.mapScale === 'number' && uiSettings.mapScale > 0) {
+                    zoom = uiSettings.mapScale;
                 }
-                if (typeof parsed.explorationMode === 'boolean') {
-                    explorationMode = parsed.explorationMode;
+                if (typeof uiSettings.explorationMode === 'boolean') {
+                    explorationMode = uiSettings.explorationMode;
                 }
-                if (typeof parsed.instantMove === 'boolean') {
-                    instantMove = parsed.instantMove;
+                if (typeof uiSettings.instantMove === 'boolean') {
+                    instantMove = uiSettings.instantMove;
                 }
-                if (typeof parsed.highlightCurrentRoom === 'boolean') {
-                    highlightCurrentRoom = parsed.highlightCurrentRoom;
+                if (typeof uiSettings.highlightCurrentRoom === 'boolean') {
+                    highlightCurrentRoom = uiSettings.highlightCurrentRoom;
                 }
-                if (parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data') {
-                    labelRenderMode = parsed.labelRenderMode;
+                if (uiSettings.labelRenderMode === 'image' || uiSettings.labelRenderMode === 'data') {
+                    labelRenderMode = uiSettings.labelRenderMode;
                 }
-                if (typeof parsed.transparentLabels === 'boolean') {
-                    transparentLabels = parsed.transparentLabels;
+                if (typeof uiSettings.transparentLabels === 'boolean') {
+                    transparentLabels = uiSettings.transparentLabels;
                 }
             }
         } catch {

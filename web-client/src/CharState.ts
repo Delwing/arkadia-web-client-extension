@@ -1,4 +1,3 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
 import appEventBus from "@client/src/events/app-event-bus.ts";
 
