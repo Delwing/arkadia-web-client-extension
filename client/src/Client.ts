@@ -391,6 +391,7 @@ export default class Client {
         result = result.replace(/\x1b\[0m/g, () => restore[index++] || '\x1b[0m')
         this.buffer.unshift({out: result, type: type})
         this.flushBuffer();
+        this.inLineProcess = false
         return result
     }
 
