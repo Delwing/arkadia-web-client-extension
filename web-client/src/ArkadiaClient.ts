@@ -249,7 +249,7 @@ class ArkadiaClient implements ClientAdapter {
     private startPing() {
         this.stopPing();
         this.sendGmcp('core.ping');
-        this.pingTimer = window.setInterval(() => this.sendGmcp('core.ping'), 30000);
+        this.pingTimer = window.setInterval(() => this.sendGmcp('core.ping'), 3000);
     }
 
     private stopPing() {
