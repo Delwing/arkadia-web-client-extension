@@ -340,6 +340,75 @@ describe('ObjectList', () => {
     delete (window as any).documentPictureInPicture;
   });
 
+  test('picture-in-picture shows status header and footer', async () => {
+    document.body.innerHTML = `
+      <div id="location-text">#101 Northern Gate</div>
+      <span id="cover-timer">Zas: 1.50</span>
+      <div id="main_text_output_msg_wrapper">
+        <div class="output_msg"><div class="output_msg_text"><span class="ansi">Enemies incoming</span></div></div>
+        <div id="split-bottom"></div>
+      </div>
+      <div id="objects-list"></div>
+    `;
+    const pipDoc = document.implementation.createHTMLDocument('pip');
+    const pipWindow = {
+      document: pipDoc,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      close: jest.fn(),
+    } as unknown as DocumentPictureInPictureWindow;
+    const requestWindow = jest.fn().mockResolvedValue(pipWindow);
+    (window as any).documentPictureInPicture = { requestWindow };
+
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    client.ObjectManager.getObjectsOnLocation = () => [
+      { shortcut: '1', desc: 'Goblin', num: 7 },
+    ];
+    (objectList as any).render();
+
+    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
+    button.click();
+    await Promise.resolve();
+
+    const pipRoot = pipDoc.body.querySelector('#objects-list-pip') as HTMLElement;
+    expect(pipRoot).toBeTruthy();
+    let lines = pipRoot.innerHTML.split('<br>');
+    expect(lines[0]).toContain('objects-list-pip-header');
+    expect(lines[0]).toContain('#101 Northern Gate');
+    expect(lines[0]).toContain('Zas: 1.50');
+    const footerLine = lines[lines.length - 1];
+    expect(footerLine).toContain('objects-list-pip-footer');
+    expect(footerLine).toContain('Enemies incoming');
+    expect(footerLine).toContain('span class="ansi"');
+
+    const locationEl = document.getElementById('location-text')!;
+    locationEl.textContent = '#202 Southern Gate';
+    await Promise.resolve();
+    lines = pipRoot.innerHTML.split('<br>');
+    expect(lines[0]).toContain('#202 Southern Gate');
+
+    const coverEl = document.getElementById('cover-timer')!;
+    coverEl.textContent = 'Zas: OK';
+    await Promise.resolve();
+    lines = pipRoot.innerHTML.split('<br>');
+    expect(lines[0]).toContain('Zas: OK');
+
+    const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
+    const msg = document.createElement('div');
+    msg.className = 'output_msg';
+    const msgText = document.createElement('div');
+    msgText.className = 'output_msg_text';
+    msgText.innerHTML = '<span class="ansi">All clear</span>';
+    msg.appendChild(msgText);
+    wrapper.insertBefore(msg, document.getElementById('split-bottom'));
+    (objectList as any).handleOutputUpdate();
+    lines = pipRoot.innerHTML.split('<br>');
+    expect(lines[lines.length - 1]).toContain('All clear');
+
+    delete (window as any).documentPictureInPicture;
+  });
+
   test('picture-in-picture inherits objects list styling changes', async () => {
     document.body.innerHTML = '<div id="objects-list" style="font-size: 0.9rem; font-family: Courier, monospace;"></div>';
     const container = document.getElementById('objects-list') as HTMLElement;
