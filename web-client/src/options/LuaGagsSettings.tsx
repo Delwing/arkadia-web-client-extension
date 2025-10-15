@@ -15,9 +15,9 @@ type RegisterSave = (cb: () => void) => void;
 type DeleteLineState = Record<LuaGagLineType, LuaGagDeleteMode>;
 
 const selectOptions = [
-    { value: 0 as LuaGagDeleteMode, label: "0 - Leave line as is" },
-    { value: 1 as LuaGagDeleteMode, label: "1 - Delete line" },
-    { value: 2 as LuaGagDeleteMode, label: "2 - Prefix" },
+    { value: 0 as LuaGagDeleteMode, label: "Pozostaw linię" },
+    { value: 1 as LuaGagDeleteMode, label: "Usuń linię" },
+    { value: 2 as LuaGagDeleteMode, label: "Dodaj prefiks" },
 ];
 
 function formatLabel(key: LuaGagLineType): string {
