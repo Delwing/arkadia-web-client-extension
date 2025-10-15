@@ -307,8 +307,7 @@ export default class MobileDirectionButtons {
         // Set initial position from storage if available
         this.container.style.removeProperty('right');
 
-        const savedData = getItemSync('mobileButtonsPosition');
-        const savedPosition = savedData?.mobileButtonsPosition;
+        const savedPosition = getItemSync('mobileButtonsPosition');
         if (savedPosition) {
             try {
                 const {x, y, origin} = savedPosition as any;

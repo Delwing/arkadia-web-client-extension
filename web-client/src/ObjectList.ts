@@ -51,8 +51,7 @@ export default class ObjectList {
     private setupDraggable() {
         if (!this.container) return;
 
-        const savedData = getItemSync("objectsListPosition");
-        const saved = savedData?.objectsListPosition;
+        const saved = getItemSync("objectsListPosition");
         if (saved) {
             try {
                 let { left, top, right, x, y } = saved as any;
