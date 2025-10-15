@@ -48,9 +48,60 @@ export function formatItem(
         return `| ${namePart} ${spaces} ${numbersContent} |`;
     }
 
-    const nameLine = `| ${pad(namePart, width - 3)}|`;
-    const numbersLine = `| ${pad(numbersContent, width - 3)}|`;
-    return nameLine + '\n' + numbersLine;
+    const availableWidth = width - 3;
+    if (availableWidth <= 0) {
+        return '| |';
+    }
+
+    const prefixLength = stripAnsiCodes(amountPrefix).length;
+    const indent = ' '.repeat(Math.min(prefixLength, Math.max(0, availableWidth)));
+
+    const wrapPlainText = (text: string, firstLimit: number, subsequentLimit: number) => {
+        const segments: string[] = [];
+        let remaining = text;
+        let limit = firstLimit;
+
+        while (remaining.length > 0) {
+            const trimmed = remaining.trimStart();
+            const currentLimit = Math.max(1, limit);
+            if (trimmed.length <= currentLimit) {
+                segments.push(trimmed);
+                break;
+            }
+
+            let cut = trimmed.lastIndexOf(' ', currentLimit);
+            if (cut <= 0) {
+                cut = currentLimit;
+                segments.push(trimmed.slice(0, cut));
+                remaining = trimmed.slice(cut);
+            } else {
+                segments.push(trimmed.slice(0, cut));
+                remaining = trimmed.slice(cut + 1);
+            }
+
+            if (remaining.length === 0) {
+                break;
+            }
+
+            limit = subsequentLimit;
+        }
+
+        if (segments.length === 0) {
+            segments.push('');
+        }
+
+        return segments.map((segment) => segment.trimEnd());
+    };
+
+    const textLimit = availableWidth - prefixLength;
+    const nameSegments = wrapPlainText(name, textLimit, textLimit);
+    const nameLines = nameSegments.map((segment, index) => {
+        const prefix = index === 0 ? amountPrefix : indent;
+        return `| ${pad(prefix + segment, availableWidth)}|`;
+    });
+
+    const numbersLine = `| ${pad(numbersContent, availableWidth)}|`;
+    return [...nameLines, numbersLine].join('\n');
 }
 
 export default function initShop(client: Client, opts: ShopOptions) {
@@ -59,7 +110,58 @@ export default function initShop(client: Client, opts: ShopOptions) {
         width = ev.detail;
     });
 
-    const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - stripAnsiCodes(str).length));
+    const truncateWithAnsi = (str: string, len: number) => {
+        if (len <= 0) {
+            return '';
+        }
+
+        let visible = 0;
+        let i = 0;
+        let result = '';
+        let needsReset = false;
+
+        while (i < str.length && visible < len) {
+            const char = str[i];
+            if (char === '\u001b') {
+                const match = str.slice(i).match(/^\x1b\[[0-9;]*m/);
+                if (match) {
+                    const code = match[0];
+                    result += code;
+                    i += code.length;
+                    if (code === '\u001b[0m') {
+                        needsReset = false;
+                    } else {
+                        needsReset = true;
+                    }
+                    continue;
+                }
+            }
+
+            const codePoint = str.codePointAt(i);
+            if (codePoint === undefined) {
+                break;
+            }
+
+            const symbol = String.fromCodePoint(codePoint);
+            result += symbol;
+            visible += 1;
+            i += symbol.length;
+        }
+
+        if (needsReset && !result.endsWith('\u001b[0m')) {
+            result += '\u001b[0m';
+        }
+
+        return result;
+    };
+
+    const pad = (str: string, len: number) => {
+        const plainLength = stripAnsiCodes(str).length;
+        if (plainLength >= len) {
+            return truncateWithAnsi(str, len);
+        }
+        return str + ' '.repeat(len - plainLength);
+    };
 
     client.Triggers.registerTrigger(opts.splitReg, () => {
         if (width >= opts.normalWidth) return undefined;

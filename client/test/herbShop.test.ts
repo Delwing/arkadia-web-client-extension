@@ -44,8 +44,16 @@ describe('herb shop width adjustments', () => {
 
     const it = parse(item).split('\n');
     expect(it[0]).toMatch(/\|\s*100\|/);
-    expect(it[0]).toMatch(/jaskier/);
-    expect(it[1]).toMatch(/\//);
+    expect(it.some((line) => /jaskier/.test(stripAnsiCodes(line)))).toBe(true);
+    expect(it[it.length - 1]).toMatch(/\//);
+  });
+
+  test('transformed lines respect current width', () => {
+    const headerLines = parse(header).split('\n');
+    const itemLines = parse(item).split('\n');
+    for (const line of [...headerLines, ...itemLines]) {
+      expect(stripAnsiCodes(line).length).toBeLessThanOrEqual(client.contentWidth);
+    }
   });
 
   test('keeps item on one line when there is room', () => {
