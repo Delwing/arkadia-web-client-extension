@@ -329,6 +329,23 @@ h1 {
   padding-right: 0.5rem;
 }
 
+#main_text_output_msg_wrapper.show-timestamps .output_msg_text.with-timestamps {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.5rem;
+  align-items: start;
+}
+
+#main_text_output_msg_wrapper.show-timestamps .output-msg-time {
+  color: darkorange;
+  padding-right: 0.5rem;
+  white-space: nowrap;
+}
+
+#main_text_output_msg_wrapper.show-timestamps .output-msg-content {
+  white-space: pre-wrap;
+}
+
 #split-bottom {
   position: sticky;
   bottom: 0px;

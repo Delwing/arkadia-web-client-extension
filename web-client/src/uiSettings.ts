@@ -34,6 +34,7 @@ interface UiSettings {
     transparentLabels: boolean;
     outputBackground: string;
     clearInputOnSend: boolean;
+    showTimestamps: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -56,6 +57,7 @@ const defaultSettings: UiSettings = {
     transparentLabels: true,
     outputBackground: '#242424',
     clearInputOnSend: false,
+    showTimestamps: false,
 };
 
 function apply(settings: UiSettings) {
@@ -71,6 +73,7 @@ function apply(settings: UiSettings) {
     if (content) {
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
+        content.classList.toggle('show-timestamps', settings.showTimestamps);
     }
     const charState = document.getElementById('char-state');
     if (charState) {
@@ -148,6 +151,7 @@ function apply(settings: UiSettings) {
                     footerMode: settings.footerMode,
                     fightTitleIcon: settings.fightTitleIcon,
                     clearInputOnSend: settings.clearInputOnSend,
+                    showTimestamps: settings.showTimestamps,
                 },
             })
         );
@@ -198,6 +202,9 @@ async function load(): Promise<UiSettings> {
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultSettings.clearInputOnSend;
+            const showTimestamps = typeof parsed.showTimestamps === 'boolean'
+                ? parsed.showTimestamps
+                : defaultSettings.showTimestamps;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -215,6 +222,7 @@ async function load(): Promise<UiSettings> {
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
                 clearInputOnSend,
+                showTimestamps,
             };
         }
     } catch {
@@ -254,6 +262,7 @@ export default async function initUiSettings() {
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
+    const showTimestampsInput = modalEl.querySelector('#ui-show-timestamps') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -276,6 +285,7 @@ export default async function initUiSettings() {
     transparentLabelsInput.checked = current.transparentLabels;
     outputBackgroundInput.value = current.outputBackground;
     clearInputOnSendInput.checked = current.clearInputOnSend;
+    showTimestampsInput.checked = current.showTimestamps;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -355,6 +365,7 @@ export default async function initUiSettings() {
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
+            showTimestamps: showTimestampsInput.checked,
         };
     }
 

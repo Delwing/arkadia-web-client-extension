@@ -44,6 +44,7 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import { getItemSync } from "@client/src/storage"
+import { formatTime, splitLines } from "./utils/logFormatting"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -169,6 +170,82 @@ const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 let isSplitView = false;
 const STICKY_LINES = 15;
 
+let showTimestamps = false;
+const storedUiSettings = getItemSync('uiSettings');
+if (typeof storedUiSettings?.uiSettings?.showTimestamps === 'boolean') {
+    showTimestamps = storedUiSettings.uiSettings.showTimestamps;
+}
+
+function applyMessageContent(target: HTMLElement, messageHtml: string, timestamp: number, withTimestamps: boolean) {
+    target.innerHTML = '';
+    if (withTimestamps) {
+        target.classList.add('with-timestamps');
+        target.style.whiteSpace = '';
+        const lines = splitLines(messageHtml);
+        for (const line of lines) {
+            const timeSpan = document.createElement('span');
+            timeSpan.classList.add('log-time', 'output-msg-time');
+            timeSpan.textContent = formatTime(timestamp);
+            const contentSpan = document.createElement('span');
+            contentSpan.classList.add('output-msg-content');
+            contentSpan.innerHTML = line;
+            target.appendChild(timeSpan);
+            target.appendChild(contentSpan);
+        }
+    } else {
+        target.classList.remove('with-timestamps');
+        target.style.whiteSpace = 'pre-wrap';
+        target.innerHTML = messageHtml;
+    }
+}
+
+function updateWrapperContent(wrapper: HTMLElement, messageHtml: string, timestamp: number, withTimestamps: boolean) {
+    const messageDiv = wrapper.querySelector('.output_msg_text') as HTMLElement | null;
+    if (!messageDiv) {
+        return;
+    }
+    wrapper.dataset.rawMessage = messageHtml;
+    wrapper.dataset.timestamp = String(timestamp);
+    applyMessageContent(messageDiv, messageHtml, timestamp, withTimestamps);
+}
+
+function rerenderContainer(container: HTMLElement | null, withTimestamps: boolean, skip?: Element | null) {
+    if (!container) {
+        return;
+    }
+    Array.from(container.children).forEach(child => {
+        if (skip && child === skip) {
+            return;
+        }
+        const element = child as HTMLElement;
+        const raw = element.dataset.rawMessage;
+        const ts = element.dataset.timestamp;
+        if (!raw || !ts) {
+            return;
+        }
+        const parsedTs = Number(ts);
+        if (!Number.isFinite(parsedTs)) {
+            return;
+        }
+        const messageDiv = element.querySelector('.output_msg_text') as HTMLElement | null;
+        if (!messageDiv) {
+            return;
+        }
+        applyMessageContent(messageDiv, raw, parsedTs, withTimestamps);
+    });
+}
+
+function setShowTimestamps(value: boolean) {
+    showTimestamps = value;
+    if (outputWrapper) {
+        outputWrapper.classList.toggle('show-timestamps', showTimestamps);
+    }
+    rerenderContainer(outputWrapper, showTimestamps, splitBottom);
+    rerenderContainer(stickyArea, showTimestamps);
+}
+
+setShowTimestamps(showTimestamps);
+
 function processSticky(count: number) {
     const handler: any = (window as any).clientExtension?.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
@@ -251,7 +328,7 @@ Promise.all([mapDataPromise, colorsPromise])
 
 // Set up message event listener for UI updates
 arkadiaClient.on('message', (message: string, type?: string) => {
-    if (message === "") {
+    if (typeof message !== 'string' || message === "") {
         return; //TODO investigate
     }
     const wrapper = document.createElement('div');
@@ -262,11 +339,12 @@ arkadiaClient.on('message', (message: string, type?: string) => {
     }
 
     const messageDiv = document.createElement('div');
-    messageDiv.innerHTML = message;
     messageDiv.classList.add('output_msg_text');
-    messageDiv.style.whiteSpace = 'pre-wrap';
-
     wrapper.appendChild(messageDiv);
+
+    const timestamp = Date.now();
+    updateWrapperContent(wrapper, message, timestamp, showTimestamps);
+
     outputWrapper.insertBefore(wrapper, splitBottom);
 
     const maxElements = 1000;
@@ -454,8 +532,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
     client.eventTarget.addEventListener('uiSettings', (ev: Event) => {
         const detail = (ev as CustomEvent).detail;
-        if (detail && typeof detail.clearInputOnSend === 'boolean') {
-            clearInputOnSend = detail.clearInputOnSend;
+        if (detail) {
+            if (typeof detail.clearInputOnSend === 'boolean') {
+                clearInputOnSend = detail.clearInputOnSend;
+            }
+            if (typeof detail.showTimestamps === 'boolean') {
+                setShowTimestamps(detail.showTimestamps);
+            }
         }
     });
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
