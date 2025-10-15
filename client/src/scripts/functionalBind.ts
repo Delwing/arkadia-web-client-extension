@@ -32,6 +32,23 @@ export function formatLabel(options: FunctionalBindOptions) {
     return parts.join('+');
 }
 
+function matchesKey(event: KeyboardEvent, expectedKey: string) {
+    if (event.code === expectedKey || event.key === expectedKey) {
+        return true;
+    }
+
+    switch (expectedKey) {
+        case 'BracketRight':
+            return event.key === ']';
+        case 'BracketLeft':
+            return event.key === '[';
+        case 'Backquote':
+            return event.key === '`';
+        default:
+            return false;
+    }
+}
+
 export class FunctionalBind {
 
     private client: Client;
@@ -55,7 +72,7 @@ export class FunctionalBind {
         this.shift = !!options.shift;
         window.addEventListener('keydown', (ev) => {
             if (
-                (ev.code === this.key || ev.key === this.key) &&
+                matchesKey(ev, this.key) &&
                 (!!this.ctrl === ev.ctrlKey) &&
                 (!!this.alt === ev.altKey) &&
                 (!!this.shift === ev.shiftKey)
