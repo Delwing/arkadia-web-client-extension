@@ -20,9 +20,9 @@ export default function GuildSection({selected, enemySelected, colors = {}, defa
     const allSelected = selected.length === guilds.length;
     const allEnemySelected = enemySelected.length === guilds.length;
     return (
-        <div className="mb-4 border rounded p-3">
-            <div className="d-flex justify-content-between mb-2">
-                <h5 className="fw-bold">Gildie</h5>
+        <section className="character-settings-section character-settings-section--full">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <h5 className="character-settings-section-title mb-0">Gildie</h5>
                 <div className="d-flex gap-2">
                     <Form.Check
                         type="checkbox"
@@ -55,6 +55,6 @@ export default function GuildSection({selected, enemySelected, colors = {}, defa
                     />
                 ))}
             </div>
-        </div>
+        </section>
     );
 }
