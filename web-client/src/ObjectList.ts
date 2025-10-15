@@ -507,14 +507,23 @@ export default class ObjectList {
         const styleEl = this.pipDocument.createElement("style");
         styleEl.setAttribute("data-objects-list-pip", "true");
         styleEl.textContent = `:root { color-scheme: dark; }
-body {
+html, body {
     margin: 0;
+    height: 100%;
 }
 #objects-list-pip {
     white-space: pre;
     box-sizing: border-box;
     max-width: 100vw;
     overflow-x: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+#objects-list-pip .objects-list-pip-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    white-space: inherit;
 }
 #objects-list-pip .objects-list-pip-header {
     display: block;
@@ -525,6 +534,9 @@ body {
     display: block;
     margin-top: 0.35rem;
     color: #d0d0d0;
+}
+#objects-list-pip .objects-list-pip-footer-content {
+    display: block;
 }
 #objects-list-pip .object-num,
 #objects-list-pip .object-desc {
@@ -603,17 +615,17 @@ body {
             }
             return;
         }
-        let lastHtml = "";
-        for (let i = wrapper.children.length - 1; i >= 0; i--) {
+        const outputs: string[] = [];
+        for (let i = wrapper.children.length - 1; i >= 0 && outputs.length < 2; i--) {
             const child = wrapper.children[i] as HTMLElement;
             if (child && child.classList && child.classList.contains("output_msg")) {
                 const textEl = child.querySelector<HTMLElement>(".output_msg_text");
                 if (textEl) {
-                    lastHtml = textEl.innerHTML;
+                    outputs.unshift(textEl.innerHTML);
                 }
-                break;
             }
         }
+        const lastHtml = outputs.join("<br>");
         if (lastHtml === this.pipLastOutputHtml) {
             return;
         }
@@ -631,18 +643,21 @@ body {
 
     private buildPictureInPictureHtml() {
         const lines = [...this.objectLines];
-        const header = this.buildPipHeaderLine();
-        const footer = this.buildPipFooterLine();
+        const header = this.buildPipHeaderHtml();
+        const footer = this.buildPipFooterHtml();
+        const body = `<div class="objects-list-pip-body">${lines.join("<br>")}</div>`;
+        const parts = [] as string[];
         if (header) {
-            lines.unshift(header);
+            parts.push(header);
         }
+        parts.push(body);
         if (footer) {
-            lines.push(footer);
+            parts.push(footer);
         }
-        return lines.join("<br>");
+        return parts.join("");
     }
 
-    private buildPipHeaderLine() {
+    private buildPipHeaderHtml() {
         const parts = [] as string[];
         if (this.pipLocationText) {
             parts.push(this.escapeHtml(this.pipLocationText));
@@ -654,14 +669,14 @@ body {
             return "";
         }
         const content = parts.join("&nbsp;&bull;&nbsp;");
-        return `<span class="objects-list-pip-header">${content}</span>`;
+        return `<div class="objects-list-pip-header">${content}</div>`;
     }
 
-    private buildPipFooterLine() {
+    private buildPipFooterHtml() {
         if (!this.pipLastOutputHtml) {
             return "";
         }
-        return `<span class="objects-list-pip-footer">${this.pipLastOutputHtml}</span>`;
+        return `<div class="objects-list-pip-footer"><div class="objects-list-pip-footer-content">${this.pipLastOutputHtml}</div></div>`;
     }
 
     private escapeHtml(text: string) {

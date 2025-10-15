@@ -373,26 +373,29 @@ describe('ObjectList', () => {
 
     const pipRoot = pipDoc.body.querySelector('#objects-list-pip') as HTMLElement;
     expect(pipRoot).toBeTruthy();
-    let lines = pipRoot.innerHTML.split('<br>');
-    expect(lines[0]).toContain('objects-list-pip-header');
-    expect(lines[0]).toContain('#101 Northern Gate');
-    expect(lines[0]).toContain('Zas: 1.50');
-    const footerLine = lines[lines.length - 1];
-    expect(footerLine).toContain('objects-list-pip-footer');
-    expect(footerLine).toContain('Enemies incoming');
-    expect(footerLine).toContain('span class="ansi"');
+    const getHeaderHtml = () =>
+      (pipRoot.querySelector('.objects-list-pip-header') as HTMLElement | null)?.innerHTML || '';
+    const getFooterHtml = () =>
+      (pipRoot.querySelector('.objects-list-pip-footer-content') as HTMLElement | null)?.innerHTML || '';
+    const getBodyHtml = () =>
+      (pipRoot.querySelector('.objects-list-pip-body') as HTMLElement | null)?.innerHTML || '';
+
+    expect(getHeaderHtml()).toContain('#101 Northern Gate');
+    expect(getHeaderHtml()).toContain('Zas: 1.50');
+    expect(getBodyHtml()).toContain('Goblin');
+    const initialFooterHtml = getFooterHtml();
+    expect(initialFooterHtml).toContain('Enemies incoming');
+    expect(initialFooterHtml).toContain('span class="ansi"');
 
     const locationEl = document.getElementById('location-text')!;
     locationEl.textContent = '#202 Southern Gate';
     await Promise.resolve();
-    lines = pipRoot.innerHTML.split('<br>');
-    expect(lines[0]).toContain('#202 Southern Gate');
+    expect(getHeaderHtml()).toContain('#202 Southern Gate');
 
     const coverEl = document.getElementById('cover-timer')!;
     coverEl.textContent = 'Zas: OK';
     await Promise.resolve();
-    lines = pipRoot.innerHTML.split('<br>');
-    expect(lines[0]).toContain('Zas: OK');
+    expect(getHeaderHtml()).toContain('Zas: OK');
 
     const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
     const msg = document.createElement('div');
@@ -403,8 +406,10 @@ describe('ObjectList', () => {
     msg.appendChild(msgText);
     wrapper.insertBefore(msg, document.getElementById('split-bottom'));
     (objectList as any).handleOutputUpdate();
-    lines = pipRoot.innerHTML.split('<br>');
-    expect(lines[lines.length - 1]).toContain('All clear');
+    const footerHtml = getFooterHtml();
+    expect(footerHtml).toContain('Enemies incoming');
+    expect(footerHtml).toContain('All clear');
+    expect(footerHtml.split('<br>').length).toBe(2);
 
     delete (window as any).documentPictureInPicture;
   });
