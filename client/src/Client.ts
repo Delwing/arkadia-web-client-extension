@@ -345,7 +345,7 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
-    sendCommand(command: string, echo: boolean = true) {
+    sendCommand(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
         if (command) {
             command = stripPolishCharacters(command)
 
@@ -361,7 +361,7 @@ export default class Client {
                     "szepnij",
                     "jszepnij",
                 ]
-                const shouldLowercase = !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
+                const shouldLowercase = !options?.preserveCase && !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
                 if (shouldLowercase) {
                     const leadingWhitespaceLength = command.length - trimmedCommand.length
                     const leadingWhitespace = command.slice(0, leadingWhitespaceLength)
@@ -382,7 +382,7 @@ export default class Client {
         if (split.length > 1) {
             split.forEach(part => {
                 if (part !== preparse) {
-                    this.sendCommand(part, echo)
+                    this.sendCommand(part, echo, options)
                 } else {
                     this.sendMovement(part, echo)
                 }
