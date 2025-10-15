@@ -169,6 +169,23 @@ test('sendCommand dispatches event and splits commands', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true);
 });
 
+test('sendCommand lowercases non speech commands', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  parseCommand.mockClear();
+  client.sendCommand('LOOK AROUND');
+  expect(parseCommand).toHaveBeenCalledTimes(1);
+  expect(parseCommand).toHaveBeenCalledWith('look around');
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:look around', true);
+});
+
+test('sendCommand keeps casing for speech commands', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  parseCommand.mockClear();
+  client.sendCommand("'SHOUT");
+  expect(parseCommand).toHaveBeenCalledTimes(1);
+  expect(parseCommand).toHaveBeenCalledWith("'SHOUT");
+});
+
 test('sendCommand allows empty command', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   client.sendCommand('');
