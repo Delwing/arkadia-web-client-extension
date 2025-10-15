@@ -23,6 +23,7 @@ export interface UiSettings {
     buttonSize: number;
     mapScale: number;
     showButtons: boolean;
+    clearInputAfterSend: boolean;
     hapticFeedback: boolean;
     mapHeight: number;
     mapPosition: MapPosition;
@@ -46,6 +47,7 @@ const defaultSettings: UiSettings = {
     buttonSize: 1,
     mapScale: 0.30,
     showButtons: true,
+    clearInputAfterSend: false,
     hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
@@ -179,6 +181,9 @@ async function load(): Promise<UiSettings> {
             const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
                 ? parsed.highlightCurrentRoom
                 : defaultSettings.highlightCurrentRoom;
+            const clearInputAfterSend = typeof parsed.clearInputAfterSend === 'boolean'
+                ? parsed.clearInputAfterSend
+                : defaultSettings.clearInputAfterSend;
             const outputBackground = typeof parsed.outputBackground === 'string'
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
@@ -196,6 +201,7 @@ async function load(): Promise<UiSettings> {
                 hapticFeedback,
                 instantMove,
                 highlightCurrentRoom,
+                clearInputAfterSend,
                 transparentLabels,
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
@@ -226,6 +232,7 @@ export default async function initUiSettings() {
     const explorationInput = modalEl.querySelector('#ui-exploration-mode') as HTMLInputElement;
     const explorationStats = modalEl.querySelector('#ui-exploration-stats') as HTMLElement | null;
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
+    const clearInputAfterSendInput = modalEl.querySelector('#ui-clear-input-after-send') as HTMLInputElement;
     const hapticFeedbackInput = modalEl.querySelector('#ui-haptic-feedback') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
@@ -248,6 +255,7 @@ export default async function initUiSettings() {
     mapPositionInput.value = current.mapPosition;
     explorationInput.checked = current.explorationMode;
     showButtonsInput.checked = current.showButtons;
+    clearInputAfterSendInput.checked = current.clearInputAfterSend;
     hapticFeedbackInput.checked = current.hapticFeedback;
     emojiLabelsInput.checked = current.emojiLabels;
     fightTitleIconInput.checked = current.fightTitleIcon;
@@ -325,6 +333,7 @@ export default async function initUiSettings() {
             mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
             mapPosition: (mapPositionInput.value as MapPosition) || defaultSettings.mapPosition,
             showButtons: showButtonsInput.checked,
+            clearInputAfterSend: clearInputAfterSendInput.checked,
             hapticFeedback: hapticFeedbackInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,

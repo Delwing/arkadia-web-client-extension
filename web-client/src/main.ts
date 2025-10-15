@@ -52,6 +52,8 @@ registerScripts(client)
 
 appEventBus.emit('settings', Object.assign(defaultSettings, getItemSync('settings')))
 
+let clearInputAfterSend = false
+
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
 const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
 if (!isNaN(initialLocationId)) {
@@ -117,6 +119,10 @@ appEventBus.on('settings', (settings) => {
     if (settings.binds.directions) {
         applyDirectionBinds(settings.binds.directions);
     }
+});
+
+appEventBus.on('uiSettings', (settings) => {
+    clearInputAfterSend = !!settings.clearInputAfterSend;
 });
 
 
@@ -923,6 +929,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function sendMessage(focus = true) {
         const message = messageInput.value.trim();
+        const applyPostSend = () => {
+            if (clearInputAfterSend) {
+                messageInput.value = '';
+                if (focus) {
+                    messageInput.focus();
+                }
+            } else if (focus) {
+                messageInput.select();
+            }
+        };
         if (message) {
             // Only add command to history if we've received the first GMCP event
             if (arkadiaClient.hasReceivedFirstGmcp()) {
@@ -935,15 +951,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentInput = '';
 
                 client.sendCommand(message);
-                if (focus) messageInput.select();
+                applyPostSend();
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
                 client.sendCommand(message);
                 messageInput.value = '';
+                if (clearInputAfterSend && focus) {
+                    messageInput.focus();
+                }
             }
         } else {
             client.sendCommand('');
-            if (focus) messageInput.select();
+            applyPostSend();
         }
     }
 
