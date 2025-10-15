@@ -123,11 +123,9 @@ export function registerScripts(client: Client) {
         /^Wykonuje komende 'idz /
     ], (_, line): undefined => {
         const lines = line.split("\n")
-        if (lines.length > 1) {
-            const matches = lines[1].match(movePattern)
-            if (matches.groups.direction) {
-                client.Map.followMove(matches.groups.direction)
-            }
+        const matches = lines[1].match(movePattern)
+        if (lines.length > 1 && matches?.groups?.direction) {
+            client.Map.followMove(matches.groups.direction)
         } else {
             client.Map.refresh()
             client.Map.refreshPosition = true
