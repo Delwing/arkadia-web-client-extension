@@ -8,6 +8,14 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
+import { getItemSync } from "../storage";
+import {
+    DEFAULT_LUA_GAGS_DELETE_LINES,
+    LUA_GAG_LINE_TYPES,
+    LUA_GAGS_STORAGE_KEY,
+    LuaGagDeleteMode,
+    normalizeLuaGagsDeleteLines,
+} from "../luaGagsSettings";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -76,24 +84,38 @@ function registerTrigger(container: Triggers | Trigger, triggerPatterns: (RegExp
         : (parent as Triggers).registerTrigger(triggerPatterns, callback, node.name);
 }
 
-const deleteLines = {
-    moje_ciosy: false,
-    moje_spece: false,
-    innych_ciosy: false,
-    innych_ciosy_we_mnie: false,
-    innych_spece: false,
-    moje_uniki: false,
-    innych_uniki: false,
-    moje_parowanie: false,
-    innych_parowanie: false,
-    zaslony_udane: false,
-    zaslony_nieudane: false,
-    bron: false,
-    npc: false,
-    npc_spece: false
+const deleteLines: Record<string, LuaGagDeleteMode> = { ...DEFAULT_LUA_GAGS_DELETE_LINES };
+
+function applyDeleteLinesConfig(value: unknown) {
+    const normalized = normalizeLuaGagsDeleteLines(value);
+    LUA_GAG_LINE_TYPES.forEach(key => {
+        deleteLines[key] = normalized[key];
+    });
+}
+
+function getDeleteMode(type: string): LuaGagDeleteMode {
+    const mode = deleteLines[type];
+    if (mode === 0 || mode === 1 || mode === 2) {
+        return mode;
+    }
+    return 2;
 }
 
 export default function registerLuaGagTriggers(client: Client) {
+    applyDeleteLinesConfig(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]);
+
+    client.addEventListener("storage", (event: CustomEvent) => {
+        if (event.detail?.key === LUA_GAGS_STORAGE_KEY) {
+            applyDeleteLinesConfig(event.detail.value);
+        }
+    });
+
+    client.addEventListener("port-connected", () => {
+        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
+    });
+
+    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
+
     function toPattern(p: PatternObj) {
         if (p.type === 1) {
             return new RegExp(p.pattern);
@@ -184,9 +206,13 @@ export default function registerLuaGagTriggers(client: Client) {
                 gags.gag_prefix(null, `${value}/${totalValue}`, type)
             },
             gag_prefix: (_, prefix: string, type: string) => {
-                if (deleteLines[type]) {
-                    global.line = ""
-                    return
+                const mode = getDeleteMode(type);
+                if (mode === 1) {
+                    global.line = "";
+                    return;
+                }
+                if (mode !== 2) {
+                    return;
                 }
                 global.line = colorString(`[${prefix}] `, gagColorCodes[type]) + global.line
             },
@@ -211,9 +237,10 @@ export default function registerLuaGagTriggers(client: Client) {
                 gags.gag_prefix(null, gags.fin_prefix, target)
             },
             delete_line: (_, type: string) => {
-                if (deleteLines[type]) {
-                    global.line = ""
-                    return true
+                const mode = getDeleteMode(type);
+                if (mode === 1) {
+                    global.line = "";
+                    return true;
                 }
                 return false
             },

@@ -2,17 +2,19 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import storage, { getCurrentCharacter } from "@client/src/storage";
 import GeneralSettings from "./Settings";
 import GuildsSettings from "./GuildsSettings";
+import LuaGagsSettings from "./LuaGagsSettings";
 
-type Tab = "general" | "guild";
+type Tab = "general" | "guild" | "luaGags";
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
     const scrollRefs = {
         general: useRef<HTMLDivElement>(null),
         guild: useRef<HTMLDivElement>(null),
+        luaGags: useRef<HTMLDivElement>(null),
     } as const;
-    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0 });
-    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {} });
+    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0 });
+    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {}, luaGags: () => {} });
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
@@ -57,11 +59,16 @@ function CharacterSettings() {
         saveRefs.current.guild = fn;
     }, []);
 
+    const registerLuaGagsSave = useCallback((fn: () => void) => {
+        saveRefs.current.luaGags = fn;
+    }, []);
+
     useEffect(() => {
         const handler = () => {
             const saves = [
                 Promise.resolve(saveRefs.current.general()),
                 Promise.resolve(saveRefs.current.guild()),
+                Promise.resolve(saveRefs.current.luaGags()),
             ];
             Promise.all(saves).then(() => {
                 window.dispatchEvent(new Event("close-options"));
@@ -117,6 +124,12 @@ function CharacterSettings() {
                     >
                         Gildie
                     </button>
+                    <button
+                        className={`btn btn-sm ${tab === "luaGags" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("luaGags")}
+                    >
+                        Lua gagi
+                    </button>
                 </div>
             </div>
             <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
@@ -133,6 +146,13 @@ function CharacterSettings() {
                     style={{ minHeight: 0 }}
                 >
                     <GuildsSettings registerSave={registerGuildSave} />
+                </div>
+                <div
+                    ref={scrollRefs.luaGags}
+                    className={`h-100 overflow-auto${tab === "luaGags" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <LuaGagsSettings registerSave={registerLuaGagsSave} />
                 </div>
             </div>
         </div>
