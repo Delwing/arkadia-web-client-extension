@@ -127,11 +127,11 @@ export function registerScripts(client: Client) {
             const matches = lines[1].match(movePattern)
             if (matches?.groups?.direction) {
                 client.Map.followMove(matches.groups.direction)
+                return
             }
-        } else {
-            client.Map.refresh()
-            client.Map.refreshPosition = true
         }
+        client.Map.refresh()
+        client.Map.refreshPosition = true
     }, 'follow', { stayOpenLines: 1 })
 
     client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
