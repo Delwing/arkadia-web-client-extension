@@ -47,6 +47,7 @@ initSessionLogger(appEventBus).catch(err => console.error('Logger init failed', 
 const websocketAdapter = new WebSocketTransportAdapter()
 const arkadiaClient = new ArkadiaClient(websocketAdapter);
 const client = new Client(arkadiaClient)
+const recorder = new Recorder(websocketAdapter)
 registerScripts(client)
 
 appEventBus.emit('settings', Object.assign(defaultSettings, getItemSync('settings')))
@@ -770,41 +771,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {
-            arkadiaClient.recorder.stopRecording(true);
+            recorder.stopRecording(true);
         });
     }
 
     if (playbackPause) {
         playbackPause.addEventListener('click', () => {
             if (playbackPause.textContent === 'Pause') {
-                arkadiaClient.recorder.pausePlayback();
+                recorder.pausePlayback();
             } else {
-                arkadiaClient.recorder.resumePlayback();
+                recorder.resumePlayback();
             }
         });
     }
 
     if (playbackStop) {
         playbackStop.addEventListener('click', () => {
-            arkadiaClient.recorder.stopPlayback();
+            recorder.stopPlayback();
         });
     }
 
     if (playbackReplay) {
         playbackReplay.addEventListener('click', () => {
-            arkadiaClient.recorder.replayLast();
+            recorder.replayLast();
         });
     }
 
     if (playbackStepBack) {
         playbackStepBack.addEventListener('click', () => {
-            arkadiaClient.recorder.stepBack();
+            recorder.stepBack();
         });
     }
 
     if (playbackStep) {
         playbackStep.addEventListener('click', () => {
-            arkadiaClient.recorder.stepForward();
+            recorder.stepForward();
         });
     }
 
@@ -1117,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const recordingsRoot = document.getElementById('recordings-options');
     if (recordingsRoot) {
-        createRoot(recordingsRoot).render(createElement(Recordings, {recorder: new Recorder(websocketAdapter)}));
+        createRoot(recordingsRoot).render(createElement(Recordings, {recorder: recorder}));
     }
 
     const shortcutsRoot = document.getElementById('shortcuts-options');
