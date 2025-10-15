@@ -125,7 +125,7 @@ export function registerScripts(client: Client) {
         const lines = line.split("\n")
         if (lines.length > 1) {
             const matches = lines[1].match(movePattern)
-            if (matches.groups.direction) {
+            if (matches?.groups?.direction) {
                 client.Map.followMove(matches.groups.direction)
             }
         } else {
