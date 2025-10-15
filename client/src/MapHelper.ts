@@ -44,8 +44,7 @@ export default class MapHelper {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        const savedData = getItemSync(STORAGE_KEY);
-        const saved = savedData ? savedData[STORAGE_KEY] : null;
+        const saved = getItemSync(STORAGE_KEY);
         if (saved) {
             this.savedRoomId = parseInt(saved);
         }
