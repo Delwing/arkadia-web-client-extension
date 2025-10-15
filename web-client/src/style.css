@@ -50,7 +50,7 @@ a:hover {
 body {
   margin: 0;
   min-width: 100vw;
-  height: 100dvh;
+  height: 100svh;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
