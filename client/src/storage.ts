@@ -1,4 +1,5 @@
 import {defaultSettings} from './defaultSettings';
+import appEventBus from "./events/app-event-bus";
 
 interface Storage {
     getItem(key: string): Promise<any>;
@@ -94,6 +95,7 @@ export function setCurrentCharacter(name: string) {
         localStorage.removeItem('currentCharacter');
     }
     notifyCharacterChange(prev);
+    appEventBus.emit("currentCharacter", currentCharacter);
 }
 
 export function getCurrentCharacter() {

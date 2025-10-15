@@ -128,24 +128,26 @@ export default class ImproveCounter {
         this.client = client;
         this.killCounter = killCounter;
 
-        const session = getItemSync(ImproveCounter.STORAGE_KEY)
-        this.load(session || {});
-        this.loaded = true;
-        if (this.pendingLevel !== undefined) {
-            const level = this.pendingLevel;
-            this.pendingLevel = undefined;
-            this.handleLevel(level);
-        }
-
-        const lifetime = getItemSync(ImproveCounter.LIFETIME_KEY)
-        this.loadLifetime(lifetime || {});
-        this.lifetimeLoaded = true;
-        if (this.pendingLifetime.length) {
-            for (const p of this.pendingLifetime) {
-                this.addToLifetime(p.count, p.time);
+        appEventBus.on("currentCharacter", () => {
+            const session = getItemSync(ImproveCounter.STORAGE_KEY)
+            this.load(session || {});
+            this.loaded = true;
+            if (this.pendingLevel !== undefined) {
+                const level = this.pendingLevel;
+                this.pendingLevel = undefined;
+                this.handleLevel(level);
             }
-            this.pendingLifetime = [];
-        }
+
+            const lifetime = getItemSync(ImproveCounter.LIFETIME_KEY)
+            this.loadLifetime(lifetime || {});
+            this.lifetimeLoaded = true;
+            if (this.pendingLifetime.length) {
+                for (const p of this.pendingLifetime) {
+                    this.addToLifetime(p.count, p.time);
+                }
+                this.pendingLifetime = [];
+            }
+        })
 
         appEventBus.on("reset", () => this.reset());
 
@@ -178,17 +180,8 @@ export default class ImproveCounter {
             this.pendingLevel = level;
             return;
         }
-        const objStored = getItemSync("object_num")?.object_num;
-        const objNum =
-            typeof objStored === "string"
-                ? parseInt(objStored, 10)
-                : typeof objStored === "number"
-                    ? objStored
-                    : undefined;
-        const newObj =
-            objNum !== undefined &&
-            this.lastObjNum !== undefined &&
-            objNum !== this.lastObjNum;
+        const objNum = getItemSync("object_num")
+        const newObj = objNum !== undefined && this.lastObjNum !== undefined && objNum !== this.lastObjNum;
 
         if (!this.initialized || newObj) {
             if (newObj) {
