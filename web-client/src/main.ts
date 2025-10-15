@@ -43,6 +43,7 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
+import { getItemSync } from "@client/src/storage"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -449,6 +450,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const messageInput = document.getElementById('message-input') as HTMLInputElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
+    const uiSettingsData = getItemSync('uiSettings');
+    let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
+    client.eventTarget.addEventListener('uiSettings', (ev: Event) => {
+        const detail = (ev as CustomEvent).detail;
+        if (detail && typeof detail.clearInputOnSend === 'boolean') {
+            clearInputOnSend = detail.clearInputOnSend;
+        }
+    });
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
     const historyDownButton = document.getElementById('history-down-button') as HTMLButtonElement | null;
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
@@ -839,15 +848,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentInput = '';
 
                 client.sendCommand(message);
-                if (focus) messageInput.select();
+                if (clearInputOnSend) {
+                    messageInput.value = '';
+                    if (focus) messageInput.focus();
+                } else if (focus) {
+                    messageInput.select();
+                }
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
                 client.sendCommand(message);
                 messageInput.value = '';
+                if (focus) messageInput.focus();
             }
         } else {
             client.sendCommand('');
-            if (focus) messageInput.select();
+            if (focus) {
+                if (clearInputOnSend) {
+                    messageInput.focus();
+                } else {
+                    messageInput.select();
+                }
+            }
         }
     }
 

@@ -33,6 +33,7 @@ interface UiSettings {
     labelRenderMode: 'image' | 'data';
     transparentLabels: boolean;
     outputBackground: string;
+    clearInputOnSend: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -54,6 +55,7 @@ const defaultSettings: UiSettings = {
     labelRenderMode: 'data',
     transparentLabels: true,
     outputBackground: '#242424',
+    clearInputOnSend: false,
 };
 
 function apply(settings: UiSettings) {
@@ -145,6 +147,7 @@ function apply(settings: UiSettings) {
                     xtermPalette: settings.xtermPalette,
                     footerMode: settings.footerMode,
                     fightTitleIcon: settings.fightTitleIcon,
+                    clearInputOnSend: settings.clearInputOnSend,
                 },
             })
         );
@@ -192,6 +195,9 @@ async function load(): Promise<UiSettings> {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultSettings.outputBackground;
+            const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
+                ? parsed.clearInputOnSend
+                : defaultSettings.clearInputOnSend;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -208,6 +214,7 @@ async function load(): Promise<UiSettings> {
                 transparentLabels,
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
+                clearInputOnSend,
             };
         }
     } catch {
@@ -246,6 +253,7 @@ export default async function initUiSettings() {
     const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
+    const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -267,6 +275,7 @@ export default async function initUiSettings() {
     labelRenderModeInput.value = current.labelRenderMode;
     transparentLabelsInput.checked = current.transparentLabels;
     outputBackgroundInput.value = current.outputBackground;
+    clearInputOnSendInput.checked = current.clearInputOnSend;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -345,6 +354,7 @@ export default async function initUiSettings() {
             labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
+            clearInputOnSend: clearInputOnSendInput.checked,
         };
     }
 
