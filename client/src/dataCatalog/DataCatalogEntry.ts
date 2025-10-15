@@ -30,7 +30,6 @@ interface CollectionIndexRecord {
 }
 
 const COLLECTION_INDEX_SUFFIX = '__collection_index__';
-
 export class DataCatalogEntry<T, Persisted = T> {
   private data: T | null = null;
   private timestamp = 0;
@@ -39,12 +38,15 @@ export class DataCatalogEntry<T, Persisted = T> {
   private readonly persistenceKey: string;
   private loadProgressListeners: Set<DataStoreProgressListener> | null = null;
   private currentProgress = 0;
+  private lastDataSnapshot: string | null = null;
+  private hasComparableSnapshot = false;
 
   constructor(private readonly options: DataCatalogEntryOptions<T, Persisted>) {
     this.persistenceKey = options.persistenceKey ?? options.key;
     if (options.initialData !== undefined) {
       this.data = options.initialData ?? null;
       this.timestamp = Date.now();
+      this.updateSnapshotState(this.data);
     }
   }
 
@@ -177,14 +179,14 @@ export class DataCatalogEntry<T, Persisted = T> {
 
   async storeData(data: T, options?: { persist?: boolean; timestamp?: number }): Promise<void> {
     const timestamp = options?.timestamp ?? Date.now();
-    this.updateMemory(data, timestamp);
+    this.commitData(data, timestamp);
     if (options?.persist === false) {
       return;
     }
 
     const persistedData = await this.persist(data, timestamp);
     if (persistedData !== data) {
-      this.updateMemory(persistedData, timestamp);
+      this.commitData(persistedData, timestamp);
     }
   }
 
@@ -193,6 +195,7 @@ export class DataCatalogEntry<T, Persisted = T> {
     this.timestamp = 0;
     this.loadingPromise = null;
     this.clearProgressListeners();
+    this.resetSnapshotState();
     if (!this.options.collection) {
       await this.options.persistenceAdapter.delete(this.options.storeName, this.persistenceKey);
       return;
@@ -218,7 +221,7 @@ export class DataCatalogEntry<T, Persisted = T> {
 
     const freshData = await this.safeLoadFromSource(onProgress);
     const persistedData = await this.persist(freshData);
-    this.updateMemory(persistedData);
+    this.commitData(persistedData);
     return persistedData;
   }
 
@@ -242,7 +245,7 @@ export class DataCatalogEntry<T, Persisted = T> {
         return null;
       }
 
-      this.updateMemory(record.data, record.timestamp);
+      this.commitData(record.data, record.timestamp);
       onProgress?.(1);
       return record.data;
     } catch (error) {
@@ -285,10 +288,18 @@ export class DataCatalogEntry<T, Persisted = T> {
     return data;
   }
 
-  private updateMemory(data: T, timestamp: number = Date.now()): void {
+  private commitData(data: T, timestamp: number = Date.now()): void {
+    const snapshotInfo = this.createSnapshot(data);
+    const shouldNotify = snapshotInfo.shouldNotify;
+
+    this.updateSnapshotStateFromSnapshotInfo(snapshotInfo);
+
     this.data = data;
     this.timestamp = timestamp;
-    this.notifyListeners(data);
+
+    if (shouldNotify) {
+      this.notifyListeners(data);
+    }
   }
 
   private isExpired(): boolean {
@@ -307,6 +318,61 @@ export class DataCatalogEntry<T, Persisted = T> {
         console.error(`Data listener for ${this.options.key} failed`, error);
       }
     }
+  }
+
+  private createSnapshot(
+    data: T,
+  ): { comparable: true; snapshot: string; shouldNotify: boolean } | { comparable: false; shouldNotify: boolean } {
+    try {
+      const snapshot = JSON.stringify(data);
+      if (typeof snapshot === 'string') {
+        if (!this.hasComparableSnapshot) {
+          return { comparable: true, snapshot, shouldNotify: true };
+        }
+
+        return {
+          comparable: true,
+          snapshot,
+          shouldNotify: snapshot !== this.lastDataSnapshot,
+        };
+      }
+    } catch (error) {
+      console.warn(`Failed to snapshot data for ${this.options.key}`, error);
+    }
+
+    return {
+      comparable: false,
+      shouldNotify: !Object.is(this.data, data),
+    };
+  }
+
+  private updateSnapshotStateFromSnapshotInfo(
+    snapshotInfo:
+      | { comparable: true; snapshot: string; shouldNotify: boolean }
+      | { comparable: false; shouldNotify: boolean },
+  ): void {
+    if (snapshotInfo.comparable) {
+      this.hasComparableSnapshot = true;
+      this.lastDataSnapshot = snapshotInfo.snapshot;
+      return;
+    }
+
+    this.resetSnapshotState();
+  }
+
+  private updateSnapshotState(data: T | null): void {
+    if (data === null) {
+      this.resetSnapshotState();
+      return;
+    }
+
+    const snapshotInfo = this.createSnapshot(data);
+    this.updateSnapshotStateFromSnapshotInfo(snapshotInfo);
+  }
+
+  private resetSnapshotState(): void {
+    this.hasComparableSnapshot = false;
+    this.lastDataSnapshot = null;
   }
 
   private getCollectionIndexKey(): string {
@@ -340,7 +406,7 @@ export class DataCatalogEntry<T, Persisted = T> {
 
       const items = await this.loadPersistedCollectionItems<Persisted>(keys);
       const data = options.fromPersistenceItems(items);
-      this.updateMemory(data, indexRecord.timestamp);
+      this.commitData(data, indexRecord.timestamp);
       onProgress?.(1);
       return data;
     } catch (error) {
