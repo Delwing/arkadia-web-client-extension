@@ -6,6 +6,7 @@ export default class ObjectList {
     private client: Client;
     private readonly container: HTMLElement | null;
     private readonly content: HTMLElement | null;
+    private objectLines: string[] = [];
     private isDragging = false;
     private startX = 0;
     private startY = 0;
@@ -19,6 +20,12 @@ export default class ObjectList {
     private pipButton: HTMLButtonElement | null = null;
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
+    private locationObserver: MutationObserver | null = null;
+    private coverTimerObserver: MutationObserver | null = null;
+    private pipLocationText = "";
+    private pipCoverTimerText = "";
+    private pipLastOutputHtml = "";
+    private cachedPipHtml = "";
 
     constructor(client: Client) {
         this.client = client;
@@ -34,6 +41,9 @@ export default class ObjectList {
         this.client.addEventListener("gmcp.objects.nums", () => this.render());
         this.client.addEventListener("gmcp.objects.data", () => this.render());
         this.client.addEventListener("gmcp.char.state", () => this.render());
+        this.client.addEventListener("output-sent", this.handleOutputUpdate);
+        this.client.addEventListener("buffer-sent", this.handleOutputUpdate);
+        this.initializePipInfoSources();
         this.render();
     }
 
@@ -284,12 +294,10 @@ export default class ObjectList {
             const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
             return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
         });
+        this.objectLines = lines;
         const html = lines.join("<br>");
         this.content.innerHTML = html;
-        if (this.pipContent) {
-            this.pipContent.innerHTML = html;
-            this.syncPictureInPictureStyles();
-        }
+        this.rebuildPictureInPictureHtml();
     }
 
     private setupPictureInPictureControls(content: HTMLElement) {
@@ -352,7 +360,7 @@ export default class ObjectList {
                 this.pipContent.addEventListener("click", this.onClick);
             }
             this.injectPictureInPictureStyles();
-            this.pipContent.innerHTML = this.content.innerHTML;
+            this.pipContent.innerHTML = this.cachedPipHtml;
             this.syncPictureInPictureStyles();
             this.observePictureInPictureStyles();
             this.updatePictureInPictureButton(true);
@@ -499,14 +507,36 @@ export default class ObjectList {
         const styleEl = this.pipDocument.createElement("style");
         styleEl.setAttribute("data-objects-list-pip", "true");
         styleEl.textContent = `:root { color-scheme: dark; }
-body {
+html, body {
     margin: 0;
+    height: 100%;
 }
 #objects-list-pip {
     white-space: pre;
     box-sizing: border-box;
     max-width: 100vw;
     overflow-x: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+#objects-list-pip .objects-list-pip-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    white-space: inherit;
+}
+#objects-list-pip .objects-list-pip-header {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+#objects-list-pip .objects-list-pip-footer {
+    display: block;
+    margin-top: 0.35rem;
+    color: #d0d0d0;
+}
+#objects-list-pip .objects-list-pip-footer-content {
+    display: block;
 }
 #objects-list-pip .object-num,
 #objects-list-pip .object-desc {
@@ -516,5 +546,147 @@ body {
     font-style: italic;
 }`;
         this.pipDocument.head.appendChild(styleEl);
+    }
+
+    private initializePipInfoSources() {
+        const locationElement = document.getElementById("location-text");
+        if (locationElement && typeof MutationObserver !== "undefined") {
+            this.locationObserver?.disconnect();
+            this.locationObserver = new MutationObserver(() => {
+                this.updateLocationText(locationElement.textContent || "");
+            });
+            this.locationObserver.observe(locationElement, {
+                childList: true,
+                characterData: true,
+                subtree: true,
+            });
+            this.updateLocationText(locationElement.textContent || "");
+        } else {
+            this.locationObserver = null;
+        }
+
+        const coverTimerElement = document.getElementById("cover-timer");
+        if (coverTimerElement && typeof MutationObserver !== "undefined") {
+            this.coverTimerObserver?.disconnect();
+            this.coverTimerObserver = new MutationObserver(() => {
+                this.updateCoverTimerText(coverTimerElement.textContent || "");
+            });
+            this.coverTimerObserver.observe(coverTimerElement, {
+                childList: true,
+                characterData: true,
+                subtree: true,
+            });
+            this.updateCoverTimerText(coverTimerElement.textContent || "");
+        } else {
+            this.coverTimerObserver = null;
+        }
+
+        this.updateLastOutputLineFromDom();
+    }
+
+    private handleOutputUpdate = () => {
+        this.updateLastOutputLineFromDom();
+    };
+
+    private updateLocationText(text: string) {
+        const normalized = text.trim();
+        if (normalized === this.pipLocationText) {
+            return;
+        }
+        this.pipLocationText = normalized;
+        this.rebuildPictureInPictureHtml();
+    }
+
+    private updateCoverTimerText(text: string) {
+        const normalized = text.trim();
+        if (normalized === this.pipCoverTimerText) {
+            return;
+        }
+        this.pipCoverTimerText = normalized;
+        this.rebuildPictureInPictureHtml();
+    }
+
+    private updateLastOutputLineFromDom() {
+        const wrapper = document.getElementById("main_text_output_msg_wrapper");
+        if (!wrapper) {
+            if (this.pipLastOutputHtml !== "") {
+                this.pipLastOutputHtml = "";
+                this.rebuildPictureInPictureHtml();
+            }
+            return;
+        }
+        const outputs: string[] = [];
+        for (let i = wrapper.children.length - 1; i >= 0 && outputs.length < 2; i--) {
+            const child = wrapper.children[i] as HTMLElement;
+            if (child && child.classList && child.classList.contains("output_msg")) {
+                const textEl = child.querySelector<HTMLElement>(".output_msg_text");
+                if (textEl) {
+                    outputs.unshift(textEl.innerHTML);
+                }
+            }
+        }
+        const lastHtml = outputs.join("<br>");
+        if (lastHtml === this.pipLastOutputHtml) {
+            return;
+        }
+        this.pipLastOutputHtml = lastHtml;
+        this.rebuildPictureInPictureHtml();
+    }
+
+    private rebuildPictureInPictureHtml() {
+        this.cachedPipHtml = this.buildPictureInPictureHtml();
+        if (this.pipContent) {
+            this.pipContent.innerHTML = this.cachedPipHtml;
+            this.syncPictureInPictureStyles();
+        }
+    }
+
+    private buildPictureInPictureHtml() {
+        const lines = [...this.objectLines];
+        const header = this.buildPipHeaderHtml();
+        const footer = this.buildPipFooterHtml();
+        const body = `<div class="objects-list-pip-body">${lines.join("<br>")}</div>`;
+        const parts = [] as string[];
+        if (header) {
+            parts.push(header);
+        }
+        parts.push(body);
+        if (footer) {
+            parts.push(footer);
+        }
+        return parts.join("");
+    }
+
+    private buildPipHeaderHtml() {
+        const parts = [] as string[];
+        if (this.pipLocationText) {
+            parts.push(this.escapeHtml(this.pipLocationText));
+        }
+        if (this.pipCoverTimerText) {
+            parts.push(this.escapeHtml(this.pipCoverTimerText));
+        }
+        if (!parts.length) {
+            return "";
+        }
+        const content = parts.join("&nbsp;&bull;&nbsp;");
+        return `<div class="objects-list-pip-header">${content}</div>`;
+    }
+
+    private buildPipFooterHtml() {
+        if (!this.pipLastOutputHtml) {
+            return "";
+        }
+        return `<div class="objects-list-pip-footer"><div class="objects-list-pip-footer-content">${this.pipLastOutputHtml}</div></div>`;
+    }
+
+    private escapeHtml(text: string) {
+        const map: Record<string, string> = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+        };
+        return text.replace(/[&<>"']/g, (char) => map[char] || char);
     }
 }
