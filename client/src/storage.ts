@@ -1,4 +1,5 @@
 import { defaultSettings } from './defaultSettings';
+import { LUA_GAGS_STORAGE_KEY } from "./luaGagsSettings";
 
 interface Storage {
     getItem(key: string): Promise<any>;
@@ -39,6 +40,7 @@ const characterScopedKeys = new Set([
     'mapperRoomId',
     'lastLang',
     'object_num',
+    LUA_GAGS_STORAGE_KEY,
 ]);
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');
