@@ -34,7 +34,7 @@ function Npc() {
     }
 
     function clearNpcs() {
-        dataCatalog.getNpcStore().invalidate().then(() => {
+        dataCatalog.getNpcStore().storeData([], {persist: true}).then(() => {
             setNpcs([])
         })
     }

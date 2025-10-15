@@ -565,7 +565,7 @@ export default class MobileDirectionButtons {
     private renderList(target: HTMLDivElement | null, regex: RegExp, prefix: string) {
         if (!target) return;
         target.innerHTML = '';
-        const objects = (window as any).clientExtension?.ObjectManager?.getObjectsOnLocation?.() || [];
+        const objects = this.client.ObjectManager.getObjectsOnLocation();
         const values = Array.from(new Set(objects
             .filter((o: any) => regex.test(o.shortcut))
             .map((o: any) => o.shortcut)));

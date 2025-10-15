@@ -11,7 +11,6 @@ jest.mock('@client/src/storage', () => ({
 class MockClient {
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
   TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
-  addEventListener() {}
   sendCommand = jest.fn();
 }
 
@@ -43,7 +42,7 @@ describe('ObjectList', () => {
   });
 
   test('converts stored right position to left', () => {
-    (getItemSync as jest.Mock).mockReturnValue({ objectsListPosition: { x: 100, y: 50 } });
+    (getItemSync as jest.Mock).mockReturnValue({ x: 100, y: 50  });
     Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
     document.body.innerHTML = '<div id="objects-list"></div>';
     const container = document.getElementById('objects-list') as any;

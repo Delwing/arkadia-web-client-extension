@@ -2,28 +2,15 @@ import { initImproveCounter } from '../src/scripts/improveCounter';
 import { initKillCounter } from '../src/scripts/kill';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { colorString, findClosestColor } from '../src/Colors';
-import { EventEmitter } from 'events';
 import { setItemSync } from '../src/storage';
 import appEventBus from '../src/events/app-event-bus';
 
 class FakeClient {
-  private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   TeamManager = { isInTeam: jest.fn() };
   prefix = (line: string, prefix: string) => prefix + line;
   print = jest.fn();
   println = jest.fn();
-  port = { postMessage: jest.fn() } as any;
-
-  addEventListener(event: string, cb: any) {
-    this.emitter.on(event, cb);
-  }
-  removeEventListener(event: string, cb: any) {
-    this.emitter.off(event, cb);
-  }
-  dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
-  }
 }
 
 describe('improve counter', () => {
@@ -45,7 +32,7 @@ describe('improve counter', () => {
   const setup = (options: SetupOptions = {}) => {
     appEventBus.clear();
     localStorage.clear();
-    setItemSync('object_num', { object_num: options.objectNum ?? 1 });
+    setItemSync('object_num', options.objectNum ?? 1);
     setItemSync('kill_counter', options.killCounter ?? {});
     setItemSync('kill_counter_session', options.killCounterSession ?? {});
     setItemSync('improve_counter', options.improveCounter ?? {});
