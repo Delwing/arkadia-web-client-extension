@@ -355,7 +355,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                                 </Form.Select>
                             </Form.Group>
                         </div>
-                        <table className="table table-sm mt-3 mb-0">
+                        <table className="table table-modern table-sm table-hover table-zebra mt-3 mb-0">
                             <thead>
                                 <tr>
                                     <th>Alias</th>

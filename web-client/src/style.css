@@ -194,6 +194,69 @@ input::placeholder {
   border-color: #3b82f6;
 }
 
+.table-modern {
+  --table-border-color: var(--surface-border);
+  --table-header-bg: rgba(255, 255, 255, 0.06);
+  --table-header-border: var(--surface-border-strong);
+  --table-row-border: rgba(148, 163, 184, 0.15);
+  --table-hover-bg: rgba(88, 154, 255, 0.16);
+  --bs-table-color: var(--text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-striped-color: var(--text-primary);
+  --bs-table-hover-color: var(--text-primary);
+  --bs-table-border-color: var(--surface-border);
+  background-color: var(--surface-raised);
+  border: 1px solid var(--table-border-color);
+  overflow: hidden;
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.25);
+}
+
+.table-modern thead {
+  background: var(--table-header-bg);
+}
+
+.table-modern thead th {
+  border-bottom: 1px solid var(--table-header-border);
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.table-modern > :not(caption) > * > * {
+  background-color: transparent;
+  border-bottom: 1px solid var(--table-row-border);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.table-modern > :not(caption) > *:last-child > * {
+  border-bottom: 0;
+}
+
+.table-modern.table-bordered > :not(caption) > * > * {
+  border-width: 0;
+}
+
+.table-modern.table-zebra tbody tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.table-modern.table-zebra tbody tr:nth-of-type(even) {
+  background-color: transparent;
+}
+
+.table-modern.table-hover tbody tr:hover {
+  background-color: var(--table-hover-bg);
+}
+
+.table-modern.table-hover tbody tr:hover > * {
+  color: var(--text-primary);
+}
+
+.table-modern caption {
+  color: var(--text-secondary);
+}
+
 .dropdown-menu {
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);

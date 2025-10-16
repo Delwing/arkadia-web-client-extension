@@ -181,7 +181,7 @@ function Recordings() {
                     <Button size="sm" onClick={start}>Rozpocznij</Button>
                 )}
             </Form.Group>
-            <Table bordered size="sm" className="table-zebra">
+            <Table bordered size="sm" hover className="table-modern table-zebra">
                 <tbody>
                 {names.map(n => (
                     <tr key={n}>

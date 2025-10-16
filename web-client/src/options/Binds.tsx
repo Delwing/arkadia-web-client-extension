@@ -576,7 +576,7 @@ function Binds() {
                 <Alert variant="danger" className="mb-0">{importError}</Alert>
             )}
             <fieldset className="p-0 border-0 m-0">
-                <Table bordered size="sm" className="table-zebra mb-2">
+                <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">
                         <tr>
                             <td className="w-32">Domyślny</td>
