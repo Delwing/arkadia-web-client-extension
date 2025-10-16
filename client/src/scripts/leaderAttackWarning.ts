@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import { formatLabel } from "./functionalBind";
+import { gmcp } from "../gmcp";
 
 export default function initLeaderAttackWarning(client: Client) {
     const RED = findClosestColor("#ff0000");
@@ -10,6 +11,7 @@ export default function initLeaderAttackWarning(client: Client) {
     let lastPrintedAt = 0;
     let activeTargetId: string | undefined;
     let dropRequestedAt: number | undefined;
+    let dropTimerArmed = false;
 
     function print(text: string) {
         const width = text.length + PADDING;
@@ -23,15 +25,7 @@ export default function initLeaderAttackWarning(client: Client) {
         lastPrintedAt = 0;
         activeTargetId = undefined;
         dropRequestedAt = undefined;
-    }
-
-    function shouldDrop(detail: Record<string, any> | undefined | null) {
-        if (!detail || typeof detail !== "object") {
-            return false;
-        }
-        return Object.values(detail).some(value =>
-            value && typeof value === "object" && value.drop_leader_attack_warning === true
-        );
+        dropTimerArmed = false;
     }
 
     function printWarning(targetId?: string, force = false) {
@@ -57,22 +51,31 @@ export default function initLeaderAttackWarning(client: Client) {
     client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
         activeTargetId = e.detail;
         dropRequestedAt = undefined;
+        dropTimerArmed = false;
         printWarning(activeTargetId, true);
     });
-    client.addEventListener('gmcp.objects.data', (e: CustomEvent<Record<string, any>>) => {
+    client.addEventListener('gmcp.objects.data', (_e: CustomEvent<Record<string, any>>) => {
         if (!activeTargetId) {
+            dropRequestedAt = undefined;
+            dropTimerArmed = false;
             return;
         }
-        if (dropRequestedAt !== undefined) {
-            if (Date.now() - dropRequestedAt >= warningInterval) {
+
+        const dropFlag = gmcp?.char?.options?.drop_leader_attack_warning === true;
+
+        if (dropFlag) {
+            if (!dropTimerArmed) {
+                dropRequestedAt = Date.now();
+                dropTimerArmed = true;
+            }
+            if (dropRequestedAt !== undefined && Date.now() - dropRequestedAt >= warningInterval) {
                 stopPrinting();
             }
             return;
         }
-        if (shouldDrop(e.detail)) {
-            dropRequestedAt = Date.now();
-            return;
-        }
+
+        dropTimerArmed = false;
+        dropRequestedAt = undefined;
         printWarning(activeTargetId);
     });
     client.addEventListener('teamLeaderTargetAvatar', stopPrinting);
