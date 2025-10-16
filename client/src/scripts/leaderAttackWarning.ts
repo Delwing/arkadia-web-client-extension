@@ -5,9 +5,11 @@ import { formatLabel } from "./functionalBind";
 export default function initLeaderAttackWarning(client: Client) {
     const RED = findClosestColor("#ff0000");
     const PADDING = 4; // two spaces on each side
-    const warningInternval = 5000;
-    let interval: ReturnType<typeof setInterval> | undefined;
+    const warningInterval = 5000;
     let lastText: string | undefined;
+    let lastPrintedAt = 0;
+    let activeTargetId: string | undefined;
+    let dropRequestedAt: number | undefined;
 
     function print(text: string) {
         const width = text.length + PADDING;
@@ -16,7 +18,23 @@ export default function initLeaderAttackWarning(client: Client) {
         client.println(message);
     }
 
-    function startPrinting(targetId?: string) {
+    function stopPrinting() {
+        lastText = undefined;
+        lastPrintedAt = 0;
+        activeTargetId = undefined;
+        dropRequestedAt = undefined;
+    }
+
+    function shouldDrop(detail: Record<string, any> | undefined | null) {
+        if (!detail || typeof detail !== "object") {
+            return false;
+        }
+        return Object.values(detail).some(value =>
+            value && typeof value === "object" && value.drop_leader_attack_warning === true
+        );
+    }
+
+    function printWarning(targetId?: string, force = false) {
         const attackTargetId = client.TeamManager.getAttackTargetId?.();
         const avatarTargetId = client.TeamManager.getAvatarAttackTargetId?.();
         if (attackTargetId && avatarTargetId === attackTargetId) {
@@ -27,22 +45,35 @@ export default function initLeaderAttackWarning(client: Client) {
         const supportBind = formatLabel(client.supportBind);
         const text = attackTargetId && targetId === attackTargetId ?
             `Zaatakuj cel ataku (${attackBind})` : `wesprzyj (${supportBind})`;
-        if (interval && text === lastText) {
+        const now = Date.now();
+        if (!force && text === lastText && now - lastPrintedAt < warningInterval) {
             return;
         }
-        stopPrinting();
         lastText = text;
+        lastPrintedAt = now;
         print(text);
-        interval = setInterval(() => print(text), warningInternval);
     }
 
-    function stopPrinting() {
-        if (interval) {
-            clearInterval(interval);
-            interval = undefined;
+    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
+        activeTargetId = e.detail;
+        dropRequestedAt = undefined;
+        printWarning(activeTargetId, true);
+    });
+    client.addEventListener('gmcp.objects.data', (e: CustomEvent<Record<string, any>>) => {
+        if (!activeTargetId) {
+            return;
         }
-    }
-
-    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => startPrinting(e.detail));
+        if (dropRequestedAt !== undefined) {
+            if (Date.now() - dropRequestedAt >= warningInterval) {
+                stopPrinting();
+            }
+            return;
+        }
+        if (shouldDrop(e.detail)) {
+            dropRequestedAt = Date.now();
+            return;
+        }
+        printWarning(activeTargetId);
+    });
     client.addEventListener('teamLeaderTargetAvatar', stopPrinting);
 }
