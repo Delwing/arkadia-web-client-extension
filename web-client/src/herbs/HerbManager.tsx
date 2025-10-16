@@ -22,6 +22,18 @@ interface DragPayload {
     stackId: string;
 }
 
+type HerbPillStyle = React.CSSProperties & {
+    ["--herb-pill-bg"]?: string;
+    ["--herb-pill-bg-hover"]?: string;
+    ["--herb-pill-border"]?: string;
+    ["--herb-pill-border-hover"]?: string;
+    ["--herb-pill-bg-split"]?: string;
+    ["--herb-pill-border-split"]?: string;
+    ["--herb-pill-text"]?: string;
+};
+
+const herbStyleCache = new Map<string, HerbPillStyle>();
+
 const buildBags = (source: HerbCounts | undefined, allocateId: () => string): HerbBag[] => {
     if (!source) {
         return [];
@@ -118,6 +130,51 @@ const clamp = (value: number, min: number, max: number) => {
         return min;
     }
     return Math.min(Math.max(value, min), max);
+};
+
+const getHerbStyle = (herbId: string): HerbPillStyle => {
+    const cached = herbStyleCache.get(herbId);
+    if (cached) {
+        return cached;
+    }
+
+    let hash = 0;
+    for (let index = 0; index < herbId.length; index += 1) {
+        hash = ((hash << 5) - hash + herbId.charCodeAt(index)) >>> 0;
+    }
+
+    const hue = hash % 360;
+    const saturation = clamp(58 + (hash % 18), 52, 82);
+    const baseLightness = clamp(26 + ((hash >> 3) % 18), 22, 54);
+    const depthLightness = clamp(baseLightness - 10, 10, 40);
+    const hoverLightness = clamp(baseLightness + 8, 32, 72);
+    const accentLightness = clamp(baseLightness + 26, 48, 92);
+    const splitLightness = clamp(baseLightness + 16, 34, 80);
+
+    const style: HerbPillStyle = {
+        "--herb-pill-bg": `linear-gradient(145deg, hsl(${hue} ${saturation}% ${baseLightness}% / 0.96), hsl(${hue} ${clamp(
+            saturation - 10,
+            35,
+            88,
+        )}% ${depthLightness}% / 0.98))`,
+        "--herb-pill-bg-hover": `linear-gradient(145deg, hsl(${hue} ${clamp(saturation + 6, 40, 96)}% ${hoverLightness}% / 0.98), hsl(${hue} ${clamp(
+            saturation - 4,
+            32,
+            88,
+        )}% ${baseLightness}% / 0.98))`,
+        "--herb-pill-border": `hsl(${hue} ${clamp(saturation + 14, 45, 98)}% ${accentLightness}% / 0.9)`,
+        "--herb-pill-border-hover": `hsl(${hue} ${clamp(saturation + 20, 52, 99)}% ${clamp(accentLightness + 6, 55, 97)}% / 0.95)`,
+        "--herb-pill-bg-split": `linear-gradient(145deg, hsl(${hue} ${clamp(saturation + 10, 40, 99)}% ${splitLightness}% / 0.98), hsl(${hue} ${clamp(
+            saturation,
+            35,
+            92,
+        )}% ${clamp(baseLightness + 10, 28, 74)}% / 0.98))`,
+        "--herb-pill-border-split": `hsl(${hue} ${clamp(saturation + 24, 55, 99)}% ${clamp(accentLightness + 14, 62, 99)}% / 0.98)`,
+        "--herb-pill-text": `hsl(${hue} 20% 96% / 0.98)`,
+    };
+
+    herbStyleCache.set(herbId, style);
+    return style;
 };
 
 const HerbManager = () => {
@@ -465,6 +522,7 @@ const HerbManager = () => {
                                                         key={stack.instanceId}
                                                         type="button"
                                                         className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
+                                                        style={getHerbStyle(stack.herbId)}
                                                         draggable={!busy}
                                                         onDragStart={handleDragStart(bag.bagNumber, stack)}
                                                         onDragEnd={handleDragEnd}
