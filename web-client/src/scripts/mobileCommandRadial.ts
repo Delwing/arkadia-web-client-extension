@@ -27,7 +27,6 @@ export default class MobileCommandRadial {
     private readonly threshold: HTMLDivElement | null;
     private readonly selectionLabel: HTMLDivElement | null;
     private readonly contentArea: HTMLDivElement | null;
-    private readonly contentAreaSelector = '#main_text_output_msg_wrapper';
     private settings: Settings | null = null;
     private activeLayout: LayoutSettings | null = null;
     private commands: RadialCommand[] = [];
@@ -35,15 +34,6 @@ export default class MobileCommandRadial {
     private touchIdentifier: number | null = null;
     private longPressTimer: number | null = null;
     private isMenuActive = false;
-    private readonly ignoreSelectors = [
-        "#input-area",
-        "#mobile-direction-buttons",
-        ".modal",
-        ".dropdown-menu",
-        "#options-modal",
-        "#map",
-        "#auth-overlay",
-    ];
     private startX = 0;
     private startY = 0;
     private centerX = 0;
@@ -73,16 +63,17 @@ export default class MobileCommandRadial {
             console.warn('Mobile radial command selection label missing.');
         }
 
+        if (!this.contentArea) {
+            console.warn('Mobile radial command content area missing.');
+            return;
+        }
+
         this.registerEventListeners();
         this.loadInitialSettings();
     }
 
     private registerEventListeners() {
-        if (this.contentArea) {
-            this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        } else {
-            document.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        }
+        this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
         window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
         window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
         window.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
@@ -124,8 +115,7 @@ export default class MobileCommandRadial {
             return;
         }
         const touch = event.touches[0];
-        const target = event.target as Element | null;
-        if (!this.isEligibleTarget(target)) {
+        if (!this.isEligibleTouch(touch)) {
             this.cancelLongPress();
             return;
         }
@@ -495,19 +485,26 @@ export default class MobileCommandRadial {
         return null;
     }
 
-    private isEligibleTarget(target: Element | null): boolean {
-        if (!target) {
+    private isEligibleTouch(touch: Touch): boolean {
+        if (!this.contentArea) {
             return false;
         }
         if (window.innerWidth > 1024) {
             return false;
         }
-        if (this.ignoreSelectors.some(sel => target.closest(sel))) {
+        const rect = this.contentArea.getBoundingClientRect();
+        if (
+            touch.clientX < rect.left ||
+            touch.clientX > rect.right ||
+            touch.clientY < rect.top ||
+            touch.clientY > rect.bottom
+        ) {
             return false;
         }
-        if (!this.contentArea) {
-            return !!target.closest(this.contentAreaSelector);
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!element) {
+            return false;
         }
-        return target === this.contentArea;
+        return this.contentArea.contains(element);
     }
 }
