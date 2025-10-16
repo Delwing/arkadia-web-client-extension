@@ -132,9 +132,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
+    client.addEventListener('storage', async (ev: CustomEvent) => {
         if (ev.detail.key === STORAGE_KEY) {
             storedBags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
+            await ensureData();
             broadcastBags();
         }
     });
@@ -196,6 +197,20 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         });
     };
 
+    const formatHerbName = (herbId: string, amount = 1): string => {
+        const forms = herbs?.herb_id_to_odmiana?.[herbId];
+        if (!forms) {
+            return herbId;
+        }
+        if (amount === 1) {
+            return forms.mianownik;
+        }
+        if (amount > 1) {
+            return forms.mnoga_mianownik;
+        }
+        return forms.mianownik;
+    };
+
     function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
@@ -219,9 +234,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
         entries.sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, c]) => {
             const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${mudletColorLine(u.effect)}`).join(' | ') || '--';
+            const herbName = formatHerbName(id, c);
 
             if (normal) {
-                const name = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
+                const name = client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev));
                 const base = `${String(c).padStart(5, ' ')} | ${name.padEnd(43, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
                 if (available >= stripAnsiCodes(uses).length) {
@@ -230,11 +246,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     lines.push(base + uses.slice(0, available));
                     lines.push(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available));
                 } else {
-                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`);
+                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`);
                     lines.push(' '.repeat(prefixWidth) + uses);
                 }
             } else {
-                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`;
+                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`;
                 lines.push(base);
                 lines.push(' '.repeat(4) + uses);
             }
@@ -247,7 +263,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`)
+                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(formatHerbName(id, c), (ev) => showHerbActions(id, ev))}`)
                     .join(', ');
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });
@@ -338,14 +354,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (available <= 0) continue;
             const toTake = Math.min(available, leftToTake);
             if (toTake <= 0) continue;
-            client.sendCommand(`otworz ${num}. swojego woreczka`);
+            client.sendCommand(`otworz ${num}. swoj woreczek`);
             const form = getHerbCase(herb, toTake, herbs);
             if (toTake === 1) {
                 client.sendCommand(`wez ${form} z ${num}. swojego woreczka`);
             } else {
                 client.sendCommand(`wez ${toTake} ${form} z ${num}. swojego woreczka`);
             }
-            client.sendCommand(`zamknij ${num}. swojego woreczka`);
+            client.sendCommand(`zamknij ${num}. swoj woreczek`);
             const remaining = available - toTake;
             if (remaining > 0) {
                 contents[herb] = remaining;
@@ -371,14 +387,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             return 0;
         }
         const toInsert = Math.max(1, Math.floor(amount));
-        client.sendCommand(`otworz ${bagNumber}. swojego woreczka`);
+        client.sendCommand(`otworz ${bagNumber}. swoj woreczek`);
         const form = getHerbCase(herb, toInsert, herbs);
         if (toInsert === 1) {
             client.sendCommand(`wloz ${form} do ${bagNumber}. swojego woreczka`);
         } else {
             client.sendCommand(`wloz ${toInsert} ${form} do ${bagNumber}. swojego woreczka`);
         }
-        client.sendCommand(`zamknij ${bagNumber}. swojego woreczka`);
+        client.sendCommand(`zamknij ${bagNumber}. swoj woreczek`);
         const bagContents = storedBags[bagNumber] || (storedBags[bagNumber] = {});
         bagContents[herb] = (bagContents[herb] || 0) + toInsert;
         persistBags();
@@ -409,9 +425,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
-                const listener = (ev: CustomEvent) => {
+                const listener = async (ev: CustomEvent) => {
                     if (ev.detail.key === STORAGE_KEY) {
                         const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
+                        await ensureData();
                         const lines = buildSummary(bags, false);
                         if (lines.length > 0) {
                             client.println(lines.join('\n'));

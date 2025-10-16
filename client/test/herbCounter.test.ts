@@ -48,9 +48,10 @@ describe('herb counter', () => {
     parse('Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz zolty jasny kwiat.');
     const printed = client.println.mock.calls[0][0];
     expect(printed).toMatch(/3/);
-    expect(printed).toMatch(/deliona/);
-    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}deliona{clickClose}/);
-    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}deliona{clickClose}/);
+    expect(printed).toMatch(/zolte jasne kwiaty/);
+    expect(printed).toMatch(/zolty jasny kwiat/);
+    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}zolte jasne kwiaty{clickClose}/);
+    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}zolty jasny kwiat{clickClose}/);
   });
 
   test('splits summary when width is limited', async () => {
@@ -96,27 +97,32 @@ describe('herb counter', () => {
     });
   });
 
-  test('prints summary from storage', () => {
+  test('prints summary from storage', async () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
     const show = aliases[1].callback as any;
+    const printedPromise = new Promise<string>((resolve) => {
+      client.println.mockImplementationOnce((line: string) => {
+        resolve(line);
+      });
+    });
     show();
     client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
-    const printed = client.println.mock.calls[0][0];
+    const printed = await printedPromise;
     expect(printed).toMatch(/2/);
-    expect(printed).toMatch(/deliona/);
+    expect(printed).toMatch(/zolte jasne kwiaty/);
   });
 
   test('herb manager can move herbs between bags', async () => {
     initHerbClient((client as unknown) as any, { 1: { deliona: 1 }, 2: {} });
     const manager = (client as unknown as any).herbManager;
     await manager.move({ herbId: 'deliona', amount: 1, fromBag: 1, toBag: 2 });
-    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wloz zolty jasny kwiat do 2. swojego woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swoj woreczek');
     const setCalls = client.port.postMessage.mock.calls
       .map(([arg]) => arg)
       .filter(call => call?.type === 'SET_STORAGE');
@@ -131,9 +137,9 @@ describe('herb counter', () => {
     initHerbClient((client as unknown) as any, { 1: {} });
     const manager = (client as unknown as any).herbManager;
     await manager.put('deliona', 2, 1);
-    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wloz 2 zolte jasne kwiaty do 1. swojego woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
     const setCalls = client.port.postMessage.mock.calls
       .map(([arg]) => arg)
       .filter(call => call?.type === 'SET_STORAGE');
