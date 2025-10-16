@@ -524,7 +524,6 @@ h1 {
 .herb-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 14, 0.58);
   z-index: 1040;
 }
 
