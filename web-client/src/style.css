@@ -50,9 +50,15 @@ a:hover {
 body {
   margin: 0;
   min-width: 100vw;
-  height: 100svh;
+  min-height: 100vh;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
+}
+
+@supports (height: 100lvh) {
+  body {
+    min-height: 100lvh;
+  }
 }
 
 @media (max-width: 768px) {
@@ -347,8 +353,14 @@ h1 {
 #main-container {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  min-height: 100vh;
   width: 100vw;
+}
+
+@supports (height: 100lvh) {
+  #main-container {
+    min-height: 100lvh;
+  }
 }
 
 #content-area {
@@ -1277,11 +1289,17 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-width: 8vmin;
   }
 
-  /* Fix for virtual keyboard pushing content */
+  /* Reserve the full viewport height even when the on-screen keyboard is visible */
   @supports (-webkit-touch-callout: none) {
-  #main-container {
-    height: 100dvh;
-  }
+    #main-container {
+      min-height: 100vh;
+    }
+
+    @supports (height: 100lvh) {
+      #main-container {
+        min-height: 100lvh;
+      }
+    }
   }
 }
 
