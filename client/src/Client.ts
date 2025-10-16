@@ -23,7 +23,7 @@ import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
-import { CommandOptions, normalizeCommand } from "./scripts/commandPreserveCaseMode";
+import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
 
 export interface ClientAdapter {
@@ -357,7 +357,6 @@ export default class Client {
     }
 
     sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
-        command = normalizeCommand(command, options)
         if (command) {
             command = stripPolishCharacters(command)
         }
@@ -416,11 +415,7 @@ export default class Client {
             this.Map.setBlockable(true)
         }
         const commandToSend = this.applyMoveMode(moveRes.direction, moveRes.moved)
-        if (typeof options === 'undefined') {
-            this.clientAdapter.send(commandToSend, echo)
-        } else {
-            this.clientAdapter.send(commandToSend, echo, options)
-        }
+        this.clientAdapter.send(commandToSend, echo, options)
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {
