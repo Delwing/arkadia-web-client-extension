@@ -10,7 +10,6 @@ export default function initLeaderAttackWarning(client: Client) {
     let lastPrintedAt = 0;
     let activeTargetId: string | undefined;
     let dropRequestedAt: number | undefined;
-    let dropTimerArmed = false;
 
     function print(text: string) {
         const width = text.length + PADDING;
@@ -24,7 +23,6 @@ export default function initLeaderAttackWarning(client: Client) {
         lastPrintedAt = 0;
         activeTargetId = undefined;
         dropRequestedAt = undefined;
-        dropTimerArmed = false;
     }
 
     function printWarning(targetId?: string, force = false) {
@@ -47,47 +45,37 @@ export default function initLeaderAttackWarning(client: Client) {
         print(text);
     }
 
-    function hasDropFlag(detail: Record<string, any> | undefined) {
+    function hasDropFlag(detail?: Record<string, unknown>): boolean {
         if (!detail) {
             return false;
         }
 
-        if (detail.drop_leader_attack_warning === true) {
-            return true;
-        }
-
-        return Object.values(detail).some(value => {
-            return value && typeof value === 'object' && value.drop_leader_attack_warning === true;
+        return detail.drop_leader_attack_warning === true || Object.values(detail).some((value) => {
+            return value !== null && typeof value === 'object' && hasDropFlag(value as Record<string, unknown>);
         });
     }
 
     client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
         activeTargetId = e.detail;
         dropRequestedAt = undefined;
-        dropTimerArmed = false;
         printWarning(activeTargetId, true);
     });
     client.addEventListener('gmcp.objects.data', (e: CustomEvent<Record<string, any>>) => {
         if (!activeTargetId) {
             dropRequestedAt = undefined;
-            dropTimerArmed = false;
             return;
         }
 
         const dropFlag = hasDropFlag(e.detail);
 
         if (dropFlag) {
-            if (!dropTimerArmed) {
-                dropRequestedAt = Date.now();
-                dropTimerArmed = true;
-            }
-            if (dropRequestedAt !== undefined && Date.now() - dropRequestedAt >= warningInterval) {
+            dropRequestedAt = dropRequestedAt ?? Date.now();
+            if (Date.now() - dropRequestedAt >= warningInterval) {
                 stopPrinting();
             }
             return;
         }
 
-        dropTimerArmed = false;
         dropRequestedAt = undefined;
         printWarning(activeTargetId);
     });
