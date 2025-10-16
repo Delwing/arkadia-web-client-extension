@@ -23,6 +23,7 @@ import {stripPolishCharacters} from "./stripPolishCharacters";
 import {normalizeCommand, CommandOptions} from "./normalizeCommand";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
+import type { HerbManagerApi } from "./types/herbs";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -96,6 +97,7 @@ export default class Client {
     moveMode = 0;
     carriageMode = false;
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
+    herbManager?: HerbManagerApi;
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {

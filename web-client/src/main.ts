@@ -37,6 +37,7 @@ import ExportImport from "./options/ExportImport.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
+import HerbManager from "./herbs/HerbManager";
 import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
@@ -1054,6 +1055,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileButtonsRoot = document.getElementById('mobile-buttons-options');
     if (mobileButtonsRoot) {
         createRoot(mobileButtonsRoot).render(createElement(MobileButtons));
+    }
+
+    const herbRoot = document.getElementById('herb-ui-root');
+    if (herbRoot) {
+        createRoot(herbRoot).render(createElement(HerbManager));
     }
 });
 

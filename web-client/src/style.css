@@ -86,7 +86,8 @@ body {
 }
 
 .modal .btn-close,
-.letter-composer .btn-close {
+.letter-composer .btn-close,
+.herb-window .btn-close {
   width: var(--close-button-size, var(--floating-close-size));
   height: var(--close-button-size, var(--floating-close-size));
   border-radius: 999px;
@@ -110,7 +111,9 @@ body {
 .modal .btn-close:hover,
 .modal .btn-close:focus-visible,
 .letter-composer .btn-close:hover,
-.letter-composer .btn-close:focus-visible {
+.letter-composer .btn-close:focus-visible,
+.herb-window .btn-close:hover,
+.herb-window .btn-close:focus-visible {
   opacity: var(--close-button-hover-opacity, var(--floating-close-hover-opacity));
   background-color: var(
     --close-button-hover-background,
@@ -516,6 +519,196 @@ h1 {
   width: 10ch;
   font-size: 0.8rem;
   position: relative;
+}
+
+.herb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 14, 0.58);
+  backdrop-filter: blur(2px);
+  z-index: 1040;
+}
+
+.herb-window {
+  position: fixed;
+  z-index: 1050;
+  width: min(1140px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  border-radius: 0.5rem;
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--surface-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f8f9fa;
+  box-shadow: 0 1.5rem 3rem #00000080;
+}
+
+.herb-window:focus,
+.herb-window:focus-visible {
+  outline: none;
+  border-color: var(--surface-border);
+  box-shadow: 0 1.5rem 3rem #00000080;
+}
+
+.herb-window--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.herb-window--floating {
+  transform: none;
+}
+
+.herb-window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: move;
+  user-select: none;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.herb-window-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(241, 245, 249, 0.94);
+}
+
+.herb-window-body {
+  flex: 1 1 auto;
+  padding: 1rem 1.25rem 1.35rem;
+  overflow: auto;
+  background-color: var(--surface-elevated);
+}
+
+.herb-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.herb-manager--busy {
+  pointer-events: none;
+  opacity: 0.88;
+  filter: saturate(0.85);
+}
+
+.herb-manager-status {
+  margin-bottom: 0;
+}
+
+.herb-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.herb-bag {
+  background: linear-gradient(160deg, rgba(18, 26, 42, 0.98), rgba(12, 18, 30, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px rgba(4, 6, 12, 0.55);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.herb-bag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.15rem;
+  font-weight: 600;
+  color: rgba(248, 250, 252, 0.88);
+  letter-spacing: 0.01em;
+}
+
+.herb-bag-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.herb-bag-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.herb-bag-empty {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: rgba(203, 213, 225, 0.72);
+}
+
+.herb-bag-drop-target {
+  border-color: rgba(125, 211, 252, 0.85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(125, 211, 252, 0.45),
+    0 18px 36px rgba(14, 116, 144, 0.45);
+  transform: translateY(-2px);
+}
+
+.herb-pill {
+  --herb-pill-bg: linear-gradient(145deg, rgba(59, 130, 246, 0.36), rgba(30, 64, 175, 0.52));
+  --herb-pill-bg-hover: linear-gradient(145deg, rgba(59, 130, 246, 0.48), rgba(37, 99, 235, 0.62));
+  --herb-pill-border: rgba(191, 219, 254, 0.78);
+  --herb-pill-border-hover: rgba(221, 239, 254, 0.92);
+  --herb-pill-bg-split: linear-gradient(145deg, rgba(59, 130, 246, 0.62), rgba(37, 99, 235, 0.74));
+  --herb-pill-border-split: rgba(224, 231, 255, 0.95);
+  --herb-pill-text: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--herb-pill-border);
+  background: var(--herb-pill-bg);
+  color: var(--herb-pill-text);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 18px rgba(4, 7, 12, 0.35);
+}
+
+.herb-pill:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.herb-pill:hover {
+  background: var(--herb-pill-bg-hover);
+  border-color: var(--herb-pill-border-hover);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 22px rgba(4, 7, 12, 0.45);
+}
+
+.herb-pill-split {
+  --herb-pill-bg: var(--herb-pill-bg-split);
+  --herb-pill-border: var(--herb-pill-border-split);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 12px 26px rgba(14, 116, 144, 0.45);
+}
+
+.herb-pill-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgba(10, 13, 20, 0.65);
+}
+
+.herb-pill-label {
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(10, 13, 20, 0.6);
 }
 
 .char-state-bar .progress-value {

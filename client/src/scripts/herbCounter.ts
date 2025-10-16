@@ -4,6 +4,7 @@ import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 import { openHerbContextMenu } from "../contextMenus";
+import type { HerbManagerApi, HerbMoveOptions, HerbBagsState } from "../types/herbs";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -108,13 +109,38 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     client.addEventListener('contentWidth', (ev: CustomEvent) => {
         width = ev.detail;
     });
-    let storedBags: Record<number, Record<string, number>> = {};
-    client.addEventListener('storage', (ev: CustomEvent) => {
+    let storedBags: HerbBagsState = {};
+
+    const cloneBags = () => structuredClone(storedBags);
+
+    const persistBags = () => {
+        const snapshot = cloneBags();
+        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot });
+        client.sendEvent('herbCounts', structuredClone(snapshot));
+        storedBags = snapshot;
+    };
+
+    const broadcastBags = () => {
+        client.sendEvent('herbCounts', cloneBags());
+    };
+
+    const requestBagsIfNeeded = () => {
+        if (Object.keys(storedBags).length > 0) {
+            broadcastBags();
+        } else {
+            client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+        }
+    };
+
+    client.addEventListener('storage', async (ev: CustomEvent) => {
         if (ev.detail.key === STORAGE_KEY) {
             storedBags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
+            await ensureData();
+            broadcastBags();
         }
     });
     client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    window.addEventListener('request-herb-counts', requestBagsIfNeeded);
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
@@ -171,7 +197,25 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         });
     };
 
-    function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {
+    const formatHerbName = (herbId: string, amount = 1): string => {
+        const forms = herbs?.herb_id_to_odmiana?.[herbId];
+        if (!forms) {
+            return herbId;
+        }
+        if (amount === 1) {
+            return forms.mianownik;
+        }
+        if (amount > 1) {
+            return forms.mnoga_mianownik;
+        }
+        return forms.mianownik;
+    };
+
+    function buildSummary(
+        bags: Record<number, Record<string, number>>,
+        includeBags = true,
+        useFormattedNames = true
+    ): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
             Object.entries(contents).forEach(([id, c]) => {
@@ -194,9 +238,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
         entries.sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, c]) => {
             const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${mudletColorLine(u.effect)}`).join(' | ') || '--';
+            const herbName = useFormattedNames ? formatHerbName(id, c) : id;
 
             if (normal) {
-                const name = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
+                const name = client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev));
                 const base = `${String(c).padStart(5, ' ')} | ${name.padEnd(43, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
                 if (available >= stripAnsiCodes(uses).length) {
@@ -205,11 +250,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     lines.push(base + uses.slice(0, available));
                     lines.push(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available));
                 } else {
-                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`);
+                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`);
                     lines.push(' '.repeat(prefixWidth) + uses);
                 }
             } else {
-                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`;
+                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`;
                 lines.push(base);
                 lines.push(' '.repeat(4) + uses);
             }
@@ -222,7 +267,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev))}`)
+                    .map(([id, c]) => {
+                        const name = useFormattedNames ? formatHerbName(id, c) : id;
+                        return `${c} ${client.OutputHandler.makeStringRightClickable(name, (ev) => showHerbActions(id, ev))}`;
+                    })
                     .join(', ');
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });
@@ -233,9 +281,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     function finish() {
         storedBags = structuredClone(bagTotals);
-        const lines = buildSummary(storedBags);
+        const lines = buildSummary(storedBags, true, false);
         client.println(lines.join('\n'));
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags });
+        persistBags();
         awaiting = false;
         left = 0;
         Object.keys(totals).forEach(k => delete totals[k]);
@@ -295,39 +343,100 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         client.sendCommand('policz swoje woreczki');
     }
 
-    async function take(herb: string, amount: number) {
+    async function take(herb: string, amount: number, fromBag?: number): Promise<number> {
         await ensureData();
+        if (amount <= 0) {
+            return 0;
+        }
         let leftToTake = amount;
-        const bags = Object.keys(storedBags).map(n => parseInt(n)).sort((a, b) => a - b);
+        let removed = 0;
+        const bags = typeof fromBag === 'number'
+            ? [fromBag]
+            : Object.keys(storedBags).map(n => parseInt(n)).sort((a, b) => a - b);
         for (const num of bags) {
             if (leftToTake <= 0) break;
             const contents = storedBags[num];
-            const available = contents?.[herb] || 0;
+            if (!contents) continue;
+            const available = contents[herb] || 0;
             if (available <= 0) continue;
             const toTake = Math.min(available, leftToTake);
-            client.sendCommand(`otworz ${num}. woreczek`);
+            if (toTake <= 0) continue;
+            client.sendCommand(`otworz ${num}. swoj woreczek`);
             const form = getHerbCase(herb, toTake, herbs);
             if (toTake === 1) {
-                client.sendCommand(`wez ${form} z ${num}. woreczka`);
+                client.sendCommand(`wez ${form} z ${num}. swojego woreczka`);
             } else {
-                client.sendCommand(`wez ${toTake} ${form} z ${num}. woreczka`);
+                client.sendCommand(`wez ${toTake} ${form} z ${num}. swojego woreczka`);
             }
-            client.sendCommand(`zamknij ${num}. woreczek`);
-            contents[herb] = available - toTake;
-            if (contents[herb] <= 0) delete contents[herb];
+            client.sendCommand(`zamknij ${num}. swoj woreczek`);
+            const remaining = available - toTake;
+            if (remaining > 0) {
+                contents[herb] = remaining;
+            } else {
+                delete contents[herb];
+            }
             leftToTake -= toTake;
+            removed += toTake;
         }
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: storedBags });
+        if (removed > 0) {
+            persistBags();
+        }
+        return removed;
     }
+
+    async function put(herb: string, amount: number, bag: number): Promise<number> {
+        await ensureData();
+        if (amount <= 0) {
+            return 0;
+        }
+        const bagNumber = Number.isFinite(bag) ? Math.floor(bag) : NaN;
+        if (!Number.isFinite(bagNumber) || bagNumber <= 0) {
+            return 0;
+        }
+        const toInsert = Math.max(1, Math.floor(amount));
+        client.sendCommand(`otworz ${bagNumber}. swoj woreczek`);
+        const form = getHerbCase(herb, toInsert, herbs);
+        if (toInsert === 1) {
+            client.sendCommand(`wloz ${form} do ${bagNumber}. swojego woreczka`);
+        } else {
+            client.sendCommand(`wloz ${toInsert} ${form} do ${bagNumber}. swojego woreczka`);
+        }
+        client.sendCommand(`zamknij ${bagNumber}. swoj woreczek`);
+        const bagContents = storedBags[bagNumber] || (storedBags[bagNumber] = {});
+        bagContents[herb] = (bagContents[herb] || 0) + toInsert;
+        persistBags();
+        return toInsert;
+    }
+
+    async function move(options: HerbMoveOptions): Promise<void> {
+        const { herbId, amount, fromBag, toBag } = options;
+        if (!herbId || fromBag === toBag) {
+            return;
+        }
+        const taken = await take(herbId, amount, fromBag);
+        if (taken > 0) {
+            await put(herbId, taken, toBag);
+        }
+    }
+
+    const herbManager: HerbManagerApi = {
+        getBags: cloneBags,
+        take,
+        put,
+        move,
+    };
+
+    client.herbManager = herbManager;
 
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
-                const listener = (ev: CustomEvent) => {
+                const listener = async (ev: CustomEvent) => {
                     if (ev.detail.key === STORAGE_KEY) {
                         const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
-                        const lines = buildSummary(bags, false);
+                        await ensureData();
+                        const lines = buildSummary(bags, false, false);
                         if (lines.length > 0) {
                             client.println(lines.join('\n'));
                         } else {
@@ -338,6 +447,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 };
                 client.addEventListener('storage', listener);
                 client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+            }
+        });
+        aliases.push({
+            pattern: /\/ziola$/, callback: () => {
+                client.sendEvent('herbManagerOpen');
             }
         });
         aliases.push({ pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10)) });
