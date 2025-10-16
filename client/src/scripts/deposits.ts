@@ -36,6 +36,12 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: deposits });
     };
 
+    const clearDeposits = () => {
+        Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
+        persist();
+        client.println("Zapisane depozyty zostaly usuniete.");
+    };
+
     let columns = 1;
     let width = client.contentWidth;
     client.addEventListener('settings', (ev: CustomEvent) => {
@@ -113,6 +119,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
     if (aliases) {
         aliases.push({ pattern: /\/depozyt$/, callback: () => client.sendCommand("przejrzyj depozyt") });
         aliases.push({ pattern: /\/depozyty$/, callback: printDeposits });
+        aliases.push({ pattern: /\/depozyt_reset$/, callback: clearDeposits });
     }
 
     window.addEventListener("beforeunload", persist);
