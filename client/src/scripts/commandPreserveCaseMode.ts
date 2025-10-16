@@ -1,24 +1,65 @@
 import Client from "../Client";
 
+export interface CommandOptions {
+    preserveCase?: boolean;
+}
+
 const EXIT_PATTERNS = [
     /^Zaniechane/,
     /^Brak adresata/,
+    /^Brak tematu/,
     /^Nie ma takiego adresata/,
     /^Przerywasz pisanie/,
     /^Rezygnujesz z pisania/,
 ];
 
+let preserverCaseMode = false;
+
+const skipLowercasePrefixes = [
+    "'",
+    'powiedz',
+    "j'",
+    'jpowiedz',
+    'jppowiedz',
+    'krzyknij',
+    'jkrzyknij',
+    'jpkrzyknij',
+    'szepnij',
+    'jszepnij',
+    'jpszepnij',
+];
+
+export interface CommandOptions {
+    preserveCase?: boolean;
+}
+
+export function normalizeCommand(command: string, options?: CommandOptions): string {
+    const trimmedCommand = command.trimStart();
+    if (!trimmedCommand || options?.preserveCase || preserverCaseMode) {
+        return command;
+    }
+
+    const shouldLowercase = !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix));
+    if (!shouldLowercase) {
+        return command;
+    }
+
+    const leadingWhitespaceLength = command.length - trimmedCommand.length;
+    const leadingWhitespace = command.slice(0, leadingWhitespaceLength);
+    return leadingWhitespace + trimmedCommand.toLowerCase();
+}
+
 export default function initCommandPreserveCaseMode(client: Client) {
-    let playerNum: string | undefined;
+    let playerNum: number | undefined;
     let gmcpEditingActive = false;
 
     const enterMode = () => {
-        client.setCommandPreserveCaseMode(true);
+        preserverCaseMode = true;
     };
 
     const exitMode = () => {
         gmcpEditingActive = false;
-        client.setCommandPreserveCaseMode(false);
+        preserverCaseMode = false;
     };
 
     client.addEventListener('command', (ev: CustomEvent<string>) => {
@@ -32,13 +73,13 @@ export default function initCommandPreserveCaseMode(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.info', (ev: CustomEvent<{ object_num?: number | string }>) => {
+    client.addEventListener('gmcp.char.info', (ev: CustomEvent<{ object_num?: number }>) => {
         if (typeof ev.detail?.object_num !== 'undefined') {
-            playerNum = String(ev.detail.object_num);
+            playerNum = ev.detail.object_num;
         }
     });
 
-    client.addEventListener('gmcp.char.objects', (ev: CustomEvent<Record<string, { editing?: boolean }>>) => {
+    client.addEventListener('gmcp.objects.data', (ev: CustomEvent<Record<string, { editing?: boolean }>>) => {
         if (!playerNum) {
             return;
         }

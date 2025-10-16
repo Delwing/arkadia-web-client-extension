@@ -20,10 +20,10 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import {normalizeCommand, CommandOptions} from "./normalizeCommand";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
+import {CommandOptions} from "./scripts/commandPreserveCaseMode";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -53,7 +53,6 @@ export default class Client {
     inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
-    private commandPreserveCaseMode = false;
     sounds: Record<string, Howl> = {
         beep: new Howl({
             src: beepSound,
@@ -352,9 +351,6 @@ export default class Client {
     sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
         if (command) {
             command = stripPolishCharacters(command)
-            const preserveCase = options?.preserveCase ?? this.commandPreserveCaseMode
-            const normalizeOptions: CommandOptions = options ? {...options, preserveCase} : {preserveCase}
-            command = normalizeCommand(command, normalizeOptions)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
@@ -390,7 +386,7 @@ export default class Client {
                 this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
                 return
             }
-            this.sendMovement(command, echo)
+            this.sendMovement(command, echo, options)
         }
     }
 
@@ -405,12 +401,12 @@ export default class Client {
         })
     }
 
-    private sendMovement(command: string, echo: boolean) {
+    private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
         const moveRes = this.Map.move(command)
         if (moveRes.moved) {
             this.Map.setBlockable(true)
         }
-        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
+        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo, options)
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {
@@ -419,14 +415,6 @@ export default class Client {
         if (this.moveMode === 1) return `przemknij ${cmd}`
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
         return cmd
-    }
-
-    setCommandPreserveCaseMode(value: boolean) {
-        this.commandPreserveCaseMode = value
-    }
-
-    isCommandPreserveCaseMode(): boolean {
-        return this.commandPreserveCaseMode
     }
 
     onLine(line: string, type: string) {
