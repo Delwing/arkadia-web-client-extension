@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import loadHerbs, { HerbsData } from "@client/src/scripts/herbsLoader";
 import { getItemSync } from "@client/src/storage";
 import type { HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
 
@@ -113,14 +112,6 @@ const getInitialCounts = (): HerbCounts | undefined => {
     return value;
 };
 
-const formatHerbLabel = (data: HerbsData | null, herbId: string, count: number): string => {
-    const forms = data?.herb_id_to_odmiana?.[herbId];
-    if (!forms) {
-        return herbId;
-    }
-    return count === 1 ? forms.mianownik : forms.mnoga_mianownik;
-};
-
 const HerbManager = () => {
     const idCounter = useRef(0);
     const nextInstanceId = () => `stack-${idCounter.current++}`;
@@ -130,14 +121,9 @@ const HerbManager = () => {
     };
 
     const [bags, setBags] = useState<HerbBag[]>(() => rebuildBags(getInitialCounts()));
-    const [herbData, setHerbData] = useState<HerbsData | null>(null);
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        loadHerbs().then(setHerbData).catch(() => setHerbData(null));
-    }, []);
 
     useEffect(() => {
         const handler = (ev: Event) => {
@@ -323,7 +309,7 @@ const HerbManager = () => {
                                             onClick={handleSplit(bag.bagNumber, stack)}
                                         >
                                             <span className="herb-pill-count">{stack.count} ×</span>
-                                            <span className="herb-pill-label">{formatHerbLabel(herbData, stack.herbId, stack.count)}</span>
+                                            <span className="herb-pill-label">{stack.herbId}</span>
                                         </button>
                                     ))
                                 )}
