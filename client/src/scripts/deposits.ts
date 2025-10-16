@@ -22,8 +22,11 @@ function isBankRoom(room: any): boolean {
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail.key === STORAGE_KEY && event.detail.value) {
-            Object.assign(deposits, event.detail.value);
+        if (event.detail.key === STORAGE_KEY) {
+            Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
+            if (event.detail.value) {
+                Object.assign(deposits, event.detail.value);
+            }
         }
     });
 
