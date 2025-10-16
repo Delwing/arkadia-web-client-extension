@@ -81,7 +81,7 @@ function Shortcuts() {
                     </div>
                 </div>
             )}
-            <Table bordered size="sm" className="table-zebra">
+            <Table bordered size="sm" hover className="table-modern table-zebra">
                 <tbody className="align-middle">
                 {list.map(item => (
                     <tr key={item.key}>

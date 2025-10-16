@@ -117,7 +117,7 @@ function Npc() {
                     style={{width: '100%', maxWidth: '160px'}}
                 />
             </div>
-            <Table bordered size="sm" className="table-zebra">
+            <Table bordered size="sm" hover className="table-modern table-zebra">
                 <tbody className="align-middle">
                 {npcs
                     .filter(item => item.name.toLowerCase().includes(filter.toLowerCase()))
