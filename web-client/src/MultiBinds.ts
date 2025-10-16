@@ -9,9 +9,9 @@ interface DisplayMultibind {
 export default class MultiBinds {
   private container: HTMLElement | null;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor(private readonly client: ArkadiaClient) {
     this.container = document.getElementById("multi-binds");
-    client.on(
+    this.client.on(
       "multibinds",
       (payload: { list?: DisplayMultibind[] } = { list: [] }) => {
         const list = Array.isArray(payload.list) ? payload.list : [];
@@ -32,8 +32,10 @@ export default class MultiBinds {
       .slice()
       .sort((a, b) => a.index - b.index)
       .forEach((bind) => {
-        const wrapper = document.createElement("span");
+        const wrapper = document.createElement("button");
         wrapper.className = "multi-bind";
+        wrapper.type = "button";
+        wrapper.title = bind.action;
 
         const keySpan = document.createElement("span");
         keySpan.className = "multi-bind-key";
@@ -43,7 +45,17 @@ export default class MultiBinds {
         actionSpan.className = "multi-bind-action";
         actionSpan.textContent = bind.action;
 
-        wrapper.append(keySpan, document.createTextNode(" "), actionSpan);
+        const { action } = bind;
+        if (action.trim()) {
+          wrapper.addEventListener("click", (event) => {
+            event.preventDefault();
+            this.client.send(action);
+          });
+        } else {
+          wrapper.disabled = true;
+        }
+
+        wrapper.append(keySpan, actionSpan);
         this.container!.appendChild(wrapper);
       });
   }
