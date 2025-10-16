@@ -125,4 +125,24 @@ describe('deposits', () => {
     parse('Twoj depozyt zawiera miecz.');
     expect(prettyPrintContainer).toHaveBeenCalledWith(expect.anything(), 3, 'DEPOZYT', 5, client.contentWidth);
   });
+
+  test('replaces stored deposits when storage updates', () => {
+    parse('Twoj depozyt zawiera miecz.');
+    expect(deposits[1]?.items).toEqual([
+      { count: 1, name: 'miecz' }
+    ]);
+
+    client.dispatch('storage', {
+      key: 'deposits',
+      value: {
+        2: { name: 'Inny bank', items: [{ count: 3, name: 'klejnoty' }] }
+      }
+    });
+
+    expect(deposits[1]).toBeUndefined();
+    expect(deposits[2]).toEqual({
+      name: 'Inny bank',
+      items: [{ count: 3, name: 'klejnoty' }]
+    });
+  });
 });
