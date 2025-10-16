@@ -196,12 +196,18 @@ const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transpar
 
 const defaultRadialSettings: RadialSettings = {
     commands: [
-        { id: 'radial-1', label: '/ziola', command: '/ziola' },
-        { id: 'radial-2', label: '+k', command: '+k' },
+        { id: 'radial-1', label: 'dobadz broni', command: 'dobadz wszystkich broni' },
+        { id: 'radial-2', label: 'buduj zioła', command: '/ziola_buduj' },
         { id: 'radial-3', label: 'deliona', command: '/z_zjedz deliona' },
-        { id: 'radial-4', label: 'porzuc druzyne', command: 'porzuc druzyne' },
+        { id: 'radial-4', label: '+k', command: '+k' },
+        { id: 'radial-5', label: '/list', command: '/list' },
+        { id: 'radial-6', label: 'otul', command: 'otul sie plaszczem' },
     ],
 };
+
+function cloneDefaultRadialCommands(): RadialCommandSetting[] {
+    return defaultRadialSettings.commands.map(cmd => ({ ...cmd }));
+}
 
 function extractButtons(set: any): Record<string, ButtonSetting> {
     if (!set || typeof set !== 'object') {
@@ -244,7 +250,7 @@ function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout())
 
 function parseRadialSettings(raw: any): RadialSettings {
     if (!raw || typeof raw !== 'object') {
-        return { ...defaultRadialSettings };
+        return { commands: cloneDefaultRadialCommands() };
     }
     const list = Array.isArray(raw.commands) ? raw.commands : [];
     const commands: RadialCommandSetting[] = [];
@@ -269,6 +275,9 @@ function parseRadialSettings(raw: any): RadialSettings {
         const fontColor = typeof entry.fontColor === 'string' && entry.fontColor ? entry.fontColor : undefined;
         commands.push({ id, label, command, color, activeColor, fontColor });
     });
+    if (!commands.length) {
+        return { commands: cloneDefaultRadialCommands() };
+    }
     return { commands };
 }
 
@@ -333,7 +342,7 @@ export async function loadSettings(): Promise<Settings> {
         team: createDefaultLayout(),
         leader: createDefaultLayout(),
         locked: false,
-        radial: { ...defaultRadialSettings },
+        radial: { commands: cloneDefaultRadialCommands() },
     };
 }
 
