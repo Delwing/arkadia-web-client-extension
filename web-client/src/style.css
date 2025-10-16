@@ -822,6 +822,9 @@ h1 {
   -webkit-backdrop-filter: blur(2px);
   cursor: move;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   z-index: 10;
   min-width: 350px;
   box-sizing: border-box;
@@ -883,11 +886,15 @@ h1 {
 #objects-list .objects-list-content {
   white-space: pre;
   overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #objects-list .object-num,
 #objects-list .object-desc {
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #objects-list .team-not-attacking {
@@ -1348,6 +1355,9 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   transition: opacity 120ms ease-out;
   z-index: 2050;
   pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .mobile-command-radial::before {
@@ -1365,6 +1375,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .mobile-command-radial__command {
@@ -1385,6 +1397,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.55);
   background: rgba(110, 180, 220, 0.85);
   transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .mobile-command-radial__command--highlighted {
@@ -1417,6 +1431,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   white-space: normal;
   word-break: break-word;
   line-height: 1.2;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .mobile-command-radial__selected--visible {
