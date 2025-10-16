@@ -20,11 +20,12 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
+import {normalizeCommand, CommandOptions} from "./normalizeCommand";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
-    send(text: string, echo?: boolean, options?: { preserveCase?: boolean }): void;
+    send(text: string, echo?: boolean, options?: CommandOptions): void;
 
     output(text?: string, type?: string): void
 
@@ -325,7 +326,7 @@ export default class Client {
         this.eventTarget.removeEventListener(event, listener)
     }
 
-    send(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
+    send(command: string, echo: boolean = true, options?: CommandOptions) {
         this.clientAdapter.send(command, echo, options)
     }
 
@@ -345,9 +346,10 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
-    sendCommand(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
+    sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
         if (command) {
             command = stripPolishCharacters(command)
+            command = normalizeCommand(command, options)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
