@@ -53,6 +53,7 @@ export default class Client {
     inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
+    private commandPreserveCaseMode = false;
     sounds: Record<string, Howl> = {
         beep: new Howl({
             src: beepSound,
@@ -351,7 +352,9 @@ export default class Client {
     sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
         if (command) {
             command = stripPolishCharacters(command)
-            command = normalizeCommand(command, options)
+            const preserveCase = options?.preserveCase ?? this.commandPreserveCaseMode
+            const normalizeOptions: CommandOptions = options ? {...options, preserveCase} : {preserveCase}
+            command = normalizeCommand(command, normalizeOptions)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
@@ -416,6 +419,14 @@ export default class Client {
         if (this.moveMode === 1) return `przemknij ${cmd}`
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
         return cmd
+    }
+
+    setCommandPreserveCaseMode(value: boolean) {
+        this.commandPreserveCaseMode = value
+    }
+
+    isCommandPreserveCaseMode(): boolean {
+        return this.commandPreserveCaseMode
     }
 
     onLine(line: string, type: string) {

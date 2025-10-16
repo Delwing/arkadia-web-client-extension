@@ -208,6 +208,16 @@ test('sendCommand preserves casing when requested', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:UPPER CASE', true);
 });
 
+test('sendCommand preserves casing when mode is enabled', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  client.setCommandPreserveCaseMode(true);
+  parseCommand.mockClear();
+  client.sendCommand('UPPER CASE');
+  expect(parseCommand).toHaveBeenCalledTimes(1);
+  expect(parseCommand).toHaveBeenCalledWith('UPPER CASE');
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:UPPER CASE', true);
+});
+
 test('sendCommand allows empty command', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   client.sendCommand('');
