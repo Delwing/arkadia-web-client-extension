@@ -10,6 +10,15 @@ import {
 import { getItemSync, setItemSync } from "@client/src/storage";
 import { getShortDir } from "@client/src/utils/directions.ts";
 
+const ORIENTATIONS = ["portrait", "landscape"] as const;
+type Orientation = (typeof ORIENTATIONS)[number];
+type StoredPosition = {
+    x: number;
+    y: number;
+    origin: "left" | "right";
+};
+const DEFAULT_ORIGIN: StoredPosition["origin"] = "left";
+
 const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
@@ -61,6 +70,8 @@ export default class MobileDirectionButtons {
     private leaderMode = false;
     private hapticEnabled = true;
     private dragLocked = false;
+    private currentOrientation: Orientation = this.getCurrentOrientation();
+    private savedPositions: Partial<Record<Orientation, StoredPosition>> = {};
 
 
     constructor(client: Client) {
@@ -147,9 +158,15 @@ export default class MobileDirectionButtons {
             this.updateTeamMode();
         });
 
-        // Listen for window resize to check if mobile view
+        // Listen for window resize to check if mobile view and keep buttons in bounds
         window.addEventListener('resize', () => {
+            const newOrientation = this.getCurrentOrientation();
+            if (newOrientation !== this.currentOrientation) {
+                this.currentOrientation = newOrientation;
+                this.applySavedPosition();
+            }
             this.checkMobile();
+            this.clampToView(true);
             this.scrollToBottom();
         });
 
@@ -250,7 +267,7 @@ export default class MobileDirectionButtons {
         this.enabled = true;
         // Show buttons regardless of device type
         this.container.style.display = 'grid';
-        this.clampToView();
+        this.clampToView(true);
     }
 
     disable() {
@@ -259,7 +276,7 @@ export default class MobileDirectionButtons {
         this.container.style.display = 'none';
     }
 
-    private clampToView() {
+    private clampToView(persist = false) {
         const rect = this.container.getBoundingClientRect();
         let left = parseInt(this.container.style.left, 10);
         let top = parseInt(this.container.style.top, 10);
@@ -273,8 +290,14 @@ export default class MobileDirectionButtons {
         const maxTop = window.innerHeight - this.container.offsetHeight - 5;
         const clampedLeft = Math.min(Math.max(5, left), maxLeft);
         const clampedTop = Math.min(Math.max(5, top), maxTop);
-        this.container.style.left = `${clampedLeft}px`;
-        this.container.style.top = `${clampedTop}px`;
+        const changed = clampedLeft !== left || clampedTop !== top;
+        if (changed) {
+            this.container.style.left = `${clampedLeft}px`;
+            this.container.style.top = `${clampedTop}px`;
+        }
+        if (persist) {
+            this.persistCurrentPosition();
+        }
     }
 
     private setupKeyboardHandlers() {
@@ -316,29 +339,15 @@ export default class MobileDirectionButtons {
         const savedPosition = savedData?.mobileButtonsPosition;
         if (savedPosition) {
             try {
-                const { x, y, origin } = savedPosition as any;
-                const rect = this.container.getBoundingClientRect();
-                const width = rect.width || this.container.offsetWidth;
-                const safeWidth = Number.isFinite(width) ? width : 0;
-                if (typeof x === 'number' && !Number.isNaN(x)) {
-                    if (origin === 'left') {
-                        this.container.style.left = `${x}px`;
-                    } else {
-                        const fromLeft = window.innerWidth - safeWidth - x;
-                        if (Number.isFinite(fromLeft)) {
-                            this.container.style.left = `${fromLeft}px`;
-                        }
-                    }
-                }
-                if (typeof y === 'number' && !Number.isNaN(y)) {
-                    this.container.style.top = `${y}px`;
-                }
-                this.container.style.removeProperty('right');
-                requestAnimationFrame(() => this.clampToView());
+                this.savedPositions = this.normalizeSavedPositions(savedPosition);
             } catch (e) {
                 console.error('Error parsing saved position:', e);
+                this.savedPositions = {};
             }
         }
+        this.currentOrientation = this.getCurrentOrientation();
+        this.applySavedPosition();
+        requestAnimationFrame(() => this.clampToView(true));
         // Add touch event listeners for long press and drag
         this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
         this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
@@ -371,6 +380,109 @@ export default class MobileDirectionButtons {
             }
             this.lastScrollTop = currentScrollTop;
         });
+    }
+
+    private getCurrentOrientation(): Orientation {
+        if (window.matchMedia) {
+            if (window.matchMedia('(orientation: portrait)').matches) {
+                return 'portrait';
+            }
+            if (window.matchMedia('(orientation: landscape)').matches) {
+                return 'landscape';
+            }
+        }
+        return window.innerHeight >= window.innerWidth ? 'portrait' : 'landscape';
+    }
+
+    private getAlternateOrientation(orientation: Orientation): Orientation {
+        return orientation === 'portrait' ? 'landscape' : 'portrait';
+    }
+
+    private sanitizePosition(raw: unknown): StoredPosition | null {
+        if (!raw || typeof raw !== 'object') return null;
+        const candidate = raw as Partial<StoredPosition>;
+        const x = Number(candidate?.x);
+        const y = Number(candidate?.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+        const origin = candidate?.origin === 'right' ? 'right' : DEFAULT_ORIGIN;
+        return { x, y, origin };
+    }
+
+    private normalizeSavedPositions(raw: unknown): Partial<Record<Orientation, StoredPosition>> {
+        const positions: Partial<Record<Orientation, StoredPosition>> = {};
+        if (!raw || typeof raw !== 'object') return positions;
+        const source = raw as Record<string, unknown>;
+        let hasOrientationSpecific = false;
+        ORIENTATIONS.forEach(orientation => {
+            const sanitized = this.sanitizePosition(source[orientation]);
+            if (sanitized) {
+                positions[orientation] = sanitized;
+                hasOrientationSpecific = true;
+            }
+        });
+        if (hasOrientationSpecific) {
+            return positions;
+        }
+        const fallback = this.sanitizePosition(source);
+        if (fallback) {
+            ORIENTATIONS.forEach(orientation => {
+                positions[orientation] = { ...fallback };
+            });
+        }
+        return positions;
+    }
+
+    private applySavedPosition() {
+        if (!this.container) return;
+        this.container.style.removeProperty('right');
+        const saved = this.savedPositions[this.currentOrientation]
+            || this.savedPositions[this.getAlternateOrientation(this.currentOrientation)];
+        if (!saved) {
+            return;
+        }
+        const rect = this.container.getBoundingClientRect();
+        const width = rect.width || this.container.offsetWidth;
+        const safeWidth = Number.isFinite(width) ? width : 0;
+        let left = saved.x;
+        if (saved.origin === 'right') {
+            const fromLeft = window.innerWidth - safeWidth - saved.x;
+            if (Number.isFinite(fromLeft)) {
+                left = fromLeft;
+            }
+        }
+        this.container.style.left = `${left}px`;
+        this.container.style.top = `${saved.y}px`;
+    }
+
+    private positionsEqual(a?: StoredPosition | null, b?: StoredPosition | null): boolean {
+        if (!a || !b) return false;
+        return a.x === b.x && a.y === b.y && a.origin === b.origin;
+    }
+
+    private persistCurrentPosition(): void {
+        if (!this.container) return;
+        const rect = this.container.getBoundingClientRect();
+        const position: StoredPosition = {
+            x: Math.round(rect.left),
+            y: Math.round(rect.top),
+            origin: DEFAULT_ORIGIN,
+        };
+        const existing = this.savedPositions[this.currentOrientation];
+        if (this.positionsEqual(existing ?? null, position)) {
+            return;
+        }
+        this.savedPositions = {
+            ...this.savedPositions,
+            [this.currentOrientation]: position,
+        };
+        const toStore: Partial<Record<Orientation, StoredPosition>> = {};
+        ORIENTATIONS.forEach(orientation => {
+            const value = this.savedPositions[orientation];
+            if (value) {
+                toStore[orientation] = value;
+            }
+        });
+        setItemSync('mobileButtonsPosition', toStore);
     }
 
     private updateDragLock() {
@@ -438,14 +550,6 @@ export default class MobileDirectionButtons {
         }
 
         if (this.isDragging && this.container) {
-            const rect = this.container.getBoundingClientRect();
-            const position = {
-                x: rect.left,
-                y: rect.top,
-                origin: 'left' as const,
-            };
-            setItemSync('mobileButtonsPosition', position);
-
             this.isDragging = false;
             this.container.classList.remove('dragging');
             this.container.style.opacity = '1';
@@ -456,6 +560,7 @@ export default class MobileDirectionButtons {
             });
 
             if (preventDefault) preventDefault();
+            this.clampToView(true);
         }
     }
 
