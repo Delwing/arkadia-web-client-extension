@@ -100,7 +100,6 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         const normalized = action.trim();
         set(roomId, index, normalized);
         persist();
-        log(`Utworzono bind ${roomId}-${index}: ${normalized}`);
         sendUpdate(getRoomId());
     }
 
