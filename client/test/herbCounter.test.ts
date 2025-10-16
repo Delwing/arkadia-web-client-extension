@@ -110,7 +110,7 @@ describe('herb counter', () => {
     client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
     const printed = await printedPromise;
     expect(printed).toMatch(/2/);
-    expect(printed).toMatch(/zolte jasne kwiaty/);
+    expect(printed).toMatch(/deliona/);
   });
 
   test('herb manager can move herbs between bags', async () => {

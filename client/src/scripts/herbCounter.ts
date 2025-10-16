@@ -211,7 +211,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return forms.mianownik;
     };
 
-    function buildSummary(bags: Record<number, Record<string, number>>, includeBags = true): string[] {
+    function buildSummary(
+        bags: Record<number, Record<string, number>>,
+        includeBags = true,
+        useFormattedNames = true
+    ): string[] {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(contents => {
             Object.entries(contents).forEach(([id, c]) => {
@@ -234,7 +238,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
         entries.sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, c]) => {
             const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${mudletColorLine(u.effect)}`).join(' | ') || '--';
-            const herbName = formatHerbName(id, c);
+            const herbName = useFormattedNames ? formatHerbName(id, c) : id;
 
             if (normal) {
                 const name = client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev));
@@ -263,7 +267,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             Object.entries(bags).forEach(([num, contents]) => {
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([id, c]) => `${c} ${client.OutputHandler.makeStringRightClickable(formatHerbName(id, c), (ev) => showHerbActions(id, ev))}`)
+                    .map(([id, c]) => {
+                        const name = useFormattedNames ? formatHerbName(id, c) : id;
+                        return `${c} ${client.OutputHandler.makeStringRightClickable(name, (ev) => showHerbActions(id, ev))}`;
+                    })
                     .join(', ');
                 lines.push(`${num}. ${parts || '(pusty)'}`);
             });
@@ -429,7 +436,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     if (ev.detail.key === STORAGE_KEY) {
                         const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
                         await ensureData();
-                        const lines = buildSummary(bags, false);
+                        const lines = buildSummary(bags, false, false);
                         if (lines.length > 0) {
                             client.println(lines.join('\n'));
                         } else {
