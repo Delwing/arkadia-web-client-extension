@@ -169,13 +169,13 @@ test('sendCommand dispatches event and splits commands', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true, undefined);
 });
 
-test('sendCommand lowercases non speech commands', () => {
+test('sendCommand leaves casing unchanged by default', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   parseCommand.mockClear();
   client.sendCommand('LOOK AROUND');
   expect(parseCommand).toHaveBeenCalledTimes(1);
-  expect(parseCommand).toHaveBeenCalledWith('look around');
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:look around', true, undefined);
+  expect(parseCommand).toHaveBeenCalledWith('LOOK AROUND');
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:LOOK AROUND', true, undefined);
 });
 
 test('sendCommand keeps casing for speech commands', () => {
@@ -205,9 +205,13 @@ test('sendCommand preserves casing when requested', () => {
   client.sendCommand('UPPER CASE', true, { preserveCase: true });
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('UPPER CASE');
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:UPPER CASE', true, {
-    preserveCase: true,
-  });
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith(
+    'parsed:UPPER CASE',
+    true,
+    {
+      preserveCase: true,
+    }
+  );
 });
 
 test('sendCommand allows empty command', () => {
