@@ -25,6 +25,19 @@ export interface ButtonSetting {
     direction?: string;
 }
 
+export interface RadialCommandSetting {
+    id: string;
+    label: string;
+    command: string;
+    color?: string;
+    activeColor?: string;
+    fontColor?: string;
+}
+
+export interface RadialSettings {
+    commands: RadialCommandSetting[];
+}
+
 export const defaultFontColor = '#f1f5f9';
 
 export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
@@ -172,6 +185,7 @@ export interface Settings {
     team: LayoutSettings;
     leader: LayoutSettings;
     locked: boolean;
+    radial: RadialSettings;
 }
 
 export function createDefaultLayout(): LayoutSettings {
@@ -179,6 +193,21 @@ export function createDefaultLayout(): LayoutSettings {
 }
 
 const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
+
+const defaultRadialSettings: RadialSettings = {
+    commands: [
+        { id: 'radial-1', label: 'dobadz broni', command: 'dobadz wszystkich broni' },
+        { id: 'radial-2', label: 'buduj zioła', command: '/ziola_buduj' },
+        { id: 'radial-3', label: 'deliona', command: '/z_zjedz deliona' },
+        { id: 'radial-4', label: '+k', command: '+k' },
+        { id: 'radial-5', label: '/list', command: '/list' },
+        { id: 'radial-6', label: 'otul', command: 'otul sie plaszczem' },
+    ],
+};
+
+function cloneDefaultRadialCommands(): RadialCommandSetting[] {
+    return defaultRadialSettings.commands.map(cmd => ({ ...cmd }));
+}
 
 function extractButtons(set: any): Record<string, ButtonSetting> {
     if (!set || typeof set !== 'object') {
@@ -219,6 +248,39 @@ function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout())
     return { buttons, order, cols, background };
 }
 
+function parseRadialSettings(raw: any): RadialSettings {
+    if (!raw || typeof raw !== 'object') {
+        return { commands: cloneDefaultRadialCommands() };
+    }
+    const list = Array.isArray(raw.commands) ? raw.commands : [];
+    const commands: RadialCommandSetting[] = [];
+    const usedIds = new Set<string>();
+    list.forEach((entry: any, index: number) => {
+        if (!entry || typeof entry !== 'object') {
+            return;
+        }
+        const command = typeof entry.command === 'string' ? entry.command.trim() : '';
+        if (!command) {
+            return;
+        }
+        const labelRaw = typeof entry.label === 'string' ? entry.label.trim() : '';
+        const label = labelRaw || command;
+        let id = typeof entry.id === 'string' && entry.id ? entry.id : `radial-${index + 1}`;
+        while (usedIds.has(id)) {
+            id = `${id}-${commands.length + 1}`;
+        }
+        usedIds.add(id);
+        const color = typeof entry.color === 'string' && entry.color ? entry.color : undefined;
+        const activeColor = typeof entry.activeColor === 'string' && entry.activeColor ? entry.activeColor : undefined;
+        const fontColor = typeof entry.fontColor === 'string' && entry.fontColor ? entry.fontColor : undefined;
+        commands.push({ id, label, command, color, activeColor, fontColor });
+    });
+    if (!commands.length) {
+        return { commands: cloneDefaultRadialCommands() };
+    }
+    return { commands };
+}
+
 export async function loadSettings(): Promise<Settings> {
     try {
         const data = await storage.getItem('mobileButtonSettings');
@@ -231,6 +293,7 @@ export async function loadSettings(): Promise<Settings> {
                     team: parseLayout(raw.team),
                     leader: parseLayout(raw.leader),
                     locked,
+                    radial: parseRadialSettings(raw.radial),
                 };
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
@@ -270,10 +333,17 @@ export async function loadSettings(): Promise<Settings> {
                     background: leaderBackground,
                 },
                 locked,
+                radial: parseRadialSettings(raw.radial),
             };
         }
     } catch {}
-    return { solo: createDefaultLayout(), team: createDefaultLayout(), leader: createDefaultLayout(), locked: false };
+    return {
+        solo: createDefaultLayout(),
+        team: createDefaultLayout(),
+        leader: createDefaultLayout(),
+        locked: false,
+        radial: { commands: cloneDefaultRadialCommands() },
+    };
 }
 
 export function saveSettings(settings: Settings) {
