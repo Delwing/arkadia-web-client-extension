@@ -534,12 +534,9 @@ h1 {
   z-index: 1050;
   width: min(1140px, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
-  border-radius: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 0;
+  background-color: #000;
   border: 0.1vh solid silver;
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -566,7 +563,7 @@ h1 {
   border-bottom: 0.1vh solid rgba(255, 255, 255, 0.35);
   cursor: move;
   user-select: none;
-  background: rgba(0, 0, 0, 0.3);
+  background: #000;
 }
 
 .herb-window-title {
@@ -615,9 +612,9 @@ h1 {
 }
 
 .herb-bag {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 0.75rem;
+  background: #000;
+  border: 0.1vh solid rgba(255, 255, 255, 0.35);
+  border-radius: 0;
   padding: 0.65rem;
   min-height: 9rem;
   display: flex;
@@ -662,8 +659,8 @@ h1 {
   align-items: center;
   gap: 0.45rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.35);
+  border: 0.1vh solid rgba(255, 255, 255, 0.35);
+  background: #000;
   color: #f8fafc;
   padding: 0.3rem 0.7rem;
   font-size: 0.85rem;
