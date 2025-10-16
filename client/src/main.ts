@@ -79,6 +79,7 @@ import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import initLetter from './scripts/letter'
+import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
 import initZaznaczaj from './scripts/zaznaczaj'
 import Client from "./Client";
@@ -181,6 +182,7 @@ export function registerScripts(client: Client) {
     initHerbShop(client)
     initArmorShop(client)
     initSmith(client, aliases)
+    initCommandPreserveCaseMode(client)
     initHerbCounter(client, aliases)
     initHerbDescriptions(client)
     initLvlCalc(client, aliases)

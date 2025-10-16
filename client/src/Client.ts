@@ -20,10 +20,10 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import {normalizeCommand, CommandOptions} from "./normalizeCommand";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
+import {CommandOptions} from "./scripts/commandPreserveCaseMode";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -351,7 +351,6 @@ export default class Client {
     sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
         if (command) {
             command = stripPolishCharacters(command)
-            command = normalizeCommand(command, options)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
@@ -387,7 +386,7 @@ export default class Client {
                 this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
                 return
             }
-            this.sendMovement(command, echo)
+            this.sendMovement(command, echo, options)
         }
     }
 
@@ -402,12 +401,12 @@ export default class Client {
         })
     }
 
-    private sendMovement(command: string, echo: boolean) {
+    private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
         const moveRes = this.Map.move(command)
         if (moveRes.moved) {
             this.Map.setBlockable(true)
         }
-        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo)
+        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo, options)
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {

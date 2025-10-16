@@ -2,11 +2,11 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
-import {normalizeCommand, CommandOptions} from "@client/src/normalizeCommand.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
+import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
