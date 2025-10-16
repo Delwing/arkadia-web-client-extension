@@ -45,16 +45,6 @@ export default function initLeaderAttackWarning(client: Client) {
         print(text);
     }
 
-    function hasDropFlag(detail?: Record<string, unknown>): boolean {
-        if (!detail) {
-            return false;
-        }
-
-        return detail.drop_leader_attack_warning === true || Object.values(detail).some((value) => {
-            return value !== null && typeof value === 'object' && hasDropFlag(value as Record<string, unknown>);
-        });
-    }
-
     client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
         activeTargetId = e.detail;
         dropRequestedAt = undefined;
@@ -66,7 +56,23 @@ export default function initLeaderAttackWarning(client: Client) {
             return;
         }
 
-        const dropFlag = hasDropFlag(e.detail);
+        let dropFlag = false;
+        const stack = [e.detail];
+        while (stack.length && !dropFlag) {
+            const current = stack.pop();
+            if (!current || typeof current !== 'object') {
+                continue;
+            }
+            if ((current as Record<string, unknown>).drop_leader_attack_warning === true) {
+                dropFlag = true;
+                break;
+            }
+            for (const value of Object.values(current as Record<string, unknown>)) {
+                if (value && typeof value === 'object') {
+                    stack.push(value as Record<string, unknown>);
+                }
+            }
+        }
 
         if (dropFlag) {
             dropRequestedAt = dropRequestedAt ?? Date.now();
