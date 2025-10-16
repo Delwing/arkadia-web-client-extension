@@ -544,6 +544,13 @@ h1 {
   box-shadow: 0 1.5rem 3rem #00000080;
 }
 
+.herb-window:focus,
+.herb-window:focus-visible {
+  outline: none;
+  border-color: var(--surface-border);
+  box-shadow: 0 1.5rem 3rem #00000080;
+}
+
 .herb-window--center {
   top: 50%;
   left: 50%;
