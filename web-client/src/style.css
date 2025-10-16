@@ -525,7 +525,6 @@ h1 {
   position: fixed;
   inset: 0;
   background: rgba(4, 7, 14, 0.58);
-  backdrop-filter: blur(2px);
   z-index: 1040;
 }
 
