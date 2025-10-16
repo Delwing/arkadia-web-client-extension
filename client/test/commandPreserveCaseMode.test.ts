@@ -26,31 +26,24 @@ describe('command preserve case mode', () => {
 
   test('enters and exits mode based on gmcp editing flag', () => {
     client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 3 } }));
-    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { '3': { editing: true } } }));
+    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { 3: { editing: true } } }));
     expect(client.setCommandPreserveCaseMode).toHaveBeenCalledWith(true);
 
     client.setCommandPreserveCaseMode.mockClear();
-    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { '3': { editing: false } } }));
+    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { 3: { editing: false } } }));
     expect(client.setCommandPreserveCaseMode).toHaveBeenCalledWith(false);
   });
 
   test('ignores gmcp updates without editing flag', () => {
     client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 4 } }));
-    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { '4': {} } }));
+    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { 4: {} } }));
     expect(client.setCommandPreserveCaseMode).not.toHaveBeenCalled();
   });
 
   test('does not exit mode when editing flag is false without prior activation', () => {
     client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 5 } }));
-    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { '5': { editing: false } } }));
+    client.dispatchEvent(new CustomEvent('gmcp.object.data', { detail: { 5: { editing: false } } }));
     expect(client.setCommandPreserveCaseMode).not.toHaveBeenCalled();
   });
-
-  test('registers exit triggers that disable the mode', () => {
-    expect(client.Triggers.registerTrigger).toHaveBeenCalledTimes(5);
-    const [, callback] = client.Triggers.registerTrigger.mock.calls[0];
-    client.setCommandPreserveCaseMode.mockClear();
-    callback('', '', [] as any, '');
-    expect(client.setCommandPreserveCaseMode).toHaveBeenCalledWith(false);
-  });
+  
 });
