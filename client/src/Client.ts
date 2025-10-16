@@ -23,7 +23,7 @@ import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
-import {CommandOptions} from "./scripts/commandPreserveCaseMode";
+import {CommandOptions, normalizeCommand} from "./scripts/commandPreserveCaseMode";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -354,8 +354,9 @@ export default class Client {
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
-        let preparse = command
-        command = this.Map.parseCommand(command)
+        const normalizedCommand = normalizeCommand(command ?? '', options)
+        let preparse = normalizedCommand
+        command = this.Map.parseCommand(normalizedCommand)
         command = this.expandObjectShortcuts(command)
         if (command.startsWith('echo ')) {
             this.print(mudletColorLine(command.substring(5)))
@@ -367,7 +368,7 @@ export default class Client {
                 if (part !== preparse) {
                     this.sendCommand(part, echo, options)
                 } else {
-                    this.sendMovement(part, echo)
+                    this.sendMovement(part, echo, options)
                 }
             })
             return
