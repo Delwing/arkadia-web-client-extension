@@ -118,11 +118,9 @@ export default class ObjectList {
         const deltaY = e.clientY - this.startY;
         const newLeft = this.offsetLeft + deltaX;
         const newTop = this.offsetTop + deltaY;
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
-        const clampedLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        const clampedTop = Math.max(0, newTop);
-        this.container.style.left = `${clampedLeft}px`;
-        this.container.style.top = `${clampedTop}px`;
+        const { left, top } = this.getVisiblePosition(newLeft, newTop);
+        this.container.style.left = `${left}px`;
+        this.container.style.top = `${top}px`;
     };
 
     private onPointerUp = (e: PointerEvent) => {
@@ -142,28 +140,42 @@ export default class ObjectList {
         if (!this.container) return;
         const rect = this.container.getBoundingClientRect();
         const styles = window.getComputedStyle(this.container);
-        let newLeft = parseFloat(styles.left || "0");
-        let newTop = parseFloat(styles.top || "0");
-
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
-
-        if (rect.right > window.innerWidth) {
-            newLeft = maxLeft;
-        } else if (rect.left < 0) {
-            newLeft = 0;
-        }
-
-        if (rect.bottom > window.innerHeight) {
-            newTop = window.innerHeight - this.container.offsetHeight;
-        } else if (rect.top < 0) {
-            newTop = 0;
-        }
-
-        newLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        newTop = Math.max(0, newTop);
-        this.container.style.left = `${newLeft}px`;
-        this.container.style.top = `${newTop}px`;
+        const parsedLeft = parseFloat(styles.left);
+        const parsedTop = parseFloat(styles.top);
+        const currentLeft = Number.isFinite(parsedLeft) ? parsedLeft : rect.left;
+        const currentTop = Number.isFinite(parsedTop) ? parsedTop : rect.top;
+        const { left, top } = this.getVisiblePosition(currentLeft, currentTop, rect.width, rect.height);
+        this.container.style.left = `${left}px`;
+        this.container.style.top = `${top}px`;
     };
+
+    private getVisiblePosition(left: number, top: number, width?: number, height?: number) {
+        if (!this.container) {
+            return { left, top };
+        }
+        const rect = this.container.getBoundingClientRect();
+        const elementWidth = width ?? rect.width;
+        const elementHeight = height ?? rect.height;
+        const minVisiblePixels = 1;
+
+        let adjustedLeft = left;
+        if (adjustedLeft > window.innerWidth - minVisiblePixels) {
+            adjustedLeft = window.innerWidth - minVisiblePixels;
+        }
+        if (adjustedLeft + elementWidth < minVisiblePixels) {
+            adjustedLeft = minVisiblePixels - elementWidth;
+        }
+
+        let adjustedTop = top;
+        if (adjustedTop > window.innerHeight - minVisiblePixels) {
+            adjustedTop = window.innerHeight - minVisiblePixels;
+        }
+        if (adjustedTop + elementHeight < minVisiblePixels) {
+            adjustedTop = minVisiblePixels - elementHeight;
+        }
+
+        return { left: adjustedLeft, top: adjustedTop };
+    }
 
     private isMobileBrowser() {
         return (
