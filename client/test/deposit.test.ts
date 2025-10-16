@@ -34,6 +34,7 @@ describe('deposits', () => {
   let parse: (line: string) => string;
   let refresh: () => void;
   let show: () => void;
+  let reset: () => void;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
@@ -44,6 +45,7 @@ describe('deposits', () => {
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     refresh = aliases[0].callback;
     show = aliases[1].callback;
+    reset = aliases[2].callback;
     Object.keys(deposits).forEach(k => delete deposits[parseInt(k)]);
     jest.clearAllMocks();
   });
@@ -118,6 +120,17 @@ describe('deposits', () => {
     const printed = stripAnsiCodes(client.println.mock.calls[0][0]);
     expect(printed).toContain('  5 | mieczy');
     expect(printed).toContain('wie | monet');
+  });
+
+  test('reset command clears deposits and persists', () => {
+    parse('Twoj depozyt zawiera miecz.');
+    expect(deposits[1]).toBeDefined();
+
+    reset();
+
+    expect(deposits[1]).toBeUndefined();
+    expect(client.port.postMessage).toHaveBeenLastCalledWith({ type: 'SET_STORAGE', key: 'deposits', value: {} });
+    expect(client.println).toHaveBeenCalledWith('Zapisane depozyty zostaly usuniete.');
   });
 
   test('uses column setting for pretty print', () => {
