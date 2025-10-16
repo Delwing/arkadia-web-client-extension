@@ -25,6 +25,7 @@ export default class MobileCommandRadial {
     private readonly overlay: HTMLDivElement | null;
     private readonly commandsLayer: HTMLDivElement | null;
     private readonly threshold: HTMLDivElement | null;
+    private readonly selectionLabel: HTMLDivElement | null;
     private settings: Settings | null = null;
     private activeLayout: LayoutSettings | null = null;
     private commands: RadialCommand[] = [];
@@ -38,7 +39,10 @@ export default class MobileCommandRadial {
         ".modal",
         ".dropdown-menu",
         "#options-modal",
+        "#map",
+        "#auth-overlay",
     ];
+    private readonly contentAreaSelector = "#main_text_output_msg_wrapper";
     private startX = 0;
     private startY = 0;
     private centerX = 0;
@@ -56,10 +60,15 @@ export default class MobileCommandRadial {
         this.overlay = document.getElementById('mobile-command-radial') as HTMLDivElement | null;
         this.commandsLayer = this.overlay?.querySelector('.mobile-command-radial__commands') as HTMLDivElement | null;
         this.threshold = this.overlay?.querySelector('.mobile-command-radial__threshold') as HTMLDivElement | null;
+        this.selectionLabel = this.overlay?.querySelector('.mobile-command-radial__selected') as HTMLDivElement | null;
 
         if (!this.overlay || !this.commandsLayer || !this.threshold) {
             console.warn('Mobile radial command overlay missing.');
             return;
+        }
+
+        if (!this.selectionLabel) {
+            console.warn('Mobile radial command selection label missing.');
         }
 
         this.registerEventListeners();
@@ -229,6 +238,8 @@ export default class MobileCommandRadial {
         });
         document.body.classList.add('mobile-command-radial-active');
         this.positionThreshold();
+        this.positionSelectionLabel();
+        this.updateSelectionLabel(null);
         this.renderCommands();
     }
 
@@ -265,6 +276,7 @@ export default class MobileCommandRadial {
         }
         this.highlightCommand(null);
         this.commandsLayer.innerHTML = '';
+        this.updateSelectionLabel(null);
         if (!this.commands.length) {
             return;
         }
@@ -313,6 +325,34 @@ export default class MobileCommandRadial {
             }
         });
         this.highlightedCommandId = id;
+        this.updateSelectionLabel(id);
+    }
+
+    private positionSelectionLabel() {
+        if (!this.selectionLabel) {
+            return;
+        }
+        this.selectionLabel.style.left = `${this.centerX}px`;
+        this.selectionLabel.style.top = `${this.centerY}px`;
+    }
+
+    private updateSelectionLabel(id: string | null) {
+        if (!this.selectionLabel) {
+            return;
+        }
+        if (!id) {
+            this.selectionLabel.textContent = '';
+            this.selectionLabel.classList.remove('mobile-command-radial__selected--visible');
+            return;
+        }
+        const command = this.commands.find(cmd => cmd.id === id);
+        if (!command) {
+            this.selectionLabel.textContent = '';
+            this.selectionLabel.classList.remove('mobile-command-radial__selected--visible');
+            return;
+        }
+        this.selectionLabel.textContent = command.label || command.command;
+        this.selectionLabel.classList.add('mobile-command-radial__selected--visible');
     }
 
     private updateActiveLayout() {
@@ -453,12 +493,15 @@ export default class MobileCommandRadial {
         if (!target) {
             return false;
         }
-        if (!target.closest('#main-container')) {
+        if (window.innerWidth > 1024) {
             return false;
         }
         if (this.ignoreSelectors.some(sel => target.closest(sel))) {
             return false;
         }
-        return window.innerWidth <= 1024;
+        if (!target.closest(this.contentAreaSelector)) {
+            return false;
+        }
+        return true;
     }
 }

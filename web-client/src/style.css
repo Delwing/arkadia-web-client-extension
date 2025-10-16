@@ -1399,6 +1399,29 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   pointer-events: none;
 }
 
+.mobile-command-radial__selected {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 60vw;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 100ms ease-out;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.mobile-command-radial__selected--visible {
+  opacity: 1;
+}
+
 body.mobile-command-radial-active {
   touch-action: none;
 }
