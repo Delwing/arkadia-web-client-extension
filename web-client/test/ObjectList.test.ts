@@ -133,7 +133,7 @@ describe('ObjectList', () => {
     (objectList as any).render();
     const num = document.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     num.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_123');
   });
 
   test('clicking teammate shields them', () => {
@@ -306,7 +306,7 @@ describe('ObjectList', () => {
     const pipNum = pipDoc.body.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     expect(pipNum).toBeTruthy();
     pipNum.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_7');
 
     const pipDesc = pipDoc.body.querySelector('.object-desc[data-object-num="1"]') as HTMLElement;
     expect(pipDesc).toBeTruthy();

@@ -1,5 +1,5 @@
 import { saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent } from './recordingStorage';
-import {CommandOptions} from "@client/src/normalizeCommand.ts";
+import { CommandOptions } from "@client/src/scripts/commandPreserveCaseMode.ts";
 
 export interface RecorderHooks {
     processIncomingData(data: string): void;

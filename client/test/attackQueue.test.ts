@@ -1,5 +1,9 @@
 import initAttackQueue from '../src/scripts/attackQueue';
 
+jest.mock('../src/storage', () => ({
+  getItemSync: jest.fn(() => ({})),
+}));
+
 class FakeClient {
   TeamManager = {
     addEnemyToQueue: jest.fn(),
@@ -11,6 +15,7 @@ class FakeClient {
   println = jest.fn();
   sendCommand = jest.fn();
   sendEvent = jest.fn();
+  addEventListener = jest.fn();
 }
 
 describe('attack queue aliases', () => {
@@ -113,6 +118,20 @@ describe('attack queue aliases', () => {
 
     expect(client.TeamManager.shiftEnemyFromQueue).toHaveBeenCalled();
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_77');
+  });
+
+  test('kills next enemy using attack command from settings', () => {
+    const alias = aliases.find(a => a.pattern.test('/nn'))!;
+    const settingsListenerCall = client.addEventListener.mock.calls.find(
+      call => call[0] === 'settings',
+    );
+    const settingsListener = settingsListenerCall && settingsListenerCall[1];
+    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('44');
+
+    settingsListener?.({ detail: { attackCommand: 'atak' } } as any);
+    execAlias(alias, '/nn');
+
+    expect(client.sendCommand).toHaveBeenCalledWith('atak ob_44');
   });
 
   test('notifies when queue is empty', () => {

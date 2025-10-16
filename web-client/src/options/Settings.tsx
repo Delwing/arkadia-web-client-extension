@@ -302,6 +302,25 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                         </div>
                     </section>
                     <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Walka</h5>
+                        <div className="character-settings-stack">
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda ataku:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.attackCommand}
+                                    placeholder="zabij"
+                                    onChange={e => onChangeSetting(s => s.attackCommand = e.target.value)}
+                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                />
+                                <Form.Text className="text-muted">
+                                    Uzywana przy ataku na numery obiektow. Domyslnie "zabij".
+                                </Form.Text>
+                            </Form.Group>
+                        </div>
+                    </section>
+                    <section className="character-settings-section">
                         <h5 className="character-settings-section-title">Zioła</h5>
                         <div className="character-settings-stack">
                             <Form.Group>

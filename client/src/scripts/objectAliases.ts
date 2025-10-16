@@ -2,6 +2,7 @@ import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {gmcp} from "../gmcp";
 import { getItemSync, setItemSync } from "../storage";
+import { normalizeAttackCommand } from "../utils/attackCommand";
 
 export default function initObjectAliases(
     client: Client,
@@ -66,8 +67,14 @@ export default function initObjectAliases(
         }
     }
 
+    const storedSettings = getItemSync('settings')?.settings;
+    let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
+    client.addEventListener('settings', (ev: CustomEvent) => {
+        attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
+    });
+
     function attackById(id: string) {
-        client.sendCommand(`zabij ob_${id}`);
+        client.sendCommand(`${attackCommand} ob_${id}`);
         if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
             client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);
             if (attackMode === 'AWR') {
