@@ -986,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
+    new MobileCommandRadial(client);
 
     loadMobileButtonSettings().then(s => {
         const inTeam = !!client.TeamManager.isInAnyTeam?.();
@@ -1078,6 +1079,7 @@ window.client = arkadiaClient
 // background communication disabled
 
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
+import MobileCommandRadial from "./scripts/mobileCommandRadial"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
