@@ -76,25 +76,15 @@ describe('leader attack warning', () => {
     expect(client.println).toHaveBeenCalledTimes(1);
   });
 
-  test('drops warning after drop flag is set and interval passes', () => {
+  test('does not print when attack target disappears', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('1');
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
     client.println.mockClear();
 
-    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
-    expect(client.println).not.toHaveBeenCalled();
-
-    jest.advanceTimersByTime(4000);
-    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
-    expect(client.println).not.toHaveBeenCalled();
-
-    jest.advanceTimersByTime(1000);
-    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
-    expect(client.println).not.toHaveBeenCalled();
-
+    client.TeamManager.getAttackTargetId.mockReturnValue(undefined);
     jest.advanceTimersByTime(5000);
-    client.sendEvent('teamLeaderTargetNoAvatar', '1');
-    expect(client.println).toHaveBeenCalledTimes(1);
+    client.sendEvent('gmcp.objects.data');
+    expect(client.println).not.toHaveBeenCalled();
   });
 });
