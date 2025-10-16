@@ -73,6 +73,7 @@ export default class MobileDirectionButtons {
     private dragLocked = false;
     private currentOrientation: Orientation = this.getCurrentOrientation();
     private savedPositions: Partial<Record<Orientation, StoredPosition>> = {};
+    private viewportBaselineHeights: Partial<Record<Orientation, number>> = {};
 
 
     constructor(client: Client) {
@@ -124,6 +125,7 @@ export default class MobileDirectionButtons {
         this.updateToggleButton();
         this.setupDraggable();
         this.checkMobile();
+        this.updateViewportBaseline(true);
         this.setupKeyboardHandlers();
 
         this.client.addEventListener('gmcp.room.info', (ev: CustomEvent) => {
@@ -161,12 +163,18 @@ export default class MobileDirectionButtons {
 
         // Listen for window resize to check if mobile view and keep buttons in bounds
         window.addEventListener('resize', () => {
+            this.checkMobile();
             const newOrientation = this.getCurrentOrientation();
             if (newOrientation !== this.currentOrientation) {
                 this.currentOrientation = newOrientation;
+                this.updateViewportBaseline(true);
                 this.applySavedPosition();
+            } else {
+                this.updateViewportBaseline();
             }
-            this.checkMobile();
+            if (!this.viewportBaselineHeights[this.currentOrientation]) {
+                this.updateViewportBaseline(true);
+            }
             this.clampToView(true);
             this.scrollToBottom();
         });
@@ -250,6 +258,30 @@ export default class MobileDirectionButtons {
         }
     }
 
+    private updateViewportBaseline(force = false) {
+        if (!this.isMobile && !force) return;
+
+        const orientation = this.currentOrientation;
+        const currentHeight = Math.max(0, window.innerHeight || 0);
+        if (currentHeight === 0) return;
+
+        const existingHeight = this.viewportBaselineHeights[orientation];
+        if (force || !existingHeight || currentHeight > existingHeight) {
+            this.viewportBaselineHeights[orientation] = currentHeight;
+        }
+    }
+
+    private getViewportHeightForClamp(): number {
+        if (!this.isMobile) {
+            return window.innerHeight;
+        }
+        const baselineHeight = this.viewportBaselineHeights[this.currentOrientation];
+        if (baselineHeight && baselineHeight > 0) {
+            return baselineHeight;
+        }
+        return window.innerHeight;
+    }
+
     private setupEventHandlers() {
 
 
@@ -279,6 +311,22 @@ export default class MobileDirectionButtons {
 
     private clampToView(persist = false) {
         const rect = this.container.getBoundingClientRect();
+        const fullyOutsideLeft = rect.right <= 0;
+        const fullyOutsideRight = rect.left >= window.innerWidth;
+        const viewportHeight = this.getViewportHeightForClamp();
+        const fullyOutsideTop = rect.bottom <= 0;
+        const fullyOutsideBottom = rect.top >= viewportHeight;
+
+        const adjustHorizontal = fullyOutsideLeft || fullyOutsideRight;
+        const adjustVertical = fullyOutsideTop || fullyOutsideBottom;
+
+        if (!adjustHorizontal && !adjustVertical) {
+            if (persist) {
+                this.persistCurrentPosition();
+            }
+            return;
+        }
+
         let left = parseInt(this.container.style.left, 10);
         let top = parseInt(this.container.style.top, 10);
         if (isNaN(left)) {
@@ -287,10 +335,20 @@ export default class MobileDirectionButtons {
         if (isNaN(top)) {
             top = rect.top;
         }
-        const maxLeft = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
-        const maxTop = window.innerHeight - this.container.offsetHeight - 5;
-        const clampedLeft = Math.min(Math.max(5, left), maxLeft);
-        const clampedTop = Math.min(Math.max(5, top), maxTop);
+
+        let clampedLeft = left;
+        let clampedTop = top;
+
+        if (adjustHorizontal) {
+            const maxLeft = Math.max(5, window.innerWidth - this.container.offsetWidth - 5);
+            clampedLeft = Math.min(Math.max(5, left), maxLeft);
+        }
+
+        if (adjustVertical) {
+            const maxTop = viewportHeight - this.container.offsetHeight - 5;
+            clampedTop = Math.min(Math.max(5, top), maxTop);
+        }
+
         const changed = clampedLeft !== left || clampedTop !== top;
         if (changed) {
             this.container.style.left = `${clampedLeft}px`;
