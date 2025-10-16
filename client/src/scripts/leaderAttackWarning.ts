@@ -1,7 +1,6 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import { formatLabel } from "./functionalBind";
-import { gmcp } from "../gmcp";
 
 export default function initLeaderAttackWarning(client: Client) {
     const RED = findClosestColor("#ff0000");
@@ -48,20 +47,34 @@ export default function initLeaderAttackWarning(client: Client) {
         print(text);
     }
 
+    function hasDropFlag(detail: Record<string, any> | undefined) {
+        if (!detail) {
+            return false;
+        }
+
+        if (detail.drop_leader_attack_warning === true) {
+            return true;
+        }
+
+        return Object.values(detail).some(value => {
+            return value && typeof value === 'object' && value.drop_leader_attack_warning === true;
+        });
+    }
+
     client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
         activeTargetId = e.detail;
         dropRequestedAt = undefined;
         dropTimerArmed = false;
         printWarning(activeTargetId, true);
     });
-    client.addEventListener('gmcp.objects.data', (_e: CustomEvent<Record<string, any>>) => {
+    client.addEventListener('gmcp.objects.data', (e: CustomEvent<Record<string, any>>) => {
         if (!activeTargetId) {
             dropRequestedAt = undefined;
             dropTimerArmed = false;
             return;
         }
 
-        const dropFlag = gmcp?.char?.options?.drop_leader_attack_warning === true;
+        const dropFlag = hasDropFlag(e.detail);
 
         if (dropFlag) {
             if (!dropTimerArmed) {

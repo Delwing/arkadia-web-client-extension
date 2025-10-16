@@ -1,7 +1,6 @@
 import initLeaderAttackWarning from '../src/scripts/leaderAttackWarning';
 import { stripAnsiCodes } from '../src/Triggers';
 import { EventEmitter } from 'events';
-import { gmcp } from '../src/gmcp';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -27,7 +26,6 @@ describe('leader attack warning', () => {
   let client: FakeClient;
 
   beforeEach(() => {
-    Object.keys(gmcp).forEach(key => delete (gmcp as any)[key]);
     client = new FakeClient();
     jest.useFakeTimers();
     jest.setSystemTime(0);
@@ -84,19 +82,17 @@ describe('leader attack warning', () => {
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
     client.println.mockClear();
 
-    gmcp.char = { options: { drop_leader_attack_warning: true } };
-    client.sendEvent('gmcp.objects.data', {});
+    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
     expect(client.println).not.toHaveBeenCalled();
 
     jest.advanceTimersByTime(4000);
-    client.sendEvent('gmcp.objects.data', {});
+    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
     expect(client.println).not.toHaveBeenCalled();
 
     jest.advanceTimersByTime(1000);
-    client.sendEvent('gmcp.objects.data', {});
+    client.sendEvent('gmcp.objects.data', { drop_leader_attack_warning: true });
     expect(client.println).not.toHaveBeenCalled();
 
-    gmcp.char.options.drop_leader_attack_warning = false;
     jest.advanceTimersByTime(5000);
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
     expect(client.println).toHaveBeenCalledTimes(1);
