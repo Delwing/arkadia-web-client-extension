@@ -48,10 +48,9 @@ describe('herb counter', () => {
     parse('Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz zolty jasny kwiat.');
     const printed = client.println.mock.calls[0][0];
     expect(printed).toMatch(/3/);
-    expect(printed).toMatch(/zolte jasne kwiaty/);
-    expect(printed).toMatch(/zolty jasny kwiat/);
-    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}zolte jasne kwiaty{clickClose}/);
-    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}zolty jasny kwiat{clickClose}/);
+    expect(printed).toMatch(/deliona/);
+    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}deliona{clickClose}/);
+    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}deliona{clickClose}/);
   });
 
   test('splits summary when width is limited', async () => {
@@ -118,7 +117,7 @@ describe('herb counter', () => {
   test('opens herb manager overlay via alias', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
-    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_okno'));
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola'));
     expect(entry).toBeTruthy();
     client.sendEvent.mockClear();
     entry?.callback();

@@ -281,7 +281,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     function finish() {
         storedBags = structuredClone(bagTotals);
-        const lines = buildSummary(storedBags);
+        const lines = buildSummary(storedBags, true, false);
         client.println(lines.join('\n'));
         persistBags();
         awaiting = false;
@@ -450,7 +450,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             }
         });
         aliases.push({
-            pattern: /\/ziola_okno$/, callback: () => {
+            pattern: /\/ziola$/, callback: () => {
                 client.sendEvent('herbManagerOpen');
             }
         });
