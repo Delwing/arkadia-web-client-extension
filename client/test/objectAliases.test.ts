@@ -82,6 +82,19 @@ describe('object aliases', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
   });
 
+  test('kill alias uses attack command from settings when provided', () => {
+    const settingsListenerCall = client.addEventListener.mock.calls.find(
+      call => call[0] === 'settings',
+    );
+    const settingsListener = settingsListenerCall && settingsListenerCall[1];
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+
+    settingsListener?.({ detail: { attackCommand: 'atak' } } as any);
+    kill(['', '1'] as unknown as RegExpMatchArray);
+
+    expect(client.sendCommand).toHaveBeenCalledWith('atak ob_5');
+  });
+
   test('kill alias in AW mode marks target', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     setAttackMode({ detail: 'AW' });

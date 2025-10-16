@@ -205,7 +205,11 @@ test('sendCommand preserves casing when requested', () => {
   client.sendCommand('UPPER CASE', true, { preserveCase: true });
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('UPPER CASE');
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:UPPER CASE', true);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith(
+    'parsed:UPPER CASE',
+    true,
+    { preserveCase: true },
+  );
 });
 
 test('sendCommand allows empty command', () => {

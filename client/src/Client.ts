@@ -23,7 +23,8 @@ import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
-import {CommandOptions} from "./scripts/commandPreserveCaseMode";
+import { CommandOptions, normalizeCommand } from "./scripts/commandPreserveCaseMode";
+import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -72,6 +73,7 @@ export default class Client {
         alt?: boolean;
         shift?: boolean;
     };
+    attackCommand = DEFAULT_ATTACK_COMMAND;
     supportBind = {key: "KeyQ", ctrl: true} as {
         key: string;
         ctrl?: boolean;
@@ -135,7 +137,8 @@ export default class Client {
             ) {
                 const id = this.TeamManager.getAttackTargetId?.()
                 if (id) {
-                    this.sendCommand(`zabij ob_${id}`)
+                    const command = `${this.attackCommand} ob_${id}`;
+                    this.sendCommand(command)
                 }
                 ev.preventDefault()
             }
@@ -236,8 +239,13 @@ export default class Client {
             }
         }
 
+        const initialSettings = getItemSync('settings')?.settings;
+        this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
+
         this.addEventListener('settings', (ev: CustomEvent) => {
-            applyBinds(ev.detail?.binds)
+            const settings = ev.detail || {};
+            applyBinds(settings?.binds)
+            this.attackCommand = normalizeAttackCommand(settings?.attackCommand);
         })
 
         this.addEventListener('binds', (ev: CustomEvent) => {
@@ -349,6 +357,7 @@ export default class Client {
     }
 
     sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
+        command = normalizeCommand(command, options)
         if (command) {
             command = stripPolishCharacters(command)
         }
@@ -406,7 +415,12 @@ export default class Client {
         if (moveRes.moved) {
             this.Map.setBlockable(true)
         }
-        this.clientAdapter.send(this.applyMoveMode(moveRes.direction, moveRes.moved), echo, options)
+        const commandToSend = this.applyMoveMode(moveRes.direction, moveRes.moved)
+        if (typeof options === 'undefined') {
+            this.clientAdapter.send(commandToSend, echo)
+        } else {
+            this.clientAdapter.send(commandToSend, echo, options)
+        }
     }
 
     private applyMoveMode(cmd: string, moved?: boolean): string {

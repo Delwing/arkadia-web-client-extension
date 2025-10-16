@@ -1,4 +1,6 @@
 import Client from "../Client";
+import { getItemSync } from "../storage";
+import { normalizeAttackCommand } from "../utils/attackCommand";
 
 type ResolvedEnemy = {
     id: string;
@@ -59,6 +61,12 @@ export default function initAttackQueue(
 ) {
     const list = aliases ?? client.aliases;
 
+    const storedSettings = getItemSync('settings')?.settings;
+    let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
+    client.addEventListener('settings', (ev: CustomEvent) => {
+        attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
+    });
+
     const add = (matches: RegExpMatchArray) => {
         const resolved = resolveEnemy(client, matches[1] ?? matches[0]);
         if (!resolved) {
@@ -81,7 +89,7 @@ export default function initAttackQueue(
             client.println("Kolejka ataku jest pusta.");
             return;
         }
-        client.sendCommand(`zabij ob_${next}`);
+        client.sendCommand(`${attackCommand} ob_${next}`);
     };
 
     list.push({

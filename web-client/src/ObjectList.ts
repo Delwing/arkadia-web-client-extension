@@ -1,5 +1,6 @@
 import Client from "@client/src/Client";
 import { getItemSync, setItemSync } from "@client/src/storage";
+import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "@client/src/utils/attackCommand";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 
 export default class ObjectList {
@@ -26,12 +27,18 @@ export default class ObjectList {
     private pipCoverTimerText = "";
     private pipLastOutputHtml = "";
     private cachedPipHtml = "";
+    private attackCommand = DEFAULT_ATTACK_COMMAND;
 
     constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
         this.content = this.setupContainer();
         this.isMobile = this.isMobileBrowser();
+        const storedSettings = getItemSync("settings")?.settings;
+        this.attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
+        this.client.addEventListener("settings", (ev: CustomEvent) => {
+            this.attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
+        });
         this.setupDraggable();
         if (!this.isMobile) {
             this.container?.addEventListener("click", this.onClick);
@@ -197,9 +204,14 @@ export default class ObjectList {
             ".object-num[data-object-num]"
         ) as HTMLElement | null;
         if (numEl) {
-            const num = numEl.getAttribute("data-object-num");
-            if (num) {
-                this.client.sendCommand(`/z ${num}`);
+            const id = numEl.getAttribute("data-object-id");
+            if (id) {
+                this.client.sendCommand(`${this.attackCommand} ob_${id}`);
+            } else {
+                const num = numEl.getAttribute("data-object-num");
+                if (num) {
+                    this.client.sendCommand(`/z ${num}`);
+                }
             }
             return;
         }
