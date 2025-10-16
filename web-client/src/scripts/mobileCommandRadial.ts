@@ -26,6 +26,8 @@ export default class MobileCommandRadial {
     private readonly commandsLayer: HTMLDivElement | null;
     private readonly threshold: HTMLDivElement | null;
     private readonly selectionLabel: HTMLDivElement | null;
+    private readonly contentArea: HTMLDivElement | null;
+    private readonly contentAreaSelector = '#main_text_output_msg_wrapper';
     private settings: Settings | null = null;
     private activeLayout: LayoutSettings | null = null;
     private commands: RadialCommand[] = [];
@@ -42,7 +44,6 @@ export default class MobileCommandRadial {
         "#map",
         "#auth-overlay",
     ];
-    private readonly contentAreaSelector = "#main_text_output_msg_wrapper";
     private startX = 0;
     private startY = 0;
     private centerX = 0;
@@ -61,6 +62,7 @@ export default class MobileCommandRadial {
         this.commandsLayer = this.overlay?.querySelector('.mobile-command-radial__commands') as HTMLDivElement | null;
         this.threshold = this.overlay?.querySelector('.mobile-command-radial__threshold') as HTMLDivElement | null;
         this.selectionLabel = this.overlay?.querySelector('.mobile-command-radial__selected') as HTMLDivElement | null;
+        this.contentArea = document.getElementById('main_text_output_msg_wrapper') as HTMLDivElement | null;
 
         if (!this.overlay || !this.commandsLayer || !this.threshold) {
             console.warn('Mobile radial command overlay missing.');
@@ -76,7 +78,11 @@ export default class MobileCommandRadial {
     }
 
     private registerEventListeners() {
-        document.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+        if (this.contentArea) {
+            this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+        } else {
+            document.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+        }
         window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
         window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
         window.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
@@ -499,9 +505,9 @@ export default class MobileCommandRadial {
         if (this.ignoreSelectors.some(sel => target.closest(sel))) {
             return false;
         }
-        if (!target.closest(this.contentAreaSelector)) {
-            return false;
+        if (!this.contentArea) {
+            return !!target.closest(this.contentAreaSelector);
         }
-        return true;
+        return target === this.contentArea;
     }
 }
