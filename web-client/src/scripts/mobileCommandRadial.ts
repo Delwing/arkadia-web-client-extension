@@ -115,7 +115,7 @@ export default class MobileCommandRadial {
             return;
         }
         const touch = event.touches[0];
-        if (!this.isEligibleTouch(touch)) {
+        if (!this.isEligibleTouch(touch, event.target)) {
             this.cancelLongPress();
             return;
         }
@@ -485,20 +485,12 @@ export default class MobileCommandRadial {
         return null;
     }
 
-    private isEligibleTouch(touch: Touch): boolean {
+    private isEligibleTouch(touch: Touch, origin: EventTarget | null = null): boolean {
         if (!this.contentArea) {
             return false;
         }
-        if (window.innerWidth > 1024) {
-            return false;
-        }
-        const rect = this.contentArea.getBoundingClientRect();
-        if (
-            touch.clientX < rect.left ||
-            touch.clientX > rect.right ||
-            touch.clientY < rect.top ||
-            touch.clientY > rect.bottom
-        ) {
+        const originNode = origin instanceof Node ? origin : null;
+        if (originNode && !this.contentArea.contains(originNode)) {
             return false;
         }
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
