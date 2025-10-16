@@ -346,52 +346,58 @@ export default class Client {
     }
 
     sendCommand(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
-        if (command) {
-            command = stripPolishCharacters(command)
+        const skipLowercasePrefixes = [
+            "'",
+            "powiedz",
+            "j'",
+            "jpowiedz",
+            "krzyknij",
+            "jkrzyknij",
+            "szepnij",
+            "jszepnij",
+        ]
 
-            const trimmedCommand = command.trimStart()
-            if (trimmedCommand) {
-                const skipLowercasePrefixes = [
-                    "'",
-                    "powiedz",
-                    "j'",
-                    "jpowiedz",
-                    "krzyknij",
-                    "jkrzyknij",
-                    "szepnij",
-                    "jszepnij",
-                ]
-                const shouldLowercase = !options?.preserveCase && !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
-                if (shouldLowercase) {
-                    const leadingWhitespaceLength = command.length - trimmedCommand.length
-                    const leadingWhitespace = command.slice(0, leadingWhitespaceLength)
-                    command = leadingWhitespace + trimmedCommand.toLowerCase()
-                }
+        command = command ? stripPolishCharacters(command) : ''
+
+        const trimmedCommand = command.trimStart()
+        const lowerTrimmedCommand = trimmedCommand.toLowerCase()
+        const shouldLowercase = Boolean(trimmedCommand) && !options?.preserveCase && !skipLowercasePrefixes.some(prefix => lowerTrimmedCommand.startsWith(prefix))
+
+        const applyLowercase = (value: string) => {
+            if (!shouldLowercase) {
+                return value
             }
+            const valueTrimmed = value.trimStart()
+            const leadingWhitespaceLength = value.length - valueTrimmed.length
+            const leadingWhitespace = value.slice(0, leadingWhitespaceLength)
+            return leadingWhitespace + valueTrimmed.toLowerCase()
         }
+
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
-        let preparse = command
-        command = this.Map.parseCommand(command)
-        command = this.expandObjectShortcuts(command)
-        if (command.startsWith('echo ')) {
-            this.print(mudletColorLine(command.substring(5)))
+        const preparse = command
+        let processedCommand = this.Map.parseCommand(command)
+        processedCommand = this.expandObjectShortcuts(processedCommand)
+
+        const trimmedProcessedCommand = processedCommand.trimStart()
+        if (trimmedProcessedCommand.toLowerCase().startsWith('echo ')) {
+            this.print(mudletColorLine(trimmedProcessedCommand.substring(5)))
             return
         }
-        const split = command.split(/[#;]/)
+        const split = processedCommand.split(/[#;]/)
         if (split.length > 1) {
             split.forEach(part => {
                 if (part !== preparse) {
                     this.sendCommand(part, echo, options)
                 } else {
-                    this.sendMovement(part, echo)
+                    this.sendMovement(applyLowercase(part), echo)
                 }
             })
             return
         }
 
         const isAlias = this.aliases.find(alias => {
-            const matches = command.match(alias.pattern)
+            const matches = processedCommand.match(alias.pattern)
             if (matches) {
                 alias.callback(matches)
                 return true
@@ -399,11 +405,11 @@ export default class Client {
             return false
         })
         if (!isAlias) {
-            if (command.trim().startsWith('/')) {
-                this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
+            if (processedCommand.trim().startsWith('/')) {
+                this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${processedCommand}`))
                 return
             }
-            this.sendMovement(command, echo)
+            this.sendMovement(applyLowercase(processedCommand), echo)
         }
     }
 

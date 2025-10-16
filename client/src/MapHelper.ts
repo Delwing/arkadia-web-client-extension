@@ -138,7 +138,9 @@ export default class MapHelper {
     }
 
     parseCommand(command: string): string | null {
-        if (command.trim() === "idz") {
+        const trimmed = command.trim()
+        const lowerTrimmed = trimmed.toLowerCase()
+        if (lowerTrimmed === "idz") {
             this.refreshPosition = true;
             if (this.currentRoom) {
                 const allExits = Object.assign(
@@ -160,8 +162,9 @@ export default class MapHelper {
         if (this.currentRoom) {
             if (this.currentRoom.userData.dir_bind) {
                 const dirBinds = Object.fromEntries(this.currentRoom.userData.dir_bind.split("&").map((item: string) => item.split("=")))
-                if (dirBinds[getLongDir(command)]) {
-                    return dirBinds[getLongDir(command)]
+                const longDir = getLongDir(trimmed)
+                if (dirBinds[longDir]) {
+                    return dirBinds[longDir]
                 }
             }
         }
