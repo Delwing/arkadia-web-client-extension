@@ -449,6 +449,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
             }
         });
+        aliases.push({
+            pattern: /\/ziola_okno$/, callback: () => {
+                client.sendEvent('herbManagerOpen');
+            }
+        });
         aliases.push({ pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10)) });
         aliases.push({ pattern: /^\/wezz ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1) });
         aliases.push({

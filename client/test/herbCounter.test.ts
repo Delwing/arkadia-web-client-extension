@@ -100,7 +100,9 @@ describe('herb counter', () => {
   test('prints summary from storage', async () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
-    const show = aliases[1].callback as any;
+    const showEntry = aliases.find(({ pattern }) => pattern.test('/ziola_pokaz'));
+    expect(showEntry).toBeTruthy();
+    const show = showEntry!.callback as any;
     const printedPromise = new Promise<string>((resolve) => {
       client.println.mockImplementationOnce((line: string) => {
         resolve(line);
@@ -111,6 +113,16 @@ describe('herb counter', () => {
     const printed = await printedPromise;
     expect(printed).toMatch(/2/);
     expect(printed).toMatch(/deliona/);
+  });
+
+  test('opens herb manager overlay via alias', () => {
+    const aliases: { pattern: RegExp; callback: () => void }[] = [];
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_okno'));
+    expect(entry).toBeTruthy();
+    client.sendEvent.mockClear();
+    entry?.callback();
+    expect(client.sendEvent).toHaveBeenCalledWith('herbManagerOpen');
   });
 
   test('herb manager can move herbs between bags', async () => {

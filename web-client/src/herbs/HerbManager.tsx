@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getItemSync } from "@client/src/storage";
 import type { HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
 
@@ -112,6 +113,13 @@ const getInitialCounts = (): HerbCounts | undefined => {
     return value;
 };
 
+const clamp = (value: number, min: number, max: number) => {
+    if (max < min) {
+        return min;
+    }
+    return Math.min(Math.max(value, min), max);
+};
+
 const HerbManager = () => {
     const idCounter = useRef(0);
     const nextInstanceId = () => `stack-${idCounter.current++}`;
@@ -124,6 +132,10 @@ const HerbManager = () => {
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    const dragState = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
 
     useEffect(() => {
         const handler = (ev: Event) => {
@@ -138,8 +150,125 @@ const HerbManager = () => {
     }, []);
 
     useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
         window.dispatchEvent(new Event("request-herb-counts"));
+        panelRef.current?.focus();
+    }, [isOpen]);
+
+    useEffect(() => {
+        const openHandler = () => {
+            setError(null);
+            setIsOpen(true);
+        };
+        const closeHandler = () => {
+            setIsOpen(false);
+        };
+        window.addEventListener("herbManagerOpen", openHandler);
+        window.addEventListener("herbManagerClose", closeHandler);
+        return () => {
+            window.removeEventListener("herbManagerOpen", openHandler);
+            window.removeEventListener("herbManagerClose", closeHandler);
+        };
     }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setActiveBag(null);
+            return;
+        }
+        const handleKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [isOpen]);
+
+    const handleResize = useCallback(() => {
+        setPosition(prev => {
+            if (!prev || !panelRef.current) {
+                return prev;
+            }
+            const rect = panelRef.current.getBoundingClientRect();
+            const margin = 16;
+            const maxLeft = window.innerWidth - rect.width - margin;
+            const maxTop = window.innerHeight - rect.height - margin;
+            const nextLeft = clamp(prev.left, margin, maxLeft);
+            const nextTop = clamp(prev.top, margin, maxTop);
+            if (nextLeft === prev.left && nextTop === prev.top) {
+                return prev;
+            }
+            return { left: nextLeft, top: nextTop };
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [handleResize, isOpen]);
+
+    const handlePointerMove = useCallback((event: PointerEvent) => {
+        const drag = dragState.current;
+        if (!drag || event.pointerId !== drag.pointerId || !panelRef.current) {
+            return;
+        }
+        const rect = panelRef.current.getBoundingClientRect();
+        const margin = 16;
+        const nextLeft = event.clientX - drag.offsetX;
+        const nextTop = event.clientY - drag.offsetY;
+        const maxLeft = window.innerWidth - rect.width - margin;
+        const maxTop = window.innerHeight - rect.height - margin;
+        setPosition({
+            left: clamp(nextLeft, margin, maxLeft),
+            top: clamp(nextTop, margin, maxTop),
+        });
+    }, []);
+
+    const endPointerDrag = useCallback((event: PointerEvent) => {
+        const drag = dragState.current;
+        if (!drag || event.pointerId !== drag.pointerId) {
+            return;
+        }
+        dragState.current = null;
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", endPointerDrag);
+        window.removeEventListener("pointercancel", endPointerDrag);
+    }, [handlePointerMove]);
+
+    useEffect(() => {
+        return () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", endPointerDrag);
+            window.removeEventListener("pointercancel", endPointerDrag);
+        };
+    }, [endPointerDrag, handlePointerMove]);
+
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+        if (!panelRef.current) {
+            return;
+        }
+        const rect = panelRef.current.getBoundingClientRect();
+        dragState.current = {
+            pointerId: event.pointerId,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+        };
+        setPosition(prev => prev ?? { left: rect.left, top: rect.top });
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", endPointerDrag);
+        window.addEventListener("pointercancel", endPointerDrag);
+        event.preventDefault();
+    };
 
     const handleSplit = (bagNumber: number, stack: HerbStack) => (event: React.MouseEvent) => {
         if (!event.shiftKey) {
@@ -267,58 +396,94 @@ const HerbManager = () => {
 
     const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
+    const handleClose = () => {
+        setIsOpen(false);
+    };
+
+    const handleBackdropClick = () => {
+        handleClose();
+    };
+
+    if (!isOpen) {
+        return null;
+    }
+
+    const containerStyle = position
+        ? { top: `${position.top}px`, left: `${position.left}px` }
+        : undefined;
+
     return (
-        <div className={`herb-manager${busy ? " herb-manager--busy" : ""}`}>
-            {error && (
-                <div className="alert alert-danger herb-manager-status" role="alert">
-                    {error}
+        <>
+            <div className="herb-overlay" role="presentation" onClick={handleBackdropClick} />
+            <div
+                ref={panelRef}
+                className={`herb-window${position ? " herb-window--floating" : " herb-window--center"}`}
+                style={containerStyle}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Woreczki ziół"
+                tabIndex={-1}
+                onClick={event => event.stopPropagation()}
+            >
+                <div className="herb-window-header" onPointerDown={handlePointerDown}>
+                    <h5 className="herb-window-title">Woreczki ziół</h5>
+                    <button type="button" className="btn-close" aria-label="Zamknij" onClick={handleClose} />
                 </div>
-            )}
-            {emptyState ? (
-                <div className="alert alert-info herb-manager-status" role="alert">
-                    Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
-                </div>
-            ) : (
-                <div className="herb-grid">
-                    {bags.map(bag => (
-                        <div
-                            key={bag.bagNumber}
-                            className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
-                            onDragOver={handleDragOver(bag.bagNumber)}
-                            onDrop={handleDrop(bag.bagNumber)}
-                            onDragLeave={handleDragLeave(bag.bagNumber)}
-                        >
-                            <div className="herb-bag-header">
-                                <span>Woreczek {bag.bagNumber}</span>
-                                <span className="herb-bag-count">
-                                    {bag.items.reduce((sum, item) => sum + item.count, 0)} szt.
-                                </span>
+                <div className="herb-window-body">
+                    <div className={`herb-manager${busy ? " herb-manager--busy" : ""}`}>
+                        {error && (
+                            <div className="alert alert-danger herb-manager-status" role="alert">
+                                {error}
                             </div>
-                            <div className="herb-bag-content">
-                                {bag.items.length === 0 ? (
-                                    <div className="herb-bag-empty">Pusty woreczek</div>
-                                ) : (
-                                    bag.items.map(stack => (
-                                        <button
-                                            key={stack.instanceId}
-                                            type="button"
-                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
-                                            draggable={!busy}
-                                            onDragStart={handleDragStart(bag.bagNumber, stack)}
-                                            onDragEnd={handleDragEnd}
-                                            onClick={handleSplit(bag.bagNumber, stack)}
-                                        >
-                                            <span className="herb-pill-count">{stack.count} ×</span>
-                                            <span className="herb-pill-label">{stack.herbId}</span>
-                                        </button>
-                                    ))
-                                )}
+                        )}
+                        {emptyState ? (
+                            <div className="alert alert-info herb-manager-status" role="alert">
+                                Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                             </div>
-                        </div>
-                    ))}
+                        ) : (
+                            <div className="herb-grid">
+                                {bags.map(bag => (
+                                    <div
+                                        key={bag.bagNumber}
+                                        className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
+                                        onDragOver={handleDragOver(bag.bagNumber)}
+                                        onDrop={handleDrop(bag.bagNumber)}
+                                        onDragLeave={handleDragLeave(bag.bagNumber)}
+                                    >
+                                        <div className="herb-bag-header">
+                                            <span>Woreczek {bag.bagNumber}</span>
+                                            <span className="herb-bag-count">
+                                                {bag.items.reduce((sum, item) => sum + item.count, 0)} szt.
+                                            </span>
+                                        </div>
+                                        <div className="herb-bag-content">
+                                            {bag.items.length === 0 ? (
+                                                <div className="herb-bag-empty">Pusty woreczek</div>
+                                            ) : (
+                                                bag.items.map(stack => (
+                                                    <button
+                                                        key={stack.instanceId}
+                                                        type="button"
+                                                        className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
+                                                        draggable={!busy}
+                                                        onDragStart={handleDragStart(bag.bagNumber, stack)}
+                                                        onDragEnd={handleDragEnd}
+                                                        onClick={handleSplit(bag.bagNumber, stack)}
+                                                    >
+                                                        <span className="herb-pill-count">{stack.count} ×</span>
+                                                        <span className="herb-pill-label">{stack.herbId}</span>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
-        </div>
+            </div>
+        </>
     );
 };
 
