@@ -1354,7 +1354,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   content: "";
   position: absolute;
   inset: 0;
-  backdrop-filter: blur(6px);
   background: rgba(15, 23, 42, 0.45);
 }
 
@@ -1378,7 +1377,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #f1f5f9;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.55);

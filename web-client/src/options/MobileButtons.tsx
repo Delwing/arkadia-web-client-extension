@@ -8,7 +8,6 @@ import {
     ButtonSetting,
     MacroType,
     Settings,
-    RadialCommandSetting,
     defaultOrder,
     defaultCols,
     createDefaultLayout,
@@ -84,14 +83,6 @@ function rgbaFromHexAlpha(hex: string, alpha: number) {
 type SettingsMap = Record<string, ButtonSetting>;
 
 const modes: Mode[] = ['solo', 'team', 'leader'];
-
-function createRadialId() {
-    const globalCrypto = typeof crypto !== 'undefined' ? crypto : undefined;
-    if (globalCrypto && typeof globalCrypto.randomUUID === 'function') {
-        return globalCrypto.randomUUID();
-    }
-    return `radial-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
-}
 
 function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({
@@ -313,65 +304,11 @@ function MobileButtons() {
         setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
     }
 
-    function addRadialCommand() {
-        setSettings(prev => ({
-            ...prev,
-            radial: {
-                ...prev.radial,
-                commands: [...(prev.radial?.commands || []), { id: createRadialId(), label: '', command: '' }],
-            },
-        }));
-    }
-
-    function updateRadialCommand(id: string, field: 'label' | 'command', value: string) {
-        setSettings(prev => ({
-            ...prev,
-            radial: {
-                ...prev.radial,
-                commands: (prev.radial?.commands || []).map(cmd =>
-                    cmd.id === id ? { ...cmd, [field]: value } : cmd
-                ),
-            },
-        }));
-    }
-
-    function removeRadialCommand(id: string) {
-        setSettings(prev => ({
-            ...prev,
-            radial: {
-                ...prev.radial,
-                commands: (prev.radial?.commands || []).filter(cmd => cmd.id !== id),
-            },
-        }));
-    }
-
     function save() {
-        const normalizedCommands = (settings.radial?.commands || []).reduce<RadialCommandSetting[]>((acc, cmd) => {
-            const command = (cmd.command || '').trim();
-            if (!command) {
-                return acc;
-            }
-            const label = (cmd.label || '').trim();
-            acc.push({
-                ...cmd,
-                id: cmd.id || createRadialId(),
-                label: label || command,
-                command,
-            });
-            return acc;
-        }, []);
-        const normalizedSettings: Settings = {
-            ...settings,
-            radial: {
-                ...settings.radial,
-                commands: normalizedCommands,
-            },
-        };
-        setSettings(normalizedSettings);
-        saveSettings(normalizedSettings);
+        saveSettings(settings);
         const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
         const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
-        applySettings(normalizedSettings, teamActive, leaderActive);
+        applySettings(settings, teamActive, leaderActive);
         window.dispatchEvent(new Event('close-options'));
     }
 
@@ -523,68 +460,6 @@ function MobileButtons() {
                     </Button>
                 </div>
             </Form.Group>
-            <div
-                className="mb-3 w-100"
-                onClick={ev => ev.stopPropagation()}
-                onMouseDown={ev => ev.stopPropagation()}
-                onTouchStart={ev => ev.stopPropagation()}
-            >
-                <Form.Label className="mb-2">Komendy menu kołowego</Form.Label>
-                <div className="d-flex flex-column gap-2">
-                    {settings.radial.commands.length === 0 && (
-                        <p className="text-muted small mb-0">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
-                    )}
-                    {settings.radial.commands.map(cmd => (
-                        <div key={cmd.id} className="border rounded p-2 d-flex flex-column flex-lg-row gap-2">
-                            <Form.Group className="flex-grow-1">
-                                <Form.Label className="small mb-1">Etykieta</Form.Label>
-                                <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={cmd.label}
-                                    placeholder="Nazwa przycisku"
-                                    onChange={e => updateRadialCommand(cmd.id, 'label', e.target.value)}
-                                />
-                            </Form.Group>
-                            <Form.Group className="flex-grow-1">
-                                <Form.Label className="small mb-1">Komenda</Form.Label>
-                                <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={cmd.command}
-                                    placeholder="Tekst komendy"
-                                    onChange={e => updateRadialCommand(cmd.id, 'command', e.target.value)}
-                                />
-                            </Form.Group>
-                            <div className="d-flex align-items-end">
-                                <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={ev => {
-                                        ev.preventDefault();
-                                        ev.stopPropagation();
-                                        removeRadialCommand(cmd.id);
-                                    }}
-                                >
-                                    Usuń
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-2"
-                    onClick={ev => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        addRadialCommand();
-                    }}
-                >
-                    Dodaj komendę
-                </Button>
-            </div>
             {active && activeCfg && (
                 <div
                     className="mobile-button-config"

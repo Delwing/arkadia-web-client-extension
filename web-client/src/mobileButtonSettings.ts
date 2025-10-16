@@ -194,7 +194,14 @@ export function createDefaultLayout(): LayoutSettings {
 
 const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
-const defaultRadialSettings: RadialSettings = { commands: [] };
+const defaultRadialSettings: RadialSettings = {
+    commands: [
+        { id: 'radial-1', label: '/ziola', command: '/ziola' },
+        { id: 'radial-2', label: '+k', command: '+k' },
+        { id: 'radial-3', label: 'deliona', command: '/z_zjedz deliona' },
+        { id: 'radial-4', label: 'porzuc druzyne', command: 'porzuc druzyne' },
+    ],
+};
 
 function extractButtons(set: any): Record<string, ButtonSetting> {
     if (!set || typeof set !== 'object') {
