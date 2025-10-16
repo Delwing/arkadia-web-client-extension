@@ -367,7 +367,7 @@ export default class Client {
                 if (part !== preparse) {
                     this.sendCommand(part, echo, options)
                 } else {
-                    this.sendMovement(part, echo)
+                    this.sendMovement(part, echo, options)
                 }
             })
             return
