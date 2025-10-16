@@ -64,6 +64,7 @@ export default class MobileDirectionButtons {
         team: { buttons: {}, order: [], cols: 0, background: defaultBackground },
         leader: { buttons: {}, order: [], cols: 0, background: defaultBackground },
         locked: false,
+        radial: { commands: [] },
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;

@@ -1,5 +1,5 @@
 import Client from "@client/src/Client";
-import { loadSettings, Settings, LayoutSettings, ButtonSetting } from "../mobileButtonSettings";
+import { loadSettings, Settings, LayoutSettings, ButtonSetting, RadialCommandSetting } from "../mobileButtonSettings";
 
 type ActiveLayoutKey = "solo" | "team" | "leader";
 
@@ -317,15 +317,79 @@ export default class MobileCommandRadial {
 
     private updateActiveLayout() {
         if (!this.settings) {
+            this.activeLayout = null;
+            this.updateCommands();
             return;
         }
         const mode = this.resolveActiveLayoutKey();
         const layout = this.settings[mode];
-        if (!layout) {
+        this.activeLayout = layout || null;
+        this.updateCommands();
+    }
+
+    private updateCommands() {
+        if (!this.settings) {
+            this.commands = [];
+            this.highlightCommand(null);
             return;
         }
-        this.activeLayout = layout;
-        this.updateCommandsFromLayout(layout);
+        const configured = this.settings.radial?.commands || [];
+        if (configured.length) {
+            this.updateCommandsFromRadial(configured);
+            return;
+        }
+        if (this.activeLayout) {
+            this.updateCommandsFromLayout(this.activeLayout);
+            return;
+        }
+        this.commands = [];
+        this.highlightCommand(null);
+    }
+
+    private updateCommandsFromRadial(entries: RadialCommandSetting[]) {
+        const commands: RadialCommand[] = [];
+        const seen = new Set<string>();
+        entries.forEach(entry => {
+            if (!entry || typeof entry !== 'object') {
+                return;
+            }
+            const command = typeof entry.command === 'string' ? entry.command.trim() : '';
+            if (!command) {
+                return;
+            }
+            const label = typeof entry.label === 'string' && entry.label.trim() ? entry.label.trim() : command;
+            let id = typeof entry.id === 'string' && entry.id ? entry.id : `radial-${commands.length + 1}`;
+            while (seen.has(id)) {
+                id = `${id}-${commands.length + 1}`;
+            }
+            seen.add(id);
+            const color = typeof entry.color === 'string' && entry.color.trim()
+                ? entry.color.trim()
+                : 'rgba(110, 180, 220, 0.85)';
+            const fontColor = typeof entry.fontColor === 'string' && entry.fontColor.trim()
+                ? entry.fontColor.trim()
+                : '#f1f5f9';
+            const activeColor = typeof entry.activeColor === 'string' && entry.activeColor.trim()
+                ? entry.activeColor.trim()
+                : undefined;
+            commands.push({
+                id,
+                label,
+                command,
+                color,
+                activeColor,
+                fontColor,
+                angle: 0,
+                x: 0,
+                y: 0,
+            });
+        });
+        this.commands = commands;
+        if (this.isMenuActive) {
+            this.renderCommands();
+        } else {
+            this.highlightCommand(null);
+        }
     }
 
     private resolveActiveLayoutKey(): ActiveLayoutKey {
