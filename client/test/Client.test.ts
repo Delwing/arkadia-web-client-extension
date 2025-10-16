@@ -174,7 +174,7 @@ test('sendCommand lowercases non speech commands', () => {
   parseCommand.mockClear();
   client.sendCommand('LOOK AROUND');
   expect(parseCommand).toHaveBeenCalledTimes(1);
-  expect(parseCommand).toHaveBeenCalledWith('LOOK AROUND');
+  expect(parseCommand).toHaveBeenCalledWith('look around');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:look around', true);
 });
 
