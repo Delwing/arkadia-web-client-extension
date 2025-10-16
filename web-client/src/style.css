@@ -51,6 +51,7 @@ body {
   margin: 0;
   min-width: 100vw;
   min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -58,6 +59,7 @@ body {
 @supports (height: 100lvh) {
   body {
     min-height: 100lvh;
+    height: 100lvh;
   }
 }
 
@@ -354,12 +356,14 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
   width: 100vw;
 }
 
 @supports (height: 100lvh) {
   #main-container {
     min-height: 100lvh;
+    height: 100lvh;
   }
 }
 
@@ -1293,11 +1297,13 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   @supports (-webkit-touch-callout: none) {
     #main-container {
       min-height: 100vh;
+      height: 100vh;
     }
 
     @supports (height: 100lvh) {
       #main-container {
         min-height: 100lvh;
+        height: 100lvh;
       }
     }
   }
