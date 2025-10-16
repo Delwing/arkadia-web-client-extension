@@ -31,7 +31,7 @@ class ArkadiaClient implements ClientAdapter {
     private messageBuffer: { text: string, type: string }[] = []
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
-        sendCommand: (cmd) => this.sendCommand(cmd),
+        sendCommand: (cmd) => this.send(cmd),
         emit: (ev, ...args) => this.emit(ev, ...args)
     });
 
@@ -195,7 +195,7 @@ class ArkadiaClient implements ClientAdapter {
     /**
      * Send a message through the WebSocket
      */
-    send(message: string, echo: boolean = true): void {
+    send(message: string, echo: boolean = true, options?: { preserveCase?: boolean }): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.error('WebSocket is not connected');
             return;
@@ -206,7 +206,31 @@ class ArkadiaClient implements ClientAdapter {
                 this.userCommand = message;
             }
             this.passwordCommand = message;
+        } else {
+
+            const trimmedCommand = message.trimStart()
+            if (trimmedCommand) {
+                const skipLowercasePrefixes = [
+                    "'",
+                    "powiedz",
+                    "j'",
+                    "jpowiedz",
+                    "jppowiedz",
+                    "krzyknij",
+                    "jkrzyknij",
+                    "jpkrzyknij",
+                    "szepnij",
+                    "jpszepnij",
+                ]
+                const shouldLowercase = !options?.preserveCase && !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
+                if (shouldLowercase) {
+                    const leadingWhitespaceLength = message.length - trimmedCommand.length
+                    const leadingWhitespace = message.slice(0, leadingWhitespaceLength)
+                    message = leadingWhitespace + trimmedCommand.toLowerCase()
+                }
+            }
         }
+
 
         try {
             this.recorder.handleOutgoing(message);
@@ -257,13 +281,6 @@ class ArkadiaClient implements ClientAdapter {
             clearInterval(this.pingTimer);
             this.pingTimer = null;
         }
-    }
-
-    /**
-     * Compatibility wrapper matching old client API
-     */
-    sendCommand(command: string, echo: boolean = true): void {
-        this.send(command, echo);
     }
 
     output(text?: string, type?: string) {

@@ -24,7 +24,7 @@ import eventBus from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 
 export interface ClientAdapter {
-    send(text: string, echo?: boolean): void;
+    send(text: string, echo?: boolean, options?: { preserveCase?: boolean }): void;
 
     output(text?: string, type?: string): void
 
@@ -325,8 +325,8 @@ export default class Client {
         this.eventTarget.removeEventListener(event, listener)
     }
 
-    send(command: string, echo: boolean = true) {
-        this.clientAdapter.send(command, echo)
+    send(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
+        this.clientAdapter.send(command, echo, options)
     }
 
     support() {
@@ -348,26 +348,6 @@ export default class Client {
     sendCommand(command: string, echo: boolean = true, options?: { preserveCase?: boolean }) {
         if (command) {
             command = stripPolishCharacters(command)
-
-            const trimmedCommand = command.trimStart()
-            if (trimmedCommand) {
-                const skipLowercasePrefixes = [
-                    "'",
-                    "powiedz",
-                    "j'",
-                    "jpowiedz",
-                    "krzyknij",
-                    "jkrzyknij",
-                    "szepnij",
-                    "jszepnij",
-                ]
-                const shouldLowercase = !options?.preserveCase && !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
-                if (shouldLowercase) {
-                    const leadingWhitespaceLength = command.length - trimmedCommand.length
-                    const leadingWhitespace = command.slice(0, leadingWhitespaceLength)
-                    command = leadingWhitespace + trimmedCommand.toLowerCase()
-                }
-            }
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 

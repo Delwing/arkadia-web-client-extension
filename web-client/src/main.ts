@@ -43,7 +43,7 @@ import {
 } from "./mobileButtonSettings"
 import "./triggerTester"
 import "./triggerFinder"
-import { getItemSync } from "@client/src/storage"
+import {getItemSync} from "@client/src/storage"
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sendCreds = () => {
                 if (character) client.send(character);
-                if (password) client.send(password);
+                if (password) client.send(password, false, {preserveCase: true});
                 arkadiaClient.off('client.connect', sendCreds);
             };
 
