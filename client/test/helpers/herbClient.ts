@@ -8,6 +8,10 @@ export class FakeClient {
   sendCommand = jest.fn();
   println = jest.fn();
   port = { postMessage: jest.fn() } as any;
+  herbManager: any;
+  sendEvent(type: string, detail: any) {
+    this.dispatch(type, detail);
+  }
   addEventListener(event: string, cb: any) {
     this.emitter.on(event, cb);
   }

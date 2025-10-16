@@ -15,12 +15,12 @@ describe('wezz alias', () => {
     const alias = client.aliases.find(a => a.pattern.test('/wezz deliona 2'))!;
     const m = '/wezz deliona 2'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
-    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wez zolty jasny kwiat z 2. woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wez zolty jasny kwiat z 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swojego woreczka');
     expect(client.port.postMessage).toHaveBeenCalledWith({ type: 'SET_STORAGE', key: 'herb_counts', value: { 1: {}, 2: {} } });
   });
 
@@ -32,12 +32,12 @@ describe('wezz alias', () => {
     const alias = client.aliases.find(a => a.pattern.test('/wezz deliona 3'))!;
     const m = '/wezz deliona 3'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
-    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(
       2,
-      'wez 3 zolte jasne kwiaty z 1. woreczka'
+      'wez 3 zolte jasne kwiaty z 1. swojego woreczka'
     );
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
     expect(client.port.postMessage).toHaveBeenCalledWith({
       type: 'SET_STORAGE',
       key: 'herb_counts',
@@ -49,9 +49,9 @@ describe('wezz alias', () => {
     const alias = client.aliases.find(a => a.pattern.test('/wezz deliona'))!;
     const m = '/wezz deliona'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
-    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. woreczka');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
     expect(client.port.postMessage).toHaveBeenCalledWith({ type: 'SET_STORAGE', key: 'herb_counts', value: { 1: {}, 2: { deliona: 1 } } });
   });
 });

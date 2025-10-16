@@ -7,6 +7,10 @@ class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
   println = jest.fn();
+  port = { postMessage: jest.fn() } as any;
+  sendEvent = jest.fn((type: string, detail: any) => {
+    this.dispatch(type, detail);
+  });
   private index = 0;
   OutputHandler = {
     makeStringRightClickable: (str: string) => {
@@ -101,5 +105,42 @@ describe('herb counter', () => {
     const printed = client.println.mock.calls[0][0];
     expect(printed).toMatch(/2/);
     expect(printed).toMatch(/deliona/);
+  });
+
+  test('herb manager can move herbs between bags', async () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 1 }, 2: {} });
+    const manager = (client as unknown as any).herbManager;
+    await manager.move({ herbId: 'deliona', amount: 1, fromBag: 1, toBag: 2 });
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wloz zolty jasny kwiat do 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swojego woreczka');
+    const setCalls = client.port.postMessage.mock.calls
+      .map(([arg]) => arg)
+      .filter(call => call?.type === 'SET_STORAGE');
+    expect(setCalls).toContainEqual({
+      type: 'SET_STORAGE',
+      key: 'herb_counts',
+      value: { 1: {}, 2: { deliona: 1 } }
+    });
+  });
+
+  test('herb manager put adds herbs to bag', async () => {
+    initHerbClient((client as unknown) as any, { 1: {} });
+    const manager = (client as unknown as any).herbManager;
+    await manager.put('deliona', 2, 1);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wloz 2 zolte jasne kwiaty do 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swojego woreczka');
+    const setCalls = client.port.postMessage.mock.calls
+      .map(([arg]) => arg)
+      .filter(call => call?.type === 'SET_STORAGE');
+    expect(setCalls).toContainEqual({
+      type: 'SET_STORAGE',
+      key: 'herb_counts',
+      value: { 1: { deliona: 2 } }
+    });
   });
 });

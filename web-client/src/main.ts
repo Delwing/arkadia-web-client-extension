@@ -37,6 +37,7 @@ import ExportImport from "./options/ExportImport.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
+import HerbManager from "./herbs/HerbManager";
 import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
@@ -464,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
+    const herbUIButton = document.getElementById('herb-ui-button') as HTMLButtonElement | null;
     const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
     const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
@@ -506,6 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
     const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
     const mobileButtonsModal = mobileButtonsModalElement ? new Modal(mobileButtonsModalElement) : null;
+    const herbModalElement = document.getElementById('herb-modal');
+    const herbModal = herbModalElement ? new Modal(herbModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
@@ -602,6 +606,13 @@ document.addEventListener('DOMContentLoaded', () => {
         optionsButton.addEventListener('click', () => {
             window.dispatchEvent(new Event('show-general-settings'));
             optionsModal.show();
+        });
+    }
+
+    if (herbUIButton && herbModal) {
+        herbUIButton.addEventListener('click', () => {
+            window.dispatchEvent(new Event('request-herb-counts'));
+            herbModal.show();
         });
     }
 
@@ -1054,6 +1065,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileButtonsRoot = document.getElementById('mobile-buttons-options');
     if (mobileButtonsRoot) {
         createRoot(mobileButtonsRoot).render(createElement(MobileButtons));
+    }
+
+    const herbRoot = document.getElementById('herb-ui-root');
+    if (herbRoot) {
+        createRoot(herbRoot).render(createElement(HerbManager));
     }
 });
 

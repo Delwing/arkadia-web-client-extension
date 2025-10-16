@@ -518,6 +518,111 @@ h1 {
   position: relative;
 }
 
+.herb-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.herb-manager--busy {
+  pointer-events: none;
+  opacity: 0.85;
+  filter: saturate(0.85);
+}
+
+.herb-manager-status {
+  margin-bottom: 0;
+}
+
+.herb-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.herb-bag {
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.herb-bag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.herb-bag-count {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.65);
+}
+
+.herb-bag-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.herb-bag-empty {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.herb-bag-drop-target {
+  border-color: var(--surface-border-strong);
+  box-shadow: 0 0 0 1px var(--surface-border-strong);
+}
+
+.herb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 180, 248, 0.45);
+  background: rgba(59, 130, 246, 0.16);
+  color: var(--text-primary);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+  min-width: 0;
+}
+
+.herb-pill:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.herb-pill:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(138, 180, 248, 0.7);
+}
+
+.herb-pill-split {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.5);
+}
+
+.herb-pill-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.herb-pill-label {
+  white-space: nowrap;
+}
+
 .char-state-bar .progress-value {
   position: absolute;
   left: 0;
