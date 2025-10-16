@@ -2,6 +2,7 @@ import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
+import {normalizeCommand, CommandOptions} from "@client/src/normalizeCommand.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
@@ -195,7 +196,7 @@ class ArkadiaClient implements ClientAdapter {
     /**
      * Send a message through the WebSocket
      */
-    send(message: string, echo: boolean = true, options?: { preserveCase?: boolean }): void {
+    send(message: string, echo: boolean = true, options?: CommandOptions): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.error('WebSocket is not connected');
             return;
@@ -207,28 +208,7 @@ class ArkadiaClient implements ClientAdapter {
             }
             this.passwordCommand = message;
         } else {
-
-            const trimmedCommand = message.trimStart()
-            if (trimmedCommand) {
-                const skipLowercasePrefixes = [
-                    "'",
-                    "powiedz",
-                    "j'",
-                    "jpowiedz",
-                    "jppowiedz",
-                    "krzyknij",
-                    "jkrzyknij",
-                    "jpkrzyknij",
-                    "szepnij",
-                    "jpszepnij",
-                ]
-                const shouldLowercase = !options?.preserveCase && !skipLowercasePrefixes.some(prefix => trimmedCommand.startsWith(prefix))
-                if (shouldLowercase) {
-                    const leadingWhitespaceLength = message.length - trimmedCommand.length
-                    const leadingWhitespace = message.slice(0, leadingWhitespaceLength)
-                    message = leadingWhitespace + trimmedCommand.toLowerCase()
-                }
-            }
+            message = normalizeCommand(message, options)
         }
 
 
@@ -243,6 +223,10 @@ class ArkadiaClient implements ClientAdapter {
             console.error('Error sending message:', error);
             this.emit('error', error);
         }
+    }
+
+    sendCommand(message: string, echo: boolean = true, options?: CommandOptions): void {
+        this.send(message, echo, options);
     }
 
     sendGmcp(path: string, payload: any = {}): void {

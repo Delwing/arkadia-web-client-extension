@@ -1,8 +1,9 @@
 import { saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent } from './recordingStorage';
+import {CommandOptions} from "@client/src/normalizeCommand.ts";
 
 export interface RecorderHooks {
     processIncomingData(data: string): void;
-    sendCommand(command: string, echo?: boolean, options?: { preserveCase?: boolean }): void;
+    sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
     emit(event: string, ...args: any[]): void;
 }
 
