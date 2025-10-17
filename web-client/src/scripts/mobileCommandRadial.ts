@@ -27,6 +27,7 @@ export default class MobileCommandRadial {
     private readonly threshold: HTMLDivElement | null;
     private readonly selectionLabel: HTMLDivElement | null;
     private readonly contentArea: HTMLDivElement | null;
+    private readonly objectsList: HTMLElement | null;
     private settings: Settings | null = null;
     private activeLayout: LayoutSettings | null = null;
     private commands: RadialCommand[] = [];
@@ -45,6 +46,9 @@ export default class MobileCommandRadial {
             this.overlay = null;
             this.commandsLayer = null;
             this.threshold = null;
+            this.selectionLabel = null;
+            this.contentArea = null;
+            this.objectsList = null;
             return;
         }
 
@@ -53,6 +57,7 @@ export default class MobileCommandRadial {
         this.threshold = this.overlay?.querySelector('.mobile-command-radial__threshold') as HTMLDivElement | null;
         this.selectionLabel = this.overlay?.querySelector('.mobile-command-radial__selected') as HTMLDivElement | null;
         this.contentArea = document.getElementById('main_text_output_msg_wrapper') as HTMLDivElement | null;
+        this.objectsList = document.getElementById('objects-list');
 
         if (!this.overlay || !this.commandsLayer || !this.threshold) {
             console.warn('Mobile radial command overlay missing.');
@@ -495,6 +500,9 @@ export default class MobileCommandRadial {
         }
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         if (!element) {
+            return false;
+        }
+        if (this.objectsList && (this.objectsList === element || this.objectsList.contains(element))) {
             return false;
         }
         return this.contentArea.contains(element);
