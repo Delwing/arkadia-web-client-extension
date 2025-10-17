@@ -119,21 +119,18 @@ export function registerScripts(client: Client) {
         client.Map.followMove(matches.groups.direction)
     }, 'follow')
 
-    const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
-    client.Triggers.registerMultilineTrigger([
+    const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
-    ], (_, line): undefined => {
-        const lines = line.split("\n")
-        if (lines.length > 1) {
-            const matches = lines[1].match(movePattern)
-            if (matches?.groups?.direction) {
+    ], (): undefined => {}, 'follow', { stayOpenLines: 1 })
+    const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
+    idzTrigger.registerChild(movePattern, (_, __, matches): undefined => {
+        if (matches?.groups?.direction) {
                 client.Map.followMove(matches.groups.direction)
                 return
             }
-        }
         client.Map.refresh()
         client.Map.refreshPosition = true
-    }, 'follow', { stayOpenLines: 1 })
+    })
 
     client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
         client.Map.refreshPosition = false
