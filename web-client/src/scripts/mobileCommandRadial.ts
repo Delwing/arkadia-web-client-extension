@@ -45,6 +45,8 @@ export default class MobileCommandRadial {
             this.overlay = null;
             this.commandsLayer = null;
             this.threshold = null;
+            this.selectionLabel = null;
+            this.contentArea = null;
             return;
         }
 
@@ -74,9 +76,9 @@ export default class MobileCommandRadial {
 
     private registerEventListeners() {
         this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
-        window.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
+        this.contentArea.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.contentArea.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        this.contentArea.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
 
         this.client.addEventListener('mobileButtonsSettings', () => {
             this.reloadSettings();
@@ -490,11 +492,19 @@ export default class MobileCommandRadial {
             return false;
         }
         const originNode = origin instanceof Node ? origin : null;
-        if (originNode && !this.contentArea.contains(originNode)) {
-            return false;
+        if (originNode) {
+            if (!this.contentArea.contains(originNode)) {
+                return false;
+            }
+            if (originNode instanceof Element && originNode.closest('[data-mobile-command-radial-ignore]')) {
+                return false;
+            }
         }
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         if (!element) {
+            return false;
+        }
+        if (element instanceof Element && element.closest('[data-mobile-command-radial-ignore]')) {
             return false;
         }
         return this.contentArea.contains(element);
