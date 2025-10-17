@@ -27,7 +27,6 @@ export default class MobileCommandRadial {
     private readonly threshold: HTMLDivElement | null;
     private readonly selectionLabel: HTMLDivElement | null;
     private readonly contentArea: HTMLDivElement | null;
-    private readonly objectsList: HTMLElement | null;
     private settings: Settings | null = null;
     private activeLayout: LayoutSettings | null = null;
     private commands: RadialCommand[] = [];
@@ -48,7 +47,6 @@ export default class MobileCommandRadial {
             this.threshold = null;
             this.selectionLabel = null;
             this.contentArea = null;
-            this.objectsList = null;
             return;
         }
 
@@ -57,7 +55,6 @@ export default class MobileCommandRadial {
         this.threshold = this.overlay?.querySelector('.mobile-command-radial__threshold') as HTMLDivElement | null;
         this.selectionLabel = this.overlay?.querySelector('.mobile-command-radial__selected') as HTMLDivElement | null;
         this.contentArea = document.getElementById('main_text_output_msg_wrapper') as HTMLDivElement | null;
-        this.objectsList = document.getElementById('objects-list');
 
         if (!this.overlay || !this.commandsLayer || !this.threshold) {
             console.warn('Mobile radial command overlay missing.');
@@ -79,9 +76,9 @@ export default class MobileCommandRadial {
 
     private registerEventListeners() {
         this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        window.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        window.addEventListener('touchend', this.handleTouchEnd, { passive: false });
-        window.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
+        this.contentArea.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.contentArea.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        this.contentArea.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
 
         this.client.addEventListener('mobileButtonsSettings', () => {
             this.reloadSettings();
@@ -495,14 +492,19 @@ export default class MobileCommandRadial {
             return false;
         }
         const originNode = origin instanceof Node ? origin : null;
-        if (originNode && !this.contentArea.contains(originNode)) {
-            return false;
+        if (originNode) {
+            if (!this.contentArea.contains(originNode)) {
+                return false;
+            }
+            if (originNode instanceof Element && originNode.closest('[data-mobile-command-radial-ignore]')) {
+                return false;
+            }
         }
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         if (!element) {
             return false;
         }
-        if (this.objectsList && (this.objectsList === element || this.objectsList.contains(element))) {
+        if (element instanceof Element && element.closest('[data-mobile-command-radial-ignore]')) {
             return false;
         }
         return this.contentArea.contains(element);
