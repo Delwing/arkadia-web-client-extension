@@ -5,9 +5,20 @@ import { formatLabel } from "./functionalBind";
 export default function initLeaderAttackWarning(client: Client) {
     const RED = findClosestColor("#ff0000");
     const PADDING = 4; // two spaces on each side
-    const warningInternval = 5000;
-    let interval: ReturnType<typeof setInterval> | undefined;
+    const warningInterval = 5000;
     let lastText: string | undefined;
+    let lastPrintedAt = 0;
+    let activeTargetId: string | undefined;
+
+    function resetReminder() {
+        lastText = undefined;
+        lastPrintedAt = 0;
+    }
+
+    function clearActiveTarget() {
+        activeTargetId = undefined;
+        resetReminder();
+    }
 
     function print(text: string) {
         const width = text.length + PADDING;
@@ -16,33 +27,40 @@ export default function initLeaderAttackWarning(client: Client) {
         client.println(message);
     }
 
-    function startPrinting(targetId?: string) {
+    function printWarning(targetId?: string, force = false) {
         const attackTargetId = client.TeamManager.getAttackTargetId?.();
         const avatarTargetId = client.TeamManager.getAvatarAttackTargetId?.();
-        if (attackTargetId && avatarTargetId === attackTargetId) {
-            stopPrinting();
+        if (!attackTargetId) {
+            resetReminder();
+            return;
+        }
+        if (avatarTargetId === attackTargetId) {
+            resetReminder();
             return;
         }
         const attackBind = formatLabel(client.attackBind);
         const supportBind = formatLabel(client.supportBind);
         const text = attackTargetId && targetId === attackTargetId ?
             `Zaatakuj cel ataku (${attackBind})` : `wesprzyj (${supportBind})`;
-        if (interval && text === lastText) {
+        const now = Date.now();
+        if (!force && text === lastText && now - lastPrintedAt < warningInterval) {
             return;
         }
-        stopPrinting();
         lastText = text;
+        lastPrintedAt = now;
         print(text);
-        interval = setInterval(() => print(text), warningInternval);
     }
 
-    function stopPrinting() {
-        if (interval) {
-            clearInterval(interval);
-            interval = undefined;
+    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
+        activeTargetId = e.detail;
+        printWarning(activeTargetId, true);
+    });
+    client.addEventListener('gmcp.objects.data', () => {
+        if (!activeTargetId) {
+            return;
         }
-    }
 
-    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => startPrinting(e.detail));
-    client.addEventListener('teamLeaderTargetAvatar', stopPrinting);
+        printWarning(activeTargetId);
+    });
+    client.addEventListener('teamLeaderTargetAvatar', clearActiveTarget);
 }

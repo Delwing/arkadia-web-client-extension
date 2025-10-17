@@ -1,3 +1,5 @@
+import { DEFAULT_ATTACK_COMMAND } from "./utils/attackCommand";
+
 export interface Settings {
     packageHelper: boolean;
     inlineCompassRose: boolean;
@@ -12,6 +14,7 @@ export interface Settings {
     languageAliases: { alias: string; adjective: string; language: string }[];
     herbPreUseCommand: string;
     herbPostUseCommand: string;
+    attackCommand: string;
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
@@ -31,6 +34,7 @@ export const defaultSettings: Settings = {
     languageAliases: [],
     herbPreUseCommand: '',
     herbPostUseCommand: '',
+    attackCommand: DEFAULT_ATTACK_COMMAND,
     fullHpMessage: false,
     lowHpAlert: 2,
     letterLineWidth: 72,

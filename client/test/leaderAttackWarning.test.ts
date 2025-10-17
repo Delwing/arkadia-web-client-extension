@@ -28,6 +28,7 @@ describe('leader attack warning', () => {
   beforeEach(() => {
     client = new FakeClient();
     jest.useFakeTimers();
+    jest.setSystemTime(0);
     initLeaderAttackWarning((client as unknown) as any);
   });
 
@@ -57,6 +58,33 @@ describe('leader attack warning', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('3');
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue('3');
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).not.toHaveBeenCalled();
+  });
+
+  test('reprints warning on gmcp updates after interval passes', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('1');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    client.println.mockClear();
+
+    jest.advanceTimersByTime(4000);
+    client.sendEvent('gmcp.objects.data', {});
+    expect(client.println).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1000);
+    client.sendEvent('gmcp.objects.data', {});
+    expect(client.println).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not print when attack target disappears', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('1');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    client.println.mockClear();
+
+    client.TeamManager.getAttackTargetId.mockReturnValue(undefined);
+    jest.advanceTimersByTime(5000);
+    client.sendEvent('gmcp.objects.data');
     expect(client.println).not.toHaveBeenCalled();
   });
 });
