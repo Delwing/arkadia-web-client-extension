@@ -74,6 +74,12 @@ export default class MobileDirectionButtons {
     private currentOrientation: Orientation = this.getCurrentOrientation();
     private savedPositions: Partial<Record<Orientation, StoredPosition>> = {};
     private viewportBaselineHeights: Partial<Record<Orientation, number>> = {};
+    private activeTouchId: number | null = null;
+    private pendingTouchId: number | null = null;
+    private touchListenersAttached = false;
+    private readonly boundHandleTouchStart: (event: TouchEvent) => void;
+    private readonly boundHandleTouchMove: (event: TouchEvent) => void;
+    private readonly boundHandleTouchEnd: (event: TouchEvent) => void;
 
 
     constructor(client: Client) {
@@ -91,6 +97,10 @@ export default class MobileDirectionButtons {
         this.idzToggle = null;
         this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;
+
+        this.boundHandleTouchStart = this.handleTouchStart.bind(this);
+        this.boundHandleTouchMove = this.handleTouchMove.bind(this);
+        this.boundHandleTouchEnd = this.handleTouchEnd.bind(this);
 
         if (!this.container) {
             console.error('Mobile direction buttons container not found');
@@ -408,10 +418,10 @@ export default class MobileDirectionButtons {
         this.applySavedPosition();
         requestAnimationFrame(() => this.clampToView(true));
         // Add touch event listeners for long press and drag
-        this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
-        this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-        this.container.addEventListener('touchend', this.handleTouchEnd.bind(this));
-        this.container.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
+        this.container.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
+        this.container.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
+        this.container.addEventListener('touchend', this.boundHandleTouchEnd);
+        this.container.addEventListener('touchcancel', this.boundHandleTouchEnd);
 
         // Add mouse event listeners for desktop testing
         this.container.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -555,10 +565,18 @@ export default class MobileDirectionButtons {
         }
     }
 
-    private dragStart(x: number, y: number, preventDefault?: () => void) {
-        if (!this.container || this.dragLocked) return;
+    private dragStart(x: number, y: number, preventDefault?: () => void, pointerId?: number) {
+        if (!this.container || this.dragLocked) {
+            this.pendingTouchId = null;
+            return;
+        }
 
-        if (this.isScrolling) return;
+        if (this.isScrolling) {
+            this.pendingTouchId = null;
+            return;
+        }
+
+        this.pendingTouchId = typeof pointerId === 'number' ? pointerId : null;
 
         this.initialX = x;
         this.initialY = y;
@@ -568,6 +586,9 @@ export default class MobileDirectionButtons {
 
             this.isDragging = true;
             this.container.classList.add('dragging');
+
+            this.activeTouchId = this.pendingTouchId;
+            this.attachGlobalTouchListeners();
 
             const rect = this.container.getBoundingClientRect();
             this.offsetX = rect.left;
@@ -608,6 +629,9 @@ export default class MobileDirectionButtons {
             this.longPressTimer = null;
         }
 
+        this.detachGlobalTouchListeners();
+        this.pendingTouchId = null;
+
         if (this.isDragging && this.container) {
             this.isDragging = false;
             this.container.classList.remove('dragging');
@@ -621,24 +645,87 @@ export default class MobileDirectionButtons {
             if (preventDefault) preventDefault();
             this.clampToView(true);
         }
+
+        this.activeTouchId = null;
     }
 
     private handleTouchStart(e: TouchEvent) {
         if (this.dragLocked) return;
         const touch = e.touches[0];
-        this.dragStart(touch.clientX, touch.clientY, () => e.preventDefault());
+        if (!touch) return;
+        this.dragStart(touch.clientX, touch.clientY, () => e.preventDefault(), touch.identifier);
     }
 
     private handleTouchMove(e: TouchEvent) {
         if (this.dragLocked) return;
+        const isGlobalListener = e.currentTarget === document;
+        if (this.touchListenersAttached && !isGlobalListener) {
+            return;
+        }
+
+        const touch = this.getRelevantTouch(e);
+        if (!touch) return;
+
         e.preventDefault();
-        const touch = e.touches[0];
         this.dragMove(touch.clientX, touch.clientY);
     }
 
     private handleTouchEnd(e: TouchEvent) {
         if (this.dragLocked) return;
+        const isGlobalListener = e.currentTarget === document;
+        if (this.touchListenersAttached && !isGlobalListener) {
+            return;
+        }
+
+        const relevantId = this.activeTouchId ?? this.pendingTouchId;
+        if (relevantId !== null) {
+            const touches = Array.from(e.changedTouches);
+            const ended = touches.some(touch => touch.identifier === relevantId);
+            if (!ended) {
+                return;
+            }
+        }
+
         this.dragEnd(() => e.preventDefault());
+    }
+
+    private attachGlobalTouchListeners() {
+        if (this.touchListenersAttached) return;
+        document.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
+        document.addEventListener('touchend', this.boundHandleTouchEnd);
+        document.addEventListener('touchcancel', this.boundHandleTouchEnd);
+        this.touchListenersAttached = true;
+    }
+
+    private detachGlobalTouchListeners() {
+        if (!this.touchListenersAttached) return;
+        document.removeEventListener('touchmove', this.boundHandleTouchMove);
+        document.removeEventListener('touchend', this.boundHandleTouchEnd);
+        document.removeEventListener('touchcancel', this.boundHandleTouchEnd);
+        this.touchListenersAttached = false;
+    }
+
+    private getRelevantTouch(event: TouchEvent): Touch | null {
+        const targetId = this.activeTouchId ?? this.pendingTouchId;
+        if (targetId === null) {
+            return event.touches[0] || event.changedTouches[0] || null;
+        }
+
+        for (let i = 0; i < event.touches.length; i += 1) {
+            const touch = event.touches.item(i);
+            if (touch && touch.identifier === targetId) {
+                return touch;
+            }
+        }
+
+        for (let i = 0; i < event.changedTouches.length; i += 1) {
+            const touch = event.changedTouches.item(i);
+            if (touch && touch.identifier === targetId) {
+                return touch;
+            }
+        }
+
+        return null;
     }
 
     private handleMouseDown(e: MouseEvent) {
