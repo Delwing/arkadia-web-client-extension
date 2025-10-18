@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DragEvent as ReactDragEvent } from "react";
 import { Button, Form } from "react-bootstrap";
 import {
     loadSettings,
@@ -21,6 +22,64 @@ function MobileRadialCommands() {
     const [draggedId, setDraggedId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
     const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
+    const rowRefs = useRef(new Map<string, HTMLDivElement>());
+    const dragPreviewRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const preview = document.createElement("div");
+        preview.className = "mobile-radial-command mobile-radial-command--drag-preview";
+        preview.setAttribute("aria-hidden", "true");
+        preview.style.position = "fixed";
+        preview.style.top = "-1000px";
+        preview.style.left = "-1000px";
+        preview.style.pointerEvents = "none";
+        preview.style.opacity = "0";
+        preview.style.zIndex = "-1";
+        document.body.appendChild(preview);
+        dragPreviewRef.current = preview;
+        return () => {
+            preview.remove();
+            dragPreviewRef.current = null;
+        };
+    }, []);
+
+    const registerRowRef = useCallback((id: string) => {
+        return (node: HTMLDivElement | null) => {
+            if (node) {
+                rowRefs.current.set(id, node);
+            } else {
+                rowRefs.current.delete(id);
+            }
+        };
+    }, []);
+
+    const setDragPreview = useCallback(
+        (event: ReactDragEvent<HTMLElement>, id: string) => {
+            const row = rowRefs.current.get(id);
+            const preview = dragPreviewRef.current;
+            if (!row || !preview) {
+                return;
+            }
+
+            preview.innerHTML = row.innerHTML;
+            const rect = row.getBoundingClientRect();
+            preview.style.width = `${rect.width}px`;
+            preview.style.height = `${rect.height}px`;
+            preview.style.opacity = "1";
+            preview.style.zIndex = "9999";
+
+            const pointerY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+            const pointerX = rect.width / 2;
+            event.dataTransfer.setDragImage(preview, pointerX, pointerY);
+
+            window.setTimeout(() => {
+                preview.style.opacity = "0";
+                preview.style.zIndex = "-1";
+                preview.innerHTML = "";
+            }, 0);
+        },
+        []
+    );
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -178,6 +237,7 @@ function MobileRadialCommands() {
                         return (
                             <div
                                 key={cmd.id}
+                                ref={registerRowRef(cmd.id)}
                                 className={`mobile-radial-command p-2 d-flex flex-column flex-md-row align-items-md-center gap-2${
                                     isDragOver ? " mobile-radial-command--drag-over" : ""
                                 }${
@@ -256,6 +316,7 @@ function MobileRadialCommands() {
                                         draggable
                                         onDragStart={event => {
                                             event.dataTransfer.effectAllowed = "move";
+                                            setDragPreview(event, cmd.id);
                                             event.dataTransfer.setData("text/plain", cmd.id);
                                             setDraggedId(cmd.id);
                                         }}
