@@ -1348,16 +1348,46 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 }
 
 .mobile-radial-command {
-  transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  position: relative;
+  background: rgba(17, 24, 39, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.75rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease, background-color 120ms ease;
+}
+
+.mobile-radial-command::before,
+.mobile-radial-command::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  border-top: 2px solid transparent;
+  transition: border-color 120ms ease;
+}
+
+.mobile-radial-command::before {
+  top: -0.5rem;
+}
+
+.mobile-radial-command::after {
+  bottom: -0.5rem;
 }
 
 .mobile-radial-command--drag-over {
-  border-color: var(--bs-primary);
-  box-shadow: 0 0 0 0.1rem rgba(13, 110, 253, 0.25);
+  border-color: rgba(138, 180, 248, 0.6);
+  background: rgba(17, 24, 39, 0.82);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.4);
+}
+
+.mobile-radial-command--drag-over-before::before,
+.mobile-radial-command--drag-over-after::after {
+  border-color: rgba(88, 154, 255, 0.9);
 }
 
 .mobile-radial-command--dragging {
-  opacity: 0.7;
+  opacity: 0.72;
+  border-color: rgba(138, 180, 248, 0.45);
+  box-shadow: 0 10px 28px rgba(13, 110, 253, 0.15);
 }
 
 .mobile-radial-command__drag-handle {
@@ -1370,18 +1400,19 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 }
 
 .mobile-radial-command-dropzone {
-  border: 1px dashed var(--bs-border-color, rgba(108, 117, 125, 0.5));
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.75rem;
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  border-radius: 0.65rem;
+  padding: 0.4rem 0.85rem;
   text-align: center;
-  font-size: 0.875rem;
-  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.85rem;
+  color: rgba(148, 163, 184, 0.7);
+  background: rgba(17, 24, 39, 0.35);
 }
 
 .mobile-radial-command-dropzone--active {
-  border-color: var(--bs-primary);
-  color: var(--bs-primary);
-  background-color: rgba(13, 110, 253, 0.08);
+  border-color: rgba(88, 154, 255, 0.85);
+  color: rgba(138, 180, 248, 0.95);
+  background-color: rgba(13, 110, 253, 0.12);
 }
 
 .mobile-command-radial {

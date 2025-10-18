@@ -20,6 +20,7 @@ function MobileRadialCommands() {
     const [settings, setSettings] = useState<Settings | null>(null);
     const [draggedId, setDraggedId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -73,7 +74,11 @@ function MobileRadialCommands() {
         });
     }
 
-    function moveRadialCommand(sourceId: string, targetId: string | null) {
+    function moveRadialCommand(
+        sourceId: string,
+        targetId: string | null,
+        position: "before" | "after" = "after"
+    ) {
         setSettings(prev => {
             if (!prev) {
                 return prev;
@@ -83,21 +88,35 @@ function MobileRadialCommands() {
             if (sourceIndex === -1) {
                 return prev;
             }
-            const targetIndex = targetId ? commands.findIndex(cmd => cmd.id === targetId) : commands.length - 1;
-            if (targetId && targetIndex === -1) {
+            if (targetId === null) {
+                if (sourceIndex === commands.length - 1) {
+                    return prev;
+                }
+                const updated = [...commands];
+                const [moved] = updated.splice(sourceIndex, 1);
+                updated.push(moved);
+                return {
+                    ...prev,
+                    radial: {
+                        ...prev.radial,
+                        commands: updated,
+                    },
+                };
+            }
+            const targetIndex = commands.findIndex(cmd => cmd.id === targetId);
+            if (targetIndex === -1) {
+                return prev;
+            }
+            let insertIndex = targetIndex + (position === "after" ? 1 : 0);
+            if (sourceIndex < insertIndex) {
+                insertIndex -= 1;
+            }
+            if (insertIndex === sourceIndex) {
                 return prev;
             }
             const updated = [...commands];
             const [moved] = updated.splice(sourceIndex, 1);
-            if (!targetId) {
-                updated.push(moved);
-            } else {
-                let insertIndex = targetIndex;
-                if (sourceIndex < targetIndex) {
-                    insertIndex -= 1;
-                }
-                updated.splice(Math.max(insertIndex, 0), 0, moved);
-            }
+            updated.splice(Math.max(insertIndex, 0), 0, moved);
             return {
                 ...prev,
                 radial: {
@@ -153,19 +172,26 @@ function MobileRadialCommands() {
                     )}
                     {commands.map(cmd => {
                         const isDragOver = dragOverId === cmd.id;
+                        const overBefore = isDragOver && dragOverPosition === "before";
+                        const overAfter = isDragOver && dragOverPosition === "after";
                         const isDragging = draggedId === cmd.id;
                         return (
                             <div
                                 key={cmd.id}
-                                className={`mobile-radial-command border rounded p-2 d-flex flex-column flex-md-row align-items-md-center gap-2${
+                                className={`mobile-radial-command p-2 d-flex flex-column flex-md-row align-items-md-center gap-2${
                                     isDragOver ? " mobile-radial-command--drag-over" : ""
-                                }${isDragging ? " mobile-radial-command--dragging" : ""}`}
+                                }${
+                                    overBefore ? " mobile-radial-command--drag-over-before" : ""
+                                }${overAfter ? " mobile-radial-command--drag-over-after" : ""}${
+                                    isDragging ? " mobile-radial-command--dragging" : ""
+                                }`}
                                 onDragEnter={event => {
                                     if (!draggedId || draggedId === cmd.id) {
                                         return;
                                     }
                                     event.preventDefault();
                                     setDragOverId(cmd.id);
+                                    setDragOverPosition(null);
                                 }}
                                 onDragOver={event => {
                                     if (!draggedId || draggedId === cmd.id) {
@@ -173,6 +199,14 @@ function MobileRadialCommands() {
                                     }
                                     event.preventDefault();
                                     event.dataTransfer.dropEffect = "move";
+                                    const rect = event.currentTarget.getBoundingClientRect();
+                                    const midpoint = rect.top + rect.height / 2;
+                                    const position = event.clientY > midpoint ? "after" : "before";
+                                    if (dragOverId !== cmd.id || dragOverPosition !== position) {
+                                        setDragOverId(cmd.id);
+                                        setDragOverPosition(position);
+                                        moveRadialCommand(draggedId, cmd.id, position);
+                                    }
                                 }}
                                 onDragLeave={event => {
                                     const nextTarget = event.relatedTarget as Node | null;
@@ -181,6 +215,7 @@ function MobileRadialCommands() {
                                     }
                                     if (dragOverId === cmd.id) {
                                         setDragOverId(null);
+                                        setDragOverPosition(null);
                                     }
                                 }}
                                 onDrop={event => {
@@ -189,8 +224,9 @@ function MobileRadialCommands() {
                                     }
                                     event.preventDefault();
                                     event.stopPropagation();
-                                    moveRadialCommand(draggedId, cmd.id);
+                                    moveRadialCommand(draggedId, cmd.id, dragOverPosition ?? "after");
                                     setDragOverId(null);
+                                    setDragOverPosition(null);
                                     setDraggedId(null);
                                 }}
                             >
@@ -226,6 +262,7 @@ function MobileRadialCommands() {
                                         onDragEnd={() => {
                                             setDraggedId(null);
                                             setDragOverId(null);
+                                            setDragOverPosition(null);
                                         }}
                                         aria-label="Przeciągnij, aby zmienić kolejność"
                                         title="Przeciągnij, aby zmienić kolejność"
@@ -254,6 +291,7 @@ function MobileRadialCommands() {
                                 }
                                 event.preventDefault();
                                 setDragOverId("__end");
+                                setDragOverPosition("after");
                             }}
                             onDragOver={event => {
                                 if (!draggedId) {
@@ -261,6 +299,7 @@ function MobileRadialCommands() {
                                 }
                                 event.preventDefault();
                                 event.dataTransfer.dropEffect = "move";
+                                moveRadialCommand(draggedId, null, "after");
                             }}
                             onDragLeave={event => {
                                 const nextTarget = event.relatedTarget as Node | null;
@@ -269,6 +308,7 @@ function MobileRadialCommands() {
                                 }
                                 if (dragOverId === "__end") {
                                     setDragOverId(null);
+                                    setDragOverPosition(null);
                                 }
                             }}
                             onDrop={event => {
@@ -276,8 +316,9 @@ function MobileRadialCommands() {
                                     return;
                                 }
                                 event.preventDefault();
-                                moveRadialCommand(draggedId, null);
+                                moveRadialCommand(draggedId, null, "after");
                                 setDragOverId(null);
+                                setDragOverPosition(null);
                                 setDraggedId(null);
                             }}
                         >
