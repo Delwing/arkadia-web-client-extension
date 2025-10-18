@@ -90,8 +90,9 @@ export default class ObjectList {
         this.clampToViewport();
 
         this.container.addEventListener("pointerdown", this.onPointerDown);
-        window.addEventListener("pointermove", this.onPointerMove);
-        window.addEventListener("pointerup", this.onPointerUp);
+        this.container.addEventListener("pointermove", this.onPointerMove);
+        this.container.addEventListener("pointerup", this.onPointerUp);
+        this.container.addEventListener("pointercancel", this.onPointerCancel);
     }
 
     private onPointerDown = (e: PointerEvent) => {
@@ -135,6 +136,13 @@ export default class ObjectList {
             top: rect.top,
         };
         setItemSync("objectsListPosition", position);
+        this.clampToViewport();
+    };
+
+    private onPointerCancel = (e: PointerEvent) => {
+        if (!this.isDragging || !this.container || e.pointerId !== this.pointerId) return;
+        this.isDragging = false;
+        this.container.releasePointerCapture(this.pointerId);
         this.clampToViewport();
     };
 
