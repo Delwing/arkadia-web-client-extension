@@ -124,7 +124,7 @@ export default class ObjectList {
             this.container.style.opacity = "0.8";
             this.container.setPointerCapture(this.pointerId);
             this.longPressTimer = null;
-        }, 500);
+        }, 50);
     };
 
     private onPointerMove = (e: PointerEvent) => {

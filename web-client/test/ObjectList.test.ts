@@ -93,7 +93,7 @@ describe('ObjectList', () => {
       target: container,
     } as unknown as PointerEvent;
     ol.onPointerDown(downEvent);
-    jest.advanceTimersByTime(500);
+    jest.advanceTimersByTime(50);
     ol.onPointerUp({ pointerId: 1 } as unknown as PointerEvent);
     expect(setItemSync).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
   });
