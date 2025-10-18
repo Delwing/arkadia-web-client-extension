@@ -11,9 +11,12 @@ export default class ObjectList {
     private isDragging = false;
     private startX = 0;
     private startY = 0;
+    private currentX = 0;
+    private currentY = 0;
     private offsetLeft = 0;
     private offsetTop = 0;
     private pointerId = 0;
+    private longPressTimer: number | null = null;
     private isMobile = false;
     private pipWindow: DocumentPictureInPictureWindow | null = null;
     private pipDocument: Document | null = null;
@@ -89,54 +92,108 @@ export default class ObjectList {
         }
         this.clampToViewport();
 
+        this.container.addEventListener("contextmenu", e => e.preventDefault());
         this.container.addEventListener("pointerdown", this.onPointerDown);
         window.addEventListener("pointermove", this.onPointerMove);
         window.addEventListener("pointerup", this.onPointerUp);
+        window.addEventListener("pointercancel", this.onPointerCancel);
     }
 
     private onPointerDown = (e: PointerEvent) => {
         if (!this.container) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
         const target = e.target as HTMLElement | null;
         if (target?.closest(".object-num, .object-desc, .objects-list-controls")) {
             return;
         }
-        this.isDragging = true;
         this.pointerId = e.pointerId;
         this.startX = e.clientX;
         this.startY = e.clientY;
-        const rect = this.container.getBoundingClientRect();
-        this.offsetLeft = rect.left;
-        this.offsetTop = rect.top;
-        this.container.setPointerCapture(this.pointerId);
-        e.preventDefault();
+        this.currentX = e.clientX;
+        this.currentY = e.clientY;
+        this.clearLongPressTimer();
+        this.longPressTimer = window.setTimeout(() => {
+            if (!this.container) return;
+            this.isDragging = true;
+            this.startX = this.currentX;
+            this.startY = this.currentY;
+            const rect = this.container.getBoundingClientRect();
+            this.offsetLeft = rect.left;
+            this.offsetTop = rect.top;
+            this.container.classList.add("dragging");
+            this.container.style.opacity = "0.8";
+            this.container.setPointerCapture(this.pointerId);
+            this.longPressTimer = null;
+        }, 500);
     };
 
     private onPointerMove = (e: PointerEvent) => {
-        if (!this.isDragging || !this.container || e.pointerId !== this.pointerId) return;
+        if (!this.container || e.pointerId !== this.pointerId) return;
+        this.currentX = e.clientX;
+        this.currentY = e.clientY;
+        if (!this.isDragging) {
+            const deltaBeforeDrag = Math.hypot(this.currentX - this.startX, this.currentY - this.startY);
+            if (deltaBeforeDrag > 10) {
+                this.clearLongPressTimer();
+            }
+            return;
+        }
 
-        const deltaX = e.clientX - this.startX;
-        const deltaY = e.clientY - this.startY;
+        const deltaX = this.currentX - this.startX;
+        const deltaY = this.currentY - this.startY;
         const newLeft = this.offsetLeft + deltaX;
         const newTop = this.offsetTop + deltaY;
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
-        const clampedLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        const clampedTop = Math.max(0, newTop);
+        const margin = 5;
+        const maxLeft = Math.max(margin, window.innerWidth - this.container.offsetWidth - margin);
+        const maxTop = Math.max(margin, window.innerHeight - this.container.offsetHeight - margin);
+        const clampedLeft = Math.min(maxLeft, Math.max(margin, newLeft));
+        const clampedTop = Math.min(maxTop, Math.max(margin, newTop));
         this.container.style.left = `${clampedLeft}px`;
         this.container.style.top = `${clampedTop}px`;
     };
 
     private onPointerUp = (e: PointerEvent) => {
-        if (!this.isDragging || !this.container || e.pointerId !== this.pointerId) return;
-        this.isDragging = false;
-        this.container.releasePointerCapture(this.pointerId);
-        const rect = this.container.getBoundingClientRect();
-        const position = {
-            left: rect.left,
-            top: rect.top,
-        };
-        setItemSync("objectsListPosition", position);
-        this.clampToViewport();
+        if (e.pointerId !== this.pointerId) return;
+        this.finishDragging();
     };
+
+    private onPointerCancel = (e: PointerEvent) => {
+        if (e.pointerId !== this.pointerId) return;
+        this.finishDragging(false);
+    };
+
+    private clearLongPressTimer() {
+        if (this.longPressTimer !== null) {
+            window.clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+    }
+
+    private finishDragging(persist = true) {
+        this.clearLongPressTimer();
+        if (!this.container) {
+            this.isDragging = false;
+            return;
+        }
+        if (this.isDragging) {
+            this.isDragging = false;
+            if (typeof this.container.hasPointerCapture === "function" && this.container.hasPointerCapture(this.pointerId)) {
+                this.container.releasePointerCapture(this.pointerId);
+            }
+            this.container.classList.remove("dragging");
+            this.container.style.opacity = "";
+            const rect = this.container.getBoundingClientRect();
+            if (persist) {
+                const position = {
+                    left: rect.left,
+                    top: rect.top,
+                };
+                setItemSync("objectsListPosition", position);
+            }
+        }
+        this.clampToViewport();
+        this.pointerId = 0;
+    }
 
     private clampToViewport = () => {
         if (!this.container) return;
@@ -144,23 +201,31 @@ export default class ObjectList {
         const styles = window.getComputedStyle(this.container);
         let newLeft = parseFloat(styles.left || "0");
         let newTop = parseFloat(styles.top || "0");
+        if (Number.isNaN(newLeft)) {
+            newLeft = rect.left;
+        }
+        if (Number.isNaN(newTop)) {
+            newTop = rect.top;
+        }
 
-        const maxLeft = window.innerWidth - this.container.offsetWidth;
+        const margin = 5;
+        const maxLeft = Math.max(margin, window.innerWidth - this.container.offsetWidth - margin);
+        const maxTop = Math.max(margin, window.innerHeight - this.container.offsetHeight - margin);
 
-        if (rect.right > window.innerWidth) {
+        if (rect.right > window.innerWidth - margin) {
             newLeft = maxLeft;
-        } else if (rect.left < 0) {
-            newLeft = 0;
+        } else if (rect.left < margin) {
+            newLeft = margin;
         }
 
-        if (rect.bottom > window.innerHeight) {
-            newTop = window.innerHeight - this.container.offsetHeight;
-        } else if (rect.top < 0) {
-            newTop = 0;
+        if (rect.bottom > window.innerHeight - margin) {
+            newTop = maxTop;
+        } else if (rect.top < margin) {
+            newTop = margin;
         }
 
-        newLeft = Math.min(maxLeft, Math.max(0, newLeft));
-        newTop = Math.max(0, newTop);
+        newLeft = Math.min(maxLeft, Math.max(margin, newLeft));
+        newTop = Math.min(maxTop, Math.max(margin, newTop));
         this.container.style.left = `${newLeft}px`;
         this.container.style.top = `${newTop}px`;
     };

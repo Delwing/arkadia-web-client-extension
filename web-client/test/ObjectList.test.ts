@@ -24,6 +24,10 @@ describe('ObjectList', () => {
     Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('non team members not fighting are not purple', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const client = new MockClient();
@@ -63,6 +67,7 @@ describe('ObjectList', () => {
   });
 
   test('saves left position on pointer up', () => {
+    jest.useFakeTimers();
     (getItemSync as jest.Mock).mockReturnValue(undefined);
     document.body.innerHTML = '<div id="objects-list"></div>';
     const container = document.getElementById('objects-list') as any;
@@ -88,6 +93,7 @@ describe('ObjectList', () => {
       target: container,
     } as unknown as PointerEvent;
     ol.onPointerDown(downEvent);
+    jest.advanceTimersByTime(500);
     ol.onPointerUp({ pointerId: 1 } as unknown as PointerEvent);
     expect(setItemSync).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
   });
