@@ -1459,7 +1459,7 @@ body.mobile-command-radial-active {
   justify-content: center;
   align-items: center;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
-  touch-action: manipulation; /* Improve touch behavior */
+  touch-action: none; /* Keep pointer focus during drags */
 }
 
 .mobile-button.empty {
@@ -1520,6 +1520,7 @@ body.mobile-command-radial-active {
   grid-template-columns: 1fr;
   grid-auto-rows: 36px;
   gap: 5px;
+  touch-action: none;
 }
 
 .mobile-idz-buttons {
@@ -1531,6 +1532,7 @@ body.mobile-command-radial-active {
   grid-template-columns: 1fr;
   grid-auto-rows: 36px;
   gap: 5px;
+  touch-action: none;
 }
 .mobile-idz-buttons .mobile-button {
   width: 72px;

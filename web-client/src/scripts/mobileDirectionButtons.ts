@@ -77,6 +77,10 @@ export default class MobileDirectionButtons {
     private activeTouchId: number | null = null;
     private pendingTouchId: number | null = null;
     private touchListenersAttached = false;
+    private readonly usingPointerEvents: boolean;
+    private readonly boundHandlePointerDown: (event: PointerEvent) => void;
+    private readonly boundHandlePointerMove: (event: PointerEvent) => void;
+    private readonly boundHandlePointerUp: (event: PointerEvent) => void;
     private readonly boundHandleTouchStart: (event: TouchEvent) => void;
     private readonly boundHandleTouchMove: (event: TouchEvent) => void;
     private readonly boundHandleTouchEnd: (event: TouchEvent) => void;
@@ -101,6 +105,10 @@ export default class MobileDirectionButtons {
         this.boundHandleTouchStart = this.handleTouchStart.bind(this);
         this.boundHandleTouchMove = this.handleTouchMove.bind(this);
         this.boundHandleTouchEnd = this.handleTouchEnd.bind(this);
+        this.usingPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
+        this.boundHandlePointerDown = this.handlePointerDown.bind(this);
+        this.boundHandlePointerMove = this.handlePointerMove.bind(this);
+        this.boundHandlePointerUp = this.handlePointerUp.bind(this);
 
         if (!this.container) {
             console.error('Mobile direction buttons container not found');
@@ -417,16 +425,23 @@ export default class MobileDirectionButtons {
         this.currentOrientation = this.getCurrentOrientation();
         this.applySavedPosition();
         requestAnimationFrame(() => this.clampToView(true));
-        // Add touch event listeners for long press and drag
-        this.container.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
-        this.container.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
-        this.container.addEventListener('touchend', this.boundHandleTouchEnd);
-        this.container.addEventListener('touchcancel', this.boundHandleTouchEnd);
+        if (this.usingPointerEvents) {
+            this.container.addEventListener('pointerdown', this.boundHandlePointerDown, { passive: false });
+            this.container.addEventListener('pointermove', this.boundHandlePointerMove, { passive: false });
+            this.container.addEventListener('pointerup', this.boundHandlePointerUp);
+            this.container.addEventListener('pointercancel', this.boundHandlePointerUp);
+        } else {
+            // Add touch event listeners for long press and drag
+            this.container.addEventListener('touchstart', this.boundHandleTouchStart, { passive: false });
+            this.container.addEventListener('touchmove', this.boundHandleTouchMove, { passive: false });
+            this.container.addEventListener('touchend', this.boundHandleTouchEnd);
+            this.container.addEventListener('touchcancel', this.boundHandleTouchEnd);
 
-        // Add mouse event listeners for desktop testing
-        this.container.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+            // Add mouse event listeners for desktop testing
+            this.container.addEventListener('mousedown', this.handleMouseDown.bind(this));
+            document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+            document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        }
 
         // Add scroll detection
         this.lastScrollTop = this.contentArea.scrollTop;
@@ -565,7 +580,13 @@ export default class MobileDirectionButtons {
         }
     }
 
-    private dragStart(x: number, y: number, preventDefault?: () => void, pointerId?: number) {
+    private dragStart(
+        x: number,
+        y: number,
+        preventDefault?: () => void,
+        pointerId?: number,
+        onActivated?: () => void,
+    ) {
         if (!this.container || this.dragLocked) {
             this.pendingTouchId = null;
             return;
@@ -588,7 +609,12 @@ export default class MobileDirectionButtons {
             this.container.classList.add('dragging');
 
             this.activeTouchId = this.pendingTouchId;
-            this.attachGlobalTouchListeners();
+            if (!this.usingPointerEvents) {
+                this.attachGlobalTouchListeners();
+            }
+            if (onActivated) {
+                onActivated();
+            }
 
             const rect = this.container.getBoundingClientRect();
             this.offsetX = rect.left;
@@ -646,6 +672,17 @@ export default class MobileDirectionButtons {
             this.clampToView(true);
         }
 
+        if (this.usingPointerEvents && this.container && this.activeTouchId !== null) {
+            try {
+                if (typeof this.container.hasPointerCapture === 'function'
+                    && this.container.hasPointerCapture(this.activeTouchId)) {
+                    this.container.releasePointerCapture(this.activeTouchId);
+                }
+            } catch (err) {
+                // Ignore errors from unsupported pointer capture APIs.
+            }
+        }
+
         this.activeTouchId = null;
     }
 
@@ -687,6 +724,57 @@ export default class MobileDirectionButtons {
         }
 
         this.dragEnd(() => e.preventDefault());
+    }
+
+    private handlePointerDown(e: PointerEvent) {
+        if (this.dragLocked) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+        this.dragStart(
+            e.clientX,
+            e.clientY,
+            () => e.preventDefault(),
+            e.pointerId,
+            () => {
+                try {
+                    this.container?.setPointerCapture(e.pointerId);
+                } catch (err) {
+                    // Ignore errors from unsupported pointer capture.
+                }
+            },
+        );
+    }
+
+    private handlePointerMove(e: PointerEvent) {
+        if (this.dragLocked) return;
+        if (!this.isDragging) return;
+        if (this.activeTouchId !== e.pointerId) return;
+
+        e.preventDefault();
+        this.dragMove(e.clientX, e.clientY);
+    }
+
+    private handlePointerUp(e: PointerEvent) {
+        if (this.dragLocked) {
+            try {
+                this.container?.releasePointerCapture(e.pointerId);
+            } catch (err) {
+                // Ignore errors from unsupported pointer capture.
+            }
+            return;
+        }
+
+        const relevantId = this.activeTouchId ?? this.pendingTouchId;
+        if (relevantId !== null && relevantId !== e.pointerId) {
+            return;
+        }
+
+        this.dragEnd(() => e.preventDefault());
+        try {
+            this.container?.releasePointerCapture(e.pointerId);
+        } catch (err) {
+            // Ignore errors from unsupported pointer capture.
+        }
     }
 
     private attachGlobalTouchListeners() {
