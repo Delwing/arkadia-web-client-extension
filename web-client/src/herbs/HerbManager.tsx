@@ -2,6 +2,9 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getItemSync } from "@client/src/storage";
 import type { HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
+import { openHerbContextMenu } from "@client/src/contextMenus";
+import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
+import type Client from "@client/src/Client";
 
 type HerbCounts = Record<string | number, Record<string, number>>;
 
@@ -125,6 +128,16 @@ const getInitialCounts = (): HerbCounts | undefined => {
     return value;
 };
 
+const parseCommandList = (value: unknown): string[] => {
+    if (typeof value !== "string") {
+        return [];
+    }
+    return value
+        .split(";")
+        .map(entry => entry.trim())
+        .filter(Boolean);
+};
+
 const clamp = (value: number, min: number, max: number) => {
     if (max < min) {
         return min;
@@ -193,6 +206,57 @@ const HerbManager = () => {
     const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const dragState = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
+    const herbsDataRef = useRef<HerbsData | null>(null);
+    const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
+    const initialSettings = getItemSync("settings")?.settings as Record<string, unknown> | undefined;
+    const preUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPreUseCommand));
+    const postUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPostUseCommand));
+
+    const ensureHerbsData = useCallback(async (): Promise<HerbsData | null> => {
+        if (herbsDataRef.current) {
+            return herbsDataRef.current;
+        }
+        if (!herbsDataPromiseRef.current) {
+            herbsDataPromiseRef.current = loadHerbs()
+                .then(data => {
+                    herbsDataRef.current = data;
+                    return data;
+                })
+                .finally(() => {
+                    herbsDataPromiseRef.current = null;
+                });
+        }
+        return herbsDataPromiseRef.current;
+    }, []);
+
+    const closeContextMenu = useCallback(() => {
+        const client = (window as any).clientExtension as Client | undefined;
+        const outputHandler = client?.OutputHandler
+        outputHandler?.hideContextMenu?.();
+    }, []);
+
+    const handleClose = useCallback(() => {
+        closeContextMenu();
+        setIsOpen(false);
+    }, [closeContextMenu]);
+
+    useEffect(() => {
+        const client = (window as any).clientExtension as Client | undefined;
+        if (!client) {
+            return;
+        }
+        const handleSettings = (event: CustomEvent) => {
+            const detail = event.detail as Record<string, unknown> | null | undefined;
+            const pre = parseCommandList(detail?.herbPreUseCommand);
+            const post = parseCommandList(detail?.herbPostUseCommand);
+            preUseCommandsRef.current = pre;
+            postUseCommandsRef.current = post;
+        };
+        const unsubscribe = client.addEventListener("settings", handleSettings);
+        return () => {
+            unsubscribe?.();
+        };
+    }, []);
 
     useEffect(() => {
         const handler = (ev: Event) => {
@@ -220,7 +284,7 @@ const HerbManager = () => {
             setIsOpen(true);
         };
         const closeHandler = () => {
-            setIsOpen(false);
+            handleClose();
         };
         window.addEventListener("herbManagerOpen", openHandler);
         window.addEventListener("herbManagerClose", closeHandler);
@@ -228,7 +292,7 @@ const HerbManager = () => {
             window.removeEventListener("herbManagerOpen", openHandler);
             window.removeEventListener("herbManagerClose", closeHandler);
         };
-    }, []);
+    }, [handleClose]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -238,12 +302,28 @@ const HerbManager = () => {
         const handleKey = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
                 event.preventDefault();
-                setIsOpen(false);
+                handleClose();
             }
         };
         window.addEventListener("keydown", handleKey);
         return () => window.removeEventListener("keydown", handleKey);
-    }, [isOpen]);
+    }, [handleClose, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        const handlePointerDownOutside = (event: PointerEvent) => {
+            const target = event.target as Node | null;
+            const contextMenu = document.getElementById("context-menu");
+            if (target && (panelRef.current?.contains(target) || contextMenu?.contains(target))) {
+                return;
+            }
+            handleClose();
+        };
+        window.addEventListener("pointerdown", handlePointerDownOutside);
+        return () => window.removeEventListener("pointerdown", handlePointerDownOutside);
+    }, [handleClose, isOpen]);
 
     const handleResize = useCallback(() => {
         setPosition(prev => {
@@ -451,11 +531,33 @@ const HerbManager = () => {
         }
     };
 
-    const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
-
-    const handleClose = () => {
-        setIsOpen(false);
+    const handleContextMenu = (stack: HerbStack) => async (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        const { pageX, pageY } = event;
+        const client = (window as any).clientExtension as Client | undefined;
+        if (!client) {
+            return;
+        }
+        const data = herbsDataRef.current ?? (await ensureHerbsData());
+        if (!data) {
+            return;
+        }
+        const actions = data.herb_id_to_use?.[stack.herbId];
+        if (!actions || actions.length === 0) {
+            return;
+        }
+        openHerbContextMenu(client, {
+            herbId: stack.herbId,
+            actions,
+            x: pageX,
+            y: pageY,
+            commandPrefix: "/z",
+            preUseCommands: preUseCommandsRef.current,
+            postUseCommands: postUseCommandsRef.current,
+        });
     };
+
+    const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
     const handleBackdropClick = () => {
         handleClose();
@@ -481,6 +583,7 @@ const HerbManager = () => {
                 aria-label="Woreczki ziół"
                 tabIndex={-1}
                 onClick={event => event.stopPropagation()}
+                onPointerDownCapture={closeContextMenu}
             >
                 <div className="herb-window-header" onPointerDown={handlePointerDown}>
                     <h5 className="herb-window-title">Woreczki ziół</h5>
@@ -523,11 +626,12 @@ const HerbManager = () => {
                                                         type="button"
                                                         className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
                                                         style={getHerbStyle(stack.herbId)}
-                                                        draggable={!busy}
-                                                        onDragStart={handleDragStart(bag.bagNumber, stack)}
-                                                        onDragEnd={handleDragEnd}
-                                                        onClick={handleSplit(bag.bagNumber, stack)}
-                                                    >
+                                                    draggable={!busy}
+                                                    onDragStart={handleDragStart(bag.bagNumber, stack)}
+                                                    onDragEnd={handleDragEnd}
+                                                    onClick={handleSplit(bag.bagNumber, stack)}
+                                                    onContextMenu={handleContextMenu(stack)}
+                                                >
                                                         <span className="herb-pill-count">{stack.count} ×</span>
                                                         <span className="herb-pill-label">{stack.herbId}</span>
                                                     </button>

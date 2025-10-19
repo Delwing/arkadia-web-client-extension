@@ -19,7 +19,7 @@ export default class OutputHandler {
         document.addEventListener('click', this.hideContextMenu)
     }
 
-    private hideContextMenu = () => {
+    hideContextMenu = () => {
         if (this.contextMenu) {
             this.contextMenu.classList.remove('show')
             this.contextMenu.innerHTML = ''

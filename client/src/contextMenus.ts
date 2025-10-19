@@ -1,4 +1,6 @@
 import type Client from "./Client";
+import { mudletColorLine } from "./Colors";
+import { stripAnsiCodes } from "./stripAnsiCodes";
 import type { HerbUse } from "./scripts/herbsLoader";
 
 export interface ContextMenuItem {
@@ -32,15 +34,25 @@ export function buildHerbContextMenuItems(
         return [];
     }
 
-    return actions.flatMap(action =>
-        amounts.map(amount => ({
-            label: `${action.action} ${amount}`,
-            action: () => {
-                preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                client.sendCommand(`${commandPrefix} ${action.action} ${herbId} ${amount}`);
-                postUseCommands.forEach(cmd => client.sendCommand(cmd));
-            }
-        }))
+    const bindableActions = actions.filter(action => !action.dont_bind);
+    if (bindableActions.length === 0) {
+        return [];
+    }
+
+    return bindableActions.flatMap(action =>
+        amounts.map(amount => {
+            const rawEffect = typeof action.effect === "string" ? action.effect.trim() : "";
+            const parsedEffect = rawEffect ? stripAnsiCodes(mudletColorLine(rawEffect)) : "";
+            const effectLabel = parsedEffect ? ` (${parsedEffect})` : "";
+            return {
+                label: `${action.action} ${amount}${effectLabel}`,
+                action: () => {
+                    preUseCommands.forEach(cmd => client.sendCommand(cmd));
+                    client.sendCommand(`${commandPrefix} ${action.action} ${herbId} ${amount}`);
+                    postUseCommands.forEach(cmd => client.sendCommand(cmd));
+                }
+            };
+        })
     );
 }
 
@@ -65,10 +77,6 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
         postUseCommands,
         amounts,
     );
-
-    if (items.length === 0) {
-        return;
-    }
 
     client.OutputHandler.showContextMenu(items, x, y, {
         header: `Ziolo: ${herbId}`,

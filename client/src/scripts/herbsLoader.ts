@@ -14,6 +14,7 @@ export interface HerbForms {
 export interface HerbUse {
     action: string;
     effect: string;
+    dont_bind?: boolean;
 }
 
 export interface HerbsData {
