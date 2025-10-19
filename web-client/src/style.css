@@ -359,6 +359,7 @@ h1 {
   min-height: 0;
   --map-size: 30vh;
   background-color: var(--surface-content);
+  overflow: hidden;
 }
 
 #main_text_output_msg_wrapper {
