@@ -96,8 +96,13 @@ export default class ObjectList {
 
     private onPointerDown = (e: PointerEvent) => {
         if (!this.container) return;
-        const target = e.target as HTMLElement | null;
-        if (target?.closest(".object-num, .object-desc, .objects-list-controls")) {
+        const target = this.getEventTargetElement(e.target);
+        if (target?.closest(".objects-list-controls")) {
+            return;
+        }
+        const pointerType = e.pointerType || (this.isMobile ? "touch" : "mouse");
+        const isMouseLikePointer = pointerType === "mouse" || pointerType === "pen";
+        if (isMouseLikePointer && target?.closest(".object-num, .object-desc")) {
             return;
         }
         this.isDragging = true;
