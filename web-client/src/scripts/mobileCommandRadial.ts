@@ -108,8 +108,19 @@ export default class MobileCommandRadial {
         }).catch(err => console.error('Failed to reload mobile button settings for radial menu', err));
     }
 
+    private isRadialEnabled(): boolean {
+        if (!this.settings) {
+            return true;
+        }
+        return this.settings.radial?.enabled !== false;
+    }
+
     private readonly handleTouchStart = (event: TouchEvent) => {
         if (this.overlay?.classList.contains('mobile-command-radial--visible')) {
+            return;
+        }
+        if (!this.isRadialEnabled()) {
+            this.cancelLongPress();
             return;
         }
         if (event.touches.length !== 1) {
@@ -366,7 +377,7 @@ export default class MobileCommandRadial {
     }
 
     private updateCommands() {
-        if (!this.settings) {
+        if (!this.settings || !this.isRadialEnabled()) {
             this.commands = [];
             this.highlightCommand(null);
             return;
