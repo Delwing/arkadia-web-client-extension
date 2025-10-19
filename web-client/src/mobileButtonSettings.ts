@@ -200,10 +200,10 @@ const defaultRadialSettings: RadialSettings = {
     commands: [
         { id: 'radial-1', label: 'dobadz broni', command: 'dobadz wszystkich broni' },
         { id: 'radial-2', label: 'buduj zioła', command: '/ziola_buduj' },
-        { id: 'radial-3', label: 'deliona', command: '/z_zjedz deliona' },
-        { id: 'radial-4', label: '+k', command: '+k' },
+        { id: 'radial-3', label: 'deliona', command: '/zi zjedz deliona' },
         { id: 'radial-5', label: '/list', command: '/list' },
         { id: 'radial-6', label: 'otul', command: 'otul sie plaszczem' },
+        { id: 'radial-4', label: '+k', command: '+k' },
     ],
 };
 
