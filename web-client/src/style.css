@@ -886,9 +886,6 @@ h1 {
 
 #objects-list .objects-list-content {
   white-space: pre;
-  overflow-x: hidden;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 #objects-list .object-num,
