@@ -35,6 +35,7 @@ export interface RadialCommandSetting {
 }
 
 export interface RadialSettings {
+    enabled: boolean;
     commands: RadialCommandSetting[];
 }
 
@@ -195,6 +196,7 @@ export function createDefaultLayout(): LayoutSettings {
 const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 const defaultRadialSettings: RadialSettings = {
+    enabled: true,
     commands: [
         { id: 'radial-1', label: 'dobadz broni', command: 'dobadz wszystkich broni' },
         { id: 'radial-2', label: 'buduj zioła', command: '/ziola_buduj' },
@@ -250,8 +252,9 @@ function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout())
 
 function parseRadialSettings(raw: any): RadialSettings {
     if (!raw || typeof raw !== 'object') {
-        return { commands: cloneDefaultRadialCommands() };
+        return { enabled: true, commands: cloneDefaultRadialCommands() };
     }
+    const enabled = raw.enabled === false ? false : true;
     const list = Array.isArray(raw.commands) ? raw.commands : [];
     const commands: RadialCommandSetting[] = [];
     const usedIds = new Set<string>();
@@ -276,9 +279,9 @@ function parseRadialSettings(raw: any): RadialSettings {
         commands.push({ id, label, command, color, activeColor, fontColor });
     });
     if (!commands.length) {
-        return { commands: cloneDefaultRadialCommands() };
+        return { enabled, commands: cloneDefaultRadialCommands() };
     }
-    return { commands };
+    return { enabled, commands };
 }
 
 export async function loadSettings(): Promise<Settings> {
@@ -342,7 +345,7 @@ export async function loadSettings(): Promise<Settings> {
         team: createDefaultLayout(),
         leader: createDefaultLayout(),
         locked: false,
-        radial: { commands: cloneDefaultRadialCommands() },
+        radial: { enabled: true, commands: cloneDefaultRadialCommands() },
     };
 }
 

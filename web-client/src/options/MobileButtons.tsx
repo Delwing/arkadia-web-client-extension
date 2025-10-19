@@ -90,7 +90,7 @@ function MobileButtons() {
         team: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
         leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
         locked: false,
-        radial: { commands: [] },
+        radial: { enabled: true, commands: [] },
     });
     const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
