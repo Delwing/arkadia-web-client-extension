@@ -569,7 +569,7 @@ const HerbManager = () => {
             actions,
             x: pageX,
             y: pageY,
-            commandPrefix: "/z",
+            commandPrefix: "/zi",
             preUseCommands: preUseCommandsRef.current,
             postUseCommands: postUseCommandsRef.current,
         });

@@ -64,7 +64,7 @@ describe("buildHerbContextMenuItems", () => {
             actions: [{ action: "napoj", effect: "+5 HP", dont_bind: true }],
             x: 10,
             y: 20,
-            commandPrefix: "/z",
+            commandPrefix: "/zi",
             preUseCommands: [],
             postUseCommands: [],
             amounts: [1],
