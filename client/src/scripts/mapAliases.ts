@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {longToShort} from "../MapHelper";
 import {getShortcut} from "./shortcuts";
+import {peekEmbeddedMap} from "../runtime/embeddedMapBridge";
 
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
@@ -38,10 +39,10 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/go$/,
             callback: () => {
-                const embedded: any = (window as any).embedded;
+                const embedded = peekEmbeddedMap();
                 const room: any = client.Map.currentRoom;
-                if (!embedded?.destinations?.length || !room) return;
-                const target = parseInt(embedded.destinations[0]);
+                const target = embedded?.getDestinations()?.[0];
+                if (typeof target !== 'number' || !room) return;
                 const path = client.Map.findPath(room.id, target);
                 if (!path || path.length < 2) return;
                 const next = path[1];

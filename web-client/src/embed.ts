@@ -256,6 +256,14 @@ export class EmbeddedMap {
         return this.totalRooms;
     }
 
+    getDestinations(): readonly number[] {
+        return this.destinations;
+    }
+
+    getPrimaryDestination(): number | null {
+        return this.destinations.length > 0 ? this.destinations[0] : null;
+    }
+
     setExplorationMode(on: boolean) {
         this.explorationMode = on;
         if (this.explorationMode) {
@@ -311,7 +319,7 @@ export class EmbeddedMap {
         if (id) {
             this.destinations = [parseInt(id)];
         } else {
-            this.destinations = [];6
+            this.destinations = [];
         }
         this.refresh();
     }
