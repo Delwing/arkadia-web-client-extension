@@ -121,7 +121,9 @@ export function registerScripts(client: Client) {
 
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
-    ], (): undefined => {}, 'follow', { stayOpenLines: 1 })
+    ], (): undefined => {
+        client.Map.refreshPosition = true
+    }, 'follow', { stayOpenLines: 1 })
     const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
     idzTrigger.registerChild(movePattern, (_, __, matches): undefined => {
         if (matches?.groups?.direction) {
