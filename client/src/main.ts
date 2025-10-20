@@ -122,14 +122,17 @@ export function registerScripts(client: Client) {
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
     ], (): undefined => {
-        client.Map.refreshPosition = true
-    }, 'follow', { stayOpenLines: 1 })
+    }, 'follow', {stayOpenLines: 1})
     const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
-    idzTrigger.registerChild(movePattern, (_, __, matches): undefined => {
+    idzTrigger.registerChild(/.*/, (_, line): undefined => {
+        const matches = line.match(movePattern)
         if (matches?.groups?.direction) {
-                client.Map.followMove(matches.groups.direction)
-                return
-            }
+            client.Map.followMove(matches.groups.direction)
+            return
+        }
+        if (line.startsWith("Wykonuje komende 'idz ")) {
+            return
+        }
         client.Map.refresh()
         client.Map.refreshPosition = true
     })
