@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import initHerbCounter from '../../src/scripts/herbCounter';
+import { normalizeHerbBagsState } from '../../src/types/herbs';
 
 export class FakeClient {
   private emitter = new EventEmitter();
@@ -40,7 +41,7 @@ export const defaultHerbData = {
 
 export function initHerbClient(
   client: { aliases: { pattern: RegExp; callback: Function }[]; dispatch(event: string, detail: any): void },
-  herbCounts: Record<number, Record<string, number>> = {},
+  herbCounts: Record<number, any> = {},
   herbData: any = defaultHerbData,
   aliases = client.aliases
 ) {
@@ -49,6 +50,5 @@ export function initHerbClient(
     json: () => Promise.resolve(herbData)
   });
   initHerbCounter((client as unknown) as any, aliases);
-  client.dispatch('storage', { key: 'herb_counts', value: herbCounts });
+  client.dispatch('storage', { key: 'herb_counts', value: normalizeHerbBagsState(herbCounts) });
 }
-

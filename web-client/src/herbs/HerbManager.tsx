@@ -1,12 +1,13 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getItemSync } from "@client/src/storage";
-import type { HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
+import type { HerbBagState, HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
+import { normalizeHerbBagsState } from "@client/src/types/herbs";
 import { openHerbContextMenu } from "@client/src/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
 import type Client from "@client/src/Client";
 
-type HerbCounts = Record<string | number, Record<string, number>>;
+type HerbCounts = HerbBagsState | undefined;
 
 interface HerbStack {
     instanceId: string;
@@ -18,6 +19,7 @@ interface HerbStack {
 interface HerbBag {
     bagNumber: number;
     items: HerbStack[];
+    condition?: number;
 }
 
 interface DragPayload {
@@ -37,7 +39,17 @@ type HerbPillStyle = React.CSSProperties & {
 
 const herbStyleCache = new Map<string, HerbPillStyle>();
 
-const buildBags = (source: HerbCounts | undefined, allocateId: () => string): HerbBag[] => {
+const getConditionVariant = (value: number): "good" | "warn" | "bad" => {
+    if (value >= 4) {
+        return "good";
+    }
+    if (value === 3) {
+        return "warn";
+    }
+    return "bad";
+};
+
+const buildBags = (source: HerbCounts, allocateId: () => string): HerbBag[] => {
     if (!source) {
         return [];
     }
@@ -48,8 +60,9 @@ const buildBags = (source: HerbCounts | undefined, allocateId: () => string): He
             if (!Number.isFinite(bagNumber)) {
                 return null;
             }
-            const normalized = typeof contents === "object" && contents ? contents : {};
-            const items: HerbStack[] = Object.entries(normalized)
+            const bagState = contents as HerbBagState | undefined;
+            const herbs = bagState?.herbs ?? {};
+            const items: HerbStack[] = Object.entries(herbs)
                 .filter(([, count]) => typeof count === "number" && count > 0)
                 .map(([herbId, count]) => ({
                     herbId,
@@ -57,7 +70,8 @@ const buildBags = (source: HerbCounts | undefined, allocateId: () => string): He
                     instanceId: allocateId(),
                 }))
                 .sort((a, b) => a.herbId.localeCompare(b.herbId));
-            return { bagNumber, items } as HerbBag;
+            const condition = typeof bagState?.condition === "number" ? bagState.condition : undefined;
+            return { bagNumber, items, condition } as HerbBag;
         })
         .filter((bag): bag is HerbBag => !!bag)
         .sort((a, b) => a.bagNumber - b.bagNumber);
@@ -96,6 +110,7 @@ const moveLocally = (
     const cloned = current.map(b => ({
         bagNumber: b.bagNumber,
         items: b.items.map(item => ({ ...item })),
+        condition: b.condition,
     }));
     const source = cloned.find(b => b.bagNumber === fromBag);
     if (!source) {
@@ -122,10 +137,12 @@ const moveLocally = (
     return { next: cloned, moved };
 };
 
-const getInitialCounts = (): HerbCounts | undefined => {
+const getInitialCounts = (): HerbCounts => {
     const stored = getItemSync("herb_counts");
-    const value = stored ? (stored.herb_counts as HerbCounts | undefined) : undefined;
-    return value;
+    if (!stored) {
+        return undefined;
+    }
+    return normalizeHerbBagsState(stored.herb_counts);
 };
 
 const parseCommandList = (value: unknown): string[] => {
@@ -195,7 +212,8 @@ const HerbManager = () => {
     const nextInstanceId = () => `stack-${idCounter.current++}`;
     const rebuildBags = (counts?: HerbCounts) => {
         idCounter.current = 0;
-        return buildBags(counts, nextInstanceId);
+        const normalized = counts ? normalizeHerbBagsState(counts) : undefined;
+        return buildBags(normalized, nextInstanceId);
     };
 
     const [bags, setBags] = useState<HerbBag[]>(() => rebuildBags(getInitialCounts()));
@@ -260,10 +278,10 @@ const HerbManager = () => {
 
     useEffect(() => {
         const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent<HerbBagsState>).detail;
+            const detail = (ev as CustomEvent<unknown>).detail;
             if (detail && typeof detail === "object") {
                 setError(null);
-                setBags(rebuildBags(detail));
+                setBags(rebuildBags(detail as HerbCounts));
             }
         };
         window.addEventListener("herbCounts", handler as EventListener);
@@ -602,44 +620,59 @@ const HerbManager = () => {
                             </div>
                         ) : (
                             <div className="herb-grid">
-                                {bags.map(bag => (
-                                    <div
-                                        key={bag.bagNumber}
-                                        className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
-                                        onDragOver={handleDragOver(bag.bagNumber)}
-                                        onDrop={handleDrop(bag.bagNumber)}
-                                        onDragLeave={handleDragLeave(bag.bagNumber)}
-                                    >
-                                        <div className="herb-bag-header">
-                                            <span>Woreczek {bag.bagNumber}</span>
-                                            <span className="herb-bag-count">
-                                                {bag.items.reduce((sum, item) => sum + item.count, 0)} szt.
-                                            </span>
+                                {bags.map(bag => {
+                                    const totalCount = bag.items.reduce((sum, item) => sum + item.count, 0);
+                                    const conditionValue =
+                                        typeof bag.condition === "number"
+                                            ? Math.min(5, Math.max(1, Math.round(bag.condition)))
+                                            : null;
+                                    return (
+                                        <div
+                                            key={bag.bagNumber}
+                                            className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
+                                            onDragOver={handleDragOver(bag.bagNumber)}
+                                            onDrop={handleDrop(bag.bagNumber)}
+                                            onDragLeave={handleDragLeave(bag.bagNumber)}
+                                        >
+                                            <div className="herb-bag-header">
+                                                <span>Woreczek {bag.bagNumber}</span>
+                                                <div className="herb-bag-meta">
+                                                    {conditionValue !== null && (
+                                                        <span
+                                                            className={`herb-bag-condition herb-bag-condition--${getConditionVariant(conditionValue)}`}
+                                                            title={`Stan woreczka: ${conditionValue}/5`}
+                                                        >
+                                                            {conditionValue}/5
+                                                        </span>
+                                                    )}
+                                                    <span className="herb-bag-count">{totalCount} szt.</span>
+                                                </div>
+                                            </div>
+                                            <div className="herb-bag-content">
+                                                {bag.items.length === 0 ? (
+                                                    <div className="herb-bag-empty">Pusty woreczek</div>
+                                                ) : (
+                                                    bag.items.map(stack => (
+                                                        <button
+                                                            key={stack.instanceId}
+                                                            type="button"
+                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
+                                                            style={getHerbStyle(stack.herbId)}
+                                                            draggable={!busy}
+                                                            onDragStart={handleDragStart(bag.bagNumber, stack)}
+                                                            onDragEnd={handleDragEnd}
+                                                            onClick={handleSplit(bag.bagNumber, stack)}
+                                                            onContextMenu={handleContextMenu(stack)}
+                                                        >
+                                                            <span className="herb-pill-count">{stack.count} ×</span>
+                                                            <span className="herb-pill-label">{stack.herbId}</span>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="herb-bag-content">
-                                            {bag.items.length === 0 ? (
-                                                <div className="herb-bag-empty">Pusty woreczek</div>
-                                            ) : (
-                                                bag.items.map(stack => (
-                                                    <button
-                                                        key={stack.instanceId}
-                                                        type="button"
-                                                        className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
-                                                        style={getHerbStyle(stack.herbId)}
-                                                    draggable={!busy}
-                                                    onDragStart={handleDragStart(bag.bagNumber, stack)}
-                                                    onDragEnd={handleDragEnd}
-                                                    onClick={handleSplit(bag.bagNumber, stack)}
-                                                    onContextMenu={handleContextMenu(stack)}
-                                                >
-                                                        <span className="herb-pill-count">{stack.count} ×</span>
-                                                        <span className="herb-pill-label">{stack.herbId}</span>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

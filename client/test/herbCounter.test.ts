@@ -114,6 +114,37 @@ describe('herb counter', () => {
     expect(printed).toMatch(/deliona/);
   });
 
+  test('woreczki alias updates bag conditions', async () => {
+    jest.useFakeTimers();
+    try {
+      const aliases: { pattern: RegExp; callback: () => void }[] = [];
+      initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+      const wearEntry = aliases.find(({ pattern }) => pattern.test('/woreczki_buduj'));
+      expect(wearEntry).toBeTruthy();
+      client.sendCommand.mockClear();
+      client.port.postMessage.mockClear();
+      wearEntry?.callback();
+      expect(client.sendCommand).toHaveBeenCalledWith('ocen wszystkie woreczki');
+      parse('Ten element ekwipunku wyglada na troche zuzyty.');
+      parse('Ten element ekwipunku wyglada na calkiem nowy.');
+      jest.advanceTimersByTime(150);
+      await Promise.resolve();
+      const setCalls = client.port.postMessage.mock.calls
+        .map(([arg]) => arg)
+        .filter(call => call?.type === 'SET_STORAGE');
+      expect(setCalls[setCalls.length - 1]).toEqual({
+        type: 'SET_STORAGE',
+        key: 'herb_counts',
+        value: {
+          1: { herbs: {}, condition: 3 },
+          2: { herbs: {}, condition: 5 }
+        }
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('opens herb manager overlay via alias', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
@@ -140,7 +171,7 @@ describe('herb counter', () => {
     expect(setCalls).toContainEqual({
       type: 'SET_STORAGE',
       key: 'herb_counts',
-      value: { 1: {}, 2: { deliona: 1 } }
+      value: { 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } }
     });
   });
 
@@ -157,7 +188,7 @@ describe('herb counter', () => {
     expect(setCalls).toContainEqual({
       type: 'SET_STORAGE',
       key: 'herb_counts',
-      value: { 1: { deliona: 2 } }
+      value: { 1: { herbs: { deliona: 2 } } }
     });
   });
 });

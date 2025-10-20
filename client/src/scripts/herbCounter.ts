@@ -4,7 +4,9 @@ import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 import { openHerbContextMenu } from "../contextMenus";
-import type { HerbManagerApi, HerbMoveOptions, HerbBagsState } from "../types/herbs";
+import type { HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState } from "../types/herbs";
+import { clampHerbBagCondition, normalizeHerbBagsState } from "../types/herbs";
+import { getWearValue } from "./wearUsed";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -110,18 +112,30 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         width = ev.detail;
     });
     let storedBags: HerbBagsState = {};
+    let currentBagForEvaluation = 1;
+
+    const ensureBagState = (bagNumber: number): HerbBagState => {
+        let bag = storedBags[bagNumber];
+        if (!bag) {
+            bag = { herbs: {} };
+            storedBags[bagNumber] = bag;
+        } else if (!bag.herbs) {
+            bag.herbs = {};
+        }
+        return bag;
+    };
 
     const cloneBags = () => structuredClone(storedBags);
 
     const persistBags = () => {
-        const snapshot = cloneBags();
+        const snapshot = normalizeHerbBagsState(cloneBags());
         client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot });
         client.sendEvent('herbCounts', structuredClone(snapshot));
         storedBags = snapshot;
     };
 
     const broadcastBags = () => {
-        client.sendEvent('herbCounts', cloneBags());
+        client.sendEvent('herbCounts', structuredClone(storedBags));
     };
 
     const requestBagsIfNeeded = () => {
@@ -134,7 +148,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     client.addEventListener('storage', async (ev: CustomEvent) => {
         if (ev.detail.key === STORAGE_KEY) {
-            storedBags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
+            storedBags = normalizeHerbBagsState(ev.detail.value);
             await ensureData();
             broadcastBags();
         }
@@ -178,11 +192,61 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const contentRegex1 = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W srodku dostrzegasz (?<content>.*)\.$/;
     const contentRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W srodku dostrzegasz (?<content>[a-zA-Z0-9, -]+)\.$/;
     const emptyRegex = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W jego srodku nic jednak nie ma\.$/;
+    const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
 
     let awaiting = false;
     let left = 0;
     const totals: Record<string, number> = {};
-    const bagTotals: Record<number, Record<string, number>> = {};
+    const bagTotals: Record<number, HerbBagState> = {};
+    const pendingConditions: Record<number, number> = {};
+    let conditionFlushHandle: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleConditionFlush = () => {
+        if (conditionFlushHandle) return;
+        conditionFlushHandle = setTimeout(() => {
+            conditionFlushHandle = null;
+            const entries = Object.entries(pendingConditions as Record<string, number>);
+            Object.keys(pendingConditions as Record<string, number>).forEach(key => {
+                delete (pendingConditions as Record<string, number>)[key];
+            });
+            if (entries.length === 0) {
+                return;
+            }
+            let changed = false;
+            for (const [key, rawValue] of entries) {
+                const bagNumber = Number(key);
+                if (!Number.isFinite(bagNumber) || bagNumber <= 0) {
+                    continue;
+                }
+                const condition = clampHerbBagCondition(rawValue);
+                const bag = ensureBagState(bagNumber);
+                if (bag.condition !== condition) {
+                    bag.condition = condition;
+                    changed = true;
+                }
+            }
+            if (changed) {
+                persistBags();
+            } else {
+                broadcastBags();
+            }
+        }, 100);
+    };
+
+    const resolveWearValue = (desc: string): number | undefined => {
+        const trimmed = desc.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        const direct = getWearValue(trimmed);
+        if (direct != null) {
+            return direct;
+        }
+        if (trimmed.endsWith('.')) {
+            return getWearValue(trimmed.slice(0, -1));
+        }
+        return getWearValue(`${trimmed}.`);
+    };
     let currentBag = 0;
 
     const showHerbActions = (id: string, ev: MouseEvent) => {
@@ -212,12 +276,13 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     };
 
     function buildSummary(
-        bags: Record<number, Record<string, number>>,
+        bags: HerbBagsState,
         includeBags = true,
         useFormattedNames = true
     ): string[] {
         const totalsMap: Record<string, number> = {};
-        Object.values(bags).forEach(contents => {
+        Object.values(bags).forEach(bag => {
+            const contents = bag?.herbs ?? {};
             Object.entries(contents).forEach(([id, c]) => {
                 totalsMap[id] = (totalsMap[id] || 0) + c;
             });
@@ -264,7 +329,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
         if (includeBags && Object.keys(bags).length > 0) {
             lines.push('');
-            Object.entries(bags).forEach(([num, contents]) => {
+            Object.entries(bags).forEach(([num, bagState]) => {
+                const contents = bagState?.herbs ?? {};
                 const parts = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
                     .map(([id, c]) => {
@@ -272,7 +338,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                         return `${c} ${client.OutputHandler.makeStringRightClickable(name, (ev) => showHerbActions(id, ev))}`;
                     })
                     .join(', ');
-                lines.push(`${num}. ${parts || '(pusty)'}`);
+                const condition = bagState?.condition;
+                const conditionSuffix = typeof condition === 'number' ? ` [${condition}/5]` : '';
+                lines.push(`${num}. ${parts || '(pusty)'}${conditionSuffix}`);
             });
         }
 
@@ -280,7 +348,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     function finish() {
-        storedBags = structuredClone(bagTotals);
+        storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
         const lines = buildSummary(storedBags, true, false);
         client.println(lines.join('\n'));
         persistBags();
@@ -311,7 +379,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             totals[key] = (totals[key] || 0) + count;
             bag[key] = (bag[key] || 0) + count;
         });
-        bagTotals[currentBag] = bag;
+        bagTotals[currentBag] = { herbs: bag };
         left -= 1;
         if (left <= 0) finish();
         return undefined;
@@ -328,9 +396,21 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     client.Triggers.registerTrigger(emptyRegex, () => {
         if (!awaiting) return undefined;
         currentBag += 1;
-        bagTotals[currentBag] = {};
+        bagTotals[currentBag] = { herbs: {} };
         left -= 1;
         if (left <= 0) finish();
+        return undefined;
+    });
+
+    client.Triggers.registerTrigger(bagConditionRegex, (_raw, _line, m) => {
+        const desc = m.groups?.desc;
+        if (!desc) return undefined;
+        const bagNumber = currentBagForEvaluation++
+        if (!Number.isFinite(bagNumber) || bagNumber <= 0) return undefined;
+        const wearValue = resolveWearValue(desc);
+        if (wearValue == null) return undefined;
+        pendingConditions[bagNumber] = wearValue;
+        scheduleConditionFlush();
         return undefined;
     });
 
@@ -341,6 +421,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         currentBag = 0;
         Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
         client.sendCommand('policz swoje woreczki');
+    }
+
+    function evaluateBagConditions() {
+        Object.keys(pendingConditions as Record<string, number>).forEach(key => {
+            delete (pendingConditions as Record<string, number>)[key];
+        });
+        if (conditionFlushHandle) {
+            clearTimeout(conditionFlushHandle);
+            conditionFlushHandle = null;
+        }
+        currentBagForEvaluation = 1;
+        client.sendCommand('ocen wszystkie woreczki');
     }
 
     async function take(herb: string, amount: number, fromBag?: number): Promise<number> {
@@ -355,9 +447,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             : Object.keys(storedBags).map(n => parseInt(n)).sort((a, b) => a - b);
         for (const num of bags) {
             if (leftToTake <= 0) break;
-            const contents = storedBags[num];
-            if (!contents) continue;
-            const available = contents[herb] || 0;
+            const bag = storedBags[num];
+            const contents = bag?.herbs;
+            if (!bag || !contents) continue;
+            const available = contents[herb] ?? 0;
             if (available <= 0) continue;
             const toTake = Math.min(available, leftToTake);
             if (toTake <= 0) continue;
@@ -402,8 +495,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             client.sendCommand(`wloz ${toInsert} ${form} do ${bagNumber}. swojego woreczka`);
         }
         client.sendCommand(`zamknij ${bagNumber}. swoj woreczek`);
-        const bagContents = storedBags[bagNumber] || (storedBags[bagNumber] = {});
-        bagContents[herb] = (bagContents[herb] || 0) + toInsert;
+        const bagState = ensureBagState(bagNumber);
+        bagState.herbs[herb] = (bagState.herbs[herb] || 0) + toInsert;
         persistBags();
         return toInsert;
     }
@@ -430,11 +523,12 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
+        aliases.push({pattern: /\/woreczki_buduj$/, callback: evaluateBagConditions});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
                 const listener = async (ev: CustomEvent) => {
                     if (ev.detail.key === STORAGE_KEY) {
-                        const bags = typeof ev.detail.value === 'object' && ev.detail.value ? ev.detail.value : {};
+                        const bags = normalizeHerbBagsState(ev.detail.value);
                         await ensureData();
                         const lines = buildSummary(bags, false, false);
                         if (lines.length > 0) {
