@@ -6,7 +6,7 @@ export default function initMagikZnika(client: Client) {
     const tag = "magik-znika";
     const prefix = "\n\t" + colorString("[  MAGIK ZNIKA   ]", COLOR);
 
-    const format = (line: string) => `${prefix}\n${colorString(line, COLOR)}\n`;
+    const format = (line: string) => `${prefix} ${colorString(line, COLOR)}\n`;
 
     client.Triggers.registerTrigger(
         /^Bialy, zimny plomien ogarnia (.*), w kilka chwil spopielajac .* calkowicie\.$/,
