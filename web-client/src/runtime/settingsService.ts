@@ -42,6 +42,7 @@ class SettingsService {
             listener((ev as CustomEvent<Settings>).detail);
         };
         this.target.addEventListener('change', handler);
+        listener(this.snapshot);
         return () => this.target.removeEventListener('change', handler);
     }
 
