@@ -22,7 +22,6 @@ import "@client/src/main.ts"
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
-import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import Binds from "./options/Binds.tsx"
@@ -48,7 +47,7 @@ import "./triggerTester"
 import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
 import {initRuntime} from "./runtime/compositionRoot";
-import {setEmbeddedMap} from "./runtime/mapProvider";
+import {initializeEmbeddedMap} from "./runtime/mapProvider";
 
 const {client} = await initRuntime();
 
@@ -241,7 +240,7 @@ Promise.all([mapDataPromise, colorsPromise])
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        setEmbeddedMap(new EmbeddedMap(reader, pathFinder, startId));
+        initializeEmbeddedMap({ reader, pathFinder, startId });
     })
     .catch(error => {
         progressContainer.style.display = 'none';

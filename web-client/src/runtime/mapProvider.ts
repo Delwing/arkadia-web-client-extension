@@ -1,14 +1,50 @@
-import type { EmbeddedMap } from '../embed';
+import type { MapReader, PathFinder } from 'mudlet-map-renderer';
+import { EmbeddedMap } from '../embed';
+import {
+    clearEmbeddedMapBridge,
+    setEmbeddedMapBridge,
+} from '@client/src/runtime/embeddedMapBridge';
 
 let embeddedMapInstance: EmbeddedMap | null = null;
+type EmbeddedMapSubscriber = (map: EmbeddedMap | null) => void;
+const subscribers = new Set<EmbeddedMapSubscriber>();
 
-export function setEmbeddedMap(map: EmbeddedMap | null) {
+function notifySubscribers() {
+    subscribers.forEach(listener => {
+        try {
+            listener(embeddedMapInstance);
+        } catch (err) {
+            console.error('mapProvider subscriber failed', err);
+        }
+    });
+}
+
+function assignEmbeddedMap(map: EmbeddedMap | null) {
     embeddedMapInstance = map;
     if (map) {
-        (globalThis as any).embedded = map;
-    } else if ((globalThis as any).embedded) {
-        delete (globalThis as any).embedded;
+        setEmbeddedMapBridge(map);
+    } else {
+        clearEmbeddedMapBridge();
     }
+    notifySubscribers();
+}
+
+export function initializeEmbeddedMap({
+    reader,
+    pathFinder,
+    startId,
+}: {
+    reader: MapReader;
+    pathFinder: PathFinder;
+    startId?: number;
+}): EmbeddedMap {
+    const map = new EmbeddedMap(reader, pathFinder, startId);
+    assignEmbeddedMap(map);
+    return map;
+}
+
+export function setEmbeddedMap(map: EmbeddedMap | null) {
+    assignEmbeddedMap(map);
 }
 
 export function getEmbeddedMap(): EmbeddedMap {
@@ -22,6 +58,14 @@ export function peekEmbeddedMap(): EmbeddedMap | null {
     return embeddedMapInstance;
 }
 
+export function subscribeEmbeddedMap(listener: EmbeddedMapSubscriber): () => void {
+    subscribers.add(listener);
+    listener(embeddedMapInstance);
+    return () => {
+        subscribers.delete(listener);
+    };
+}
+
 export function clearEmbeddedMap() {
-    setEmbeddedMap(null);
+    assignEmbeddedMap(null);
 }

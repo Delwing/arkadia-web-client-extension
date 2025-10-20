@@ -20,6 +20,7 @@ export default defineConfig({
     build: {
         minify: true,
         sourcemap: true,
+        target: 'esnext',
         rollupOptions: {
             input: {
                 plugin: resolve('src/plugin.ts'),

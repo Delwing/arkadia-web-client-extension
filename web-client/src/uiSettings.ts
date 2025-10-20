@@ -1,7 +1,13 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
 import {peekClient} from "./runtime/clientProvider";
-import {peekEmbeddedMap} from "./runtime/mapProvider";
+import {subscribeEmbeddedMap} from "./runtime/mapProvider";
+import type { EmbeddedMap } from "./embed";
+
+let embeddedMapRef: EmbeddedMap | null = null;
+subscribeEmbeddedMap(map => {
+    embeddedMapRef = map;
+});
 
 const mapPositions = [
     'top-overlay',
@@ -125,8 +131,8 @@ function apply(settings: UiSettings) {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
-    const embedded = peekEmbeddedMap();
-    if (embedded && (embedded as any).renderer) {
+    const embedded = embeddedMapRef;
+    if (embedded) {
         embedded.setZoom(settings.mapScale);
         embedded.setExplorationMode(settings.explorationMode);
         embedded.refresh();
@@ -321,7 +327,7 @@ export default async function initUiSettings() {
     storage.onChanged?.addListener(handleStorageChange);
 
     function refreshExplorationStats() {
-        const map = peekEmbeddedMap();
+        const map = embeddedMapRef;
         if (map?.getVisitedCount && map?.getRoomCount && explorationStats) {
             const visited = map.getVisitedCount();
             const total = map.getRoomCount();
