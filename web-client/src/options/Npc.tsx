@@ -4,6 +4,7 @@ import {Button, Form, Table} from 'react-bootstrap';
 import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache.ts";
 import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
+import { getCommandDispatcher, getEventHub } from "../runtime/clientProvider";
 
 const DB_CONFIG = { dbName: 'ArkadiaNpcDB', storeName: 'npcData', key: 'npc' } as const;
 const NPC_URL = 'https://delwing.github.io/arkadia-mapa/data/npc.json';
@@ -15,6 +16,7 @@ interface NpcProps {
 
 function Npc() {
 
+    const { sendEvent } = getCommandDispatcher();
     const [npcs, setNpcs] = useState<NpcProps[]>([])
     const [filter, setFilter] = useState<string>('')
 
@@ -25,15 +27,15 @@ function Npc() {
     }, []);
 
     useEffect(() => {
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail
+        const eventHub = getEventHub();
+        const handler = (detail: unknown) => {
             if (Array.isArray(detail)) {
                 setNpcs(detail)
             }
         }
-        window.addEventListener('npc', handler as EventListener)
+        eventHub.on('npc', handler)
         return () => {
-            window.removeEventListener('npc', handler as EventListener)
+            eventHub.off('npc', handler)
         }
     }, [])
 
@@ -41,7 +43,7 @@ function Npc() {
         updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
             .then(data => {
                 setNpcs(data)
-                ;(window as any).clientExtension?.sendEvent('npc', data)
+                sendEvent('npc', data)
             })
             .catch(e => console.error('Failed to update NPC data:', e));
     }
@@ -50,7 +52,7 @@ function Npc() {
         clearIndexedDB(DB_CONFIG)
             .then(() => {
                 setNpcs([])
-                ;(window as any).clientExtension?.sendEvent('npc', [])
+                sendEvent('npc', [])
             })
             .catch(e => console.error('Failed to clear NPC data:', e));
     }
@@ -70,7 +72,7 @@ function Npc() {
         const updated = npcs.filter(n => !(n.name === npc.name && n.loc === npc.loc))
         setNpcs(updated)
         saveNpcs(updated)
-        ;(window as any).clientExtension?.sendEvent('npc', updated)
+        sendEvent('npc', updated)
     }
 
     async function saveNpcs(list: NpcProps[]) {

@@ -1,9 +1,14 @@
 import AttackMode from '../src/AttackMode';
+import { getClient } from '../src/runtime/clientProvider';
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),
 }));
 import { getItemSync } from '@client/src/storage.ts';
+
+jest.mock('../src/runtime/clientProvider', () => ({
+  getClient: jest.fn(),
+}));
 
 class MockClient {
   private events: Record<string, Function[]> = {};
@@ -18,13 +23,15 @@ class MockClient {
 describe('AttackMode', () => {
   let container: HTMLElement;
   let client: MockClient;
+  let teamManager: { isLeader: jest.Mock };
 
   beforeEach(() => {
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
     (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => true) } };
+    teamManager = { isLeader: jest.fn(() => true) };
+    (getClient as jest.Mock).mockReturnValue({ TeamManager: teamManager });
     new AttackMode(client as any);
   });
 
@@ -56,10 +63,11 @@ describe('AttackMode', () => {
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => false) } };
+    teamManager = { isLeader: jest.fn(() => false) };
+    (getClient as jest.Mock).mockReturnValue({ TeamManager: teamManager });
     new AttackMode(client as any);
     expect(container.style.display).toBe('none');
-    (window as any).clientExtension.TeamManager.isLeader.mockReturnValue(true);
+    teamManager.isLeader.mockReturnValue(true);
     client.emit('teamChange');
     expect(container.style.display).toBe('block');
   });

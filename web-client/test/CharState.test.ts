@@ -1,5 +1,13 @@
 import CharState from '../src/CharState';
 
+jest.mock('../src/runtime/clientProvider', () => ({
+  getEventHub: jest.fn(() => ({
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  })),
+}));
+
 class MockClient {
   private events: Record<string, Function[]> = {};
   on(event: string, listener: Function) {

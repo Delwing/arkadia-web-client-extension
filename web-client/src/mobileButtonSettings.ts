@@ -1,4 +1,5 @@
 import storage from "@client/src/storage";
+import { getEventHub } from "./runtime/clientProvider";
 
 export type MacroType =
     | 'functional'
@@ -434,11 +435,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
-        );
-    }
+    getEventHub().emit('mobileButtonsSettings', set.buttons);
 }
 
 

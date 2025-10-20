@@ -170,7 +170,7 @@ let isSplitView = false;
 const STICKY_LINES = 15;
 
 function processSticky(count: number) {
-    const handler: any = (window as any).clientExtension?.OutputHandler;
+    const handler = client.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
         const prev = handler.output;
         handler.output = stickyArea;
@@ -354,7 +354,7 @@ arkadiaClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     updateConnectButtons();
-    window.clientExtension.sendEvent('refreshPositionWhenAble');
+    client.sendEvent('refreshPositionWhenAble');
     console.log('Client connected to Arkadia server.');
 });
 
@@ -425,10 +425,10 @@ document.addEventListener('keydown', (e) => {
     if (direction) {
         e.preventDefault();
         if (direction === 'special') {
-            const exits = (window as any).clientExtension?.Map.currentRoom?.specialExits ?? {};
+            const exits = client.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
-                (window as any).clientExtension.sendCommand(first);
+                client.sendCommand(first);
             }
         } else {
             client.sendCommand(direction);
@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shareLocationButton && locationQrImage && locationShareModal) {
         shareLocationButton.addEventListener('click', () => {
-            const roomId = (window as any).clientExtension?.Map?.currentRoom?.id;
+            const roomId = client.Map?.currentRoom?.id;
             if (!roomId) {
                 return;
             }

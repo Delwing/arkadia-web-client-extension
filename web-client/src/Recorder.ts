@@ -1,5 +1,6 @@
 import { saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent } from './recordingStorage';
 import { CommandOptions } from "@client/src/scripts/commandPreserveCaseMode.ts";
+import { peekClient } from "./runtime/clientProvider";
 
 export interface RecorderHooks {
     processIncomingData(data: string): void;
@@ -172,7 +173,7 @@ export default class Recorder {
             this.hooks.processIncomingData(ev.message);
         } else {
             Output.send('→ ' + ev.message);
-            window.clientExtension.sendCommand(ev.message, false);
+            peekClient()?.sendCommand(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }
     }
