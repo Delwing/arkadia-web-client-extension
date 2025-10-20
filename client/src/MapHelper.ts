@@ -168,7 +168,7 @@ export default class MapHelper {
         return command
     }
 
-    move(direction: string) {
+    move(direction: string): {direction: string, moved: boolean, supress?: boolean} {
         if (!this.mapReader) {
             return {direction, moved: false}
         }
@@ -191,6 +191,11 @@ export default class MapHelper {
                 if (exits.length > 0) {
                     actualDirection = getShortDir(exits[0]);
                 }
+            }
+
+            if (actualDirection !== direction) {
+                this.client.sendCommand(actualDirection)
+                return {direction: actualDirection, moved: false, supress: true}
             }
 
             const locationId = allExits[getLongDir(actualDirection)]

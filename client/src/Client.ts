@@ -411,6 +411,9 @@ export default class Client {
 
     private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
         const moveRes = this.Map.move(command)
+        if (moveRes.supress) {
+            return
+        }
         if (moveRes.moved) {
             this.Map.setBlockable(true)
         }
