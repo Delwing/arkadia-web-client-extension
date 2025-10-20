@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { getItemSync } from "@client/src/storage.ts";
+import { getClient } from "./runtime/clientProvider";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];
@@ -37,7 +38,7 @@ export default class AttackMode {
 
   private updateVisibility() {
     if (!this.container) return;
-    const leader = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
+    const leader = !!getClient().TeamManager?.isLeader?.();
     this.container.style.display = leader ? 'block' : 'none';
   }
 }

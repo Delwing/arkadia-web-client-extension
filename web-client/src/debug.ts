@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import { getCommandDispatcher, peekClient } from "./runtime/clientProvider";
 
 function initDebug() {
   const debugButton = document.getElementById("debug-button") as HTMLButtonElement | null;
@@ -40,13 +41,15 @@ function initDebug() {
 
   if (scheduleButton) {
     scheduleButton.addEventListener("click", () => {
-      const client = (window as any).clientExtension;
+      const client = peekClient();
       if (!client) return;
       client.enableNotifications?.();
-      client.sendEvent?.("notify", { text: "Powiadomienie za 5s" });
+      const dispatcher = getCommandDispatcher();
+      dispatcher.sendEvent("notify", { text: "Powiadomienie za 5s" });
       setTimeout(() => {
-        client.notify?.("Test notification");
-        client.sendEvent?.("notify", { text: "Test notification" });
+        const latestClient = peekClient();
+        latestClient?.notify?.("Test notification");
+        dispatcher.sendEvent("notify", { text: "Test notification" });
       }, 5000);
     });
   }

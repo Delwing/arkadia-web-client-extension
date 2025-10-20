@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import { getEventHub } from "./runtime/clientProvider";
 
 export default class FightTitle {
   private baseTitle: string;
@@ -18,12 +19,13 @@ export default class FightTitle {
     client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
     client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
     client.on("client.disconnect", () => this.reset());
-    (window as any).clientExtension?.eventTarget.addEventListener("uiSettings", (ev: CustomEvent) => {
-      if (typeof ev.detail?.fightTitleIcon === "boolean") {
-        this.enabled = ev.detail.fightTitleIcon;
+    const handleUiSettings = (settings: any) => {
+      if (typeof settings?.fightTitleIcon === "boolean") {
+        this.enabled = settings.fightTitleIcon;
         this.updateTitle(this.isFighting, true);
       }
-    });
+    };
+    getEventHub().on("uiSettings", handleUiSettings);
   }
 
   private handleCharInfo(info: any) {

@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
+import { getEventHub } from "./runtime/clientProvider";
 
 export interface CharStateData {
   hp: number;
@@ -169,17 +170,15 @@ export default class CharState {
       }
     });
 
-    const ext: any = (window as any).clientExtension;
-    if (ext?.addEventListener) {
-      ext.addEventListener('uiSettings', (ev: CustomEvent) => {
-        if (typeof ev.detail?.emojiLabels === 'boolean') {
-          this.applyLabelMode(ev.detail.emojiLabels);
-        }
-        if (typeof ev.detail?.footerMode === 'number') {
-          this.applyMode(ev.detail.footerMode);
-        }
-      });
-    }
+    const eventHub = getEventHub();
+    eventHub.on('uiSettings', (settings: any) => {
+      if (typeof settings?.emojiLabels === 'boolean') {
+        this.applyLabelMode(settings.emojiLabels);
+      }
+      if (typeof settings?.footerMode === 'number') {
+        this.applyMode(settings.footerMode);
+      }
+    });
 
     this.client.on(
       "gmcp.char.state",

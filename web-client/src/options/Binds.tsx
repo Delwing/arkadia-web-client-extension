@@ -3,6 +3,7 @@ import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-boo
 import storage from "@client/src/storage";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
 import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
+import { getClient, getEventHub } from "../runtime/clientProvider";
 
 interface Bind {
     key: string;
@@ -207,15 +208,15 @@ function Binds() {
                 setMultibinds(list);
             }
         });
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail;
+        const eventHub = getEventHub();
+        const handler = (detail: unknown) => {
             setMultibinds(normalizeMultibinds(detail));
         };
-        window.addEventListener('multibindsStorage', handler as EventListener);
-        window.clientExtension?.port?.postMessage?.({ type: 'MULTIBINDS_LOAD' });
+        eventHub.on('multibindsStorage', handler);
+        getClient().port?.postMessage?.({ type: 'MULTIBINDS_LOAD' });
         return () => {
             active = false;
-            window.removeEventListener('multibindsStorage', handler as EventListener);
+            eventHub.off('multibindsStorage', handler);
         };
     }, []);
 
@@ -357,27 +358,29 @@ function Binds() {
         }
         const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
         try {
-            if (window.clientExtension?.port) {
+            const eventHub = getEventHub();
+            const client = getClient();
+            if (client.port) {
                 await new Promise<void>((resolve) => {
                     let settled = false;
                     const handler = () => {
                         if (settled) return;
                         settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
+                        eventHub.off('multibindsStorage', handler);
                         resolve();
                     };
-                    window.addEventListener('multibindsStorage', handler as EventListener, { once: true });
-                    window.clientExtension.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
+                    eventHub.on('multibindsStorage', handler);
+                    client.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
                     setTimeout(() => {
                         if (settled) return;
                         settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
+                        eventHub.off('multibindsStorage', handler);
                         resolve();
                     }, 1500);
                 });
             } else {
                 await replaceMultibinds(finalList);
-                window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: finalList }));
+                eventHub.emit('multibindsStorage', finalList);
             }
             setMultibinds(finalList);
             setImportResult({

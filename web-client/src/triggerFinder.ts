@@ -2,6 +2,7 @@ import Modal from "bootstrap/js/dist/modal";
 import { stripAnsiCodes } from "@client/src/stripAnsiCodes";
 import type { Trigger } from "@client/src/Triggers";
 import { getMatchingPatterns, matchTrigger, patternToString } from "./triggerUtils";
+import { peekClient } from "./runtime/clientProvider";
 
 type TriggerSource = "regular" | "multiline" | "token";
 
@@ -29,8 +30,7 @@ function initTriggerFinder() {
     });
 
     runBtn.addEventListener("click", () => {
-        // @ts-ignore
-        const manager = (window as any).clientExtension?.Triggers;
+        const manager = peekClient()?.Triggers;
         if (!manager) {
             outputEl.textContent = "No trigger manager.";
             return;

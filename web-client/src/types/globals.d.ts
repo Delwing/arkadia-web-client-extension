@@ -47,7 +47,6 @@ declare global {
         Text: ClientText;
         Conf: ClientConf
         Gmcp: ClientGmcp;
-        clientExtension: Client
     }
 
     declare var Input: ClientInput;

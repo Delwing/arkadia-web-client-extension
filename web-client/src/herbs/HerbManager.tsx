@@ -4,7 +4,7 @@ import { getItemSync } from "@client/src/storage";
 import type { HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/src/types/herbs";
 import { openHerbContextMenu } from "@client/src/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
-import type Client from "@client/src/Client";
+import { getCommandDispatcher, getEventHub, peekClient } from "../runtime/clientProvider";
 
 type HerbCounts = Record<string | number, Record<string, number>>;
 
@@ -191,12 +191,13 @@ const getHerbStyle = (herbId: string): HerbPillStyle => {
 };
 
 const HerbManager = () => {
+    const commandDispatcher = getCommandDispatcher();
     const idCounter = useRef(0);
-    const nextInstanceId = () => `stack-${idCounter.current++}`;
-    const rebuildBags = (counts?: HerbCounts) => {
+    const nextInstanceId = useCallback(() => `stack-${idCounter.current++}`, []);
+    const rebuildBags = useCallback((counts?: HerbCounts) => {
         idCounter.current = 0;
         return buildBags(counts, nextInstanceId);
-    };
+    }, [nextInstanceId]);
 
     const [bags, setBags] = useState<HerbBag[]>(() => rebuildBags(getInitialCounts()));
     const [activeBag, setActiveBag] = useState<number | null>(null);
@@ -230,7 +231,7 @@ const HerbManager = () => {
     }, []);
 
     const closeContextMenu = useCallback(() => {
-        const client = (window as any).clientExtension as Client | undefined;
+        const client = peekClient();
         const outputHandler = client?.OutputHandler
         outputHandler?.hideContextMenu?.();
     }, []);
@@ -241,7 +242,7 @@ const HerbManager = () => {
     }, [closeContextMenu]);
 
     useEffect(() => {
-        const client = (window as any).clientExtension as Client | undefined;
+        const client = peekClient();
         if (!client) {
             return;
         }
@@ -259,22 +260,22 @@ const HerbManager = () => {
     }, []);
 
     useEffect(() => {
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent<HerbBagsState>).detail;
+        const eventHub = getEventHub();
+        const handler = (detail: unknown) => {
             if (detail && typeof detail === "object") {
                 setError(null);
-                setBags(rebuildBags(detail));
+                setBags(rebuildBags(detail as HerbBagsState));
             }
         };
-        window.addEventListener("herbCounts", handler as EventListener);
-        return () => window.removeEventListener("herbCounts", handler as EventListener);
-    }, []);
+        eventHub.on("herbCounts", handler);
+        return () => eventHub.off("herbCounts", handler);
+    }, [rebuildBags]);
 
     useEffect(() => {
         if (!isOpen) {
             return;
         }
-        window.dispatchEvent(new Event("request-herb-counts"));
+        commandDispatcher.sendEvent("request-herb-counts");
         panelRef.current?.focus();
     }, [isOpen]);
 
@@ -460,7 +461,7 @@ const HerbManager = () => {
         setError(null);
         setBags(moveResult.next);
         setBusy(true);
-        const manager = (window as any).clientExtension?.herbManager as HerbManagerApi | undefined;
+        const manager = peekClient()?.herbManager as HerbManagerApi | undefined;
         const payload: HerbMoveOptions = {
             herbId: moveResult.moved.herbId,
             amount: moveResult.moved.count,
@@ -470,14 +471,14 @@ const HerbManager = () => {
         if (!manager) {
             setError("Brak połączenia z licznikiem ziół.");
             setBusy(false);
-            window.dispatchEvent(new Event("request-herb-counts"));
+            commandDispatcher.sendEvent("request-herb-counts");
             return;
         }
         Promise.resolve(manager.move(payload))
             .catch(err => {
                 const message = err instanceof Error ? err.message : "Nie udało się przenieść ziół.";
                 setError(message);
-                window.dispatchEvent(new Event("request-herb-counts"));
+                commandDispatcher.sendEvent("request-herb-counts");
             })
             .finally(() => {
                 setBusy(false);
@@ -534,7 +535,7 @@ const HerbManager = () => {
     const handleContextMenu = (stack: HerbStack) => async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         const { pageX, pageY } = event;
-        const client = (window as any).clientExtension as Client | undefined;
+        const client = peekClient();
         if (!client) {
             return;
         }
