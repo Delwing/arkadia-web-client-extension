@@ -3,15 +3,12 @@
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
-    "prebuild": "mkdirp ../extension/dist/",
-    "build": "webpack",
-    "watch": "webpack --watch",
     "test": "jest"
   },
   "dependencies": {
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
-    "mudlet-map-renderer": "^0.8.2-konva",
+    "mudlet-map-renderer": "^0.8.4-konva",
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
