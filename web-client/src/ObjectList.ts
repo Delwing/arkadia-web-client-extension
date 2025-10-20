@@ -639,7 +639,10 @@ html, body {
             if (child && child.classList && child.classList.contains("output_msg")) {
                 const textEl = child.querySelector<HTMLElement>(".output_msg_text");
                 if (textEl) {
-                    outputs.unshift(textEl.innerHTML);
+                    const lines = this.splitOutputHtmlIntoLines(textEl.innerHTML);
+                    for (let j = lines.length - 1; j >= 0 && outputs.length < 2; j--) {
+                        outputs.unshift(lines[j]);
+                    }
                 }
             }
         }
@@ -695,6 +698,47 @@ html, body {
             return "";
         }
         return `<div class="objects-list-pip-footer"><div class="objects-list-pip-footer-content">${this.pipLastOutputHtml}</div></div>`;
+    }
+
+    private splitOutputHtmlIntoLines(html: string): string[] {
+        const lines: string[] = [];
+        const stack: { open: string; close: string }[] = [];
+        let line = "";
+        const regex = /(<[^>]+>|\r?\n)/g;
+        let last = 0;
+        let match: RegExpExecArray | null;
+        const hasVisibleContent = (value: string) =>
+            value
+                .replace(/<[^>]+>/g, "")
+                .replace(/&nbsp;/gi, " ")
+                .trim().length > 0;
+        while ((match = regex.exec(html)) !== null) {
+            const token = match[0];
+            line += html.slice(last, match.index);
+            if (token === "\n" || token === "\r\n" || /^<br\b[^>]*>$/i.test(token)) {
+                const closedLine = line + stack.map(s => s.close).reverse().join("");
+                if (hasVisibleContent(closedLine)) {
+                    lines.push(closedLine);
+                }
+                line = stack.map(s => s.open).join("");
+            } else {
+                line += token;
+                if (token.startsWith("<") && !token.startsWith("</") && !token.endsWith("/>") && !token.startsWith("<!")) {
+                    const tag = token.match(/^<([a-zA-Z0-9:-]+)/);
+                    if (tag) {
+                        stack.push({ open: token, close: `</${tag[1]}>` });
+                    }
+                } else if (token.startsWith("</")) {
+                    stack.pop();
+                }
+            }
+            last = regex.lastIndex;
+        }
+        line += html.slice(last);
+        if (hasVisibleContent(line)) {
+            lines.push(line);
+        }
+        return lines;
     }
 
     private escapeHtml(text: string) {
