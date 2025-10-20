@@ -7,6 +7,7 @@ import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
+import {peekClient} from "./runtime/clientProvider";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
@@ -363,7 +364,10 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private sendLine(text: string, type: string, i: number) {
-        text = window.clientExtension.onLine(text, type)
+        const client = peekClient();
+        if (client) {
+            text = client.onLine(text, type);
+        }
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         Output.send(parseAnsiPatterns(text), type);
         this.emit('line-sent')

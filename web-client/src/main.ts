@@ -16,11 +16,9 @@ import ReleaseGuard from "./ReleaseGuard";
 import AttackMode from "./AttackMode";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
-import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
-import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {loadNpcData} from "./npcDataLoader.ts";
@@ -39,6 +37,9 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
+import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
+import MobileCommandRadial from "./scripts/mobileCommandRadial"
+import initUiSettings from "./uiSettings"
 import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
@@ -46,13 +47,10 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
+import {initRuntime} from "./runtime/compositionRoot";
+import {setEmbeddedMap} from "./runtime/mapProvider";
 
-initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
-
-const client = new Client(arkadiaClient, new MockPort())
-window.clientExtension = client;
-registerScripts(client)
-client.connect(client.port, true)
+const {client} = await initRuntime();
 
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
@@ -243,7 +241,7 @@ Promise.all([mapDataPromise, colorsPromise])
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        (window as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
+        setEmbeddedMap(new EmbeddedMap(reader, pathFinder, startId));
     })
     .catch(error => {
         progressContainer.style.display = 'none';
@@ -1091,13 +1089,4 @@ window.addEventListener('resize', () => {
     }
 });
 
-// @ts-ignore
-window.client = arkadiaClient
-
 // background communication disabled
-
-import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
-import MobileCommandRadial from "./scripts/mobileCommandRadial"
-import initUiSettings from "./uiSettings";
-import Client from "@client/src/Client.ts";
-import {registerScripts} from "@client/src/main.ts";

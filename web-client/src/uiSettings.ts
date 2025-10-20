@@ -1,5 +1,7 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import {peekClient} from "./runtime/clientProvider";
+import {peekEmbeddedMap} from "./runtime/mapProvider";
 
 const mapPositions = [
     'top-overlay',
@@ -123,35 +125,39 @@ function apply(settings: UiSettings) {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
-    if ((window as any).embedded?.renderer) {
-        (window as any).embedded.setZoom?.(settings.mapScale);
-        (window as any).embedded.setExplorationMode?.(settings.explorationMode);
-        (window as any).embedded.refresh();
+    const embedded = peekEmbeddedMap();
+    if (embedded && (embedded as any).renderer) {
+        embedded.setZoom(settings.mapScale);
+        embedded.setExplorationMode(settings.explorationMode);
+        embedded.refresh();
     }
     Settings.transparentLabels = settings.transparentLabels;
     const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
     Settings.labelRenderMode = labelRenderMode;
-    (window as any).embedded?.setTransparentLabels?.(settings.transparentLabels);
-    (window as any).embedded?.setLabelRenderMode?.(labelRenderMode);
-    Settings.instantMapMove = settings.instantMove;
-    (window as any).embedded?.setInstantMove?.(settings.instantMove);
-    Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
-    (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', {
-                detail: {
-                    mobileDirectionButtons: settings.showButtons,
-                    hapticFeedback: settings.hapticFeedback,
-                    emojiLabels: settings.emojiLabels,
-                    xtermPalette: settings.xtermPalette,
-                    footerMode: settings.footerMode,
-                    fightTitleIcon: settings.fightTitleIcon,
-                    clearInputOnSend: settings.clearInputOnSend,
-                },
-            })
-        );
+    if (embedded) {
+        embedded.setTransparentLabels(settings.transparentLabels);
+        embedded.setLabelRenderMode(labelRenderMode);
+        Settings.instantMapMove = settings.instantMove;
+        embedded.setInstantMove(settings.instantMove);
+        Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
+        embedded.setHighlightCurrentRoom(settings.highlightCurrentRoom);
+    } else {
+        Settings.instantMapMove = settings.instantMove;
+        Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     }
+    peekClient()?.eventTarget.dispatchEvent(
+        new CustomEvent('uiSettings', {
+            detail: {
+                mobileDirectionButtons: settings.showButtons,
+                hapticFeedback: settings.hapticFeedback,
+                emojiLabels: settings.emojiLabels,
+                xtermPalette: settings.xtermPalette,
+                footerMode: settings.footerMode,
+                fightTitleIcon: settings.fightTitleIcon,
+                clearInputOnSend: settings.clearInputOnSend,
+            },
+        })
+    );
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }
@@ -315,7 +321,7 @@ export default async function initUiSettings() {
     storage.onChanged?.addListener(handleStorageChange);
 
     function refreshExplorationStats() {
-        const map = (window as any).embedded;
+        const map = peekEmbeddedMap();
         if (map?.getVisitedCount && map?.getRoomCount && explorationStats) {
             const visited = map.getVisitedCount();
             const total = map.getRoomCount();
