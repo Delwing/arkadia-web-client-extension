@@ -64,7 +64,6 @@ async function bootstrap(options: RuntimeOptions): Promise<RuntimeContext> {
     setSettingsService(settingsService);
 
     const eventHub = getEventHub();
-    client.sendEvent('settings.updated', settingsService.snapshot);
     settingsService.onChange(settings => {
         client.sendEvent('settings.updated', settings);
     });
