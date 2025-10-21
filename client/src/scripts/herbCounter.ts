@@ -562,6 +562,23 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 postUseCommands.forEach(cmd => client.sendCommand(cmd));
             }
         });
+
+        aliases.push({
+            pattern: /^\/zi (\w+) (\w+) (\d+)$/,
+            callback: async (m: RegExpMatchArray) => {
+                const action = m[1];
+                const herb = m[2].toLowerCase();
+                let amount = parseNumber(m[3]);
+                if (isNaN(amount)) {
+                    amount = 1;
+                }
+                await take(herb, amount);
+                const biernik = herbs?.herb_id_to_odmiana[herb]?.mnoga_biernik || herb;
+                preUseCommands.forEach(cmd => client.sendCommand(cmd));
+                client.sendCommand(`${action} ${amount} ${biernik}`);
+                postUseCommands.forEach(cmd => client.sendCommand(cmd));
+            }
+        });
     }
 
     // load herb data in background so it's ready after refresh
