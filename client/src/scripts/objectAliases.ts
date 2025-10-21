@@ -73,8 +73,8 @@ export default function initObjectAliases(
         attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
     });
 
-    function attackById(id: string) {
-        client.sendCommand(`${attackCommand} ob_${id}`);
+    function attackById(id: string, command: string = attackCommand) {
+        client.sendCommand(`${command} ob_${id}`);
         if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
             client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);
             if (attackMode === 'AWR') {
@@ -87,6 +87,13 @@ export default function initObjectAliases(
         const obj = findByShortcut(short);
         if (obj) {
             attackById(obj.num.toString());
+        }
+    }
+
+    function surprise(short: string) {
+        const obj = findByShortcut(short);
+        if (obj) {
+            attackById(obj.num.toString(), "zaskocz");
         }
     }
 
@@ -112,6 +119,10 @@ export default function initObjectAliases(
             callback: (m: RegExpMatchArray) => attack(m[1])
         });
         aliases.push({
+            pattern: /\/x ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => surprise(m[1])
+        });
+        aliases.push({
             pattern: /\/zas ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => shield(m[1])
         });
@@ -121,6 +132,15 @@ export default function initObjectAliases(
                 const id = client.TeamManager.getAttackTargetId();
                 if (id) {
                     attackById(id);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /^\/x$/,
+            callback: () => {
+                const id = client.TeamManager.getAttackTargetId();
+                if (id) {
+                    attackById(id, "zaskocz");
                 }
             }
         });
