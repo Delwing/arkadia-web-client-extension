@@ -7,6 +7,7 @@ import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
+import PingTracker from "./PingTracker.ts";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
@@ -28,7 +29,7 @@ class ArkadiaClient implements ClientAdapter {
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
     private lastConnectManual = true;
-    private pingTimer: number | null = null;
+    private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
@@ -37,6 +38,7 @@ class ArkadiaClient implements ClientAdapter {
     });
 
     constructor() {
+        this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 event.preventDefault();
@@ -92,7 +94,7 @@ class ArkadiaClient implements ClientAdapter {
             this.socket.onclose = (event: CloseEvent) => {
                 this.emit('close', event);
                 this.emit('client.disconnect');
-                this.stopPing();
+                this.pingTracker.stop();
 
                 // @ts-ignore
                 this.readInflator = new pako.Inflate()
@@ -102,7 +104,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('open', event);
                 this.emit('client.connect');
                 this.mccp = false;
-                this.startPing();
+                this.pingTracker.start();
                 if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
                     this.send(this.userCommand, false);
                     if (this.passwordCommand !== this.userCommand) {
@@ -149,7 +151,7 @@ class ArkadiaClient implements ClientAdapter {
             this.socket.close();
         }
         this.mccp = false;
-        this.stopPing();
+        this.pingTracker.stop();
     }
 
     /**
@@ -252,19 +254,6 @@ class ArkadiaClient implements ClientAdapter {
             filename: filename,
         }
         this.sendGmcp('client.conf.set', data)
-    }
-
-    private startPing() {
-        this.stopPing();
-        this.sendGmcp('core.ping');
-        this.pingTimer = window.setInterval(() => this.sendGmcp('core.ping'), 3000);
-    }
-
-    private stopPing() {
-        if (this.pingTimer !== null) {
-            clearInterval(this.pingTimer);
-            this.pingTimer = null;
-        }
     }
 
     output(text?: string, type?: string) {
@@ -383,6 +372,10 @@ class ArkadiaClient implements ClientAdapter {
 
     listRecordings() {
         return this.recorder.listRecordings();
+    }
+
+    getLastPingDuration(): number | null {
+        return this.pingTracker.getLastDuration();
     }
 
     deleteRecording(name: string) {

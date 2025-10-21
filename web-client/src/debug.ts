@@ -1,4 +1,5 @@
 import Modal from "bootstrap/js/dist/modal";
+import arkadiaClient from "./ArkadiaClient.ts";
 
 function initDebug() {
   const debugButton = document.getElementById("debug-button") as HTMLButtonElement | null;
@@ -8,6 +9,22 @@ function initDebug() {
   const modal = new Modal(modalEl);
   const content = modalEl.querySelector("#debug-content") as HTMLElement;
   const scheduleButton = modalEl.querySelector("#notification-schedule-button") as HTMLButtonElement | null;
+  const pingIndicator = modalEl.querySelector("#debug-ping") as HTMLElement | null;
+
+  const updatePingIndicator = (value: number | null) => {
+    if (!pingIndicator) return;
+    pingIndicator.textContent =
+      typeof value === "number" && !Number.isNaN(value)
+        ? `Ping: ${Math.round(value)} ms`
+        : "Ping: --";
+  };
+
+  if (pingIndicator) {
+    updatePingIndicator(arkadiaClient.getLastPingDuration());
+    arkadiaClient.on("ping", (duration: number | null) => {
+      updatePingIndicator(duration);
+    });
+  }
 
   const methods: Array<keyof Console> = ["log", "error", "warn", "info"];
   methods.forEach((m) => {
