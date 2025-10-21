@@ -25,6 +25,7 @@ export interface KnownEvents {
     'npc': any;
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
+    'ping': number | null;
 }
 
 export type ClientEvents = KnownEvents & {
