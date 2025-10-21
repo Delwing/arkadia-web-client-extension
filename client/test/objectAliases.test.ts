@@ -30,7 +30,9 @@ describe('object aliases', () => {
   let client: FakeClient;
   let kill: (m: RegExpMatchArray) => void;
   let shield: (m: RegExpMatchArray) => void;
+  let surprise: (m: RegExpMatchArray) => void;
   let killTarget: () => void;
+  let surpriseTarget: () => void;
   let shieldTarget: () => void;
   let invite: (m: RegExpMatchArray) => void;
   let toggle: () => void;
@@ -50,22 +52,35 @@ describe('object aliases', () => {
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initObjectAliases((client as unknown) as any, aliases);
-    kill = aliases[0].callback as any;
-    shield = aliases[1].callback as any;
-    killTarget = aliases[2].callback as any;
-    shieldTarget = aliases[3].callback as any;
-    invite = aliases[4].callback as any;
-    toggle = aliases[7].callback as any;
-    shieldGroup = aliases[8].callback as any;
-    withdraw = aliases[9].callback as any;
-    passLeadership = aliases[10].callback as any;
-    breakDefense = aliases[11].callback as any;
-    orderAttack = aliases[12].callback as any;
-    orderAttackTarget = aliases[13].callback as any;
-    orderShield = aliases[14].callback as any;
-    orderShieldTarget = aliases[15].callback as any;
-    markAttack = aliases[16].callback as any;
-    markDefense = aliases[17].callback as any;
+
+    const getAlias = (pattern: RegExp) => {
+      const entry = aliases.find(alias => alias.pattern.toString() === pattern.toString());
+      if (!entry) {
+        throw new Error(`Alias for pattern ${pattern} not found`);
+      }
+      return entry.callback as (m: RegExpMatchArray) => void;
+    };
+
+    kill = getAlias(/\/z ([0-9]+)$/);
+    surprise = getAlias(/\/x ([0-9]+)$/);
+    shield = getAlias(/\/zas ([A-Za-z0-9@]+)$/);
+    killTarget = getAlias(/^\/z$/) as unknown as () => void;
+    surpriseTarget = getAlias(/^\/x$/) as unknown as () => void;
+    shieldTarget = getAlias(/^\/zas$/) as unknown as () => void;
+    invite = getAlias(/\/zap ([0-9]+)$/);
+    toggle = getAlias(/^\/puszczaj$/) as unknown as () => void;
+    shieldGroup = getAlias(/^\/za([234]) ([A-Za-z0-9@]+)$/);
+    withdraw = getAlias(/\/w ([A-Za-z0-9@]+)$/);
+    passLeadership = getAlias(/\/pro ([A-Za-z0-9@]+)$/);
+    breakDefense = getAlias(/\/prze(?: ([A-Za-z0-9@]+))?$/) as unknown as (
+      m?: RegExpMatchArray,
+    ) => void;
+    orderAttack = getAlias(/\/ra ([0-9]+)$/);
+    orderAttackTarget = getAlias(/^\/ra$/) as unknown as () => void;
+    orderShield = getAlias(/\/rz ([A-Za-z0-9@]+)$/);
+    orderShieldTarget = getAlias(/^\/rz$/) as unknown as () => void;
+    markAttack = getAlias(/\/wa ([0-9]+)$/);
+    markDefense = getAlias(/\/wz ([A-Za-z0-9@]+)$/);
     (global as any).Input = { send: jest.fn() };
     (window as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
@@ -80,6 +95,12 @@ describe('object aliases', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
+  });
+
+  test('surprise alias sends zaskocz with object number', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 6, shortcut: '2' }]);
+    surprise(['', '2'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('zaskocz ob_6');
   });
 
   test('kill alias uses attack command from settings when provided', () => {
@@ -156,6 +177,12 @@ describe('object aliases', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('10');
     killTarget();
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_10');
+  });
+
+  test('/x alias attacks attack target with zaskocz', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('11');
+    surpriseTarget();
+    expect(client.sendCommand).toHaveBeenCalledWith('zaskocz ob_11');
   });
 
   test('/zas alias covers defense target', () => {
