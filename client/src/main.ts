@@ -83,6 +83,7 @@ import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
 import initZaznaczaj from './scripts/zaznaczaj'
 import Client from "./Client";
+import {initSpecialLocations} from "./scripts/specialLocations";
 
 
 export function registerScripts(client: Client) {
@@ -111,7 +112,8 @@ export function registerScripts(client: Client) {
 
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
-        const direction = tokenized[tokenized.length - 1]
+        const candidate = tokenized[tokenized.length - 2]
+        const direction = candidate == "na" ? tokenized[tokenized.length - 1] : candidate;
         client.Map.followMove(direction)
     }, 'follow')
 
@@ -227,6 +229,7 @@ export function registerScripts(client: Client) {
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
+    initSpecialLocations(client)
 
     new People(client)
     registerGagTriggers(client)
