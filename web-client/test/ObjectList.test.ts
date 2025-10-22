@@ -266,7 +266,7 @@ describe('ObjectList', () => {
     await Promise.resolve();
     expect(requestWindow).toHaveBeenCalled();
     expect(pipDoc.body.querySelector('#objects-list-pip')?.innerHTML).toContain('object-num');
-    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.classList.contains('objects-list-button-active')).toBe(true);
     expect(pipDoc.title).toBe('Arkadia');
 
     document.title = 'Arkadia - Battle';
@@ -275,7 +275,7 @@ describe('ObjectList', () => {
     expect(pipDoc.title).toBe('Arkadia - Battle');
 
     handlers.pagehide?.call(pipWindow, undefined);
-    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.classList.contains('objects-list-button-active')).toBe(false);
 
     delete (window as any).documentPictureInPicture;
   });

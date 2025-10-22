@@ -597,15 +597,13 @@ const HerbManager = () => {
                 className={`herb-window${position ? " herb-window--floating" : " herb-window--center"}`}
                 style={containerStyle}
                 role="dialog"
-                aria-modal="true"
-                aria-label="Woreczki ziół"
                 tabIndex={-1}
                 onClick={event => event.stopPropagation()}
                 onPointerDownCapture={closeContextMenu}
             >
                 <div className="herb-window-header" onPointerDown={handlePointerDown}>
                     <h5 className="herb-window-title">Woreczki ziół</h5>
-                    <button type="button" className="btn-close" aria-label="Zamknij" onClick={handleClose} />
+                    <button type="button" className="btn-close" onClick={handleClose} />
                 </div>
                 <div className="herb-window-body">
                     <div className={`herb-manager${busy ? " herb-manager--busy" : ""}`}>
