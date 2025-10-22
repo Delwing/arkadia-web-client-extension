@@ -8,7 +8,7 @@
   "dependencies": {
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
-    "mudlet-map-renderer": "^0.8.5-konva",
+    "mudlet-map-renderer": "^0.8.6-konva",
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
