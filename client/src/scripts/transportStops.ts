@@ -307,7 +307,20 @@ class TransportTracker {
         this.pendingCandidates = matches;
         if (this.currentJourney && matches.has(this.currentJourney.definition)) {
             const candidateIndexes = matches.get(this.currentJourney.definition)!;
+            if (this.currentJourney.candidateIndexes.size > 0) {
+                const intersection = candidateIndexes.filter(index => this.currentJourney!.candidateIndexes.has(index));
+                if (intersection.length > 0) {
+                    this.applyCandidateIndexes(this.currentJourney, intersection, false);
+                    this.log(
+                        `Refined candidates from location ${locationId} for ${this.currentJourney.definition.name}. Candidates: ${this.describeCandidates(this.currentJourney)}`
+                    );
+                    return;
+                }
+            }
             this.applyCandidateIndexes(this.currentJourney, candidateIndexes);
+            this.log(
+                `Reset candidates from location ${locationId} for ${this.currentJourney.definition.name}. Candidates: ${this.describeCandidates(this.currentJourney)}`
+            );
         } else if (!this.currentJourney && matches.size === 1) {
             const [definition, candidateIndexes] = matches.entries().next().value as [CompiledTransportDefinition, number[]];
             const journey = this.ensureJourney(definition);
@@ -317,12 +330,24 @@ class TransportTracker {
     }
 
     private handleEnter(definition: CompiledTransportDefinition) {
+        if (!this.shouldHandle(definition)) {
+            return;
+        }
         const journey = this.ensureJourney(definition);
         const startId = this.previousLocationId ?? this.currentLocationId ?? null;
         if (typeof startId === "number") {
             const indexes = this.collectIndexes(definition, startId);
             if (indexes.length > 0) {
-                this.applyCandidateIndexes(journey, indexes);
+                if (journey.candidateIndexes.size > 0) {
+                    const intersection = indexes.filter(index => journey.candidateIndexes.has(index));
+                    if (intersection.length > 0) {
+                        this.applyCandidateIndexes(journey, intersection, false);
+                    } else {
+                        this.applyCandidateIndexes(journey, indexes);
+                    }
+                } else {
+                    this.applyCandidateIndexes(journey, indexes);
+                }
             }
         }
         if (journey.candidateIndexes.size === 0) {
@@ -342,6 +367,9 @@ class TransportTracker {
     }
 
     private handleStart(definition: CompiledTransportDefinition) {
+        if (!this.shouldHandle(definition)) {
+            return;
+        }
         const journey = this.ensureJourney(definition);
         journey.onBoard = true;
         this.cancelExitTimeout(journey);
@@ -369,6 +397,13 @@ class TransportTracker {
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
         const journey = this.ensureJourney(definition);
+        const stop = definition.stops[index];
+        if (journey.candidateIndexes.size > 0 && !journey.candidateIndexes.has(index)) {
+            this.log(
+                `Ignoring set pattern on ${definition.name} for ${formatLabel(stop)} – not among current candidates (${this.describeCandidates(journey)}).`
+            );
+            return;
+        }
         this.applyCandidateIndexes(journey, [index], false);
         journey.activeIndex = index;
         this.pendingCandidates.delete(definition);
@@ -376,10 +411,13 @@ class TransportTracker {
         if (typeof startedAt === "number") {
             this.startCountdown(journey, index, startedAt);
         }
-        this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition.stops[index])}`);
+        this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(stop)}`);
     }
 
     private handleStop(definition: CompiledTransportDefinition, index: number) {
+        if (!this.shouldHandle(definition)) {
+            return;
+        }
         const journey = this.ensureJourney(definition);
         const stop = definition.stops[index];
         const startedAt = journey.startTimes.get(index);
@@ -534,6 +572,13 @@ class TransportTracker {
         this.currentJourney = null;
         this.pendingCandidates.clear();
         this.emitTimer(null);
+    }
+
+    private shouldHandle(definition: CompiledTransportDefinition): boolean {
+        if (this.currentJourney && this.currentJourney.definition === definition) {
+            return true;
+        }
+        return this.pendingCandidates.has(definition);
     }
 
     private emitTimer(payload: TransportTimerPayload | null) {
