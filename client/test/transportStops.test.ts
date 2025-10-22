@@ -176,4 +176,71 @@ describe('transport stop triggers', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  test('set pattern outside chooses stop based on location', () => {
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 6571 });
+    parseLine('Woznica glosno wola: Za chwile ruszamy w kierunku Nuln!');
+
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do czarnego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    const payload = events[events.length - 1] as TransportTimerPayload;
+    expect(payload.label).toBe("Karczma 'Czarny Kon' → Blutdorf");
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('set pattern on board requires multiple candidates', () => {
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 5200 });
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    parseLine('Woznica wola: Nastepny postoj - Nuln!');
+    const targeted = events[events.length - 1] as TransportTimerPayload;
+    expect(targeted.label).toBe('Kreutzhofen → Nuln');
+
+    const eventsAfterFirstSet = events.length;
+
+    parseLine('Woznica wola: Nastepny postoj - Nuln!');
+    expect(events.length).toBe(eventsAfterFirstSet);
+    expect(events[events.length - 1]).toBe(targeted);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });

@@ -466,12 +466,43 @@ class TransportTracker {
     private handleSet(definition: CompiledTransportDefinition, index: number) {
         const journey = this.ensureJourney(definition);
         const stop = definition.stops[index];
-        if (journey.candidateIndexes.size > 0 && !journey.candidateIndexes.has(index)) {
+
+        if (!journey.onBoard) {
+            const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
+            if (typeof locationId !== "number") {
+                this.log(
+                    `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – outside transport with unknown location.`
+                );
+                return;
+            }
+            if (stop.start !== locationId) {
+                this.log(
+                    `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – current location ${resolveLocationLabel(definition, locationId)} does not match start ${resolveLocationLabel(definition, stop.start)}.`
+                );
+                return;
+            }
+            this.applyCandidateIndexes(journey, [index]);
+            this.pendingCandidates.delete(definition);
+            this.log(
+                `Registered set pattern for ${definition.name} at ${resolveLocationLabel(definition, locationId)}. Candidates: ${this.describeCandidates(journey)}`
+            );
+            return;
+        }
+
+        if (journey.candidateIndexes.size <= 1) {
+            this.log(
+                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – only ${journey.candidateIndexes.size} candidate(s) while on board.`
+            );
+            return;
+        }
+
+        if (!journey.candidateIndexes.has(index)) {
             this.log(
                 `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not among current candidates (${this.describeCandidates(journey)}).`
             );
             return;
         }
+
         this.applyCandidateIndexes(journey, [index], false);
         journey.activeIndex = index;
         this.pendingCandidates.delete(definition);
