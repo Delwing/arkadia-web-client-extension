@@ -32,3 +32,5 @@ if (typeof globalThis.fetch !== 'function') {
     });
   }
 }
+
+export {};
