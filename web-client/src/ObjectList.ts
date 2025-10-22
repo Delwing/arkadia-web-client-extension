@@ -334,10 +334,8 @@ export default class ObjectList {
         button.type = "button";
         button.id = "objects-list-pip-button";
         button.className = "objects-list-button";
-        button.setAttribute("aria-pressed", "false");
-        button.setAttribute("aria-label", "Otwórz listę obiektów w trybie Picture-in-Picture");
         button.title = "Picture-in-Picture";
-        button.innerHTML = `<span aria-hidden="true">⤢</span>`;
+        button.innerHTML = `<span>⤢</span>`;
         button.addEventListener("click", this.togglePictureInPicture);
         controls.appendChild(button);
         this.container.insertBefore(controls, content);
@@ -422,7 +420,6 @@ export default class ObjectList {
 
     private updatePictureInPictureButton(active: boolean) {
         if (!this.pipButton) return;
-        this.pipButton.setAttribute("aria-pressed", active ? "true" : "false");
         if (active) {
             this.pipButton.classList.add("objects-list-button-active");
         } else {

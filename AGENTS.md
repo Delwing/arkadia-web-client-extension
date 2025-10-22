@@ -13,6 +13,7 @@ Always run tests!
 
 In Regexps don't add ever polish letters.
 Prefer creation of HTML elements in HTML files, when possible.
+Do not use `aria-*` attributes; they are not needed in this project.
 
 ## Data directory
 
