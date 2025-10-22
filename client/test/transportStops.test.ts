@@ -193,7 +193,7 @@ describe('transport stop triggers', () => {
     jest.useRealTimers();
   });
 
-  test('outside set pattern selects pending slot without known location', () => {
+  test('outside set pattern selects pending slot with known location', () => {
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -210,10 +210,9 @@ describe('transport stop triggers', () => {
       client.dispatchEvent('command', command);
     };
 
+    client.dispatchEvent('enterLocation', { id: 746 });
     parseLine('Woznica oznajmia gromkim glosem: Postoj - plac w centrum Bialego Mostu. Nastepny przystanek - wies Anchor.');
     parseLine('Siedzacy na kozle woznica krzyczy glosno: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!');
-
-    client.dispatchEvent('enterLocation', { id: 746 });
     emitCommand('wsiadz do dylizansu');
     parseLine('Placisz woznicy i wspinasz sie na czarny stojacy dylizans.');
 

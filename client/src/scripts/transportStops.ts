@@ -496,11 +496,11 @@ class TransportTracker {
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
             const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
-                const indexes = setGroup && setGroup.length > 0 ? [...setGroup] : [index];
-                this.applyCandidateIndexes(journey, indexes);
-                this.pendingCandidates.set(definition, indexes);
                 this.log(
-                    `Registered set pattern for ${definition.name} outside transport without known location. Candidates: ${this.describeCandidates(journey)}`
+                    `Ignoring set pattern on ${definition.name} for ${formatLabel(
+                        definition,
+                        stop
+                    )} – location unknown while outside transport.`
                 );
                 return;
             }
