@@ -4,6 +4,13 @@ import Triggers from '../src/Triggers';
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
   Map = { setMapRoomById: jest.fn() } as any;
+  sendEvent = jest.fn();
+  private listeners: Record<string, Function[]> = {};
+
+  addEventListener(event: string, listener: Function) {
+    (this.listeners[event] ||= []).push(listener);
+    return () => {};
+  }
 }
 
 describe('transport stop triggers', () => {

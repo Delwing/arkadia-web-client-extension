@@ -6,6 +6,7 @@ import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";
 import LampTimer from "./LampTimer";
+import TransportTimer from "./TransportTimer";
 import CoverTimer from "./CoverTimer";
 import ZaskTimer from "./ZaskTimer";
 import BreakItemWarning from "./BreakItemWarning";
@@ -985,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new MultiBinds(arkadiaClient);
     new CharState(arkadiaClient);
     new CharStateInfo(arkadiaClient);
+    new TransportTimer(arkadiaClient);
     new LampTimer(arkadiaClient);
     new CoverTimer(arkadiaClient);
     new ZaskTimer(arkadiaClient);
