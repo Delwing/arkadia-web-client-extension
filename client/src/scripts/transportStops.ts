@@ -47,6 +47,10 @@ const BOARD_COMMANDS = new Set([
     "wjedz na statek",
 ]);
 
+const EXIT_FAILURE_PATTERNS: RegExp[] = [
+    /^Wolisz nie probowac wysiasc z jadacego dylizansu\.$/,
+];
+
 const EXIT_TIMEOUT_MS = 30_000;
 
 const LOG_PREFIX = "[Transport]";
@@ -226,6 +230,7 @@ class TransportTracker {
                 .filter((cmd): cmd is string => typeof cmd === "string" && cmd.length > 0)
         );
         this.registerTriggers();
+        this.registerExitFailureTriggers();
         this.registerListeners();
         this.emitTimer(null);
     }
@@ -254,8 +259,8 @@ class TransportTracker {
                 }, "transport-tracker");
             }
             if (definition.exitPattern) {
-                this.client.Triggers.registerTrigger(definition.exitPattern, () => {
-                    this.handleExit(definition);
+                this.client.Triggers.registerTrigger(definition.exitPattern, (_raw, line) => {
+                    this.handleExit(definition, line);
                     return undefined;
                 }, "transport-tracker");
             }
@@ -277,6 +282,15 @@ class TransportTracker {
                     }, "transport-tracker");
                 }
             });
+        });
+    }
+
+    private registerExitFailureTriggers() {
+        EXIT_FAILURE_PATTERNS.forEach(pattern => {
+            this.client.Triggers.registerTrigger(pattern, (_raw, line) => {
+                this.handleExitFailure(line);
+                return undefined;
+            }, "transport-tracker");
         });
     }
 
@@ -384,13 +398,31 @@ class TransportTracker {
         this.cancelExitTimeout(journey);
         this.pendingCandidates.delete(definition);
         this.log(`Entered ${definition.name}. Candidate stops: ${this.describeCandidates(journey)}`);
+        this.refreshTimer(journey);
     }
 
-    private handleExit(definition?: CompiledTransportDefinition) {
+    private handleExit(definition?: CompiledTransportDefinition, _line?: string) {
         if (definition && this.currentJourney && this.currentJourney.definition !== definition) {
             return;
         }
         this.markOutOfTransport();
+    }
+
+    private handleExitFailure(line?: string) {
+        if (!this.currentJourney || this.currentJourney.onBoard) {
+            return;
+        }
+        this.currentJourney.onBoard = true;
+        this.cancelExitTimeout(this.currentJourney);
+        this.log(`Exit prevented on ${this.currentJourney.definition.name}${line ? ` (${line})` : ""}.`);
+        if (this.currentJourney.activeIndex !== undefined) {
+            const startedAt = this.currentJourney.startTimes.get(this.currentJourney.activeIndex);
+            if (typeof startedAt === "number") {
+                this.startCountdown(this.currentJourney, this.currentJourney.activeIndex, startedAt);
+                return;
+            }
+        }
+        this.refreshTimer(this.currentJourney);
     }
 
     private handleStart(definition: CompiledTransportDefinition) {
@@ -439,6 +471,7 @@ class TransportTracker {
             this.startCountdown(journey, index, startedAt);
         }
         this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
+        this.refreshTimer(journey);
     }
 
     private handleStop(definition: CompiledTransportDefinition, index: number) {
@@ -464,6 +497,7 @@ class TransportTracker {
         const nextIndex = (index + 1) % journey.definition.stops.length;
         this.applyCandidateIndexes(journey, [nextIndex]);
         this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
+        this.refreshTimer(journey);
     }
 
     private ensureJourney(definition: CompiledTransportDefinition): JourneyState {
@@ -618,6 +652,30 @@ class TransportTracker {
 
     private describeCandidates(journey: JourneyState): string {
         return describeStopList(journey.definition, journey.candidateIndexes);
+    }
+
+    private refreshTimer(journey: JourneyState | null) {
+        if (!journey || !journey.onBoard) {
+            this.emitTimer(null);
+            return;
+        }
+        const index = this.determineActiveIndex(journey);
+        if (index === undefined) {
+            this.emitTimer(null);
+            return;
+        }
+        const stop = journey.definition.stops[index];
+        const startedAt = journey.startTimes.get(index);
+        if (typeof startedAt === "number") {
+            this.updateTimer(journey.definition, stop, startedAt);
+            return;
+        }
+        const payload: TransportTimerPayload = {
+            label: formatLabel(journey.definition, stop),
+            remaining: stop.time,
+            total: stop.time,
+        };
+        this.emitTimer(payload);
     }
 }
 

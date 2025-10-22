@@ -12,19 +12,20 @@ export default class TransportTimer {
 
   private update(payload: TransportTimerPayload | null) {
     if (!this.container) return;
-    if (!payload || payload.remaining <= 0) {
+    if (!payload) {
       this.container.textContent = "";
       this.container.className = "";
       this.container.style.display = "none";
       return;
     }
-    const minutes = Math.floor(payload.remaining / 60);
-    const seconds = Math.floor(payload.remaining % 60);
+    const remaining = Math.max(0, payload.remaining);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = Math.floor(remaining % 60);
     const secondsText = seconds.toString().padStart(2, "0");
     this.container.textContent = `Tr: ${payload.label} ${minutes}:${secondsText}`;
-    if (payload.remaining < 10) {
+    if (remaining < 10) {
       this.container.className = "red";
-    } else if (payload.remaining < 30) {
+    } else if (remaining < 30) {
       this.container.className = "yellow";
     } else {
       this.container.className = "green";

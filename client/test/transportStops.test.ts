@@ -61,28 +61,81 @@ describe('transport stop triggers', () => {
     parseLine("Woznica dylizansu glosno wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
     emitCommand('wsiadz do dylizansu');
     parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    const lastEvent = () => events[events.length - 1];
+
+    expect(lastEvent()).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'", remaining: 53, total: 53 });
+
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'", total: 53 });
+    let payload = lastEvent() as TransportTimerPayload;
+    expect(payload.label).toBe("Kreutzhofen → 'Pod piegowata elfka'");
+    expect(payload.total).toBe(53);
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem \'Pod piegowata elfka\'.');
-    expect(events[events.length - 1]).toBeNull();
+    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", remaining: 12, total: 12 });
 
     parseLine('Woznica wola: Nastepny postoj - Salignac La Rouge!');
+    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", remaining: 12, total: 12 });
+
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", total: 12 });
+    payload = lastEvent() as TransportTimerPayload;
+    expect(payload.label).toBe("'Pod piegowata elfka' → Salignac La Rouge");
+    expect(payload.total).toBe(12);
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, rynek miejski Salignac La Rouge.');
-    expect(events[events.length - 1]).toBeNull();
+    expect(lastEvent()).toMatchObject({ label: "Salignac La Rouge → 'Pod piegowata elfka'", remaining: 11, total: 11 });
 
     parseLine("Woznica wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    expect(lastEvent()).toMatchObject({ label: "Salignac La Rouge → 'Pod piegowata elfka'", remaining: 11, total: 11 });
+
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: "Salignac La Rouge → 'Pod piegowata elfka'", total: 11 });
+    payload = lastEvent() as TransportTimerPayload;
+    expect(payload.label).toBe("Salignac La Rouge → 'Pod piegowata elfka'");
+    expect(payload.total).toBe(11);
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem \'Pod piegowata elfka\'.');
-    expect(events[events.length - 1]).toBeNull();
+    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", remaining: 12, total: 12 });
+
+    emitCommand('wyjscie');
+    expect(lastEvent()).toBeNull();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('exit failure keeps active journey running', () => {
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 5200 });
+
+    parseLine("Woznica dylizansu glosno wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    const lastActive = events[events.length - 1] as TransportTimerPayload;
+    expect(lastActive).toBeTruthy();
 
     emitCommand('wyjscie');
     expect(events[events.length - 1]).toBeNull();
+
+    parseLine('Wolisz nie probowac wysiasc z jadacego dylizansu.');
+    const resumed = events[events.length - 1] as TransportTimerPayload;
+    expect(resumed.label).toBe(lastActive.label);
+    expect(resumed.total).toBe(lastActive.total);
 
     jest.clearAllTimers();
     jest.useRealTimers();

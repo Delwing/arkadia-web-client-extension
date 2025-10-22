@@ -40,5 +40,10 @@ describe("TransportTimer", () => {
 
     client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 5, total: 140 });
     expect(container.className).toBe("red");
+
+    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 0, total: 140 });
+    expect(container.textContent).toBe("Tr: Kreutzhofen → Hagge 0:00");
+    expect(container.className).toBe("red");
+    expect(container.style.display).toBe("block");
   });
 });
