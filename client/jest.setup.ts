@@ -1,7 +1,5 @@
 import 'fake-indexeddb/auto';
 
-process.env.IS_JEST = 'true';
-
 class LocalStorageMock {
   private store: Record<string, string> = {};
   clear() { this.store = {}; }
@@ -35,40 +33,4 @@ if (typeof globalThis.fetch !== 'function') {
   }
 }
 
-if (typeof (require as any).context !== 'function') {
-  const path = require('path');
-  const fs = require('fs');
-  (require as any).context = (base = '.', scanSubDirectories = false, regularExpression = /./) => {
-    const baseDir = path.resolve(__dirname, 'src/scripts', base.replace(/^\.\//, ''));
-    const files: string[] = [];
-
-    const readDirectory = (directory: string, prefix: string) => {
-      fs.readdirSync(directory).forEach((file: string) => {
-        const fullPath = path.join(directory, file);
-        const relativePath = `${prefix}${file}`;
-        if (fs.statSync(fullPath).isDirectory()) {
-          if (scanSubDirectories) {
-            readDirectory(fullPath, `${relativePath}/`);
-          }
-          return;
-        }
-        if (regularExpression.test(relativePath)) {
-          files.push(`./${relativePath}`);
-        }
-      });
-    };
-
-    readDirectory(baseDir, '');
-
-    const context = ((key: string) => {
-      const filePath = path.join(baseDir, key.replace(/^\.\//, ''));
-      const content = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(content);
-    }) as RequireContext;
-
-    context.keys = () => files;
-    return context;
-  };
-}
-
-type RequireContext = ((key: string) => any) & { keys: () => string[] };
+export {};

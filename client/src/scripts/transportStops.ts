@@ -2,6 +2,41 @@ import Client from "../Client";
 import { isDirection } from "../utils/directions";
 import type { TransportTimerPayload } from "../types/transport";
 
+import Ancelmus from "./ships/Ancelmus.json";
+import Annibale from "./ships/Annibale.json";
+import Asa from "./ships/Asa.json";
+import Batista from "./ships/Batista.json";
+import Bjorn from "./ships/Bjorn.json";
+import Cern from "./ships/Cern.json";
+import Charonda from "./ships/Charonda.json";
+import Creyard from "./ships/Creyard.json";
+import Daniel from "./ships/Daniel.json";
+import Elich from "./ships/Elich.json";
+import Flavius from "./ships/Flavius.json";
+import Francois from "./ships/Francois.json";
+import Gervais from "./ships/Gervais.json";
+import Gmeath from "./ships/Gmeath.json";
+import Gvidon from "./ships/Gvidon.json";
+import Hallgerda from "./ships/Hallgerda.json";
+import Haming from "./ships/Haming.json";
+import Jacob from "./ships/Jacob.json";
+import Kelim from "./ships/Kelim.json";
+import Louis from "./ships/Louis.json";
+import Luiggi from "./ships/Luiggi.json";
+import Malacius from "./ships/Malacius.json";
+import Mallcolm from "./ships/Mallcolm.json";
+import Olaf from "./ships/Olaf.json";
+import Pluskolec from "./ships/Pluskolec.json";
+import Rygwit from "./ships/Rygwit.json";
+import Strag from "./ships/Strag.json";
+
+import Jouinard from "./other/Jouinard - Nuln.json";
+import KrainaZgromadzenia from "./other/Kraina Zgromadzenia - Nuln.json";
+import MariborGrabowa from "./other/Maribor - Grabowa Buchta.json";
+import Salignac from "./other/Salignac - Nuln.json";
+import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
+import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
+
 const BOARD_COMMANDS = new Set([
     "wsiadz na statek",
     "wejdz na statek",
@@ -33,7 +68,41 @@ interface RawTransportDefinition {
     stops: RawTransportStop[];
 }
 
-type RequireContext = ((key: string) => RawTransportDefinition) & { keys: () => string[] };
+const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
+    ["Ancelmus", Ancelmus as RawTransportDefinition],
+    ["Annibale", Annibale as RawTransportDefinition],
+    ["Asa", Asa as RawTransportDefinition],
+    ["Batista", Batista as RawTransportDefinition],
+    ["Bjorn", Bjorn as RawTransportDefinition],
+    ["Cern", Cern as RawTransportDefinition],
+    ["Charonda", Charonda as RawTransportDefinition],
+    ["Creyard", Creyard as RawTransportDefinition],
+    ["Daniel", Daniel as RawTransportDefinition],
+    ["Elich", Elich as RawTransportDefinition],
+    ["Flavius", Flavius as RawTransportDefinition],
+    ["Francois", Francois as RawTransportDefinition],
+    ["Gervais", Gervais as RawTransportDefinition],
+    ["Gmeath", Gmeath as RawTransportDefinition],
+    ["Gvidon", Gvidon as RawTransportDefinition],
+    ["Hallgerda", Hallgerda as RawTransportDefinition],
+    ["Haming", Haming as RawTransportDefinition],
+    ["Jacob", Jacob as RawTransportDefinition],
+    ["Kelim", Kelim as RawTransportDefinition],
+    ["Louis", Louis as RawTransportDefinition],
+    ["Luiggi", Luiggi as RawTransportDefinition],
+    ["Malacius", Malacius as RawTransportDefinition],
+    ["Mallcolm", Mallcolm as RawTransportDefinition],
+    ["Olaf", Olaf as RawTransportDefinition],
+    ["Pluskolec", Pluskolec as RawTransportDefinition],
+    ["Rygwit", Rygwit as RawTransportDefinition],
+    ["Strag", Strag as RawTransportDefinition],
+    ["Jouinard - Nuln", Jouinard as RawTransportDefinition],
+    ["Kraina Zgromadzenia - Nuln", KrainaZgromadzenia as RawTransportDefinition],
+    ["Maribor - Grabowa Buchta", MariborGrabowa as RawTransportDefinition],
+    ["Salignac - Nuln", Salignac as RawTransportDefinition],
+    ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
+    ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
+];
 
 type TimerHandle = ReturnType<typeof setInterval>;
 type TimeoutHandle = ReturnType<typeof setTimeout>;
@@ -69,53 +138,20 @@ function createPattern(pattern?: string): RegExp | undefined {
     return new RegExp(pattern);
 }
 
-function loadContext(directory: string): RequireContext {
-    const reqAny = require as any;
-    if (typeof reqAny.context !== "function") {
-        if (typeof process !== "undefined" && process.env && process.env.IS_JEST === "true") {
-            const path = require("path") as typeof import("path");
-            const fs = require("fs") as typeof import("fs");
-            const baseDir = path.resolve(__dirname, directory.replace(/^\.\//, ""));
-            const fileNames = fs
-                .readdirSync(baseDir)
-                .filter((name: string) => name.toLowerCase().endsWith(".json"))
-                .map((name: string) => `./${name}`);
-            const loader = ((key: string) => {
-                const filePath = path.join(baseDir, key.replace(/^\.\//, ""));
-                const content = fs.readFileSync(filePath, "utf-8");
-                return JSON.parse(content) as RawTransportDefinition;
-            }) as RequireContext;
-            loader.keys = () => fileNames;
-            return loader;
-        }
-        throw new Error("require.context is not available");
-    }
-    return reqAny.context(directory, false, /\.json$/);
-}
-
 function loadDefinitions(): CompiledTransportDefinition[] {
-    const contexts = [loadContext("./ships"), loadContext("./other")];
-    const definitions: CompiledTransportDefinition[] = [];
-    contexts.forEach(context => {
-        context.keys().forEach(key => {
-            const data = context(key);
-            const compiledStops = data.stops.map(stop => ({
-                ...stop,
-                stopRegex: new RegExp(stop.stop_pattern),
-                setRegex: stop.set_pattern ? new RegExp(stop.set_pattern) : undefined,
-            }));
-            definitions.push({
-                ...data,
-                name: key.replace(/^\.\//, "").replace(/\.json$/i, ""),
-                enterPattern: createPattern(data.enter),
-                exitPattern: createPattern(data.exit),
-                startPattern: createPattern(data.start),
-                stops: compiledStops,
-                exitCommand: data.exit_command ? data.exit_command.toLowerCase() : undefined,
-            });
-        });
-    });
-    return definitions;
+    return RAW_DEFINITION_ENTRIES.map(([name, data]) => ({
+        ...data,
+        name,
+        enterPattern: createPattern(data.enter),
+        exitPattern: createPattern(data.exit),
+        startPattern: createPattern(data.start),
+        stops: data.stops.map(stop => ({
+            ...stop,
+            stopRegex: new RegExp(stop.stop_pattern),
+            setRegex: stop.set_pattern ? new RegExp(stop.set_pattern) : undefined,
+        })),
+        exitCommand: data.exit_command ? data.exit_command.toLowerCase() : undefined,
+    }));
 }
 
 function formatLabel(stop: CompiledTransportStop): string {
@@ -314,11 +350,7 @@ class TransportTracker {
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
         const journey = this.ensureJourney(definition);
-        const stop = definition.stops[index];
-        const indexes = this.collectIndexes(definition, stop.start);
-        if (indexes.length > 0) {
-            this.applyCandidateIndexes(journey, indexes, false);
-        }
+        this.applyCandidateIndexes(journey, [index], false);
         journey.activeIndex = index;
         this.pendingCandidates.delete(definition);
         const startedAt = journey.startTimes.get(index);
