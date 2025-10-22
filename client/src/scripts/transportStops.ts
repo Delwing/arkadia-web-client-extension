@@ -130,6 +130,7 @@ interface CompiledTransportDefinition extends RawTransportDefinition {
     exitCommand?: string;
     locationLabels: Map<number, string>;
     stopPatternGroups: Map<string, number[]>;
+    setPatternGroups: Map<string, number[]>;
 }
 
 interface JourneyState {
@@ -184,6 +185,7 @@ function loadDefinitions(): CompiledTransportDefinition[] {
             patternKey: stop.stop_pattern,
         }));
         const stopPatternGroups = new Map<string, number[]>();
+        const setPatternGroups = new Map<string, number[]>();
         compiledStops.forEach((stop, index) => {
             const key = stop.patternKey;
             const existing = stopPatternGroups.get(key);
@@ -191,6 +193,14 @@ function loadDefinitions(): CompiledTransportDefinition[] {
                 existing.push(index);
             } else {
                 stopPatternGroups.set(key, [index]);
+            }
+            if (stop.set_pattern) {
+                const setGroup = setPatternGroups.get(stop.set_pattern);
+                if (setGroup) {
+                    setGroup.push(index);
+                } else {
+                    setPatternGroups.set(stop.set_pattern, [index]);
+                }
             }
         });
         return {
@@ -203,6 +213,7 @@ function loadDefinitions(): CompiledTransportDefinition[] {
             exitCommand: data.exit_command ? data.exit_command.toLowerCase() : undefined,
             locationLabels,
             stopPatternGroups,
+            setPatternGroups,
         };
     });
 }
@@ -495,8 +506,18 @@ class TransportTracker {
                 );
                 return;
             }
-            this.applyCandidateIndexes(journey, [index]);
-            this.pendingCandidates.delete(definition);
+
+            const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
+            let indexes: number[];
+            if (setGroup && setGroup.length > 0) {
+                const matches = setGroup.filter(candidateIndex => definition.stops[candidateIndex].start === locationId);
+                indexes = matches.length > 0 ? matches : [index];
+            } else {
+                indexes = [index];
+            }
+
+            this.applyCandidateIndexes(journey, indexes);
+            this.pendingCandidates.set(definition, indexes);
             this.log(
                 `Registered set pattern for ${definition.name} at ${resolveLocationLabel(definition, locationId)}. Candidates: ${this.describeCandidates(journey)}`
             );
