@@ -46,4 +46,11 @@ describe("TransportTimer", () => {
     expect(container.className).toBe("red");
     expect(container.style.display).toBe("block");
   });
+
+  test("shows label without timer when duration is unknown", () => {
+    client.emit("transportTimer", { label: "Kreutzhofen → Tajemnicze miejsce", remaining: null, total: null });
+    expect(container.textContent).toBe("Tr: Kreutzhofen → Tajemnicze miejsce");
+    expect(container.className).toBe("");
+    expect(container.style.display).toBe("block");
+  });
 });

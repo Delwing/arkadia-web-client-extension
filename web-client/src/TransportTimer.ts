@@ -18,17 +18,23 @@ export default class TransportTimer {
       this.container.style.display = "none";
       return;
     }
-    const remaining = Math.max(0, payload.remaining);
-    const minutes = Math.floor(remaining / 60);
-    const seconds = Math.floor(remaining % 60);
-    const secondsText = seconds.toString().padStart(2, "0");
-    this.container.textContent = `Tr: ${payload.label} ${minutes}:${secondsText}`;
-    if (remaining < 10) {
-      this.container.className = "red";
-    } else if (remaining < 30) {
-      this.container.className = "yellow";
+    const hasTimer = typeof payload.remaining === "number" && typeof payload.total === "number";
+    if (hasTimer) {
+      const remaining = Math.max(0, payload.remaining);
+      const minutes = Math.floor(remaining / 60);
+      const seconds = Math.floor(remaining % 60);
+      const secondsText = seconds.toString().padStart(2, "0");
+      this.container.textContent = `Tr: ${payload.label} ${minutes}:${secondsText}`;
+      if (remaining < 10) {
+        this.container.className = "red";
+      } else if (remaining < 30) {
+        this.container.className = "yellow";
+      } else {
+        this.container.className = "green";
+      }
     } else {
-      this.container.className = "green";
+      this.container.textContent = `Tr: ${payload.label}`;
+      this.container.className = "";
     }
     this.container.style.display = "block";
   }

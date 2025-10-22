@@ -1,5 +1,5 @@
 export interface TransportTimerPayload {
     label: string;
-    remaining: number;
-    total: number;
+    remaining: number | null;
+    total: number | null;
 }

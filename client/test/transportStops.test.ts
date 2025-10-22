@@ -1,6 +1,7 @@
 import initTransportStops from '../src/scripts/transportStops';
 import Triggers from '../src/Triggers';
 import type { TransportTimerPayload } from '../src/types/transport';
+import * as transportStats from '../src/utils/transportStats';
 
 class FakeClient {
   Triggers: Triggers;
@@ -26,11 +27,16 @@ describe('transport stop triggers', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await transportStats.clearTransportStats();
     client = new FakeClient();
     initTransportStops(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   test('stop pattern does not register trigger', () => {
@@ -100,6 +106,36 @@ describe('transport stop triggers', () => {
 
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  test('records transport segment stats when a stop completes', async () => {
+    client.dispatchEvent('enterLocation', { id: 5200 });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    parseLine("Woznica dylizansu glosno wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    parseLine("Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem 'Pod piegowata elfka'.");
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const segments = await transportStats.getAllTransportSegments();
+    expect(segments.length).toBeGreaterThan(0);
+    const latest = segments[segments.length - 1];
+    expect(latest.transport).toBe('Salignac - Nuln');
+    expect(typeof latest.fromId).toBe('number');
+    expect(typeof latest.toId).toBe('number');
+    expect(typeof latest.fromLabel).toBe('string');
+    expect(latest.toLabel).toContain("'Pod piegowata elfka'");
+    expect(typeof latest.expectedDuration).toBe('number');
+    expect(typeof latest.duration).toBe('number');
   });
 
   test('exit failure keeps active journey running', () => {

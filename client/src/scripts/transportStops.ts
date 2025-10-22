@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { isDirection } from "../utils/directions";
 import type { TransportTimerPayload } from "../types/transport";
+import { recordTransportSegment } from "../utils/transportStats";
 
 import Ancelmus from "./ships/Ancelmus.json";
 import Annibale from "./ships/Annibale.json";
@@ -49,6 +50,7 @@ const BOARD_COMMANDS = new Set([
 
 const EXIT_FAILURE_PATTERNS: RegExp[] = [
     /^Wolisz nie probowac wysiasc z jadacego dylizansu\.$/,
+    /^Wolisz nie probowac wysiasc z jadacego wozu\.$/,
 ];
 
 const EXIT_TIMEOUT_MS = 30_000;
@@ -58,7 +60,7 @@ const LOG_PREFIX = "[Transport]";
 interface RawTransportStop {
     start: number;
     destination: number;
-    time: number;
+    time?: number;
     stop_pattern: string;
     set_pattern?: string;
     label?: string;
@@ -199,9 +201,16 @@ function resolveLocationLabel(definition: CompiledTransportDefinition, locationI
     return String(locationId);
 }
 
+function resolveDestinationLabel(definition: CompiledTransportDefinition, stop: CompiledTransportStop): string {
+    if (stop.label && stop.label.trim().length > 0) {
+        return stop.label.trim();
+    }
+    return resolveLocationLabel(definition, stop.destination);
+}
+
 function formatLabel(definition: CompiledTransportDefinition, stop: CompiledTransportStop): string {
     const from = resolveLocationLabel(definition, stop.start);
-    const destinationLabel = stop.label && stop.label.trim().length > 0 ? stop.label.trim() : resolveLocationLabel(definition, stop.destination);
+    const destinationLabel = resolveDestinationLabel(definition, stop);
     if (from === destinationLabel) {
         return destinationLabel;
     }
@@ -482,14 +491,32 @@ class TransportTracker {
         const stop = definition.stops[index];
         const startedAt = journey.startTimes.get(index);
         if (typeof startedAt === "number") {
-            const elapsed = secondsBetween(startedAt);
-            const expected = stop.time;
-            const diff = expected - elapsed;
-            if (diff > 0.1) {
+            const endedAt = Date.now();
+            const elapsed = (endedAt - startedAt) / 1000;
+            const expected = typeof stop.time === "number" ? stop.time : null;
+            if (expected !== null) {
+                const diff = expected - elapsed;
+                if (diff > 0.1) {
+                    console.log(
+                        `[Transport] Segment to ${formatLabel(definition, stop)} finished ${diff.toFixed(2)}s earlier (expected ${expected.toFixed(2)}s, actual ${elapsed.toFixed(2)}s).`
+                    );
+                }
+            } else {
                 console.log(
-                    `[Transport] Segment to ${formatLabel(definition, stop)} finished ${diff.toFixed(2)}s earlier (expected ${expected.toFixed(2)}s, actual ${elapsed.toFixed(2)}s).`
+                    `[Transport] Segment to ${formatLabel(definition, stop)} finished in ${elapsed.toFixed(2)}s (no expected duration).`
                 );
             }
+            void recordTransportSegment({
+                transport: definition.name,
+                fromId: stop.start,
+                toId: stop.destination,
+                fromLabel: resolveLocationLabel(definition, stop.start),
+                toLabel: resolveDestinationLabel(definition, stop),
+                startedAt,
+                endedAt,
+                duration: elapsed,
+                expectedDuration: expected,
+            });
         }
         this.stopCountdown();
         journey.startTimes.clear();
@@ -547,27 +574,36 @@ class TransportTracker {
         const stop = journey.definition.stops[index];
         journey.activeIndex = index;
         journey.startTimes.set(index, startedAt);
+        const hasDuration = typeof stop.time === "number" && !Number.isNaN(stop.time);
         this.updateTimer(journey.definition, stop, startedAt);
-        this.log(`Starting countdown on ${journey.definition.name} towards ${formatLabel(journey.definition, stop)}.`);
+        this.log(
+            `Tracking segment on ${journey.definition.name} towards ${formatLabel(journey.definition, stop)}${hasDuration ? " with countdown." : " (no duration available)."}`
+        );
         if (journey.timer) {
             clearInterval(journey.timer);
         }
-        journey.timer = setInterval(() => {
-            const currentStart = journey.startTimes.get(index);
-            if (typeof currentStart !== "number") {
-                return;
-            }
-            this.updateTimer(journey.definition, stop, currentStart);
-        }, 500);
+        if (hasDuration) {
+            journey.timer = setInterval(() => {
+                const currentStart = journey.startTimes.get(index);
+                if (typeof currentStart !== "number") {
+                    return;
+                }
+                this.updateTimer(journey.definition, stop, currentStart);
+            }, 500);
+        } else {
+            journey.timer = undefined;
+        }
     }
 
     private updateTimer(definition: CompiledTransportDefinition, stop: CompiledTransportStop, startedAt: number) {
         const elapsed = secondsBetween(startedAt);
-        const remaining = Math.max(0, stop.time - elapsed);
+        const hasDuration = typeof stop.time === "number" && !Number.isNaN(stop.time);
+        const remaining = hasDuration ? Math.max(0, stop.time - elapsed) : null;
+        const total = hasDuration ? stop.time : null;
         const payload: TransportTimerPayload = {
             label: formatLabel(definition, stop),
             remaining,
-            total: stop.time,
+            total,
         };
         this.emitTimer(payload);
     }
@@ -672,8 +708,8 @@ class TransportTracker {
         }
         const payload: TransportTimerPayload = {
             label: formatLabel(journey.definition, stop),
-            remaining: stop.time,
-            total: stop.time,
+            remaining: typeof stop.time === "number" ? stop.time : null,
+            total: typeof stop.time === "number" ? stop.time : null,
         };
         this.emitTimer(payload);
     }
