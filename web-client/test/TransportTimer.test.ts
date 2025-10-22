@@ -30,15 +30,15 @@ describe("TransportTimer", () => {
   });
 
   test("updates timer text and class", () => {
-    client.emit("transportTimer", { label: "Hagge", remaining: 125, total: 140 });
-    expect(container.textContent).toBe("Tr: Hagge 2:05");
+    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
+    expect(container.textContent).toBe("Tr: Kreutzhofen → Hagge 2:05");
     expect(container.className).toBe("green");
     expect(container.style.display).toBe("block");
 
-    client.emit("transportTimer", { label: "Hagge", remaining: 45, total: 140 });
+    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 25, total: 140 });
     expect(container.className).toBe("yellow");
 
-    client.emit("transportTimer", { label: "Hagge", remaining: 20, total: 140 });
+    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 5, total: 140 });
     expect(container.className).toBe("red");
   });
 });

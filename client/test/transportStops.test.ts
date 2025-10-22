@@ -62,21 +62,21 @@ describe('transport stop triggers', () => {
     emitCommand('wsiadz do dylizansu');
     parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: "'Pod piegowata elfka'", total: 53 });
+    expect(events[events.length - 1]).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'", total: 53 });
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem \'Pod piegowata elfka\'.');
     expect(events[events.length - 1]).toBeNull();
 
     parseLine('Woznica wola: Nastepny postoj - Salignac La Rouge!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: 'Salignac La Rouge', total: 12 });
+    expect(events[events.length - 1]).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", total: 12 });
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, rynek miejski Salignac La Rouge.');
     expect(events[events.length - 1]).toBeNull();
 
     parseLine("Woznica wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
-    expect(events[events.length - 1]).toMatchObject({ label: "'Pod piegowata elfka'", total: 11 });
+    expect(events[events.length - 1]).toMatchObject({ label: "Salignac La Rouge → 'Pod piegowata elfka'", total: 11 });
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem \'Pod piegowata elfka\'.');
     expect(events[events.length - 1]).toBeNull();

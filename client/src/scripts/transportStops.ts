@@ -121,6 +121,7 @@ interface CompiledTransportDefinition extends RawTransportDefinition {
     startPattern?: RegExp;
     stops: CompiledTransportStop[];
     exitCommand?: string;
+    locationLabels: Map<number, string>;
 }
 
 interface JourneyState {
@@ -138,7 +139,7 @@ function describeStopList(definition: CompiledTransportDefinition, indexes: Iter
     for (const index of indexes) {
         const stop = definition.stops[index];
         if (stop) {
-            labels.push(formatLabel(stop));
+            labels.push(formatLabel(definition, stop));
         }
     }
     if (labels.length === 0) {
@@ -155,26 +156,52 @@ function createPattern(pattern?: string): RegExp | undefined {
 }
 
 function loadDefinitions(): CompiledTransportDefinition[] {
-    return RAW_DEFINITION_ENTRIES.map(([name, data]) => ({
-        ...data,
-        name,
-        enterPattern: createPattern(data.enter),
-        exitPattern: createPattern(data.exit),
-        startPattern: createPattern(data.start),
-        stops: data.stops.map(stop => ({
+    return RAW_DEFINITION_ENTRIES.map(([name, data]) => {
+        const locationLabels = new Map<number, string>();
+        for (const stop of data.stops) {
+            const trimmed = (stop.label ?? "").trim();
+            const resolved = trimmed.length > 0 ? trimmed : String(stop.destination);
+            locationLabels.set(stop.destination, resolved);
+        }
+        for (const stop of data.stops) {
+            if (!locationLabels.has(stop.start)) {
+                locationLabels.set(stop.start, String(stop.start));
+            }
+        }
+        const compiledStops = data.stops.map(stop => ({
             ...stop,
+            label: (stop.label ?? "").trim() || undefined,
             stopRegex: new RegExp(stop.stop_pattern),
             setRegex: stop.set_pattern ? new RegExp(stop.set_pattern) : undefined,
-        })),
-        exitCommand: data.exit_command ? data.exit_command.toLowerCase() : undefined,
-    }));
+        }));
+        return {
+            ...data,
+            name,
+            enterPattern: createPattern(data.enter),
+            exitPattern: createPattern(data.exit),
+            startPattern: createPattern(data.start),
+            stops: compiledStops,
+            exitCommand: data.exit_command ? data.exit_command.toLowerCase() : undefined,
+            locationLabels,
+        };
+    });
 }
 
-function formatLabel(stop: CompiledTransportStop): string {
-    if (stop.label && stop.label.trim().length > 0) {
-        return stop.label.trim();
+function resolveLocationLabel(definition: CompiledTransportDefinition, locationId: number): string {
+    const label = definition.locationLabels.get(locationId);
+    if (label && label.trim().length > 0) {
+        return label;
     }
-    return String(stop.destination);
+    return String(locationId);
+}
+
+function formatLabel(definition: CompiledTransportDefinition, stop: CompiledTransportStop): string {
+    const from = resolveLocationLabel(definition, stop.start);
+    const destinationLabel = stop.label && stop.label.trim().length > 0 ? stop.label.trim() : resolveLocationLabel(definition, stop.destination);
+    if (from === destinationLabel) {
+        return destinationLabel;
+    }
+    return `${from} → ${destinationLabel}`;
 }
 
 function secondsBetween(start: number): number {
@@ -400,7 +427,7 @@ class TransportTracker {
         const stop = definition.stops[index];
         if (journey.candidateIndexes.size > 0 && !journey.candidateIndexes.has(index)) {
             this.log(
-                `Ignoring set pattern on ${definition.name} for ${formatLabel(stop)} – not among current candidates (${this.describeCandidates(journey)}).`
+                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not among current candidates (${this.describeCandidates(journey)}).`
             );
             return;
         }
@@ -411,7 +438,7 @@ class TransportTracker {
         if (typeof startedAt === "number") {
             this.startCountdown(journey, index, startedAt);
         }
-        this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(stop)}`);
+        this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
     }
 
     private handleStop(definition: CompiledTransportDefinition, index: number) {
@@ -427,7 +454,7 @@ class TransportTracker {
             const diff = expected - elapsed;
             if (diff > 0.1) {
                 console.log(
-                    `[Transport] Segment to ${formatLabel(stop)} finished ${diff.toFixed(2)}s earlier (expected ${expected.toFixed(2)}s, actual ${elapsed.toFixed(2)}s).`
+                    `[Transport] Segment to ${formatLabel(definition, stop)} finished ${diff.toFixed(2)}s earlier (expected ${expected.toFixed(2)}s, actual ${elapsed.toFixed(2)}s).`
                 );
             }
         }
@@ -436,7 +463,7 @@ class TransportTracker {
         journey.activeIndex = undefined;
         const nextIndex = (index + 1) % journey.definition.stops.length;
         this.applyCandidateIndexes(journey, [nextIndex]);
-        this.log(`Arrived at ${formatLabel(stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
+        this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
     }
 
     private ensureJourney(definition: CompiledTransportDefinition): JourneyState {
@@ -486,8 +513,8 @@ class TransportTracker {
         const stop = journey.definition.stops[index];
         journey.activeIndex = index;
         journey.startTimes.set(index, startedAt);
-        this.updateTimer(stop, startedAt);
-        this.log(`Starting countdown on ${journey.definition.name} towards ${formatLabel(stop)}.`);
+        this.updateTimer(journey.definition, stop, startedAt);
+        this.log(`Starting countdown on ${journey.definition.name} towards ${formatLabel(journey.definition, stop)}.`);
         if (journey.timer) {
             clearInterval(journey.timer);
         }
@@ -496,15 +523,15 @@ class TransportTracker {
             if (typeof currentStart !== "number") {
                 return;
             }
-            this.updateTimer(stop, currentStart);
+            this.updateTimer(journey.definition, stop, currentStart);
         }, 500);
     }
 
-    private updateTimer(stop: CompiledTransportStop, startedAt: number) {
+    private updateTimer(definition: CompiledTransportDefinition, stop: CompiledTransportStop, startedAt: number) {
         const elapsed = secondsBetween(startedAt);
         const remaining = Math.max(0, stop.time - elapsed);
         const payload: TransportTimerPayload = {
-            label: formatLabel(stop),
+            label: formatLabel(definition, stop),
             remaining,
             total: stop.time,
         };
@@ -519,7 +546,7 @@ class TransportTracker {
         this.emitTimer(null);
         if (this.currentJourney?.activeIndex !== undefined) {
             const stop = this.currentJourney.definition.stops[this.currentJourney.activeIndex];
-            this.log(`Stopped countdown on ${this.currentJourney.definition.name} for ${formatLabel(stop)}.`);
+            this.log(`Stopped countdown on ${this.currentJourney.definition.name} for ${formatLabel(this.currentJourney.definition, stop)}.`);
         }
     }
 

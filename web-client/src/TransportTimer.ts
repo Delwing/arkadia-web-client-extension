@@ -22,9 +22,9 @@ export default class TransportTimer {
     const seconds = Math.floor(payload.remaining % 60);
     const secondsText = seconds.toString().padStart(2, "0");
     this.container.textContent = `Tr: ${payload.label} ${minutes}:${secondsText}`;
-    if (payload.remaining < 30) {
+    if (payload.remaining < 10) {
       this.container.className = "red";
-    } else if (payload.remaining < 60) {
+    } else if (payload.remaining < 30) {
       this.container.className = "yellow";
     } else {
       this.container.className = "green";
