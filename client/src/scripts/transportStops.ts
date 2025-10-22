@@ -31,6 +31,7 @@ import Pluskolec from "./ships/Pluskolec.json";
 import Rygwit from "./ships/Rygwit.json";
 import Strag from "./ships/Strag.json";
 
+import BialyMostHagge from "./other/Bialy Most - Hagge.json";
 import Jouinard from "./other/Jouinard - Nuln.json";
 import KrainaZgromadzenia from "./other/Kraina Zgromadzenia - Nuln.json";
 import MariborGrabowa from "./other/Maribor - Grabowa Buchta.json";
@@ -104,6 +105,7 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Pluskolec", Pluskolec as RawTransportDefinition],
     ["Rygwit", Rygwit as RawTransportDefinition],
     ["Strag", Strag as RawTransportDefinition],
+    ["Bialy Most - Hagge", BialyMostHagge as RawTransportDefinition],
     ["Jouinard - Nuln", Jouinard as RawTransportDefinition],
     ["Kraina Zgromadzenia - Nuln", KrainaZgromadzenia as RawTransportDefinition],
     ["Maribor - Grabowa Buchta", MariborGrabowa as RawTransportDefinition],
