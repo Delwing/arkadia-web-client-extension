@@ -49,6 +49,8 @@ const BOARD_COMMANDS = new Set([
 
 const EXIT_TIMEOUT_MS = 30_000;
 
+const LOG_PREFIX = "[Transport]";
+
 interface RawTransportStop {
     start: number;
     destination: number;
@@ -129,6 +131,20 @@ interface JourneyState {
     onBoard: boolean;
     timer?: TimerHandle;
     exitTimeout?: TimeoutHandle;
+}
+
+function describeStopList(definition: CompiledTransportDefinition, indexes: Iterable<number>): string {
+    const labels: string[] = [];
+    for (const index of indexes) {
+        const stop = definition.stops[index];
+        if (stop) {
+            labels.push(formatLabel(stop));
+        }
+    }
+    if (labels.length === 0) {
+        return "none";
+    }
+    return labels.join(", ");
 }
 
 function createPattern(pattern?: string): RegExp | undefined {
@@ -296,6 +312,7 @@ class TransportTracker {
             const [definition, candidateIndexes] = matches.entries().next().value as [CompiledTransportDefinition, number[]];
             const journey = this.ensureJourney(definition);
             this.applyCandidateIndexes(journey, candidateIndexes);
+            this.log(`Prepared candidates from location ${locationId} for ${definition.name}. Candidates: ${this.describeCandidates(journey)}`);
         }
     }
 
@@ -314,6 +331,7 @@ class TransportTracker {
         journey.onBoard = true;
         this.cancelExitTimeout(journey);
         this.pendingCandidates.delete(definition);
+        this.log(`Entered ${definition.name}. Candidate stops: ${this.describeCandidates(journey)}`);
     }
 
     private handleExit(definition?: CompiledTransportDefinition) {
@@ -346,6 +364,7 @@ class TransportTracker {
             this.emitTimer(null);
         }
         this.pendingCandidates.delete(definition);
+        this.log(`Journey on ${definition.name} started. Candidate stops: ${this.describeCandidates(journey)}`);
     }
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
@@ -357,6 +376,7 @@ class TransportTracker {
         if (typeof startedAt === "number") {
             this.startCountdown(journey, index, startedAt);
         }
+        this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition.stops[index])}`);
     }
 
     private handleStop(definition: CompiledTransportDefinition, index: number) {
@@ -378,6 +398,7 @@ class TransportTracker {
         journey.activeIndex = undefined;
         const nextIndex = (index + 1) % journey.definition.stops.length;
         this.applyCandidateIndexes(journey, [nextIndex]);
+        this.log(`Arrived at ${formatLabel(stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
     }
 
     private ensureJourney(definition: CompiledTransportDefinition): JourneyState {
@@ -392,6 +413,7 @@ class TransportTracker {
                 startTimes: new Map<number, number>(),
                 onBoard: false,
             };
+            this.log(`Created journey tracker for ${definition.name}.`);
         }
         return this.currentJourney;
     }
@@ -427,6 +449,7 @@ class TransportTracker {
         journey.activeIndex = index;
         journey.startTimes.set(index, startedAt);
         this.updateTimer(stop, startedAt);
+        this.log(`Starting countdown on ${journey.definition.name} towards ${formatLabel(stop)}.`);
         if (journey.timer) {
             clearInterval(journey.timer);
         }
@@ -456,6 +479,10 @@ class TransportTracker {
             this.currentJourney.timer = undefined;
         }
         this.emitTimer(null);
+        if (this.currentJourney?.activeIndex !== undefined) {
+            const stop = this.currentJourney.definition.stops[this.currentJourney.activeIndex];
+            this.log(`Stopped countdown on ${this.currentJourney.definition.name} for ${formatLabel(stop)}.`);
+        }
     }
 
     private collectIndexes(definition: CompiledTransportDefinition, startId: number): number[] {
@@ -483,6 +510,7 @@ class TransportTracker {
         this.currentJourney.onBoard = false;
         this.stopCountdown();
         this.scheduleCleanup();
+        this.log(`Exited ${this.currentJourney.definition.name}. Waiting for re-entry before cleanup.`);
     }
 
     private scheduleCleanup() {
@@ -501,6 +529,7 @@ class TransportTracker {
         if (this.currentJourney) {
             this.stopCountdown();
             this.cancelExitTimeout(this.currentJourney);
+            this.log(`Cleared journey tracker for ${this.currentJourney.definition.name}.`);
         }
         this.currentJourney = null;
         this.pendingCandidates.clear();
@@ -509,6 +538,14 @@ class TransportTracker {
 
     private emitTimer(payload: TransportTimerPayload | null) {
         this.client.sendEvent("transportTimer", payload);
+    }
+
+    private log(message: string) {
+        console.log(`${LOG_PREFIX} ${message}`);
+    }
+
+    private describeCandidates(journey: JourneyState): string {
+        return describeStopList(journey.definition, journey.candidateIndexes);
     }
 }
 
