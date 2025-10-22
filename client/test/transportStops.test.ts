@@ -193,6 +193,38 @@ describe('transport stop triggers', () => {
     jest.useRealTimers();
   });
 
+  test('outside set pattern selects pending slot without known location', () => {
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    parseLine('Woznica oznajmia gromkim glosem: Postoj - plac w centrum Bialego Mostu. Nastepny przystanek - wies Anchor.');
+    parseLine('Siedzacy na kozle woznica krzyczy glosno: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!');
+
+    client.dispatchEvent('enterLocation', { id: 746 });
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Placisz woznicy i wspinasz sie na czarny stojacy dylizans.');
+
+    const payload = events[events.length - 1] as TransportTimerPayload;
+    expect(payload.label).toBe('Bialy Most → Anchor');
+    expect(payload.total).toBe(23);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   test('exit failure keeps active journey running', () => {
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];

@@ -494,9 +494,13 @@ class TransportTracker {
 
         if (!journey.onBoard) {
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
+            const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
+                const indexes = setGroup && setGroup.length > 0 ? [...setGroup] : [index];
+                this.applyCandidateIndexes(journey, indexes);
+                this.pendingCandidates.set(definition, indexes);
                 this.log(
-                    `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – outside transport with unknown location.`
+                    `Registered set pattern for ${definition.name} outside transport without known location. Candidates: ${this.describeCandidates(journey)}`
                 );
                 return;
             }
@@ -507,7 +511,6 @@ class TransportTracker {
                 return;
             }
 
-            const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             let indexes: number[];
             if (setGroup && setGroup.length > 0) {
                 const matches = setGroup.filter(candidateIndex => definition.stops[candidateIndex].start === locationId);
