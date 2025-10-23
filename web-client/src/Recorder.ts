@@ -1,9 +1,12 @@
-import { saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent } from './recordingStorage';
-import { CommandOptions } from "@client/src/scripts/commandPreserveCaseMode.ts";
+import {saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent} from './recordingStorage';
+import {CommandOptions} from "@client/src/scripts/commandPreserveCaseMode.ts";
+import ArkadiaClient from "./ArkadiaClient.ts";
 
 export interface RecorderHooks {
     processIncomingData(data: string): void;
+
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
+
     emit(event: string, ...args: any[]): void;
 }
 
@@ -19,7 +22,8 @@ export default class Recorder {
     private isPlaying = false;
     private paused = false;
 
-    constructor(private hooks: RecorderHooks) {}
+    constructor(private hooks: RecorderHooks) {
+    }
 
     handleIncoming(message: string) {
         if (this.isRecording) {
@@ -143,15 +147,15 @@ export default class Recorder {
         this.stopPlayback();
         this.isPlaying = true;
         this.hooks.emit('playback.start');
-        Output.send('== Playback start ==');
+        ArkadiaClient.emit("message", '== Playback start ==');
         this.recordedMessages.forEach(ev => {
             if (ev.direction === 'in') {
                 this.hooks.processIncomingData(ev.message);
             } else {
-                Output.send('→ ' + ev.message);
+                ArkadiaClient.emit("message", '→ ' + ev.message);
             }
         });
-        Output.send('== Playback end ==');
+        ArkadiaClient.emit("message", '== Playback end ==');
         this.stopPlayback();
     }
 
@@ -162,7 +166,7 @@ export default class Recorder {
         this.paused = false;
         this.playbackIndex = 0;
         this.hooks.emit('playback.start', this.recordedMessages.length);
-        Output.send('== Playback start ==');
+        ArkadiaClient.emit("message", '== Playback start ==');
         this.hooks.emit('playback.index', 0, this.recordedMessages.length);
         this.scheduleNext(0);
     }
@@ -171,7 +175,7 @@ export default class Recorder {
         if (ev.direction === 'in') {
             this.hooks.processIncomingData(ev.message);
         } else {
-            Output.send('→ ' + ev.message);
+            ArkadiaClient.emit("message", '→ ' + ev.message);
             window.clientExtension.sendCommand(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }
@@ -180,7 +184,7 @@ export default class Recorder {
     private executeCurrent() {
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+            ArkadiaClient.emit("message", '== Playback end ==');
             this.stopPlayback();
             return;
         }
@@ -193,7 +197,7 @@ export default class Recorder {
         if (!this.isPlaying) return;
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
-            Output.send('== Playback end ==');
+            ArkadiaClient.emit("message", '== Playback end ==');
             this.stopPlayback();
             return;
         }
