@@ -25,6 +25,7 @@ import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
+import TriggerLine from "./triggers/TriggerLine";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -434,12 +435,33 @@ export default class Client {
         this.eventTarget.dispatchEvent(new CustomEvent(LINE_START_EVENT))
         const ansiRegex = /\x1b\[[0-9;]*m/g
 
-        line = this.Triggers.parseMultiline(line, type)
-        let split = line.split('\n')
-        if (stripAnsiCodes(split[split.length - 1]) === '') {
+        const triggerEngineActive =
+            typeof this.Triggers.isTriggerEngineActive === 'function'
+                ? this.Triggers.isTriggerEngineActive()
+                : true
+        const multilineInput = new TriggerLine(line, { type }, triggerEngineActive)
+        const multilineResultRaw = this.Triggers.parseMultiline(multilineInput, type) as unknown
+        if (typeof multilineResultRaw === 'string' && multilineResultRaw === SKIP_LINE) {
+            this.inLineProcess = false
+            return ""
+        }
+        const multilineText = multilineResultRaw instanceof TriggerLine
+            ? multilineResultRaw.toAnsiString()
+            : String(multilineResultRaw ?? '')
+        let split = multilineText.split('\n')
+        if (split.length > 0 && stripAnsiCodes(split[split.length - 1]) === '') {
             split.pop()
         }
-        let result = split.map(partial => this.Triggers.parseLine(partial, type)).filter(line => line !== SKIP_LINE).join('\n')
+        const processedParts = split.map(partial => {
+            const lineInput = new TriggerLine(partial, { type }, triggerEngineActive)
+            const processedRaw = this.Triggers.parseLine(lineInput, type) as unknown
+            if (processedRaw instanceof TriggerLine) {
+                return processedRaw.toAnsiString()
+            }
+            return processedRaw as string
+        })
+        const serializedParts = processedParts.filter((part): part is string => part !== SKIP_LINE)
+        let result = serializedParts.join('\n')
         if (!result.startsWith("\x1b")) {
             result = color(255) + result
         }
