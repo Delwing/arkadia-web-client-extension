@@ -13,6 +13,8 @@ interface NpcProps {
     loc: number
 }
 
+const npcKey = (npc: NpcProps) => `${npc.name}-${npc.loc}`
+
 function Npc() {
 
     const [npcs, setNpcs] = useState<NpcProps[]>([])
@@ -37,13 +39,18 @@ function Npc() {
         }
     }, [])
 
-    function downloadNpcs() {
-        updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
-            .then(data => {
-                setNpcs(data)
-                ;(window as any).clientExtension?.sendEvent('npc', data)
-            })
-            .catch(e => console.error('Failed to update NPC data:', e));
+    async function downloadNpcs() {
+        try {
+            const downloaded = await updateIndexedDB<NpcProps[]>(DB_CONFIG, NPC_URL)
+            const downloadedKeys = new Set(downloaded.map(npcKey))
+            const preserved = npcs.filter(npc => !downloadedKeys.has(npcKey(npc)))
+            const merged = [...downloaded, ...preserved]
+            setNpcs(merged)
+            ;(window as any).clientExtension?.sendEvent('npc', merged)
+            void saveNpcs(merged)
+        } catch (e) {
+            console.error('Failed to update NPC data:', e)
+        }
     }
 
     function clearNpcs() {
