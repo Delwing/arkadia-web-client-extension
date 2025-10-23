@@ -1,6 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { getItemSync } from "@client/src/storage";
-import type { Settings } from "@client/src/defaultSettings";
+import type { UiSettings } from "./uiSettings.ts";
 import type { TransportTimerPayload } from "@client/src/types/transport";
 
 export default class TransportTimer {
@@ -11,27 +11,44 @@ export default class TransportTimer {
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("transport-timer");
     this.showTransportLabel = this.getInitialShowTransportLabel();
-    client.on("settings", (settings: Partial<Settings> | undefined) => {
-      if (settings && typeof settings.showTransportLabel === "boolean") {
-        this.showTransportLabel = settings.showTransportLabel;
-        this.update(this.lastPayload);
-      }
-    });
+    this.subscribeToUiSettings();
     client.on("transportTimer", (payload: TransportTimerPayload | null) => this.update(payload));
     this.update(null);
   }
 
   private getInitialShowTransportLabel(): boolean {
-    const stored = getItemSync("settings")?.settings as Partial<Settings> | undefined;
+    const stored = getItemSync("uiSettings")?.uiSettings as Partial<UiSettings> | undefined;
     if (stored && typeof stored.showTransportLabel === "boolean") {
       return stored.showTransportLabel;
     }
     return true;
   }
 
+  private subscribeToUiSettings() {
+    const ext: any = (window as any).clientExtension;
+    const target: EventTarget | undefined = ext?.eventTarget;
+    if (!target) {
+      return;
+    }
+    const handler: EventListener = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<UiSettings>>).detail;
+      if (detail && typeof detail.showTransportLabel === "boolean") {
+        this.showTransportLabel = detail.showTransportLabel;
+        this.update(this.lastPayload);
+      }
+    };
+    target.addEventListener("uiSettings", handler);
+  }
+
   private update(payload: TransportTimerPayload | null) {
     this.lastPayload = payload;
     if (!this.container) return;
+    if (!this.showTransportLabel) {
+      this.container.textContent = "";
+      this.container.className = "";
+      this.container.style.display = "none";
+      return;
+    }
     if (!payload) {
       this.container.textContent = "";
       this.container.className = "";
@@ -39,12 +56,6 @@ export default class TransportTimer {
       return;
     }
     const hasTimer = typeof payload.remaining === "number" && typeof payload.total === "number";
-    if (!this.showTransportLabel && !hasTimer) {
-      this.container.textContent = "";
-      this.container.className = "";
-      this.container.style.display = "none";
-      return;
-    }
     const parts = ["Tr:"];
     if (this.showTransportLabel) {
       parts.push(payload.label);
