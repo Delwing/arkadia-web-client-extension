@@ -41,6 +41,7 @@ import MariborObawa from "./other/Maribor - Obawa.json";
 import Salignac from "./other/Salignac - Nuln.json";
 import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
 import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
+import QuenellesMontlacMerceauxDescloux from "./other/Quenelles - Montlac - Merceaux-Descloux.json";
 
 const BOARD_COMMANDS = new Set([
     "wsiadz na statek",
@@ -119,6 +120,10 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Salignac - Nuln", Salignac as RawTransportDefinition],
     ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
     ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
+    [
+        "Quenelles - Montlac - Merceaux-Descloux",
+        QuenellesMontlacMerceauxDescloux as RawTransportDefinition,
+    ],
 ];
 
 type TimerHandle = ReturnType<typeof setInterval>;

@@ -108,6 +108,71 @@ describe('transport stop triggers', () => {
     jest.useRealTimers();
   });
 
+  test('tracks Quenelles - Montlac - Merceaux-Descloux route from sample log', () => {
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 4659 });
+
+    parseLine('Woznica oznajmia gromkim glosem: Postoj, plac Gillesa le Breton.');
+    parseLine('Woznica dylizansu glosno wola: Nastepny postoj - Montlac!');
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do blekitnego stojacego dylizansu.');
+
+    const lastEvent = () => events[events.length - 1];
+
+    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: null, total: null });
+
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac.');
+    expect(lastEvent()).toMatchObject({ label: 'Montlac → Merceaux-Descloux', remaining: null, total: null });
+
+    parseLine('Woznica wola: Nastepny postoj - Merceaux-Descloux!');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux.');
+    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Parravon', remaining: null, total: null });
+
+    parseLine('Woznica wola: Nastepny postoj - most pod Parravon!');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem.');
+    expect(lastEvent()).toMatchObject({ label: 'Parravon → Merceaux-Descloux', remaining: null, total: null });
+
+    parseLine('Woznica wola: Nastepny postoj - Merceaux-Descloux!');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux.');
+    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Montlac', remaining: null, total: null });
+
+    parseLine('Woznica wola: Nastepny postoj - Montlac!');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac.');
+    expect(lastEvent()).toMatchObject({ label: 'Montlac → Quenelles', remaining: null, total: null });
+
+    parseLine('Woznica wola: Nastepny postoj - Quenelles!');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac Gillesa le Breton.');
+    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: null, total: null });
+
+    emitCommand('wyjscie');
+    expect(lastEvent()).toBeNull();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   test('records transport segment stats when a stop completes', async () => {
     client.dispatchEvent('enterLocation', { id: 5200 });
 
