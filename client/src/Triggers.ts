@@ -1,19 +1,22 @@
 import Client from "./Client";
 import { stripAnsiCodes } from "./stripAnsiCodes";
+import TriggerLine from "./triggers/TriggerLine";
 export { stripAnsiCodes };
 
 type TriggerCallback = (
     rawLine: string,
     line: string,
     matches: RegExpMatchArray,
-    type: string
-) => string | undefined;
+    type: string,
+    triggerLine?: TriggerLine,
+) => string | TriggerLine | undefined;
 
 type TriggerMatchFunction = (
     rawLine: string,
     line: string,
     _matches: RegExpMatchArray | undefined,
-    type: string
+    type: string,
+    triggerLine?: TriggerLine,
 ) => RegExpMatchArray | undefined;
 
 type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
@@ -27,7 +30,7 @@ export interface TriggerOptions {
 export function isType(type: string): TriggerMatchFunction {
     const matches = [] as unknown as RegExpMatchArray;
     matches.index = 0
-    return (_, __, ___, _type) => {
+    return (_raw, _line, _matches, _type) => {
         return _type === type ? matches : undefined;
     };
 }
@@ -65,9 +68,9 @@ export class Trigger {
     ) {
         const child = this.registerChild(
             pattern,
-            (rawLine, line, matches, type) => {
+            (rawLine, line, matches, type, triggerLine) => {
                 this.manager.removeTrigger(child);
-                return callback(rawLine, line, matches, type);
+                return callback(rawLine, line, matches, type, triggerLine);
             },
             tag,
             options
@@ -75,24 +78,28 @@ export class Trigger {
         return child;
     }
 
-    execute(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+    execute(line: TriggerLine, type: string) {
+        const plainLine = line.text.replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         for (const pattern of patterns) {
             if (pattern instanceof RegExp) {
-                matches = line.match(pattern);
+                matches = plainLine.match(pattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
-                const index = !this.options.caseInsensitive ? rawLine.indexOf(patternStr) : rawLine.toLowerCase().indexOf(patternStr.toLowerCase());
+                const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
+                const needle = !this.options.caseInsensitive ? patternStr : patternStr.toLowerCase();
+                const index = haystack.indexOf(needle);
                 if (index > -1) {
                     const end = index + patternStr.length;
-                    matches = [rawLine.substring(index, end)];
+                    const matchedText = plainLine.substring(index, end);
+                    matches = [matchedText] as RegExpMatchArray;
                     matches.index = index;
+                    matches.input = plainLine;
                 }
             } else if (typeof pattern === "function") {
-                matches = pattern(rawLine, line, undefined, type);
+                matches = pattern(line.toAnsiString(), plainLine, undefined, type, line);
             }
             if (matches) {
                 break;
@@ -107,15 +114,33 @@ export class Trigger {
         } else if (this.openInstances.length > 0) {
             matched = true;
         }
+        if (!matches) {
+            line.clearMatches();
+        }
         if (matched) {
             if (matches && this.callback) {
-                rawLine = this.callback(rawLine, line, matches, type) ?? rawLine;
+                line.setMatches({ matches, type, triggerId: this.id });
+                const result = this.callback(
+                    line.toAnsiString(),
+                    plainLine,
+                    matches,
+                    type,
+                    line,
+                );
+                if (this.manager.isTriggerEngineActive()) {
+                    if (result instanceof TriggerLine) {
+                        line = result;
+                    } else if (typeof result === "string") {
+                        line = new TriggerLine(result, line.matches, this.manager.isTriggerEngineActive());
+                        line.setOverrideAnsi(result);
+                    }
+                }
             }
             this.children.forEach(child => {
-                rawLine = child.execute(rawLine, type);
+                line = child.execute(line, type);
             });
         }
-        return rawLine;
+        return line;
     }
 }
 
@@ -125,9 +150,18 @@ export default class Triggers {
     triggers: Map<string, Trigger> = new Map();
     multilineTriggers: Map<string, Trigger> = new Map();
     private tokenTriggers: { words: string[]; trigger: Trigger }[] = [];
+    private triggerEngineActive = true;
 
     constructor(clientExtension: Client) {
         this.clientExtension = clientExtension;
+    }
+
+    isTriggerEngineActive(): boolean {
+        return this.triggerEngineActive;
+    }
+
+    setTriggerEngineActive(active: boolean) {
+        this.triggerEngineActive = active;
     }
 
     private removeByTagRecursive(tag: string, collection: Map<string, Trigger>) {
@@ -155,9 +189,9 @@ export default class Triggers {
     registerOneTimeTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerTrigger(
             pattern,
-            (rawLine, line, matches, type) => {
+            (rawLine, line, matches, type, triggerLine) => {
                 this.removeTrigger(trigger);
-                return callback(rawLine, line, matches, type);
+                return callback(rawLine, line, matches, type, triggerLine);
             },
             tag,
             options
@@ -178,9 +212,9 @@ export default class Triggers {
     registerOneTimeMultilineTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerMultilineTrigger(
             pattern,
-            (rawLine, line, matches, type) => {
+            (rawLine, line, matches, type, triggerLine) => {
                 this.removeTrigger(trigger);
-                return callback(rawLine, line, matches, type);
+                return callback(rawLine, line, matches, type, triggerLine);
             },
             tag,
             options
@@ -205,14 +239,15 @@ export default class Triggers {
     }
 
     parseLine(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
-        const tokens = line
+        let triggerLine = new TriggerLine(rawLine, { type }, this.triggerEngineActive);
+        const plain = stripAnsiCodes(triggerLine.text).replace(/\s$/g, "");
+        const tokens = plain
             .split(/[ \n\t.,!?*()\/\[\]]+/)
             .filter(t => t.length > 0)
             .map(t => t.toLowerCase());
 
         this.triggers.forEach(trigger => {
-            rawLine = trigger.execute(rawLine, type);
+            triggerLine = trigger.execute(triggerLine, type);
         });
 
         this.tokenTriggers.forEach(({ words, trigger }) => {
@@ -225,19 +260,20 @@ export default class Triggers {
                     }
                 }
                 if (found) {
-                    rawLine = trigger.execute(rawLine, type);
+                    triggerLine = trigger.execute(triggerLine, type);
                     break;
                 }
             }
         });
-        return rawLine;
+        return triggerLine.toAnsiString();
     }
 
     parseMultiline(rawLine: string, type: string) {
+        let triggerLine = new TriggerLine(rawLine, { type }, this.triggerEngineActive);
         this.multilineTriggers.forEach(trigger => {
-            rawLine = trigger.execute(rawLine, type);
+            triggerLine = trigger.execute(triggerLine, type);
         });
-        return rawLine;
+        return triggerLine.toAnsiString();
     }
 
 }

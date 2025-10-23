@@ -20,17 +20,43 @@ export interface TriggerMatchMetadata {
     [key: string]: unknown;
 }
 
+function cloneMatches(matches: RegExpMatchArray): RegExpMatchArray {
+    const clone = [...matches] as RegExpMatchArray;
+    if (typeof matches.index === "number") {
+        clone.index = matches.index;
+    }
+    if (typeof matches.input === "string") {
+        clone.input = matches.input;
+    }
+    if (matches.groups) {
+        clone.groups = { ...matches.groups };
+    }
+    return clone;
+}
+
 export default class TriggerLine {
     private readonly buffer: AnsiAwareBuffer;
     private metadata: TriggerMatchMetadata;
+    private readonly mutable: boolean;
+    private overrideAnsi?: string;
 
-    constructor(textOrBuffer: string | AnsiAwareBuffer, metadata: TriggerMatchMetadata = {}) {
+    constructor(
+        textOrBuffer: string | AnsiAwareBuffer,
+        metadata: TriggerMatchMetadata = {},
+        mutable = true,
+    ) {
         if (typeof textOrBuffer === "string") {
             this.buffer = new AnsiAwareBuffer(textOrBuffer);
+            this.overrideAnsi = textOrBuffer;
         } else {
             this.buffer = textOrBuffer.clone();
+            this.overrideAnsi = undefined;
         }
-        this.metadata = { ...metadata };
+        this.metadata = {
+            ...metadata,
+            matches: metadata.matches ? cloneMatches(metadata.matches) : undefined,
+        };
+        this.mutable = mutable;
     }
 
     get text(): string {
@@ -42,11 +68,17 @@ export default class TriggerLine {
     }
 
     get matches(): Readonly<TriggerMatchMetadata> {
-        return { ...this.metadata };
+        return {
+            ...this.metadata,
+            matches: this.metadata.matches ? cloneMatches(this.metadata.matches) : undefined,
+        };
     }
 
     setMatches(metadata: TriggerMatchMetadata): void {
-        this.metadata = { ...metadata };
+        this.metadata = {
+            ...metadata,
+            matches: metadata.matches ? cloneMatches(metadata.matches) : undefined,
+        };
     }
 
     clearMatches(): void {
@@ -54,43 +86,66 @@ export default class TriggerLine {
     }
 
     replace(range: TextRange, text: string, style?: FormatStyle): this {
+        if (!this.mutable) return this;
+        this.overrideAnsi = undefined;
         this.buffer.replace(range, text, style);
         this.refreshMatchMetadata();
         return this;
     }
 
     insert(index: number, text: string, style?: FormatStyle): this {
+        if (!this.mutable) return this;
+        this.overrideAnsi = undefined;
         this.buffer.insert(index, text, style);
         this.refreshMatchMetadata();
         return this;
     }
 
     append(text: string, style?: FormatStyle): this {
+        if (!this.mutable) return this;
+        this.overrideAnsi = undefined;
         this.buffer.append(text, style);
         this.refreshMatchMetadata();
         return this;
     }
 
     prepend(text: string, style?: FormatStyle): this {
+        if (!this.mutable) return this;
+        this.overrideAnsi = undefined;
         this.buffer.prepend(text, style);
         this.refreshMatchMetadata();
         return this;
     }
 
     remove(range: TextRange): this {
+        if (!this.mutable) return this;
+        this.overrideAnsi = undefined;
         this.buffer.remove(range);
         this.refreshMatchMetadata();
         return this;
     }
 
+    isMutable(): boolean {
+        return this.mutable;
+    }
+
     /** @internal */
     toAnsiString(): string {
-        return this.buffer.toAnsiString();
+        return this.overrideAnsi ?? this.buffer.toAnsiString();
     }
 
     /** @internal */
     toHyperlinkSegments(): HyperlinkSegment[] {
         return this.buffer.toHyperlinkSegments();
+    }
+
+    /** @internal */
+    setOverrideAnsi(text?: string): void {
+        this.overrideAnsi = text;
+    }
+
+    toString(): string {
+        return this.toAnsiString();
     }
 
     /**
@@ -105,14 +160,9 @@ export default class TriggerLine {
             this.metadata = { ...this.metadata, matches: undefined };
             return;
         }
-        const clone = [...matches] as RegExpMatchArray;
+        const clone = cloneMatches(matches);
         clone.index = newIndex;
-        if (matches.input) {
-            clone.input = plainText;
-        }
-        if (matches.groups) {
-            clone.groups = { ...matches.groups };
-        }
+        clone.input = plainText;
         this.metadata = { ...this.metadata, matches: clone };
     }
 }
