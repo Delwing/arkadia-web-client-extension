@@ -136,4 +136,32 @@ describe('Triggers', () => {
     const matches = cb.mock.calls[0][2];
     expect(matches[0]).toBe('bar');
   });
+
+  test('regex match index maps to raw position with ansi codes', () => {
+    const triggers = new Triggers({} as any);
+    const raw = '\x1B[22;38;5;42mfoo\x1B[0m bar baz';
+    let captured: number | undefined;
+    triggers.registerTrigger(/bar/, (lineWithAnsi, _plain, matches) => {
+      captured = matches.index;
+      return lineWithAnsi;
+    });
+
+    triggers.parseLine(raw, '');
+
+    expect(captured).toBe(raw.indexOf('bar'));
+  });
+
+  test('regex match index skips clickable sequences', () => {
+    const triggers = new Triggers({} as any);
+    const raw = '{clickOpen:1}foo{clickClose} bar';
+    let captured: number | undefined;
+    triggers.registerTrigger(/bar/, (lineWithTags, _plain, matches) => {
+      captured = matches.index;
+      return lineWithTags;
+    });
+
+    triggers.parseLine(raw, '');
+
+    expect(captured).toBe(raw.indexOf('bar'));
+  });
 });

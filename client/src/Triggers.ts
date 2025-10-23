@@ -1,5 +1,6 @@
 import Client from "./Client";
 import { stripAnsiCodes } from "./stripAnsiCodes";
+import AnsiAwareBuffer from "./AnsiAwareBuffer";
 export { stripAnsiCodes };
 
 type TriggerCallback = (
@@ -76,13 +77,20 @@ export class Trigger {
     }
 
     execute(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+        const buffer = new AnsiAwareBuffer(rawLine);
+        const line = buffer.getPlainText().replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         for (const pattern of patterns) {
             if (pattern instanceof RegExp) {
                 matches = line.match(pattern);
+                if (matches && matches.length > 0) {
+                    const plainIndex = matches.index ?? line.indexOf(matches[0]);
+                    if (plainIndex !== undefined && plainIndex >= 0) {
+                        matches.index = buffer.mapPlainIndexToRaw(plainIndex);
+                    }
+                }
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
                 const index = !this.options.caseInsensitive ? rawLine.indexOf(patternStr) : rawLine.toLowerCase().indexOf(patternStr.toLowerCase());
@@ -205,7 +213,8 @@ export default class Triggers {
     }
 
     parseLine(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+        const buffer = new AnsiAwareBuffer(rawLine);
+        const line = buffer.getPlainText().replace(/\s$/g, "");
         const tokens = line
             .split(/[ \n\t.,!?*()\/\[\]]+/)
             .filter(t => t.length > 0)
