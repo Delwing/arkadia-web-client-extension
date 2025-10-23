@@ -271,9 +271,10 @@ export default class MapHelper {
 
     setMapRoomById(id: number) {
         if (this.currentRoom?.id === id) {
+            this.locationHistory = [id];
             return;
         }
-        this.renderRoomById(id)
+        this.setMapRoom(id)
     }
 
     setMapRoom(room: number) {
