@@ -82,6 +82,7 @@ import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
 import initZaznaczaj from './scripts/zaznaczaj'
+import initTropBind from './scripts/trop'
 import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
 
@@ -172,6 +173,7 @@ export function registerScripts(client: Client) {
     initLocalizers(client)
     initShipLocalizers(client)
     initFollowSpecialExits(client)
+    initTropBind(client)
     initMountain(client)
     initMultibinds(client, aliases)
 
