@@ -85,10 +85,10 @@ export class Trigger {
                 matches = line.match(pattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
-                const index = !this.options.caseInsensitive ? rawLine.indexOf(patternStr) : rawLine.toLowerCase().indexOf(patternStr.toLowerCase());
+                const index = !this.options.caseInsensitive ? line.indexOf(patternStr) : line.toLowerCase().indexOf(patternStr.toLowerCase());
                 if (index > -1) {
                     const end = index + patternStr.length;
-                    matches = [rawLine.substring(index, end)];
+                    matches = [line.substring(index, end)];
                     matches.index = index;
                 }
             } else if (typeof pattern === "function") {

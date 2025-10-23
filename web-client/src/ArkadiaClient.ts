@@ -354,7 +354,7 @@ class ArkadiaClient implements ClientAdapter {
     private sendLine(text: string, type: string, i: number) {
         text = window.clientExtension.onLine(text, type)
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        Output.send(parseAnsiPatterns(text), type);
+        this.emit("message", parseAnsiPatterns(text), type);
         this.emit('line-sent')
     }
 

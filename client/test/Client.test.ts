@@ -11,9 +11,7 @@
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
 jest.mock('../src/main', () => ({
-  __esModule: true,
-  rawInputSend: jest.fn((cmd: string) => (window as any).Input.send(cmd)),
-  rawOutputSend: jest.fn(),
+  __esModule: true
 }));
 
 import Client from '../src/Client';
@@ -237,29 +235,6 @@ test('sendCommand prints echo commands locally', () => {
   client.sendCommand('echo <red> text');
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
   expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
-});
-
-test('onLine sends printed messages after line and restores Output.send', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const originalOutputSend = (window as any).Output.send;
-
-  client.Triggers.parseLine = jest.fn(() => {
-    client.print('printed');
-    return 'processed';
-  });
-
-  const result = client.onLine('line', '');
-
-  const expected = '\x1b[22;38;5;255mprocessed';
-  expect(result).toBe(expected);
-  expect((window as any).Output.send).toBe(originalOutputSend);
-  expect(originalOutputSend).not.toHaveBeenCalled();
-
-  originalOutputSend(result);
-  client.sendEvent('output-sent');
-
-  expect(originalOutputSend).toHaveBeenNthCalledWith(1, expected);
-  expect((global as any).clientAdapterMock.output).toHaveBeenCalledWith('printed', undefined);
 });
 
 test('onLine replaces reset sequences with preceding ANSI code', () => {

@@ -25,6 +25,7 @@ import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
+import {parseAnsiPatterns} from "front-client/src/ansiParser";
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -494,7 +495,7 @@ export default class Client {
             printable = JSON.stringify(printable)
         }
         // @ts-ignore
-        const text = Text.parse_patterns(printable)
+        const text = parseAnsiPatterns(printable)
         this.buffer.push({out: text})
         if (!this.inLineProcess) {
             this.sendEvent('output-sent', 1)

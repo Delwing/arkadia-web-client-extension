@@ -1,7 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import arkadiaClient from "./ArkadiaClient.ts";
-import "./plugin.ts"
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";

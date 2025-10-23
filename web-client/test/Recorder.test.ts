@@ -9,13 +9,12 @@ describe('Recorder playback', () => {
     };
     const recorder = new Recorder(hooks as any);
     (window as any).clientExtension = { sendCommand: jest.fn() };
-    (window as any).Output = { send: jest.fn() };
     recorder.setRecordedMessages([
       { message: 'look', timestamp: 0, direction: 'out' },
     ]);
     jest.useFakeTimers();
     recorder.replayRecordedMessagesTimed();
     jest.runAllTimers();
-    expect((window as any).Output.send).toHaveBeenCalledWith('→ look');
+    expect(hooks.emit).toHaveBeenCalledWith('message', '→ look');
   });
 });
