@@ -34,16 +34,32 @@ function initLogBrowser(): boolean {
   });
 
   let db: IDBDatabase | null = null;
-  interface LogGroup {
-    time: string;
-    elements: HTMLElement[];
+  interface LogLine {
+    element: HTMLElement;
     text: string;
+  }
+
+  interface LogGroup {
+    timestamp: number;
+    time: string;
+    dateTime: string;
+    lines: LogLine[];
+  }
+
+  interface LineMatch {
+    element: HTMLElement;
+    lineIndex: number;
+    matchIndex: number;
+    text: string;
+    lineText: string;
   }
 
   interface SearchResultData {
     group: LogGroup;
-    count: number;
+    matches: LineMatch[];
     button: HTMLButtonElement;
+    count: HTMLSpanElement;
+    activeMatchIndex: number;
   }
 
   let logGroups: LogGroup[] = [];
@@ -121,13 +137,11 @@ function initLogBrowser(): boolean {
     preview.scrollTo({ top: targetTop, behavior: "smooth" });
   }
 
-  function focusLogGroup(group: LogGroup, { scroll }: { scroll: boolean }) {
-    if (group.elements.length === 0) return;
-    const target = group.elements[0];
+  function focusLogMatch(match: LineMatch, { scroll }: { scroll: boolean }) {
     if (scroll) {
-      scrollToPreviewElement(target);
+      scrollToPreviewElement(match.element);
     }
-    highlightPreviewElements(group.elements);
+    highlightPreviewElements([match.element]);
   }
 
   function escapeRegExp(value: string): string {
@@ -176,6 +190,7 @@ function initLogBrowser(): boolean {
     searchNext.disabled = true;
     searchResultsData = [];
     activeResultIndex = -1;
+    clearHighlight();
   }
 
   function renderSearchMessage(message: string) {
@@ -186,6 +201,7 @@ function initLogBrowser(): boolean {
     searchNext.disabled = true;
     searchResultsData = [];
     activeResultIndex = -1;
+    clearHighlight();
     const info = document.createElement("div");
     info.classList.add("logs-search-empty");
     info.textContent = message;
@@ -219,17 +235,61 @@ function initLogBrowser(): boolean {
     return fragment;
   }
 
+  function refreshResultCount(index: number) {
+    const result = searchResultsData[index];
+    if (!result) return;
+    if (activeResultIndex === index) {
+      result.count.textContent = `(${result.activeMatchIndex + 1}/${result.matches.length})`;
+    } else {
+      result.count.textContent = `(${result.matches.length})`;
+    }
+  }
+
+  function refreshAllResultCounts() {
+    searchResultsData.forEach((_, i) => refreshResultCount(i));
+  }
+
   function updateNavigationButtons() {
     if (searchResultsData.length === 0 || activeResultIndex === -1) {
       searchPrev.disabled = true;
       searchNext.disabled = searchResultsData.length === 0;
       return;
     }
-    searchPrev.disabled = activeResultIndex <= 0;
-    searchNext.disabled = activeResultIndex >= searchResultsData.length - 1;
+    const active = searchResultsData[activeResultIndex];
+    const isAtFirst = activeResultIndex === 0 && active.activeMatchIndex === 0;
+    const isAtLast =
+      activeResultIndex === searchResultsData.length - 1 &&
+      active.activeMatchIndex === active.matches.length - 1;
+    searchPrev.disabled = isAtFirst;
+    searchNext.disabled = isAtLast;
   }
 
-  function setActiveResult(index: number, { scrollPreview, ensureVisible }: { scrollPreview: boolean; ensureVisible: boolean }) {
+  function setActiveMatch(
+    resultIndex: number,
+    matchIndex: number,
+    { scrollPreview, ensureVisible }: { scrollPreview: boolean; ensureVisible: boolean },
+  ) {
+    if (resultIndex < 0 || resultIndex >= searchResultsData.length) return;
+    const result = searchResultsData[resultIndex];
+    if (matchIndex < 0 || matchIndex >= result.matches.length) return;
+    result.activeMatchIndex = matchIndex;
+    const match = result.matches[matchIndex];
+    focusLogMatch(match, { scroll: scrollPreview });
+    if (ensureVisible) {
+      result.button.scrollIntoView({ block: "nearest" });
+    }
+    refreshAllResultCounts();
+    updateNavigationButtons();
+  }
+
+  function setActiveResult(
+    index: number,
+    {
+      scrollPreview,
+      ensureVisible,
+      matchIndex,
+    }: { scrollPreview: boolean; ensureVisible: boolean; matchIndex?: number },
+  ) {
     if (index < 0 || index >= searchResultsData.length) {
       return;
     }
@@ -242,14 +302,14 @@ function initLogBrowser(): boolean {
       }
     });
     const active = searchResultsData[index];
-    if (ensureVisible) {
-      active.button.scrollIntoView({ block: "nearest" });
-    }
-    focusLogGroup(active.group, { scroll: scrollPreview });
-    updateNavigationButtons();
+    const targetMatchIndex = Math.min(
+      Math.max(matchIndex ?? (active.activeMatchIndex >= 0 ? active.activeMatchIndex : 0), 0),
+      active.matches.length - 1,
+    );
+    setActiveMatch(index, targetMatchIndex, { scrollPreview, ensureVisible });
   }
 
-  function renderSearchResults(matches: { group: LogGroup; matches: { index: number; text: string }[] }[]) {
+  function renderSearchResults(matches: { group: LogGroup; matches: LineMatch[] }[]) {
     searchResults.innerHTML = "";
     searchResults.hidden = false;
     searchControls.hidden = false;
@@ -261,11 +321,11 @@ function initLogBrowser(): boolean {
       button.classList.add("logs-search-result");
       const timeSpan = document.createElement("span");
       timeSpan.classList.add("logs-search-result-time");
-      timeSpan.textContent = item.group.time;
+      timeSpan.textContent = item.group.dateTime;
       const snippetSpan = document.createElement("span");
       snippetSpan.classList.add("logs-search-result-snippet");
       const firstMatch = item.matches[0];
-      snippetSpan.appendChild(createResultSnippet(item.group.text, firstMatch.index, firstMatch.text));
+      snippetSpan.appendChild(createResultSnippet(firstMatch.lineText, firstMatch.matchIndex, firstMatch.text));
       const countSpan = document.createElement("span");
       countSpan.classList.add("logs-search-result-count");
       countSpan.textContent = `(${item.matches.length})`;
@@ -278,8 +338,10 @@ function initLogBrowser(): boolean {
       searchResults.appendChild(button);
       searchResultsData.push({
         group: item.group,
-        count: item.matches.length,
+        matches: item.matches,
         button,
+        count: countSpan,
+        activeMatchIndex: 0,
       });
     });
     searchResults.scrollTop = 0;
@@ -304,18 +366,27 @@ function initLogBrowser(): boolean {
     }
     const baseFlags = normalizeFlags(regex.flags);
     const globalFlags = `${baseFlags}g`;
-    const results: { group: LogGroup; matches: { index: number; text: string }[] }[] = [];
+    const results: { group: LogGroup; matches: LineMatch[] }[] = [];
     for (const group of logGroups) {
-      if (!group.text) continue;
-      const matcher = new RegExp(regex.source, globalFlags);
-      const groupMatches: { index: number; text: string }[] = [];
-      let match: RegExpExecArray | null;
-      while ((match = matcher.exec(group.text)) !== null) {
-        if (match[0].length === 0) {
-          matcher.lastIndex += 1;
-          continue;
+      const groupMatches: LineMatch[] = [];
+      for (let lineIndex = 0; lineIndex < group.lines.length; lineIndex++) {
+        const line = group.lines[lineIndex];
+        if (!line.text) continue;
+        const matcher = new RegExp(regex.source, globalFlags);
+        let match: RegExpExecArray | null;
+        while ((match = matcher.exec(line.text)) !== null) {
+          if (match[0].length === 0) {
+            matcher.lastIndex += 1;
+            continue;
+          }
+          groupMatches.push({
+            element: line.element,
+            lineIndex,
+            matchIndex: match.index,
+            text: match[0],
+            lineText: line.text,
+          });
         }
-        groupMatches.push({ index: match.index, text: match[0] });
       }
       if (groupMatches.length > 0) {
         results.push({ group, matches: groupMatches });
@@ -417,8 +488,7 @@ function initLogBrowser(): boolean {
       for (const entry of logs) {
         const lines = splitLines(entry.text);
         const time = formatTime(entry.timestamp);
-        const elements: HTMLElement[] = [];
-        const textParts: string[] = [];
+        const lineItems: LogLine[] = [];
         for (const line of lines) {
           const wrapper = document.createElement("div");
           wrapper.classList.add("output_msg");
@@ -437,13 +507,16 @@ function initLogBrowser(): boolean {
           msg.appendChild(contentSpan);
           wrapper.appendChild(msg);
           preview.appendChild(wrapper);
-          elements.push(wrapper);
-          textParts.push(contentSpan.textContent ?? "");
+          lineItems.push({
+            element: wrapper,
+            text: contentSpan.textContent ?? "",
+          });
         }
         logGroups.push({
+          timestamp: entry.timestamp,
           time,
-          elements,
-          text: textParts.join("\n"),
+          dateTime: formatDateTime(entry.timestamp),
+          lines: lineItems,
         });
       }
       preview.scrollTop = preview.scrollHeight;
@@ -529,13 +602,26 @@ function initLogBrowser(): boolean {
   searchInput.addEventListener("input", () => {
     if (!searchInput.value.trim()) {
       clearSearchResults();
-      clearHighlight();
     }
   });
 
   searchPrev.addEventListener("click", () => {
+    if (activeResultIndex === -1) {
+      return;
+    }
+    const active = searchResultsData[activeResultIndex];
+    if (active.activeMatchIndex > 0) {
+      setActiveMatch(activeResultIndex, active.activeMatchIndex - 1, { scrollPreview: true, ensureVisible: false });
+      return;
+    }
     if (activeResultIndex > 0) {
-      setActiveResult(activeResultIndex - 1, { scrollPreview: true, ensureVisible: true });
+      const previousIndex = activeResultIndex - 1;
+      const previous = searchResultsData[previousIndex];
+      setActiveResult(previousIndex, {
+        scrollPreview: true,
+        ensureVisible: true,
+        matchIndex: previous.matches.length - 1,
+      });
     }
   });
 
@@ -544,6 +630,11 @@ function initLogBrowser(): boolean {
       if (searchResultsData.length > 0) {
         setActiveResult(0, { scrollPreview: true, ensureVisible: true });
       }
+      return;
+    }
+    const active = searchResultsData[activeResultIndex];
+    if (active.activeMatchIndex < active.matches.length - 1) {
+      setActiveMatch(activeResultIndex, active.activeMatchIndex + 1, { scrollPreview: true, ensureVisible: false });
       return;
     }
     if (activeResultIndex < searchResultsData.length - 1) {
