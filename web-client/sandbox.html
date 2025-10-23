@@ -512,7 +512,11 @@
                             </div>
                             <button id="logs-search-button" class="btn btn-primary">Szukaj</button>
                         </div>
-                        <div id="logs-search-results" class="logs-search-results border rounded"></div>
+                        <div id="logs-search-controls" class="logs-search-controls" hidden>
+                            <button id="logs-search-prev" class="btn btn-secondary btn-sm" type="button" disabled>Poprzedni</button>
+                            <button id="logs-search-next" class="btn btn-secondary btn-sm" type="button" disabled>Następny</button>
+                        </div>
+                        <div id="logs-search-results" class="logs-search-results border rounded" hidden></div>
                     </div>
                     <div id="logs-preview" class="border"></div>
                 </div>

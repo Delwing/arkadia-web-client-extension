@@ -394,6 +394,12 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
+.logs-search-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 #logs-search-results .logs-search-result {
   display: flex;
   gap: 0.5rem;
@@ -404,10 +410,12 @@ h1 {
   text-align: left;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
+  align-items: flex-start;
 }
 
 #logs-search-results .logs-search-result:hover,
-#logs-search-results .logs-search-result:focus {
+#logs-search-results .logs-search-result:focus,
+#logs-search-results .logs-search-result.logs-search-result-active {
   background-color: rgba(13, 110, 253, 0.1);
   outline: none;
 }
@@ -419,6 +427,23 @@ h1 {
 #logs-search-results .logs-search-result-time {
   color: darkorange;
   min-width: 4.5rem;
+}
+
+#logs-search-results .logs-search-result-snippet {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+#logs-search-results .logs-search-result-count {
+  color: var(--bs-secondary-color);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+#logs-search-results .logs-search-result mark {
+  background-color: rgba(255, 193, 7, 0.35);
+  color: inherit;
+  padding: 0;
 }
 
 #logs-search-results .logs-search-empty {
