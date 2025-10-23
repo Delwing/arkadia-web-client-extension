@@ -46,8 +46,21 @@ function initLogBrowser(): boolean {
     lines: LogLine[];
   }
 
+  interface ParsedLogLine {
+    html: string;
+    text: string;
+  }
+
+  interface ParsedLogGroup {
+    timestamp: number;
+    time: string;
+    dateTime: string;
+    type?: string;
+    lines: ParsedLogLine[];
+  }
+
   interface LineMatch {
-    element: HTMLElement;
+    element: HTMLElement | null;
     lineIndex: number;
     matchIndex: number;
     text: string;
@@ -55,18 +68,33 @@ function initLogBrowser(): boolean {
   }
 
   interface SearchResultData {
-    group: LogGroup;
+    sessionName: string;
+    sessionLabel: string;
+    groupTimestamp: number;
+    groupDateTime: string;
     matches: LineMatch[];
     button: HTMLButtonElement;
     count: HTMLSpanElement;
     activeMatchIndex: number;
   }
 
+  interface RenderableSearchResult {
+    sessionName: string;
+    sessionLabel: string;
+    groupTimestamp: number;
+    groupDateTime: string;
+    matches: LineMatch[];
+  }
+
   let logGroups: LogGroup[] = [];
+  let sessionInfos: { name: string; label: string }[] = [];
   let searchResultsData: SearchResultData[] = [];
   let activeResultIndex = -1;
   let activeHighlight: HTMLElement[] = [];
   let highlightTimeout: number | null = null;
+  let currentSessionName: string | null = null;
+  let searchRequestId = 0;
+  let activeResultRequestId = 0;
 
   function formatTime(ts: number): string {
     const d = new Date(ts);
@@ -86,6 +114,85 @@ function initLogBrowser(): boolean {
   }
 
   const modal = new Modal(modalEl);
+  const textParser = document.createElement("div");
+
+  function formatSessionLabel(name: string): string {
+    if (name.startsWith("session_")) {
+      const ts = parseInt(name.slice("session_".length), 10);
+      if (!Number.isNaN(ts)) {
+        return new Date(ts).toLocaleString();
+      }
+    }
+    return name;
+  }
+
+  function parseLogEntries(entries: LogEntry[]): ParsedLogGroup[] {
+    const groups: ParsedLogGroup[] = [];
+    for (const entry of entries) {
+      const lines: ParsedLogLine[] = [];
+      const parts = splitLines(entry.text);
+      for (const part of parts) {
+        textParser.innerHTML = part;
+        const text = textParser.textContent ?? "";
+        textParser.textContent = "";
+        lines.push({ html: part, text });
+      }
+      groups.push({
+        timestamp: entry.timestamp,
+        time: formatTime(entry.timestamp),
+        dateTime: formatDateTime(entry.timestamp),
+        type: entry.type,
+        lines,
+      });
+    }
+    return groups;
+  }
+
+  async function getSessionData(storeName: string): Promise<ParsedLogGroup[]> {
+    if (!db) {
+      db = await openDb();
+    }
+    if (!db) {
+      return [];
+    }
+    return new Promise(resolve => {
+      let tx: IDBTransaction;
+      try {
+        tx = db!.transaction(storeName, "readonly");
+      } catch {
+        resolve([]);
+        return;
+      }
+      const req = tx.objectStore(storeName).getAll();
+      req.onsuccess = () => {
+        const logs = req.result as LogEntry[];
+        resolve(parseLogEntries(logs));
+      };
+      req.onerror = () => {
+        resolve([]);
+      };
+    });
+  }
+
+  function syncResultElementsForSession(sessionName: string | null) {
+    if (!sessionName || currentSessionName !== sessionName) {
+      return;
+    }
+    const groupByTimestamp = new Map<number, LogGroup>();
+    for (const group of logGroups) {
+      groupByTimestamp.set(group.timestamp, group);
+    }
+    for (const result of searchResultsData) {
+      if (result.sessionName !== sessionName) continue;
+      const group = groupByTimestamp.get(result.groupTimestamp);
+      if (!group) continue;
+      for (const match of result.matches) {
+        const line = group.lines[match.lineIndex];
+        match.element = line?.element ?? null;
+        match.lineText = line?.text ?? match.lineText;
+      }
+    }
+  }
 
   function clearHighlight() {
     if (activeHighlight.length > 0) {
@@ -138,6 +245,9 @@ function initLogBrowser(): boolean {
   }
 
   function focusLogMatch(match: LineMatch, { scroll }: { scroll: boolean }) {
+    if (!match.element) {
+      return;
+    }
     if (scroll) {
       scrollToPreviewElement(match.element);
     }
@@ -282,7 +392,16 @@ function initLogBrowser(): boolean {
     updateNavigationButtons();
   }
 
-  function setActiveResult(
+  async function ensureResultSessionLoaded(result: SearchResultData): Promise<void> {
+    if (currentSessionName === result.sessionName) {
+      syncResultElementsForSession(result.sessionName);
+      return;
+    }
+    select.value = result.sessionName;
+    await loadPreview(result.sessionName, { triggerSearch: false });
+  }
+
+  async function setActiveResult(
     index: number,
     {
       scrollPreview,
@@ -293,6 +412,7 @@ function initLogBrowser(): boolean {
     if (index < 0 || index >= searchResultsData.length) {
       return;
     }
+    const requestId = ++activeResultRequestId;
     activeResultIndex = index;
     searchResultsData.forEach((item, i) => {
       if (i === index) {
@@ -302,6 +422,10 @@ function initLogBrowser(): boolean {
       }
     });
     const active = searchResultsData[index];
+    await ensureResultSessionLoaded(active);
+    if (requestId !== activeResultRequestId) {
+      return;
+    }
     const targetMatchIndex = Math.min(
       Math.max(matchIndex ?? (active.activeMatchIndex >= 0 ? active.activeMatchIndex : 0), 0),
       active.matches.length - 1,
@@ -309,7 +433,7 @@ function initLogBrowser(): boolean {
     setActiveMatch(index, targetMatchIndex, { scrollPreview, ensureVisible });
   }
 
-  function renderSearchResults(matches: { group: LogGroup; matches: LineMatch[] }[]) {
+  function renderSearchResults(matches: RenderableSearchResult[]) {
     searchResults.innerHTML = "";
     searchResults.hidden = false;
     searchControls.hidden = false;
@@ -319,25 +443,35 @@ function initLogBrowser(): boolean {
       const button = document.createElement("button");
       button.type = "button";
       button.classList.add("logs-search-result");
+      const header = document.createElement("div");
+      header.classList.add("logs-search-result-header");
+      const sessionSpan = document.createElement("span");
+      sessionSpan.classList.add("logs-search-result-session");
+      sessionSpan.textContent = item.sessionLabel;
       const timeSpan = document.createElement("span");
       timeSpan.classList.add("logs-search-result-time");
-      timeSpan.textContent = item.group.dateTime;
+      timeSpan.textContent = item.groupDateTime;
+      const countSpan = document.createElement("span");
+      countSpan.classList.add("logs-search-result-count");
+      countSpan.textContent = `(${item.matches.length})`;
+      header.appendChild(sessionSpan);
+      header.appendChild(timeSpan);
+      header.appendChild(countSpan);
       const snippetSpan = document.createElement("span");
       snippetSpan.classList.add("logs-search-result-snippet");
       const firstMatch = item.matches[0];
       snippetSpan.appendChild(createResultSnippet(firstMatch.lineText, firstMatch.matchIndex, firstMatch.text));
-      const countSpan = document.createElement("span");
-      countSpan.classList.add("logs-search-result-count");
-      countSpan.textContent = `(${item.matches.length})`;
-      button.appendChild(timeSpan);
+      button.appendChild(header);
       button.appendChild(snippetSpan);
-      button.appendChild(countSpan);
       button.addEventListener("click", () => {
-        setActiveResult(index, { scrollPreview: true, ensureVisible: true });
+        void setActiveResult(index, { scrollPreview: true, ensureVisible: true });
       });
       searchResults.appendChild(button);
       searchResultsData.push({
-        group: item.group,
+        sessionName: item.sessionName,
+        sessionLabel: item.sessionLabel,
+        groupTimestamp: item.groupTimestamp,
+        groupDateTime: item.groupDateTime,
         matches: item.matches,
         button,
         count: countSpan,
@@ -346,13 +480,13 @@ function initLogBrowser(): boolean {
     });
     searchResults.scrollTop = 0;
     if (searchResultsData.length > 0) {
-      setActiveResult(0, { scrollPreview: true, ensureVisible: true });
+      void setActiveResult(0, { scrollPreview: true, ensureVisible: true });
     } else {
       updateNavigationButtons();
     }
   }
 
-  function runSearch() {
+  async function runSearch() {
     const query = searchInput.value;
     const trimmed = query.trim();
     const { regex, error } = parseSearchQuery(query);
@@ -364,39 +498,61 @@ function initLogBrowser(): boolean {
       renderSearchMessage(error ?? "Nie udało się utworzyć wyrażenia wyszukiwania.");
       return;
     }
+    if (sessionInfos.length === 0) {
+      renderSearchMessage("Brak logów do wyświetlenia.");
+      return;
+    }
+    const requestId = ++searchRequestId;
+    renderSearchMessage("Wyszukiwanie…");
     const baseFlags = normalizeFlags(regex.flags);
     const globalFlags = `${baseFlags}g`;
-    const results: { group: LogGroup; matches: LineMatch[] }[] = [];
-    for (const group of logGroups) {
-      const groupMatches: LineMatch[] = [];
-      for (let lineIndex = 0; lineIndex < group.lines.length; lineIndex++) {
-        const line = group.lines[lineIndex];
-        if (!line.text) continue;
-        const matcher = new RegExp(regex.source, globalFlags);
-        let match: RegExpExecArray | null;
-        while ((match = matcher.exec(line.text)) !== null) {
-          if (match[0].length === 0) {
-            matcher.lastIndex += 1;
-            continue;
+    const results: RenderableSearchResult[] = [];
+    for (const session of sessionInfos) {
+      const groups = await getSessionData(session.name);
+      if (requestId !== searchRequestId) {
+        return;
+      }
+      for (const group of groups) {
+        const groupMatches: LineMatch[] = [];
+        for (let lineIndex = 0; lineIndex < group.lines.length; lineIndex++) {
+          const line = group.lines[lineIndex];
+          if (!line.text) continue;
+          const matcher = new RegExp(regex.source, globalFlags);
+          let match: RegExpExecArray | null;
+          while ((match = matcher.exec(line.text)) !== null) {
+            if (match[0].length === 0) {
+              matcher.lastIndex += 1;
+              continue;
+            }
+            groupMatches.push({
+              element: null,
+              lineIndex,
+              matchIndex: match.index,
+              text: match[0],
+              lineText: line.text,
+            });
           }
-          groupMatches.push({
-            element: line.element,
-            lineIndex,
-            matchIndex: match.index,
-            text: match[0],
-            lineText: line.text,
+        }
+        if (groupMatches.length > 0) {
+          results.push({
+            sessionName: session.name,
+            sessionLabel: session.label,
+            groupTimestamp: group.timestamp,
+            groupDateTime: group.dateTime,
+            matches: groupMatches,
           });
         }
       }
-      if (groupMatches.length > 0) {
-        results.push({ group, matches: groupMatches });
-      }
+    }
+    if (requestId !== searchRequestId) {
+      return;
     }
     if (results.length === 0) {
       renderSearchMessage("Brak wyników.");
       return;
     }
     renderSearchResults(results);
+    syncResultElementsForSession(currentSessionName);
   }
 
   function openDb(): Promise<IDBDatabase> {
@@ -414,34 +570,45 @@ function initLogBrowser(): boolean {
     db?.close();
     db = await openDb();
     select.innerHTML = "";
-    const names: string[] = [];
+    sessionInfos = [];
+    if (!db) {
+      preview.innerHTML = "";
+      logGroups = [];
+      currentSessionName = null;
+      clearHighlight();
+      renderSearchMessage("Brak logów do wyświetlenia.");
+      return;
+    }
+    const available: { name: string; label: string }[] = [];
     for (let i = 0; i < db.objectStoreNames.length; i++) {
       const name = db.objectStoreNames.item(i);
       if (!name) continue;
       const tx = db.transaction(name, "readonly");
       const req = tx.objectStore(name).count();
-      const count = await new Promise<number>((resolve) => {
+      const count = await new Promise<number>(resolve => {
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => resolve(0);
       });
       if (count > 0) {
-        names.push(name);
+        available.push({ name, label: formatSessionLabel(name) });
       }
     }
-    names.sort();
-    for (const name of names) {
+    available.sort((a, b) => a.name.localeCompare(b.name));
+    for (const info of available) {
       const option = document.createElement("option");
-      option.value = name;
-      const ts = parseInt(name.replace("session_", ""), 10);
-      option.textContent = isNaN(ts) ? name : new Date(ts).toLocaleString();
+      option.value = info.name;
+      option.textContent = info.label;
       select.appendChild(option);
     }
-    if (names.length > 0) {
-      select.value = names[names.length - 1];
-      loadPreview(select.value);
+    sessionInfos = available;
+    if (sessionInfos.length > 0) {
+      const latest = sessionInfos[sessionInfos.length - 1];
+      select.value = latest.name;
+      await loadPreview(latest.name);
     } else {
       preview.innerHTML = "";
       logGroups = [];
+      currentSessionName = null;
       clearHighlight();
       renderSearchMessage("Brak logów do wyświetlenia.");
     }
@@ -476,61 +643,64 @@ function initLogBrowser(): boolean {
     return lines;
   }
 
-  function loadPreview(storeName: string) {
+  async function loadPreview(storeName: string, options?: { triggerSearch?: boolean }) {
+    if (!db) {
+      db = await openDb();
+    }
     if (!db) return;
     preview.innerHTML = "";
     clearHighlight();
     logGroups = [];
-    const tx = db.transaction(storeName, "readonly");
-    const req = tx.objectStore(storeName).getAll();
-    req.onsuccess = () => {
-      const logs = req.result as LogEntry[];
-      for (const entry of logs) {
-        const lines = splitLines(entry.text);
-        const time = formatTime(entry.timestamp);
-        const lineItems: LogLine[] = [];
-        for (const line of lines) {
-          const wrapper = document.createElement("div");
-          wrapper.classList.add("output_msg");
-          if (entry.type) {
-            wrapper.classList.add(entry.type);
-          }
-          const msg = document.createElement("div");
-          msg.classList.add("output_msg_text");
-          msg.style.whiteSpace = "pre-wrap";
-          const timeSpan = document.createElement("span");
-          timeSpan.classList.add("log-time");
-          timeSpan.textContent = time;
-          const contentSpan = document.createElement("span");
-          contentSpan.innerHTML = line;
-          msg.appendChild(timeSpan);
-          msg.appendChild(contentSpan);
-          wrapper.appendChild(msg);
-          preview.appendChild(wrapper);
-          lineItems.push({
-            element: wrapper,
-            text: contentSpan.textContent ?? "",
-          });
+    const groups = await getSessionData(storeName);
+    for (const group of groups) {
+      const lineItems: LogLine[] = [];
+      for (const line of group.lines) {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("output_msg");
+        if (group.type) {
+          wrapper.classList.add(group.type);
         }
-        logGroups.push({
-          timestamp: entry.timestamp,
-          time,
-          dateTime: formatDateTime(entry.timestamp),
-          lines: lineItems,
+        const msg = document.createElement("div");
+        msg.classList.add("output_msg_text");
+        msg.style.whiteSpace = "pre-wrap";
+        const timeSpan = document.createElement("span");
+        timeSpan.classList.add("log-time");
+        timeSpan.textContent = group.time;
+        const contentSpan = document.createElement("span");
+        contentSpan.innerHTML = line.html;
+        msg.appendChild(timeSpan);
+        msg.appendChild(contentSpan);
+        wrapper.appendChild(msg);
+        preview.appendChild(wrapper);
+        lineItems.push({
+          element: wrapper,
+          text: contentSpan.textContent ?? "",
         });
       }
-      preview.scrollTop = preview.scrollHeight;
-      if (searchInput.value.trim()) {
-        runSearch();
-      } else {
-        clearSearchResults();
-      }
-    };
+      logGroups.push({
+        timestamp: group.timestamp,
+        time: group.time,
+        dateTime: group.dateTime,
+        lines: lineItems,
+      });
+    }
+    currentSessionName = storeName;
+    preview.scrollTop = preview.scrollHeight;
+    syncResultElementsForSession(storeName);
+    if (options?.triggerSearch === false) {
+      updateNavigationButtons();
+      return;
+    }
+    if (searchInput.value.trim()) {
+      void runSearch();
+    } else {
+      clearSearchResults();
+    }
   }
 
   select.addEventListener("change", () => {
     if (select.value) {
-      loadPreview(select.value);
+      void loadPreview(select.value);
     }
   });
 
@@ -589,13 +759,13 @@ function initLogBrowser(): boolean {
   });
 
   searchButton.addEventListener("click", () => {
-    runSearch();
+    void runSearch();
   });
 
   searchInput.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       event.preventDefault();
-      runSearch();
+      void runSearch();
     }
   });
 
@@ -606,40 +776,44 @@ function initLogBrowser(): boolean {
   });
 
   searchPrev.addEventListener("click", () => {
-    if (activeResultIndex === -1) {
-      return;
-    }
-    const active = searchResultsData[activeResultIndex];
-    if (active.activeMatchIndex > 0) {
-      setActiveMatch(activeResultIndex, active.activeMatchIndex - 1, { scrollPreview: true, ensureVisible: false });
-      return;
-    }
-    if (activeResultIndex > 0) {
-      const previousIndex = activeResultIndex - 1;
-      const previous = searchResultsData[previousIndex];
-      setActiveResult(previousIndex, {
-        scrollPreview: true,
-        ensureVisible: true,
-        matchIndex: previous.matches.length - 1,
-      });
-    }
+    void (async () => {
+      if (activeResultIndex === -1) {
+        return;
+      }
+      const active = searchResultsData[activeResultIndex];
+      if (active.activeMatchIndex > 0) {
+        setActiveMatch(activeResultIndex, active.activeMatchIndex - 1, { scrollPreview: true, ensureVisible: false });
+        return;
+      }
+      if (activeResultIndex > 0) {
+        const previousIndex = activeResultIndex - 1;
+        const previous = searchResultsData[previousIndex];
+        await setActiveResult(previousIndex, {
+          scrollPreview: true,
+          ensureVisible: true,
+          matchIndex: previous.matches.length - 1,
+        });
+      }
+    })();
   });
 
   searchNext.addEventListener("click", () => {
-    if (activeResultIndex === -1) {
-      if (searchResultsData.length > 0) {
-        setActiveResult(0, { scrollPreview: true, ensureVisible: true });
+    void (async () => {
+      if (activeResultIndex === -1) {
+        if (searchResultsData.length > 0) {
+          await setActiveResult(0, { scrollPreview: true, ensureVisible: true });
+        }
+        return;
       }
-      return;
-    }
-    const active = searchResultsData[activeResultIndex];
-    if (active.activeMatchIndex < active.matches.length - 1) {
-      setActiveMatch(activeResultIndex, active.activeMatchIndex + 1, { scrollPreview: true, ensureVisible: false });
-      return;
-    }
-    if (activeResultIndex < searchResultsData.length - 1) {
-      setActiveResult(activeResultIndex + 1, { scrollPreview: true, ensureVisible: true });
-    }
+      const active = searchResultsData[activeResultIndex];
+      if (active.activeMatchIndex < active.matches.length - 1) {
+        setActiveMatch(activeResultIndex, active.activeMatchIndex + 1, { scrollPreview: true, ensureVisible: false });
+        return;
+      }
+      if (activeResultIndex < searchResultsData.length - 1) {
+        await setActiveResult(activeResultIndex + 1, { scrollPreview: true, ensureVisible: true });
+      }
+    })();
   });
 
   clearSearchResults();
