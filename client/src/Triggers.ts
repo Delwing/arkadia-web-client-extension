@@ -238,8 +238,11 @@ export default class Triggers {
         }
     }
 
-    parseLine(rawLine: string, type: string) {
-        let triggerLine = new TriggerLine(rawLine, { type }, this.triggerEngineActive);
+    parseLine(rawLine: string | TriggerLine, type: string): string {
+        let triggerLine =
+            rawLine instanceof TriggerLine
+                ? rawLine
+                : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
         const plain = stripAnsiCodes(triggerLine.text).replace(/\s$/g, "");
         const tokens = plain
             .split(/[ \n\t.,!?*()\/\[\]]+/)
@@ -268,8 +271,11 @@ export default class Triggers {
         return triggerLine.toAnsiString();
     }
 
-    parseMultiline(rawLine: string, type: string) {
-        let triggerLine = new TriggerLine(rawLine, { type }, this.triggerEngineActive);
+    parseMultiline(rawLine: string | TriggerLine, type: string): string {
+        let triggerLine =
+            rawLine instanceof TriggerLine
+                ? rawLine
+                : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
         this.multilineTriggers.forEach(trigger => {
             triggerLine = trigger.execute(triggerLine, type);
         });
