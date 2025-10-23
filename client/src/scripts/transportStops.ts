@@ -814,7 +814,18 @@ class TransportTracker {
         }
         const index = this.determineActiveIndex(journey);
         if (index === undefined) {
-            this.emitTimer(null);
+            const fallbackIndex = this.selectUnknownDurationCandidate(journey);
+            if (fallbackIndex === undefined) {
+                this.emitTimer(null);
+                return;
+            }
+            const fallbackStop = journey.definition.stops[fallbackIndex];
+            const payload: TransportTimerPayload = {
+                label: formatLabel(journey.definition, fallbackStop),
+                remaining: null,
+                total: null,
+            };
+            this.emitTimer(payload);
             return;
         }
         const stop = journey.definition.stops[index];
@@ -829,6 +840,19 @@ class TransportTracker {
             total: typeof stop.time === "number" ? stop.time : null,
         };
         this.emitTimer(payload);
+    }
+
+    private selectUnknownDurationCandidate(journey: JourneyState): number | undefined {
+        for (const candidate of journey.candidateIndexes) {
+            const stop = journey.definition.stops[candidate];
+            if (!stop) {
+                continue;
+            }
+            if (typeof stop.time !== "number" || Number.isNaN(stop.time)) {
+                return candidate;
+            }
+        }
+        return undefined;
     }
 }
 

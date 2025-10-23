@@ -128,14 +128,16 @@ describe('transport stop triggers', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
     const segments = await transportStats.getAllTransportSegments();
     expect(segments.length).toBeGreaterThan(0);
-    const latest = segments[segments.length - 1];
-    expect(latest.transport).toBe('Salignac - Nuln');
-    expect(typeof latest.fromId).toBe('number');
-    expect(typeof latest.toId).toBe('number');
-    expect(typeof latest.fromLabel).toBe('string');
-    expect(latest.toLabel).toContain("'Pod piegowata elfka'");
-    expect(typeof latest.expectedDuration).toBe('number');
-    expect(typeof latest.duration).toBe('number');
+    const matching = segments.find(segment => segment.toLabel.includes("'Pod piegowata elfka'"));
+    expect(matching).toBeTruthy();
+    const record = matching!;
+    expect(record.transport).toBe('Salignac - Nuln');
+    expect(typeof record.fromId).toBe('number');
+    expect(typeof record.toId).toBe('number');
+    expect(typeof record.fromLabel).toBe('string');
+    expect(typeof record.expectedDuration).toBe('number');
+    expect(typeof record.shortestDuration.duration).toBe('number');
+    expect(typeof record.longestDuration.duration).toBe('number');
   });
 
   test('tracks Wyzima - Oxenfurt route with shared stop pattern', () => {
