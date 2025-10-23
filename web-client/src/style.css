@@ -766,6 +766,22 @@ h1 {
   display: none;
 }
 
+#transport-timer {
+  display: none;
+}
+
+#transport-timer.green {
+  color: springgreen;
+}
+
+#transport-timer.yellow {
+  color: yellow;
+}
+
+#transport-timer.red {
+  color: tomato;
+}
+
 #lamp-timer.green {
   color: springgreen;
 }

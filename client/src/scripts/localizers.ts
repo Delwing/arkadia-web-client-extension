@@ -68,14 +68,14 @@ export default function initLocalizers(client: Client) {
         { pattern: 'Postoj - rozdroza niedaleko Piany', roomId: 764 },
         { pattern: 'Postoj - wies na podgrodziu Oxenfurtu', roomId: 790 },
         // maribor-grabowa
-        { pattern: 'Postoj, przystan powozowa', roomId: 180 },
+        { pattern: 'Postoj, przystan powozowa.', roomId: 180 },
         { pattern: 'Postoj, na dziedzincu zajazdu', roomId: 3343 },
         { pattern: 'Postoj, centralny plac wioski', roomId: 3457 },
         { pattern: 'Postoj, placyk w Grabowej Buchcie', roomId: 3525 },
         // maribor-verden
-        { pattern: 'Postoj, lesne rozdroze', roomId: 536 },
+        { pattern: 'Postoj, lesne rozdroze.', roomId: 536 },
         { pattern: 'Postoj, przed zajazdem.', roomId: 3043 },
-        { pattern: 'placyk w centrum wsi', roomId: 3221 },
+        { pattern: 'Postoj, placyk w centrum wsi.', roomId: 3221 },
         // gelibol-tretogor
         { pattern: 'Postoj, podgrodzie Tretogoru.', roomId: 3926 },
         { pattern: 'Postoj, glowny plac miasta.', roomId: 4163 },

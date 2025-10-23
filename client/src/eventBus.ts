@@ -1,4 +1,5 @@
 import type { LetterSubmitPayload } from "./types/letter";
+import type { TransportTimerPayload } from "./types/transport";
 
 export interface KnownEvents {
     'command': string;
@@ -26,6 +27,7 @@ export interface KnownEvents {
     'zaskTimer': { seconds: number; ok: boolean } | null;
     'moveModeChanged': number;
     'ping': number | null;
+    'transportTimer': TransportTimerPayload | null;
 }
 
 export type ClientEvents = KnownEvents & {
