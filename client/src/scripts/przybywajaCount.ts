@@ -1,7 +1,7 @@
 import Client from "../Client";
 
 export default function initPrzybywajaCount(client: Client) {
-    const pattern = /^[ >]*(.*) przybywaja/;
+    const pattern = /^[ >]*(.*) przybywaja\b/;
     client.Triggers.registerTrigger(pattern, (raw, _line, matches) => {
         const names = matches[1]
             .split(/,| i /)
