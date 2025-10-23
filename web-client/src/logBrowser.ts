@@ -67,6 +67,15 @@ function initLogBrowser(): boolean {
     lineText: string;
   }
 
+  interface SearchSessionData {
+    sessionName: string;
+    sessionLabel: string;
+    container: HTMLElement;
+    count: HTMLSpanElement;
+    resultsContainer: HTMLElement;
+    totalMatches: number;
+  }
+
   interface SearchResultData {
     sessionName: string;
     sessionLabel: string;
@@ -76,6 +85,7 @@ function initLogBrowser(): boolean {
     button: HTMLButtonElement;
     count: HTMLSpanElement;
     activeMatchIndex: number;
+    session: SearchSessionData;
   }
 
   interface RenderableSearchResult {
@@ -89,7 +99,9 @@ function initLogBrowser(): boolean {
   let logGroups: LogGroup[] = [];
   let sessionInfos: { name: string; label: string }[] = [];
   let searchResultsData: SearchResultData[] = [];
+  let searchSessionsData: SearchSessionData[] = [];
   let activeResultIndex = -1;
+  let activeSession: SearchSessionData | null = null;
   let activeHighlight: HTMLElement[] = [];
   let highlightTimeout: number | null = null;
   let currentSessionName: string | null = null;
@@ -299,7 +311,9 @@ function initLogBrowser(): boolean {
     searchPrev.disabled = true;
     searchNext.disabled = true;
     searchResultsData = [];
+    searchSessionsData = [];
     activeResultIndex = -1;
+    activeSession = null;
     clearHighlight();
   }
 
@@ -310,7 +324,9 @@ function initLogBrowser(): boolean {
     searchPrev.disabled = true;
     searchNext.disabled = true;
     searchResultsData = [];
+    searchSessionsData = [];
     activeResultIndex = -1;
+    activeSession = null;
     clearHighlight();
     const info = document.createElement("div");
     info.classList.add("logs-search-empty");
@@ -357,6 +373,17 @@ function initLogBrowser(): boolean {
 
   function refreshAllResultCounts() {
     searchResultsData.forEach((_, i) => refreshResultCount(i));
+  }
+
+  function setActiveSession(session: SearchSessionData | null) {
+    activeSession = session;
+    for (const entry of searchSessionsData) {
+      if (entry === session) {
+        entry.container.classList.add("logs-search-session-active");
+      } else {
+        entry.container.classList.remove("logs-search-session-active");
+      }
+    }
   }
 
   function updateNavigationButtons() {
@@ -426,6 +453,7 @@ function initLogBrowser(): boolean {
     if (requestId !== activeResultRequestId) {
       return;
     }
+    setActiveSession(active.session);
     const targetMatchIndex = Math.min(
       Math.max(matchIndex ?? (active.activeMatchIndex >= 0 ? active.activeMatchIndex : 0), 0),
       active.matches.length - 1,
@@ -438,8 +466,41 @@ function initLogBrowser(): boolean {
     searchResults.hidden = false;
     searchControls.hidden = false;
     searchResultsData = [];
+    searchSessionsData = [];
     activeResultIndex = -1;
-    matches.forEach((item, index) => {
+    activeSession = null;
+    const sessionsByName = new Map<string, SearchSessionData>();
+    matches.forEach(item => {
+      let session = sessionsByName.get(item.sessionName);
+      if (!session) {
+        const sessionContainer = document.createElement("div");
+        sessionContainer.classList.add("logs-search-session");
+        const header = document.createElement("div");
+        header.classList.add("logs-search-session-header");
+        const title = document.createElement("span");
+        title.classList.add("logs-search-session-title");
+        title.textContent = item.sessionLabel;
+        const count = document.createElement("span");
+        count.classList.add("logs-search-session-count");
+        count.textContent = "(0)";
+        header.appendChild(title);
+        header.appendChild(count);
+        const resultsContainer = document.createElement("div");
+        resultsContainer.classList.add("logs-search-session-results");
+        sessionContainer.appendChild(header);
+        sessionContainer.appendChild(resultsContainer);
+        searchResults.appendChild(sessionContainer);
+        session = {
+          sessionName: item.sessionName,
+          sessionLabel: item.sessionLabel,
+          container: sessionContainer,
+          count,
+          resultsContainer,
+          totalMatches: 0,
+        };
+        sessionsByName.set(item.sessionName, session);
+        searchSessionsData.push(session);
+      }
       const button = document.createElement("button");
       button.type = "button";
       button.classList.add("logs-search-result");
@@ -463,10 +524,13 @@ function initLogBrowser(): boolean {
       snippetSpan.appendChild(createResultSnippet(firstMatch.lineText, firstMatch.matchIndex, firstMatch.text));
       button.appendChild(header);
       button.appendChild(snippetSpan);
+      const resultIndex = searchResultsData.length;
       button.addEventListener("click", () => {
-        void setActiveResult(index, { scrollPreview: true, ensureVisible: true });
+        void setActiveResult(resultIndex, { scrollPreview: true, ensureVisible: true });
       });
-      searchResults.appendChild(button);
+      session.resultsContainer.appendChild(button);
+      session.totalMatches += item.matches.length;
+      session.count.textContent = `(${session.totalMatches})`;
       searchResultsData.push({
         sessionName: item.sessionName,
         sessionLabel: item.sessionLabel,
@@ -476,6 +540,7 @@ function initLogBrowser(): boolean {
         button,
         count: countSpan,
         activeMatchIndex: 0,
+        session,
       });
     });
     searchResults.scrollTop = 0;

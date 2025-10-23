@@ -394,6 +394,43 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
+.logs-search-session {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.logs-search-session:last-child {
+  border-bottom: 0;
+}
+
+.logs-search-session-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
+.logs-search-session-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.logs-search-session-count {
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+.logs-search-session-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-search-session-active .logs-search-session-header {
+  color: var(--text-primary);
+  background-color: rgba(13, 110, 253, 0.08);
+}
+
 .logs-search-controls {
   display: flex;
   gap: 0.5rem;
