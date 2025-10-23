@@ -55,8 +55,7 @@ const BOARD_COMMANDS = new Set([
 ]);
 
 const EXIT_FAILURE_PATTERNS: RegExp[] = [
-    /^Wolisz nie probowac wysiasc z jadacego dylizansu\.$/,
-    /^Wolisz nie probowac wysiasc z jadacego wozu\.$/,
+    /^Wolisz nie probowac wysiasc z jadacego .*\.$/,
 ];
 
 const EXIT_TIMEOUT_MS = 30_000;
