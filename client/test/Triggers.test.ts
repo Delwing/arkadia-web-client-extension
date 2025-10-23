@@ -136,4 +136,67 @@ describe('Triggers', () => {
     const matches = cb.mock.calls[0][2];
     expect(matches[0]).toBe('bar');
   });
+
+  test('triggerLine replace preserves ANSI formatting without manual handling', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerTrigger(/Azure/, (_raw, _line, matches, _type, triggerLine) => {
+      expect(triggerLine).toBeDefined();
+      triggerLine!.replace([matches.index!, matches.index! + matches[0].length], 'Blue');
+      return undefined;
+    });
+
+    const result = triggers.parseLine('\u001b[34mAzure\u001b[0m sea', '');
+
+    expect(result).toBe('\u001b[34mBlue\u001b[0m sea');
+  });
+
+  test('triggerLine insert retains hyperlink metadata', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerTrigger(/Map/, (_raw, _line, matches, _type, triggerLine) => {
+      expect(triggerLine).toBeDefined();
+      triggerLine!.insert(matches.index! + matches[0].length, ' link');
+      return undefined;
+    });
+
+    const raw = '{clickOpen:9:map}Map{clickClose} ahead';
+    const result = triggers.parseLine(raw, '');
+
+    expect(result).toBe('{clickOpen:9:map}Map link{clickClose} ahead');
+  });
+
+  test('multiline triggers keep plain-text indices aligned with metadata', () => {
+    const triggers = new Triggers({} as any);
+    let observedIndex: number | undefined;
+    triggers.registerMultilineTrigger(/Second/, (_raw, _line, matches, _type, triggerLine) => {
+      expect(triggerLine).toBeDefined();
+      const metadata = triggerLine!.matches.matches;
+      expect(metadata?.index).toBe(matches.index);
+      expect(triggerLine!.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Second');
+      observedIndex = matches.index;
+      return undefined;
+    });
+
+    const raw = '\u001b[31mFirst\u001b[0m line\n{clickOpen:7}Second{clickClose} line';
+    triggers.parseMultiline(raw, '');
+
+    expect(observedIndex).toBe('First line'.length + 1);
+  });
+
+  test('token triggers expose plain-text indices despite formatting', () => {
+    const triggers = new Triggers({} as any);
+    let observedIndex: number | undefined;
+    triggers.registerTokenTrigger('Eamon', (_raw, _line, matches, _type, triggerLine) => {
+      expect(triggerLine).toBeDefined();
+      const metadata = triggerLine!.matches.matches;
+      expect(metadata?.index).toBe(matches.index);
+      expect(triggerLine!.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Eamon');
+      observedIndex = matches.index;
+      return undefined;
+    });
+
+    const raw = '\u001b[32mEamon\u001b[0m arrives in style';
+    triggers.parseLine(raw, '');
+
+    expect(observedIndex).toBe(0);
+  });
 });
