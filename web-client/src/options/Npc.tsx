@@ -112,7 +112,7 @@ function Npc() {
     return (
         <div className="m-2">
             <div className="mb-2 d-flex align-items-center gap-2">
-                <Button variant="primary" size="sm" onClick={downloadNpcs}>Pobierz</Button>
+                <Button variant="primary" size="sm" onClick={downloadNpcs}>Aktualizuj</Button>
                 <Button variant="secondary" size="sm" onClick={exportNpcs}>Eksport</Button>
                 <Button variant="danger" size="sm" onClick={clearNpcs}>Wyczyść</Button>
                 <Form.Control
