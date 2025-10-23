@@ -505,6 +505,20 @@
                         <select id="logs-session-select" class="form-select"></select>
                         <button id="logs-download" class="btn btn-secondary">Pobierz</button>
                     </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex gap-2 align-items-end flex-wrap">
+                            <div class="flex-grow-1">
+                                <label for="logs-search-input" class="form-label mb-1">Szukaj w logach</label>
+                                <input id="logs-search-input" class="form-control" placeholder="Fraza lub /wzorzec/">
+                            </div>
+                            <button id="logs-search-button" class="btn btn-primary">Szukaj</button>
+                        </div>
+                        <div id="logs-search-controls" class="logs-search-controls" hidden>
+                            <button id="logs-search-prev" class="btn btn-secondary btn-sm" type="button" disabled>Poprzedni</button>
+                            <button id="logs-search-next" class="btn btn-secondary btn-sm" type="button" disabled>Następny</button>
+                        </div>
+                        <div id="logs-search-results" class="logs-search-results border rounded" hidden></div>
+                    </div>
                     <div id="logs-preview" class="border"></div>
                 </div>
             </div>
