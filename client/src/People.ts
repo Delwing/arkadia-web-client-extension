@@ -1,7 +1,7 @@
 import { loadPeople, type PersonEntry } from './peopleLoader';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
-import { mapAnsi, replacePlainSegment, rawIndexToPlain, type AnsiMap } from './ansiMapping';
+import { mapAnsi, replacePlainSegment, type AnsiMap } from './ansiMapping';
 
 export default class People {
 
@@ -70,10 +70,8 @@ export default class People {
 
             const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
                 const mapping = mapAnsi(rawLine)
-                const rawStart = matches.index || 0
-                const rawEnd = rawStart + matches[0].length
-                const startPlain = rawIndexToPlain(mapping, rawStart)
-                const endPlain = rawIndexToPlain(mapping, rawEnd)
+                const startPlain = matches.index ?? 0
+                const endPlain = startPlain + matches[0].length
                 const suffixPlain = mapping.plain.slice(endPlain)
                 const nextWord = suffixPlain
                     .toLowerCase()
@@ -92,10 +90,8 @@ export default class People {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
                         const mapping = mapAnsi(rawLine)
-                        const rawStart = matches.index || 0
-                        const rawEnd = rawStart + matches[0].length
-                        const startPlain = rawIndexToPlain(mapping, rawStart)
-                        const endPlain = rawIndexToPlain(mapping, rawEnd)
+                        const startPlain = matches.index ?? 0
+                        const endPlain = startPlain + matches[0].length
                         return this.buildNameHighlight(rawLine, mapping, startPlain, endPlain, chosenColor)
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
