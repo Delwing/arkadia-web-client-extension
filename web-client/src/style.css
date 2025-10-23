@@ -260,6 +260,40 @@ input::placeholder {
   color: var(--text-secondary);
 }
 
+.npc-table {
+  width: 100%;
+}
+
+.npc-table col.npc-table__location-col {
+  width: 5ch;
+}
+
+.npc-table col.npc-table__actions-col {
+  width: 3.25rem;
+}
+
+.npc-location {
+  text-align: center;
+}
+
+.npc-location__value {
+  display: inline-block;
+  width: 5ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.npc-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.npc-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
 .dropdown-menu {
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);

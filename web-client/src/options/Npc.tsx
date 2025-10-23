@@ -124,17 +124,31 @@ function Npc() {
                     style={{width: '100%', maxWidth: '160px'}}
                 />
             </div>
-            <Table bordered size="sm" hover className="table-modern table-zebra">
+            <Table bordered size="sm" hover className="table-modern table-zebra npc-table">
+                <colgroup>
+                    <col />
+                    <col className="npc-table__location-col" />
+                    <col className="npc-table__actions-col" />
+                </colgroup>
                 <tbody className="align-middle">
                 {npcs
                     .filter(item => item.name.toLowerCase().includes(filter.toLowerCase()))
                     .sort((a, b) => a.name.localeCompare(b.name))
                     .map((item) => (
                         <tr key={item.name + '-' + item.loc}>
-                            <td>{item.name}</td>
-                            <td>{item.loc}</td>
-                            <td>
-                                <Button variant="danger" size="sm" onClick={() => deleteNpc(item)}><TiDelete/></Button>
+                            <td className="npc-name">{item.name}</td>
+                            <td className="npc-location">
+                                <span className="npc-location__value">{item.loc}</span>
+                            </td>
+                            <td className="npc-actions text-end">
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => deleteNpc(item)}
+                                    className="npc-delete-button"
+                                >
+                                    <TiDelete/>
+                                </Button>
                             </td>
                         </tr>
                     ))}
