@@ -386,6 +386,46 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
+#logs-search-results {
+  max-height: 12rem;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.775rem;
+  background-color: var(--bs-body-bg);
+}
+
+#logs-search-results .logs-search-result {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: transparent;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+#logs-search-results .logs-search-result:hover,
+#logs-search-results .logs-search-result:focus {
+  background-color: rgba(13, 110, 253, 0.1);
+  outline: none;
+}
+
+#logs-search-results .logs-search-result:last-child {
+  border-bottom: 0;
+}
+
+#logs-search-results .logs-search-result-time {
+  color: darkorange;
+  min-width: 4.5rem;
+}
+
+#logs-search-results .logs-search-empty {
+  padding: 0.5rem 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
 #logs-preview .output_msg_text {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -394,6 +434,11 @@ h1 {
 #logs-preview .log-time {
   color: darkorange;
   padding-right: 0.5rem;
+}
+
+#logs-preview .logs-preview-highlight {
+  background-color: rgba(255, 193, 7, 0.2);
+  outline: 1px solid rgba(255, 193, 7, 0.6);
 }
 
 #split-bottom {

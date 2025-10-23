@@ -17,7 +17,10 @@ function initLogBrowser(): boolean {
   const preview = document.getElementById("logs-preview") as HTMLElement | null;
   const download = document.getElementById("logs-download") as HTMLButtonElement | null;
   const enabled = document.getElementById("logs-enabled") as HTMLInputElement | null;
-  if (!button || !modalEl || !select || !preview || !download || !enabled) return false;
+  const searchInput = document.getElementById("logs-search-input") as HTMLInputElement | null;
+  const searchButton = document.getElementById("logs-search-button") as HTMLButtonElement | null;
+  const searchResults = document.getElementById("logs-search-results") as HTMLElement | null;
+  if (!button || !modalEl || !select || !preview || !download || !enabled || !searchInput || !searchButton || !searchResults) return false;
 
   storage.getItem("loggingEnabled").then(res => {
     enabled.checked = res?.loggingEnabled !== false;
@@ -28,6 +31,9 @@ function initLogBrowser(): boolean {
   });
 
   let db: IDBDatabase | null = null;
+  let previewEntries: { element: HTMLElement; text: string; time: string }[] = [];
+  let activeHighlight: HTMLElement | null = null;
+  let highlightTimeout: number | null = null;
 
   function formatTime(ts: number): string {
     const d = new Date(ts);
@@ -47,6 +53,151 @@ function initLogBrowser(): boolean {
   }
 
   const modal = new Modal(modalEl);
+
+  function clearHighlight() {
+    if (activeHighlight) {
+      activeHighlight.classList.remove("logs-preview-highlight");
+      activeHighlight = null;
+    }
+    if (highlightTimeout !== null) {
+      window.clearTimeout(highlightTimeout);
+      highlightTimeout = null;
+    }
+  }
+
+  function highlightPreviewEntry(element: HTMLElement) {
+    if (activeHighlight && activeHighlight !== element) {
+      activeHighlight.classList.remove("logs-preview-highlight");
+    }
+    if (highlightTimeout !== null) {
+      window.clearTimeout(highlightTimeout);
+    }
+    element.classList.add("logs-preview-highlight");
+    activeHighlight = element;
+    highlightTimeout = window.setTimeout(() => {
+      element.classList.remove("logs-preview-highlight");
+      if (activeHighlight === element) {
+        activeHighlight = null;
+      }
+      highlightTimeout = null;
+    }, 2000);
+  }
+
+  function scrollToPreviewEntry(element: HTMLElement) {
+    const containerRect = preview.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const offset = elementRect.top - containerRect.top;
+    const targetTop = Math.max(preview.scrollTop + offset - preview.clientHeight / 2, 0);
+    preview.scrollTo({ top: targetTop, behavior: "smooth" });
+    highlightPreviewEntry(element);
+  }
+
+  function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function normalizeFlags(flags: string): string {
+    const filtered = flags.replace(/g/g, "");
+    const parts = filtered.split("").filter(part => part !== "");
+    return Array.from(new Set(parts)).join("");
+  }
+
+  function parseSearchQuery(query: string): { regex: RegExp | null; error?: string } {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return { regex: null };
+    }
+    if (trimmed.startsWith("/")) {
+      let escaped = false;
+      for (let i = 1; i < trimmed.length; i++) {
+        const char = trimmed[i];
+        if (!escaped && char === "/") {
+          const pattern = trimmed.slice(1, i);
+          const flags = trimmed.slice(i + 1);
+          try {
+            return { regex: new RegExp(pattern, flags) };
+          } catch {
+            return { regex: null, error: "Niepoprawne wyrażenie regularne." };
+          }
+        }
+        escaped = !escaped && char === "\\";
+      }
+    }
+    try {
+      return { regex: new RegExp(escapeRegExp(trimmed), "i") };
+    } catch {
+      return { regex: null, error: "Nie udało się utworzyć wyrażenia wyszukiwania." };
+    }
+  }
+
+  function renderSearchMessage(message: string) {
+    searchResults.innerHTML = "";
+    const info = document.createElement("div");
+    info.classList.add("logs-search-empty");
+    info.textContent = message;
+    searchResults.appendChild(info);
+    searchResults.scrollTop = 0;
+  }
+
+  function renderSearchResults(matches: { entry: { element: HTMLElement; text: string; time: string }; match: RegExpExecArray }[]) {
+    searchResults.innerHTML = "";
+    for (const item of matches) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.classList.add("logs-search-result");
+      const timeSpan = document.createElement("span");
+      timeSpan.classList.add("logs-search-result-time");
+      timeSpan.textContent = item.entry.time;
+      const textSpan = document.createElement("span");
+      const matchIndex = item.match.index;
+      const matchText = item.match[0];
+      const before = item.entry.text.slice(0, matchIndex);
+      const after = item.entry.text.slice(matchIndex + matchText.length);
+      if (before) {
+        textSpan.appendChild(document.createTextNode(before));
+      }
+      const highlight = document.createElement("mark");
+      highlight.textContent = matchText;
+      textSpan.appendChild(highlight);
+      if (after) {
+        textSpan.appendChild(document.createTextNode(after));
+      }
+      button.appendChild(timeSpan);
+      button.appendChild(textSpan);
+      button.addEventListener("click", () => {
+        scrollToPreviewEntry(item.entry.element);
+      });
+      searchResults.appendChild(button);
+    }
+    searchResults.scrollTop = 0;
+  }
+
+  function runSearch() {
+    const query = searchInput.value;
+    const { regex, error } = parseSearchQuery(query);
+    if (!query.trim()) {
+      renderSearchMessage("Wpisz frazę wyszukiwania.");
+      return;
+    }
+    if (!regex) {
+      renderSearchMessage(error ?? "Nie udało się utworzyć wyrażenia wyszukiwania.");
+      return;
+    }
+    const baseFlags = normalizeFlags(regex.flags);
+    const searchRegex = new RegExp(regex.source, baseFlags);
+    const matches: { entry: { element: HTMLElement; text: string; time: string }; match: RegExpExecArray }[] = [];
+    for (const entry of previewEntries) {
+      const match = searchRegex.exec(entry.text);
+      if (match) {
+        matches.push({ entry, match });
+      }
+    }
+    if (matches.length === 0) {
+      renderSearchMessage("Brak wyników.");
+      return;
+    }
+    renderSearchResults(matches);
+  }
 
   function openDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -90,6 +241,9 @@ function initLogBrowser(): boolean {
       loadPreview(select.value);
     } else {
       preview.innerHTML = "";
+      previewEntries = [];
+      clearHighlight();
+      renderSearchMessage("Brak logów do wyświetlenia.");
     }
   }
 
@@ -125,6 +279,8 @@ function initLogBrowser(): boolean {
   function loadPreview(storeName: string) {
     if (!db) return;
     preview.innerHTML = "";
+    clearHighlight();
+    previewEntries = [];
     const tx = db.transaction(storeName, "readonly");
     const req = tx.objectStore(storeName).getAll();
     req.onsuccess = () => {
@@ -150,9 +306,19 @@ function initLogBrowser(): boolean {
           msg.appendChild(contentSpan);
           wrapper.appendChild(msg);
           preview.appendChild(wrapper);
+          previewEntries.push({
+            element: wrapper,
+            text: contentSpan.textContent ?? "",
+            time,
+          });
         }
       }
       preview.scrollTop = preview.scrollHeight;
+      if (searchInput.value.trim()) {
+        runSearch();
+      } else {
+        renderSearchMessage("Wyniki wyszukiwania pojawią się tutaj.");
+      }
     };
   }
 
@@ -215,6 +381,25 @@ function initLogBrowser(): boolean {
     await refreshSessions();
     modal.show();
   });
+
+  searchButton.addEventListener("click", () => {
+    runSearch();
+  });
+
+  searchInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runSearch();
+    }
+  });
+
+  searchInput.addEventListener("input", () => {
+    if (!searchInput.value.trim()) {
+      renderSearchMessage("Wyniki wyszukiwania pojawią się tutaj.");
+    }
+  });
+
+  renderSearchMessage("Wyniki wyszukiwania pojawią się tutaj.");
 
   initialized = true;
   return true;
