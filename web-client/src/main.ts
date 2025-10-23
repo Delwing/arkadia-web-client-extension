@@ -85,6 +85,13 @@ function updateWakeLockButton() {
     }
 }
 
+function isLikelyTouchDevice() {
+    return (
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+        navigator.maxTouchPoints > 0
+    );
+}
+
 // Function to prevent tab sleep
 function preventTabSleep() {
     // If already active, don't activate again
@@ -518,6 +525,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
     const enableNotificationsSettings = document.getElementById('ui-enable-notifications') as HTMLButtonElement | null;
+    const contentArea = document.getElementById('content-area') as HTMLElement | null;
+
+    if (contentArea) {
+        const focusMessageInput = (target: EventTarget | null) => {
+            if (!target || !(target instanceof Element)) {
+                messageInput.focus();
+                return;
+            }
+
+            if (target.closest('a, button, input, textarea, select')) {
+                return;
+            }
+
+            if (document.activeElement !== messageInput) {
+                messageInput.focus();
+            }
+        };
+
+        if (window.PointerEvent) {
+            contentArea.addEventListener('pointerdown', (event: PointerEvent) => {
+                if (event.button !== 0) return;
+                const pointerType = event.pointerType || '';
+                const isTouchPointer = pointerType === 'touch' || (pointerType === '' && isLikelyTouchDevice());
+                if (isTouchPointer) return;
+                focusMessageInput(event.target);
+            });
+        } else {
+            contentArea.addEventListener('click', (event) => {
+                if (isLikelyTouchDevice()) return;
+                focusMessageInput(event.target);
+            });
+        }
+    }
     const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
     const shareLocationButton = document.getElementById('share-location-button') as HTMLButtonElement | null;
     const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
