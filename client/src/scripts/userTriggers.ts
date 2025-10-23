@@ -1,12 +1,11 @@
 import Client from "../Client";
 import { color, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../stripAnsiCodes";
+import { collectHiddenSequences } from "./hiddenSequences";
 
 function toUpperSafe(text: string) {
     return text.split(/(\x1B\[[0-9;]*m)/g).map((seg, i) => i % 2 === 0 ? seg.toUpperCase() : seg).join('');
 }
-
-const HIDDEN_SEQUENCE_REGEX = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]|{clickOpen:\d+(?::[^}]+)?}|{clickClose}/g;
 
 interface AnsiState {
     foreground: string | null;
@@ -15,10 +14,6 @@ interface AnsiState {
     backgroundReset: string | null;
     fullReset: string | null;
     others: string[];
-}
-
-function cloneHiddenRegex(): RegExp {
-    return new RegExp(HIDDEN_SEQUENCE_REGEX.source, 'g');
 }
 
 function updateAnsiState(state: AnsiState, sequence: string) {
@@ -119,10 +114,9 @@ function stateToString(state: AnsiState): string {
 function createIndexAndStates(raw: string, plain: string): { positions: number[]; states: string[] } {
     const positions = new Array(plain.length + 1).fill(raw.length);
     const states = new Array(plain.length + 1).fill('');
-    const regex = cloneHiddenRegex();
-    let match = regex.exec(raw);
-    let nextHiddenStart = match ? match.index : -1;
-    let nextHiddenEnd = match ? regex.lastIndex : -1;
+    const hiddenSequences = collectHiddenSequences(raw);
+    let hiddenIndex = 0;
+    let nextHidden = hiddenSequences[hiddenIndex] ?? null;
     const state: AnsiState = {
         foreground: null,
         background: null,
@@ -135,15 +129,13 @@ function createIndexAndStates(raw: string, plain: string): { positions: number[]
     let plainIndex = 0;
 
     while (rawIndex < raw.length && plainIndex < plain.length) {
-        if (nextHiddenStart !== -1 && rawIndex === nextHiddenStart) {
-            const sequence = raw.slice(nextHiddenStart, nextHiddenEnd);
-            if ((sequence[0] === '\u001b' || sequence[0] === '\u009b') && sequence.endsWith('m')) {
-                updateAnsiState(state, sequence);
+        if (nextHidden && rawIndex === nextHidden.start) {
+            if ((nextHidden.text[0] === '\u001b' || nextHidden.text[0] === '\u009b') && nextHidden.text.endsWith('m')) {
+                updateAnsiState(state, nextHidden.text);
             }
-            rawIndex = nextHiddenEnd;
-            match = regex.exec(raw);
-            nextHiddenStart = match ? match.index : -1;
-            nextHiddenEnd = match ? regex.lastIndex : -1;
+            rawIndex = nextHidden.end;
+            hiddenIndex += 1;
+            nextHidden = hiddenSequences[hiddenIndex] ?? null;
             continue;
         }
         states[plainIndex] = stateToString(state);
@@ -152,18 +144,16 @@ function createIndexAndStates(raw: string, plain: string): { positions: number[]
         plainIndex += 1;
     }
 
-    while (nextHiddenStart !== -1 && rawIndex <= raw.length) {
-        if (rawIndex <= nextHiddenStart) {
-            rawIndex = nextHiddenStart;
+    while (nextHidden) {
+        if (rawIndex <= nextHidden.start) {
+            rawIndex = nextHidden.start;
         }
-        const sequence = raw.slice(nextHiddenStart, nextHiddenEnd);
-        if ((sequence[0] === '\u001b' || sequence[0] === '\u009b') && sequence.endsWith('m')) {
-            updateAnsiState(state, sequence);
+        if ((nextHidden.text[0] === '\u001b' || nextHidden.text[0] === '\u009b') && nextHidden.text.endsWith('m')) {
+            updateAnsiState(state, nextHidden.text);
         }
-        rawIndex = nextHiddenEnd;
-        match = regex.exec(raw);
-        nextHiddenStart = match ? match.index : -1;
-        nextHiddenEnd = match ? regex.lastIndex : -1;
+        rawIndex = nextHidden.end;
+        hiddenIndex += 1;
+        nextHidden = hiddenSequences[hiddenIndex] ?? null;
     }
 
     const finalState = stateToString(state);
