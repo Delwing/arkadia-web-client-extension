@@ -1,23 +1,28 @@
 import type { Trigger } from "@client/src/Triggers";
 import { stripAnsiCodes } from "@client/src/stripAnsiCodes";
 
-function sanitizeLine(rawLine: string): { raw: string; stripped: string } {
-    const raw = rawLine.replace(/^>\s?/, "");
-    const stripped = stripAnsiCodes(raw).replace(/\s$/g, "");
-    return { raw, stripped };
+function sanitizeLine(
+    rawLine: string
+): { sanitized: string; stripped: string; withPrompt: string } {
+    const promptMatch = rawLine.match(/^>\s?/);
+    const prompt = promptMatch ? promptMatch[0] : "";
+    const sanitized = prompt ? rawLine.slice(prompt.length) : rawLine;
+    const stripped = stripAnsiCodes(sanitized).replace(/\s$/g, "");
+    const withPrompt = prompt ? `${prompt}${sanitized}` : sanitized;
+    return { sanitized, stripped, withPrompt };
 }
 
 export function matchTrigger(trigger: Trigger, rawLine: string, type: string): boolean {
-    const { raw, stripped } = sanitizeLine(rawLine);
+    const { sanitized, stripped, withPrompt } = sanitizeLine(rawLine);
     const patterns = Array.isArray(trigger.pattern) ? trigger.pattern : [trigger.pattern];
     for (const pattern of patterns) {
         if (pattern instanceof RegExp) {
             if (stripped.match(pattern)) return true;
         } else if (typeof pattern === "string") {
-            const index = raw.toLowerCase().indexOf(pattern.toLowerCase());
+            const index = sanitized.toLowerCase().indexOf(pattern.toLowerCase());
             if (index > -1) return true;
         } else if (typeof pattern === "function") {
-            const res = pattern(raw, stripped, undefined as any, type);
+            const res = pattern(withPrompt, stripped, undefined as any, type);
             if (res) return true;
         }
     }
@@ -25,7 +30,7 @@ export function matchTrigger(trigger: Trigger, rawLine: string, type: string): b
 }
 
 export function getMatchingPatterns(trigger: Trigger, rawLine: string, type: string): string[] {
-    const { raw, stripped } = sanitizeLine(rawLine);
+    const { sanitized, stripped, withPrompt } = sanitizeLine(rawLine);
     const matches: string[] = [];
     const patterns = Array.isArray(trigger.pattern) ? trigger.pattern : [trigger.pattern];
 
@@ -41,14 +46,14 @@ export function getMatchingPatterns(trigger: Trigger, rawLine: string, type: str
             return;
         }
         if (typeof pattern === "string") {
-            const index = raw.toLowerCase().indexOf(pattern.toLowerCase());
+            const index = sanitized.toLowerCase().indexOf(pattern.toLowerCase());
             if (index > -1) {
                 matches.push(pattern);
             }
             return;
         }
         if (typeof pattern === "function") {
-            const res = pattern(raw, stripped, undefined as any, type);
+            const res = pattern(withPrompt, stripped, undefined as any, type);
             if (res) {
                 matches.push(pattern.name ? `[fn ${pattern.name}]` : "[fn]");
             }
