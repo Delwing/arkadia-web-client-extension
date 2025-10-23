@@ -34,3 +34,28 @@ if (typeof globalThis.fetch !== 'function') {
     });
   }
 }
+
+if (typeof globalThis.pako === 'undefined') {
+  class MockInflate {
+    constructor() {
+      this.result = new Uint8Array();
+    }
+
+    push(data) {
+      if (data instanceof Uint8Array) {
+        this.result = data;
+      } else if (typeof data === 'string') {
+        const encoder = new TextEncoder();
+        this.result = encoder.encode(data);
+      } else {
+        this.result = new Uint8Array();
+      }
+    }
+  }
+
+  globalThis.pako = {
+    inflate: (input) => input,
+    ungzip: (input) => input,
+    Inflate: MockInflate,
+  };
+}

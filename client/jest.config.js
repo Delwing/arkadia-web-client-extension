@@ -12,5 +12,6 @@ module.exports = {
   },
   moduleNameMapper: {
     '\\.(?:wasm)\\?url$': '<rootDir>/test/__mocks__/wasmUrlMock.js',
+    '^@client/(.*)$': '<rootDir>/$1',
   },
 }

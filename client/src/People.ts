@@ -3,6 +3,8 @@ import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
 import {stripAnsiCodes} from './Triggers';
 
+const ANSI_SEQUENCE = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]|{clickOpen:\d+(?::[^}]+)?}|{clickClose}/y;
+
 export default class People {
 
     tag = 'people'
@@ -71,7 +73,8 @@ export default class People {
             const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
                 const index = matches.index || 0
                 const token = matches[0]
-                const suffix = rawLine.substring(index + token.length)
+                const suffixStart = this.resolveRawIndex(rawLine, index + token.length)
+                const suffix = rawLine.substring(suffixStart)
                 const nextWord = stripAnsiCodes(suffix)
                     .toLowerCase()
                     .replace(/^\s+/, '')
@@ -110,16 +113,41 @@ export default class People {
         return { inGuild, isEnemy, guildColor }
     }
 
+    private resolveRawIndex(rawLine: string, plainIndex: number) {
+        if (plainIndex <= 0) {
+            return 0
+        }
+
+        let rawIndex = 0
+        let processed = 0
+        while (rawIndex < rawLine.length && processed < plainIndex) {
+            ANSI_SEQUENCE.lastIndex = rawIndex
+            const match = ANSI_SEQUENCE.exec(rawLine)
+            if (match && match.index === rawIndex) {
+                rawIndex = ANSI_SEQUENCE.lastIndex
+                continue
+            }
+            rawIndex += 1
+            processed += 1
+        }
+
+        return rawIndex
+    }
+
     private buildNameHighlight(rawLine: string, token: string, index: number, colorCode: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
+        const start = this.resolveRawIndex(rawLine, index)
+        const end = this.resolveRawIndex(rawLine, index + token.length)
+        const prefix = rawLine.substring(0, start)
+        const suffix = rawLine.substring(end)
         const highlighted = color(colorCode) + token + RESET
         return prefix + highlighted + suffix
     }
 
     private buildDescHighlight(rawLine: string, token: string, index: number, replacement: { name: string; guild: string }, state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }, RED: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
+        const start = this.resolveRawIndex(rawLine, index)
+        const end = this.resolveRawIndex(rawLine, index + token.length)
+        const prefix = rawLine.substring(0, start)
+        const suffix = rawLine.substring(end)
         let highlighted = token
         if (state.isEnemy) {
             highlighted = color(RED) + token + RESET
