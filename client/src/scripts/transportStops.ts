@@ -1,7 +1,8 @@
 import Client from "../Client";
 import { isDirection } from "../utils/directions";
 import type { TransportTimerPayload } from "../types/transport";
-import { recordTransportSegment } from "../utils/transportStats";
+import { getAllTransportSegments, recordTransportSegment } from "../utils/transportStats";
+import type { StoredTransportSegmentRecord } from "../utils/transportStats";
 
 import Ancelmus from "./ships/Ancelmus.json";
 import Annibale from "./ships/Annibale.json";
@@ -259,18 +260,25 @@ function secondsBetween(start: number): number {
     return (Date.now() - start) / 1000;
 }
 
+function createSegmentKey(transport: string, fromId: number, toId: number): string {
+    return `${transport}::${fromId}->${toId}`;
+}
+
 class TransportTracker {
     private client: Client;
     private definitions: CompiledTransportDefinition[];
+    private definitionsByName: Map<string, CompiledTransportDefinition>;
     private currentJourney: JourneyState | null = null;
     private pendingCandidates = new Map<CompiledTransportDefinition, number[]>();
     private currentLocationId: number | null = null;
     private previousLocationId: number | null = null;
     private exitCommands: Set<string>;
+    private segmentDurationOverrides = new Map<string, number>();
 
     constructor(client: Client) {
         this.client = client;
         this.definitions = loadDefinitions();
+        this.definitionsByName = new Map(this.definitions.map(def => [def.name, def]));
         this.exitCommands = new Set(
             this.definitions
                 .map(def => def.exitCommand)
@@ -280,6 +288,78 @@ class TransportTracker {
         this.registerExitFailureTriggers();
         this.registerListeners();
         this.emitTimer(null);
+        void this.loadSegmentDurationOverrides();
+    }
+
+    private async loadSegmentDurationOverrides() {
+        try {
+            const records = await getAllTransportSegments();
+            this.applyStoredSegmentDurations(records);
+        } catch (error) {
+            console.warn("[Transport] Failed to load stored transport segment durations", error);
+        }
+    }
+
+    private applyStoredSegmentDurations(records: StoredTransportSegmentRecord[]) {
+        for (const record of records) {
+            const definition = this.definitionsByName.get(record.transport);
+            if (!definition) {
+                continue;
+            }
+            definition.stops.forEach((stop, index) => {
+                if (stop.start === record.fromId && stop.destination === record.toId) {
+                    this.applyDurationOverride(definition, index, record.shortestDuration.duration);
+                }
+            });
+        }
+    }
+
+    private applyDurationOverride(definition: CompiledTransportDefinition, index: number, duration: number) {
+        if (!Number.isFinite(duration) || duration <= 0) {
+            return;
+        }
+
+        const stop = definition.stops[index];
+        if (!stop) {
+            return;
+        }
+
+        const key = createSegmentKey(definition.name, stop.start, stop.destination);
+        const currentTime = typeof stop.time === "number" && !Number.isNaN(stop.time) ? stop.time : undefined;
+        if (duration < 1) {
+            if (this.segmentDurationOverrides.has(key)) {
+                const existing = this.segmentDurationOverrides.get(key);
+                if (existing !== undefined && existing <= duration) {
+                    return;
+                }
+            } else if (currentTime !== undefined) {
+                return;
+            }
+        }
+
+        const existingOverride = this.segmentDurationOverrides.get(key);
+        const bestDuration = existingOverride ?? currentTime;
+        const nextDuration = bestDuration !== undefined ? Math.min(bestDuration, duration) : duration;
+
+        if (existingOverride !== undefined && existingOverride <= nextDuration) {
+            return;
+        }
+
+        this.segmentDurationOverrides.set(key, nextDuration);
+        stop.time = nextDuration;
+
+        if (
+            this.currentJourney &&
+            this.currentJourney.definition === definition &&
+            this.currentJourney.activeIndex === index
+        ) {
+            const startedAt = this.currentJourney.startTimes.get(index);
+            if (typeof startedAt === "number") {
+                this.updateTimer(definition, stop, startedAt);
+            } else {
+                this.refreshTimer(this.currentJourney);
+            }
+        }
     }
 
     private registerListeners() {
@@ -619,6 +699,7 @@ class TransportTracker {
                 duration: elapsed,
                 expectedDuration: expected,
             });
+            this.applyDurationOverride(definition, index, elapsed);
         }
 
         this.stopCountdown();
