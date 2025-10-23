@@ -14,7 +14,7 @@ const mapPositions = [
 
 type MapPosition = (typeof mapPositions)[number];
 
-interface UiSettings {
+export interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
     buttonSize: number;
@@ -34,6 +34,7 @@ interface UiSettings {
     transparentLabels: boolean;
     outputBackground: string;
     clearInputOnSend: boolean;
+    showTransportLabel: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -56,6 +57,7 @@ const defaultSettings: UiSettings = {
     transparentLabels: true,
     outputBackground: '#242424',
     clearInputOnSend: false,
+    showTransportLabel: true,
 };
 
 function apply(settings: UiSettings) {
@@ -148,6 +150,7 @@ function apply(settings: UiSettings) {
                     footerMode: settings.footerMode,
                     fightTitleIcon: settings.fightTitleIcon,
                     clearInputOnSend: settings.clearInputOnSend,
+                    showTransportLabel: settings.showTransportLabel,
                 },
             })
         );
@@ -198,6 +201,9 @@ async function load(): Promise<UiSettings> {
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultSettings.clearInputOnSend;
+            const showTransportLabel = typeof parsed.showTransportLabel === 'boolean'
+                ? parsed.showTransportLabel
+                : defaultSettings.showTransportLabel;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -215,6 +221,7 @@ async function load(): Promise<UiSettings> {
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
                 clearInputOnSend,
+                showTransportLabel,
             };
         }
     } catch {
@@ -254,6 +261,7 @@ export default async function initUiSettings() {
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
+    const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -276,6 +284,7 @@ export default async function initUiSettings() {
     transparentLabelsInput.checked = current.transparentLabels;
     outputBackgroundInput.value = current.outputBackground;
     clearInputOnSendInput.checked = current.clearInputOnSend;
+    showTransportLabelInput.checked = current.showTransportLabel;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -355,6 +364,7 @@ export default async function initUiSettings() {
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
+            showTransportLabel: showTransportLabelInput.checked,
         };
     }
 

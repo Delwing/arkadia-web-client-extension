@@ -18,8 +18,13 @@ describe("TransportTimer", () => {
     localStorage.clear();
     document.body.innerHTML = '<span id="transport-timer"></span>';
     container = document.getElementById("transport-timer")!;
+    (window as any).clientExtension = { eventTarget: new EventTarget() };
     client = new MockClient();
     new TransportTimer(client as any);
+  });
+
+  afterEach(() => {
+    delete (window as any).clientExtension;
   });
 
   test("hides timer when payload is null", () => {
@@ -55,7 +60,8 @@ describe("TransportTimer", () => {
   });
 
   test("hides label when option disabled", () => {
-    client.emit("settings", { showTransportLabel: false });
+    const target = (window as any).clientExtension.eventTarget as EventTarget;
+    target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showTransportLabel: false } }));
     client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
     expect(container.textContent).toBe("Tr: 2:05");
     expect(container.className).toBe("green");
