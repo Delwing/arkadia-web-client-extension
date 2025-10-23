@@ -136,4 +136,18 @@ describe('Triggers', () => {
     const matches = cb.mock.calls[0][2];
     expect(matches[0]).toBe('bar');
   });
+
+  test('string pattern matches text separated by ansi codes', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn((raw, _line, matches, _type, context) => {
+      context?.replacePlainRange(matches.index ?? 0, (matches.index ?? 0) + matches[0].length, `[${matches[0]}]`);
+      return context ? context.getRaw() : raw;
+    });
+    triggers.registerTrigger('Hello', cb);
+
+    const result = triggers.parseLine('\x1b[31mHello\x1b[0m', '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(result).toBe('\x1b[31m[Hello]\x1b[0m');
+  });
 });

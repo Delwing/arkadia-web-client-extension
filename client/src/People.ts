@@ -1,7 +1,7 @@
 import { loadPeople, type PersonEntry } from './peopleLoader';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
-import {stripAnsiCodes} from './Triggers';
+import AnsiString from "./AnsiString";
 
 export default class People {
 
@@ -68,17 +68,18 @@ export default class People {
                 return
             }
 
-            const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
+            const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, context?: AnsiString) => {
                 const index = matches.index || 0
                 const token = matches[0]
-                const suffix = rawLine.substring(index + token.length)
-                const nextWord = stripAnsiCodes(suffix)
+                const ctx = context ?? new AnsiString(rawLine)
+                const plainSuffix = ctx.getPlain().substring(index + token.length)
+                const nextWord = plainSuffix
                     .toLowerCase()
                     .replace(/^\s+/, '')
                 if (nextWord.startsWith('chaosu')) {
-                    return rawLine
+                    return ctx.getRaw()
                 }
-                return this.buildDescHighlight(rawLine, token, index, replacement, state, RED)
+                return this.buildDescHighlight(ctx, token, index, replacement, state, RED)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -87,10 +88,11 @@ export default class People {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
-                    const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
+                    const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, context?: AnsiString) => {
                         const index = matches.index || 0
                         const token = matches[0]
-                        return this.buildNameHighlight(rawLine, token, index, chosenColor)
+                        const ctx = context ?? new AnsiString(rawLine)
+                        return this.buildNameHighlight(ctx, token, index, chosenColor)
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
@@ -110,16 +112,12 @@ export default class People {
         return { inGuild, isEnemy, guildColor }
     }
 
-    private buildNameHighlight(rawLine: string, token: string, index: number, colorCode: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
-        const highlighted = color(colorCode) + token + RESET
-        return prefix + highlighted + suffix
+    private buildNameHighlight(context: AnsiString, token: string, index: number, colorCode: number) {
+        context.replacePlainRange(index, index + token.length, color(colorCode) + token + RESET)
+        return context.getRaw()
     }
 
-    private buildDescHighlight(rawLine: string, token: string, index: number, replacement: { name: string; guild: string }, state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }, RED: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
+    private buildDescHighlight(context: AnsiString, token: string, index: number, replacement: { name: string; guild: string }, state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }, RED: number) {
         let highlighted = token
         if (state.isEnemy) {
             highlighted = color(RED) + token + RESET
@@ -132,7 +130,8 @@ export default class People {
             suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
         }
 
-        return prefix + highlighted + suffixText + suffix
+        context.replacePlainRange(index, index + token.length, highlighted + suffixText)
+        return context.getRaw()
     }
 
 }

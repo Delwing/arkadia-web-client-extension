@@ -1,19 +1,22 @@
 import Client from "./Client";
 import { stripAnsiCodes } from "./stripAnsiCodes";
+import AnsiString from "./AnsiString";
 export { stripAnsiCodes };
 
 type TriggerCallback = (
     rawLine: string,
     line: string,
     matches: RegExpMatchArray,
-    type: string
+    type: string,
+    context?: AnsiString
 ) => string | undefined;
 
 type TriggerMatchFunction = (
     rawLine: string,
     line: string,
     _matches: RegExpMatchArray | undefined,
-    type: string
+    type: string,
+    context?: AnsiString
 ) => RegExpMatchArray | undefined;
 
 type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
@@ -75,8 +78,9 @@ export class Trigger {
         return child;
     }
 
-    execute(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+    execute(context: AnsiString, type: string) {
+        const rawLine = context.getRaw();
+        const line = context.getPlain().replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
@@ -85,14 +89,16 @@ export class Trigger {
                 matches = line.match(pattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
-                const index = !this.options.caseInsensitive ? rawLine.indexOf(patternStr) : rawLine.toLowerCase().indexOf(patternStr.toLowerCase());
+                const index = !this.options.caseInsensitive
+                    ? line.indexOf(patternStr)
+                    : line.toLowerCase().indexOf(patternStr.toLowerCase());
                 if (index > -1) {
                     const end = index + patternStr.length;
-                    matches = [rawLine.substring(index, end)];
+                    matches = [line.substring(index, end)];
                     matches.index = index;
                 }
             } else if (typeof pattern === "function") {
-                matches = pattern(rawLine, line, undefined, type);
+                matches = pattern(rawLine, line, undefined, type, context);
             }
             if (matches) {
                 break;
@@ -109,13 +115,16 @@ export class Trigger {
         }
         if (matched) {
             if (matches && this.callback) {
-                rawLine = this.callback(rawLine, line, matches, type) ?? rawLine;
+                const updated = this.callback(rawLine, line, matches, type, context);
+                if (typeof updated === "string") {
+                    context.setRaw(updated);
+                }
             }
             this.children.forEach(child => {
-                rawLine = child.execute(rawLine, type);
+                child.execute(context, type);
             });
         }
-        return rawLine;
+        return context.getRaw();
     }
 }
 
@@ -205,14 +214,15 @@ export default class Triggers {
     }
 
     parseLine(rawLine: string, type: string) {
-        const line = stripAnsiCodes(rawLine).replace(/\s$/g, "");
-        const tokens = line
+        const context = new AnsiString(rawLine);
+        const baseLine = stripAnsiCodes(rawLine).replace(/\s$/g, "");
+        const tokens = baseLine
             .split(/[ \n\t.,!?*()\/\[\]]+/)
             .filter(t => t.length > 0)
             .map(t => t.toLowerCase());
 
         this.triggers.forEach(trigger => {
-            rawLine = trigger.execute(rawLine, type);
+            trigger.execute(context, type);
         });
 
         this.tokenTriggers.forEach(({ words, trigger }) => {
@@ -225,19 +235,20 @@ export default class Triggers {
                     }
                 }
                 if (found) {
-                    rawLine = trigger.execute(rawLine, type);
+                    trigger.execute(context, type);
                     break;
                 }
             }
         });
-        return rawLine;
+        return context.getRaw();
     }
 
     parseMultiline(rawLine: string, type: string) {
+        const context = new AnsiString(rawLine);
         this.multilineTriggers.forEach(trigger => {
-            rawLine = trigger.execute(rawLine, type);
+            trigger.execute(context, type);
         });
-        return rawLine;
+        return context.getRaw();
     }
 
 }

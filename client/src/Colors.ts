@@ -2,6 +2,7 @@ import xtermArkadia from "./xtermArkadia";
 import xtermProper from "./xtermProper";
 import mudletColors from "./colors.json";
 import { getItemSync } from "./storage";
+import AnsiString from "./AnsiString";
 
 function hexToRgb(hex: string): [number, number, number] {
     const value = parseInt(hex.replace(/^#/, ''), 16);
@@ -46,20 +47,26 @@ export function colorString(string: string, colorCode: number) {
 }
 
 export function colorStringInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.indexOf(string, startIndex)
+    const ansi = new AnsiString(rawLine)
+    const plainStart = startIndex > 0 ? ansi.getPlainIndexFromRaw(startIndex) : 0
+    const matchIndex = ansi.indexOf(string, plainStart)
     if (matchIndex === -1) {
         return rawLine
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + string + RESET + rawLine.substring(matchIndex + string.length)
+    ansi.replacePlainRange(matchIndex, matchIndex + string.length, color(colorCode) + string + RESET)
+    return ansi.getRaw()
 }
 
 export function colorTokenInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.toLowerCase().indexOf(string, startIndex)
-    const endIndex = matchIndex + string.length
+    const ansi = new AnsiString(rawLine)
+    const plainStart = startIndex > 0 ? ansi.getPlainIndexFromRaw(startIndex) : 0
+    const matchIndex = ansi.indexOf(string, plainStart, true)
     if (matchIndex === -1) {
         return rawLine
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex)
+    const original = ansi.getPlain().substring(matchIndex, matchIndex + string.length)
+    ansi.replacePlainRange(matchIndex, matchIndex + string.length, color(colorCode) + original + RESET)
+    return ansi.getRaw()
 }
 
 export function findClosestColor(hex: string | number[]): number {
