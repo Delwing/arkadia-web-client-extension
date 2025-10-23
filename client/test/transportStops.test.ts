@@ -2,6 +2,7 @@ import initTransportStops from '../src/scripts/transportStops';
 import Triggers from '../src/Triggers';
 import type { TransportTimerPayload } from '../src/types/transport';
 import * as transportStats from '../src/utils/transportStats';
+import type { StoredTransportSegmentRecord } from '../src/utils/transportStats';
 
 class FakeClient {
   Triggers: Triggers;
@@ -30,7 +31,6 @@ describe('transport stop triggers', () => {
   beforeEach(async () => {
     await transportStats.clearTransportStats();
     client = new FakeClient();
-    initTransportStops(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     jest.clearAllMocks();
   });
@@ -40,12 +40,14 @@ describe('transport stop triggers', () => {
   });
 
   test('stop pattern does not register trigger', () => {
+    initTransportStops(client as unknown as any);
     const line = 'Bjorn krzyczy: Doplynelismy do przystani na wyspie Mekan! Mozna wysiadac!';
     parse(line);
     expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
   });
 
   test('tracks Salignac - Nuln route from sample log', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -109,6 +111,7 @@ describe('transport stop triggers', () => {
   });
 
   test('tracks Quenelles - Montlac - Merceaux-Descloux route from sample log', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -174,6 +177,7 @@ describe('transport stop triggers', () => {
   });
 
   test('records transport segment stats when a stop completes', async () => {
+    initTransportStops(client as unknown as any);
     client.dispatchEvent('enterLocation', { id: 5200 });
 
     const parseLine = (line: string) => {
@@ -206,6 +210,7 @@ describe('transport stop triggers', () => {
   });
 
   test('tracks Wyzima - Oxenfurt route with shared stop pattern', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -261,6 +266,7 @@ describe('transport stop triggers', () => {
   });
 
   test('outside set pattern selects pending slot with known location', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -292,6 +298,7 @@ describe('transport stop triggers', () => {
   });
 
   test('exit failure keeps active journey running', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -331,6 +338,7 @@ describe('transport stop triggers', () => {
   });
 
   test('set pattern outside chooses stop based on location', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -362,6 +370,7 @@ describe('transport stop triggers', () => {
   });
 
   test('set pattern on board requires multiple candidates', () => {
+    initTransportStops(client as unknown as any);
     jest.useFakeTimers();
     const events: (TransportTimerPayload | null)[] = [];
     client.sendEvent = jest.fn((type: string, payload: any) => {
@@ -392,6 +401,57 @@ describe('transport stop triggers', () => {
     parseLine('Woznica wola: Nastepny postoj - Nuln!');
     expect(events.length).toBe(eventsAfterFirstSet);
     expect(events[events.length - 1]).toBe(targeted);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('uses stored transport segment minimum duration when available', async () => {
+    const storedDuration = 40;
+    const record: StoredTransportSegmentRecord = {
+      segmentKey: 'Salignac - Nuln::5200->4985',
+      transport: 'Salignac - Nuln',
+      fromId: 5200,
+      toId: 4985,
+      fromLabel: 'Kreutzhofen',
+      toLabel: "'Pod piegowata elfka'",
+      shortestDuration: { duration: storedDuration, startedAt: 0, endedAt: storedDuration },
+      longestDuration: { duration: storedDuration + 5, startedAt: 0, endedAt: storedDuration + 5 },
+      expectedDuration: 53,
+      updatedAt: Date.now(),
+    };
+
+    jest.spyOn(transportStats, 'getAllTransportSegments').mockResolvedValue([record]);
+    initTransportStops(client as unknown as any);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 5200 });
+
+    parseLine("Woznica dylizansu glosno wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+
+    const payload = events[events.length - 1] as TransportTimerPayload;
+    expect(payload.label).toBe("Kreutzhofen → 'Pod piegowata elfka'");
+    expect(payload.total).toBe(storedDuration);
 
     jest.clearAllTimers();
     jest.useRealTimers();
