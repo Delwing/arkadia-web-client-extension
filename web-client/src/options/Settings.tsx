@@ -153,6 +153,14 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                                 onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                                 className="me-2"
                             />
+                            <Form.Check
+                                type="checkbox"
+                                id="showTransportLabel"
+                                label="Pokaz etykiete transportu"
+                                checked={settings.showTransportLabel}
+                                onChange={e => onChangeSetting(s => s.showTransportLabel = e.target.checked)}
+                                className="me-2"
+                            />
                             <Form.Group className="d-flex align-items-center me-2">
                                 <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii listu:</Form.Label>
                                 <Form.Control

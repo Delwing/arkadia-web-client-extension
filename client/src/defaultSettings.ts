@@ -18,6 +18,7 @@ export interface Settings {
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
+    showTransportLabel: boolean;
 }
 
 export const defaultSettings: Settings = {
@@ -36,6 +37,7 @@ export const defaultSettings: Settings = {
     herbPostUseCommand: '',
     attackCommand: DEFAULT_ATTACK_COMMAND,
     fullHpMessage: false,
+    showTransportLabel: true,
     lowHpAlert: 2,
     letterLineWidth: 72,
 };
