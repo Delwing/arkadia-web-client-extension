@@ -468,15 +468,9 @@ h1 {
   width: 100%;
 }
 
-#logs-search-results .logs-search-result-session {
-  color: var(--bs-secondary-color);
-  font-weight: 600;
-  flex: 1;
-  min-width: 0;
-}
-
 #logs-search-results .logs-search-result-time {
   color: darkorange;
+  flex: 1;
   white-space: nowrap;
 }
 

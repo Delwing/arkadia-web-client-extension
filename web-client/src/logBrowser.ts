@@ -73,7 +73,7 @@ function initLogBrowser(): boolean {
     container: HTMLElement;
     count: HTMLSpanElement;
     resultsContainer: HTMLElement;
-    totalMatches: number;
+    totalResults: number;
   }
 
   interface SearchResultData {
@@ -84,7 +84,6 @@ function initLogBrowser(): boolean {
     matches: LineMatch[];
     button: HTMLButtonElement;
     count: HTMLSpanElement;
-    activeMatchIndex: number;
     session: SearchSessionData;
   }
 
@@ -256,16 +255,6 @@ function initLogBrowser(): boolean {
     preview.scrollTo({ top: targetTop, behavior: "smooth" });
   }
 
-  function focusLogMatch(match: LineMatch, { scroll }: { scroll: boolean }) {
-    if (!match.element) {
-      return;
-    }
-    if (scroll) {
-      scrollToPreviewElement(match.element);
-    }
-    highlightPreviewElements([match.element]);
-  }
-
   function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -315,6 +304,7 @@ function initLogBrowser(): boolean {
     activeResultIndex = -1;
     activeSession = null;
     clearHighlight();
+    updateNavigationButtons();
   }
 
   function renderSearchMessage(message: string) {
@@ -333,6 +323,7 @@ function initLogBrowser(): boolean {
     info.textContent = message;
     searchResults.appendChild(info);
     searchResults.scrollTop = 0;
+    updateNavigationButtons();
   }
 
   function createResultSnippet(text: string, matchIndex: number, matchText: string): DocumentFragment {
@@ -361,20 +352,6 @@ function initLogBrowser(): boolean {
     return fragment;
   }
 
-  function refreshResultCount(index: number) {
-    const result = searchResultsData[index];
-    if (!result) return;
-    if (activeResultIndex === index) {
-      result.count.textContent = `(${result.activeMatchIndex + 1}/${result.matches.length})`;
-    } else {
-      result.count.textContent = `(${result.matches.length})`;
-    }
-  }
-
-  function refreshAllResultCounts() {
-    searchResultsData.forEach((_, i) => refreshResultCount(i));
-  }
-
   function setActiveSession(session: SearchSessionData | null) {
     activeSession = session;
     for (const entry of searchSessionsData) {
@@ -387,36 +364,39 @@ function initLogBrowser(): boolean {
   }
 
   function updateNavigationButtons() {
-    if (searchResultsData.length === 0 || activeResultIndex === -1) {
+    if (searchResultsData.length === 0) {
       searchPrev.disabled = true;
-      searchNext.disabled = searchResultsData.length === 0;
+      searchNext.disabled = true;
       return;
     }
-    const active = searchResultsData[activeResultIndex];
-    const isAtFirst = activeResultIndex === 0 && active.activeMatchIndex === 0;
-    const isAtLast =
-      activeResultIndex === searchResultsData.length - 1 &&
-      active.activeMatchIndex === active.matches.length - 1;
+    if (activeResultIndex === -1) {
+      searchPrev.disabled = true;
+      searchNext.disabled = false;
+      return;
+    }
+    const isAtFirst = activeResultIndex === 0;
+    const isAtLast = activeResultIndex === searchResultsData.length - 1;
     searchPrev.disabled = isAtFirst;
     searchNext.disabled = isAtLast;
   }
 
-  function setActiveMatch(
-    resultIndex: number,
-    matchIndex: number,
-    { scrollPreview, ensureVisible }: { scrollPreview: boolean; ensureVisible: boolean },
-  ) {
-    if (resultIndex < 0 || resultIndex >= searchResultsData.length) return;
-    const result = searchResultsData[resultIndex];
-    if (matchIndex < 0 || matchIndex >= result.matches.length) return;
-    result.activeMatchIndex = matchIndex;
-    const match = result.matches[matchIndex];
-    focusLogMatch(match, { scroll: scrollPreview });
-    if (ensureVisible) {
-      result.button.scrollIntoView({ block: "nearest" });
+  function focusResultMatches(matches: LineMatch[], { scrollPreview }: { scrollPreview: boolean }) {
+    const elements: HTMLElement[] = [];
+    const seen = new Set<HTMLElement>();
+    for (const match of matches) {
+      if (!match.element) continue;
+      if (seen.has(match.element)) continue;
+      seen.add(match.element);
+      elements.push(match.element);
     }
-    refreshAllResultCounts();
-    updateNavigationButtons();
+    if (elements.length === 0) {
+      clearHighlight();
+      return;
+    }
+    if (scrollPreview) {
+      scrollToPreviewElement(elements[0]);
+    }
+    highlightPreviewElements(elements);
   }
 
   async function ensureResultSessionLoaded(result: SearchResultData): Promise<void> {
@@ -430,11 +410,7 @@ function initLogBrowser(): boolean {
 
   async function setActiveResult(
     index: number,
-    {
-      scrollPreview,
-      ensureVisible,
-      matchIndex,
-    }: { scrollPreview: boolean; ensureVisible: boolean; matchIndex?: number },
+    { scrollPreview, ensureVisible }: { scrollPreview: boolean; ensureVisible: boolean },
   ) {
     if (index < 0 || index >= searchResultsData.length) {
       return;
@@ -454,11 +430,11 @@ function initLogBrowser(): boolean {
       return;
     }
     setActiveSession(active.session);
-    const targetMatchIndex = Math.min(
-      Math.max(matchIndex ?? (active.activeMatchIndex >= 0 ? active.activeMatchIndex : 0), 0),
-      active.matches.length - 1,
-    );
-    setActiveMatch(index, targetMatchIndex, { scrollPreview, ensureVisible });
+    if (ensureVisible) {
+      active.button.scrollIntoView({ block: "nearest" });
+    }
+    focusResultMatches(active.matches, { scrollPreview });
+    updateNavigationButtons();
   }
 
   function renderSearchResults(matches: RenderableSearchResult[]) {
@@ -496,7 +472,7 @@ function initLogBrowser(): boolean {
           container: sessionContainer,
           count,
           resultsContainer,
-          totalMatches: 0,
+          totalResults: 0,
         };
         sessionsByName.set(item.sessionName, session);
         searchSessionsData.push(session);
@@ -506,16 +482,12 @@ function initLogBrowser(): boolean {
       button.classList.add("logs-search-result");
       const header = document.createElement("div");
       header.classList.add("logs-search-result-header");
-      const sessionSpan = document.createElement("span");
-      sessionSpan.classList.add("logs-search-result-session");
-      sessionSpan.textContent = item.sessionLabel;
       const timeSpan = document.createElement("span");
       timeSpan.classList.add("logs-search-result-time");
       timeSpan.textContent = item.groupDateTime;
       const countSpan = document.createElement("span");
       countSpan.classList.add("logs-search-result-count");
       countSpan.textContent = `(${item.matches.length})`;
-      header.appendChild(sessionSpan);
       header.appendChild(timeSpan);
       header.appendChild(countSpan);
       const snippetSpan = document.createElement("span");
@@ -529,8 +501,8 @@ function initLogBrowser(): boolean {
         void setActiveResult(resultIndex, { scrollPreview: true, ensureVisible: true });
       });
       session.resultsContainer.appendChild(button);
-      session.totalMatches += item.matches.length;
-      session.count.textContent = `(${session.totalMatches})`;
+      session.totalResults += 1;
+      session.count.textContent = `(${session.totalResults})`;
       searchResultsData.push({
         sessionName: item.sessionName,
         sessionLabel: item.sessionLabel,
@@ -539,7 +511,6 @@ function initLogBrowser(): boolean {
         matches: item.matches,
         button,
         count: countSpan,
-        activeMatchIndex: 0,
         session,
       });
     });
@@ -845,19 +816,8 @@ function initLogBrowser(): boolean {
       if (activeResultIndex === -1) {
         return;
       }
-      const active = searchResultsData[activeResultIndex];
-      if (active.activeMatchIndex > 0) {
-        setActiveMatch(activeResultIndex, active.activeMatchIndex - 1, { scrollPreview: true, ensureVisible: false });
-        return;
-      }
       if (activeResultIndex > 0) {
-        const previousIndex = activeResultIndex - 1;
-        const previous = searchResultsData[previousIndex];
-        await setActiveResult(previousIndex, {
-          scrollPreview: true,
-          ensureVisible: true,
-          matchIndex: previous.matches.length - 1,
-        });
+        await setActiveResult(activeResultIndex - 1, { scrollPreview: true, ensureVisible: true });
       }
     })();
   });
@@ -868,11 +828,6 @@ function initLogBrowser(): boolean {
         if (searchResultsData.length > 0) {
           await setActiveResult(0, { scrollPreview: true, ensureVisible: true });
         }
-        return;
-      }
-      const active = searchResultsData[activeResultIndex];
-      if (active.activeMatchIndex < active.matches.length - 1) {
-        setActiveMatch(activeResultIndex, active.activeMatchIndex + 1, { scrollPreview: true, ensureVisible: false });
         return;
       }
       if (activeResultIndex < searchResultsData.length - 1) {
