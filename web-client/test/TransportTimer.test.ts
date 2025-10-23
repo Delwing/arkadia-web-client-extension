@@ -1,12 +1,11 @@
 import TransportTimer from "../src/TransportTimer";
-import type { TransportTimerPayload } from "@client/src/types/transport";
 
 class MockClient {
   private events: Record<string, Function[]> = {};
   on(event: string, listener: Function) {
     (this.events[event] ||= []).push(listener);
   }
-  emit(event: string, payload: TransportTimerPayload | null) {
+  emit(event: string, payload: any) {
     (this.events[event] || []).forEach(fn => fn(payload));
   }
 }
@@ -16,6 +15,7 @@ describe("TransportTimer", () => {
   let client: MockClient;
 
   beforeEach(() => {
+    localStorage.clear();
     document.body.innerHTML = '<span id="transport-timer"></span>';
     container = document.getElementById("transport-timer")!;
     client = new MockClient();
@@ -52,5 +52,16 @@ describe("TransportTimer", () => {
     expect(container.textContent).toBe("Tr: Kreutzhofen → Tajemnicze miejsce");
     expect(container.className).toBe("");
     expect(container.style.display).toBe("block");
+  });
+
+  test("hides label when option disabled", () => {
+    client.emit("settings", { showTransportLabel: false });
+    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
+    expect(container.textContent).toBe("Tr: 2:05");
+    expect(container.className).toBe("green");
+
+    client.emit("transportTimer", { label: "Kreutzhofen → Tajemnicze miejsce", remaining: null, total: null });
+    expect(container.style.display).toBe("none");
+    expect(container.textContent).toBe("");
   });
 });
