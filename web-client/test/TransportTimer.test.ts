@@ -63,8 +63,9 @@ describe("TransportTimer", () => {
     const target = (window as any).clientExtension.eventTarget as EventTarget;
     target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showTransportLabel: false } }));
     client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
-    expect(container.textContent).toBe("Tr: 2:05");
-    expect(container.className).toBe("green");
+    expect(container.style.display).toBe("none");
+    expect(container.textContent).toBe("");
+    expect(container.className).toBe("");
 
     client.emit("transportTimer", { label: "Kreutzhofen → Tajemnicze miejsce", remaining: null, total: null });
     expect(container.style.display).toBe("none");

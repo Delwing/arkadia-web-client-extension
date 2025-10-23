@@ -43,6 +43,12 @@ export default class TransportTimer {
   private update(payload: TransportTimerPayload | null) {
     this.lastPayload = payload;
     if (!this.container) return;
+    if (!this.showTransportLabel) {
+      this.container.textContent = "";
+      this.container.className = "";
+      this.container.style.display = "none";
+      return;
+    }
     if (!payload) {
       this.container.textContent = "";
       this.container.className = "";
@@ -50,12 +56,6 @@ export default class TransportTimer {
       return;
     }
     const hasTimer = typeof payload.remaining === "number" && typeof payload.total === "number";
-    if (!this.showTransportLabel && !hasTimer) {
-      this.container.textContent = "";
-      this.container.className = "";
-      this.container.style.display = "none";
-      return;
-    }
     const parts = ["Tr:"];
     if (this.showTransportLabel) {
       parts.push(payload.label);
