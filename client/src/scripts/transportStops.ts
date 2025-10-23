@@ -35,6 +35,7 @@ import BialyMostHagge from "./other/Bialy Most - Hagge.json";
 import Jouinard from "./other/Jouinard - Nuln.json";
 import KrainaZgromadzenia from "./other/Kraina Zgromadzenia - Nuln.json";
 import MariborGrabowa from "./other/Maribor - Grabowa Buchta.json";
+import PodgrodzieTretogoruGelibol from "./other/Podgrodzie Tretogoru - Gelibol.json";
 import Salignac from "./other/Salignac - Nuln.json";
 import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
 import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
@@ -109,6 +110,7 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Jouinard - Nuln", Jouinard as RawTransportDefinition],
     ["Kraina Zgromadzenia - Nuln", KrainaZgromadzenia as RawTransportDefinition],
     ["Maribor - Grabowa Buchta", MariborGrabowa as RawTransportDefinition],
+    ["Podgrodzie Tretogoru - Gelibol", PodgrodzieTretogoruGelibol as RawTransportDefinition],
     ["Salignac - Nuln", Salignac as RawTransportDefinition],
     ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
     ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
