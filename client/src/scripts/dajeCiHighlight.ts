@@ -8,7 +8,7 @@ export default function initDajeCiHighlight(client: Client) {
         const group = matches[1];
         if (group !== "nowy zapal do walki.") {
             const start = matches.index ?? 0;
-            return colorStringInLine(raw, group, TURQUOISE, start);
+            return colorStringInLine(raw, group, TURQUOISE, start, true);
         }
     }, "daje-ci-highlight");
 }

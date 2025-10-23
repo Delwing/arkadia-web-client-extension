@@ -2,6 +2,7 @@ import xtermArkadia from "./xtermArkadia";
 import xtermProper from "./xtermProper";
 import mudletColors from "./colors.json";
 import { getItemSync } from "./storage";
+import { clampPlainIndex, mapAnsi, rawIndexToPlain, replacePlainSegment } from "./ansiMapping";
 
 function hexToRgb(hex: string): [number, number, number] {
     const value = parseInt(hex.replace(/^#/, ''), 16);
@@ -45,21 +46,50 @@ export function colorString(string: string, colorCode: number) {
     return color(colorCode) + string + RESET;
 }
 
-export function colorStringInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.indexOf(string, startIndex)
-    if (matchIndex === -1) {
-        return rawLine
+export function colorStringInLine(rawLine: string, string: string, colorCode: number, startIndex = 0, startIndexIsPlain = false) {
+    if (!string) {
+        return rawLine;
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + string + RESET + rawLine.substring(matchIndex + string.length)
+    const mapping = mapAnsi(rawLine);
+    const searchStart = startIndexIsPlain
+        ? clampPlainIndex(startIndex, mapping.plain.length)
+        : rawIndexToPlain(mapping, startIndex);
+    const plainIndex = mapping.plain.indexOf(string, searchStart);
+    if (plainIndex === -1) {
+        return rawLine;
+    }
+    const plainEnd = plainIndex + string.length;
+    return replacePlainSegment(rawLine, plainIndex, plainEnd, segment => {
+        if (!segment.plain) {
+            return segment.raw;
+        }
+        const suffixState = segment.endState.startsWith(RESET) ? segment.endState.slice(RESET.length) : segment.endState;
+        return `${color(colorCode)}${segment.plain}${RESET}${suffixState}`;
+    }, mapping);
 }
 
-export function colorTokenInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.toLowerCase().indexOf(string, startIndex)
-    const endIndex = matchIndex + string.length
-    if (matchIndex === -1) {
-        return rawLine
+export function colorTokenInLine(rawLine: string, string: string, colorCode: number, startIndex = 0, startIndexIsPlain = false) {
+    if (!string) {
+        return rawLine;
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex)
+    const mapping = mapAnsi(rawLine);
+    const searchStart = startIndexIsPlain
+        ? clampPlainIndex(startIndex, mapping.plain.length)
+        : rawIndexToPlain(mapping, startIndex);
+    const lowerNeedle = string.toLowerCase();
+    const plainLower = mapping.plain.toLowerCase();
+    const plainIndex = plainLower.indexOf(lowerNeedle, searchStart);
+    if (plainIndex === -1) {
+        return rawLine;
+    }
+    const plainEnd = plainIndex + string.length;
+    return replacePlainSegment(rawLine, plainIndex, plainEnd, segment => {
+        if (!segment.plain) {
+            return segment.raw;
+        }
+        const suffixState = segment.endState.startsWith(RESET) ? segment.endState.slice(RESET.length) : segment.endState;
+        return `${color(colorCode)}${segment.plain}${RESET}${suffixState}`;
+    }, mapping);
 }
 
 export function findClosestColor(hex: string | number[]): number {

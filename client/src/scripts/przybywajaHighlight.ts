@@ -6,6 +6,6 @@ export default function initPrzybywajaHighlight(client: Client) {
     const pattern = /\b(przybyw(?:a|aja))\b/i;
     client.Triggers.registerTrigger(pattern, (raw, _line, matches) => {
         const start = matches.index ?? 0;
-        return colorStringInLine(raw, matches[1], HIGHLIGHT, start);
+        return colorStringInLine(raw, matches[1], HIGHLIGHT, start, true);
     }, 'przybywaja-highlight');
 }

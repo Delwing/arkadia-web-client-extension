@@ -1,7 +1,7 @@
 import { loadPeople, type PersonEntry } from './peopleLoader';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
-import {stripAnsiCodes} from './Triggers';
+import { mapAnsi, replacePlainSegment, rawIndexToPlain, type AnsiMap } from './ansiMapping';
 
 export default class People {
 
@@ -69,16 +69,19 @@ export default class People {
             }
 
             const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-                const index = matches.index || 0
-                const token = matches[0]
-                const suffix = rawLine.substring(index + token.length)
-                const nextWord = stripAnsiCodes(suffix)
+                const mapping = mapAnsi(rawLine)
+                const rawStart = matches.index || 0
+                const rawEnd = rawStart + matches[0].length
+                const startPlain = rawIndexToPlain(mapping, rawStart)
+                const endPlain = rawIndexToPlain(mapping, rawEnd)
+                const suffixPlain = mapping.plain.slice(endPlain)
+                const nextWord = suffixPlain
                     .toLowerCase()
                     .replace(/^\s+/, '')
                 if (nextWord.startsWith('chaosu')) {
                     return rawLine
                 }
-                return this.buildDescHighlight(rawLine, token, index, replacement, state, RED)
+                return this.buildDescHighlight(rawLine, mapping, startPlain, endPlain, replacement, state, RED)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -88,9 +91,12 @@ export default class People {
                 if (!addedNames.has(key) && replacement.name.length > 2) {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-                        const index = matches.index || 0
-                        const token = matches[0]
-                        return this.buildNameHighlight(rawLine, token, index, chosenColor)
+                        const mapping = mapAnsi(rawLine)
+                        const rawStart = matches.index || 0
+                        const rawEnd = rawStart + matches[0].length
+                        const startPlain = rawIndexToPlain(mapping, rawStart)
+                        const endPlain = rawIndexToPlain(mapping, rawEnd)
+                        return this.buildNameHighlight(rawLine, mapping, startPlain, endPlain, chosenColor)
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
@@ -110,29 +116,42 @@ export default class People {
         return { inGuild, isEnemy, guildColor }
     }
 
-    private buildNameHighlight(rawLine: string, token: string, index: number, colorCode: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
-        const highlighted = color(colorCode) + token + RESET
-        return prefix + highlighted + suffix
+    private buildNameHighlight(rawLine: string, mapping: AnsiMap, start: number, end: number, colorCode: number) {
+        return replacePlainSegment(rawLine, start, end, segment => {
+            if (!segment.plain) {
+                return segment.raw
+            }
+            const suffixState = segment.endState.startsWith(RESET) ? segment.endState.slice(RESET.length) : segment.endState
+            return `${color(colorCode)}${segment.plain}${RESET}${suffixState}`
+        }, mapping)
     }
 
-    private buildDescHighlight(rawLine: string, token: string, index: number, replacement: { name: string; guild: string }, state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }, RED: number) {
-        const prefix = rawLine.substring(0, index)
-        const suffix = rawLine.substring(index + token.length)
-        let highlighted = token
-        if (state.isEnemy) {
-            highlighted = color(RED) + token + RESET
-        }
+    private buildDescHighlight(
+        rawLine: string,
+        mapping: AnsiMap,
+        start: number,
+        end: number,
+        replacement: { name: string; guild: string },
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: number },
+        RED: number,
+    ) {
+        return replacePlainSegment(rawLine, start, end, segment => {
+            if (!segment.plain) {
+                return segment.raw
+            }
 
-        let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
-        if (state.isEnemy) {
-            suffixText = ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
-        } else if (state.inGuild && state.guildColor !== undefined) {
-            suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
-        }
+            const baseText = state.isEnemy ? `${color(RED)}${segment.plain}${RESET}` : segment.plain
 
-        return prefix + highlighted + suffixText + suffix
+            let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
+            if (state.isEnemy) {
+                suffixText = ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
+            } else if (state.inGuild && state.guildColor !== undefined) {
+                suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
+            }
+
+            const suffixState = segment.endState.startsWith(RESET) ? segment.endState.slice(RESET.length) : segment.endState
+            return `${baseText}${suffixText}${suffixState}`
+        }, mapping)
     }
 
 }
