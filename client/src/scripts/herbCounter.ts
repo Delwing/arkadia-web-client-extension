@@ -573,7 +573,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     amount = 1;
                 }
                 await take(herb, amount);
-                const biernik = herbs?.herb_id_to_odmiana[herb]?.mnoga_biernik || herb;
+                const biernik = getHerbCase(herb, amount, herbs);
                 preUseCommands.forEach(cmd => client.sendCommand(cmd));
                 client.sendCommand(`${action} ${amount} ${biernik}`);
                 postUseCommands.forEach(cmd => client.sendCommand(cmd));
