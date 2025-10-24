@@ -24,7 +24,7 @@ export class IndexedDbSingleRecordStrategy<TSnapshot, TMeta extends RefreshMetad
     this.metadataConfig =
       options.metadata ?? {
         ...options.snapshot,
-        key: `${options.snapshot.key}-metadata`,
+        key: `metadata`,
       };
   }
 
