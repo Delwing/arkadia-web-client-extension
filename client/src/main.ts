@@ -85,16 +85,14 @@ import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
 import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
-
+import { emitFakeLine } from "./scripts/fakeLine";
 
 export function registerScripts(client: Client) {
     const aliases = client.aliases
     aliases.push({
         pattern: /\/fake (.*)/,
         callback: (matches: RegExpMatchArray) => {
-            client.clientAdapter.output(client.clientAdapter.parseAnsiPatterns(client.onLine(matches[1], 'combat.avatar')))
-            // @ts-ignore
-            client.clientAdapter.flushMessageBuffer() //TODO figure that one
+            emitFakeLine(client, matches[1])
         }
     })
     initMapAliases(client, aliases)
