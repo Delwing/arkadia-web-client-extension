@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
 import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
-import { readMultibinds, replaceMultibinds, type StoredMultibindRecord } from "../multibindStorage";
+import {
+    replaceAll as replaceMultibinds,
+    subscribe as subscribeMultibinds,
+    toKey,
+    type StoredMultibindRecord,
+} from "../dataStores/multibindStore";
 
 interface Bind {
     key: string;
@@ -89,30 +94,6 @@ const CONFLICT_POLICIES: { value: ConflictPolicy; label: string }[] = [
     { value: 'keep-first', label: 'Zachowaj pierwszy wpis' },
     { value: 'skip-conflicts', label: 'Pomiń konflikty' },
 ];
-
-function toKey(roomId: number, index: number) {
-    return `${roomId}:${index}`;
-}
-
-function normalizeMultibinds(list: any): StoredMultibindRecord[] {
-    if (!Array.isArray(list)) {
-        return [];
-    }
-    return list
-        .map(item => {
-            const roomId = Number(item?.roomId);
-            const index = Number(item?.index);
-            if (!Number.isFinite(roomId) || !Number.isFinite(index)) {
-                return null;
-            }
-            return {
-                roomId,
-                index,
-                action: typeof item?.action === 'string' ? item.action : String(item?.action ?? ''),
-            } as StoredMultibindRecord;
-        })
-        .filter((entry): entry is StoredMultibindRecord => !!entry);
-}
 
 function applyConflictPolicy(rows: MultibindImportRow[], policy: ConflictPolicy) {
     const map = new Map<string, MultibindImportRow>();
@@ -201,21 +182,9 @@ function Binds() {
     }, []);
 
     useEffect(() => {
-        let active = true;
-        readMultibinds().then(list => {
-            if (active) {
-                setMultibinds(list);
-            }
-        });
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent).detail;
-            setMultibinds(normalizeMultibinds(detail));
-        };
-        window.addEventListener('multibindsStorage', handler as EventListener);
-        window.clientExtension?.port?.postMessage?.({ type: 'MULTIBINDS_LOAD' });
+        const unsubscribe = subscribeMultibinds(setMultibinds);
         return () => {
-            active = false;
-            window.removeEventListener('multibindsStorage', handler as EventListener);
+            unsubscribe();
         };
     }, []);
 
@@ -357,29 +326,7 @@ function Binds() {
         }
         const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
         try {
-            if (window.clientExtension?.port) {
-                await new Promise<void>((resolve) => {
-                    let settled = false;
-                    const handler = () => {
-                        if (settled) return;
-                        settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
-                        resolve();
-                    };
-                    window.addEventListener('multibindsStorage', handler as EventListener, { once: true });
-                    window.clientExtension.port.postMessage({ type: 'MULTIBINDS_SAVE', value: finalList });
-                    setTimeout(() => {
-                        if (settled) return;
-                        settled = true;
-                        window.removeEventListener('multibindsStorage', handler as EventListener);
-                        resolve();
-                    }, 1500);
-                });
-            } else {
-                await replaceMultibinds(finalList);
-                window.dispatchEvent(new CustomEvent('multibindsStorage', { detail: finalList }));
-            }
-            setMultibinds(finalList);
+            await replaceMultibinds(finalList);
             setImportResult({
                 newCount,
                 updatedCount: overwriteExisting ? updateCount : 0,

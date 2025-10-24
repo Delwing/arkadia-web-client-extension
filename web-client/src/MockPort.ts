@@ -1,5 +1,9 @@
 import storage, { setItemSync, getItemSync } from "@client/src/storage";
-import { readMultibinds, replaceMultibinds } from "./multibindStorage";
+import {
+    getSnapshot as getMultibindsSnapshot,
+    replaceAll as replaceMultibinds,
+    subscribe as subscribeMultibinds,
+} from "./dataStores/multibindStore";
 import {
     addLocalNpc,
     setLocalNpcs,
@@ -16,6 +20,8 @@ export default class MockPort {
         }
     };
 
+    private unsubscribeMultibinds: (() => void) | null = null;
+
     constructor() {
         storage.onChanged?.addListener(changes => {
             Object.entries(changes).forEach(([key, {newValue}]) => {
@@ -31,6 +37,10 @@ export default class MockPort {
             this.dispatch({ npc: this.currentNpc });
             this.dispatch({ storage: { key: 'npc', value: this.currentNpc } });
         });
+
+        this.unsubscribeMultibinds = subscribeMultibinds(list => {
+            this.dispatch({ multibindsStorage: list });
+        });
     }
 
     private dispatch(message: any) {
@@ -43,7 +53,7 @@ export default class MockPort {
             return;
         }
         if (message.type === 'MULTIBINDS_LOAD') {
-            readMultibinds()
+            getMultibindsSnapshot()
                 .then(list => {
                     this.dispatch({ multibindsStorage: list });
                 })
@@ -52,11 +62,7 @@ export default class MockPort {
         }
         if (message.type === 'MULTIBINDS_SAVE') {
             const list = Array.isArray(message.value) ? message.value : [];
-            replaceMultibinds(list)
-                .then((normalized) => {
-                    this.dispatch({ multibindsStorage: normalized });
-                })
-                .catch(e => console.error('Failed to save multibinds:', e));
+            replaceMultibinds(list).catch(e => console.error('Failed to save multibinds:', e));
             return;
         }
         if (message.type === 'SET_STORAGE') {
