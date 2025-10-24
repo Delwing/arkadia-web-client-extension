@@ -49,7 +49,8 @@ describe("PluginHost", () => {
         });
 
         let cleanupCount = 0;
-        const setup = jest.fn((_api: PluginAPI) => {
+        const setup = jest.fn((api: PluginAPI) => {
+            expect(api.client.extension).toBe(client);
             return () => {
                 cleanupCount++;
             };
