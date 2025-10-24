@@ -51,6 +51,20 @@ function normalizeSnapshot(list: unknown): StoredMultibindRecord[] {
   return Array.from(unique.values());
 }
 
+function extractStoredEntry(record: { value: unknown }): StoredMultibindRecord {
+  const value = record.value as Record<string, unknown> | StoredMultibindRecord | undefined;
+  if (value && typeof value === 'object') {
+    const container = value as Record<string, unknown>;
+    if (container.data && typeof container.data === 'object') {
+      return container.data as StoredMultibindRecord;
+    }
+    if (container.value && typeof container.value === 'object') {
+      return container.value as StoredMultibindRecord;
+    }
+  }
+  return (value ?? record.value) as StoredMultibindRecord;
+}
+
 const getMultibindStore = createDataStoreSingleton(() =>
   new DataStore<StoredMultibindRecord[], RefreshMetadata>({
     loader: {
@@ -68,6 +82,7 @@ const getMultibindStore = createDataStoreSingleton(() =>
       metadataStore: DB_CONFIG.metadataStore,
       version: 2,
       buildEntryId,
+      valueMapper: (record) => extractStoredEntry(record),
     }),
   }),
 );

@@ -77,6 +77,57 @@ describe('IndexedDbCollectionStrategy', () => {
     }
   });
 
+  test('uses value mapper when reading snapshot', async () => {
+    strategy = new IndexedDbCollectionStrategy<PersonEntry, TestMetadata>({
+      dbName: DB_NAME,
+      entriesStore: 'peopleEntries',
+      metadataStore: 'peopleMetadata',
+      metadataKey: 'metadata',
+      version: 2,
+      buildEntryId: (person, index) => `legacy-${index}-${person.name}`,
+      valueMapper: (record) => {
+        const stored = record.value as { data: PersonEntry };
+        return stored.data;
+      },
+    });
+
+    const openRequest = indexedDB.open(DB_NAME, 2);
+    openRequest.onupgradeneeded = () => {
+      const db = openRequest.result;
+      if (!db.objectStoreNames.contains('peopleEntries')) {
+        db.createObjectStore('peopleEntries', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('peopleMetadata')) {
+        db.createObjectStore('peopleMetadata', { keyPath: 'id' });
+      }
+    };
+
+    const db: IDBDatabase = await new Promise((resolve, reject) => {
+      openRequest.onsuccess = () => resolve(openRequest.result);
+      openRequest.onerror = () => reject(openRequest.error ?? new Error('Failed to prepare legacy database state'));
+    });
+
+    try {
+      const transaction = db.transaction(['peopleEntries'], 'readwrite');
+      const store = transaction.objectStore('peopleEntries');
+      samplePeople.forEach((person, index) => {
+        store.put({ id: `legacy-${index}`, order: index, value: { data: person } });
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store legacy entries'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Storing legacy entries was aborted'));
+      });
+    } finally {
+      db.close();
+    }
+
+    const cachedSnapshot = await strategy.readSnapshot();
+
+    expect(cachedSnapshot).toEqual(samplePeople);
+  });
+
   test('clear removes snapshot and metadata', async () => {
     const metadata: TestMetadata = { refreshedAt: Date.now(), count: samplePeople.length };
     await strategy.writeSnapshot(samplePeople);

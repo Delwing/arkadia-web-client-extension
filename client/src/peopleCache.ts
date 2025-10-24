@@ -18,6 +18,7 @@ export interface IndexedDbCollectionStrategyOptions<TEntry> {
   metadataKey?: string;
   version?: number;
   buildEntryId: (entry: TEntry, index: number) => string;
+  valueMapper?: (record: CollectionRecord<unknown>) => TEntry;
 }
 
 async function openDatabase(options: IndexedDbCollectionStrategyOptions<any>): Promise<IDBDatabase> {
@@ -52,12 +53,14 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
 {
   private readonly options: IndexedDbCollectionStrategyOptions<TEntry>;
   private readonly metadataKey: string;
+  private readonly mapRecordValue: (record: CollectionRecord<unknown>) => TEntry;
   private inMemorySnapshot: TEntry[] | undefined;
   private inMemoryMetadata: TMeta | undefined;
 
   constructor(options: IndexedDbCollectionStrategyOptions<TEntry>) {
     this.options = options;
     this.metadataKey = options.metadataKey ?? 'metadata';
+    this.mapRecordValue = options.valueMapper ?? ((record) => record.value as TEntry);
   }
 
   async readSnapshot(): Promise<TEntry[] | undefined> {
@@ -70,14 +73,14 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
       try {
         const transaction = db.transaction([this.options.entriesStore], 'readonly');
         const store = transaction.objectStore(this.options.entriesStore);
-        const records = (await runRequest(store.getAll())) as CollectionRecord<TEntry>[];
+        const records = (await runRequest(store.getAll())) as CollectionRecord<unknown>[];
         if (records.length === 0) {
           this.inMemorySnapshot = undefined;
           return this.inMemorySnapshot;
         }
         const ordered = records
           .sort((a, b) => a.order - b.order)
-          .map((record) => record.value);
+          .map((record) => this.mapRecordValue(record));
         this.inMemorySnapshot = ordered;
         return this.inMemorySnapshot;
       } finally {
