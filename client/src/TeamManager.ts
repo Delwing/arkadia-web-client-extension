@@ -202,7 +202,7 @@ export default class TeamManager {
             this.clearTeam();
         };
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)\]? zmusza cie do opuszczenia druzyny\.$/, clear, tag);
-        triggers.registerTrigger(/Nie jestes w zadnej druzynie\./, clear, tag);
+        triggers.registerTrigger("Nie jestes w zadnej druzynie.", clear, tag);
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)\]? rozwiazuje druzyne\.$/, clear, tag);
         triggers.registerTrigger(/^Porzucasz (?:swoja druzyne|druzyne, ktorej przewodzil[ea]s)\.$/, clear, tag);
         triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?:\:|) (?<team>.*)\.$/, (_r, _l, m): undefined => {

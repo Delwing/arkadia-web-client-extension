@@ -6,7 +6,7 @@ export default function initMountain(client: Client) {
     const tag = "mountain";
     const YELLOW = findClosestColor("#ffff00");
 
-    client.Triggers.registerTrigger(/Zaczynasz schodzic na dol\./, (_r, line) => {
+    client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (_r, line) => {
         mountainMovingDir = "down";
         return colorString(line, YELLOW);
     }, tag);
@@ -16,12 +16,12 @@ export default function initMountain(client: Client) {
         return colorString(line, YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger(/Docierasz na gore\./, (_r, line) => {
+    client.Triggers.registerTrigger("Docierasz na gore.", (_r, line) => {
         mountainMovingDir = undefined;
         return colorString(line, YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger(/Bezpiecznie schodzisz na dol\./, (_r, line) => {
+    client.Triggers.registerTrigger("Bezpiecznie schodzisz na dol.", (_r, line) => {
         mountainMovingDir = undefined;
         return colorString(line, YELLOW);
     }, tag);
