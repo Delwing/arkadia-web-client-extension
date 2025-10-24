@@ -99,4 +99,8 @@ export default function initLocalizers(client: Client) {
         const handler = createHandler(client, entry.roomId);
         parent.registerChild(entry.pattern, handler, 'localizers');
     });
+
+    client.Triggers.registerTrigger("Otworzyly sie drzwi klatki.", (): undefined => {
+        client.Map.refreshPosition = true
+    })
 }
