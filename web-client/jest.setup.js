@@ -34,3 +34,23 @@ if (typeof globalThis.fetch !== 'function') {
     });
   }
 }
+
+if (typeof globalThis.pako === 'undefined') {
+  class InflateMock {
+    constructor() {
+      this.result = [];
+      this.err = 0;
+      this.msg = '';
+      this.chunks = [];
+      this.ended = false;
+    }
+
+    push() {}
+  }
+
+  globalThis.pako = {
+    Inflate: InflateMock,
+    inflate: (input) => input,
+    ungzip: (input) => input,
+  };
+}
