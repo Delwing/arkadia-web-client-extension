@@ -24,14 +24,10 @@ function trigger_func_skrypty_ui_gags_color_color_other_wytracenie_tobie()
 end
 
 function trigger_func_skrypty_ui_gags_color_color_other_przelamanie()
+    display(ateam.team_names)
     local team_break = ateam.team_names[matches[3]] or ateam.team_names[string.lower(matches[3])]
     local color = team_break and "green" or "red"
-    local prefix = "[ KTOS LAMIE ]"
-    creplaceLine("\n\n" .. prefix .. " " .. matches[2] .. "\n\n")
-    if selectString(prefix, 1) > -1 then
-        fg(color)
-        deselect()
-    end
+    creplaceLine("\n\n<".. color ..">[ KTOS LAMIE ] " .. matches[2] .. "\n\n")
     ateam:may_setup_broken_defense(matches[4])
     resetFormat()
 

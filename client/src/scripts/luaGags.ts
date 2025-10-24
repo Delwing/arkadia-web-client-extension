@@ -17,6 +17,7 @@ import {
     LuaGagDeleteMode,
     normalizeLuaGagsDeleteLines,
 } from "../luaGagsSettings";
+import {Table} from "lua-in-js";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -309,11 +310,17 @@ export default function registerLuaGagTriggers(client: Client) {
             npc_spece:  "floral_white"
         }
 
+        const team_names = new luainjs.Table([])
+        team_names.metatable = new Table()
+        team_names.metatable.set("__index", (_: any, name: string) => {
+            return client.TeamManager.getTeamMembers().find(n => n === name)
+        })
+
         const ateam = {
             may_setup_paralyzed_name: (_, name: string) => console.log("Ogluch " + name),
             may_setup_broken_defense: (_, name: string) => console.log("Przelamanie " + name),
             may_end_paralyzed_name: (_, name: string) => console.log("Koniec oglucha " + name),
-            team_names: new luainjs.Table(client.TeamManager.getTeamMembers())
+            team_names: team_names
         }
 
         const rex = {
@@ -336,6 +343,10 @@ export default function registerLuaGagTriggers(client: Client) {
             gag_colors: new luainjs.Table(gagColors),
             utils: new luainjs.Table({
                 bind_functional: (string: string) => {
+                    client.FunctionalBind.newMessage()
+                    client.FunctionalBind.set(string)
+                },
+                echobind: (string: string) => {
                     client.FunctionalBind.newMessage()
                     client.FunctionalBind.set(string)
                 }
@@ -408,6 +419,9 @@ export default function registerLuaGagTriggers(client: Client) {
             },
             getCurrentLine: () => {
                 return global.line
+            },
+            display: (object: any)=> {
+                console.log(object)
             }
         }
 
