@@ -11,7 +11,7 @@ export default defineConfig({
     plugins: [
         react(),
         tsconfigPaths()
-    ] as PluginOption[],
+    ] as unknown as PluginOption[],
     base: "./",
     define: {
         __COMMIT_SHA__: JSON.stringify(commitSha),
