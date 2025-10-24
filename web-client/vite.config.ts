@@ -11,6 +11,8 @@ const commitSha = execSync('git rev-parse --short HEAD').toString().trim();
 const commitDate = execSync('git log -1 --format=%cd --date=short').toString().trim();
 const configDir = fileURLToPath(new URL('.', import.meta.url));
 const require = createRequire(import.meta.url);
+const repoRoot = join(configDir, "..");
+const clientDir = join(repoRoot, "client");
 
 function buildPluginApiPackage(): PluginOption {
     return {
@@ -23,6 +25,9 @@ function buildPluginApiPackage(): PluginOption {
             rmSync(pluginsDir, {recursive: true, force: true});
 
             const tscBin = require.resolve("typescript/bin/tsc");
+            execFileSync("yarn", ["--cwd", clientDir, "types"], {
+                stdio: "inherit",
+            });
             execFileSync("node", [tscBin, "--project", "tsconfig.plugins.json"], {
                 cwd: configDir,
                 stdio: "inherit",

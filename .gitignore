@@ -8,3 +8,8 @@ arkadia-extension.zip
 vite.config.js
 .yarn
 .DS_Store
+client/src/**/*.d.ts
+!client/src/types/MapData.d.ts
+!client/src/types/global.d.ts
+!client/src/types/wasm.d.ts
+web-client/src/plugins/types/generated/
