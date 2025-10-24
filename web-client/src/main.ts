@@ -51,7 +51,9 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
-registerScripts(client)
+registerScripts(client, {
+    arkadia: arkadiaClient,
+})
 client.connect(client.port, true)
 
 

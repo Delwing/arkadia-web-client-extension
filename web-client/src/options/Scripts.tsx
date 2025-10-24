@@ -13,6 +13,19 @@ function Scripts() {
                 setScripts(res.scripts);
             }
         });
+        const listener = (changes: { [key: string]: { oldValue: any, newValue: any } }) => {
+            if (!changes.scripts) {
+                return;
+            }
+            const value = changes.scripts.newValue;
+            if (Array.isArray(value)) {
+                setScripts(value);
+            }
+        };
+        storage.onChanged?.addListener(listener);
+        return () => {
+            storage.onChanged?.removeListener?.(listener);
+        };
     }, []);
 
     function save(list: string[]) {

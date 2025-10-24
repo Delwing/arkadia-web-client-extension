@@ -84,10 +84,11 @@ import initTeamBlockers from './scripts/teamBlockers'
 import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
 import Client from "./Client";
+import type { PluginHostOptions } from "./plugins/api";
 import {initSpecialLocations} from "./scripts/specialLocations";
 
 
-export function registerScripts(client: Client) {
+export function registerScripts(client: Client, pluginOptions: PluginHostOptions = {}) {
     const aliases = client.aliases
     aliases.push({
         pattern: /\/fake (.*)/,
@@ -225,7 +226,7 @@ export function registerScripts(client: Client) {
     initShortcuts(client, aliases)
     initLetter(client, aliases)
     initShortExits(client)
-    initExternalScripts(client)
+    initExternalScripts(client, pluginOptions)
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initWeaponEvaluation(client)
