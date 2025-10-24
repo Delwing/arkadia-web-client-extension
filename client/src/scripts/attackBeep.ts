@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
-import {loadPeople, type PersonEntry} from '../peopleLoader';
+import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '../peopleStore';
+import type { PersonEntry } from '../types/people';
 
 const RED = findClosestColor("#ff0000");
 
@@ -21,25 +22,16 @@ export default function initAttackBeep(client: Client) {
     const tag = "attackBeep";
     let enemyGuilds: string[] = [];
     let peopleCache: PersonEntry[] = [];
-    let loadPromise: Promise<PersonEntry[]> | null = null;
+
+    subscribeToPeopleStore(snapshot => {
+        peopleCache = snapshot ?? [];
+    });
 
     function ensurePeopleLoaded() {
-        if (!loadPromise) {
-            loadPromise = loadPeople()
-                .then(people => {
-                    peopleCache = people;
-                    return people;
-                })
-                .catch(error => {
-                    console.warn('Failed to load people database', error);
-                    peopleCache = [];
-                    return [] as PersonEntry[];
-                })
-                .finally(() => {
-                    loadPromise = null;
-                });
-        }
-        return loadPromise;
+        return refreshPeopleStore().catch(error => {
+            console.warn('Failed to load people database', error);
+            return undefined;
+        });
     }
 
     ensurePeopleLoaded().catch(() => undefined);

@@ -1,5 +1,7 @@
-import { loadPeopleFromIndexedDB, storePeopleInIndexedDB } from '../src/peopleCache';
+import { IndexedDbCollectionStrategy } from '../src/peopleCache';
 import type { PersonEntry } from '../src/types/people';
+
+type TestMetadata = { refreshedAt: number; count: number };
 
 const DB_NAME = 'ArkadiaPeopleDB';
 
@@ -12,47 +14,38 @@ async function deleteDatabase() {
   });
 }
 
-async function updateMetadataTimestamp(timestamp: number) {
-  const request = indexedDB.open(DB_NAME, 2);
-  const db: IDBDatabase = await new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('Failed to open database'));
-  });
-
-  try {
-    const transaction = db.transaction(['peopleMetadata'], 'readwrite');
-    const store = transaction.objectStore('peopleMetadata');
-    await new Promise<void>((resolve, reject) => {
-      const putRequest = store.put({ id: 'metadata', timestamp });
-      putRequest.onsuccess = () => resolve();
-      putRequest.onerror = () => reject(putRequest.error ?? new Error('Failed to update metadata timestamp'));
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error('Failed to commit metadata transaction'));
-      transaction.onabort = () => reject(transaction.error ?? new Error('Metadata transaction aborted'));
-    });
-  } finally {
-    db.close();
-  }
-}
-
-describe('people IndexedDB cache', () => {
+describe('IndexedDbCollectionStrategy', () => {
   const samplePeople: PersonEntry[] = [
     { name: 'Aeron', description: 'wysoki mezczyzna', guild: 'CKN' },
     { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
   ];
 
+  let strategy: IndexedDbCollectionStrategy<PersonEntry, TestMetadata>;
+
   beforeEach(async () => {
     await deleteDatabase();
+    strategy = new IndexedDbCollectionStrategy<PersonEntry, TestMetadata>({
+      dbName: DB_NAME,
+      entriesStore: 'peopleEntries',
+      metadataStore: 'peopleMetadata',
+      metadataKey: 'metadata',
+      version: 2,
+      buildEntryId: (person) =>
+        `${person.name.toLowerCase()}|${person.guild.toLowerCase()}|${person.description.toLowerCase()}`,
+    });
   });
 
-  test('stores people as normalized entries and loads them back', async () => {
-    await storePeopleInIndexedDB(samplePeople);
+  test('stores snapshot entries preserving order and metadata', async () => {
+    const metadata: TestMetadata = { refreshedAt: Date.now(), count: samplePeople.length };
 
-    const cached = await loadPeopleFromIndexedDB(24 * 60 * 60 * 1000);
-    expect(cached).toEqual(samplePeople);
+    await strategy.writeSnapshot(samplePeople);
+    await strategy.writeMetadata(metadata);
+
+    const cachedSnapshot = await strategy.readSnapshot();
+    const cachedMetadata = await strategy.readMetadata();
+
+    expect(cachedSnapshot).toEqual(samplePeople);
+    expect(cachedMetadata).toEqual(metadata);
 
     const openRequest = indexedDB.open(DB_NAME, 2);
     const db: IDBDatabase = await new Promise((resolve, reject) => {
@@ -74,10 +67,8 @@ describe('people IndexedDB cache', () => {
         expect(record).toEqual(
           expect.objectContaining({
             id: expect.any(String),
-            name: samplePeople[index].name,
-            description: samplePeople[index].description,
-            guild: samplePeople[index].guild,
             order: index,
+            value: samplePeople[index],
           }),
         );
       });
@@ -86,13 +77,17 @@ describe('people IndexedDB cache', () => {
     }
   });
 
-  test('respects ttl when loading cached entries', async () => {
-    await storePeopleInIndexedDB(samplePeople);
+  test('clear removes snapshot and metadata', async () => {
+    const metadata: TestMetadata = { refreshedAt: Date.now(), count: samplePeople.length };
+    await strategy.writeSnapshot(samplePeople);
+    await strategy.writeMetadata(metadata);
 
-    const past = Date.now() - 2 * 24 * 60 * 60 * 1000;
-    await updateMetadataTimestamp(past);
+    await strategy.clear();
 
-    const cached = await loadPeopleFromIndexedDB(24 * 60 * 60 * 1000);
-    expect(cached).toBeNull();
+    const cachedSnapshot = await strategy.readSnapshot();
+    const cachedMetadata = await strategy.readMetadata();
+
+    expect(cachedSnapshot).toBeUndefined();
+    expect(cachedMetadata).toBeUndefined();
   });
 });
