@@ -14,7 +14,7 @@ function createHandler(client: Client, roomId: number) {
 }
 
 export default function initShipLocalizers(client: Client) {
-    const parent = client.Triggers.registerTrigger(/krzyczy:/, () => undefined, 'ship-localizers');
+    const parent = client.Triggers.registerTrigger('krzyczy:', () => undefined, 'ship-localizers');
 
     const entries: Localizer[] = [
         { pattern: /(?:Mlody smutny mezczyzna|Strag) krzyczy: Doplynelismy do przystani promu w Oxenfurcie! Mozna wysiadac!$/, roomId: 2464 },
