@@ -1,3 +1,7 @@
+jest.mock('front-client/src/dataStores/npcStore', () => ({
+  addLocalNpc: jest.fn().mockResolvedValue(undefined),
+}));
+
 import PackageHelper from '../src/PackageHelper';
 import { colorStringInLine, findClosestColor } from '../src/Colors';
 
