@@ -1,11 +1,14 @@
 // Keep the interfaces below in sync with the implementations in
 // ../client/src/plugins/api.ts.
 
+import type Client from "@client/src/Client.ts";
+
 export interface CommandOptions {
     preserveCase?: boolean;
 }
 
 export interface PluginClientAPI {
+    readonly extension: Client;
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
     send(command: string, echo?: boolean, options?: CommandOptions): void;
     addEventListener(event: string, listener: (ev: CustomEvent) => void, options?: AddEventListenerOptions | boolean): () => void;
