@@ -17,8 +17,11 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@client/src/Client": [
-        "./src/plugins/types/client"
+      "@client/src/*": [
+        "./src/plugins/types/generated/*.d.ts",
+        "./src/plugins/types/*",
+        "../client/src/*.d.ts",
+        "../client/src/*.ts"
       ],
       "@client/*": [
         "../client/*"

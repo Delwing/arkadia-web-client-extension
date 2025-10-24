@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "types": "node ./scripts/generate-types.cjs"
   },
   "dependencies": {
     "howler": "^2.2.4",
