@@ -258,15 +258,18 @@ export default class MapHelper {
     }
 
     refresh() {
-        this.setMapPosition(this.gmcpPosition)
+        return this.setMapPosition(this.gmcpPosition)
     }
 
     setMapPosition(data: Position) {
         if (data && data.x && data.y && data.name) {
             const hash = `${data.x}:${data.y}:0:${data.name}`;
             const room = this.hashes[hash];
+            let roomId = this.currentRoom.id
             this.setMapRoom(room)
+            return roomId !== room
         }
+        return false
     }
 
     setMapRoomById(id: number) {

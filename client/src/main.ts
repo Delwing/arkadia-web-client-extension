@@ -136,7 +136,9 @@ export function registerScripts(client: Client) {
         if (line.startsWith("Wykonuje komende 'idz ")) {
             return
         }
-        client.Map.refresh()
+        if (client.Map.refresh()) {
+            return
+        }
         client.Map.refreshPosition = true
     })
 
