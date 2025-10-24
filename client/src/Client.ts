@@ -1,5 +1,4 @@
 import Triggers from "./Triggers";
-import { stripAnsiCodes } from "./stripAnsiCodes";
 import PackageHelper from "./PackageHelper";
 import MapHelper from "./MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
@@ -27,6 +26,31 @@ import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "front-client/src/ansiParser";
+
+const ANSI_SGR_REGEX = /\x1b\[[0-9;]*m/g;
+const ANSI_RESET = "\x1b[0m";
+
+const ESCAPE_CHAR_CODE = 0x1b;
+const TAB_CHAR_CODE = 0x09;
+const PRINTABLE_THRESHOLD = 0x20;
+
+function hasPrintableContent(segment: string): boolean {
+    for (let i = 0; i < segment.length; i++) {
+        const code = segment.charCodeAt(i);
+        if (code === ESCAPE_CHAR_CODE) {
+            const end = segment.indexOf('m', i);
+            if (end === -1) {
+                return false;
+            }
+            i = end;
+            continue;
+        }
+        if (code >= PRINTABLE_THRESHOLD || code === TAB_CHAR_CODE) {
+            return true;
+        }
+    }
+    return false;
+}
 
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
@@ -434,8 +458,6 @@ export default class Client {
     onLine(line: string, type: string) {
         this.inLineProcess = true
         this.eventTarget.dispatchEvent(new CustomEvent(LINE_START_EVENT))
-        const ansiRegex = /\x1b\[[0-9;]*m/g
-
         const triggerEngineActive =
             typeof this.Triggers.isTriggerEngineActive === 'function'
                 ? this.Triggers.isTriggerEngineActive()
@@ -449,49 +471,60 @@ export default class Client {
         const multilineText = multilineResultRaw instanceof TriggerLine
             ? multilineResultRaw.toAnsiString()
             : String(multilineResultRaw ?? '')
-        let split = multilineText.split('\n')
-        if (split.length > 0 && stripAnsiCodes(split[split.length - 1]) === '') {
-            split.pop()
+        const split = multilineText.split('\n')
+        let lastPrintableIndex = split.length - 1
+        while (lastPrintableIndex >= 0 && !hasPrintableContent(split[lastPrintableIndex])) {
+            lastPrintableIndex--
         }
-        const processedParts = split.map(partial => {
+        const processedParts: string[] = []
+        for (let i = 0; i <= lastPrintableIndex; i++) {
+            const partial = split[i]
             const lineInput = new TriggerLine(partial, { type }, triggerEngineActive)
             const processedRaw = this.Triggers.parseLine(lineInput, type) as unknown
             if (processedRaw instanceof TriggerLine) {
-                return processedRaw.toAnsiString()
+                processedParts.push(processedRaw.toAnsiString())
+            } else {
+                processedParts.push(processedRaw as string)
             }
-            return processedRaw as string
-        })
+        }
         const serializedParts = processedParts.filter((part): part is string => part !== SKIP_LINE)
+        const defaultColorCode = color(this.defaultColor) || ANSI_RESET
         let result = serializedParts.join('\n')
         if (!result.startsWith("\x1b")) {
-            result = color(255) + result
+            result = defaultColorCode + result
         }
-        const restore: string[] = []
+        const trimmedResult = result.trimEnd()
+        const firstResetIndex = result.indexOf(ANSI_RESET)
+        const trailingResetIndex =
+            firstResetIndex !== -1 &&
+            firstResetIndex === result.lastIndexOf(ANSI_RESET) &&
+            trimmedResult.endsWith(ANSI_RESET)
+                ? firstResetIndex
+                : -1
+        let rebuilt = ""
+        let lastIndex = 0
         const stack: string[] = []
-        const matches = Array.from(result.matchAll(ansiRegex))
-        const resetMatches = Array.from(result.matchAll(/\x1b\[0m/g))
-        const trailingCount = resetMatches.length === 1 && result.trimEnd().endsWith('\x1b[0m') ? 1 : 0
-        matches.forEach((match, i) => {
+        ANSI_SGR_REGEX.lastIndex = 0
+        let match: RegExpExecArray | null
+        while ((match = ANSI_SGR_REGEX.exec(result)) !== null) {
+            rebuilt += result.slice(lastIndex, match.index)
             const seq = match[0]
-            const isTrailing = seq === '\x1b[0m' && i >= matches.length - trailingCount
-            if (seq === '\x1b[0m') {
-                if (isTrailing) {
-                    restore.push('\x1b[0m')
+            if (seq === ANSI_RESET) {
+                if (match.index === trailingResetIndex) {
+                    rebuilt += ANSI_RESET
                 } else {
                     stack.pop()
                     const prev = stack[stack.length - 1]
-                    if (prev) {
-                        restore.push(prev)
-                    } else {
-                        restore.push(color(this.defaultColor) || '\x1b[0m')
-                    }
+                    rebuilt += prev ?? defaultColorCode
                 }
             } else {
                 stack.push(seq)
+                rebuilt += seq
             }
-        })
-        let index = 0
-        result = result.replace(/\x1b\[0m/g, () => restore[index++] || '\x1b[0m')
+            lastIndex = ANSI_SGR_REGEX.lastIndex
+        }
+        rebuilt += result.slice(lastIndex)
+        result = rebuilt
         this.inLineProcess = false
         return result
     }
