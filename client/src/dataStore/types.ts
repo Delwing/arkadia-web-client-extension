@@ -3,10 +3,13 @@ export interface RefreshMetadata {
   hash?: string;
 }
 
+export type ProgressListener = (progress: number, loaded?: number, total?: number) => void;
+
 export interface LoaderContext<TSnapshot, TMeta extends RefreshMetadata> {
   previousSnapshot?: TSnapshot;
   metadata?: TMeta;
   force?: boolean;
+  onProgress?: ProgressListener;
 }
 
 export interface LoaderResult<TSnapshot, TMeta extends RefreshMetadata> {
