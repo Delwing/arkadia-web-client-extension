@@ -1,6 +1,7 @@
 import { SnapshotEventEmitter } from './events';
 import {
   LoaderStrategy,
+  ProgressListener,
   RefreshMetadata,
   SnapshotListener,
   StorageStrategy,
@@ -11,6 +12,7 @@ type Clock = () => number;
 
 type RefreshOptions = {
   force?: boolean;
+  onProgress?: ProgressListener;
 };
 
 export interface DataStoreOptions<TSnapshot, TMeta extends RefreshMetadata> {
@@ -31,6 +33,15 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
   private currentMetadata: TMeta | undefined;
   private initializationPromise: Promise<void> | null = null;
   private activeRefresh: Promise<TSnapshot | undefined> | null = null;
+  private pendingProgressListeners: ProgressListener[] | null = null;
+  private readonly progressDispatcher: ProgressListener = (progress, loaded, total) => {
+    if (!this.pendingProgressListeners) {
+      return;
+    }
+    for (const listener of [...this.pendingProgressListeners]) {
+      listener(progress, loaded, total);
+    }
+  };
 
   constructor(options: DataStoreOptions<TSnapshot, TMeta>) {
     this.loader = options.loader;
@@ -53,18 +64,38 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     await this.ensureInitialized();
 
     if (!options.force && !this.shouldRefresh()) {
+      options.onProgress?.(100);
       return this.currentSnapshot;
     }
 
     if (!this.activeRefresh) {
+      this.pendingProgressListeners = [];
+      if (options.onProgress) {
+        this.pendingProgressListeners.push(options.onProgress);
+      }
       this.activeRefresh = this.performRefresh(options.force === true);
+    } else if (options.onProgress) {
+      if (!this.pendingProgressListeners) {
+        this.pendingProgressListeners = [];
+      }
+      this.pendingProgressListeners.push(options.onProgress);
     }
 
     try {
-      return await this.activeRefresh;
+      const result = await this.activeRefresh;
+      if (options.onProgress && (!this.pendingProgressListeners || this.pendingProgressListeners.length === 0)) {
+        options.onProgress(100);
+      }
+      return result;
     } finally {
       this.activeRefresh = null;
+      this.pendingProgressListeners = null;
     }
+  }
+
+  async getSnapshot(): Promise<TSnapshot | undefined> {
+    await this.ensureInitialized();
+    return this.currentSnapshot;
   }
 
   async applyLocalChange(mutator: (current: TSnapshot | undefined) => TSnapshot): Promise<TSnapshot> {
@@ -113,10 +144,13 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
   }
 
   private async performRefresh(force: boolean): Promise<TSnapshot | undefined> {
+    const onProgress = this.pendingProgressListeners ? this.progressDispatcher : undefined;
+
     const result = await this.loader.load({
       previousSnapshot: this.currentSnapshot,
       metadata: this.currentMetadata,
       force,
+      onProgress,
     });
 
     this.currentSnapshot = result.snapshot;
@@ -131,6 +165,8 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
       this.storage.writeSnapshot(this.currentSnapshot),
       this.storage.writeMetadata(this.currentMetadata),
     ]);
+
+    onProgress?.(100);
 
     this.emitter.emit(this.currentSnapshot);
     return this.currentSnapshot;

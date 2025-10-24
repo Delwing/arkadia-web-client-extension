@@ -1,40 +1,31 @@
-import { loadCachedJSON } from "../utils/dataCache";
+import { SubscriptionOptions } from '../dataStore/types';
+import {
+  getHerbsStore,
+  HERBS_URL,
+  HerbsData,
+  HerbForms,
+  HerbUse,
+} from '../dataStores/herbsStore';
 
-export const HERBS_URL = "https://raw.githubusercontent.com/tjurczyk/arkadia-data/refs/heads/master/herbs_data.json";
-
-export interface HerbForms {
-    mianownik: string;
-    dopelniacz: string;
-    biernik: string;
-    mnoga_mianownik: string;
-    mnoga_dopelniacz: string;
-    mnoga_biernik: string;
-}
-
-export interface HerbUse {
-    action: string;
-    effect: string;
-    dont_bind?: boolean;
-}
-
-export interface HerbsData {
-    herb_id_to_odmiana: Record<string, HerbForms>;
-    version: number;
-    herb_id_to_use: Record<string, HerbUse[]>;
-}
-
-const TTL = 24 * 60 * 60 * 1000; // 24h
+export { HERBS_URL };
+export type { HerbForms, HerbUse, HerbsData };
 
 export default async function loadHerbs(): Promise<HerbsData | null> {
-    try {
-        return await loadCachedJSON<HerbsData>({
-            url: HERBS_URL,
-            localStorageKey: "herbs_data",
-            indexedDB: { dbName: "ArkadiaHerbsDB", storeName: "herbs", key: "herbs" },
-            ttl: TTL,
-        });
-    } catch (e) {
-        console.error("Failed to load herbs:", e);
-        return null;
-    }
+  const store = getHerbsStore();
+  try {
+    const snapshot = await store.refresh();
+    return snapshot?.data ?? null;
+  } catch (error) {
+    console.error('Failed to load herbs:', error);
+    const fallback = await store.getSnapshot();
+    return fallback?.data ?? null;
+  }
+}
+
+export function subscribeToHerbs(
+  listener: (data: HerbsData | undefined) => void,
+  options?: SubscriptionOptions,
+): () => void {
+  const store = getHerbsStore();
+  return store.subscribe((snapshot) => listener(snapshot?.data), options);
 }
