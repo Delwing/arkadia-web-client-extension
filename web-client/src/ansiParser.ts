@@ -1,5 +1,5 @@
 // ANSI color table for terminal color rendering
-import {colorCodes} from "@client/src/Colors.ts";
+import {colorCodes} from "@client/src/Colors";
 
 
 /**

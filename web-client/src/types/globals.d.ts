@@ -1,4 +1,4 @@
-import Client from "@client/src/Client.ts";
+import Client from "@client/src/Client";
 
 interface ClientInput {
     send(command: string): void;

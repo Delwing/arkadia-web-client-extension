@@ -1,4 +1,4 @@
-import eventBus from "@client/src/eventBus.ts";
+import eventBus from "@client/src/eventBus";
 
 const PING_INTERVAL_MS = 3000;
 

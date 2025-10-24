@@ -1,5 +1,5 @@
 // This file provides a way to load map and colors data asynchronously.
-import { loadCachedJSON } from "@client/src/utils/dataCache.ts";
+import { loadCachedJSON } from "@client/src/utils/dataCache";
 
 const TTL = 24 * 60 * 60 * 1000; // 24h
 

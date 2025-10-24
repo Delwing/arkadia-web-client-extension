@@ -1,7 +1,7 @@
 import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
-import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache.ts";
+import {clearIndexedDB, updateIndexedDB} from "@client/src/utils/dataCache";
 import {TiDelete} from "react-icons/ti";
 import {loadNpcData} from "../npcDataLoader.ts";
 
