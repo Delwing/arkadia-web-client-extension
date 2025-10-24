@@ -361,7 +361,8 @@ class ArkadiaClient implements ClientAdapter {
 
     private sendLine(text: string, type: string) {
         const processedText = window.clientExtension.onLine(text, type)
-        this.emit("message", processedText, type);
+        const parsedText = parseAnsiPatterns(processedText)
+        this.emit("message", parsedText, type);
         this.emit('line-sent')
         return processedText
     }
