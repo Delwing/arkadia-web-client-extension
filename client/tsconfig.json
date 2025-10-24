@@ -5,6 +5,12 @@
     "outDir": "dist",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "baseUrl": "./",
+    "paths": {
+      "@client": ["./"],
+      "@client/*": ["./*"]
+    },
+    "allowImportingTsExtensions": true,
     /* Linting */
     "strict": false,
     "noUnusedLocals": true,
