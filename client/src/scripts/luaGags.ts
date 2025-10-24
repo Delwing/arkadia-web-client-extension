@@ -8,6 +8,7 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
+import TriggerLine from "../triggers/TriggerLine";
 import { getItemSync } from "../storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -78,7 +79,25 @@ type GagNode = {
 };
 
 
-function registerTrigger(container: Triggers | Trigger, triggerPatterns: (RegExp | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray) | string)[], callback: (rawLine: string, line: string, matches: RegExpMatchArray) => string, node: GagNode, parent: Triggers | Trigger) {
+type LuaGagCallback = (
+    rawLine: string,
+    line: string,
+    matches: RegExpMatchArray,
+    type: string,
+    triggerLine?: TriggerLine,
+) => string | TriggerLine;
+
+function registerTrigger(
+    container: Triggers | Trigger,
+    triggerPatterns: (
+        | RegExp
+        | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray)
+        | string
+    )[],
+    callback: LuaGagCallback,
+    node: GagNode,
+    parent: Triggers | Trigger,
+) {
     return container instanceof Trigger
         ? container.registerChild(triggerPatterns, callback, node.name)
         : (parent as Triggers).registerTrigger(triggerPatterns, callback, node.name);
@@ -143,9 +162,9 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback = (rawLine: string, line: string, matches: RegExpMatchArray) => {
+        const callback: LuaGagCallback = (rawLine, line, matches, _type, triggerLine) => {
             if (node.script != undefined) {
-                global.line = rawLine
+                global.line = triggerLine ? triggerLine.toAnsiString() : rawLine
                 global.matches = matches
                 luaEnv.parse(`line = "${rawLine}"`).exec()
                 luaEnv.parse(createMatches(matches)).exec()
@@ -163,8 +182,17 @@ export default function registerLuaGagTriggers(client: Client) {
 
                 }
                 rawLine = global.line
+                if (triggerLine) {
+                    const updatedLine = new TriggerLine(
+                        rawLine,
+                        triggerLine.matches,
+                        triggerLine.isMutable(),
+                    );
+                    updatedLine.setOverrideAnsi(rawLine);
+                    return updatedLine;
+                }
             }
-            return rawLine;
+            return triggerLine ?? rawLine;
         }
 
         const triggers: Trigger[] = []
