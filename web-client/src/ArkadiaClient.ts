@@ -336,26 +336,34 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     flushMessageBuffer() {
-        let processed = [];
-        this.messageBuffer.forEach((message, i) => {
-            if (processed[processed.length - 1]?.type === message.type) {
-                processed[processed.length - 1].text += message.text
+        const aggregated: { text: string, type: string }[] = [];
+        this.messageBuffer.forEach((message) => {
+            const last = aggregated[aggregated.length - 1];
+            if (last?.type === message.type) {
+                last.text += message.text;
             } else {
-                processed.push(message)
+                aggregated.push({...message});
             }
         })
-        processed.forEach((message, i) => {
-            this.sendLine(message.text, message.type, i)
+
+        const gmcpOutputs: { text: string, type: string }[] = [];
+        aggregated.forEach((message) => {
+            const processedText = this.sendLine(message.text, message.type);
+            gmcpOutputs.push({text: processedText, type: message.type});
         })
-        this.emit('output-sent', processed.length)
+
+        this.emit('output-sent', aggregated.length)
+        gmcpOutputs.forEach(({text, type}) => {
+            this.emit(`gmcp_msg.${type}`, text);
+        })
         this.messageBuffer = []
     }
 
-    private sendLine(text: string, type: string, i: number) {
-        text = window.clientExtension.onLine(text, type)
-        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        this.emit("message", parseAnsiPatterns(text), type);
+    private sendLine(text: string, type: string) {
+        const processedText = window.clientExtension.onLine(text, type)
+        this.emit("message", processedText, type);
         this.emit('line-sent')
+        return processedText
     }
 
     startRecording(name: string) {
