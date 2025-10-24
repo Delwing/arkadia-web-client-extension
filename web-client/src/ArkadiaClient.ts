@@ -336,18 +336,35 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     flushMessageBuffer() {
-        let processed = [];
-        this.messageBuffer.forEach((message, i) => {
-            if (processed[processed.length - 1]?.type === message.type) {
-                processed[processed.length - 1].text += message.text
-            } else {
-                processed.push(message)
+        let groupCount = 0;
+        let currentType: string | null = null;
+        let currentText = "";
+
+        const flushCurrentGroup = () => {
+            if (currentType === null) {
+                return;
             }
-        })
-        processed.forEach((message, i) => {
-            this.sendLine(message.text, message.type, i)
-        })
-        this.emit('output-sent', processed.length)
+
+            const index = groupCount;
+            this.sendLine(currentText, currentType, index);
+            groupCount += 1;
+            currentType = null;
+            currentText = "";
+        }
+
+        this.messageBuffer.forEach((message) => {
+            if (message.type === currentType) {
+                currentText += message.text;
+            } else {
+                flushCurrentGroup();
+                currentType = message.type;
+                currentText = message.text;
+            }
+        });
+
+        flushCurrentGroup();
+
+        this.emit('output-sent', groupCount);
         this.messageBuffer = []
     }
 
