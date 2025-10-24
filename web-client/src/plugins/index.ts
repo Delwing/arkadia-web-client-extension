@@ -100,3 +100,6 @@ export interface PluginDefinition {
     dispose?(api: PluginAPI): void | Promise<void>;
 }
 
+export type PluginApiClient = PluginClientAPI;
+export type { Client };
+

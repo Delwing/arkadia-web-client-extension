@@ -96,6 +96,7 @@ export interface PluginDefinition {
 }
 
 export type { default as Client } from "../Client";
+export type PluginApiClient = PluginClientAPI;
 
 export function createClientAPI(client: Client): PluginClientAPI {
     return {

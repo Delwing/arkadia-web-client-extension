@@ -9,5 +9,8 @@
   "include": [
     "src",
     "test"
+  ],
+  "exclude": [
+    "src/plugins/types"
   ]
 }
