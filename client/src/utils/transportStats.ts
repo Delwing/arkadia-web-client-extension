@@ -231,15 +231,24 @@ export async function clearTransportStats(): Promise<void> {
         return;
     }
 
-    await new Promise<void>((resolve, reject) => {
-        const request = indexedDB.deleteDatabase(DB_NAME);
-        request.onsuccess = () => {
-            dbPromise = null;
-            resolve();
-        };
-        request.onerror = () => reject(request.error ?? new Error("Failed to clear transport stats"));
-        request.onblocked = () => resolve();
-    });
+    try {
+        const db = await getDatabase();
+        await new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error ?? new Error("Failed to clear transport stats"));
+            transaction.onabort = () => reject(transaction.error ?? new Error("Failed to clear transport stats"));
+            const store = transaction.objectStore(STORE_NAME);
+            store.clear();
+        });
+        db.close();
+    } catch (error) {
+        if (typeof process === "undefined" || process.env.NODE_ENV !== "test") {
+            console.warn("[Transport] Failed to clear transport stats", error);
+        }
+    } finally {
+        dbPromise = null;
+    }
 }
 
 export async function getAllTransportSegments(): Promise<StoredTransportSegmentRecord[]> {
