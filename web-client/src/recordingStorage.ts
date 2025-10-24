@@ -4,16 +4,8 @@ export interface RecordedEvent {
     direction: 'in' | 'out';
 }
 
-function isIndexedDBSupported() {
-    return 'indexedDB' in window;
-}
-
 function openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-        if (!isIndexedDBSupported()) {
-            reject(new Error('IndexedDB is not supported'));
-            return;
-        }
         const request = indexedDB.open('ArkadiaRecordingsDB', 1);
         request.onupgradeneeded = () => {
             const db = request.result;

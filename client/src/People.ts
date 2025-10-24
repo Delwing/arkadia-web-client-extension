@@ -1,4 +1,5 @@
-import { loadPeople, type PersonEntry } from './peopleLoader';
+import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from './peopleStore';
+import type { PersonEntry } from './types/people';
 import Client from "./Client";
 import {color, RESET, findClosestColor} from './Colors';
 import TriggerLine from "./triggers/TriggerLine";
@@ -12,10 +13,20 @@ export default class People {
     guildColors: Record<string, string | undefined> = {}
     people: PersonEntry[] = []
     private loadErrorLogged = false
-    private peopleLoadPromise: Promise<void> | null = null
+    private refreshPromise: Promise<PersonEntry[] | undefined> | null = null
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
+        subscribeToPeopleStore(snapshot => {
+            if (snapshot) {
+                this.people = snapshot
+                this.loadErrorLogged = false
+                this.registerPeopleTriggers()
+            } else {
+                this.people = []
+                this.client.Triggers.removeByTag(this.tag)
+            }
+        })
         this.client.addEventListener('settings', (event: CustomEvent) => {
             this.guildFilter = event.detail.guilds || []
             this.enemyGuilds = event.detail.enemyGuilds || []
@@ -28,23 +39,20 @@ export default class People {
     private ensurePeopleTriggers(forceRefresh = false) {
         if (!forceRefresh && this.people.length > 0) {
             this.registerPeopleTriggers()
-        }
-
-        if (this.peopleLoadPromise && !forceRefresh) {
             return
         }
 
-        this.peopleLoadPromise = loadPeople(forceRefresh)
-            .then(people => {
-                this.people = people
-                this.loadErrorLogged = false
-                this.registerPeopleTriggers()
-            })
+        if (this.refreshPromise && !forceRefresh) {
+            return
+        }
+
+        this.refreshPromise = (forceRefresh ? forceRefreshPeopleStore() : refreshPeopleStore())
             .catch(error => {
                 this.handleLoadError(error)
+                return undefined
             })
             .finally(() => {
-                this.peopleLoadPromise = null
+                this.refreshPromise = null
             })
     }
 

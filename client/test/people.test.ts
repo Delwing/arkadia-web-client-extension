@@ -1,13 +1,17 @@
 import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
 import { color, RESET, findClosestColor } from '../src/Colors';
-import { loadPeople } from '../src/peopleLoader';
+import { refresh, subscribe, forceRefresh } from '../src/peopleStore';
 
-jest.mock('../src/peopleLoader', () => ({
-  loadPeople: jest.fn(),
+jest.mock('../src/peopleStore', () => ({
+  subscribe: jest.fn(),
+  refresh: jest.fn(),
+  forceRefresh: jest.fn(),
 }));
 
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+const subscribeMock = subscribe as jest.MockedFunction<typeof subscribe>;
+const refreshMock = refresh as jest.MockedFunction<typeof refresh>;
+const forceRefreshMock = forceRefresh as jest.MockedFunction<typeof forceRefresh>;
 
 const MOCK_PEOPLE = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
@@ -25,19 +29,43 @@ class FakeClient {
 describe('people triggers enemy highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+    forceRefreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
     client = new FakeClient();
     new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     const handler = client.addEventListener.mock.calls[0]?.[1];
     if (handler) {
       handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
     }
-    const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
   });
 
   test('colors enemy description red', () => {
@@ -83,16 +111,36 @@ describe('people triggers guild highlight', () => {
   let parse: (line: string) => string;
   type SettingsEvent = { detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> } };
   let settingsHandler: ((event: SettingsEvent) => void) | undefined;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
-    loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
     client = new FakeClient();
     new People((client as unknown) as any);
-    await loadPeopleMock.mock.results[0]?.value;
+    await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
-    const lastGuildCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+    const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastGuildCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
   });
 
   const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {

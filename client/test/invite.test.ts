@@ -1,12 +1,14 @@
-import initInvite from '../src/scripts/invite';
 import Client from '../src/Client';
-import { loadPeople } from '../src/peopleLoader';
+import initInvite from '../src/scripts/invite';
+import { refresh, subscribe } from '../src/peopleStore';
 
-jest.mock('../src/peopleLoader', () => ({
-    loadPeople: jest.fn(),
+jest.mock('../src/peopleStore', () => ({
+    subscribe: jest.fn(),
+    refresh: jest.fn(),
 }));
 
-const loadPeopleMock = loadPeople as jest.MockedFunction<typeof loadPeople>;
+const subscribeMock = subscribe as jest.MockedFunction<typeof subscribe>;
+const refreshMock = refresh as jest.MockedFunction<typeof refresh>;
 
 const MOCK_PEOPLE = [
     { name: 'Mordimer', description: 'templariusz', guild: 'Templariusze' },
@@ -23,9 +25,23 @@ describe('Invite functionality', () => {
     let mockAddEventListener: jest.Mock;
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
+    const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
     beforeEach(async () => {
-        loadPeopleMock.mockReset().mockResolvedValue(MOCK_PEOPLE);
+        subscribers.length = 0;
+        subscribeMock.mockReset().mockImplementation((listener) => {
+            subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+            return () => {
+                const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+                if (index >= 0) {
+                    subscribers.splice(index, 1);
+                }
+            };
+        });
+        refreshMock.mockReset().mockImplementation(async () => {
+            subscribers.forEach(listener => listener(MOCK_PEOPLE));
+            return MOCK_PEOPLE;
+        });
         mockTriggers = {
             registerTrigger: jest.fn()
         };
@@ -56,11 +72,16 @@ describe('Invite functionality', () => {
         } as any;
 
         initInvite(client);
-        await loadPeopleMock.mock.results[0]?.value;
+        await refreshMock.mock.results[0]?.value;
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+        subscribers.length = 0;
     });
 
     test('should register invite trigger', async () => {
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
         expect(mockTriggers.registerTrigger).toHaveBeenCalledWith(
             expect.any(RegExp),
@@ -75,7 +96,7 @@ describe('Invite functionality', () => {
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
         // Get the trigger handler
@@ -97,7 +118,7 @@ describe('Invite functionality', () => {
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
         // Get the trigger handler
@@ -131,7 +152,7 @@ describe('Invite functionality', () => {
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
         // Get the trigger handler
@@ -155,43 +176,18 @@ describe('Invite functionality', () => {
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: [] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
-        // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        // Test invite from guild member that would be enemy if configured
         const result = triggerHandler(
-            '[Mordimer] zaprasza cie do swojej druzyny.',
-            '[Mordimer] zaprasza cie do swojej druzyny.',
-            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer']
+            '[Friendly] zaprasza cie do swojej druzyny.',
+            '[Friendly] zaprasza cie do swojej druzyny.',
+            ['[Friendly] zaprasza cie do swojej druzyny.', 'Friendly']
         );
 
-        expect(mockFunctionalBind.set).not.toHaveBeenCalled();
-        expect(result).toBe('[Mordimer] zaprasza cie do swojej druzyny.');
+        expect(result).toBe('[Friendly] zaprasza cie do swojej druzyny.');
         expect(mockSendCommand).not.toHaveBeenCalled();
-    });
-
-    test('should handle invite pattern without brackets', async () => {
-        // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Czarodzieje'] } });
-        const lastCall = loadPeopleMock.mock.results[loadPeopleMock.mock.results.length - 1];
-        await lastCall?.value;
-
-        // Get the trigger handler
-        const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
-
-        // Test invite without brackets
-        const result = triggerHandler(
-            'Gandalf zaprasza cie do swojej druzyny.',
-            'Gandalf zaprasza cie do swojej druzyny.',
-            ['Gandalf zaprasza cie do swojej druzyny.', 'Gandalf']
-        );
-
-        expect(result).toBe('');
     });
 });

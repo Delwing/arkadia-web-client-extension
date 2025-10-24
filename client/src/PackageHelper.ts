@@ -1,3 +1,4 @@
+import { addLocalNpc } from "front-client/src/dataStores/npcStore";
 import {colorStringInLine, findClosestColor, RESET} from "./Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
@@ -328,11 +329,8 @@ export default class PackageHelper {
             if (matches[1] === 'Oddajesz') {
                 if (!this.npc[this.currentPackage.name]) {
                     this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
-                    this.client.port.postMessage({
-                        type: 'NEW_NPC',
-                        name: this.currentPackage.name,
-                        loc: this.client.Map.currentRoom.id
-                    })
+                    void addLocalNpc({ name: this.currentPackage.name, loc: this.client.Map.currentRoom.id })
+                        .catch(err => console.error('Failed to add NPC:', err))
                 }
             }
             this.currentPackage = undefined;

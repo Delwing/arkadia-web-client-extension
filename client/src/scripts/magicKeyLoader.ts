@@ -1,27 +1,50 @@
-import { loadCachedJSON } from "../utils/dataCache";
+import { SubscriptionOptions } from '../dataStore/types';
+import {
+  getMagicKeysStore,
+  MAGIC_KEYS_URL,
+  MagicKeysData,
+} from '../dataStores/magicKeysStore';
 
-export const MAGIC_KEYS_URL = "https://raw.githubusercontent.com/tjurczyk/arkadia-data/refs/heads/master/magic_keys.json";
-
-interface MagicKeysData {
-    magic_keys: string[];
-}
-
-const TTL = 24 * 60 * 60 * 1000; // 24h
+export { MAGIC_KEYS_URL };
+export type { MagicKeysData };
 
 export default async function loadMagicKeys(): Promise<string[]> {
-    try {
-        const data = await loadCachedJSON<MagicKeysData>({
-            url: MAGIC_KEYS_URL,
-            localStorageKey: "magic_keys",
-            indexedDB: { dbName: "ArkadiaMagicKeysDB", storeName: "magicKeys", key: "keys" },
-            ttl: TTL,
-        });
-        if (!Array.isArray(data.magic_keys)) {
-            throw new Error("Invalid data format");
-        }
-        return data.magic_keys;
-    } catch (e) {
-        console.error("Failed to load magic keys:", e);
-        return [];
+  const store = getMagicKeysStore();
+  try {
+    const snapshot = await store.refresh();
+    const data = snapshot?.data;
+    if (!data) {
+      return [];
     }
+    if (!Array.isArray(data.magic_keys)) {
+      throw new Error('Invalid data format');
+    }
+    return data.magic_keys;
+  } catch (error) {
+    console.error('Failed to load magic keys:', error);
+    const fallback = await store.getSnapshot();
+    const data = fallback?.data;
+    if (!data || !Array.isArray(data.magic_keys)) {
+      return [];
+    }
+    return data.magic_keys;
+  }
+}
+
+export function subscribeToMagicKeys(
+  listener: (keys: string[] | undefined) => void,
+  options?: SubscriptionOptions,
+): () => void {
+  const store = getMagicKeysStore();
+  return store.subscribe(
+    (snapshot) => {
+      const data = snapshot?.data;
+      if (!data || !Array.isArray(data.magic_keys)) {
+        listener(undefined);
+        return;
+      }
+      listener(data.magic_keys);
+    },
+    options,
+  );
 }
