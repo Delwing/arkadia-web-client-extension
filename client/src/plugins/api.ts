@@ -3,6 +3,7 @@ import type { CommandOptions } from "../scripts/commandPreserveCaseMode";
 import storage from "../storage";
 
 export interface PluginClientAPI {
+    readonly extension: Client;
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
     send(command: string, echo?: boolean, options?: CommandOptions): void;
     addEventListener(event: string, listener: (ev: CustomEvent) => void, options?: AddEventListenerOptions | boolean): () => void;
@@ -96,8 +97,11 @@ export interface PluginDefinition {
 
 export type RegisterArkadiaPlugin = (definition: PluginDefinition) => void;
 
+export type { default as Client } from "../Client";
+
 export function createClientAPI(client: Client): PluginClientAPI {
     return {
+        extension: client,
         sendCommand: (command: string, echo?: boolean, options?: CommandOptions) => client.sendCommand(command, echo, options),
         send: (command: string, echo?: boolean, options?: CommandOptions) => client.send(command, echo, options),
         addEventListener: (event: string, listener: (ev: CustomEvent) => void, options?: AddEventListenerOptions | boolean) => client.addEventListener(event, listener, options),
