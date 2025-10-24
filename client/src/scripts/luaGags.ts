@@ -8,6 +8,7 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
+import TriggerLine from "../triggers/TriggerLine";
 import { getItemSync } from "../storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -16,6 +17,7 @@ import {
     LuaGagDeleteMode,
     normalizeLuaGagsDeleteLines,
 } from "../luaGagsSettings";
+import {Table} from "lua-in-js";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -78,7 +80,25 @@ type GagNode = {
 };
 
 
-function registerTrigger(container: Triggers | Trigger, triggerPatterns: (RegExp | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray) | string)[], callback: (rawLine: string, line: string, matches: RegExpMatchArray) => string, node: GagNode, parent: Triggers | Trigger) {
+type LuaGagCallback = (
+    rawLine: string,
+    line: string,
+    matches: RegExpMatchArray,
+    type: string,
+    triggerLine?: TriggerLine,
+) => string | TriggerLine;
+
+function registerTrigger(
+    container: Triggers | Trigger,
+    triggerPatterns: (
+        | RegExp
+        | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray)
+        | string
+    )[],
+    callback: LuaGagCallback,
+    node: GagNode,
+    parent: Triggers | Trigger,
+) {
     return container instanceof Trigger
         ? container.registerChild(triggerPatterns, callback, node.name)
         : (parent as Triggers).registerTrigger(triggerPatterns, callback, node.name);
@@ -143,9 +163,9 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback = (rawLine: string, line: string, matches: RegExpMatchArray) => {
+        const callback: LuaGagCallback = (rawLine, line, matches, _type, triggerLine) => {
             if (node.script != undefined) {
-                global.line = rawLine
+                global.line = triggerLine ? triggerLine.toAnsiString() : rawLine
                 global.matches = matches
                 luaEnv.parse(`line = "${rawLine}"`).exec()
                 luaEnv.parse(createMatches(matches)).exec()
@@ -163,8 +183,17 @@ export default function registerLuaGagTriggers(client: Client) {
 
                 }
                 rawLine = global.line
+                if (triggerLine) {
+                    const updatedLine = new TriggerLine(
+                        rawLine,
+                        triggerLine.matches,
+                        triggerLine.isMutable(),
+                    );
+                    updatedLine.setOverrideAnsi(rawLine);
+                    return updatedLine;
+                }
             }
-            return rawLine;
+            return triggerLine ?? rawLine;
         }
 
         const triggers: Trigger[] = []
@@ -281,11 +310,17 @@ export default function registerLuaGagTriggers(client: Client) {
             npc_spece:  "floral_white"
         }
 
+        const team_names = new luainjs.Table([])
+        team_names.metatable = new Table()
+        team_names.metatable.set("__index", (_: any, name: string) => {
+            return client.TeamManager.getTeamMembers().find(n => n === name)
+        })
+
         const ateam = {
             may_setup_paralyzed_name: (_, name: string) => console.log("Ogluch " + name),
             may_setup_broken_defense: (_, name: string) => console.log("Przelamanie " + name),
             may_end_paralyzed_name: (_, name: string) => console.log("Koniec oglucha " + name),
-            team_names: new luainjs.Table(client.TeamManager.getTeamMembers())
+            team_names: team_names
         }
 
         const rex = {
@@ -308,6 +343,10 @@ export default function registerLuaGagTriggers(client: Client) {
             gag_colors: new luainjs.Table(gagColors),
             utils: new luainjs.Table({
                 bind_functional: (string: string) => {
+                    client.FunctionalBind.newMessage()
+                    client.FunctionalBind.set(string)
+                },
+                echobind: (string: string) => {
                     client.FunctionalBind.newMessage()
                     client.FunctionalBind.set(string)
                 }
@@ -380,6 +419,9 @@ export default function registerLuaGagTriggers(client: Client) {
             },
             getCurrentLine: () => {
                 return global.line
+            },
+            display: (object: any)=> {
+                console.log(object)
             }
         }
 

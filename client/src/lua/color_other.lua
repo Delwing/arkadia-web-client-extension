@@ -24,6 +24,7 @@ function trigger_func_skrypty_ui_gags_color_color_other_wytracenie_tobie()
 end
 
 function trigger_func_skrypty_ui_gags_color_color_other_przelamanie()
+    display(ateam.team_names)
     local team_break = ateam.team_names[matches[3]] or ateam.team_names[string.lower(matches[3])]
     local color = team_break and "green" or "red"
     creplaceLine("\n\n<".. color ..">[ KTOS LAMIE ] " .. matches[2] .. "\n\n")
