@@ -1,6 +1,6 @@
-import initHerbDescriptions, { HERB_NAME_COLOR } from '../src/scripts/herbDescriptions';
-import Triggers from '../src/Triggers';
-import { color, RESET } from '../src/Colors';
+import initHerbDescriptions from '../src/scripts/herbDescriptions';
+import Triggers, { stripAnsiCodes } from '../src/Triggers';
+import { RESET } from '../src/Colors';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -47,14 +47,10 @@ describe('herb descriptions', () => {
     await initHerbDescriptions((client as unknown) as any);
     const line = 'Widzisz zolty jasny kwiat';
     const result = client.Triggers.parseLine(line, '');
-    expect(result).toBe(
-      'Widzisz zolty jasny kwiat ' +
-        '(' +
-        color(HERB_NAME_COLOR) +
-        '{clickOpen:0}deliona{clickClose}' +
-        RESET +
-        ')'
-    );
+    expect(result.startsWith('Widzisz zolty jasny kwiat ')).toBe(true);
+    expect(result).toContain('{clickOpen:0}deliona{clickClose}');
+    expect(result).toContain(RESET + ')');
+    expect(stripAnsiCodes(result)).toBe('Widzisz zolty jasny kwiat (deliona)');
   });
 
   test('does not duplicate herb name', async () => {

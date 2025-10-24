@@ -62,6 +62,8 @@ export interface ClientAdapter {
     parseAnsiPatterns(text: string): string;
 
     flushMessageBuffer(): void
+
+    emit(event: string, ...args: any[]): void;
 }
 
 export default class Client {
