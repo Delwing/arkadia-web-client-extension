@@ -62,15 +62,31 @@ export function colorTokenInLine(rawLine: string, string: string, colorCode: num
     return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex)
 }
 
-export function findClosestColor(hex: string | number[]): number {
-    if (!Array.isArray(hex)) {
+function isHexColor(value: string): boolean {
+    const normalized = value.startsWith('#') ? value.slice(1) : value;
+    return normalized.length === 3 || normalized.length === 6
+        ? /^[0-9a-f]+$/i.test(normalized)
+        : false;
+}
+
+export function findClosestColor(hex: string | Array<number | string>): number {
+    let targetRgb: number[];
+    if (Array.isArray(hex)) {
+        targetRgb = hex.map(component => typeof component === 'string' ? Number(component) : component) as number[];
+        if (targetRgb.length !== 3 || targetRgb.some(value => Number.isNaN(value))) {
+            return 1;
+        }
+    } else {
         const normalized = hex.trim().toLowerCase();
         const exactIndex = colorCodes.xterm.findIndex(colorHex => colorHex.toLowerCase() === normalized);
         if (exactIndex >= 0) {
             return exactIndex + 1;
         }
+        if (!isHexColor(normalized)) {
+            return 1;
+        }
+        targetRgb = hexToRgb(normalized);
     }
-    const targetRgb = Array.isArray(hex) ? hex : hexToRgb(hex);
     let distance = 99999999999999
     let currentPick: number = 0;
     colorCodes.xterm.forEach((colorsKey, index) => {
@@ -86,11 +102,23 @@ export function findClosestColor(hex: string | number[]): number {
 
 export function mudletColorLine(line: string) {
     return line.replace(/<(.+?)>/g, (substring => {
-        const stringColor = substring.substring(1, substring.length - 1)
+        const stringColor = substring.substring(1, substring.length - 1).trim()
         if (stringColor === "reset") {
             return RESET
         } else {
-            return color(findClosestColor(mudletColors[stringColor] ?? stringColor.split(",")))
+            const predefined = mudletColors[stringColor]
+            if (predefined) {
+                return color(findClosestColor(predefined))
+            }
+            let colorSpec: string | number[]
+            if (stringColor.startsWith('#')) {
+                colorSpec = stringColor
+            } else if (stringColor.includes(',')) {
+                colorSpec = stringColor.split(",").map(component => Number(component.trim()))
+            } else {
+                colorSpec = stringColor
+            }
+            return color(findClosestColor(colorSpec))
         }
     }));
 }
