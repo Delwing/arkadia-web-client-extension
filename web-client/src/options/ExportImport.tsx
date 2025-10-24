@@ -1,8 +1,7 @@
 import {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Button, Form, Spinner} from "react-bootstrap";
 import storage from "@client/src/storage";
-import type {StoredMultibindRecord} from "../multibindStorage";
-import {readMultibinds, replaceMultibinds} from "../multibindStorage";
+import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type {RecordedEvent} from "./recordingStorage";
 import {getRecording, getRecordingNames} from "./recordingStorage";
 
@@ -342,7 +341,7 @@ async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise
 
 async function buildExport(selectedCharacters: string[]): Promise<ExportPayload> {
     const [multibinds, recordings, visitedRooms] = await Promise.all([
-        readMultibinds().catch(err => {
+        getMultibindsSnapshot().catch(err => {
             console.error("Failed to export multibinds", err);
             return [] as StoredMultibindRecord[];
         }),

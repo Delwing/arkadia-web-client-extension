@@ -1,13 +1,12 @@
 import Client from "../Client";
 import { getMultibindLabel, MULTIBIND_KEYS } from "../multibindKeys";
+import {
+    replaceAll as replaceMultibinds,
+    subscribe as subscribeMultibinds,
+    type StoredMultibindRecord,
+} from "front-client/src/dataStores/multibindStore";
 
 const MAX_BINDS = 4;
-
-interface StoredMultibind {
-    roomId: number;
-    index: number;
-    action: string;
-}
 
 interface DisplayMultibind {
     index: number;
@@ -22,8 +21,8 @@ function isValidIndex(index: number) {
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const data = new Map<number, Map<number, string>>();
 
-    function serialize(): StoredMultibind[] {
-        const entries: StoredMultibind[] = [];
+    function serialize(): StoredMultibindRecord[] {
+        const entries: StoredMultibindRecord[] = [];
         data.forEach((roomMap, roomId) => {
             roomMap.forEach((action, index) => {
                 entries.push({ roomId, index, action });
@@ -34,7 +33,9 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function persist() {
         const payload = serialize();
-        client.port?.postMessage({ type: 'MULTIBINDS_SAVE', value: payload });
+        replaceMultibinds(payload).catch(err => {
+            console.error('Failed to persist multibinds:', err);
+        });
     }
 
     function set(roomId: number, index: number, action: string) {
@@ -65,7 +66,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         return typeof id === 'number' ? id : null;
     }
 
-    function getForRoom(roomId: number): StoredMultibind[] {
+    function getForRoom(roomId: number): StoredMultibindRecord[] {
         const roomMap = data.get(roomId);
         if (!roomMap) {
             return [];
@@ -100,7 +101,6 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         const normalized = action.trim();
         set(roomId, index, normalized);
         persist();
-        sendUpdate(getRoomId());
     }
 
     function createCurrent(index: number, action: string) {
@@ -131,9 +131,6 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     function clearRoom(roomId: number) {
         removeAll(roomId);
         persist();
-        if (getRoomId() === roomId) {
-            sendUpdate(roomId);
-        }
     }
 
     function clearCurrent() {
@@ -148,9 +145,6 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     function clearIndex(roomId: number, index: number) {
         remove(roomId, index);
         persist();
-        if (getRoomId() === roomId) {
-            sendUpdate(roomId);
-        }
     }
 
     function clearCurrentIndex(index: number) {
@@ -200,7 +194,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         run(roomId, index);
     }
 
-    function applyStored(list: StoredMultibind[]) {
+    function applyStored(list: StoredMultibindRecord[]) {
         data.clear();
         list.forEach(item => {
             const roomId = Number(item.roomId);
@@ -218,18 +212,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         sendUpdate(Number.isNaN(roomId) ? null : roomId);
     });
 
-    client.addEventListener('multibindsStorage', (ev: CustomEvent) => {
-        const list = Array.isArray(ev.detail) ? ev.detail as StoredMultibind[] : [];
-        applyStored(list);
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'MULTIBINDS_LOAD' });
-    });
-
-    if (client.port) {
-        client.port.postMessage({ type: 'MULTIBINDS_LOAD' });
-    }
+    subscribeMultibinds(applyStored);
 
     window.addEventListener('keydown', (ev) => {
         if (ev.repeat) {
