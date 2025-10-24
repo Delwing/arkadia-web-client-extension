@@ -93,5 +93,5 @@ export default function initAttackBeep(client: Client) {
         /^\w+(?: \w+){0,4} z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/
     ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
 
-    client.Triggers.registerTrigger(/atakuje cie!$/, (_r, line) => highlightPhrase(line), tag);
+    client.Triggers.registerTrigger('atakuje cie!', (_r, line) => highlightPhrase(line), tag);
 }
