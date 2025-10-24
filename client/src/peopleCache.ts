@@ -1,17 +1,11 @@
-import type { RefreshMetadata, StorageStrategy } from './dataStore/types';
-
-type CollectionRecord<T> = {
-  id: string;
-  order: number;
-  value: T;
-};
+import type {CollectionRecord, RefreshMetadata, StorageStrategy} from './dataStore/types';
 
 type MetadataRecord<TMeta> = {
   id: string;
   value: TMeta;
 };
 
-export interface IndexedDbCollectionStrategyOptions<TEntry> {
+export interface IndexedDbCollectionStrategyOptions<TEntry extends CollectionRecord> {
   dbName: string;
   entriesStore: string;
   metadataStore: string;
@@ -47,7 +41,7 @@ async function runRequest<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
+export class IndexedDbCollectionStrategy<TEntry extends CollectionRecord, TMeta extends RefreshMetadata>
   implements StorageStrategy<TEntry[], TMeta>
 {
   private readonly options: IndexedDbCollectionStrategyOptions<TEntry>;
@@ -70,15 +64,12 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
       try {
         const transaction = db.transaction([this.options.entriesStore], 'readonly');
         const store = transaction.objectStore(this.options.entriesStore);
-        const records = (await runRequest(store.getAll())) as CollectionRecord<TEntry>[];
+        const records = (await runRequest(store.getAll())) as TEntry[];
         if (records.length === 0) {
           this.inMemorySnapshot = undefined;
           return this.inMemorySnapshot;
         }
-        const ordered = records
-          .sort((a, b) => a.order - b.order)
-          .map((record) => record.value);
-        this.inMemorySnapshot = ordered;
+        this.inMemorySnapshot = records;
         return this.inMemorySnapshot;
       } finally {
         db.close();
@@ -100,12 +91,7 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
         await runRequest(store.clear());
         if (snapshot) {
           snapshot.forEach((entry, index) => {
-            const record: CollectionRecord<TEntry> = {
-              id: this.options.buildEntryId(entry, index),
-              order: index,
-              value: entry,
-            };
-            store.put(record);
+            store.put(Object.assign({}, entry, { id: this.options.buildEntryId(entry, index) }));
           });
         }
         await new Promise<void>((resolve, reject) => {

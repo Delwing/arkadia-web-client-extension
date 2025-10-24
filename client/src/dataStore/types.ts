@@ -3,6 +3,11 @@ export interface RefreshMetadata {
   hash?: string;
 }
 
+export interface CollectionRecord {
+  id: string;
+  order: number;
+}
+
 export type ProgressListener = (progress: number, loaded?: number, total?: number) => void;
 
 export interface LoaderContext<TSnapshot, TMeta extends RefreshMetadata> {
