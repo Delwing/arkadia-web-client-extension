@@ -46,6 +46,7 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
+import {setupOutputMessageHandler} from "./outputMessageHandler";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -259,56 +260,13 @@ Promise.all([mapDataPromise, colorsPromise])
 
 
 // Set up message event listener for UI updates
-arkadiaClient.on('message', (message: string, type?: string) => {
-    if (message === "") {
-        return; //TODO investigate
-    }
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('output_msg');
-
-    if (type) {
-        wrapper.classList.add(type);
-    }
-
-    const messageDiv = document.createElement('div');
-    messageDiv.innerHTML = message;
-    messageDiv.classList.add('output_msg_text');
-    messageDiv.style.whiteSpace = 'pre-wrap';
-
-    wrapper.appendChild(messageDiv);
-    outputWrapper.insertBefore(wrapper, splitBottom);
-
-    const maxElements = 1000;
-    while (outputWrapper.childElementCount - 1 > maxElements) {
-        const first = outputWrapper.firstElementChild;
-        if (first === splitBottom) {
-            const second = first.nextElementSibling;
-            if (second) {
-                outputWrapper.removeChild(second);
-            } else {
-                break;
-            }
-        } else if (first) {
-            outputWrapper.removeChild(first);
-        } else {
-            break;
-        }
-    }
-
-    if (isSplitView) {
-        stickyArea.appendChild(wrapper.cloneNode(true));
-        processSticky(1);
-        while (stickyArea.childElementCount > STICKY_LINES) {
-            const firstSticky = stickyArea.firstElementChild;
-            if (firstSticky) {
-                stickyArea.removeChild(firstSticky);
-            } else {
-                break;
-            }
-        }
-    } else {
-        outputWrapper.scrollTop = outputWrapper.scrollHeight;
-    }
+setupOutputMessageHandler(arkadiaClient, {
+    outputWrapper,
+    splitBottom,
+    stickyArea,
+    isSplitView: () => isSplitView,
+    processSticky,
+    stickyLines: STICKY_LINES,
 });
 
 // Track connection state
