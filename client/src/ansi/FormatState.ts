@@ -350,10 +350,10 @@ function stateToAnsi(state?: FormatStateSnapshot): string {
             } else if (index >= 8 && index <= 15) {
                 codes.push(90 + (index - 8));
             } else {
-                codes.push(38, 5, index);
+                codes.push(22, 38, 5, index);
             }
         } else {
-            codes.push(38, 2, state.foreground.r, state.foreground.g, state.foreground.b);
+            codes.push(22, 38, 2, state.foreground.r, state.foreground.g, state.foreground.b);
         }
     }
     if (state.background) {
