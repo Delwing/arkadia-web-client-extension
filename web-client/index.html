@@ -194,7 +194,7 @@
         <button id="send-button">➢</button>
         <div class="dropdown me-0 me-md-2">
             <button id="menu-button" class="dropdown-toggle h-100" data-bs-toggle="dropdown">⋮</button>
-            <ul class="dropdown-menu dropdown-menu-end mb-1 gap-2">
+            <ul id="menu-dropdown" class="dropdown-menu dropdown-menu-end mb-1 gap-2">
                 <li>
                     <button class="w-100 p-1" id="options-button">Ustawienia</button>
                 </li>
@@ -246,7 +246,23 @@
                 <li>
                     <button class="w-100 p-1" id="fullscreen-button" title="Pełny ekran">⛶</button>
                 </li>
+                <li id="plugin-menu-divider" class="dropdown-divider d-none"></li>
             </ul>
+            <div id="plugin-modal-container"></div>
+            <template id="plugin-modal-template">
+                <div class="modal fade" tabindex="-1" data-plugin-modal>
+                    <div class="modal-dialog modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body"></div>
+                            <div class="modal-footer d-none"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 

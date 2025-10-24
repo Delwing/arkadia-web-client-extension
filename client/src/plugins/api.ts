@@ -26,9 +26,45 @@ export interface PluginStorageAPI {
     onChanged(listener: (changes: StorageChangeMap) => void): () => void;
 }
 
+export interface PluginMenuButtonOptions {
+    id?: string;
+    label: string;
+    title?: string;
+    beforeId?: string;
+    className?: string;
+}
+
+export interface PluginModalOptions {
+    title: string;
+    body?: string | Node;
+    footer?: string | Node;
+    size?: "sm" | "lg" | "xl";
+    scrollable?: boolean;
+    show?: boolean;
+}
+
+export interface PluginModalHandle {
+    element: HTMLElement;
+    body: HTMLElement;
+    footer: HTMLElement | null;
+    setTitle(title: string): void;
+    setBody(content?: string | Node | null): void;
+    setFooter(content?: string | Node | null): void;
+    show(): void;
+    hide(): void;
+    dispose(): void;
+}
+
 export interface PluginUIHooks {
     registerOptionsPanel?(pluginUrl: string, panelId: string, render: () => void): void;
     unregisterOptionsPanel?(pluginUrl: string, panelId?: string): void;
+    registerMenuButton?(options: PluginMenuButtonOptions, handler: (event: MouseEvent) => void): () => void;
+    openModal?(options: PluginModalOptions): PluginModalHandle;
+}
+
+export interface PluginUIManager {
+    create(pluginUrl: string): PluginUIHooks | undefined;
+    dispose?(pluginUrl: string): void;
 }
 
 export interface ArkadiaAdapter {
@@ -41,7 +77,7 @@ export interface ArkadiaAdapter {
 
 export interface PluginHostOptions {
     arkadia?: ArkadiaAdapter;
-    ui?: PluginUIHooks;
+    ui?: PluginUIHooks | PluginUIManager;
 }
 
 export interface PluginAPI {

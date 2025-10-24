@@ -39,6 +39,7 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
+import createPluginUIManager from "./plugins/ui";
 import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
@@ -51,9 +52,14 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
+const pluginUi = createPluginUIManager();
 registerScripts(client, {
     arkadia: arkadiaClient,
+    ui: pluginUi,
 })
+if (import.meta.env.DEV) {
+    import("./plugins/devDummyPlugin").catch(err => console.error("Failed to load dev demo plugin", err))
+}
 client.connect(client.port, true)
 
 

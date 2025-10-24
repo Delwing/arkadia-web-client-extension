@@ -5,14 +5,22 @@ import {
     PluginAPI,
     PluginDefinition,
     PluginHostOptions,
+    PluginUIHooks,
+    PluginUIManager,
     RegisterArkadiaPlugin,
 } from "./api";
+
+type PluginUIResolution = {
+    hooks?: PluginUIHooks;
+    dispose?: () => void;
+};
 
 interface PluginState {
     definition: PluginDefinition;
     api: PluginAPI;
     setupPromise: Promise<void>;
     cleanup?: () => void | Promise<void>;
+    uiDispose?: () => void;
 }
 
 export default class PluginHost {
@@ -38,7 +46,8 @@ export default class PluginHost {
             console.warn("Arkadia plugin registration ignored – missing script URL.");
             return;
         }
-        const api = this.createPluginAPI(scriptUrl);
+        const {hooks: uiHooks, dispose: uiDispose} = this.resolvePluginUI(scriptUrl);
+        const api = this.createPluginAPI(scriptUrl, uiHooks);
         const state: PluginState = {
             definition,
             api,
@@ -53,6 +62,7 @@ export default class PluginHost {
                 .then(() => {
                     // ensure promise resolves to void
                 }),
+            uiDispose,
         };
         state.setupPromise.catch(err => {
             console.error(`Plugin setup failed for ${scriptUrl}`, err);
@@ -82,6 +92,13 @@ export default class PluginHost {
                 console.error(`Plugin dispose hook failed for ${scriptUrl}`, err);
             });
         }
+        if (state.uiDispose) {
+            try {
+                state.uiDispose();
+            } catch (err) {
+                console.error(`Plugin UI cleanup failed for ${scriptUrl}`, err);
+            }
+        }
     }
 
     async disposeAll(): Promise<void> {
@@ -93,14 +110,28 @@ export default class PluginHost {
         return Array.from(this.plugins.keys());
     }
 
-    private createPluginAPI(scriptUrl: string): PluginAPI {
+    private createPluginAPI(scriptUrl: string, uiHooks?: PluginUIHooks): PluginAPI {
         return {
             scriptUrl,
             client: createClientAPI(this.client),
             storage: this.storageApi,
             arkadia: this.options.arkadia,
-            ui: this.options.ui,
+            ui: uiHooks,
         };
+    }
+
+    private resolvePluginUI(scriptUrl: string): PluginUIResolution {
+        const option = this.options.ui;
+        if (!option) {
+            return {};
+        }
+        if (typeof option === "object" && "create" in option && typeof option.create === "function") {
+            const manager = option as PluginUIManager;
+            const hooks = manager.create(scriptUrl);
+            const dispose = manager.dispose ? () => manager.dispose!(scriptUrl) : undefined;
+            return {hooks, dispose};
+        }
+        return {hooks: option as PluginUIHooks};
     }
 
     private resolveCurrentScriptUrl(): string | null {
