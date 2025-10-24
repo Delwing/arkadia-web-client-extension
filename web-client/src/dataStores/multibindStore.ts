@@ -66,6 +66,7 @@ const getMultibindStore = createDataStoreSingleton(() =>
       dbName: DB_CONFIG.dbName,
       entriesStore: DB_CONFIG.entriesStore,
       metadataStore: DB_CONFIG.metadataStore,
+      version: 2,
       buildEntryId,
     }),
   }),
