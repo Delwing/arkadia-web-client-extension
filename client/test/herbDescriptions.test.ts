@@ -1,6 +1,5 @@
 import initHerbDescriptions from '../src/scripts/herbDescriptions';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
-import { RESET } from '../src/Colors';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -49,7 +48,6 @@ describe('herb descriptions', () => {
     const result = client.Triggers.parseLine(line, '');
     expect(result.startsWith('Widzisz zolty jasny kwiat ')).toBe(true);
     expect(result).toContain('{clickOpen:0}deliona{clickClose}');
-    expect(result).toContain(RESET + ')');
     expect(stripAnsiCodes(result)).toBe('Widzisz zolty jasny kwiat (deliona)');
   });
 

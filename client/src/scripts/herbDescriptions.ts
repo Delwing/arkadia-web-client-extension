@@ -1,9 +1,6 @@
 import Client from "../Client";
 import loadHerbs from "./herbsLoader";
-import {color, RESET, findClosestColor} from "../Colors";
 import { openHerbContextMenu } from "../contextMenus";
-
-export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
 export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";
@@ -44,7 +41,7 @@ export default async function initHerbDescriptions(client: Client) {
                         return raw;
                     }
                     const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
-                    const insertion = ` (${color(HERB_NAME_COLOR)}${clickable}${RESET})`;
+                    const insertion = ` (${clickable})`;
                     if (triggerLine) {
                         triggerLine.insert(index + token.length, insertion);
                         return triggerLine;
