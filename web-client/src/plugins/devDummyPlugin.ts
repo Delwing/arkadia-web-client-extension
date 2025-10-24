@@ -1,4 +1,4 @@
-import type {PluginDefinition, PluginModalHandle, RegisterArkadiaPlugin} from "@client/src/plugins/api";
+import type {PluginDefinition, PluginModalHandle, RegisterArkadiaPlugin} from "./index";
 
 const definition: PluginDefinition = {
     name: "Dev UI demo",
