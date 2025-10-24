@@ -17,6 +17,9 @@
     ],
     "baseUrl": ".",
     "paths": {
+      "@client/src/Client": [
+        "./src/plugins/types/client"
+      ],
       "@client/*": [
         "../client/*"
       ]
