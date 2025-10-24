@@ -31,6 +31,7 @@ class ArkadiaClient implements ClientAdapter {
     private lastConnectManual = true;
     private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
+    private readonly telnetOptionHandler: (optionData: string) => string;
     private recorder = new Recorder({
         processIncomingData: (d) => this.processIncomingData(d),
         sendCommand: (cmd) => this.send(cmd),
@@ -39,6 +40,7 @@ class ArkadiaClient implements ClientAdapter {
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
+        this.telnetOptionHandler = this.parseTelnetOption.bind(this);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 event.preventDefault();
@@ -269,7 +271,7 @@ class ArkadiaClient implements ClientAdapter {
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string) {
-        const leftOver = data.replace(TELNET_OPTION_REGEX, this.parseTelnetOption.bind(this)).trim();
+        const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
             this.emit('message', sanitized)
