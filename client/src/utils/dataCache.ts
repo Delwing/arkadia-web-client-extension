@@ -6,21 +6,44 @@ export interface IndexedDBConfig {
 
 const dbCache: Record<string, Promise<IDBDatabase>> = {};
 
+function openDatabase(config: IndexedDBConfig, version?: number): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = version !== undefined ? indexedDB.open(config.dbName, version) : indexedDB.open(config.dbName);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(config.storeName)) {
+                db.createObjectStore(config.storeName, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+    });
+}
+
+async function ensureStoreExists(config: IndexedDBConfig, version?: number): Promise<IDBDatabase> {
+    const db = await openDatabase(config, version);
+    if (db.objectStoreNames.contains(config.storeName)) {
+        return db;
+    }
+
+    const nextVersion = Math.max(db.version, 1) + 1;
+    db.close();
+    return ensureStoreExists(config, nextVersion);
+}
+
 async function getDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
     if (!dbCache[config.dbName]) {
-        dbCache[config.dbName] = new Promise((resolve, reject) => {
-            const request = indexedDB.open(config.dbName, 1);
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains(config.storeName)) {
-                    db.createObjectStore(config.storeName, { keyPath: 'id' });
-                }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(new Error('Failed to open IndexedDB'));
-        });
+        dbCache[config.dbName] = ensureStoreExists(config);
     }
-    return dbCache[config.dbName];
+
+    let db = await dbCache[config.dbName];
+    if (!db.objectStoreNames.contains(config.storeName)) {
+        db.close();
+        dbCache[config.dbName] = ensureStoreExists(config, db.version + 1);
+        db = await dbCache[config.dbName];
+    }
+
+    return db;
 }
 
 async function getStore(config: IndexedDBConfig, mode: IDBTransactionMode) {
