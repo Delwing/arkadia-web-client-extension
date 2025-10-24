@@ -1,4 +1,4 @@
-import type {PluginDefinition, PluginModalHandle, RegisterArkadiaPlugin} from "./index";
+import type {PluginDefinition, PluginModalHandle} from "./index";
 
 const definition: PluginDefinition = {
     name: "Dev UI demo",
@@ -32,9 +32,4 @@ const definition: PluginDefinition = {
     },
 };
 
-const register = window.registerArkadiaPlugin as RegisterArkadiaPlugin | undefined;
-if (register) {
-    register(definition);
-} else {
-    console.warn("registerArkadiaPlugin was not available for the dev demo plugin.");
-}
+export default definition;

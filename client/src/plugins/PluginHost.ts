@@ -7,7 +7,6 @@ import {
     PluginHostOptions,
     PluginUIHooks,
     PluginUIManager,
-    RegisterArkadiaPlugin,
 } from "./api";
 
 type PluginUIResolution = {
@@ -29,22 +28,15 @@ export default class PluginHost {
 
     constructor(private readonly client: Client, private readonly options: PluginHostOptions = {}) {}
 
-    attachToWindow(): void {
-        const register: RegisterArkadiaPlugin = (definition: PluginDefinition) => {
-            const url = this.resolveCurrentScriptUrl();
-            if (!url) {
-                console.warn("Arkadia plugin registration ignored – unable to determine script URL.");
-                return;
-            }
-            this.register(url, definition);
-        };
-        window.registerArkadiaPlugin = register;
+    async load(scriptUrl: string): Promise<void> {
+        const definition = await this.importPluginDefinition(scriptUrl);
+        await this.register(scriptUrl, definition);
     }
 
-    register(scriptUrl: string, definition: PluginDefinition): void {
+    register(scriptUrl: string, definition: PluginDefinition): Promise<void> {
         if (!scriptUrl) {
             console.warn("Arkadia plugin registration ignored – missing script URL.");
-            return;
+            return Promise.resolve();
         }
         const {hooks: uiHooks, dispose: uiDispose} = this.resolvePluginUI(scriptUrl);
         const api = this.createPluginAPI(scriptUrl, uiHooks);
@@ -69,6 +61,7 @@ export default class PluginHost {
             this.plugins.delete(scriptUrl);
         });
         this.plugins.set(scriptUrl, state);
+        return state.setupPromise;
     }
 
     async dispose(scriptUrl: string): Promise<void> {
@@ -134,18 +127,34 @@ export default class PluginHost {
         return {hooks: option as PluginUIHooks};
     }
 
-    private resolveCurrentScriptUrl(): string | null {
-        const current = document.currentScript as HTMLScriptElement | null;
-        if (!current) {
-            return null;
+    private async importPluginDefinition(scriptUrl: string): Promise<PluginDefinition> {
+        const response = await fetch(scriptUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-        const fromDataset = current.dataset?.arkadiaPluginUrl;
-        if (fromDataset) {
-            return fromDataset;
+        const code = await response.text();
+        const blobUrl = URL.createObjectURL(new Blob([code], {type: "text/javascript"}));
+        try {
+            const module = await import(/* @vite-ignore */ blobUrl);
+            return this.resolveModuleDefinition(module);
+        } finally {
+            URL.revokeObjectURL(blobUrl);
         }
-        if (current.src) {
-            return current.src;
+    }
+
+    private resolveModuleDefinition(module: any): PluginDefinition {
+        const candidates = [module?.default, module];
+        for (const candidate of candidates) {
+            if (!candidate) {
+                continue;
+            }
+            if (typeof candidate === "function") {
+                return {setup: candidate};
+            }
+            if (typeof candidate === "object" && typeof candidate.setup === "function") {
+                return candidate as PluginDefinition;
+            }
         }
-        return null;
+        throw new Error("Plugin missing setup(api)");
     }
 }

@@ -100,4 +100,3 @@ export interface PluginDefinition {
     dispose?(api: PluginAPI): void | Promise<void>;
 }
 
-export type RegisterArkadiaPlugin = (definition: PluginDefinition) => void;

@@ -95,8 +95,6 @@ export interface PluginDefinition {
     dispose?(api: PluginAPI): void | Promise<void>;
 }
 
-export type RegisterArkadiaPlugin = (definition: PluginDefinition) => void;
-
 export type { default as Client } from "../Client";
 
 export function createClientAPI(client: Client): PluginClientAPI {
@@ -143,10 +141,4 @@ export function createStorageAPI(): PluginStorageAPI {
             };
         },
     };
-}
-
-declare global {
-    interface Window {
-        registerArkadiaPlugin?: RegisterArkadiaPlugin;
-    }
 }

@@ -30,23 +30,10 @@ describe("PluginHost", () => {
         } as unknown as Client;
     }
 
-    async function flushPromises() {
-        await Promise.resolve();
-        await new Promise(resolve => setTimeout(resolve, 0));
-    }
-
     test("registers and disposes plugins by URL", async () => {
         const client = createClientStub();
         const host = new PluginHost(client);
-        host.attachToWindow();
-
         const scriptUrl = "https://example.com/plugin.js";
-        const script = document.createElement("script");
-        script.dataset.arkadiaPluginUrl = scriptUrl;
-        Object.defineProperty(document, "currentScript", {
-            configurable: true,
-            value: script,
-        });
 
         let cleanupCount = 0;
         const setup = jest.fn((api: PluginAPI) => {
@@ -57,24 +44,22 @@ describe("PluginHost", () => {
         });
         const dispose = jest.fn();
 
-        window.registerArkadiaPlugin?.({
+        await host.register(scriptUrl, {
             name: "sample",
             setup,
             dispose,
         });
-        await flushPromises();
 
         expect(setup).toHaveBeenCalledTimes(1);
         expect(host.getRegisteredUrls()).toEqual([scriptUrl]);
         expect(cleanupCount).toBe(0);
         expect(dispose).not.toHaveBeenCalled();
 
-        window.registerArkadiaPlugin?.({
+        await host.register(scriptUrl, {
             name: "sample",
             setup,
             dispose,
         });
-        await flushPromises();
 
         expect(setup).toHaveBeenCalledTimes(2);
         expect(cleanupCount).toBe(1);
@@ -82,7 +67,6 @@ describe("PluginHost", () => {
         expect(host.getRegisteredUrls()).toEqual([scriptUrl]);
 
         await host.dispose(scriptUrl);
-        await flushPromises();
 
         expect(cleanupCount).toBe(2);
         expect(dispose).toHaveBeenCalledTimes(2);

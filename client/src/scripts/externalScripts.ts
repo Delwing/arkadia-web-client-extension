@@ -6,32 +6,27 @@ const STORAGE_KEY = "scripts";
 
 export default function initExternalScripts(client: Client, options: PluginHostOptions = {}) {
     const host = new PluginHost(client, options);
-    host.attachToWindow();
 
-    const loaded: Record<string, HTMLScriptElement> = {};
+    const loaded = new Set<string>();
     let known: string[] = [];
 
     const apply = (list: string[] = []) => {
-        Object.keys(loaded).forEach(url => {
+        Array.from(loaded).forEach(url => {
             if (!list.includes(url)) {
                 host.dispose(url).catch(err => console.error(`Failed to dispose plugin for ${url}`, err));
-                loaded[url].remove();
-                delete loaded[url];
+                loaded.delete(url);
             }
         });
         list.forEach(url => {
-            if (!loaded[url]) {
-                const script = document.createElement("script");
-                script.src = url;
-                script.async = true;
-                script.dataset.arkadiaPluginUrl = url;
-                script.addEventListener("error", () => {
-                    host.dispose(url).catch(err => console.error(`Failed to dispose plugin for ${url}`, err));
-                    delete loaded[url];
-                });
-                document.head.appendChild(script);
-                loaded[url] = script;
+            if (loaded.has(url)) {
+                return;
             }
+            loaded.add(url);
+            host.load(url).catch(err => {
+                console.error(`Failed to load plugin for ${url}`, err);
+                host.dispose(url).catch(disposeErr => console.error(`Failed to dispose plugin for ${url}`, disposeErr));
+                loaded.delete(url);
+            });
         });
     };
 
