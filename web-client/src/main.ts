@@ -23,7 +23,6 @@ import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
-import {loadNpcData} from "./npcDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -47,6 +46,7 @@ import "./triggerTester"
 import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
 import {setupOutputMessageHandler} from "./outputMessageHandler";
+import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -54,6 +54,12 @@ const client = new Client(arkadiaClient, new MockPort())
 window.clientExtension = client;
 registerScripts(client)
 client.connect(client.port, true)
+
+subscribeNpcStore(snapshot => {
+    const payload = snapshot?.all.data.map(({name, loc}) => ({name, loc})) ?? []
+    client.sendEvent("npc", payload)
+})
+void refreshNpcStore()
 
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');
@@ -122,10 +128,6 @@ function disableTabSleepPrevention() {
     wakeLockEnabled = false;
     updateWakeLockButton();
 }
-
-loadNpcData().then(npc => {
-    client.sendEvent("npc", npc)
-})
 
 arkadiaClient.on('settings', (detail: any) => {
     if (detail?.binds?.directions) {
