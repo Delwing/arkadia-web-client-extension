@@ -26,7 +26,14 @@ end
 function trigger_func_skrypty_ui_gags_color_color_other_przelamanie()
     local team_break = ateam.team_names[matches[3]] or ateam.team_names[string.lower(matches[3])]
     local color = team_break and "green" or "red"
-    creplaceLine("\n\n<".. color ..">[ KTOS LAMIE ] " .. matches[2] .. "\n\n")
+    local prefix = "[ KTOS LAMIE ]"
+    creplaceLine("\n\n" .. prefix .. " " .. matches[2] .. "\n\n")
+    tempTimer(0, function()
+        if selectString(prefix, 1) > -1 then
+            fg(color)
+            deselect()
+        end
+    end)
     ateam:may_setup_broken_defense(matches[4])
     resetFormat()
 
