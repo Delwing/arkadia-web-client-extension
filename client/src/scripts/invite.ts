@@ -1,29 +1,21 @@
 import Client from "../Client";
-import {loadPeople, type PersonEntry} from '../peopleLoader';
+import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '../peopleStore';
+import type { PersonEntry } from '../types/people';
 
 export default function initInvite(client: Client) {
     const tag = "invite";
     let enemyGuilds: string[] = [];
     let peopleCache: PersonEntry[] = [];
-    let loadPromise: Promise<PersonEntry[]> | null = null;
+
+    subscribeToPeopleStore(snapshot => {
+        peopleCache = snapshot ?? [];
+    });
 
     function ensurePeopleLoaded() {
-        if (!loadPromise) {
-            loadPromise = loadPeople()
-                .then(people => {
-                    peopleCache = people;
-                    return people;
-                })
-                .catch(error => {
-                    console.warn('Failed to load people database', error);
-                    peopleCache = [];
-                    return [] as PersonEntry[];
-                })
-                .finally(() => {
-                    loadPromise = null;
-                });
-        }
-        return loadPromise;
+        return refreshPeopleStore().catch(error => {
+            console.warn('Failed to load people database', error);
+            return undefined;
+        });
     }
 
     ensurePeopleLoaded().catch(() => undefined);

@@ -1,174 +1,230 @@
-import type { PersonEntry } from './types/people';
+import type { RefreshMetadata, StorageStrategy } from './dataStore/types';
 
-const DB_NAME = 'ArkadiaPeopleDB';
-const ENTRIES_STORE = 'peopleEntries';
-const METADATA_STORE = 'peopleMetadata';
-const METADATA_KEY = 'metadata';
+type CollectionRecord<T> = {
+  id: string;
+  order: number;
+  value: T;
+};
 
-interface MetadataRecord {
-    id: typeof METADATA_KEY;
-    timestamp: number;
-}
-
-interface PersonRecord extends PersonEntry {
-    id: string;
-    order: number;
-}
+type MetadataRecord<TMeta> = {
+  id: string;
+  value: TMeta;
+};
 
 function isIndexedDBSupported(): boolean {
-    return typeof indexedDB !== 'undefined';
+  return typeof indexedDB !== 'undefined';
 }
 
-function buildPersonId(person: PersonEntry): string {
-    return `${person.name.toLowerCase()}|${person.guild.toLowerCase()}|${person.description.toLowerCase()}`;
+export interface IndexedDbCollectionStrategyOptions<TEntry> {
+  dbName: string;
+  entriesStore: string;
+  metadataStore: string;
+  metadataKey?: string;
+  version?: number;
+  buildEntryId: (entry: TEntry, index: number) => string;
 }
 
-function openDatabase(): Promise<IDBDatabase> {
-    if (!isIndexedDBSupported()) {
-        return Promise.reject(new Error('IndexedDB is not supported'));
+async function openDatabase(options: IndexedDbCollectionStrategyOptions<any>): Promise<IDBDatabase> {
+  if (!isIndexedDBSupported()) {
+    throw new Error('IndexedDB is not supported');
+  }
+
+  return await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(options.dbName, options.version ?? 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(options.entriesStore)) {
+        db.createObjectStore(options.entriesStore, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(options.metadataStore)) {
+        db.createObjectStore(options.metadataStore, { keyPath: 'id' });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
+    request.onblocked = () => reject(new Error('Opening collection database was blocked'));
+  });
+}
+
+async function runRequest<T>(request: IDBRequest<T>): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result as T);
+    request.onerror = () => reject(request.error ?? new Error('IndexedDB operation failed'));
+  });
+}
+
+export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
+  implements StorageStrategy<TEntry[], TMeta>
+{
+  private readonly options: IndexedDbCollectionStrategyOptions<TEntry>;
+  private readonly metadataKey: string;
+  private inMemorySnapshot: TEntry[] | undefined;
+  private inMemoryMetadata: TMeta | undefined;
+
+  constructor(options: IndexedDbCollectionStrategyOptions<TEntry>) {
+    this.options = options;
+    this.metadataKey = options.metadataKey ?? 'metadata';
+  }
+
+  async readSnapshot(): Promise<TEntry[] | undefined> {
+    if (this.inMemorySnapshot) {
+      return this.inMemorySnapshot;
     }
 
-    return new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 2);
-
-        request.onupgradeneeded = () => {
-            const db = request.result;
-
-            if (db.objectStoreNames.contains('people')) {
-                db.deleteObjectStore('people');
-            }
-
-            if (!db.objectStoreNames.contains(ENTRIES_STORE)) {
-                db.createObjectStore(ENTRIES_STORE, { keyPath: 'id' });
-            }
-
-            if (!db.objectStoreNames.contains(METADATA_STORE)) {
-                db.createObjectStore(METADATA_STORE, { keyPath: 'id' });
-            }
-        };
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
-        request.onblocked = () => reject(new Error('Opening people database was blocked'));
-    });
-}
-
-function getTransaction(db: IDBDatabase, mode: IDBTransactionMode): IDBTransaction {
-    return db.transaction([ENTRIES_STORE, METADATA_STORE], mode);
-}
-
-async function readMetadata(store: IDBObjectStore): Promise<MetadataRecord | undefined> {
-    return await new Promise<MetadataRecord | undefined>((resolve, reject) => {
-        const request = store.get(METADATA_KEY);
-        request.onsuccess = () => resolve(request.result as MetadataRecord | undefined);
-        request.onerror = () => reject(request.error ?? new Error('Failed to read metadata'));
-    });
-}
-
-async function readAllPeople(store: IDBObjectStore): Promise<PersonEntry[]> {
-    const records = await new Promise<PersonRecord[]>((resolve, reject) => {
-        const request = store.getAll();
-        request.onsuccess = () => resolve((request.result as PersonRecord[]) ?? []);
-        request.onerror = () => reject(request.error ?? new Error('Failed to read people entries'));
-    });
-
-    return records
-        .sort((a, b) => a.order - b.order)
-        .map(({ name, description, guild }) => ({ name, description, guild }));
-}
-
-export async function loadPeopleFromIndexedDB(ttlMs: number): Promise<PersonEntry[] | null> {
     if (!isIndexedDBSupported()) {
-        return null;
+      return this.inMemorySnapshot;
     }
 
-    const db = await openDatabase();
     try {
-        const transaction = getTransaction(db, 'readonly');
-        const metadataStore = transaction.objectStore(METADATA_STORE);
-        const entriesStore = transaction.objectStore(ENTRIES_STORE);
-
-        const metadata = await readMetadata(metadataStore);
-        if (!metadata) {
-            return null;
+      const db = await openDatabase(this.options);
+      try {
+        const transaction = db.transaction([this.options.entriesStore], 'readonly');
+        const store = transaction.objectStore(this.options.entriesStore);
+        const records = (await runRequest(store.getAll())) as CollectionRecord<TEntry>[];
+        if (records.length === 0) {
+          this.inMemorySnapshot = undefined;
+          return this.inMemorySnapshot;
         }
-
-        if (ttlMs && metadata.timestamp + ttlMs <= Date.now()) {
-            return null;
-        }
-
-        const people = await readAllPeople(entriesStore);
-        await new Promise<void>((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error ?? new Error('Failed to read cached people'));
-            transaction.onabort = () => reject(transaction.error ?? new Error('Reading cached people was aborted'));
-        });
-
-        return people;
-    } finally {
+        const ordered = records
+          .sort((a, b) => a.order - b.order)
+          .map((record) => record.value);
+        this.inMemorySnapshot = ordered;
+        return this.inMemorySnapshot;
+      } finally {
         db.close();
+      }
+    } catch (error) {
+      console.warn('Failed to read collection from IndexedDB:', error);
+      return this.inMemorySnapshot;
     }
-}
+  }
 
-async function clearEntries(store: IDBObjectStore): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-        const request = store.clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error ?? new Error('Failed to clear people cache'));
-    });
-}
+  async writeSnapshot(snapshot: TEntry[] | undefined): Promise<void> {
+    this.inMemorySnapshot = snapshot;
 
-async function writePerson(store: IDBObjectStore, record: PersonRecord): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-        const request = store.put(record);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error ?? new Error('Failed to store person entry'));
-    });
-}
-
-async function writeMetadata(store: IDBObjectStore, timestamp: number): Promise<void> {
-    const record: MetadataRecord = { id: METADATA_KEY, timestamp };
-    await new Promise<void>((resolve, reject) => {
-        const request = store.put(record);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error ?? new Error('Failed to store metadata'));
-    });
-}
-
-export async function storePeopleInIndexedDB(people: PersonEntry[]): Promise<void> {
     if (!isIndexedDBSupported()) {
-        throw new Error('IndexedDB is not supported');
+      return;
     }
 
-    const db = await openDatabase();
     try {
-        const transaction = getTransaction(db, 'readwrite');
-        const metadataStore = transaction.objectStore(METADATA_STORE);
-        const entriesStore = transaction.objectStore(ENTRIES_STORE);
-
-        await clearEntries(entriesStore);
-
-        const timestamp = Date.now();
-        let order = 0;
-        for (const person of people) {
-            const record: PersonRecord = {
-                id: buildPersonId(person),
-                name: person.name,
-                description: person.description,
-                guild: person.guild,
-                order: order++,
+      const db = await openDatabase(this.options);
+      try {
+        const transaction = db.transaction([this.options.entriesStore], 'readwrite');
+        const store = transaction.objectStore(this.options.entriesStore);
+        await runRequest(store.clear());
+        if (snapshot) {
+          snapshot.forEach((entry, index) => {
+            const record: CollectionRecord<TEntry> = {
+              id: this.options.buildEntryId(entry, index),
+              order: index,
+              value: entry,
             };
-            await writePerson(entriesStore, record);
+            store.put(record);
+          });
         }
-
-        await writeMetadata(metadataStore, timestamp);
-
         await new Promise<void>((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error ?? new Error('Failed to commit people cache transaction'));
-            transaction.onabort = () => reject(transaction.error ?? new Error('People cache transaction was aborted'));
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection snapshot'));
+          transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection snapshot was aborted'));
         });
-    } finally {
+      } finally {
         db.close();
+      }
+    } catch (error) {
+      console.warn('Failed to store collection in IndexedDB:', error);
     }
+  }
+
+  async readMetadata(): Promise<TMeta | undefined> {
+    if (this.inMemoryMetadata) {
+      return this.inMemoryMetadata;
+    }
+
+    if (!isIndexedDBSupported()) {
+      return this.inMemoryMetadata;
+    }
+
+    try {
+      const db = await openDatabase(this.options);
+      try {
+        const transaction = db.transaction([this.options.metadataStore], 'readonly');
+        const store = transaction.objectStore(this.options.metadataStore);
+        const record = (await runRequest(store.get(this.metadataKey))) as MetadataRecord<TMeta> | undefined;
+        if (record?.value) {
+          this.inMemoryMetadata = record.value;
+        }
+        return this.inMemoryMetadata;
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      console.warn('Failed to read collection metadata from IndexedDB:', error);
+      return this.inMemoryMetadata;
+    }
+  }
+
+  async writeMetadata(metadata: TMeta | undefined): Promise<void> {
+    this.inMemoryMetadata = metadata;
+
+    if (!isIndexedDBSupported()) {
+      return;
+    }
+
+    try {
+      const db = await openDatabase(this.options);
+      try {
+        const transaction = db.transaction([this.options.metadataStore], 'readwrite');
+        const store = transaction.objectStore(this.options.metadataStore);
+        if (metadata === undefined) {
+          await runRequest(store.delete(this.metadataKey));
+        } else {
+          const record: MetadataRecord<TMeta> = { id: this.metadataKey, value: metadata };
+          await runRequest(store.put(record));
+        }
+        await new Promise<void>((resolve, reject) => {
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection metadata'));
+          transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection metadata was aborted'));
+        });
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      console.warn('Failed to store collection metadata in IndexedDB:', error);
+    }
+  }
+
+  async clear(): Promise<void> {
+    this.inMemorySnapshot = undefined;
+    this.inMemoryMetadata = undefined;
+
+    if (!isIndexedDBSupported()) {
+      return;
+    }
+
+    try {
+      const db = await openDatabase(this.options);
+      try {
+        const transaction = db.transaction(
+          [this.options.entriesStore, this.options.metadataStore],
+          'readwrite',
+        );
+        await Promise.all([
+          runRequest(transaction.objectStore(this.options.entriesStore).clear()),
+          runRequest(transaction.objectStore(this.options.metadataStore).clear()),
+        ]);
+        await new Promise<void>((resolve, reject) => {
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to clear collection cache'));
+          transaction.onabort = () => reject(transaction.error ?? new Error('Clearing collection cache was aborted'));
+        });
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      console.warn('Failed to clear collection cache in IndexedDB:', error);
+    }
+  }
 }
