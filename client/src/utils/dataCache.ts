@@ -4,20 +4,11 @@ export interface IndexedDBConfig {
     key: string;
 }
 
-function isIndexedDBSupported() {
-    return typeof indexedDB !== "undefined";
-}
-
 const dbCache: Record<string, Promise<IDBDatabase>> = {};
 
 async function getDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
     if (!dbCache[config.dbName]) {
         dbCache[config.dbName] = new Promise((resolve, reject) => {
-            if (!isIndexedDBSupported()) {
-                reject(new Error('IndexedDB is not supported'));
-                return;
-            }
-
             const request = indexedDB.open(config.dbName, 1);
             request.onupgradeneeded = () => {
                 const db = request.result;

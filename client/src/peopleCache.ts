@@ -11,10 +11,6 @@ type MetadataRecord<TMeta> = {
   value: TMeta;
 };
 
-function isIndexedDBSupported(): boolean {
-  return typeof indexedDB !== 'undefined';
-}
-
 export interface IndexedDbCollectionStrategyOptions<TEntry> {
   dbName: string;
   entriesStore: string;
@@ -25,10 +21,6 @@ export interface IndexedDbCollectionStrategyOptions<TEntry> {
 }
 
 async function openDatabase(options: IndexedDbCollectionStrategyOptions<any>): Promise<IDBDatabase> {
-  if (!isIndexedDBSupported()) {
-    throw new Error('IndexedDB is not supported');
-  }
-
   return await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(options.dbName, options.version ?? 1);
 
@@ -73,10 +65,6 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
       return this.inMemorySnapshot;
     }
 
-    if (!isIndexedDBSupported()) {
-      return this.inMemorySnapshot;
-    }
-
     try {
       const db = await openDatabase(this.options);
       try {
@@ -103,10 +91,6 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
 
   async writeSnapshot(snapshot: TEntry[] | undefined): Promise<void> {
     this.inMemorySnapshot = snapshot;
-
-    if (!isIndexedDBSupported()) {
-      return;
-    }
 
     try {
       const db = await openDatabase(this.options);
@@ -142,10 +126,6 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
       return this.inMemoryMetadata;
     }
 
-    if (!isIndexedDBSupported()) {
-      return this.inMemoryMetadata;
-    }
-
     try {
       const db = await openDatabase(this.options);
       try {
@@ -167,10 +147,6 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
 
   async writeMetadata(metadata: TMeta | undefined): Promise<void> {
     this.inMemoryMetadata = metadata;
-
-    if (!isIndexedDBSupported()) {
-      return;
-    }
 
     try {
       const db = await openDatabase(this.options);
@@ -199,10 +175,6 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
   async clear(): Promise<void> {
     this.inMemorySnapshot = undefined;
     this.inMemoryMetadata = undefined;
-
-    if (!isIndexedDBSupported()) {
-      return;
-    }
 
     try {
       const db = await openDatabase(this.options);
