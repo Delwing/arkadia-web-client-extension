@@ -63,7 +63,14 @@ export function colorTokenInLine(rawLine: string, string: string, colorCode: num
 }
 
 export function findClosestColor(hex: string | number[]): number {
-    const targetRgb = Array.isArray(hex) ? hex : hexToRgb(hex)
+    if (!Array.isArray(hex)) {
+        const normalized = hex.trim().toLowerCase();
+        const exactIndex = colorCodes.xterm.findIndex(colorHex => colorHex.toLowerCase() === normalized);
+        if (exactIndex >= 0) {
+            return exactIndex + 1;
+        }
+    }
+    const targetRgb = Array.isArray(hex) ? hex : hexToRgb(hex);
     let distance = 99999999999999
     let currentPick: number = 0;
     colorCodes.xterm.forEach((colorsKey, index) => {
