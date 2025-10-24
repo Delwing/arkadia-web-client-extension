@@ -244,9 +244,6 @@ async function exportRecordings(): Promise<ExportedRecording[]> {
 }
 
 async function openRecordingsDb(): Promise<IDBDatabase> {
-    if (typeof indexedDB === "undefined") {
-        throw new Error("IndexedDB is not supported");
-    }
     return new Promise((resolve, reject) => {
         const request = indexedDB.open("ArkadiaRecordingsDB", 1);
         request.onupgradeneeded = () => {
@@ -261,9 +258,6 @@ async function openRecordingsDb(): Promise<IDBDatabase> {
 }
 
 async function importRecordings(records: ExportedRecording[]): Promise<void> {
-    if (typeof indexedDB === "undefined") {
-        return;
-    }
     const list = Array.isArray(records) ? records : [];
     const db = await openRecordingsDb();
     await new Promise<void>((resolve, reject) => {
@@ -282,9 +276,6 @@ async function importRecordings(records: ExportedRecording[]): Promise<void> {
 }
 
 async function openVisitedDb(): Promise<IDBDatabase> {
-    if (typeof indexedDB === "undefined") {
-        throw new Error("IndexedDB is not supported");
-    }
     return new Promise((resolve, reject) => {
         const request = indexedDB.open("ArkadiaVisitedRoomsDB", 1);
         request.onupgradeneeded = () => {
@@ -299,9 +290,6 @@ async function openVisitedDb(): Promise<IDBDatabase> {
 }
 
 async function exportVisitedRooms(selectedCharacters: string[]): Promise<ExportedVisitedRoomsEntry[]> {
-    if (typeof indexedDB === "undefined") {
-        return [];
-    }
     try {
         const db = await openVisitedDb();
         return await new Promise<ExportedVisitedRoomsEntry[]>((resolve, reject) => {
@@ -340,9 +328,6 @@ async function exportVisitedRooms(selectedCharacters: string[]): Promise<Exporte
 async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise<void> {
     if (!Array.isArray(entries)) return;
     if (entries.length === 0) return;
-    if (typeof indexedDB === "undefined") {
-        return;
-    }
     const db = await openVisitedDb();
     await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(["visitedRooms"], "readwrite");
@@ -665,9 +650,7 @@ function ExportImport() {
 
     const applyImportedData = useCallback(async (payload: ExportPayload) => {
         applyLocalStorageImport(payload.localStorage);
-        if (typeof indexedDB !== "undefined") {
-            await replaceMultibinds(payload.indexedDB.multibinds ?? []);
-        }
+        await replaceMultibinds(payload.indexedDB.multibinds ?? []);
         await importRecordings(payload.indexedDB.recordings ?? []);
         await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     }, []);

@@ -2,17 +2,9 @@ const DB_NAME = "ArkadiaTransportStatsDB";
 const STORE_NAME = "segments";
 const DB_VERSION = 2;
 
-function isIndexedDBSupported(): boolean {
-    return typeof indexedDB !== "undefined";
-}
-
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 async function getDatabase(): Promise<IDBDatabase> {
-    if (!isIndexedDBSupported()) {
-        throw new Error("IndexedDB is not supported");
-    }
-
     if (!dbPromise) {
         dbPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -227,10 +219,6 @@ export async function recordTransportSegment(record: TransportSegmentRecord): Pr
 }
 
 export async function clearTransportStats(): Promise<void> {
-    if (!isIndexedDBSupported()) {
-        return;
-    }
-
     try {
         const db = await getDatabase();
         await new Promise<void>((resolve, reject) => {
