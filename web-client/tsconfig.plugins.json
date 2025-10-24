@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/plugins/package",
+    "rootDir": "./src/plugins",
+    "strict": true,
+    "skipLibCheck": true,
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@client/*": [
+        "../client/*"
+      ]
+    }
+  },
+  "include": [
+    "src/plugins/index.ts"
+  ]
+}

@@ -5,7 +5,7 @@ import type {
     PluginModalOptions,
     PluginUIHooks,
     PluginUIManager,
-} from "@client/src/plugins/api";
+} from "./index";
 
 interface PluginUIState {
     disposers: Set<() => void>;
