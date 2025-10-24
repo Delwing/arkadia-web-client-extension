@@ -1,5 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import { getItemSync } from "@client/src/storage.ts";
+import { getItemSync } from "@client/src/storage";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type Mode = typeof MODES[number];

@@ -1,7 +1,7 @@
 // Keep the interfaces below in sync with the implementations in
 // ../client/src/plugins/api.ts.
 
-import type Client from "@client/src/Client.ts";
+import type Client from "@client/src/Client";
 
 export interface CommandOptions {
     preserveCase?: boolean;

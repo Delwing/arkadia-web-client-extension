@@ -19,7 +19,7 @@ import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
-import "@client/src/main.ts"
+import "@client/src/main"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
@@ -1148,5 +1148,5 @@ window.client = arkadiaClient
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
 import MobileCommandRadial from "./scripts/mobileCommandRadial"
 import initUiSettings from "./uiSettings";
-import Client from "@client/src/Client.ts";
-import {registerScripts} from "@client/src/main.ts";
+import Client from "@client/src/Client";
+import {registerScripts} from "@client/src/main";

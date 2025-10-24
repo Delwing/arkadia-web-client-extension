@@ -1,12 +1,12 @@
 import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent} from './recordingStorage';
 import Recorder from './Recorder';
-import {ClientAdapter} from "@client/src/Client.ts";
-import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
+import {ClientAdapter} from "@client/src/Client";
+import eventBus, {ClientEvents} from "@client/src/eventBus";
 import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
 import {md5} from 'js-md5';
 import {uncompress} from "./compression.ts";
-import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
+import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker.ts";
 
 type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
