@@ -1,5 +1,5 @@
 import {ChangeEvent, useEffect, useRef, useState} from 'react';
-import {Button, Table, Form} from 'react-bootstrap';
+import {Button, Form} from 'react-bootstrap';
 import {getRecordingNames, deleteRecording, getRecording, saveRecording, RecordedEvent} from './recordingStorage';
 
 const AUTO_RECENT_WINDOW_MS = 3 * 60 * 1000;
@@ -201,8 +201,8 @@ function Recordings() {
     }
 
     return (
-        <div className="m-2 d-flex flex-column gap-3">
-            <Form.Group className="d-flex gap-2 align-items-center">
+        <div className="recordings-options">
+            <Form.Group className="recordings-controls">
                 <Form.Control
                     type="text"
                     size="sm"
@@ -210,46 +210,70 @@ function Recordings() {
                     value={recordingName}
                     onChange={e => setRecordingName(e.target.value)}
                     disabled={recording}
-                    style={{maxWidth: '10rem'}}
+                    className="recording-name-input"
                 />
                 {recording ? (
                     <>
-                        <Button size="sm" variant="secondary" onClick={() => stop(false)}>Zatrzymaj</Button>
-                        <Button size="sm" onClick={() => stop(true)}>Zatrzymaj i zapisz</Button>
-                        <Button size="sm" variant="outline-primary" onClick={() => downloadRecording(recordingName)}>
+                        <Button size="sm" variant="secondary" className="recordings-action" onClick={() => stop(false)}>
+                            Zatrzymaj
+                        </Button>
+                        <Button size="sm" className="recordings-action" onClick={() => stop(true)}>
+                            Zatrzymaj i zapisz
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline-primary"
+                            className="recordings-action"
+                            onClick={() => downloadRecording(recordingName)}
+                        >
                             Pobierz (bieżący)
                         </Button>
                     </>
                 ) : (
-                    <Button size="sm" onClick={start}>Rozpocznij</Button>
+                    <Button size="sm" className="recordings-action" onClick={start}>Rozpocznij</Button>
                 )}
             </Form.Group>
             {autoRecordingName && (
-                <div className="d-flex flex-wrap gap-2 align-items-center text-muted small">
+                <div className="recordings-auto-info text-muted small">
                     <span>Automatyczne nagrywanie aktywne:</span>
                     <strong className="text-body">{autoRecordingName}</strong>
-                    <Button size="sm" onClick={() => downloadRecording(autoRecordingName)}>Pobierz aktualny stan</Button>
-                    <Button size="sm" variant="outline-primary" onClick={downloadAutoRecentRecording}>Pobierz ostatnie 3 minuty</Button>
+                    <Button size="sm" className="recordings-action" onClick={() => downloadRecording(autoRecordingName)}>
+                        Pobierz aktualny stan
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline-primary"
+                        className="recordings-action"
+                        onClick={downloadAutoRecentRecording}
+                    >
+                        Pobierz ostatnie 3 minuty
+                    </Button>
                 </div>
             )}
-            <Table bordered size="sm" hover className="table-modern table-zebra">
-                <tbody>
+            <div className="recordings-list">
                 {names.map(n => (
-                    <tr key={n}>
-                        <td>{n}</td>
-                        <td className="d-flex gap-2">
-                            <Button size="sm" onClick={() => handlePlay(n)}>Odtwórz</Button>
-                            <Button size="sm" onClick={() => handlePlayTimed(n)}>Odtwórz w czasie</Button>
-                            <Button size="sm" onClick={() => downloadRecording(n)}>Pobierz</Button>
-                            <Button size="sm" variant="danger" onClick={() => handleDelete(n)}>Usuń</Button>
-                        </td>
-                    </tr>
+                    <div key={n} className="recordings-item">
+                        <div className="recordings-item-name">{n}</div>
+                        <div className="recordings-row-actions">
+                            <Button size="sm" className="recordings-action" onClick={() => handlePlay(n)}>
+                                Odtwórz
+                            </Button>
+                            <Button size="sm" className="recordings-action" onClick={() => handlePlayTimed(n)}>
+                                Odtwórz w czasie
+                            </Button>
+                            <Button size="sm" className="recordings-action" onClick={() => downloadRecording(n)}>
+                                Pobierz
+                            </Button>
+                            <Button size="sm" variant="danger" className="recordings-action" onClick={() => handleDelete(n)}>
+                                Usuń
+                            </Button>
+                        </div>
+                    </div>
                 ))}
-                </tbody>
-            </Table>
-            <div className="d-flex gap-2">
-                <Button size="sm" onClick={downloadRecordings}>Eksport</Button>
-                <Button size="sm" onClick={triggerFileInput}>Importuj</Button>
+            </div>
+            <div className="recordings-footer-actions">
+                <Button size="sm" className="recordings-action" onClick={downloadRecordings}>Eksport</Button>
+                <Button size="sm" className="recordings-action" onClick={triggerFileInput}>Importuj</Button>
                 <input
                     ref={fileInput}
                     type="file"
@@ -258,7 +282,7 @@ function Recordings() {
                     onChange={uploadRecordings}
                 />
             </div>
-            {message && <div>{message}</div>}
+            {message && <div className="recordings-message">{message}</div>}
         </div>
     );
 }

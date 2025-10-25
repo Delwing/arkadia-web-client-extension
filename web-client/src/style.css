@@ -1124,6 +1124,117 @@ h1 {
   color: white;
 }
 
+.recordings-options {
+  margin: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.recordings-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.recording-name-input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.recordings-action {
+  flex: 1 1 10rem;
+}
+
+.recordings-auto-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.recordings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recordings-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.recordings-item-name {
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.recordings-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.recordings-row-actions .btn {
+  flex: 1 1 10rem;
+}
+
+.recordings-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.recordings-footer-actions .btn,
+.recordings-auto-info .btn {
+  flex: 1 1 12rem;
+}
+
+.recordings-message {
+  font-size: 0.875rem;
+}
+
+@media (min-width: 576px) {
+  .recordings-options {
+    gap: 1.25rem;
+  }
+
+  .recordings-controls {
+    align-items: center;
+  }
+
+  .recording-name-input {
+    flex: 0 0 12rem;
+  }
+
+  .recordings-action,
+  .recordings-footer-actions .btn,
+  .recordings-auto-info .btn {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .recordings-item {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .recordings-item-name {
+    flex: 1;
+  }
+
+  .recordings-row-actions .btn {
+    flex: 0 0 auto;
+  }
+}
+
 #app {
   max-width: 90vw;
   margin: 0 auto;
