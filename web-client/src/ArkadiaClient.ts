@@ -478,7 +478,26 @@ class ArkadiaClient implements ClientAdapter {
         const recorder = new Recorder({
             processIncomingData: (d) => this.processIncomingData(d),
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
-            emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args)
+            emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
+            getCurrentMapLocation: () => {
+                const ext: any = (window as any).clientExtension;
+                const id = ext?.Map?.currentRoom?.id;
+                return typeof id === 'number' ? id : null;
+            },
+            setMapLocationSilently: (locationId: number) => {
+                const ext: any = (window as any).clientExtension;
+                const map = ext?.Map;
+                if (!map || typeof locationId !== 'number') {
+                    return;
+                }
+                if (typeof map.renderRoomByIdSilently === 'function') {
+                    map.renderRoomByIdSilently(locationId);
+                    return;
+                }
+                if (typeof map.renderRoomById === 'function') {
+                    map.renderRoomById(locationId, false);
+                }
+            }
         });
         return recorder;
     }

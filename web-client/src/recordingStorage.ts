@@ -2,6 +2,8 @@ export interface RecordedEvent {
     message: string;
     timestamp: number;
     direction: 'in' | 'out';
+    locationId?: number;
+    initialLocationId?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {
