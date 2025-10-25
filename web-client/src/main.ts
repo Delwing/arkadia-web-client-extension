@@ -452,6 +452,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const playbackReplay = document.getElementById('playback-replay') as HTMLButtonElement | null;
     const playbackStepBack = document.getElementById('playback-step-back') as HTMLButtonElement | null;
     const playbackStep = document.getElementById('playback-step') as HTMLButtonElement | null;
+    const updatePlaybackInfoText = (() => {
+        const pad = (value: number) => value.toString().padStart(2, '0');
+        const formatAbsoluteTime = (timestamp: number) => {
+            const date = new Date(timestamp);
+            return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
+        const formatDuration = (ms: number) => {
+            const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            if (hours > 0) {
+                return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+            }
+            return `${pad(minutes)}:${pad(seconds)}`;
+        };
+        return (index: number, total: number, timestamp?: number | null, offset?: number | null) => {
+            if (!playbackInfo) return;
+            let extra = '';
+            if (typeof timestamp === 'number' && !Number.isNaN(timestamp)) {
+                extra = formatAbsoluteTime(timestamp);
+                if (typeof offset === 'number' && offset >= 0) {
+                    extra += ` | +${formatDuration(offset)}`;
+                }
+            } else if (typeof offset === 'number' && offset >= 0) {
+                extra = `+${formatDuration(offset)}`;
+            }
+            playbackInfo.textContent = extra ? `${index} / ${total} (${extra})` : `${index} / ${total}`;
+        };
+    })();
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
@@ -742,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     arkadiaClient.on('playback.start', (total: number) => {
         playbackMode = true;
         if (playbackControls) playbackControls.style.display = 'flex';
-        if (playbackInfo) playbackInfo.textContent = `0 / ${total}`;
+        updatePlaybackInfoText(0, total);
         if (playbackPause) playbackPause.textContent = 'Pause';
         updateConnectButtons();
     });
@@ -761,8 +791,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playbackPause) playbackPause.textContent = 'Pause';
     });
 
-    arkadiaClient.on('playback.index', (index: number, total: number) => {
-        if (playbackInfo) playbackInfo.textContent = `${index} / ${total}`;
+    arkadiaClient.on('playback.index', (index: number, total: number, timestamp?: number | null, offset?: number | null) => {
+        updatePlaybackInfoText(index, total, timestamp, offset);
     });
 
     if (wakeLockButton) {

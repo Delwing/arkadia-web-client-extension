@@ -20,6 +20,7 @@ export default class Recorder {
     private pausedDelay = 0;
     private isPlaying = false;
     private paused = false;
+    private playbackBaseTimestamp: number | null = null;
 
     constructor(private hooks: RecorderHooks) {
     }
@@ -89,6 +90,7 @@ export default class Recorder {
         this.isPlaying = false;
         this.paused = false;
         this.playbackIndex = 0;
+        this.playbackBaseTimestamp = null;
         this.hooks.emit('playback.stop');
     }
 
@@ -177,9 +179,11 @@ export default class Recorder {
         this.isPlaying = true;
         this.paused = false;
         this.playbackIndex = 0;
+        const firstTimestamp = this.recordedMessages[0]?.timestamp;
+        this.playbackBaseTimestamp = typeof firstTimestamp === 'number' ? firstTimestamp : null;
         this.hooks.emit('playback.start', this.recordedMessages.length);
         this.hooks.emit("message", '== Playback start ==');
-        this.hooks.emit('playback.index', 0, this.recordedMessages.length);
+        this.hooks.emit('playback.index', 0, this.recordedMessages.length, this.playbackBaseTimestamp, 0);
         this.scheduleNext(0);
     }
 
@@ -200,9 +204,13 @@ export default class Recorder {
             this.stopPlayback();
             return;
         }
+        const eventTimestamp = typeof ev.timestamp === 'number' ? ev.timestamp : null;
+        const offset = eventTimestamp !== null && this.playbackBaseTimestamp !== null
+            ? Math.max(0, eventTimestamp - this.playbackBaseTimestamp)
+            : null;
         this.playEvent(ev);
         this.playbackIndex++;
-        this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+        this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length, eventTimestamp, offset);
     }
 
     private scheduleNext(initialDelay: number) {
