@@ -219,6 +219,13 @@ function checkSplitView() {
 outputWrapper.addEventListener('scroll', checkSplitView);
 
 outputWrapper.addEventListener('contextmenu', event => {
+    if (event.defaultPrevented) {
+        return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (target && target.closest('a, [data-output-clickable]')) {
+        return;
+    }
     const handler: any = (window as any).clientExtension?.OutputHandler;
     if (!handler || typeof handler.showContextMenu !== 'function') {
         return;
