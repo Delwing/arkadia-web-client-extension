@@ -1,10 +1,12 @@
 import Client from "../Client";
+import { getClientStore } from "../state/scriptStore";
 
 function escapeRegExp(str: string) {
     return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 export default function initLanguage(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    const store = getClientStore(client);
     if (!aliases) return;
 
     const STORAGE_KEY = 'lastLang';
@@ -13,17 +15,16 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     let lastLang = '';
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            lastLang = ev.detail.value || '';
+    store.subscribeStorage<string>(STORAGE_KEY, (value) => {
+        lastLang = typeof value === 'string' ? value : '';
+    });
+
+    void (async () => {
+        const stored = await store.getStorageItem<string>(STORAGE_KEY);
+        if (typeof stored === 'string') {
+            lastLang = stored;
         }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    })();
 
     function setLanguage(lang: string) {
         if (lang !== lastLang && lang !== 'potoczna') {
@@ -52,7 +53,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         callback: (matches: RegExpMatchArray) => {
             client.send('justaw ' + matches[1], false);
             lastLang = matches[1];
-            client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
+            void store.setStorageItem(STORAGE_KEY, lastLang);
         }
     })
 

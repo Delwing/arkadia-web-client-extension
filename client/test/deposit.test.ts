@@ -10,13 +10,44 @@ import { EventEmitter } from 'events';
 
 class FakeClient {
   private emitter = new EventEmitter();
+  private storageListeners: Record<string, Set<(value: any) => void>> = {};
   Triggers = new Triggers(({} as unknown) as any);
   Map = { currentRoom: { id: 1, name: 'Bank', userData: { bind: '/depozyt' } } } as any;
   println = jest.fn();
   print = jest.fn();
-  port = { postMessage: jest.fn() } as any;
+  storeData: Record<string, any> = {};
+  store = {
+    setStorageItem: jest.fn(async (key: string, value: any) => {
+      this.storeData[key] = value;
+      this.emitStorage(key, value);
+    }),
+    getStorageItem: jest.fn(async (key: string) => this.storeData[key]),
+    updateSettings: jest.fn().mockResolvedValue(undefined),
+    updateUiSettings: jest.fn().mockResolvedValue(undefined),
+    getSettingsSnapshot: jest.fn(() => ({} as any)),
+    updateHerbCounts: jest.fn().mockResolvedValue(undefined),
+    subscribeStorage: jest.fn((key: string, cb: (value: any) => void) => {
+      if (!this.storageListeners[key]) {
+        this.storageListeners[key] = new Set();
+      }
+      this.storageListeners[key].add(cb);
+      return () => {
+        this.storageListeners[key].delete(cb);
+      };
+    }),
+  } as any;
   sendCommand = jest.fn();
   contentWidth = 80;
+
+  emitStorage(key: string, value: any) {
+    this.storeData[key] = value;
+    const listeners = this.storageListeners[key];
+    if (listeners) {
+      listeners.forEach((cb) => {
+        Promise.resolve().then(() => cb(value));
+      });
+    }
+  }
 
   addEventListener(event: string, cb: any) {
     this.emitter.on(event, cb);
@@ -41,7 +72,7 @@ describe('deposits', () => {
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initDeposits((client as unknown) as any, aliases);
-    client.dispatch('storage', { key: 'deposits', value: {} });
+    client.emitStorage('deposits', {});
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     refresh = aliases[0].callback;
     show = aliases[1].callback;
@@ -129,7 +160,7 @@ describe('deposits', () => {
     reset();
 
     expect(deposits[1]).toBeUndefined();
-    expect(client.port.postMessage).toHaveBeenLastCalledWith({ type: 'SET_STORAGE', key: 'deposits', value: {} });
+    expect(client.store.setStorageItem).toHaveBeenLastCalledWith('deposits', {});
     expect(client.println).toHaveBeenCalledWith('Zapisane depozyty zostaly usuniete.');
   });
 
@@ -139,18 +170,16 @@ describe('deposits', () => {
     expect(prettyPrintContainer).toHaveBeenCalledWith(expect.anything(), 3, 'DEPOZYT', 5, client.contentWidth);
   });
 
-  test('replaces stored deposits when storage updates', () => {
+  test('replaces stored deposits when storage updates', async () => {
     parse('Twoj depozyt zawiera miecz.');
     expect(deposits[1]?.items).toEqual([
       { count: 1, name: 'miecz' }
     ]);
 
-    client.dispatch('storage', {
-      key: 'deposits',
-      value: {
-        2: { name: 'Inny bank', items: [{ count: 3, name: 'klejnoty' }] }
-      }
+    client.emitStorage('deposits', {
+      2: { name: 'Inny bank', items: [{ count: 3, name: 'klejnoty' }] }
     });
+    await Promise.resolve();
 
     expect(deposits[1]).toBeUndefined();
     expect(deposits[2]).toEqual({

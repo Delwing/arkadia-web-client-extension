@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {stripAnsiCodes} from "../Triggers";
 import {colorString, findClosestColor} from "../Colors";
+import { getClientStore } from "../state/scriptStore";
 
 const STORAGE_KEY = "containers";
 
@@ -70,7 +71,8 @@ function getBagForms(bag: string) {
 }
 
 function saveConfig(client: Client) {
-    client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: containerConfig });
+    const store = getClientStore(client);
+    void store.setStorageItem(STORAGE_KEY, structuredClone(containerConfig));
 }
 
 function setContainer(type: keyof ContainerConfig, bag: string, client: Client) {
@@ -198,12 +200,18 @@ export default function initBagManager(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY && ev.detail.value) {
-            Object.assign(containerConfig, ev.detail.value);
+    const store = getClientStore(client);
+    store.subscribeStorage<typeof containerConfig>(STORAGE_KEY, (value) => {
+        if (value) {
+            Object.assign(containerConfig, value);
         }
     });
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+    void (async () => {
+        const stored = await store.getStorageItem<typeof containerConfig>(STORAGE_KEY);
+        if (stored) {
+            Object.assign(containerConfig, stored);
+        }
+    })();
     window.addEventListener("beforeunload", () => saveConfig(client));
 
     if (aliases) {

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
+import { getClientStore, ScriptStore } from "../state/scriptStore";
 
 type KillEntry = {
     mySession: number;
@@ -224,17 +225,17 @@ export { parseName, formatSessionTable, formatLifetimeTable };
 class KillCounter {
     private client: Client;
     private kills: KillCounts = {};
+    private store: ScriptStore;
 
     constructor(client: Client) {
         this.client = client;
+        this.store = getClientStore(client);
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === STORAGE_KEY) {
-                this.loadTotals(event.detail.value ?? {});
-            }
-            if (event.detail.key === SESSION_STORAGE_KEY) {
-                this.loadSession(event.detail.value ?? {});
-            }
+        this.store.subscribeStorage<Record<string, number>>(STORAGE_KEY, (value) => {
+            this.loadTotals(value ?? {});
+        });
+        this.store.subscribeStorage<Record<string, { mySession: number; teamSession: number }>>(SESSION_STORAGE_KEY, (value) => {
+            this.loadSession(value ?? {});
         });
 
         this.client.addEventListener("reset", () => this.resetSession());
@@ -270,8 +271,20 @@ class KillCounter {
             }
         );
 
-        this.client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
-        this.client.port?.postMessage({ type: "GET_STORAGE", key: SESSION_STORAGE_KEY });
+        void this.loadStoredData();
+    }
+
+    private async loadStoredData() {
+        const [totals, sessions] = await Promise.all([
+            this.store.getStorageItem<Record<string, number>>(STORAGE_KEY),
+            this.store.getStorageItem<Record<string, { mySession: number; teamSession: number }>>(SESSION_STORAGE_KEY),
+        ]);
+        if (totals) {
+            this.loadTotals(totals);
+        }
+        if (sessions) {
+            this.loadSession(sessions);
+        }
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -291,11 +304,7 @@ class KillCounter {
         Object.entries(this.kills).forEach(([name, entry]) => {
             totals[name] = entry.myTotal;
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY,
-            value: totals,
-        });
+        void this.store.setStorageItem(STORAGE_KEY, { ...totals });
     };
 
     private loadSession(session: Record<string, { mySession: number; teamSession: number }> = {}): void {
@@ -314,11 +323,7 @@ class KillCounter {
                 sessions[name] = { mySession: entry.mySession, teamSession: entry.teamSession };
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: SESSION_STORAGE_KEY,
-            value: sessions,
-        });
+        void this.store.setStorageItem(SESSION_STORAGE_KEY, structuredClone(sessions));
     };
 
     private ensureEntry(name: string): KillEntry {

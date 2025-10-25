@@ -2,6 +2,7 @@ import Client from "../Client";
 import { stripAnsiCodes } from "../Triggers";
 import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
 import { colorString, findClosestColor } from "../Colors";
+import { getClientStore } from "../state/scriptStore";
 
 interface DepositInfo {
     name: string;
@@ -21,19 +22,23 @@ function isBankRoom(room: any): boolean {
 }
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail.key === STORAGE_KEY) {
-            Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
-            if (event.detail.value) {
-                Object.assign(deposits, event.detail.value);
-            }
+    const store = getClientStore(client);
+    store.subscribeStorage<typeof deposits>(STORAGE_KEY, (value) => {
+        Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
+        if (value) {
+            Object.assign(deposits, value);
         }
     });
 
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+    void (async () => {
+        const stored = await store.getStorageItem<typeof deposits>(STORAGE_KEY);
+        if (stored) {
+            Object.assign(deposits, stored);
+        }
+    })();
 
     const persist = () => {
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: deposits });
+        void store.setStorageItem(STORAGE_KEY, structuredClone(deposits));
     };
 
     const clearDeposits = () => {

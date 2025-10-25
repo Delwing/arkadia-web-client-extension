@@ -27,6 +27,7 @@ import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCo
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "front-client/src/ansiParser";
 import type { ClientStorageBridge } from "./state/storageBridge";
+import { createClientStore, ScriptStore } from "./state/scriptStore";
 
 const ANSI_SGR_REGEX = /\x1b\[[0-9;]*m/g;
 const ANSI_RESET = "\x1b[0m";
@@ -70,6 +71,7 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port: { postMessage: (message: any) => void };
+    store: ScriptStore;
     private storageBridge: ClientStorageBridge;
     eventTarget = eventBus;
     Colors = Colors;
@@ -135,6 +137,7 @@ export default class Client {
     constructor(clientAdapter: ClientAdapter, storageBridge: ClientStorageBridge) {
         this.clientAdapter = clientAdapter
         this.storageBridge = storageBridge
+        this.store = createClientStore(this)
         this.port = {
             postMessage: (message: any) => {
                 this.handleStorageMessage(message)

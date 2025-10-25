@@ -7,6 +7,7 @@ import { openHerbContextMenu } from "../contextMenus";
 import type { HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState } from "../types/herbs";
 import { clampHerbBagCondition, normalizeHerbBagsState } from "../types/herbs";
 import { getWearValue } from "./wearUsed";
+import { getClientStore } from "../state/scriptStore";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -104,6 +105,7 @@ function parseNumber(str: string): number {
 }
 
 export default async function initHerbCounter(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    const store = getClientStore(client);
     let herbs: HerbsData | null = null;
     let loading: Promise<void> | null = null;
     const herbMap: Record<string, string> = {};
@@ -129,31 +131,44 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     const persistBags = () => {
         const snapshot = normalizeHerbBagsState(cloneBags());
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot });
-        client.sendEvent('herbCounts', structuredClone(snapshot));
         storedBags = snapshot;
+        void store.updateHerbCounts(snapshot);
     };
 
     const broadcastBags = () => {
         client.sendEvent('herbCounts', structuredClone(storedBags));
     };
 
+    const loadStoredBags = async () => {
+        const stored = await store.getStorageItem<HerbBagsState>(STORAGE_KEY);
+        if (!stored) {
+            return;
+        }
+        storedBags = normalizeHerbBagsState(structuredClone(stored));
+        await ensureData();
+        broadcastBags();
+    };
+
     const requestBagsIfNeeded = () => {
         if (Object.keys(storedBags).length > 0) {
             broadcastBags();
         } else {
-            client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+            void loadStoredBags();
         }
     };
 
-    client.addEventListener('storage', async (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            storedBags = normalizeHerbBagsState(ev.detail.value);
+    store.subscribeStorage<HerbBagsState>(STORAGE_KEY, (value) => {
+        void (async () => {
+            if (value) {
+                storedBags = normalizeHerbBagsState(structuredClone(value));
+            } else {
+                storedBags = {};
+            }
             await ensureData();
             broadcastBags();
-        }
+        })();
     });
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    void loadStoredBags();
     window.addEventListener('request-herb-counts', requestBagsIfNeeded);
 
     let preUseCommands: string[] = [];
@@ -525,22 +540,16 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({pattern: /\/woreczki_buduj$/, callback: evaluateBagConditions});
         aliases.push({
-            pattern: /\/ziola_pokaz$/, callback: () => {
-                const listener = async (ev: CustomEvent) => {
-                    if (ev.detail.key === STORAGE_KEY) {
-                        const bags = normalizeHerbBagsState(ev.detail.value);
-                        await ensureData();
-                        const lines = buildSummary(bags, false, false);
-                        if (lines.length > 0) {
-                            client.println(lines.join('\n'));
-                        } else {
-                            client.println('Brak podsumowania.');
-                        }
-                        client.removeEventListener('storage', listener);
-                    }
-                };
-                client.addEventListener('storage', listener);
-                client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+            pattern: /\/ziola_pokaz$/, callback: async () => {
+                const stored = await store.getStorageItem<HerbBagsState>(STORAGE_KEY);
+                const bags = normalizeHerbBagsState(structuredClone(stored ?? storedBags));
+                await ensureData();
+                const lines = buildSummary(bags, false, false);
+                if (lines.length > 0) {
+                    client.println(lines.join('\n'));
+                } else {
+                    client.println('Brak podsumowania.');
+                }
             }
         });
         aliases.push({

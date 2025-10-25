@@ -18,6 +18,7 @@ import {
     normalizeLuaGagsDeleteLines,
 } from "../luaGagsSettings";
 import {Table} from "lua-in-js";
+import { getClientStore } from "../state/scriptStore";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -122,19 +123,19 @@ function getDeleteMode(type: string): LuaGagDeleteMode {
 }
 
 export default function registerLuaGagTriggers(client: Client) {
+    const store = getClientStore(client);
     applyDeleteLinesConfig(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]);
 
-    client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail?.key === LUA_GAGS_STORAGE_KEY) {
-            applyDeleteLinesConfig(event.detail.value);
+    store.subscribeStorage(LUA_GAGS_STORAGE_KEY, (value) => {
+        applyDeleteLinesConfig(value);
+    });
+
+    void (async () => {
+        const stored = await store.getStorageItem(LUA_GAGS_STORAGE_KEY);
+        if (stored !== undefined) {
+            applyDeleteLinesConfig(stored);
         }
-    });
-
-    client.addEventListener("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
+    })();
 
     function toPattern(p: PatternObj) {
         if (p.type === 1) {
