@@ -74,7 +74,7 @@ export function findClosestColor(hex: string | number[]): number {
             distance = compDistance
         }
     })
-    return currentPick + 1
+    return currentPick
 }
 
 export function mudletColorLine(line: string) {

@@ -68,7 +68,7 @@ export default class People {
 
     private registerPeopleTriggers() {
         this.client.Triggers.removeByTag(this.tag)
-        const RED = findClosestColor('#ff0000')
+        const enemyColor = this.enemyColor
         const addedNames = new Set<string>()
         this.people.forEach(replacement => {
             const state = this.shouldHighlight(replacement)
@@ -87,7 +87,7 @@ export default class People {
                 if (nextWord.startsWith('chaosu')) {
                     return triggerLine ? undefined : rawLine
                 }
-                return this.buildDescHighlight(triggerLine, rawLine, token, index, replacement, state, RED)
+                return this.buildDescHighlight(triggerLine, rawLine, token, index, replacement, state)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -95,7 +95,7 @@ export default class People {
             if (state.isEnemy || (state.inGuild && state.guildColor !== undefined)) {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
-                    const chosenColor = state.isEnemy ? RED : state.guildColor!
+                    const chosenColor = state.isEnemy ? enemyColor : state.guildColor!
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, triggerLine?: TriggerLine) => {
                         const index = matches.index || 0
                         const token = matches[0]
@@ -129,21 +129,25 @@ export default class People {
         return triggerLine ? line : override
     }
 
+    private get enemyColor() {
+        return findClosestColor('#ff0000')
+    }
+
     private buildDescHighlight(
         triggerLine: TriggerLine | undefined,
         rawLine: string,
         token: string,
         index: number,
         replacement: { name: string; guild: string },
-        state: { inGuild: boolean; isEnemy: boolean; guildColor?: number },
-        RED: number
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: number }
     ) {
         const line = triggerLine ?? new TriggerLine(rawLine)
         const end = index + token.length
         let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
         if (state.isEnemy) {
-            line.replace([index, end], color(RED) + token + RESET)
-            suffixText = RESET + ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
+            const red = this.enemyColor
+            line.replace([index, end], color(red) + token + RESET)
+            suffixText = RESET + ' ' + color(red) + `(${replacement.name} ${replacement.guild})` + RESET
         } else if (state.inGuild && state.guildColor !== undefined) {
             suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
         }
