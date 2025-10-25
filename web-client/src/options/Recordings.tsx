@@ -1,6 +1,8 @@
 import {ChangeEvent, useEffect, useRef, useState} from 'react';
 import {Button, Table, Form} from 'react-bootstrap';
-import {getRecordingNames, deleteRecording, getRecording, saveRecording} from './recordingStorage';
+import {getRecordingNames, deleteRecording, getRecording, saveRecording, RecordedEvent} from './recordingStorage';
+
+const AUTO_RECENT_WINDOW_MS = 3 * 60 * 1000;
 
 function Recordings() {
     const [names, setNames] = useState<string[]>([]);
@@ -93,17 +95,26 @@ function Recordings() {
         URL.revokeObjectURL(url);
     }
 
-    async function fetchRecordingEvents(name: string) {
+    async function fetchRecordingEvents(name: string, options?: {recentMs?: number}) {
         if (!name) {
             return null;
         }
         if (window.client?.getRecordingSnapshot) {
-            const snapshot = await window.client.getRecordingSnapshot(name);
+            const snapshot = await window.client.getRecordingSnapshot(name, options);
             if (snapshot) {
                 return snapshot;
             }
         }
-        return getRecording(name);
+        const events = await getRecording(name);
+        if (events && options?.recentMs) {
+            return filterRecentEvents(events, options.recentMs);
+        }
+        return events;
+    }
+
+    function filterRecentEvents(events: RecordedEvent[], durationMs: number) {
+        const cutoff = Date.now() - durationMs;
+        return events.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
     }
 
     async function downloadRecordings() {
@@ -128,14 +139,20 @@ function Recordings() {
         createDownload(json, 'arkadia-recordings.json');
     }
 
-    async function downloadRecording(name: string) {
+    async function downloadRecording(name: string, options?: {recentMs?: number}) {
         if (!name) return;
-        const events = await fetchRecordingEvents(name);
+        const events = await fetchRecordingEvents(name, options);
         if (!events) return;
 
         const json = JSON.stringify({[name]: events}, null, 2);
         const safeName = name.replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
-        createDownload(json, `arkadia-recording-${safeName}.json`);
+        const suffix = options?.recentMs ? `-ostatnie-${Math.round(options.recentMs / 60000)}-minuty` : '';
+        createDownload(json, `arkadia-recording-${safeName}${suffix}.json`);
+    }
+
+    async function downloadAutoRecentRecording() {
+        if (!autoRecordingName) return;
+        await downloadRecording(autoRecordingName, {recentMs: AUTO_RECENT_WINDOW_MS});
     }
 
     async function uploadRecordings(event: ChangeEvent<HTMLInputElement>) {
@@ -212,6 +229,7 @@ function Recordings() {
                     <span>Automatyczne nagrywanie aktywne:</span>
                     <strong className="text-body">{autoRecordingName}</strong>
                     <Button size="sm" onClick={() => downloadRecording(autoRecordingName)}>Pobierz aktualny stan</Button>
+                    <Button size="sm" variant="outline-primary" onClick={downloadAutoRecentRecording}>Pobierz ostatnie 3 minuty</Button>
                 </div>
             )}
             <Table bordered size="sm" hover className="table-modern table-zebra">

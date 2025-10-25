@@ -535,13 +535,20 @@ class ArkadiaClient implements ClientAdapter {
         return null;
     }
 
-    async getRecordingSnapshot(name: string): Promise<RecordedEvent[] | null> {
+    async getRecordingSnapshot(name: string, options?: {recentMs?: number}): Promise<RecordedEvent[] | null> {
         const recorder = this.findRecorderByName(name);
         if (recorder) {
+            if (options?.recentMs) {
+                return recorder.getRecordedMessagesSince(options.recentMs);
+            }
             return recorder.getRecordedMessages();
         }
         try {
-            return await getRecording(name);
+            const events = await getRecording(name);
+            if (events && options?.recentMs) {
+                return this.filterRecentEvents(events, options.recentMs);
+            }
+            return events;
         } catch (error) {
             console.error('Failed to read recording snapshot:', error);
             return null;
@@ -555,6 +562,11 @@ class ArkadiaClient implements ClientAdapter {
             }
         }
         return null;
+    }
+
+    private filterRecentEvents(events: RecordedEvent[], durationMs: number) {
+        const cutoff = Date.now() - durationMs;
+        return events.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
     }
 
 }

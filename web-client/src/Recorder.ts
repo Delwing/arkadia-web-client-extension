@@ -145,6 +145,11 @@ export default class Recorder {
         return this.recordedMessages.slice();
     }
 
+    getRecordedMessagesSince(durationMs: number) {
+        const cutoff = Date.now() - durationMs;
+        return this.recordedMessages.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
+    }
+
     setRecordedMessages(events: RecordedEvent[]) {
         this.recordedMessages = events.slice();
     }
