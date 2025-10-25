@@ -351,7 +351,6 @@ export default class MapHelper {
     }
 
     findPath(fromId: number, targetId: number) {
-        console.log("findPath", fromId, targetId)
         return this.pathFinder.findPath(fromId, targetId)
     }
 
