@@ -2,7 +2,7 @@ import {saveRecording, getRecording, getRecordingNames, deleteRecording, Recorde
 import {CommandOptions} from "@client/src/scripts/commandPreserveCaseMode.ts";
 
 export interface RecorderHooks {
-    processIncomingData(data: string): void;
+    processIncomingData(data: string, options?: { timestamp?: number }): void;
 
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
 
@@ -161,10 +161,11 @@ export default class Recorder {
         this.hooks.emit('playback.start');
         this.hooks.emit("message", '== Playback start ==');
         this.recordedMessages.forEach(ev => {
+            const timestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
             if (ev.direction === 'in') {
-                this.hooks.processIncomingData(ev.message);
+                this.hooks.processIncomingData(ev.message, { timestamp });
             } else {
-                this.hooks.emit("message", '→ ' + ev.message);
+                this.hooks.emit("message", '→ ' + ev.message, undefined, timestamp);
             }
         });
         this.hooks.emit("message", '== Playback end ==');
@@ -184,10 +185,11 @@ export default class Recorder {
     }
 
     private playEvent(ev: RecordedEvent) {
+        const timestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
         if (ev.direction === 'in') {
-            this.hooks.processIncomingData(ev.message);
+            this.hooks.processIncomingData(ev.message, { timestamp });
         } else {
-            this.hooks.emit("message", '→ ' + ev.message);
+            this.hooks.emit("message", '→ ' + ev.message, undefined, timestamp);
             window.clientExtension.sendCommand(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }

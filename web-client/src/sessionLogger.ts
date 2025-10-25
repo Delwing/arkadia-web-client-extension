@@ -46,11 +46,11 @@ async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
   });
 }
 
-async function save(db: IDBDatabase, text: string, type?: string) {
+async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number) {
   try {
     const tx = db.transaction(storeName, 'readwrite');
     await new Promise<void>((resolve, reject) => {
-      const req = tx.objectStore(storeName).add({ text, type, timestamp: Date.now() });
+      const req = tx.objectStore(storeName).add({ text, type, timestamp: timestamp ?? Date.now() });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
@@ -60,7 +60,7 @@ async function save(db: IDBDatabase, text: string, type?: string) {
 }
 
 interface Client {
-  on(event: string, handler: (text?: string, type?: string) => void): void;
+  on(event: string, handler: (text?: string, type?: string, timestamp?: number) => void): void;
 }
 
 export default async function initSessionLogger(client: Client) {
@@ -72,13 +72,13 @@ export default async function initSessionLogger(client: Client) {
     return;
   }
 
-  client.on('message', (text?: string, type?: string) => {
+  client.on('message', (text?: string, type?: string, timestamp?: number) => {
     if (!loggingEnabled) return;
     if (text) {
       if (text === "\n") {
         text = "";
       }
-      void save(db, text.replace(CLICK_TAG_REG, ''), type);
+      void save(db, text.replace(CLICK_TAG_REG, ''), type, timestamp);
     }
   });
 }

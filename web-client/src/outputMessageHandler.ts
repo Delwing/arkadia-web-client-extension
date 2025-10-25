@@ -1,6 +1,6 @@
 type MessageHandlerClient = {
-    on(event: string, listener: (message: string, type?: string) => void): void;
-    off(event: string, listener: (message: string, type?: string) => void): void;
+    on(event: string, listener: (message?: string, type?: string, timestamp?: number) => void): void;
+    off(event: string, listener: (message?: string, type?: string, timestamp?: number) => void): void;
 };
 
 type OutputHandlerOptions = {
@@ -12,6 +12,51 @@ type OutputHandlerOptions = {
     stickyLines: number;
     maxElements?: number;
 };
+
+const TIMESTAMP_CLASS = 'output-show-timestamps';
+
+let timestampsVisible = false;
+let currentOutputWrapper: HTMLElement | null = null;
+let currentStickyArea: HTMLElement | null = null;
+
+function formatTimestamp(timestamp: number): string {
+    const date = new Date(timestamp);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+}
+
+function applyTimestampVisibility() {
+    if (currentOutputWrapper) {
+        currentOutputWrapper.classList.toggle(TIMESTAMP_CLASS, timestampsVisible);
+    }
+    if (currentStickyArea) {
+        currentStickyArea.classList.toggle(TIMESTAMP_CLASS, timestampsVisible);
+    }
+}
+
+function createTimestampElement(timestamp: number): HTMLSpanElement {
+    const timestampEl = document.createElement('span');
+    timestampEl.classList.add('output-timestamp');
+    timestampEl.textContent = formatTimestamp(timestamp);
+    timestampEl.dataset.timestamp = `${timestamp}`;
+    timestampEl.title = new Date(timestamp).toLocaleString();
+    return timestampEl;
+}
+
+export function areOutputTimestampsVisible() {
+    return timestampsVisible;
+}
+
+export function setOutputTimestampVisibility(visible: boolean) {
+    timestampsVisible = visible;
+    applyTimestampVisibility();
+}
+
+export function toggleOutputTimestampVisibility() {
+    setOutputTimestampVisibility(!timestampsVisible);
+}
 
 export function setupOutputMessageHandler(
     client: MessageHandlerClient,
@@ -25,8 +70,12 @@ export function setupOutputMessageHandler(
         maxElements = 1000,
     }: OutputHandlerOptions,
 ) {
-    const handleMessage = (message: string, type?: string) => {
-        if (message === "") {
+    currentOutputWrapper = outputWrapper;
+    currentStickyArea = stickyArea;
+    applyTimestampVisibility();
+
+    const handleMessage = (message?: string, type?: string, timestamp?: number) => {
+        if (!message || message === "") {
             return;
         }
 
@@ -38,9 +87,18 @@ export function setupOutputMessageHandler(
         }
 
         const messageDiv = document.createElement('div');
-        messageDiv.innerHTML = message;
         messageDiv.classList.add('output_msg_text');
-        messageDiv.style.whiteSpace = 'pre-wrap';
+
+        const timestampValue = typeof timestamp === 'number' ? timestamp : Date.now();
+        wrapper.dataset.timestamp = `${timestampValue}`;
+        const timestampEl = createTimestampElement(timestampValue);
+        const contentSpan = document.createElement('span');
+        contentSpan.classList.add('output_msg_content');
+        contentSpan.innerHTML = message;
+        contentSpan.style.whiteSpace = 'pre-wrap';
+
+        messageDiv.appendChild(timestampEl);
+        messageDiv.appendChild(contentSpan);
 
         wrapper.appendChild(messageDiv);
         outputWrapper.insertBefore(wrapper, splitBottom);
@@ -81,5 +139,11 @@ export function setupOutputMessageHandler(
 
     return () => {
         client.off('message', handleMessage);
+        if (currentOutputWrapper === outputWrapper) {
+            currentOutputWrapper = null;
+        }
+        if (currentStickyArea === stickyArea) {
+            currentStickyArea = null;
+        }
     };
 }
