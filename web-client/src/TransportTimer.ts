@@ -1,43 +1,37 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import { getItemSync } from "@client/src/storage";
-import type { UiSettings } from "./uiSettings.ts";
 import type { TransportTimerPayload } from "@client/src/types/transport";
+import { subscribeToUiSettings } from "@client/src/state/settingsStore";
 
 export default class TransportTimer {
   private container: HTMLElement | null;
   private showTransportLabel: boolean;
   private lastPayload: TransportTimerPayload | null = null;
+  private detachUiSettings?: () => void;
 
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("transport-timer");
-    this.showTransportLabel = this.getInitialShowTransportLabel();
+    this.showTransportLabel = true;
     this.subscribeToUiSettings();
     client.on("transportTimer", (payload: TransportTimerPayload | null) => this.update(payload));
     this.update(null);
-  }
-
-  private getInitialShowTransportLabel(): boolean {
-    const stored = getItemSync("uiSettings")?.uiSettings as Partial<UiSettings> | undefined;
-    if (stored && typeof stored.showTransportLabel === "boolean") {
-      return stored.showTransportLabel;
-    }
-    return true;
+    window.addEventListener("beforeunload", () => {
+      this.detachUiSettings?.();
+      this.detachUiSettings = undefined;
+    }, { once: true });
   }
 
   private subscribeToUiSettings() {
-    const ext: any = (window as any).clientExtension;
-    const target: EventTarget | undefined = ext?.eventTarget;
-    if (!target) {
-      return;
-    }
-    const handler: EventListener = (event: Event) => {
-      const detail = (event as CustomEvent<Partial<UiSettings>>).detail;
-      if (detail && typeof detail.showTransportLabel === "boolean") {
-        this.showTransportLabel = detail.showTransportLabel;
-        this.update(this.lastPayload);
-      }
-    };
-    target.addEventListener("uiSettings", handler);
+    this.detachUiSettings = subscribeToUiSettings(
+      ui => ui.showTransportLabel,
+      (value) => {
+        const next = typeof value === "boolean" ? value : true;
+        if (this.showTransportLabel !== next) {
+          this.showTransportLabel = next;
+          this.update(this.lastPayload);
+        }
+      },
+      { fireImmediately: true },
+    );
   }
 
   private update(payload: TransportTimerPayload | null) {

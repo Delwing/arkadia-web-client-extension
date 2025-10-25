@@ -1,5 +1,6 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import { settingsStore, subscribeToUiSettings } from "@client/src/state/settingsStore";
 
 const mapPositions = [
     'top-overlay',
@@ -59,6 +60,15 @@ const defaultSettings: UiSettings = {
     clearInputOnSend: false,
     showTransportLabel: true,
 };
+
+function normalizeMapScaleValue(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return value;
+    }
+    const parsed = Number.parseFloat(typeof value === 'string' ? value : String(value ?? ''));
+    const normalized = Math.abs(parsed);
+    return Number.isFinite(normalized) && normalized > 0 ? normalized : defaultSettings.mapScale;
+}
 
 function apply(settings: UiSettings) {
     const contentArea = document.getElementById('content-area');
@@ -160,81 +170,69 @@ function apply(settings: UiSettings) {
     }
 }
 
-import storage from "@client/src/storage";
+function normalizeUiSettings(raw: unknown): UiSettings {
+    const parsed: any = (raw && typeof raw === 'object') ? { ...(raw as Record<string, unknown>) } : {};
+    const mapScale = normalizeMapScaleValue(parsed.mapScale);
+    const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
+        ? (parsed.mapPosition as MapPosition)
+        : defaultSettings.mapPosition;
+    const transparentLabels = typeof parsed.transparentLabels === 'boolean'
+        ? parsed.transparentLabels
+        : defaultSettings.transparentLabels;
+    const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
+        ? parsed.labelRenderMode
+        : defaultSettings.labelRenderMode;
+    const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
+    const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
+    const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
+    const explorationMode = !!parsed.explorationMode;
+    const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
+    const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
+    const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultSettings.instantMove;
+    const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
+        ? parsed.highlightCurrentRoom
+        : defaultSettings.highlightCurrentRoom;
+    const outputBackground = typeof parsed.outputBackground === 'string'
+        && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
+            ? parsed.outputBackground.trim()
+            : defaultSettings.outputBackground;
+    const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
+        ? parsed.clearInputOnSend
+        : defaultSettings.clearInputOnSend;
+    const showTransportLabel = typeof parsed.showTransportLabel === 'boolean'
+        ? parsed.showTransportLabel
+        : defaultSettings.showTransportLabel;
+    return {
+        ...defaultSettings,
+        ...parsed,
+        mapScale,
+        mapPosition,
+        emojiLabels: !!parsed.emojiLabels,
+        xtermPalette,
+        footerMode,
+        explorationMode,
+        fightTitleIcon,
+        hapticFeedback,
+        instantMove,
+        highlightCurrentRoom,
+        transparentLabels,
+        labelRenderMode: effectiveLabelRenderMode,
+        outputBackground,
+        clearInputOnSend,
+        showTransportLabel,
+    };
+}
 
-async function load(): Promise<UiSettings> {
-    try {
-        const uiData = await storage.getItem('uiSettings');
-        let raw = uiData?.uiSettings;
-        let parsed: any = {};
-        if (raw) {
-            parsed = raw as any;
-        }
-        if (raw || Object.keys(parsed).length > 0) {
-            const mapScale = (() => {
-                const value = Math.abs(parseFloat(parsed.mapScale));
-                return value > 0 ? value : defaultSettings.mapScale;
-            })();
-            const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
-                ? (parsed.mapPosition as MapPosition)
-                : defaultSettings.mapPosition;
-            const transparentLabels = typeof parsed.transparentLabels === 'boolean'
-                ? parsed.transparentLabels
-                : defaultSettings.transparentLabels;
-            const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
-                ? parsed.labelRenderMode
-                : defaultSettings.labelRenderMode;
-            const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
-            const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
-            const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
-            const explorationMode = !!parsed.explorationMode;
-            const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
-            const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultSettings.instantMove;
-            const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
-                ? parsed.highlightCurrentRoom
-                : defaultSettings.highlightCurrentRoom;
-            const outputBackground = typeof parsed.outputBackground === 'string'
-                && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
-                    ? parsed.outputBackground.trim()
-                    : defaultSettings.outputBackground;
-            const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
-                ? parsed.clearInputOnSend
-                : defaultSettings.clearInputOnSend;
-            const showTransportLabel = typeof parsed.showTransportLabel === 'boolean'
-                ? parsed.showTransportLabel
-                : defaultSettings.showTransportLabel;
-            return {
-                ...defaultSettings,
-                ...parsed,
-                mapScale,
-                mapPosition,
-                emojiLabels: !!parsed.emojiLabels,
-                xtermPalette,
-                footerMode,
-                explorationMode,
-                fightTitleIcon,
-                hapticFeedback,
-                instantMove,
-                highlightCurrentRoom,
-                transparentLabels,
-                labelRenderMode: effectiveLabelRenderMode,
-                outputBackground,
-                clearInputOnSend,
-                showTransportLabel,
-            };
-        }
-    } catch {
-        // ignore malformed data
-    }
-    return { ...defaultSettings };
+function load(): UiSettings {
+    const state = settingsStore.getState().uiSettings;
+    return normalizeUiSettings(state);
 }
 
 function save(settings: UiSettings) {
-    storage.setItem('uiSettings', settings);
+    settingsStore.getState().updateUiSettings(settings);
 }
 
-export default async function initUiSettings() {
+export default function initUiSettings() {
     const button = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
     const modalEl = document.getElementById('ui-settings-modal');
     if (!button || !modalEl) return;
@@ -264,7 +262,7 @@ export default async function initUiSettings() {
     const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
-    let current = await load();
+    let current = load();
     contentInput.value = String(current.contentFontSize);
     objectsInput.value = String(current.objectsFontSize);
     buttonInput.value = String(current.buttonSize);
@@ -306,22 +304,14 @@ export default async function initUiSettings() {
         current = { ...current, mapScale: scale };
     };
 
-    const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-        const uiSettingsChange = changes.uiSettings;
-        if (!uiSettingsChange || !uiSettingsChange.newValue) {
-            return;
-        }
-        const newValue = uiSettingsChange.newValue;
-        const scaleValue = typeof newValue.mapScale === 'number'
-            ? newValue.mapScale
-            : parseFloat(newValue.mapScale);
-        const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0
-            ? scaleValue
-            : defaultSettings.mapScale;
-        updateMapScale(normalizedScale);
-    };
-
-    storage.onChanged?.addListener(handleStorageChange);
+    subscribeToUiSettings(
+        ui => ui.mapScale,
+        (value) => {
+            const normalizedScale = normalizeMapScaleValue(value);
+            updateMapScale(normalizedScale);
+        },
+        { fireImmediately: true },
+    );
 
     function refreshExplorationStats() {
         const map = (window as any).embedded;

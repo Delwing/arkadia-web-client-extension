@@ -2,6 +2,7 @@ import "../style.css";
 import { useEffect, useState } from "react";
 import { Form, Button } from "react-bootstrap";
 import storage, { getCurrentCharacter } from "@client/src/storage";
+import { settingsStore, useSettingsSlice } from "@client/src/state/settingsStore";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
 
@@ -58,8 +59,17 @@ const lowHpAlertOptions = [
 const LETTER_LINE_WIDTH_MIN = 40;
 const LETTER_LINE_WIDTH_MAX = 120;
 
+function normalizeSettings(source: BaseSettings): FormSettings {
+    const merged = Object.assign({}, defaultSettings, source);
+    if (typeof merged.lowHpAlert !== "number") {
+        merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
+    }
+    return merged;
+}
+
 function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
-    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
+    const storeSettings = useSettingsSlice(settings => settings);
+    const [settings, setSettings] = useState<FormSettings>(() => normalizeSettings(storeSettings));
 
     const [locked, setLocked] = useState(!getCurrentCharacter());
 
@@ -78,6 +88,10 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
     const [aliasAdjInput, setAliasAdjInput] = useState<string>('')
     const [aliasLangInput, setAliasLangInput] = useState<string>('potoczna')
 
+    useEffect(() => {
+        setSettings(normalizeSettings(storeSettings));
+    }, [storeSettings]);
+
     function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
             const updated = {...prev}
@@ -86,33 +100,8 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
         })
     }
     useEffect(() => {
-        registerSave(() => storage.setItem("settings", settings));
+        registerSave(() => settingsStore.getState().updateSettings(settings));
     }, [registerSave, settings]);
-
-    useEffect(() => {
-        const load = () => {
-            storage.getItem("settings").then(res => {
-                const merged = Object.assign({}, defaultSettings, res?.settings);
-                if (typeof merged.lowHpAlert !== 'number') {
-                    merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
-                }
-                setSettings(merged);
-            });
-        };
-
-        load();
-
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                load();
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
-        return () => {
-            storage.onChanged?.removeListener?.(listener);
-        };
-    }, []);
 
     return (
         <div className="p-2 h-100">
