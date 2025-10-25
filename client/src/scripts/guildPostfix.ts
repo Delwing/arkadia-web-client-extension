@@ -2,16 +2,20 @@ import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 
 const SLATE_BLUE = findClosestColor("#6a5acd");
+const ENEMY_RED = findClosestColor("#ff0000");
 
 type GuildColorMap = Record<string, number | undefined>;
 
 export default function initGuildPostfix(client: Client) {
     const tag = "guildPostfix";
     let guildColors: GuildColorMap = {};
+    let enemyGuilds = new Set<string>();
 
     client.addEventListener('settings', (ev: CustomEvent) => {
         const colors: Record<string, string | undefined> = ev.detail.guildColors || {};
+        const enemies: string[] = ev.detail.enemyGuilds || [];
         guildColors = {};
+        enemyGuilds = new Set(enemies);
         Object.entries(colors).forEach(([g, hex]) => {
             if (hex) {
                 guildColors[g] = findClosestColor(hex);
@@ -21,7 +25,7 @@ export default function initGuildPostfix(client: Client) {
 
     function register(pattern: RegExp | string, guild: string) {
         client.Triggers.registerTrigger(pattern, (raw) => {
-            const color = guildColors[guild] ?? SLATE_BLUE;
+            const color = enemyGuilds.has(guild) ? ENEMY_RED : guildColors[guild] ?? SLATE_BLUE;
             return client.postfix(raw, colorString(` [${guild}]`, color));
         }, tag);
     }
