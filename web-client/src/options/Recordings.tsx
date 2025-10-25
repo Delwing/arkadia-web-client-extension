@@ -95,6 +95,11 @@ function Recordings() {
         URL.revokeObjectURL(url);
     }
 
+    function createAutoRecordingName() {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        return `arkadia-recroding-${timestamp}`;
+    }
+
     async function fetchRecordingEvents(name: string, options?: {recentMs?: number}) {
         if (!name) {
             return null;
@@ -139,20 +144,39 @@ function Recordings() {
         createDownload(json, 'arkadia-recordings.json');
     }
 
-    async function downloadRecording(name: string, options?: {recentMs?: number}) {
+    async function downloadRecording(
+        name: string,
+        options?: {recentMs?: number; overrideName?: string},
+    ) {
         if (!name) return;
         const events = await fetchRecordingEvents(name, options);
         if (!events) return;
 
-        const json = JSON.stringify({[name]: events}, null, 2);
-        const safeName = name.replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
-        const suffix = options?.recentMs ? `-ostatnie-${Math.round(options.recentMs / 60000)}-minuty` : '';
-        createDownload(json, `arkadia-recording-${safeName}${suffix}.json`);
+        const jsonName = options?.overrideName ?? name;
+        const json = JSON.stringify({[jsonName]: events}, null, 2);
+        const safeBaseName = (options?.overrideName ?? name).replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
+        const suffix = options?.recentMs && !options?.overrideName
+            ? `-ostatnie-${Math.round(options.recentMs / 60000)}-minuty`
+            : '';
+        const filename = options?.overrideName
+            ? `${safeBaseName}.json`
+            : `arkadia-recording-${safeBaseName}${suffix}.json`;
+        createDownload(json, filename);
+    }
+
+    async function downloadAutoRecordingCurrent() {
+        if (!autoRecordingName) return;
+        const autoName = createAutoRecordingName();
+        await downloadRecording(autoRecordingName, {overrideName: autoName});
     }
 
     async function downloadAutoRecentRecording() {
         if (!autoRecordingName) return;
-        await downloadRecording(autoRecordingName, {recentMs: AUTO_RECENT_WINDOW_MS});
+        const autoName = createAutoRecordingName();
+        await downloadRecording(autoRecordingName, {
+            recentMs: AUTO_RECENT_WINDOW_MS,
+            overrideName: autoName,
+        });
     }
 
     async function uploadRecordings(event: ChangeEvent<HTMLInputElement>) {
@@ -237,7 +261,7 @@ function Recordings() {
                 <div className="recordings-auto-info text-muted small">
                     <span>Automatyczne nagrywanie aktywne:</span>
                     <strong className="text-body">{autoRecordingName}</strong>
-                    <Button size="sm" className="recordings-action" onClick={() => downloadRecording(autoRecordingName)}>
+                    <Button size="sm" className="recordings-action" onClick={downloadAutoRecordingCurrent}>
                         Pobierz aktualny stan
                     </Button>
                     <Button
