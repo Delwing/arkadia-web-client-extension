@@ -7,12 +7,17 @@ export interface RecorderHooks {
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
 
     emit(event: string, ...args: any[]): void;
+
+    getCurrentMapLocation?(): number | null;
+
+    setMapLocationSilently?(locationId: number): void;
 }
 
 export default class Recorder {
     private isRecording = false;
     private recordedMessages: RecordedEvent[] = [];
     private currentRecordingName: string | null = null;
+    private pendingInitialLocationId: number | null = null;
     private playbackTimeout: number | null = null;
     private playbackIndex = 0;
     private playbackDelay = 0;
@@ -26,21 +31,13 @@ export default class Recorder {
 
     handleIncoming(message: string) {
         if (this.isRecording) {
-            this.recordedMessages.push({
-                message,
-                timestamp: Date.now(),
-                direction: 'in'
-            });
+            this.recordEvent(message, 'in');
         }
     }
 
     handleOutgoing(message: string) {
         if (this.isRecording) {
-            this.recordedMessages.push({
-                message,
-                timestamp: Date.now(),
-                direction: 'out'
-            });
+            this.recordEvent(message, 'out');
         }
     }
 
@@ -48,11 +45,13 @@ export default class Recorder {
         this.recordedMessages = [];
         this.currentRecordingName = name;
         this.isRecording = true;
+        this.pendingInitialLocationId = this.readCurrentLocation();
         this.hooks.emit('recording.start', name);
     }
 
     async stopRecording(save?: boolean) {
         this.isRecording = false;
+        this.pendingInitialLocationId = null;
         if (save && this.currentRecordingName) {
             await saveRecording(this.currentRecordingName, this.recordedMessages);
         }
@@ -157,6 +156,7 @@ export default class Recorder {
     replayRecordedMessages() {
         if (this.recordedMessages.length === 0) return;
         this.stopPlayback();
+        this.applyInitialLocation();
         this.isPlaying = true;
         this.hooks.emit('playback.start');
         this.hooks.emit("message", '== Playback start ==');
@@ -175,6 +175,7 @@ export default class Recorder {
     replayRecordedMessagesTimed() {
         if (this.recordedMessages.length === 0) return;
         this.stopPlayback();
+        this.applyInitialLocation();
         this.isPlaying = true;
         this.paused = false;
         this.playbackIndex = 0;
@@ -193,6 +194,49 @@ export default class Recorder {
             window.clientExtension.sendCommand(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }
+    }
+
+    private applyInitialLocation() {
+        if (typeof this.hooks.setMapLocationSilently !== 'function') {
+            return;
+        }
+        const initialEvent = this.recordedMessages.find(event => typeof event.initialLocationId === 'number');
+        const fallbackEvent = this.recordedMessages.find(event => typeof event.locationId === 'number');
+        const locationId = initialEvent?.initialLocationId ?? fallbackEvent?.locationId;
+        if (typeof locationId === 'number') {
+            this.hooks.setMapLocationSilently(locationId);
+        }
+    }
+
+    private recordEvent(message: string, direction: 'in' | 'out') {
+        const event: RecordedEvent = {
+            message,
+            timestamp: Date.now(),
+            direction
+        };
+        const currentLocation = this.readCurrentLocation();
+        if (typeof this.pendingInitialLocationId === 'number') {
+            event.initialLocationId = this.pendingInitialLocationId;
+            if (typeof currentLocation !== 'number') {
+                event.locationId = this.pendingInitialLocationId;
+            }
+            this.pendingInitialLocationId = null;
+        }
+        if (typeof currentLocation === 'number') {
+            event.locationId = currentLocation;
+        }
+        if (this.recordedMessages.length === 0 && typeof event.initialLocationId !== 'number' && typeof event.locationId === 'number') {
+            event.initialLocationId = event.locationId;
+        }
+        this.recordedMessages.push(event);
+    }
+
+    private readCurrentLocation(): number | null {
+        if (typeof this.hooks.getCurrentMapLocation !== 'function') {
+            return null;
+        }
+        const location = this.hooks.getCurrentMapLocation();
+        return typeof location === 'number' ? location : null;
     }
 
     private executeCurrent() {

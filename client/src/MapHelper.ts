@@ -304,6 +304,19 @@ export default class MapHelper {
         }
     }
 
+    renderRoomByIdSilently(id: number) {
+        if (typeof id !== 'number') {
+            return;
+        }
+        const previousSuppress = this.client.suppressMapMoveEvent;
+        this.client.suppressMapMoveEvent = true;
+        try {
+            this.renderRoomById(id, false);
+        } finally {
+            this.client.suppressMapMoveEvent = previousSuppress;
+        }
+    }
+
     renderRoomById(id: number, sendEvent = true) {
         if (!this.mapReader) {
             this.savedRoomId = id;
