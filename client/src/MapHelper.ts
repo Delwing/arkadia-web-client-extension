@@ -65,7 +65,7 @@ export default class MapHelper {
 
         this.client.addEventListener('gmcp.char.info', () => {
             const listener = (event: CustomEvent) => {
-                if (event.detail.key === STORAGE_KEY) {
+                if (event.detail.key === STORAGE_KEY && this.refreshPosition) {
                     const value = parseInt(event.detail.value);
                     if (!isNaN(value)) {
                         this.savedRoomId = value;
