@@ -11,6 +11,7 @@ jest.mock('howler', () => ({
 
 import Client from '../src/Client';
 import initTempBinds from '../src/scripts/tempBinds';
+import { createStorageBridgeMock } from './helpers/storageBridgeMock';
 
 describe('temp binds', () => {
   function createClient() {
@@ -22,11 +23,8 @@ describe('temp binds', () => {
       parseAnsiPatterns: jest.fn((text: string) => text),
       flushMessageBuffer: jest.fn(),
     } as any;
-    const port = {
-      postMessage: jest.fn(),
-      onMessage: { addListener: jest.fn() },
-    } as any;
-    const client = new Client(adapter, port);
+    const storageBridge = createStorageBridgeMock();
+    const client = new Client(adapter, storageBridge);
     (client as any).println = jest.fn();
     return client;
   }

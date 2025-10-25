@@ -26,6 +26,7 @@ import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "front-client/src/ansiParser";
+import type { ClientStorageBridge } from "./state/storageBridge";
 
 const ANSI_SGR_REGEX = /\x1b\[[0-9;]*m/g;
 const ANSI_RESET = "\x1b[0m";
@@ -68,7 +69,8 @@ export interface ClientAdapter {
 
 export default class Client {
     clientAdapter: ClientAdapter;
-    port?: any;
+    port: { postMessage: (message: any) => void };
+    private storageBridge: ClientStorageBridge;
     eventTarget = eventBus;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
@@ -130,8 +132,14 @@ export default class Client {
     herbManager?: HerbManagerApi;
 
 
-    constructor(clientAdapter: ClientAdapter, port: any) {
+    constructor(clientAdapter: ClientAdapter, storageBridge: ClientStorageBridge) {
         this.clientAdapter = clientAdapter
+        this.storageBridge = storageBridge
+        this.port = {
+            postMessage: (message: any) => {
+                this.handleStorageMessage(message)
+            },
+        }
         attachGmcpListener(this);
 
         window.addEventListener('extension-message', (ev: Event) => {
@@ -267,7 +275,7 @@ export default class Client {
             }
         }
 
-        const initialSettings = getItemSync('settings')?.settings;
+        const initialSettings = this.storageBridge.getSettingsSnapshot();
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
 
         this.addEventListener('settings', (ev: CustomEvent) => {
@@ -289,11 +297,16 @@ export default class Client {
         this.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
             if (ev.detail?.name) {
                 setCurrentCharacter(ev.detail.name);
-                if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
-                        this.port!.postMessage({ type: 'GET_STORAGE', key: k });
-                    });
-                }
+                void this.storageBridge.loadCharacterScopedData(this, [
+                    'settings',
+                    'kill_counter',
+                    'deposits',
+                    'containers',
+                    'herb_counts',
+                    'mapperRoomId',
+                    'binds',
+                    'lastLang',
+                ]);
             }
             if (typeof ev.detail?.object_num !== 'undefined') {
                 const newNum = String(ev.detail.object_num);
@@ -316,18 +329,6 @@ export default class Client {
             this.buffer = []
         })
 
-        this.port = port
-        port.onMessage.addListener((message) => {
-            if (message && typeof message.type === 'string') {
-                this.sendEvent(message.type, message.data)
-                return
-            }
-            if (message && typeof message === 'object') {
-                Object.entries(message).forEach(([key, value]) => {
-                    this.sendEvent(key, value)
-                })
-            }
-        })
     }
 
     setTempBind(index: number, command: string) {
@@ -345,13 +346,23 @@ export default class Client {
         }
     }
 
-    connect(port: any, initial: boolean) {
-        if (initial) {
-            port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
-        }
-        this.port = port
+    notifyPortConnected() {
         this.eventTarget.dispatchEvent(new CustomEvent('port-connected'))
         console.log("Client connected to background service.")
+    }
+
+    private handleStorageMessage(message: any) {
+        if (!message || typeof message !== 'object') {
+            return
+        }
+        const { type, key, value } = message as { type?: string; key?: string; value?: any }
+        if (type === 'SET_STORAGE' && typeof key === 'string') {
+            void this.storageBridge.setItem(key, value)
+            return
+        }
+        if (type === 'GET_STORAGE' && typeof key === 'string') {
+            void this.storageBridge.loadCharacterScopedData(this, [key])
+        }
     }
 
     addEventListener(event: string, listener: (arg: CustomEvent) => void, options?: AddEventListenerOptions | boolean) {
