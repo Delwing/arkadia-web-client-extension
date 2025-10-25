@@ -185,6 +185,9 @@ const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 let isSplitView = false;
 const STICKY_LINES = 15;
 
+let allowNextNativeContextMenu = false;
+let lastContextMenuEvent: MouseEvent | null = null;
+
 function processSticky(count: number) {
     const handler: any = (window as any).clientExtension?.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
@@ -219,19 +222,60 @@ function checkSplitView() {
 outputWrapper.addEventListener('scroll', checkSplitView);
 
 outputWrapper.addEventListener('contextmenu', event => {
-    const handler: any = (window as any).clientExtension?.OutputHandler;
-    if (!handler || typeof handler.showContextMenu !== 'function') {
+    if (allowNextNativeContextMenu) {
+        allowNextNativeContextMenu = false;
+        lastContextMenuEvent = null;
         return;
     }
+
+    const handler: any = (window as any).clientExtension?.OutputHandler;
+    if (!handler || typeof handler.showContextMenu !== 'function') {
+        lastContextMenuEvent = null;
+        return;
+    }
+
     event.preventDefault();
+    lastContextMenuEvent = event;
+
     const isVisible = areOutputTimestampsVisible();
     const items = [
         {
             label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
             action: () => setOutputTimestampVisibility(!isVisible),
         },
+        {
+            label: 'Pokaż oryginalne menu',
+            action: () => {
+                if (typeof handler.hideContextMenu === 'function') {
+                    handler.hideContextMenu();
+                }
+                const originalEvent = lastContextMenuEvent;
+                lastContextMenuEvent = null;
+                if (!originalEvent) {
+                    return;
+                }
+                const { clientX, clientY } = originalEvent;
+                const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null
+                    ?? (originalEvent.target instanceof HTMLElement ? originalEvent.target : outputWrapper);
+                allowNextNativeContextMenu = true;
+                requestAnimationFrame(() => {
+                    const nativeEvent = new MouseEvent('contextmenu', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX,
+                        clientY,
+                    });
+                    (target ?? outputWrapper).dispatchEvent(nativeEvent);
+                });
+            },
+        },
     ];
-    handler.showContextMenu(items, event.clientX, event.clientY);
+
+    handler.showContextMenu(items, event.clientX, event.clientY, {
+        header: `Znaczniki czasu: ${isVisible ? 'włączone' : 'wyłączone'}`,
+        smallHeader: true,
+    });
 });
 
 function closeHistoryScrollback() {
