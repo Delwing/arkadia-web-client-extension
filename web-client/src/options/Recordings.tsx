@@ -216,6 +216,7 @@ function Recordings() {
         if (!name) return;
         window.client.startRecording(name);
         setRecording(true);
+        window.dispatchEvent(new Event('close-options'));
     }
 
     async function stop(save: boolean) {
