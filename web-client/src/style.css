@@ -2129,7 +2129,7 @@ body.mobile-command-radial-active {
 
 .output-timestamp {
   display: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: darkorange;
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.85em;
 }
