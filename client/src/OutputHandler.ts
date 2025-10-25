@@ -81,6 +81,7 @@ export default class OutputHandler {
     }
 
     private decorateClickable(span: HTMLElement, cbIndex: number, title?: string) {
+        span.dataset.outputClickable = "true"
         span.style.cursor = "pointer"
         span.style.textDecoration = " underline"
         span.style.textDecorationStyle = "dotted"
