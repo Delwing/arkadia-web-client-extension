@@ -5,6 +5,7 @@ import storage, { getCurrentCharacter } from "@client/src/storage";
 import { settingsStore, useSettingsSlice } from "@client/src/state/settingsStore";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
+import useLatestRef from "./useLatestRef";
 
 interface FormSettings extends BaseSettings {
 }
@@ -70,6 +71,7 @@ function normalizeSettings(source: BaseSettings): FormSettings {
 function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
     const storeSettings = useSettingsSlice(settings => settings);
     const [settings, setSettings] = useState<FormSettings>(() => normalizeSettings(storeSettings));
+    const settingsRef = useLatestRef(settings);
 
     const [locked, setLocked] = useState(!getCurrentCharacter());
 
@@ -100,8 +102,8 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
         })
     }
     useEffect(() => {
-        registerSave(() => settingsStore.getState().updateSettings(settings));
-    }, [registerSave, settings]);
+        registerSave(() => settingsStore.getState().updateSettings(settingsRef.current));
+    }, [registerSave, settingsRef]);
 
     return (
         <div className="p-2 h-100">

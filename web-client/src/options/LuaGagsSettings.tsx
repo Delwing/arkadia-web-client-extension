@@ -9,6 +9,7 @@ import {
     LuaGagLineType,
     normalizeLuaGagsDeleteLines,
 } from "@client/src/luaGagsSettings";
+import useLatestRef from "./useLatestRef";
 
 type RegisterSave = (cb: () => void) => void;
 
@@ -32,6 +33,7 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
     const [deleteLines, setDeleteLines] = useState<DeleteLineState>(() => ({
         ...DEFAULT_LUA_GAGS_DELETE_LINES,
     }));
+    const deleteLinesRef = useLatestRef(deleteLines);
 
     useEffect(() => {
         const update = () => setLocked(!getCurrentCharacter());
@@ -66,8 +68,8 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
     }, [loadFromStorage]);
 
     useEffect(() => {
-        registerSave(() => storage.setItem(LUA_GAGS_STORAGE_KEY, deleteLines));
-    }, [registerSave, deleteLines]);
+        registerSave(() => storage.setItem(LUA_GAGS_STORAGE_KEY, deleteLinesRef.current));
+    }, [registerSave, deleteLinesRef]);
 
     const labels = useMemo(() => {
         const map: Record<LuaGagLineType, string> = {} as Record<LuaGagLineType, string>;

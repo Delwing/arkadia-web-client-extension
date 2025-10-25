@@ -3,6 +3,7 @@ import storage, { getCurrentCharacter } from "@client/src/storage";
 import { settingsStore, useSettingsSlice } from "@client/src/state/settingsStore";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
+import useLatestRef from "./useLatestRef";
 
 function ensureGuildList(value: unknown): string[] {
     return Array.isArray(value) ? value.filter((guild): guild is string => typeof guild === "string") : [];
@@ -29,6 +30,9 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
     const [selected, setSelected] = useState<string[]>(() => ensureGuildList(storeGuilds));
     const [enemySelected, setEnemySelected] = useState<string[]>(() => ensureGuildList(storeEnemyGuilds));
     const [colors, setColors] = useState<Record<string, string | undefined>>(() => ensureGuildColors(storeGuildColors));
+    const selectedRef = useLatestRef(selected);
+    const enemySelectedRef = useLatestRef(enemySelected);
+    const colorsRef = useLatestRef(colors);
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
@@ -90,11 +94,11 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
 
     useEffect(() => {
         registerSave(() => settingsStore.getState().updateSettings({
-            guilds: selected,
-            enemyGuilds: enemySelected,
-            guildColors: colors,
+            guilds: selectedRef.current,
+            enemyGuilds: enemySelectedRef.current,
+            guildColors: colorsRef.current,
         }));
-    }, [registerSave, selected, enemySelected, colors]);
+    }, [registerSave, selectedRef, enemySelectedRef, colorsRef]);
 
     return (
         <div className="p-2 h-100">
