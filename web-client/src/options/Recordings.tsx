@@ -7,6 +7,7 @@ function Recordings() {
     const [recordingName, setRecordingName] = useState('');
     const [recording, setRecording] = useState(false);
     const [message, setMessage] = useState('');
+    const [autoRecordingName, setAutoRecordingName] = useState<string | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
 
     const load = () => {
@@ -33,6 +34,35 @@ function Recordings() {
         return () => {
             window.client.off('recording.start', startHandler);
             window.client.off('recording.stop', stopHandler);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!window.client) return;
+
+        const updateAutoState = () => {
+            setAutoRecordingName(window.client.getAutoRecordingName?.() ?? null);
+        };
+
+        const autoStartHandler = (name?: string | null) => {
+            if (typeof name === 'string' && name) {
+                setAutoRecordingName(name);
+            } else {
+                updateAutoState();
+            }
+        };
+
+        const autoStopHandler = () => {
+            updateAutoState();
+        };
+
+        updateAutoState();
+        window.client.on('recording.auto.start', autoStartHandler as any);
+        window.client.on('recording.auto.stop', autoStopHandler as any);
+
+        return () => {
+            window.client.off('recording.auto.start', autoStartHandler as any);
+            window.client.off('recording.auto.stop', autoStopHandler as any);
         };
     }, []);
 
@@ -63,10 +93,33 @@ function Recordings() {
         URL.revokeObjectURL(url);
     }
 
+    async function fetchRecordingEvents(name: string) {
+        if (!name) {
+            return null;
+        }
+        if (window.client?.getRecordingSnapshot) {
+            const snapshot = await window.client.getRecordingSnapshot(name);
+            if (snapshot) {
+                return snapshot;
+            }
+        }
+        return getRecording(name);
+    }
+
     async function downloadRecordings() {
         const all: Record<string, any[]> = {};
-        for (const name of await getRecordingNames()) {
-            const events = await getRecording(name);
+        const namesToExport = new Set(await getRecordingNames());
+        const activeManual = window.client?.getActiveRecordingName?.();
+        if (activeManual) {
+            namesToExport.add(activeManual);
+        }
+        const activeAuto = window.client?.getAutoRecordingName?.();
+        if (activeAuto) {
+            namesToExport.add(activeAuto);
+        }
+
+        for (const name of namesToExport) {
+            const events = await fetchRecordingEvents(name);
             if (events) {
                 all[name] = events;
             }
@@ -76,7 +129,8 @@ function Recordings() {
     }
 
     async function downloadRecording(name: string) {
-        const events = await getRecording(name);
+        if (!name) return;
+        const events = await fetchRecordingEvents(name);
         if (!events) return;
 
         const json = JSON.stringify({[name]: events}, null, 2);
@@ -145,11 +199,21 @@ function Recordings() {
                     <>
                         <Button size="sm" variant="secondary" onClick={() => stop(false)}>Zatrzymaj</Button>
                         <Button size="sm" onClick={() => stop(true)}>Zatrzymaj i zapisz</Button>
+                        <Button size="sm" variant="outline-primary" onClick={() => downloadRecording(recordingName)}>
+                            Pobierz (bieżący)
+                        </Button>
                     </>
                 ) : (
                     <Button size="sm" onClick={start}>Rozpocznij</Button>
                 )}
             </Form.Group>
+            {autoRecordingName && (
+                <div className="d-flex flex-wrap gap-2 align-items-center text-muted small">
+                    <span>Automatyczne nagrywanie aktywne:</span>
+                    <strong className="text-body">{autoRecordingName}</strong>
+                    <Button size="sm" onClick={() => downloadRecording(autoRecordingName)}>Pobierz aktualny stan</Button>
+                </div>
+            )}
             <Table bordered size="sm" hover className="table-modern table-zebra">
                 <tbody>
                 {names.map(n => (

@@ -1,5 +1,5 @@
 import {parseAnsiPatterns} from './ansiParser';
-import {RecordedEvent} from './recordingStorage';
+import {RecordedEvent, getRecording} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
@@ -475,11 +475,12 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private createRecorder(auto: boolean) {
-        return new Recorder({
+        const recorder = new Recorder({
             processIncomingData: (d) => this.processIncomingData(d),
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
-            emit: (ev, ...args) => this.emitRecorderEvent(auto, ev, ...args)
+            emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args)
         });
+        return recorder;
     }
 
     private registerRecorder(recorder: Recorder) {
@@ -493,9 +494,15 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    private emitRecorderEvent(auto: boolean, event: string, ...args: any[]) {
-        if (auto && event === 'recording.start') {
-            return;
+    private emitRecorderEvent(auto: boolean, recorder: Recorder, event: string, ...args: any[]) {
+        if (auto) {
+            if (event === 'recording.start') {
+                this.emit('recording.auto.start', recorder.getCurrentRecordingName());
+                return;
+            }
+            if (event === 'recording.stop') {
+                this.emit('recording.auto.stop', recorder.getCurrentRecordingName(), ...args);
+            }
         }
         this.emit(event as any, ...args);
     }
@@ -512,6 +519,42 @@ class ArkadiaClient implements ClientAdapter {
         } catch (error) {
             console.error('Failed to stop auto recording:', error);
         }
+    }
+
+    getActiveRecordingName() {
+        if (this.recorder.isRecordingActive()) {
+            return this.recorder.getCurrentRecordingName();
+        }
+        return null;
+    }
+
+    getAutoRecordingName() {
+        if (this.autoRecorder && this.autoRecorder.isRecordingActive()) {
+            return this.autoRecorder.getCurrentRecordingName();
+        }
+        return null;
+    }
+
+    async getRecordingSnapshot(name: string): Promise<RecordedEvent[] | null> {
+        const recorder = this.findRecorderByName(name);
+        if (recorder) {
+            return recorder.getRecordedMessages();
+        }
+        try {
+            return await getRecording(name);
+        } catch (error) {
+            console.error('Failed to read recording snapshot:', error);
+            return null;
+        }
+    }
+
+    private findRecorderByName(name: string) {
+        for (const recorder of this.activeRecorders) {
+            if (recorder.getCurrentRecordingName && recorder.getCurrentRecordingName() === name) {
+                return recorder;
+            }
+        }
+        return null;
     }
 
 }
