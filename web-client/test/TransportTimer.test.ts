@@ -1,4 +1,5 @@
 import TransportTimer from "../src/TransportTimer";
+import { settingsStore } from "@client/src/state/settingsStore";
 
 class MockClient {
   private events: Record<string, Function[]> = {};
@@ -16,6 +17,7 @@ describe("TransportTimer", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    settingsStore.setState({ uiSettings: {} });
     document.body.innerHTML = '<span id="transport-timer"></span>';
     container = document.getElementById("transport-timer")!;
     (window as any).clientExtension = { eventTarget: new EventTarget() };
@@ -59,9 +61,8 @@ describe("TransportTimer", () => {
     expect(container.style.display).toBe("block");
   });
 
-  test("hides label when option disabled", () => {
-    const target = (window as any).clientExtension.eventTarget as EventTarget;
-    target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showTransportLabel: false } }));
+  test("hides label when option disabled", async () => {
+    await settingsStore.getState().updateUiSettings({ showTransportLabel: false });
     client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
     expect(container.style.display).toBe("none");
     expect(container.textContent).toBe("");
