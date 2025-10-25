@@ -1,7 +1,6 @@
 import Client from "./Client";
-import { stripAnsiCodes } from "./stripAnsiCodes";
 import TriggerLine from "./triggers/TriggerLine";
-export { stripAnsiCodes };
+export { stripAnsiCodes } from "./stripAnsiCodes";
 
 type TriggerCallback = (
     rawLine: string,
@@ -243,7 +242,7 @@ export default class Triggers {
             rawLine instanceof TriggerLine
                 ? rawLine
                 : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
-        const plain = stripAnsiCodes(triggerLine.text).replace(/\s$/g, "");
+        const plain = triggerLine.text.replace(/\s$/g, "");
         const tokens = plain
             .split(/[ \n\t.,!?*()\/\[\]]+/)
             .filter(t => t.length > 0)
