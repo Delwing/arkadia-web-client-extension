@@ -33,6 +33,9 @@ export default class People {
             this.guildColors = event.detail.guildColors || {}
             this.ensurePeopleTriggers()
         })
+        this.client.addEventListener('uiSettings', () => {
+            this.ensurePeopleTriggers(true)
+        })
         this.ensurePeopleTriggers()
     }
 

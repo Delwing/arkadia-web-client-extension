@@ -1,31 +1,43 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
 
-const SLATE_BLUE = findClosestColor("#6a5acd");
-const ENEMY_RED = findClosestColor("#ff0000");
-
 type GuildColorMap = Record<string, number | undefined>;
 
 export default function initGuildPostfix(client: Client) {
     const tag = "guildPostfix";
     let guildColors: GuildColorMap = {};
+    let guildColorHex: Record<string, string | undefined> = {};
     let enemyGuilds = new Set<string>();
+    let slateBlue = findClosestColor("#6a5acd");
+    let enemyRed = findClosestColor("#ff0000");
+
+    const recalculateColors = () => {
+        slateBlue = findClosestColor("#6a5acd");
+        enemyRed = findClosestColor("#ff0000");
+        const updated: GuildColorMap = {};
+        Object.entries(guildColorHex).forEach(([guild, hex]) => {
+            if (hex) {
+                updated[guild] = findClosestColor(hex);
+            }
+        });
+        guildColors = updated;
+    };
 
     client.addEventListener('settings', (ev: CustomEvent) => {
         const colors: Record<string, string | undefined> = ev.detail.guildColors || {};
         const enemies: string[] = ev.detail.enemyGuilds || [];
-        guildColors = {};
+        guildColorHex = { ...colors };
         enemyGuilds = new Set(enemies);
-        Object.entries(colors).forEach(([g, hex]) => {
-            if (hex) {
-                guildColors[g] = findClosestColor(hex);
-            }
-        });
+        recalculateColors();
+    });
+
+    client.addEventListener('uiSettings', () => {
+        recalculateColors();
     });
 
     function register(pattern: RegExp | string, guild: string) {
         client.Triggers.registerTrigger(pattern, (raw) => {
-            const color = enemyGuilds.has(guild) ? ENEMY_RED : guildColors[guild] ?? SLATE_BLUE;
+            const color = enemyGuilds.has(guild) ? enemyRed : guildColors[guild] ?? slateBlue;
             return client.postfix(raw, colorString(` [${guild}]`, color));
         }, tag);
     }

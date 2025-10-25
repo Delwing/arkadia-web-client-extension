@@ -1,6 +1,6 @@
 import People from '../src/People';
 import Triggers, { stripAnsiCodes } from '../src/Triggers';
-import { color, RESET, findClosestColor } from '../src/Colors';
+import { color, RESET, findClosestColor, setXtermPalette } from '../src/Colors';
 import { refresh, subscribe, forceRefresh } from '../src/peopleStore';
 
 jest.mock('../src/peopleStore', () => ({
@@ -29,6 +29,7 @@ class FakeClient {
 describe('people triggers enemy highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
+  let uiSettingsHandler: ((event: CustomEvent) => void) | undefined;
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
@@ -55,9 +56,10 @@ describe('people triggers enemy highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
+    const settingsHandler = client.addEventListener.mock.calls.find(([event]) => event === 'settings')?.[1];
+    uiSettingsHandler = client.addEventListener.mock.calls.find(([event]) => event === 'uiSettings')?.[1];
+    if (settingsHandler) {
+      settingsHandler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
     }
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
@@ -66,6 +68,7 @@ describe('people triggers enemy highlight', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    setXtermPalette('arkadia');
   });
 
   test('colors enemy description red', () => {
@@ -90,6 +93,24 @@ describe('people triggers enemy highlight', () => {
     const highlight = color(red) + 'Eamon' + RESET;
     const parts = result.split(highlight);
     expect(parts.length - 1).toBe(1);
+  });
+
+  test('re-registers enemy highlight after palette change', async () => {
+    const before = parse('Eamon wita cie.');
+    const initialRed = findClosestColor('#ff0000');
+    expect(before).toContain(color(initialRed) + 'Eamon' + RESET);
+
+    setXtermPalette('proper');
+    uiSettingsHandler?.({ detail: { xtermPalette: 'proper' } } as any);
+    expect(forceRefreshMock).toHaveBeenCalled();
+    const refreshCall = forceRefreshMock.mock.results[forceRefreshMock.mock.results.length - 1];
+    await refreshCall?.value;
+    const after = parse('Eamon wita cie.');
+    const updatedRed = findClosestColor('#ff0000');
+    const fallbackCode = updatedRed <= 15 ? (updatedRed <= 7 ? 30 + updatedRed : 90 + (updatedRed - 8)) : null;
+    const expectedHighlight = color(updatedRed) + 'Eamon' + RESET;
+    const fallbackHighlight = fallbackCode ? `\u001b[${fallbackCode}mEamon${RESET}` : null;
+    expect(after.includes(expectedHighlight) || (fallbackHighlight ? after.includes(fallbackHighlight) : false)).toBe(true);
   });
 
   test('ignores very short enemy names to avoid false positives', () => {
@@ -133,7 +154,7 @@ describe('people triggers guild highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
+    settingsHandler = client.addEventListener.mock.calls.find(([event]) => event === 'settings')?.[1] as ((event: SettingsEvent) => void);
     const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastGuildCall?.value;
   });
@@ -141,6 +162,7 @@ describe('people triggers guild highlight', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    setXtermPalette('arkadia');
   });
 
   const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
