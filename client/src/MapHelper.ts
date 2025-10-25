@@ -70,6 +70,7 @@ export default class MapHelper {
                     if (!isNaN(value)) {
                         this.savedRoomId = value;
                         this.setMapRoomById(this.savedRoomId);
+                        this.client.sendEvent('refreshPositionWhenAble');
                     }
                 }
             };
