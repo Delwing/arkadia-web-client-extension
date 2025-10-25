@@ -1,5 +1,6 @@
 import Client from '../src/Client';
 import { getItemSync } from '../src/storage';
+import { createStorageBridgeMock } from './helpers/storageBridgeMock';
 
 (window as any).Input = { send: jest.fn() };
 (window as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
@@ -56,13 +57,13 @@ describe('object_num persistence and reset event', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
-    (window as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-    (window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-    (window as any).dispatchEvent = jest.fn();
-    (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
-    (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
-    client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
+  (window as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
+  (window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
+  (window as any).dispatchEvent = jest.fn();
+  (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
+  (global as any).storageBridgeMock = createStorageBridgeMock();
+  client = new Client((global as any).clientAdapterMock as any, (global as any).storageBridgeMock);
   });
 
   test('stores object_num and emits reset when changed', () => {

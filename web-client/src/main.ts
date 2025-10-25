@@ -20,7 +20,7 @@ import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 
 import "@client/src/main.ts"
-import MockPort from "./MockPort.ts";
+import createStorageBridge from "@client/src/state/storageBridge";
 import NoSleep from 'nosleep.js';
 import {loadMapData, loadColors} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
@@ -50,10 +50,15 @@ import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./data
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort())
+const storageBridge = createStorageBridge();
+await storageBridge.initialize();
+
+const client = new Client(arkadiaClient, storageBridge)
 window.clientExtension = client;
 registerScripts(client)
-client.connect(client.port, true)
+storageBridge.bindClient(client);
+client.notifyPortConnected();
+void storageBridge.loadScripts(client);
 
 subscribeNpcStore(snapshot => {
     const payload = snapshot?.all.data.map(({name, loc}) => ({name, loc})) ?? []
