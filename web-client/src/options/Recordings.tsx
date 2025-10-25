@@ -1,12 +1,15 @@
 import {ChangeEvent, useEffect, useRef, useState} from 'react';
 import {Button, Table, Form} from 'react-bootstrap';
-import {getRecordingNames, deleteRecording, getRecording, saveRecording} from './recordingStorage';
+import {getRecordingNames, deleteRecording, getRecording, saveRecording, RecordedEvent} from './recordingStorage';
+
+const AUTO_RECENT_WINDOW_MS = 3 * 60 * 1000;
 
 function Recordings() {
     const [names, setNames] = useState<string[]>([]);
     const [recordingName, setRecordingName] = useState('');
     const [recording, setRecording] = useState(false);
     const [message, setMessage] = useState('');
+    const [autoRecordingName, setAutoRecordingName] = useState<string | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
 
     const load = () => {
@@ -33,6 +36,35 @@ function Recordings() {
         return () => {
             window.client.off('recording.start', startHandler);
             window.client.off('recording.stop', stopHandler);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!window.client) return;
+
+        const updateAutoState = () => {
+            setAutoRecordingName(window.client.getAutoRecordingName?.() ?? null);
+        };
+
+        const autoStartHandler = (name?: string | null) => {
+            if (typeof name === 'string' && name) {
+                setAutoRecordingName(name);
+            } else {
+                updateAutoState();
+            }
+        };
+
+        const autoStopHandler = () => {
+            updateAutoState();
+        };
+
+        updateAutoState();
+        window.client.on('recording.auto.start', autoStartHandler as any);
+        window.client.on('recording.auto.stop', autoStopHandler as any);
+
+        return () => {
+            window.client.off('recording.auto.start', autoStartHandler as any);
+            window.client.off('recording.auto.stop', autoStopHandler as any);
         };
     }, []);
 
@@ -63,10 +95,42 @@ function Recordings() {
         URL.revokeObjectURL(url);
     }
 
+    async function fetchRecordingEvents(name: string, options?: {recentMs?: number}) {
+        if (!name) {
+            return null;
+        }
+        if (window.client?.getRecordingSnapshot) {
+            const snapshot = await window.client.getRecordingSnapshot(name, options);
+            if (snapshot) {
+                return snapshot;
+            }
+        }
+        const events = await getRecording(name);
+        if (events && options?.recentMs) {
+            return filterRecentEvents(events, options.recentMs);
+        }
+        return events;
+    }
+
+    function filterRecentEvents(events: RecordedEvent[], durationMs: number) {
+        const cutoff = Date.now() - durationMs;
+        return events.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
+    }
+
     async function downloadRecordings() {
         const all: Record<string, any[]> = {};
-        for (const name of await getRecordingNames()) {
-            const events = await getRecording(name);
+        const namesToExport = new Set(await getRecordingNames());
+        const activeManual = window.client?.getActiveRecordingName?.();
+        if (activeManual) {
+            namesToExport.add(activeManual);
+        }
+        const activeAuto = window.client?.getAutoRecordingName?.();
+        if (activeAuto) {
+            namesToExport.add(activeAuto);
+        }
+
+        for (const name of namesToExport) {
+            const events = await fetchRecordingEvents(name);
             if (events) {
                 all[name] = events;
             }
@@ -75,13 +139,20 @@ function Recordings() {
         createDownload(json, 'arkadia-recordings.json');
     }
 
-    async function downloadRecording(name: string) {
-        const events = await getRecording(name);
+    async function downloadRecording(name: string, options?: {recentMs?: number}) {
+        if (!name) return;
+        const events = await fetchRecordingEvents(name, options);
         if (!events) return;
 
         const json = JSON.stringify({[name]: events}, null, 2);
         const safeName = name.replace(/[^a-z0-9-_]+/gi, '_') || 'recording';
-        createDownload(json, `arkadia-recording-${safeName}.json`);
+        const suffix = options?.recentMs ? `-ostatnie-${Math.round(options.recentMs / 60000)}-minuty` : '';
+        createDownload(json, `arkadia-recording-${safeName}${suffix}.json`);
+    }
+
+    async function downloadAutoRecentRecording() {
+        if (!autoRecordingName) return;
+        await downloadRecording(autoRecordingName, {recentMs: AUTO_RECENT_WINDOW_MS});
     }
 
     async function uploadRecordings(event: ChangeEvent<HTMLInputElement>) {
@@ -145,11 +216,22 @@ function Recordings() {
                     <>
                         <Button size="sm" variant="secondary" onClick={() => stop(false)}>Zatrzymaj</Button>
                         <Button size="sm" onClick={() => stop(true)}>Zatrzymaj i zapisz</Button>
+                        <Button size="sm" variant="outline-primary" onClick={() => downloadRecording(recordingName)}>
+                            Pobierz (bieżący)
+                        </Button>
                     </>
                 ) : (
                     <Button size="sm" onClick={start}>Rozpocznij</Button>
                 )}
             </Form.Group>
+            {autoRecordingName && (
+                <div className="d-flex flex-wrap gap-2 align-items-center text-muted small">
+                    <span>Automatyczne nagrywanie aktywne:</span>
+                    <strong className="text-body">{autoRecordingName}</strong>
+                    <Button size="sm" onClick={() => downloadRecording(autoRecordingName)}>Pobierz aktualny stan</Button>
+                    <Button size="sm" variant="outline-primary" onClick={downloadAutoRecentRecording}>Pobierz ostatnie 3 minuty</Button>
+                </div>
+            )}
             <Table bordered size="sm" hover className="table-modern table-zebra">
                 <tbody>
                 {names.map(n => (

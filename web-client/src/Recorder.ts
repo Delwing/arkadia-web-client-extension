@@ -60,6 +60,14 @@ export default class Recorder {
         this.currentRecordingName = null;
     }
 
+    isRecordingActive() {
+        return this.isRecording;
+    }
+
+    getCurrentRecordingName() {
+        return this.currentRecordingName;
+    }
+
     async loadRecording(name: string) {
         const data = await getRecording(name);
         this.recordedMessages = data || [];
@@ -135,6 +143,11 @@ export default class Recorder {
 
     getRecordedMessages() {
         return this.recordedMessages.slice();
+    }
+
+    getRecordedMessagesSince(durationMs: number) {
+        const cutoff = Date.now() - durationMs;
+        return this.recordedMessages.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
     }
 
     setRecordedMessages(events: RecordedEvent[]) {
