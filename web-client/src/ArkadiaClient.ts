@@ -261,8 +261,9 @@ class ArkadiaClient implements ClientAdapter {
         this.sendGmcp('client.conf.set', data)
     }
 
-    output(text?: string, type?: string) {
-        this.emit('message', text, type)
+    output(text?: string, type?: string, timestamp?: number) {
+        const ts = typeof timestamp === 'number' ? timestamp : Date.now();
+        this.emit('message', text, type, ts)
     }
 
     //Should be done on all ouput
@@ -273,11 +274,12 @@ class ArkadiaClient implements ClientAdapter {
     /**
      * Process incoming WebSocket data by removing telnet options
      */
-    private processIncomingData(data: string) {
+    private processIncomingData(data: string, options?: { timestamp?: number }) {
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
-            this.emit('message', sanitized)
+            const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
+            this.emit('message', sanitized, undefined, timestamp)
         }
         this.flushMessageBuffer()
     }
@@ -476,7 +478,7 @@ class ArkadiaClient implements ClientAdapter {
 
     private createRecorder(auto: boolean) {
         const recorder = new Recorder({
-            processIncomingData: (d) => this.processIncomingData(d),
+            processIncomingData: (d, opts) => this.processIncomingData(d, opts),
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args)
         });

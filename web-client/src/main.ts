@@ -45,7 +45,11 @@ import {
 import "./triggerTester"
 import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
-import {setupOutputMessageHandler} from "./outputMessageHandler";
+import {
+    areOutputTimestampsVisible,
+    setOutputTimestampVisibility,
+    setupOutputMessageHandler,
+} from "./outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
@@ -213,6 +217,22 @@ function checkSplitView() {
 }
 
 outputWrapper.addEventListener('scroll', checkSplitView);
+
+outputWrapper.addEventListener('contextmenu', event => {
+    const handler: any = (window as any).clientExtension?.OutputHandler;
+    if (!handler || typeof handler.showContextMenu !== 'function') {
+        return;
+    }
+    event.preventDefault();
+    const isVisible = areOutputTimestampsVisible();
+    const items = [
+        {
+            label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
+            action: () => setOutputTimestampVisibility(!isVisible),
+        },
+    ];
+    handler.showContextMenu(items, event.clientX, event.clientY);
+});
 
 function closeHistoryScrollback() {
     outputWrapper.scrollTop = outputWrapper.scrollHeight;

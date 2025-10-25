@@ -636,7 +636,9 @@ html, body {
             if (child && child.classList && child.classList.contains("output_msg")) {
                 const textEl = child.querySelector<HTMLElement>(".output_msg_text");
                 if (textEl) {
-                    const lines = this.splitOutputHtmlIntoLines(textEl.innerHTML);
+                    const content = textEl.querySelector<HTMLElement>('.output_msg_content');
+                    const sourceHtml = content ? content.innerHTML : textEl.innerHTML;
+                    const lines = this.splitOutputHtmlIntoLines(sourceHtml);
                     for (let j = lines.length - 1; j >= 0 && outputs.length < 2; j--) {
                         outputs.unshift(lines[j]);
                     }

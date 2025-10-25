@@ -2114,6 +2114,31 @@ body.mobile-command-radial-active {
     padding: 0;
 }
 
+#main_text_output_msg_wrapper .output_msg_text,
+#sticky-area .output_msg_text {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+#main_text_output_msg_wrapper .output_msg_text .output_msg_content,
+#sticky-area .output_msg_text .output_msg_content {
+  white-space: pre-wrap;
+  flex: 1 1 auto;
+}
+
+.output-timestamp {
+  display: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 0.85em;
+}
+
+#main_text_output_msg_wrapper.output-show-timestamps .output-timestamp,
+#sticky-area.output-show-timestamps .output-timestamp {
+  display: inline;
+}
+
 .logo {
   width: auto;
   height: auto;
