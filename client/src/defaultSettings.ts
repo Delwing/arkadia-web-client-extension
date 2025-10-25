@@ -1,6 +1,6 @@
 import { DEFAULT_ATTACK_COMMAND } from "./utils/attackCommand";
 
-export interface Settings {
+export interface Settings extends Record<string, unknown> {
     packageHelper: boolean;
     inlineCompassRose: boolean;
     shortenExits: boolean;
@@ -18,6 +18,7 @@ export interface Settings {
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
+    autoWalkDelay?: number | string;
 }
 
 export const defaultSettings: Settings = {

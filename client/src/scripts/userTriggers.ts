@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { getClientStore } from "../state/scriptStore";
 
 function toUpperSafe(text: string) {
     return text.split(/(\x1B\[[0-9;]*m)/g).map((seg, i) => i % 2 === 0 ? seg.toUpperCase() : seg).join('');
@@ -20,6 +21,7 @@ export interface UserTrigger {
 const STORAGE_KEY = 'triggers';
 
 export default function initUserTriggers(client: Client) {
+    const store = getClientStore(client);
     let registered: import("../Triggers").Trigger[] = [];
 
     const apply = (list: UserTrigger[] = []) => {
@@ -69,15 +71,14 @@ export default function initUserTriggers(client: Client) {
         });
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            apply(Array.isArray(ev.detail.value) ? ev.detail.value : []);
+    store.subscribeStorage<UserTrigger[]>(STORAGE_KEY, (value) => {
+        apply(Array.isArray(value) ? value : []);
+    });
+
+    void (async () => {
+        const stored = await store.getStorageItem<UserTrigger[]>(STORAGE_KEY);
+        if (Array.isArray(stored)) {
+            apply(stored);
         }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    })();
 }

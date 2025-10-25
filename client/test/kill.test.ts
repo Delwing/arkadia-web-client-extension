@@ -5,11 +5,45 @@ import { EventEmitter } from 'events';
 
 class FakeClient {
   private emitter = new EventEmitter();
+  private storageListeners: Record<string, Set<(value: any) => void>> = {};
   Triggers = new Triggers(({} as unknown) as any);
   TeamManager = { isInTeam: jest.fn() };
   prefix = (line: string, prefix: string) => prefix + line;
   print = jest.fn();
-  port = { postMessage: jest.fn() } as any;
+  storeData: Record<string, any> = {};
+  store = {
+    setStorageItem: jest.fn(async (key: string, value: any) => {
+      this.storeData[key] = value;
+      this.emitStorage(key, value);
+    }),
+    getStorageItem: jest.fn(async (key: string) => this.storeData[key]),
+    updateSettings: jest.fn().mockResolvedValue(undefined),
+    updateUiSettings: jest.fn().mockResolvedValue(undefined),
+    getSettingsSnapshot: jest.fn(() => ({} as any)),
+    updateHerbCounts: jest.fn().mockResolvedValue(undefined),
+    subscribeStorage: jest.fn((key: string, cb: (value: any) => void) => {
+      if (!this.storageListeners[key]) {
+        this.storageListeners[key] = new Set();
+      }
+      this.storageListeners[key].add(cb);
+      return () => {
+        this.storageListeners[key].delete(cb);
+      };
+    }),
+  } as any;
+  sendEvent = jest.fn((type: string, detail: any) => {
+    this.dispatch(type, detail);
+  });
+
+  emitStorage(key: string, value: any) {
+    this.storeData[key] = value;
+    const listeners = this.storageListeners[key];
+    if (listeners) {
+      listeners.forEach((cb) => {
+        Promise.resolve().then(() => cb(value));
+      });
+    }
+  }
 
   addEventListener(event: string, cb: any) {
     this.emitter.on(event, cb);
@@ -28,8 +62,8 @@ describe('kill counter team kills', () => {
   beforeEach(() => {
     client = new FakeClient();
     initKillCounter((client as unknown) as any, []);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    client.emitStorage('kill_counter', {});
+    client.emitStorage('kill_counter_session', {});
   });
 
   const parse = (line: string) => {
@@ -61,7 +95,7 @@ describe('kill counter team kills', () => {
     let result = parse('> Eamon zabil smoka chaosu.');
     expect(stripAnsiCodes(result)).toContain('(0 / 1)');
 
-    client.dispatch('storage', { key: 'kill_counter', value: { 'smoka chaosu': 1 } });
+    client.emitStorage('kill_counter', { 'smoka chaosu': 1 });
 
     result = parse('> Eamon zabil smoka chaosu.');
     expect(stripAnsiCodes(result)).toContain('(0 / 2)');
@@ -78,8 +112,8 @@ describe('kill counter scenario', () => {
     aliases = [];
     client = new FakeClient();
     initKillCounter((client as unknown) as any, aliases);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    client.emitStorage('kill_counter', {});
+    client.emitStorage('kill_counter_session', {});
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, line, '');
     // alias[0] corresponds to the /zabici command which prints

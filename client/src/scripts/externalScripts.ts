@@ -1,8 +1,10 @@
 import Client from "../Client";
+import { getClientStore } from "../state/scriptStore";
 
 const STORAGE_KEY = "scripts";
 
 export default function initExternalScripts(client: Client) {
+    const store = getClientStore(client);
     const loaded: Record<string, HTMLScriptElement> = {};
     let known: string[] = [];
 
@@ -31,11 +33,7 @@ export default function initExternalScripts(client: Client) {
         handled = true;
         if (!known.includes(param)) {
             known.push(param);
-            client.port?.postMessage({
-                type: "SET_STORAGE",
-                key: STORAGE_KEY,
-                value: known,
-            });
+            void store.setStorageItem(STORAGE_KEY, structuredClone(known));
             apply(known);
         }
         const params = new URLSearchParams(window.location.search);
@@ -45,14 +43,17 @@ export default function initExternalScripts(client: Client) {
         window.location.replace(rest ? `${base}?${rest}` : base);
     };
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            known = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(known);
-        }
+    store.subscribeStorage<string[]>(STORAGE_KEY, (value) => {
+        known = Array.isArray(value) ? value : [];
+        apply(known);
     });
 
-    client.addEventListener("port-connected", () => {
+    void (async () => {
+        const stored = await store.getStorageItem<string[]>(STORAGE_KEY);
+        if (Array.isArray(stored)) {
+            known = stored;
+            apply(known);
+        }
         checkParam();
-    })
+    })();
 }

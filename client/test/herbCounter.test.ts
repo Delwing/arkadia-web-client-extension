@@ -4,10 +4,40 @@ import { initHerbClient, defaultHerbData } from './helpers/herbClient';
 
 class FakeClient {
   private emitter = new EventEmitter();
+  private storageListeners: Record<string, Set<(value: any) => void>> = {};
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
   println = jest.fn();
-  port = { postMessage: jest.fn() } as any;
+  storeData: Record<string, any> = {};
+  store = {
+    updateHerbCounts: jest.fn().mockResolvedValue(undefined),
+    setStorageItem: jest.fn(async (key: string, value: any) => {
+      this.storeData[key] = value;
+      this.emitStorage(key, value);
+    }),
+    getStorageItem: jest.fn(async (key: string) => this.storeData[key]),
+    updateSettings: jest.fn().mockResolvedValue(undefined),
+    updateUiSettings: jest.fn().mockResolvedValue(undefined),
+    getSettingsSnapshot: jest.fn(() => ({} as any)),
+    subscribeStorage: jest.fn((key: string, cb: (value: any) => void) => {
+      if (!this.storageListeners[key]) {
+        this.storageListeners[key] = new Set();
+      }
+      this.storageListeners[key].add(cb);
+      return () => {
+        this.storageListeners[key].delete(cb);
+      };
+    }),
+  } as any;
+  emitStorage(key: string, value: any) {
+    this.storeData[key] = value;
+    const listeners = this.storageListeners[key];
+    if (listeners) {
+      listeners.forEach((cb) => {
+        Promise.resolve().then(() => cb(value));
+      });
+    }
+  }
   sendEvent = jest.fn((type: string, detail: any) => {
     this.dispatch(type, detail);
   });
@@ -107,8 +137,9 @@ describe('herb counter', () => {
         resolve(line);
       });
     });
+    client.emitStorage('herb_counts', { 1: { deliona: 2 } });
+    await Promise.resolve();
     show();
-    client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
     const printed = await printedPromise;
     expect(printed).toMatch(/2/);
     expect(printed).toMatch(/deliona/);
@@ -122,23 +153,17 @@ describe('herb counter', () => {
       const wearEntry = aliases.find(({ pattern }) => pattern.test('/woreczki_buduj'));
       expect(wearEntry).toBeTruthy();
       client.sendCommand.mockClear();
-      client.port.postMessage.mockClear();
+      client.store.updateHerbCounts.mockClear();
       wearEntry?.callback();
       expect(client.sendCommand).toHaveBeenCalledWith('ocen wszystkie woreczki');
       parse('Ten element ekwipunku wyglada na troche zuzyty.');
       parse('Ten element ekwipunku wyglada na calkiem nowy.');
       jest.advanceTimersByTime(150);
       await Promise.resolve();
-      const setCalls = client.port.postMessage.mock.calls
-        .map(([arg]) => arg)
-        .filter(call => call?.type === 'SET_STORAGE');
+      const setCalls = client.store.updateHerbCounts.mock.calls.map(([arg]) => arg);
       expect(setCalls[setCalls.length - 1]).toEqual({
-        type: 'SET_STORAGE',
-        key: 'herb_counts',
-        value: {
-          1: { herbs: {}, condition: 3 },
-          2: { herbs: {}, condition: 5 }
-        }
+        1: { herbs: {}, condition: 3 },
+        2: { herbs: {}, condition: 5 }
       });
     } finally {
       jest.useRealTimers();
@@ -165,14 +190,8 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wloz zolty jasny kwiat do 2. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swoj woreczek');
-    const setCalls = client.port.postMessage.mock.calls
-      .map(([arg]) => arg)
-      .filter(call => call?.type === 'SET_STORAGE');
-    expect(setCalls).toContainEqual({
-      type: 'SET_STORAGE',
-      key: 'herb_counts',
-      value: { 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } }
-    });
+    const setCalls = client.store.updateHerbCounts.mock.calls.map(([arg]) => arg);
+    expect(setCalls).toContainEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });
 
   test('herb manager put adds herbs to bag', async () => {
@@ -182,13 +201,7 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wloz 2 zolte jasne kwiaty do 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
-    const setCalls = client.port.postMessage.mock.calls
-      .map(([arg]) => arg)
-      .filter(call => call?.type === 'SET_STORAGE');
-    expect(setCalls).toContainEqual({
-      type: 'SET_STORAGE',
-      key: 'herb_counts',
-      value: { 1: { herbs: { deliona: 2 } } }
-    });
+    const setCalls = client.store.updateHerbCounts.mock.calls.map(([arg]) => arg);
+    expect(setCalls).toContainEqual({ 1: { herbs: { deliona: 2 } } });
   });
 });

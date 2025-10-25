@@ -1,9 +1,11 @@
 import Client from "../Client";
 import { longToShort } from "../MapHelper";
 import { getShortcut } from "./shortcuts";
+import { getClientStore } from "../state/scriptStore";
 
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    const store = getClientStore(client);
     if (!aliases) return;
 
     let path: number[] = [];
@@ -91,7 +93,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, d);
             lastDelay = delay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            void store.updateSettings({ autoWalkDelay: lastDelay });
         } else {
             delay = Math.max(0.5, lastDelay);
         }
@@ -200,7 +202,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, parseFloat(m[1]));
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            void store.updateSettings({ autoWalkDelay: lastDelay });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
@@ -211,7 +213,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, lastDelay - 0.5);
             delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            void store.updateSettings({ autoWalkDelay: lastDelay });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });
@@ -222,7 +224,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay += 0.5;
             delay += 0.5;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            void store.updateSettings({ autoWalkDelay: lastDelay });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         }
     });

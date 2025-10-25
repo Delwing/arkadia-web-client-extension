@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "../Colors";
+import { getClientStore } from "../state/scriptStore";
 
 export interface ShortcutEntry {
     key: string;
@@ -16,6 +17,7 @@ export function getShortcut(id: string): number | undefined {
 }
 
 export default function initShortcuts(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    const store = getClientStore(client);
     const HEADER_COLOR = findClosestColor("#7cfc00");
     const NAME_COLOR = findClosestColor("#ffa500");
 
@@ -29,21 +31,20 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
     }
 
     function persist() {
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: Object.values(shortcuts) });
+        void store.setStorageItem(STORAGE_KEY, Object.values(shortcuts).map(sc => ({ ...sc })));
     }
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            const value = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(value);
+    store.subscribeStorage<ShortcutEntry[]>(STORAGE_KEY, (value) => {
+        const list = Array.isArray(value) ? value : [];
+        apply(list);
+    });
+
+    void (async () => {
+        const stored = await store.getStorageItem<ShortcutEntry[]>(STORAGE_KEY);
+        if (Array.isArray(stored)) {
+            apply(stored);
         }
-    });
-
-    client.addEventListener("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+    })();
 
     function printShortcuts() {
         const lines: string[] = [];

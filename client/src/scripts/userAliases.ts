@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { getClientStore } from "../state/scriptStore";
 
 export interface UserAlias {
     pattern: string;
@@ -8,6 +9,7 @@ export interface UserAlias {
 const STORAGE_KEY = "aliases";
 
 export default function initUserAliases(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    const store = getClientStore(client);
     const list = aliases || client.aliases;
     let mapped: { pattern: RegExp; callback: (matches: RegExpMatchArray) => void }[] = [];
 
@@ -35,16 +37,14 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
         mapped.forEach(a => list.push(a));
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            const value = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(value);
+    store.subscribeStorage<UserAlias[]>(STORAGE_KEY, (value) => {
+        apply(Array.isArray(value) ? value : []);
+    });
+
+    void (async () => {
+        const stored = await store.getStorageItem<UserAlias[]>(STORAGE_KEY);
+        if (Array.isArray(stored)) {
+            apply(stored);
         }
-    });
-
-    client.addEventListener('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    })();
 }

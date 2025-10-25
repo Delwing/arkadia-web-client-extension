@@ -2,6 +2,7 @@ import Client from "../Client";
 import { colorString, findClosestColor, RESET } from "../Colors";
 import { stripAnsiCodes } from "../Triggers";
 import { getCurrentCharacter, getItemSync } from "../storage";
+import { getClientStore, ScriptStore } from "../state/scriptStore";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
 const SECTION_COLOR = findClosestColor("#ffa500");
@@ -122,30 +123,30 @@ export default class ImproveCounter {
     private initialized = false;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
+    private store: ScriptStore;
 
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
+        this.store = getClientStore(client);
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === ImproveCounter.STORAGE_KEY) {
-                this.load(event.detail.value ?? {});
-                this.loaded = true;
-                if (this.pendingLevel !== undefined) {
-                    const level = this.pendingLevel;
-                    this.pendingLevel = undefined;
-                    this.handleLevel(level);
-                }
+        this.store.subscribeStorage<any>(ImproveCounter.STORAGE_KEY, (value) => {
+            this.load(value ?? {});
+            this.loaded = true;
+            if (this.pendingLevel !== undefined) {
+                const level = this.pendingLevel;
+                this.pendingLevel = undefined;
+                this.handleLevel(level);
             }
-            if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
-                this.loadLifetime(event.detail.value ?? {});
-                this.lifetimeLoaded = true;
-                if (this.pendingLifetime.length) {
-                    for (const p of this.pendingLifetime) {
-                        this.addToLifetime(p.count, p.time);
-                    }
-                    this.pendingLifetime = [];
+        });
+        this.store.subscribeStorage<any>(ImproveCounter.LIFETIME_KEY, (value) => {
+            this.loadLifetime(value ?? {});
+            this.lifetimeLoaded = true;
+            if (this.pendingLifetime.length) {
+                for (const p of this.pendingLifetime) {
+                    this.addToLifetime(p.count, p.time);
                 }
+                this.pendingLifetime = [];
             }
         });
 
@@ -153,14 +154,7 @@ export default class ImproveCounter {
 
         window.addEventListener("beforeunload", this.persist);
 
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-        });
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-        });
+        void this.loadStoredData();
 
         this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
             const level = ev.detail?.improve;
@@ -168,6 +162,21 @@ export default class ImproveCounter {
                 this.handleLevel(level);
             }
         });
+    }
+
+    private async loadStoredData() {
+        const [snapshot, lifetime] = await Promise.all([
+            this.store.getStorageItem(ImproveCounter.STORAGE_KEY),
+            this.store.getStorageItem(ImproveCounter.LIFETIME_KEY),
+        ]);
+        if (snapshot) {
+            this.load(snapshot);
+            this.loaded = true;
+        }
+        if (lifetime) {
+            this.loadLifetime(lifetime);
+            this.lifetimeLoaded = true;
+        }
     }
 
     private getKills() {
@@ -341,24 +350,19 @@ export default class ImproveCounter {
     }
 
     private persist = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-            value: {
-                entries: this.entries,
-                lastTime: this.lastTime,
-                lastKills: this.lastKills,
-                level: this.level,
-                lastObjNum: this.lastObjNum,
-            },
+        void this.store.setStorageItem(ImproveCounter.STORAGE_KEY, {
+            entries: this.entries.map(entry => ({ ...entry })),
+            lastTime: this.lastTime,
+            lastKills: { ...this.lastKills },
+            level: this.level,
+            lastObjNum: this.lastObjNum,
         });
     };
-    
+
     private persistLifetime = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-            value: { entries: this.lifetime, enabled: this.lifetimeEnabled },
+        void this.store.setStorageItem(ImproveCounter.LIFETIME_KEY, {
+            entries: this.lifetime.map(entry => ({ ...entry })),
+            enabled: this.lifetimeEnabled,
         });
     };
 
