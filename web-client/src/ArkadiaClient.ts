@@ -17,6 +17,7 @@ const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const GMCP_COMMAND_CODE = 201;
 const MCCP_COMMAND_CODE = 86;
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
+const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
 
 class ArkadiaClient implements ClientAdapter {
@@ -32,15 +33,15 @@ class ArkadiaClient implements ClientAdapter {
     private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
     private readonly telnetOptionHandler: (optionData: string) => string;
-    private recorder = new Recorder({
-        processIncomingData: (d) => this.processIncomingData(d),
-        sendCommand: (cmd) => this.send(cmd),
-        emit: (ev, ...args) => this.emit(ev, ...args)
-    });
+    private recorder: Recorder;
+    private autoRecorder: Recorder | null = null;
+    private readonly activeRecorders = new Set<Recorder>();
+    private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.telnetOptionHandler = this.parseTelnetOption.bind(this);
+        this.recorder = this.createRecorder(false);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 event.preventDefault();
@@ -82,8 +83,8 @@ class ArkadiaClient implements ClientAdapter {
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
                     const decodedData = this.inflate(atob(event.data));
-                    this.recorder.handleIncoming(decodedData);
                     this.processIncomingData(decodedData);
+                    this.recordIncoming(decodedData);
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
@@ -97,6 +98,8 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
+
+                void this.stopAutoRecording(true);
 
                 // @ts-ignore
                 this.readInflator = new pako.Inflate()
@@ -217,7 +220,7 @@ class ArkadiaClient implements ClientAdapter {
 
 
         try {
-            this.recorder.handleOutgoing(message);
+            this.recordOutgoing(message);
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
             if (echo && this.receivedFirstGmcp && message) {
@@ -320,7 +323,11 @@ class ArkadiaClient implements ClientAdapter {
 
             try {
                 const gmcp = JSON.parse(payload);
+                const isFirstGmcpEvent = type === "char.info" && !this.receivedFirstGmcp;
                 this.receivedFirstGmcp = this.receivedFirstGmcp || type === "char.info";
+                if (isFirstGmcpEvent) {
+                    this.maybeStartAutoRecording();
+                }
                 if (type === "gmcp_msgs") {
                     let text = atob(gmcp.text)
                     this.messageBuffer.push({text, type: gmcp.type})
@@ -378,11 +385,21 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     startRecording(name: string) {
-        this.recorder.startRecording(name);
+        if (this.activeRecorders.has(this.recorder)) {
+            this.unregisterRecorder(this.recorder);
+        }
+        const recorder = this.createRecorder(false);
+        this.recorder = recorder;
+        this.registerRecorder(recorder);
+        recorder.startRecording(name);
     }
 
     async stopRecording(save?: boolean) {
+        if (!this.activeRecorders.has(this.recorder)) {
+            return;
+        }
         await this.recorder.stopRecording(save);
+        this.unregisterRecorder(this.recorder);
     }
 
     async loadRecording(name: string) {
@@ -439,6 +456,62 @@ class ArkadiaClient implements ClientAdapter {
 
     replayRecordedMessagesTimed() {
         this.recorder.replayRecordedMessagesTimed();
+    }
+
+    private maybeStartAutoRecording() {
+        if (this.autoRecorder && this.autoRecorder.isRecordingActive()) return;
+        const recorder = this.createRecorder(true);
+        this.autoRecorder = recorder;
+        this.registerRecorder(recorder);
+        recorder.startRecording(this.autoRecordingName);
+    }
+
+    private recordIncoming(data: string) {
+        this.activeRecorders.forEach(recorder => recorder.handleIncoming(data));
+    }
+
+    private recordOutgoing(message: string) {
+        this.activeRecorders.forEach(recorder => recorder.handleOutgoing(message));
+    }
+
+    private createRecorder(auto: boolean) {
+        return new Recorder({
+            processIncomingData: (d) => this.processIncomingData(d),
+            sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
+            emit: (ev, ...args) => this.emitRecorderEvent(auto, ev, ...args)
+        });
+    }
+
+    private registerRecorder(recorder: Recorder) {
+        this.activeRecorders.add(recorder);
+    }
+
+    private unregisterRecorder(recorder: Recorder) {
+        this.activeRecorders.delete(recorder);
+        if (this.autoRecorder === recorder) {
+            this.autoRecorder = null;
+        }
+    }
+
+    private emitRecorderEvent(auto: boolean, event: string, ...args: any[]) {
+        if (auto && event === 'recording.start') {
+            return;
+        }
+        this.emit(event as any, ...args);
+    }
+
+    private async stopAutoRecording(save?: boolean) {
+        if (!this.autoRecorder || !this.activeRecorders.has(this.autoRecorder)) {
+            this.autoRecorder = null;
+            return;
+        }
+        const recorder = this.autoRecorder;
+        this.unregisterRecorder(recorder);
+        try {
+            await recorder.stopRecording(save);
+        } catch (error) {
+            console.error('Failed to stop auto recording:', error);
+        }
     }
 
 }
