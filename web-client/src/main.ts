@@ -186,7 +186,12 @@ let isSplitView = false;
 const STICKY_LINES = 15;
 
 let allowNextNativeContextMenu = false;
-let lastContextMenuEvent: MouseEvent | null = null;
+type StoredContextEvent = {
+    clientX: number;
+    clientY: number;
+    target: EventTarget | null;
+};
+let lastContextMenuEvent: StoredContextEvent | null = null;
 
 function processSticky(count: number) {
     const handler: any = (window as any).clientExtension?.OutputHandler;
@@ -223,8 +228,10 @@ outputWrapper.addEventListener('scroll', checkSplitView);
 
 outputWrapper.addEventListener('contextmenu', event => {
     if (allowNextNativeContextMenu) {
-        allowNextNativeContextMenu = false;
-        lastContextMenuEvent = null;
+        if (event.isTrusted) {
+            allowNextNativeContextMenu = false;
+            lastContextMenuEvent = null;
+        }
         return;
     }
 
@@ -235,7 +242,11 @@ outputWrapper.addEventListener('contextmenu', event => {
     }
 
     event.preventDefault();
-    lastContextMenuEvent = event;
+    lastContextMenuEvent = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        target: event.target,
+    };
 
     const isVisible = areOutputTimestampsVisible();
     const items = [
@@ -251,13 +262,17 @@ outputWrapper.addEventListener('contextmenu', event => {
                 }
                 const originalEvent = lastContextMenuEvent;
                 lastContextMenuEvent = null;
+                allowNextNativeContextMenu = true;
                 if (!originalEvent) {
                     return;
                 }
-                const { clientX, clientY } = originalEvent;
-                const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null
-                    ?? (originalEvent.target instanceof HTMLElement ? originalEvent.target : outputWrapper);
-                allowNextNativeContextMenu = true;
+                const {clientX, clientY, target} = originalEvent;
+                const fallbackTarget =
+                    document.elementFromPoint(clientX, clientY) as HTMLElement | null
+                    ?? (target instanceof HTMLElement
+                        ? target
+                        : (target as Node | null)?.parentElement)
+                    ?? outputWrapper;
                 requestAnimationFrame(() => {
                     const nativeEvent = new MouseEvent('contextmenu', {
                         bubbles: true,
@@ -266,7 +281,7 @@ outputWrapper.addEventListener('contextmenu', event => {
                         clientX,
                         clientY,
                     });
-                    (target ?? outputWrapper).dispatchEvent(nativeEvent);
+                    fallbackTarget.dispatchEvent(nativeEvent);
                 });
             },
         },
