@@ -148,7 +148,9 @@ export default class Triggers {
     clientExtension: Client;
     triggers: Map<string, Trigger> = new Map();
     multilineTriggers: Map<string, Trigger> = new Map();
-    private tokenTriggers: { words: string[]; trigger: Trigger }[] = [];
+    private static readonly ZERO_LENGTH_BUCKET_KEY = Symbol("zero-length-token-trigger");
+
+    private tokenTriggers: Map<string | symbol, { words: string[]; trigger: Trigger }[]> = new Map();
     private triggerEngineActive = true;
 
     constructor(clientExtension: Client) {
@@ -204,7 +206,10 @@ export default class Triggers {
             .split(/[ \n\t.,!?*()\/\[\]]+/)
             .filter(w => w.length > 0);
         const trigger = new Trigger(this, token, callback, tag, undefined, options);
-        this.tokenTriggers.push({ words, trigger });
+        const bucketKey = words[0] ?? Triggers.ZERO_LENGTH_BUCKET_KEY;
+        const bucket = this.tokenTriggers.get(bucketKey) ?? [];
+        bucket.push({ words, trigger });
+        this.tokenTriggers.set(bucketKey, bucket);
         return trigger;
     }
 
@@ -224,7 +229,14 @@ export default class Triggers {
     removeByTag(tag: string) {
         this.removeByTagRecursive(tag, this.triggers);
         this.removeByTagRecursive(tag, this.multilineTriggers);
-        this.tokenTriggers = this.tokenTriggers.filter(t => t.trigger.tag !== tag);
+        for (const [key, bucket] of Array.from(this.tokenTriggers.entries())) {
+            const filtered = bucket.filter(t => t.trigger.tag !== tag);
+            if (filtered.length === 0) {
+                this.tokenTriggers.delete(key);
+            } else if (filtered.length !== bucket.length) {
+                this.tokenTriggers.set(key, filtered);
+            }
+        }
     }
 
     removeTrigger(trigger: Trigger) {
@@ -233,7 +245,14 @@ export default class Triggers {
         } else {
             this.triggers.delete(trigger.id);
             this.multilineTriggers.delete(trigger.id);
-            this.tokenTriggers = this.tokenTriggers.filter(t => t.trigger.id !== trigger.id);
+        }
+        for (const [key, bucket] of Array.from(this.tokenTriggers.entries())) {
+            const filtered = bucket.filter(t => t.trigger.id !== trigger.id);
+            if (filtered.length === 0) {
+                this.tokenTriggers.delete(key);
+            } else if (filtered.length !== bucket.length) {
+                this.tokenTriggers.set(key, filtered);
+            }
         }
     }
 
@@ -243,30 +262,63 @@ export default class Triggers {
                 ? rawLine
                 : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
         const plain = triggerLine.text.replace(/\s$/g, "");
-        const tokens = plain
-            .split(/[ \n\t.,!?*()\/\[\]]+/)
-            .filter(t => t.length > 0)
-            .map(t => t.toLowerCase());
+        let tokens: string[] | undefined;
+        const getTokens = () => {
+            if (!tokens) {
+                tokens = plain
+                    .split(/[ \n\t.,!?*()\/\[\]]+/)
+                    .filter(t => t.length > 0)
+                    .map(t => t.toLowerCase());
+            }
+            return tokens!;
+        };
 
         this.triggers.forEach(trigger => {
             triggerLine = trigger.execute(triggerLine, type);
         });
 
-        this.tokenTriggers.forEach(({ words, trigger }) => {
-            for (let i = 0; i <= tokens.length - words.length; i++) {
-                let found = true;
-                for (let j = 0; j < words.length; j++) {
-                    if (tokens[i + j] !== words[j]) {
-                        found = false;
-                        break;
+        if (this.tokenTriggers.size > 0) {
+            const seen = new Set<string>();
+            const zeroBucket = this.tokenTriggers.get(Triggers.ZERO_LENGTH_BUCKET_KEY);
+            if (zeroBucket) {
+                zeroBucket.forEach(({ trigger }) => {
+                    if (!seen.has(trigger.id)) {
+                        seen.add(trigger.id);
+                        triggerLine = trigger.execute(triggerLine, type);
+                    }
+                });
+            }
+            const hasOtherBuckets = this.tokenTriggers.size > (zeroBucket ? 1 : 0);
+            if (hasOtherBuckets) {
+                const loweredTokens = getTokens();
+                for (let i = 0; i < loweredTokens.length; i++) {
+                    const token = loweredTokens[i];
+                    const bucket = this.tokenTriggers.get(token);
+                    if (!bucket) {
+                        continue;
+                    }
+                    for (const { words, trigger } of bucket) {
+                        if (seen.has(trigger.id) || words.length === 0 || words[0] !== token) {
+                            continue;
+                        }
+                        if (words.length > loweredTokens.length - i) {
+                            continue;
+                        }
+                        let matches = true;
+                        for (let j = 1; j < words.length; j++) {
+                            if (loweredTokens[i + j] !== words[j]) {
+                                matches = false;
+                                break;
+                            }
+                        }
+                        if (matches) {
+                            seen.add(trigger.id);
+                            triggerLine = trigger.execute(triggerLine, type);
+                        }
                     }
                 }
-                if (found) {
-                    triggerLine = trigger.execute(triggerLine, type);
-                    break;
-                }
             }
-        });
+        }
         return triggerLine.toAnsiString();
     }
 
