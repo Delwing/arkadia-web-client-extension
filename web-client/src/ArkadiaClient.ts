@@ -82,7 +82,8 @@ class ArkadiaClient implements ClientAdapter {
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
-                    const decodedData = this.inflate(atob(event.data));
+                    const binaryPayload = atob(event.data);
+                    const decodedData = this.decodeIncomingData(binaryPayload);
                     this.processIncomingData(decodedData);
                     this.recordIncoming(decodedData);
                 } catch (error) {
@@ -101,8 +102,7 @@ class ArkadiaClient implements ClientAdapter {
 
                 void this.stopAutoRecording(true);
 
-                // @ts-ignore
-                this.readInflator = new pako.Inflate()
+                this.resetInflator()
             };
 
             this.socket.onopen = (event: Event) => {
@@ -122,30 +122,172 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
+    private decodeIncomingData(binaryData: string): string {
+        if (!binaryData) {
+            return "";
+        }
+
+        const buffer = new Uint8Array(binaryData.length);
+        for (let index = 0; index < binaryData.length; index++) {
+            buffer[index] = binaryData.charCodeAt(index);
+        }
+
+        const plainBytes: number[] = [];
+        const compressedBytes: number[] = [];
+
+        let offset = 0;
+        while (offset < buffer.length) {
+            const value = buffer[offset];
+            if (value === 0xFF) {
+                if (offset + 1 >= buffer.length) {
+                    console.warn("Truncated IAC sequence in WebSocket frame; dropping tail");
+                    break;
                 }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
+
+                const next = buffer[offset + 1];
+                if (next === 0xFF) {
+                    this.appendIncomingByte(plainBytes, compressedBytes, 0xFF);
+                    offset += 2;
+                    continue;
                 }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
+
+                if (next === 0xFA) {
+                    const end = this.findSubnegotiationEnd(buffer, offset + 2);
+                    if (end === -1) {
+                        console.warn("Incomplete telnet subnegotiation received; awaiting more data");
+                        break;
+                    }
+
+                    const optionBytes = buffer.slice(offset, end + 2);
+                    this.parseTelnetOption(this.bytesToString(optionBytes));
+                    offset = end + 2;
+                    continue;
+                }
+
+                if (next === 0xF0) {
+                    offset += 2;
+                    continue;
+                }
+
+                if (offset + 2 >= buffer.length) {
+                    console.warn("Truncated telnet negotiation sequence in WebSocket frame");
+                    break;
+                }
+
+                const negotiation = buffer.slice(offset, offset + 3);
+                this.parseTelnetOption(this.bytesToString(negotiation));
+                offset += 3;
+                continue;
+            }
+
+            this.appendIncomingByte(plainBytes, compressedBytes, value);
+            offset += 1;
+        }
+
+        let decoded = "";
+
+        if (plainBytes.length > 0) {
+            decoded += this.bytesToString(plainBytes);
+        }
+
+        if (compressedBytes.length > 0) {
+            if (!this.mccp) {
+                console.warn("Received compressed data while MCCP is disabled; ignoring payload");
+            } else {
+                const inflated = this.inflate(compressedBytes);
+                if (inflated.length === 0 && compressedBytes.length > 0) {
+                    console.debug("MCCP inflator returned no data for frame with", compressedBytes.length, "bytes");
+                }
+                decoded += inflated;
             }
         }
-        return decodedData;
+
+        return decoded;
+    }
+
+    private inflate(data: number[]): string {
+        if (!this.mccp || data.length === 0) {
+            return "";
+        }
+
+        try {
+            const byteArray = data instanceof Uint8Array ? data : new Uint8Array(data);
+            this.readInflator.push(byteArray, 2);
+            if (this.readInflator.err) {
+                console.error("MCCP decompression error: " + this.readInflator.msg);
+                return "";
+            }
+
+            const result = this.readInflator.result;
+            if (!result || (Array.isArray(result) && result.length === 0)) {
+                return "";
+            }
+
+            let output = "";
+            if (typeof result === "string") {
+                output = result;
+            } else if (result instanceof Uint8Array || Array.isArray(result)) {
+                const byteResult = result instanceof Uint8Array ? result : new Uint8Array(result);
+                output = this.bytesToString(byteResult);
+            }
+
+            this.readInflator.chunks = [];
+            this.readInflator.ended = false;
+            return output;
+        } catch (error: any) {
+            console.error("MCCP decompression error: " + error.message);
+            return "";
+        }
+    }
+
+    private resetInflator(): void {
+        // @ts-ignore
+        this.readInflator = new pako.Inflate();
+    }
+
+    private appendIncomingByte(plainBytes: number[], compressedBytes: number[], value: number): void {
+        if (this.mccp) {
+            compressedBytes.push(value);
+        } else {
+            plainBytes.push(value);
+        }
+    }
+
+    private findSubnegotiationEnd(buffer: Uint8Array, start: number): number {
+        for (let index = start; index < buffer.length - 1; index++) {
+            if (buffer[index] === 0xFF && buffer[index + 1] === 0xF0) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private bytesToString(bytes: ArrayLike<number>): string {
+        if (!bytes || bytes.length === 0) {
+            return "";
+        }
+
+        let result = "";
+        const chunkSize = 0x8000;
+        const length = bytes.length;
+        for (let index = 0; index < length; index += chunkSize) {
+            const end = Math.min(index + chunkSize, length);
+            let chunk: number[] | Uint8Array;
+            if (Array.isArray(bytes)) {
+                chunk = bytes.slice(index, end);
+            } else if (bytes instanceof Uint8Array) {
+                chunk = bytes.subarray(index, end);
+            } else {
+                const subset: number[] = [];
+                for (let cursor = index; cursor < end; cursor++) {
+                    subset.push(bytes[cursor]);
+                }
+                chunk = subset;
+            }
+            result += String.fromCharCode(...chunk);
+        }
+
+        return result;
     }
 
     /**
@@ -275,8 +417,17 @@ class ArkadiaClient implements ClientAdapter {
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string, options?: { timestamp?: number }) {
-        const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
-        const sanitized = leftOver.replace(/[ÿù]/g, "");
+        if (!data) {
+            this.flushMessageBuffer();
+            return;
+        }
+
+        if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(data)) {
+            console.warn('Unexpected control characters detected in decompressed stream');
+        }
+
+        const stripped = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
+        const sanitized = stripped.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
             const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
             this.emit('message', sanitized, undefined, timestamp)
@@ -304,8 +455,11 @@ class ArkadiaClient implements ClientAdapter {
 
         const firstChar = data.charCodeAt(0);
         if (firstChar === MCCP_COMMAND_CODE) {
-            this.mccp = true;
-            console.log("MCCP enabled")
+            const action = data.length > 1 ? data.charCodeAt(1) : 1;
+            const enable = action !== 0;
+            this.mccp = enable;
+            this.resetInflator();
+            console.log(enable ? "MCCP enabled" : "MCCP disabled");
         }
 
         if (firstChar === GMCP_COMMAND_CODE) {
@@ -592,4 +746,5 @@ class ArkadiaClient implements ClientAdapter {
 
 }
 
+export { ArkadiaClient };
 export default new ArkadiaClient();
