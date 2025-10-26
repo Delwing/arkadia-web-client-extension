@@ -125,24 +125,32 @@ class ArkadiaClient implements ClientAdapter {
     private inflate(decodedData: string) {
         if (this.mccp) {
             try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
+                const byteArray = new Uint8Array(decodedData.length);
+                for (let i = 0; i < decodedData.length; i++) {
+                    byteArray[i] = decodedData.charCodeAt(i);
+                }
                 this.readInflator.push(byteArray, 2);
                 if (this.readInflator.err) {
                     console.error("MCCP decompression error: " + this.readInflator.msg);
                     return decodedData;
                 }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
+                // @ts-ignore - pako exposes the inflated result as a Uint8Array
+                const result = this.readInflator.result as Uint8Array | undefined;
+                if (!result || result.length === 0) {
+                    this.readInflator.chunks = []
+                    this.readInflator.ended = false;
+                    return "";
+                }
+                let output = "";
+                for (let i = 0; i < result.length; i++) {
+                    output += String.fromCharCode(result[i]);
                 }
                 this.readInflator.chunks = []
                 this.readInflator.ended = false;
+                return output;
             } catch (error) {
                 console.log("MCCP decompression error: " + error.message);
+                return decodedData;
             }
         }
         return decodedData;
