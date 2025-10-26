@@ -12,6 +12,23 @@ const STORAGE_KEY = "deposits";
 
 const deposits: Record<number, DepositInfo> = {};
 
+function cloneDeposits(source: Record<number, DepositInfo> | undefined | null): Record<number, DepositInfo> {
+    const result: Record<number, DepositInfo> = {};
+    if (!source) {
+        return result;
+    }
+    Object.entries(source).forEach(([key, info]) => {
+        if (!info) {
+            return;
+        }
+        result[Number(key)] = {
+            name: info.name,
+            items: Array.isArray(info.items) ? info.items.map(item => ({ ...item })) : null,
+        };
+    });
+    return result;
+}
+
 const BANK_LABEL_COLOR = findClosestColor('#6a5acd');
 const BANK_NAME_COLOR = findClosestColor('#ff6347');
 const ITEM_NAME_COLOR = findClosestColor('#00ff7f');
@@ -23,17 +40,17 @@ function isBankRoom(room: any): boolean {
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     client.addEventListener("storage", (event: CustomEvent) => {
         if (event.detail.key === STORAGE_KEY) {
+            const nextDeposits = cloneDeposits(event.detail.value as Record<number, DepositInfo> | undefined);
             Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
-            if (event.detail.value) {
-                Object.assign(deposits, event.detail.value);
-            }
+            Object.assign(deposits, nextDeposits);
         }
     });
 
     client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
     const persist = () => {
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: deposits });
+        const snapshot = cloneDeposits(deposits);
+        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: snapshot });
     };
 
     const clearDeposits = () => {

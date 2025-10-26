@@ -158,4 +158,19 @@ describe('deposits', () => {
       items: [{ count: 3, name: 'klejnoty' }]
     });
   });
+
+  test('keeps deposit data when storage event reuses same object reference', () => {
+    parse('Twoj depozyt zawiera miecz.');
+    const storedReference = deposits as Record<number, any>;
+
+    client.dispatch('storage', {
+      key: 'deposits',
+      value: storedReference,
+    });
+
+    expect(deposits[1]).toEqual({
+      name: 'Bank',
+      items: [{ count: 1, name: 'miecz' }],
+    });
+  });
 });
