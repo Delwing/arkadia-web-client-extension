@@ -57,13 +57,18 @@
     </div>
     <div id="objects-list" data-mobile-command-radial-ignore></div>
     <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
-    <div id="playback-controls" class="btn-group btn-group-sm" style="position:absolute;top:2.5rem;right:0.5rem;z-index:1013;display:none;">
-        <button id="playback-pause" class="btn btn-secondary">Pauza</button>
-        <button id="playback-stop" class="btn btn-secondary">Zatrzymaj</button>
-        <span id="playback-info" class="px-1 text-light"></span>
-        <button id="playback-replay" class="btn btn-secondary">Powtórz</button>
-        <button id="playback-step-back" class="btn btn-secondary">Wstecz</button>
-        <button id="playback-step" class="btn btn-secondary">Krok</button>
+    <div id="playback-controls">
+        <div class="playback-controls-header" data-drag-handle>
+            <span class="playback-controls-title">Sterowanie nagraniem</span>
+        </div>
+        <div class="playback-controls-actions">
+            <button id="playback-pause" class="btn btn-secondary">Pauza</button>
+            <button id="playback-stop" class="btn btn-secondary">Zatrzymaj</button>
+            <button id="playback-replay" class="btn btn-secondary">Powtórz</button>
+            <button id="playback-step-back" class="btn btn-secondary">Wstecz</button>
+            <button id="playback-step" class="btn btn-secondary">Krok</button>
+        </div>
+        <div id="playback-info" class="playback-controls-progress"></div>
     </div>
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
     <div id="options-modal" class="modal fade" tabindex="-1">

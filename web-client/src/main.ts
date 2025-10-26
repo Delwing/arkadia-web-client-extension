@@ -759,6 +759,77 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (playbackControls) {
+        const dragTarget =
+            (playbackControls.querySelector('[data-drag-handle]') as HTMLElement | null) ?? playbackControls;
+        let dragPointerId: number | null = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        const margin = 12;
+
+        const clampToViewport = (x: number, y: number) => {
+            const width = playbackControls.offsetWidth;
+            const height = playbackControls.offsetHeight;
+            const maxX = Math.max(margin, window.innerWidth - width - margin);
+            const maxY = Math.max(margin, window.innerHeight - height - margin);
+            const clampedX = Math.min(Math.max(x, margin), maxX);
+            const clampedY = Math.min(Math.max(y, margin), maxY);
+            return {x: clampedX, y: clampedY};
+        };
+
+        const updatePosition = (x: number, y: number) => {
+            const {x: clampedX, y: clampedY} = clampToViewport(x, y);
+            playbackControls.style.left = `${clampedX}px`;
+            playbackControls.style.top = `${clampedY}px`;
+            playbackControls.style.right = 'auto';
+            playbackControls.style.bottom = 'auto';
+        };
+
+        const handlePointerMove = (event: PointerEvent) => {
+            if (dragPointerId === null || event.pointerId !== dragPointerId) return;
+            event.preventDefault();
+            const targetX = event.clientX - dragOffsetX;
+            const targetY = event.clientY - dragOffsetY;
+            updatePosition(targetX, targetY);
+        };
+
+        const finishDrag = (event: PointerEvent) => {
+            if (dragPointerId === null || event.pointerId !== dragPointerId) return;
+            if (dragTarget.hasPointerCapture(dragPointerId)) {
+                dragTarget.releasePointerCapture(dragPointerId);
+            }
+            dragPointerId = null;
+            playbackControls.classList.remove('is-dragging');
+        };
+
+        dragTarget.addEventListener('pointerdown', (event: PointerEvent) => {
+            if (event.button !== 0) return;
+            const rect = playbackControls.getBoundingClientRect();
+            dragPointerId = event.pointerId;
+            dragOffsetX = event.clientX - rect.left;
+            dragOffsetY = event.clientY - rect.top;
+            dragTarget.setPointerCapture(dragPointerId);
+            playbackControls.classList.add('is-dragging');
+            event.preventDefault();
+        });
+
+        dragTarget.addEventListener('pointermove', handlePointerMove);
+        dragTarget.addEventListener('pointerup', finishDrag);
+        dragTarget.addEventListener('pointercancel', finishDrag);
+
+        window.addEventListener('resize', () => {
+            if (!playbackControls.style.left || !playbackControls.style.top) {
+                return;
+            }
+            const left = parseFloat(playbackControls.style.left);
+            const top = parseFloat(playbackControls.style.top);
+            if (Number.isNaN(left) || Number.isNaN(top)) {
+                return;
+            }
+            updatePosition(left, top);
+        });
+    }
+
     arkadiaClient.on('recording.start', () => {
         if (recordingButton) recordingButton.style.display = 'block';
     });
