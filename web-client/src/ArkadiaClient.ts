@@ -82,9 +82,7 @@ class ArkadiaClient implements ClientAdapter {
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
-                    const decodedData = this.inflate(atob(event.data));
-                    this.processIncomingData(decodedData);
-                    this.recordIncoming(decodedData);
+                    this.handleSocketMessage(event.data);
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
@@ -122,30 +120,140 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
-                }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
-                }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
-            }
+    private inflate(data: Uint8Array): string {
+        if (!this.mccp) {
+            return this.bytesToString(data);
         }
-        return decodedData;
+
+        try {
+            this.readInflator.push(data, 2);
+            if (this.readInflator.err) {
+                console.error("MCCP decompression error: " + this.readInflator.msg);
+                return this.bytesToString(data);
+            }
+
+            const result = this.readInflator.result as any;
+            let decodedData = "";
+
+            if (typeof result === "string") {
+                decodedData = result;
+            } else if (result) {
+                const view = result instanceof Uint8Array ? result : new Uint8Array(result);
+                decodedData = this.bytesToString(view);
+            }
+
+            this.readInflator.chunks = []
+            this.readInflator.ended = false;
+
+            return decodedData;
+        } catch (error: any) {
+            console.log("MCCP decompression error: " + error.message);
+            return this.bytesToString(data);
+        }
+    }
+
+    private handleSocketMessage(base64Data: string): void {
+        const frame = this.stringToUint8Array(atob(base64Data));
+        const payload = this.extractTelnetPayload(frame);
+
+        if (payload.length === 0) {
+            this.processIncomingData("");
+            return;
+        }
+
+        const decodedData = this.inflate(payload);
+        this.processIncomingData(decodedData);
+        this.recordIncoming(decodedData);
+    }
+
+    private extractTelnetPayload(frame: Uint8Array): Uint8Array {
+        const payload: number[] = [];
+
+        for (let i = 0; i < frame.length; i++) {
+            const byte = frame[i];
+
+            if (byte !== 0xFF) {
+                payload.push(byte);
+                continue;
+            }
+
+            if (i + 1 >= frame.length) {
+                break;
+            }
+
+            const command = frame[i + 1];
+
+            if (command === 0xFF) {
+                payload.push(0xFF);
+                i += 1;
+                continue;
+            }
+
+            if (command === 0xFA) {
+                const end = this.findSubnegotiationEnd(frame, i + 2);
+                const sequence = frame.slice(i, end);
+                this.parseTelnetOption(this.bytesToString(sequence));
+                i = end - 1;
+                continue;
+            }
+
+            const length = this.commandRequiresOption(command) ? 3 : 2;
+            const sequence = frame.slice(i, Math.min(i + length, frame.length));
+            this.parseTelnetOption(this.bytesToString(sequence));
+            i += length - 1;
+        }
+
+        return Uint8Array.from(payload);
+    }
+
+    private findSubnegotiationEnd(frame: Uint8Array, start: number): number {
+        let index = start;
+
+        while (index < frame.length) {
+            if (frame[index] === 0xFF) {
+                if (index + 1 >= frame.length) {
+                    return frame.length;
+                }
+
+                const next = frame[index + 1];
+
+                if (next === 0xF0) {
+                    return index + 2;
+                }
+
+                if (next === 0xFF) {
+                    index += 2;
+                    continue;
+                }
+
+                index += 2;
+                continue;
+            }
+
+            index += 1;
+        }
+
+        return frame.length;
+    }
+
+    private commandRequiresOption(command: number): boolean {
+        return command === 0xFB || command === 0xFC || command === 0xFD || command === 0xFE;
+    }
+
+    private stringToUint8Array(value: string): Uint8Array {
+        const bytes = new Uint8Array(value.length);
+        for (let i = 0; i < value.length; i++) {
+            bytes[i] = value.charCodeAt(i);
+        }
+        return bytes;
+    }
+
+    private bytesToString(bytes: ArrayLike<number>): string {
+        let result = "";
+        for (let i = 0; i < bytes.length; i++) {
+            result += String.fromCharCode(bytes[i]);
+        }
+        return result;
     }
 
     /**
@@ -288,11 +396,21 @@ class ArkadiaClient implements ClientAdapter {
      * Parse telnet option from incoming data
      */
     private parseTelnetOption(optionData: string): string {
+        if (optionData.length < 2) {
+            return "";
+        }
+
+        const command = optionData.charCodeAt(1);
+
+        if (command === 0xFA && optionData.length >= 5) {
+            this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
+            return "";
+        }
+
         if (optionData.length === 3) {
             //this.telnetNegotiator.parseOptionNegotiation(optionData)
-        } else {
-            this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
+
         return "";
     }
 
