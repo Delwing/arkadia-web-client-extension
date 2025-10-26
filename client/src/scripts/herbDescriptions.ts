@@ -2,6 +2,7 @@ import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {color, RESET, findClosestColor} from "../Colors";
 import { openHerbContextMenu } from "../contextMenus";
+import TriggerLine from "../triggers/TriggerLine";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -41,15 +42,13 @@ export default async function initHerbDescriptions(client: Client) {
                     const suffix = line.substring(index + token.length);
                     const after = suffix.trimStart();
                     if (after.startsWith("(")) {
-                        return raw;
+                        return triggerLine ?? raw;
                     }
                     const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
                     const insertion = ` (${color(HERB_NAME_COLOR)}${clickable}${RESET})`;
-                    if (triggerLine) {
-                        triggerLine.insert(index + token.length, insertion);
-                        return triggerLine;
-                    }
-                    return line.substring(0, index + token.length) + insertion + suffix;
+                    const lineObj = triggerLine ?? new TriggerLine(raw);
+                    lineObj.insert(index + token.length, insertion);
+                    return lineObj;
                 }, tag, {caseInsensitive: true});
             });
         });
