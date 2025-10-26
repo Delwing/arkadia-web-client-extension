@@ -216,7 +216,7 @@ export default class MapHelper {
     }
 
     followMove(direction: string) {
-        const result = this.move(direction)
+        const result = this.move(direction, true)
         if (result.moved) {
             return;
         }
