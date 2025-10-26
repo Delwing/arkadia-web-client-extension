@@ -222,8 +222,8 @@ export class EmbeddedMap {
                 const destId = this.destinations[0];
                 const path = this.getPath(roomId, destId);
                 const distance = path ? path.length - 1 : 0;
-                const room = this.reader.getRoom(roomId)
-                const destArea = this.reader.getArea(room.area);
+                const destRoom = this.reader.getRoom(destId);
+                const destArea = destRoom ? this.reader.getArea(destRoom.area) : null;
                 const destName = destArea ? destArea.getAreaName() : destId;
                 text += ` → #${destId} ${destName} (${distance})`;
                 if (path) {
