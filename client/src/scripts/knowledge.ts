@@ -235,17 +235,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     const characterKey = getCharacterProgressKey();
     const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
-    const fallbackProgress =
-      characterKey === DEFAULT_KNOWLEDGE_CHARACTER_KEY
-        ? undefined
-        : currentSnapshot.data.progress[DEFAULT_KNOWLEDGE_CHARACTER_KEY];
     const libraryProgress = characterProgress[libraryId] ?? {};
-    const fallbackLibraryProgress = fallbackProgress?.[libraryId];
     const header = colorString(library.name, HEADER_COLOR);
     const lines = library.categories.map((category) => {
       const status =
         libraryProgress[category] ??
-        fallbackLibraryProgress?.[category] ??
         'not_started';
       return ` - ${formatCategory(client, category, status)}`;
     });

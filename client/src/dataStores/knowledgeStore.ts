@@ -46,86 +46,13 @@ export interface KnowledgeSnapshot {
   timestamp: number;
 }
 
-function sanitizeLibraryProgress(
-  previous: KnowledgeProgress | undefined,
-  libraries: Record<string, KnowledgeLibraryEntry>,
-): KnowledgeProgress {
-  const result: KnowledgeProgress = {};
-
-  if (!previous) {
-    return result;
-  }
-
-  for (const [libraryId, library] of Object.entries(libraries)) {
-    const previousLibrary = previous[libraryId];
-    if (!previousLibrary) {
-      continue;
-    }
-    const filtered: KnowledgeLibraryProgress = {};
-    const categories = new Set(library.categories.map((category) => category.toLowerCase()));
-    for (const [category, status] of Object.entries(previousLibrary)) {
-      if (!categories.has(category.toLowerCase())) {
-        continue;
-      }
-      if (status === 'not_started' || status === 'in_progress' || status === 'completed') {
-        filtered[category] = status;
-      }
-    }
-    if (Object.keys(filtered).length > 0) {
-      result[libraryId] = filtered;
-    }
-  }
-
-  return result;
-}
-
-function shouldTreatAsSingleCharacterProgress(
-  previous: KnowledgeProgressByCharacter | KnowledgeProgress | undefined,
-  libraries: Record<string, KnowledgeLibraryEntry>,
-): previous is KnowledgeProgress {
-  if (!previous || typeof previous !== 'object') {
-    return false;
-  }
-
-  const entries = Object.entries(previous as Record<string, unknown>);
-  if (entries.length === 0) {
-    return false;
-  }
-
-  const libraryIds = new Set(Object.keys(libraries));
-
-  for (const [key, value] of entries) {
-    if (libraryIds.has(key)) {
-      return true;
-    }
-    if (!value || typeof value !== 'object') {
-      return true;
-    }
-    for (const innerValue of Object.values(value as Record<string, unknown>)) {
-      if (!innerValue || typeof innerValue !== 'object') {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 function sanitizeProgress(
-  previous: KnowledgeProgressByCharacter | KnowledgeProgress | undefined,
+  previous: KnowledgeProgressByCharacter | undefined,
   libraries: Record<string, KnowledgeLibraryEntry>,
 ): KnowledgeProgressByCharacter {
   const result: KnowledgeProgressByCharacter = {};
 
-  if (!previous) {
-    return result;
-  }
-
-  if (shouldTreatAsSingleCharacterProgress(previous, libraries)) {
-    const sanitized = sanitizeLibraryProgress(previous, libraries);
-    if (Object.keys(sanitized).length > 0) {
-      result[DEFAULT_KNOWLEDGE_CHARACTER_KEY] = sanitized;
-    }
+  if (!previous || typeof previous !== 'object') {
     return result;
   }
 
@@ -133,9 +60,37 @@ function sanitizeProgress(
     if (!progress || typeof progress !== 'object') {
       continue;
     }
-    const sanitized = sanitizeLibraryProgress(progress, libraries);
-    if (Object.keys(sanitized).length > 0) {
-      result[character] = sanitized;
+
+    const sanitizedLibraries: KnowledgeProgress = {};
+
+    for (const [libraryId, libraryProgress] of Object.entries(progress)) {
+      const library = libraries[libraryId];
+      if (!library || !libraryProgress || typeof libraryProgress !== 'object') {
+        continue;
+      }
+
+      const categories = new Set(
+        library.categories.map((category) => category.toLowerCase()),
+      );
+      const sanitizedCategories: KnowledgeLibraryProgress = {};
+
+      for (const [category, status] of Object.entries(libraryProgress)) {
+        if (!categories.has(category.toLowerCase())) {
+          continue;
+        }
+
+        if (status === 'not_started' || status === 'in_progress' || status === 'completed') {
+          sanitizedCategories[category] = status;
+        }
+      }
+
+      if (Object.keys(sanitizedCategories).length > 0) {
+        sanitizedLibraries[libraryId] = sanitizedCategories;
+      }
+    }
+
+    if (Object.keys(sanitizedLibraries).length > 0) {
+      result[character] = sanitizedLibraries;
     }
   }
 
@@ -189,7 +144,7 @@ interface KnowledgeIndexedDbStrategyOptions {
 
 type KnowledgeLibrariesPayload = {
   libraries: Record<string, KnowledgeLibraryEntry>;
-  progress: KnowledgeProgressByCharacter | KnowledgeProgress;
+  progress: KnowledgeProgressByCharacter;
   version?: number;
   timestamp?: number;
 };
