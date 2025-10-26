@@ -24,6 +24,8 @@ class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
     private telnetNegotiator = new TelnetOptionNegotiation(this)
     private mccp = false;
+    private pendingTelnetBytes: number[] = [];
+    private pendingInflatorReset = false;
     // @ts-ignore
     private readInflator = new pako.Inflate()
     private receivedFirstGmcp: boolean = false;
@@ -79,6 +81,8 @@ class ArkadiaClient implements ClientAdapter {
             // Reset the flag when connecting
             this.receivedFirstGmcp = false;
             this.lastConnectManual = manual;
+            this.pendingTelnetBytes = [];
+            this.pendingInflatorReset = false;
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
@@ -103,6 +107,7 @@ class ArkadiaClient implements ClientAdapter {
                 void this.stopAutoRecording(true);
 
                 this.resetInflator()
+                this.pendingTelnetBytes = [];
             };
 
             this.socket.onopen = (event: Event) => {
@@ -123,30 +128,47 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private decodeIncomingData(binaryData: string): string {
-        if (!binaryData) {
+        if (!binaryData && this.pendingTelnetBytes.length === 0) {
             return "";
         }
 
-        const buffer = new Uint8Array(binaryData.length);
+        const buffer = new Uint8Array(this.pendingTelnetBytes.length + binaryData.length);
+        if (this.pendingTelnetBytes.length > 0) {
+            buffer.set(this.pendingTelnetBytes, 0);
+            this.pendingTelnetBytes = [];
+        }
         for (let index = 0; index < binaryData.length; index++) {
-            buffer[index] = binaryData.charCodeAt(index);
+            buffer[index + buffer.length - binaryData.length] = binaryData.charCodeAt(index);
         }
 
-        const plainBytes: number[] = [];
-        const compressedBytes: number[] = [];
+        type Segment = {compressed: boolean; bytes: number[]};
+        const segments: Segment[] = [];
+        const appendByte = (value: number, compressed: boolean) => {
+            if (compressed && !this.mccp) {
+                console.warn("Received compressed data while MCCP is disabled; ignoring payload byte");
+                return;
+            }
+
+            const last = segments[segments.length - 1];
+            if (!last || last.compressed !== compressed) {
+                segments.push({compressed, bytes: [value]});
+            } else {
+                last.bytes.push(value);
+            }
+        };
 
         let offset = 0;
         while (offset < buffer.length) {
             const value = buffer[offset];
             if (value === 0xFF) {
                 if (offset + 1 >= buffer.length) {
-                    console.warn("Truncated IAC sequence in WebSocket frame; dropping tail");
+                    this.pendingTelnetBytes = Array.from(buffer.slice(offset));
                     break;
                 }
 
                 const next = buffer[offset + 1];
                 if (next === 0xFF) {
-                    this.appendIncomingByte(plainBytes, compressedBytes, 0xFF);
+                    appendByte(0xFF, this.mccp);
                     offset += 2;
                     continue;
                 }
@@ -154,7 +176,7 @@ class ArkadiaClient implements ClientAdapter {
                 if (next === 0xFA) {
                     const end = this.findSubnegotiationEnd(buffer, offset + 2);
                     if (end === -1) {
-                        console.warn("Incomplete telnet subnegotiation received; awaiting more data");
+                        this.pendingTelnetBytes = Array.from(buffer.slice(offset));
                         break;
                     }
 
@@ -170,7 +192,7 @@ class ArkadiaClient implements ClientAdapter {
                 }
 
                 if (offset + 2 >= buffer.length) {
-                    console.warn("Truncated telnet negotiation sequence in WebSocket frame");
+                    this.pendingTelnetBytes = Array.from(buffer.slice(offset));
                     break;
                 }
 
@@ -180,33 +202,38 @@ class ArkadiaClient implements ClientAdapter {
                 continue;
             }
 
-            this.appendIncomingByte(plainBytes, compressedBytes, value);
+            appendByte(value, this.mccp);
             offset += 1;
         }
 
         let decoded = "";
+        for (const segment of segments) {
+            if (segment.bytes.length === 0) {
+                continue;
+            }
 
-        if (plainBytes.length > 0) {
-            decoded += this.bytesToString(plainBytes);
+            if (!segment.compressed) {
+                decoded += this.bytesToString(segment.bytes);
+                continue;
+            }
+
+            const inflated = this.inflate(segment.bytes);
+            if (inflated.length === 0) {
+                console.debug("MCCP inflator returned no data for segment with", segment.bytes.length, "bytes");
+            }
+            decoded += inflated;
         }
 
-        if (compressedBytes.length > 0) {
-            if (!this.mccp) {
-                console.warn("Received compressed data while MCCP is disabled; ignoring payload");
-            } else {
-                const inflated = this.inflate(compressedBytes);
-                if (inflated.length === 0 && compressedBytes.length > 0) {
-                    console.debug("MCCP inflator returned no data for frame with", compressedBytes.length, "bytes");
-                }
-                decoded += inflated;
-            }
+        if (!this.mccp && this.pendingInflatorReset) {
+            this.resetInflator();
+            this.pendingInflatorReset = false;
         }
 
         return decoded;
     }
 
     private inflate(data: number[]): string {
-        if (!this.mccp || data.length === 0) {
+        if (data.length === 0) {
             return "";
         }
 
@@ -243,14 +270,7 @@ class ArkadiaClient implements ClientAdapter {
     private resetInflator(): void {
         // @ts-ignore
         this.readInflator = new pako.Inflate();
-    }
-
-    private appendIncomingByte(plainBytes: number[], compressedBytes: number[], value: number): void {
-        if (this.mccp) {
-            compressedBytes.push(value);
-        } else {
-            plainBytes.push(value);
-        }
+        this.pendingInflatorReset = false;
     }
 
     private findSubnegotiationEnd(buffer: Uint8Array, start: number): number {
@@ -299,6 +319,8 @@ class ArkadiaClient implements ClientAdapter {
         }
         this.mccp = false;
         this.pingTracker.stop();
+        this.pendingTelnetBytes = [];
+        this.pendingInflatorReset = false;
     }
 
     /**
@@ -458,7 +480,12 @@ class ArkadiaClient implements ClientAdapter {
             const action = data.length > 1 ? data.charCodeAt(1) : 1;
             const enable = action !== 0;
             this.mccp = enable;
-            this.resetInflator();
+            if (enable) {
+                this.resetInflator();
+                this.pendingInflatorReset = false;
+            } else {
+                this.pendingInflatorReset = true;
+            }
             console.log(enable ? "MCCP enabled" : "MCCP disabled");
         }
 
