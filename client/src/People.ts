@@ -99,12 +99,14 @@ export default class People {
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, triggerLine?: TriggerLine) => {
                         const token = matches[0]
                         const lineInstance = triggerLine ?? new TriggerLine(rawLine)
-                        const start = typeof matches.index === 'number' ? matches.index : 0
-                        const index = this.findTokenIndex(lineInstance.text, token, start)
-                        if (index === -1) {
+                        const indices = this.findTokenIndices(lineInstance.text, token)
+                        if (indices.length === 0) {
                             return triggerLine ? undefined : rawLine
                         }
-                        return this.buildNameHighlight(lineInstance, token, index, chosenColor)
+                        for (let i = indices.length - 1; i >= 0; i -= 1) {
+                            this.buildNameHighlight(lineInstance, token, indices[i], chosenColor)
+                        }
+                        return lineInstance
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
@@ -136,22 +138,23 @@ export default class People {
         return char >= '0' && char <= '9'
     }
 
-    private findTokenIndex(text: string, token: string, searchStart: number) {
+    private findTokenIndices(text: string, token: string) {
+        const indices: number[] = []
         if (!token) {
-            return -1
+            return indices
         }
         const haystack = text.toLowerCase()
         const needle = token.toLowerCase()
-        let index = haystack.indexOf(needle, searchStart)
+        let index = haystack.indexOf(needle)
         while (index !== -1) {
             const before = index === 0 ? undefined : text[index - 1]
             const after = index + token.length >= text.length ? undefined : text[index + token.length]
             if (!this.isWordCharacter(before) && !this.isWordCharacter(after)) {
-                return index
+                indices.push(index)
             }
-            index = haystack.indexOf(needle, index + 1)
+            index = haystack.indexOf(needle, index + needle.length)
         }
-        return -1
+        return indices
     }
 
     private buildNameHighlight(line: TriggerLine, token: string, index: number, colorCode: number) {

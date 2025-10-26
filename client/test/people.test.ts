@@ -85,12 +85,12 @@ describe('people triggers enemy highlight', () => {
     expect(stripAnsiCodes(result)).not.toContain('(Eamon CKN)');
   });
 
-  test('enemy name is highlighted only once despite duplicates', () => {
-    const result = parse('Eamon wita cie.');
+  test('enemy name highlights every occurrence', () => {
+    const result = parse('Eamon wita cie. Eamon rzuca czar.');
     const red = findClosestColor('#ff0000');
     const highlight = color(red) + 'Eamon' + RESET;
     const parts = result.split(highlight);
-    expect(parts.length - 1).toBe(1);
+    expect(parts.length - 1).toBe(2);
   });
 
   test('highlights correct occurrence when name is substring of earlier word', () => {
