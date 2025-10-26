@@ -254,7 +254,16 @@ function Recordings() {
                         </Button>
                     </>
                 ) : (
-                    <Button size="sm" className="recordings-action" onClick={start}>Rozpocznij</Button>
+                    <Button
+                        size="sm"
+                        className="recordings-action"
+                        onClick={() => {
+                            window.dispatchEvent(new Event('close-options'));
+                            start();
+                        }}
+                    >
+                        Rozpocznij
+                    </Button>
                 )}
             </Form.Group>
             {autoRecordingName && (
