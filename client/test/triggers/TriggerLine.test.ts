@@ -34,4 +34,24 @@ describe('TriggerLine formatting helpers', () => {
       { text: ' walks in', hyperlink: undefined },
     ]);
   });
+
+  it('applies indexed colour to a range', () => {
+    const raw = 'Color me';
+    const line = new TriggerLine(raw);
+
+    const result = line.color([6, 8], 5);
+
+    expect(result).toBe(line);
+    expect(line.text).toBe('Color me');
+    expect(line.toAnsiString()).toBe('Color \u001b[22;38;5;5mme\u001b[0m');
+  });
+
+  it('colours matching words case-insensitively', () => {
+    const raw = 'Enemy ally ENEMY';
+    const line = new TriggerLine(raw);
+
+    line.colorWords(['enemy', 'ally'], 4, { caseInsensitive: true });
+
+    expect(line.toAnsiString()).toBe('\u001b[22;38;5;4mEnemy\u001b[0m \u001b[22;38;5;4mally\u001b[0m \u001b[22;38;5;4mENEMY\u001b[0m');
+  });
 });

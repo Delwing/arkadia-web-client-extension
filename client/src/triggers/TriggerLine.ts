@@ -40,6 +40,29 @@ export default class TriggerLine {
     private readonly mutable: boolean;
     private overrideAnsi?: string;
 
+    private static prepareStyle(styleOrIndex: number | FormatStyle): FormatStyle {
+        if (typeof styleOrIndex === "number") {
+            return {
+                foreground: {
+                    space: "indexed",
+                    index: styleOrIndex,
+                },
+            };
+        }
+        return {
+            ...styleOrIndex,
+        };
+    }
+
+    private static normaliseRanges(rangeOrRanges: TextRange | TextRange[]): TextRange[] {
+        if (Array.isArray(rangeOrRanges)) {
+            if (rangeOrRanges.length === 0 || Array.isArray(rangeOrRanges[0])) {
+                return rangeOrRanges as TextRange[];
+            }
+        }
+        return [rangeOrRanges as TextRange];
+    }
+
     constructor(
         textOrBuffer: string | AnsiAwareBuffer,
         metadata: TriggerMatchMetadata = {},
@@ -123,6 +146,50 @@ export default class TriggerLine {
         this.buffer.remove(range);
         this.refreshMatchMetadata();
         return this;
+    }
+
+    color(range: TextRange, color: number | FormatStyle): this;
+    color(ranges: TextRange[], color: number | FormatStyle): this;
+    color(rangeOrRanges: TextRange | TextRange[], colorOrStyle: number | FormatStyle): this {
+        if (!this.mutable) return this;
+        const ranges = TriggerLine.normaliseRanges(rangeOrRanges);
+        if (ranges.length === 0) return this;
+        const style = TriggerLine.prepareStyle(colorOrStyle);
+        this.overrideAnsi = undefined;
+        for (const [start, end] of ranges) {
+            if (start >= end) continue;
+            const text = this.text.slice(start, end);
+            this.buffer.replace([start, end], text, style);
+        }
+        this.refreshMatchMetadata();
+        return this;
+    }
+
+    colorWords(
+        words: string | string[],
+        color: number | FormatStyle,
+        options: { caseInsensitive?: boolean } = {},
+    ): this {
+        if (!this.mutable) return this;
+        const list = Array.isArray(words) ? words : [words];
+        if (list.length === 0) return this;
+        const caseInsensitive = options.caseInsensitive ?? false;
+        const ranges: TextRange[] = [];
+        const text = this.text;
+        const haystack = caseInsensitive ? text.toLowerCase() : text;
+        for (const word of list) {
+            if (!word) continue;
+            const needle = caseInsensitive ? word.toLowerCase() : word;
+            let searchStart = 0;
+            while (searchStart <= text.length - word.length) {
+                const index = haystack.indexOf(needle, searchStart);
+                if (index === -1) break;
+                ranges.push([index, index + word.length]);
+                searchStart = index + word.length;
+            }
+        }
+        if (ranges.length === 0) return this;
+        return this.color(ranges, color);
     }
 
     isMutable(): boolean {
