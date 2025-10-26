@@ -168,7 +168,7 @@ export default class MapHelper {
         return command
     }
 
-    move(direction: string): {direction: string, moved: boolean, supress?: boolean} {
+    move(direction: string, isTeamFollow: boolean = false): {direction: string, moved: boolean, suppress?: boolean} {
         if (!this.mapReader) {
             return {direction, moved: false}
         }
@@ -194,8 +194,10 @@ export default class MapHelper {
             }
 
             if (actualDirection !== direction) {
-                this.client.sendCommand(actualDirection)
-                return {direction: actualDirection, moved: false, supress: true}
+                if (!isTeamFollow) {
+                    this.client.sendCommand(actualDirection)
+                }
+                return {direction: actualDirection, moved: false, suppress: true}
             }
 
             const locationId = allExits[getLongDir(actualDirection)]
@@ -224,7 +226,7 @@ export default class MapHelper {
             for (const entry of entries) {
                 const [search, exit] = entry.split('*')
                 if (search && exit && direction.includes(search)) {
-                    const res = this.move(exit)
+                    const res = this.move(exit, true)
                     if (res.moved) {
                         return res.direction
                     }
@@ -235,7 +237,7 @@ export default class MapHelper {
             const specials = Object.keys(this.currentRoom.specialExits)
             for (const ex of specials) {
                 if (direction.includes(ex)) {
-                    const res = this.move(ex)
+                    const res = this.move(ex, true)
                     if (res.moved) {
                         return res.direction
                     }
@@ -244,7 +246,7 @@ export default class MapHelper {
             for (const ex of specials) {
                 const part = ex.substring(0, Math.ceil(ex.length * 0.7))
                 if (direction.includes(part)) {
-                    const res = this.move(ex)
+                    const res = this.move(ex, true)
                     if (res.moved) {
                         return res.direction
                     }
