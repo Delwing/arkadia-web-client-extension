@@ -275,7 +275,13 @@ class ArkadiaClient implements ClientAdapter {
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string, options?: { timestamp?: number }) {
+        const mccp = this.mccp;
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
+        if (leftOver.replace(/[ÿù]/g, "").length > 0 && this.mccp !== mccp) {
+            const deflated = this.inflate(leftOver);
+            this.processIncomingData(deflated, options);
+            return;
+        }
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
             const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
@@ -289,7 +295,7 @@ class ArkadiaClient implements ClientAdapter {
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-            //this.telnetNegotiator.parseOptionNegotiation(optionData)
+            this.telnetNegotiator.parseOptionNegotiation(optionData)
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
