@@ -97,9 +97,14 @@ export default class People {
                 if (!addedNames.has(key) && replacement.name.length > 2) {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
                     const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, triggerLine?: TriggerLine) => {
-                        const index = matches.index || 0
                         const token = matches[0]
-                        return this.buildNameHighlight(triggerLine, rawLine, token, index, chosenColor)
+                        const lineInstance = triggerLine ?? new TriggerLine(rawLine)
+                        const start = typeof matches.index === 'number' ? matches.index : 0
+                        const index = this.findTokenIndex(lineInstance.text, token, start)
+                        if (index === -1) {
+                            return triggerLine ? undefined : rawLine
+                        }
+                        return this.buildNameHighlight(lineInstance, token, index, chosenColor)
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
@@ -119,10 +124,40 @@ export default class People {
         return { inGuild, isEnemy, guildColor }
     }
 
-    private buildNameHighlight(triggerLine: TriggerLine | undefined, rawLine: string, token: string, index: number, colorCode: number) {
-        const line = triggerLine ?? new TriggerLine(rawLine)
+    private isWordCharacter(char: string | undefined) {
+        if (!char) {
+            return false
+        }
+        const lower = char.toLowerCase()
+        const upper = char.toUpperCase()
+        if (lower !== upper) {
+            return true
+        }
+        return char >= '0' && char <= '9'
+    }
+
+    private findTokenIndex(text: string, token: string, searchStart: number) {
+        if (!token) {
+            return -1
+        }
+        const haystack = text.toLowerCase()
+        const needle = token.toLowerCase()
+        let index = haystack.indexOf(needle, searchStart)
+        while (index !== -1) {
+            const before = index === 0 ? undefined : text[index - 1]
+            const after = index + token.length >= text.length ? undefined : text[index + token.length]
+            if (!this.isWordCharacter(before) && !this.isWordCharacter(after)) {
+                return index
+            }
+            index = haystack.indexOf(needle, index + 1)
+        }
+        return -1
+    }
+
+    private buildNameHighlight(line: TriggerLine, token: string, index: number, colorCode: number) {
         const end = index + token.length
-        return line.replace([index, end], color(colorCode) + token + RESET)
+        const original = line.text.substring(index, end)
+        return line.replace([index, end], color(colorCode) + original + RESET)
     }
 
     private buildDescHighlight(

@@ -17,6 +17,7 @@ const MOCK_PEOPLE = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
   { name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
   { name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
+  { name: 'Musin', description: 'szczuply mezczyzna', guild: 'CKN' },
   { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
   { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
 ];
@@ -90,6 +91,17 @@ describe('people triggers enemy highlight', () => {
     const highlight = color(red) + 'Eamon' + RESET;
     const parts = result.split(highlight);
     expect(parts.length - 1).toBe(1);
+  });
+
+  test('highlights correct occurrence when name is substring of earlier word', () => {
+    const result = parse('Musina, atakuje Musin.');
+    const red = findClosestColor('#ff0000');
+    const highlight = color(red) + 'Musin' + RESET;
+    const index = result.indexOf(highlight);
+    expect(index).toBeGreaterThanOrEqual(0);
+    const beforeHighlight = stripAnsiCodes(result.slice(0, index));
+    expect(beforeHighlight).toBe('Musina, atakuje ');
+    expect(result.split(highlight).length - 1).toBe(1);
   });
 
   test('ignores very short enemy names to avoid false positives', () => {
