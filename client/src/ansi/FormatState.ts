@@ -1,4 +1,4 @@
-import { stripAnsiCodes } from "../stripAnsiCodes";
+import {stripAnsiCodes} from "../stripAnsiCodes";
 
 const ESC = "\u001b";
 
@@ -40,9 +40,9 @@ interface BufferSegment {
 function cloneColor(color?: FormatColor): FormatColor | undefined {
     if (!color) return undefined;
     if (color.space === "indexed") {
-        return { space: "indexed", index: color.index };
+        return {space: "indexed", index: color.index};
     }
-    return { space: "rgb", r: color.r, g: color.g, b: color.b };
+    return {space: "rgb", r: color.r, g: color.g, b: color.b};
 }
 
 function hyperlinksEqual(a?: FormatHyperlink, b?: FormatHyperlink): boolean {
@@ -91,7 +91,7 @@ function cloneState(state?: FormatStateSnapshot): FormatStateSnapshot | undefine
         underline: state.underline,
         inverse: state.inverse,
         strikethrough: state.strikethrough,
-        hyperlink: state.hyperlink ? { ...state.hyperlink } : undefined,
+        hyperlink: state.hyperlink ? {...state.hyperlink} : undefined,
     };
 }
 
@@ -134,7 +134,7 @@ class FormatState {
         this.underline = snapshot.underline ? true : undefined;
         this.inverse = snapshot.inverse ? true : undefined;
         this.strikethrough = snapshot.strikethrough ? true : undefined;
-        this.hyperlink = snapshot.hyperlink ? { ...snapshot.hyperlink } : undefined;
+        this.hyperlink = snapshot.hyperlink ? {...snapshot.hyperlink} : undefined;
     }
 
     reset(): void {
@@ -156,7 +156,7 @@ class FormatState {
             underline: this.underline ? true : undefined,
             inverse: this.inverse ? true : undefined,
             strikethrough: this.strikethrough ? true : undefined,
-            hyperlink: this.hyperlink ? { ...this.hyperlink } : undefined,
+            hyperlink: this.hyperlink ? {...this.hyperlink} : undefined,
         };
     }
 
@@ -212,7 +212,7 @@ class FormatState {
                     const isForeground = code === 38;
                     const mode = params[i + 1];
                     if (mode === 5 && typeof params[i + 2] === "number") {
-                        const color: IndexedColor = { space: "indexed", index: params[i + 2] };
+                        const color: IndexedColor = {space: "indexed", index: params[i + 2]};
                         if (isForeground) {
                             this.foreground = color;
                         } else {
@@ -242,13 +242,13 @@ class FormatState {
                 }
                 default:
                     if (code >= 30 && code <= 37) {
-                        this.foreground = { space: "indexed", index: code - 30 };
+                        this.foreground = {space: "indexed", index: code - 30};
                     } else if (code >= 90 && code <= 97) {
-                        this.foreground = { space: "indexed", index: code - 82 };
+                        this.foreground = {space: "indexed", index: code - 82};
                     } else if (code >= 40 && code <= 47) {
-                        this.background = { space: "indexed", index: code - 40 };
+                        this.background = {space: "indexed", index: code - 40};
                     } else if (code >= 100 && code <= 107) {
-                        this.background = { space: "indexed", index: code - 92 };
+                        this.background = {space: "indexed", index: code - 92};
                     }
                     break;
             }
@@ -256,7 +256,7 @@ class FormatState {
     }
 
     setHyperlink(link?: FormatHyperlink): void {
-        this.hyperlink = link ? { ...link } : undefined;
+        this.hyperlink = link ? {...link} : undefined;
     }
 }
 
@@ -276,7 +276,7 @@ function parseHyperlinkPayload(payload: string): FormatHyperlink | undefined {
     const titlePart = colonIndex === -1 ? undefined : payload.slice(colonIndex + 1);
     const id = Number.parseInt(idPart, 10);
     if (Number.isNaN(id)) return undefined;
-    const hyperlink: FormatHyperlink = { id };
+    const hyperlink: FormatHyperlink = {id};
     if (titlePart && titlePart.length > 0) {
         hyperlink.title = titlePart;
     }
@@ -291,10 +291,10 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
         if (!buffer) return;
         const snapshot = state.toSnapshot();
         const storedState = isDefaultState(snapshot) ? undefined : snapshot;
-        segments.push({ text: buffer, state: storedState });
+        segments.push({text: buffer, state: storedState});
         buffer = "";
     };
-    for (let i = 0; i < text.length; ) {
+    for (let i = 0; i < text.length;) {
         const char = text[i];
         if (char === ESC && text[i + 1] === "[") {
             const endIndex = text.indexOf("m", i + 2);
@@ -345,13 +345,7 @@ function stateToAnsi(state?: FormatStateSnapshot): string {
     if (state.foreground) {
         if (state.foreground.space === "indexed") {
             const index = state.foreground.index;
-            if (index >= 0 && index <= 7) {
-                codes.push(30 + index);
-            } else if (index >= 8 && index <= 15) {
-                codes.push(90 + (index - 8));
-            } else {
-                codes.push(22, 38, 5, index);
-            }
+            codes.push(22, 38, 5, index);
         } else {
             codes.push(22, 38, 2, state.foreground.r, state.foreground.g, state.foreground.b);
         }
@@ -359,13 +353,7 @@ function stateToAnsi(state?: FormatStateSnapshot): string {
     if (state.background) {
         if (state.background.space === "indexed") {
             const index = state.background.index;
-            if (index >= 0 && index <= 7) {
-                codes.push(40 + index);
-            } else if (index >= 8 && index <= 15) {
-                codes.push(100 + (index - 8));
-            } else {
-                codes.push(48, 5, index);
-            }
+            codes.push(48, 5, index);
         } else {
             codes.push(48, 2, state.background.r, state.background.g, state.background.b);
         }
@@ -521,12 +509,12 @@ export class AnsiAwareBuffer {
     toHyperlinkSegments(): { text: string; hyperlink?: FormatHyperlink }[] {
         const segments: { text: string; hyperlink?: FormatHyperlink }[] = [];
         for (const segment of this.segments) {
-            const link = segment.state?.hyperlink ? { ...segment.state.hyperlink } : undefined;
+            const link = segment.state?.hyperlink ? {...segment.state.hyperlink} : undefined;
             const last = segments[segments.length - 1];
             if (last && hyperlinksEqual(last.hyperlink, link)) {
                 last.text += segment.text;
             } else {
-                segments.push({ text: segment.text, hyperlink: link });
+                segments.push({text: segment.text, hyperlink: link});
             }
         }
         return segments;
@@ -537,7 +525,7 @@ export class AnsiAwareBuffer {
         if (last && statesEqual(last.state, segment.state)) {
             last.text += segment.text;
         } else {
-            this.segments.push({ text: segment.text, state: cloneState(segment.state) });
+            this.segments.push({text: segment.text, state: cloneState(segment.state)});
         }
     }
 
@@ -550,11 +538,11 @@ export class AnsiAwareBuffer {
         if (explicitState) {
             const cleanText = stripAnsiCodes(text);
             if (cleanText.length === 0) return [];
-            return [{ text: cleanText, state: isDefaultState(explicitState) ? undefined : cloneState(explicitState) }];
+            return [{text: cleanText, state: isDefaultState(explicitState) ? undefined : cloneState(explicitState)}];
         }
         if (!text.includes(ESC) && !text.includes("{clickOpen:") && !text.includes("{clickClose}")) {
             const state = baseState && !isDefaultState(baseState) ? cloneState(baseState) : undefined;
-            return [{ text, state }];
+            return [{text, state}];
         }
         return parseAnsiSegments(text, baseState);
     }
@@ -565,16 +553,16 @@ export class AnsiAwareBuffer {
         for (let i = 0; i < this.segments.length; i += 1) {
             const length = this.segments[i].text.length;
             if (remaining < length || (allowEnd && remaining === length)) {
-                return { segmentIndex: i, offset: remaining };
+                return {segmentIndex: i, offset: remaining};
             }
             remaining -= length;
         }
-        return { segmentIndex: this.segments.length, offset: 0 };
+        return {segmentIndex: this.segments.length, offset: 0};
     }
 
     private resolveBoundaryIndex(index: number): number {
         const position = this.resolveIndex(index, true);
-        const { segmentIndex, offset } = position;
+        const {segmentIndex, offset} = position;
         if (segmentIndex >= this.segments.length) {
             return this.segments.length;
         }
@@ -606,8 +594,8 @@ export class AnsiAwareBuffer {
         const segment = this.segments[index];
         if (!segment) return;
         if (offset <= 0 || offset >= segment.text.length) return;
-        const before: BufferSegment = { text: segment.text.slice(0, offset), state: cloneState(segment.state) };
-        const after: BufferSegment = { text: segment.text.slice(offset), state: cloneState(segment.state) };
+        const before: BufferSegment = {text: segment.text.slice(0, offset), state: cloneState(segment.state)};
+        const after: BufferSegment = {text: segment.text.slice(offset), state: cloneState(segment.state)};
         this.segments.splice(index, 1, before, after);
     }
 
@@ -620,7 +608,7 @@ export class AnsiAwareBuffer {
             if (last && statesEqual(last.state, state)) {
                 last.text += segment.text;
             } else {
-                normalized.push({ text: segment.text, state });
+                normalized.push({text: segment.text, state});
             }
         }
         this.segments = normalized;
@@ -639,4 +627,4 @@ export class AnsiAwareBuffer {
     }
 }
 
-export { cloneState as cloneFormatState, statesEqual as formatStatesEqual };
+export {cloneState as cloneFormatState, statesEqual as formatStatesEqual};

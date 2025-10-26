@@ -8,7 +8,7 @@ describe('TriggerLine formatting helpers', () => {
     line.replace([0, 5], 'Hi');
 
     expect(line.text).toBe('Hi friend');
-    expect(line.toAnsiString()).toBe('\u001b[31mHi\u001b[0m friend');
+    expect(line.toAnsiString()).toBe('\u001b[22;38;5;1mHi\u001b[0m friend');
   });
 
   it('carries formatting forward when inserting at segment boundaries', () => {
@@ -18,7 +18,7 @@ describe('TriggerLine formatting helpers', () => {
     line.insert(5, 'ish');
 
     expect(line.text).toBe('Greenish!');
-    expect(line.toAnsiString()).toBe('\u001b[32mGreenish\u001b[0m!');
+    expect(line.toAnsiString()).toBe('\u001b[22;38;5;2mGreenish\u001b[0m!');
   });
 
   it('retains hyperlink metadata during insertions', () => {

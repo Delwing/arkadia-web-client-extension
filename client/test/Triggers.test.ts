@@ -147,7 +147,7 @@ describe('Triggers', () => {
 
     const result = triggers.parseLine('\u001b[34mAzure\u001b[0m sea', '');
 
-    expect(result).toBe('\u001b[34mBlue\u001b[0m sea');
+    expect(result).toBe('\u001b[22;38;5;4mBlue\u001b[0m sea');
   });
 
   test('triggerLine insert retains hyperlink metadata', () => {
