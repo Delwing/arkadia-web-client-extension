@@ -16,6 +16,7 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const GMCP_COMMAND_CODE = 201;
 const MCCP_COMMAND_CODE = 86;
+const MCCP_NEGOTIATION_SEQUENCE = String.fromCharCode(255, 250, MCCP_COMMAND_CODE, 255, 240);
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
@@ -123,29 +124,70 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
-                }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
-                }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
-            }
+        if (!decodedData.length) {
+            return decodedData;
         }
-        return decodedData;
+
+        const negotiationIndex = decodedData.indexOf(MCCP_NEGOTIATION_SEQUENCE);
+        if (negotiationIndex !== -1) {
+            const negotiationEnd = negotiationIndex + MCCP_NEGOTIATION_SEQUENCE.length;
+            const remainingData = decodedData.substring(negotiationEnd);
+            // Ensure MCCP decompression is enabled for any data following the negotiation sequence
+            this.mccp = true;
+            if (remainingData.length) {
+                const decompressed = this.decompressMccpData(remainingData);
+                decodedData = decodedData.substring(0, negotiationEnd) + decompressed;
+            }
+            return decodedData;
+        }
+
+        if (!this.mccp) {
+            return decodedData;
+        }
+
+        return this.decompressMccpData(decodedData);
+    }
+
+    private decompressMccpData(data: string): string {
+        if (!data.length) {
+            return "";
+        }
+
+        try {
+            const byteArray = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                byteArray[i] = data.charCodeAt(i);
+            }
+
+            this.readInflator.push(byteArray, false);
+
+            if (this.readInflator.err) {
+                console.error("MCCP decompression error: " + this.readInflator.msg);
+                this.readInflator.err = 0;
+                return data;
+            }
+
+            const result = this.readInflator.result as Uint8Array | string | undefined;
+            let decompressed = "";
+
+            if (typeof result === "string") {
+                decompressed = result;
+            } else if (result instanceof Uint8Array) {
+                for (let i = 0; i < result.length; i++) {
+                    decompressed += String.fromCharCode(result[i]);
+                }
+            }
+
+            this.readInflator.chunks = [];
+            // @ts-ignore - pako typings do not expose result reset
+            this.readInflator.result = undefined;
+            this.readInflator.ended = false;
+
+            return decompressed;
+        } catch (error) {
+            console.log("MCCP decompression error: " + (error as Error).message);
+            return data;
+        }
     }
 
     /**
