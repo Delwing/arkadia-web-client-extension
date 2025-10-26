@@ -26,6 +26,10 @@ export type KnowledgeLibraryProgress = Record<string, KnowledgeCategoryStatus>;
 
 export type KnowledgeProgress = Record<string, KnowledgeLibraryProgress>;
 
+export type KnowledgeProgressByCharacter = Record<string, KnowledgeProgress>;
+
+export const DEFAULT_KNOWLEDGE_CHARACTER_KEY = '__default__';
+
 export interface KnowledgeFile {
   version?: number;
   books: Record<string, KnowledgeBookEntry>;
@@ -34,7 +38,7 @@ export interface KnowledgeFile {
 
 export interface KnowledgeSnapshotData extends KnowledgeFile {
   libraries: Record<string, KnowledgeLibraryEntry>;
-  progress: KnowledgeProgress;
+  progress: KnowledgeProgressByCharacter;
 }
 
 export interface KnowledgeSnapshot {
@@ -42,11 +46,12 @@ export interface KnowledgeSnapshot {
   timestamp: number;
 }
 
-function sanitizeProgress(
+function sanitizeLibraryProgress(
   previous: KnowledgeProgress | undefined,
   libraries: Record<string, KnowledgeLibraryEntry>,
 ): KnowledgeProgress {
   const result: KnowledgeProgress = {};
+
   if (!previous) {
     return result;
   }
@@ -68,6 +73,69 @@ function sanitizeProgress(
     }
     if (Object.keys(filtered).length > 0) {
       result[libraryId] = filtered;
+    }
+  }
+
+  return result;
+}
+
+function shouldTreatAsSingleCharacterProgress(
+  previous: KnowledgeProgressByCharacter | KnowledgeProgress | undefined,
+  libraries: Record<string, KnowledgeLibraryEntry>,
+): previous is KnowledgeProgress {
+  if (!previous || typeof previous !== 'object') {
+    return false;
+  }
+
+  const entries = Object.entries(previous as Record<string, unknown>);
+  if (entries.length === 0) {
+    return false;
+  }
+
+  const libraryIds = new Set(Object.keys(libraries));
+
+  for (const [key, value] of entries) {
+    if (libraryIds.has(key)) {
+      return true;
+    }
+    if (!value || typeof value !== 'object') {
+      return true;
+    }
+    for (const innerValue of Object.values(value as Record<string, unknown>)) {
+      if (!innerValue || typeof innerValue !== 'object') {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function sanitizeProgress(
+  previous: KnowledgeProgressByCharacter | KnowledgeProgress | undefined,
+  libraries: Record<string, KnowledgeLibraryEntry>,
+): KnowledgeProgressByCharacter {
+  const result: KnowledgeProgressByCharacter = {};
+
+  if (!previous) {
+    return result;
+  }
+
+  if (shouldTreatAsSingleCharacterProgress(previous, libraries)) {
+    const sanitized = sanitizeLibraryProgress(previous, libraries);
+    if (Object.keys(sanitized).length > 0) {
+      result[DEFAULT_KNOWLEDGE_CHARACTER_KEY] = sanitized;
+    }
+    return result;
+  }
+
+  for (const [character, progress] of Object.entries(previous)) {
+    if (!progress || typeof progress !== 'object') {
+      continue;
+    }
+    const sanitized = sanitizeLibraryProgress(progress, libraries);
+    if (Object.keys(sanitized).length > 0) {
+      result[character] = sanitized;
     }
   }
 
@@ -121,7 +189,7 @@ interface KnowledgeIndexedDbStrategyOptions {
 
 type KnowledgeLibrariesPayload = {
   libraries: Record<string, KnowledgeLibraryEntry>;
-  progress: KnowledgeProgress;
+  progress: KnowledgeProgressByCharacter | KnowledgeProgress;
   version?: number;
   timestamp?: number;
 };
@@ -157,12 +225,13 @@ class KnowledgeIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshMetadata
       ]);
 
       if (books && librariesPayload) {
+        const libraries = librariesPayload.libraries ?? {};
         this.inMemorySnapshot = {
           data: {
             version: librariesPayload.version,
             books,
-            libraries: librariesPayload.libraries,
-            progress: librariesPayload.progress ?? {},
+            libraries,
+            progress: sanitizeProgress(librariesPayload.progress, libraries),
           },
           timestamp: librariesPayload.timestamp ?? Date.now(),
         };

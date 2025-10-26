@@ -1,11 +1,13 @@
 import Client from '../Client';
 import { colorString, findClosestColor } from '../Colors';
 import {
+  DEFAULT_KNOWLEDGE_CHARACTER_KEY,
   getKnowledgeStore,
   KnowledgeCategoryStatus,
   KnowledgeLibraryEntry,
   KnowledgeSnapshot,
 } from '../dataStores/knowledgeStore';
+import { getCurrentCharacter } from '../storage';
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
@@ -100,6 +102,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   let currentLibraryId: string | null = null;
   let currentSnapshot: KnowledgeSnapshot | undefined;
 
+  function getCharacterProgressKey(): string {
+    const current = getCurrentCharacter();
+    if (!current) {
+      return DEFAULT_KNOWLEDGE_CHARACTER_KEY;
+    }
+    const trimmed = current.trim();
+    return trimmed.length > 0 ? trimmed : DEFAULT_KNOWLEDGE_CHARACTER_KEY;
+  }
+
   void store.refresh().catch((error) => {
     console.error('Failed to refresh knowledge data:', error);
   });
@@ -148,7 +159,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         const nextProgress = { ...snapshot.data.progress };
-        const libraryProgress = { ...(nextProgress[libraryId] ?? {}) };
+        const characterKey = getCharacterProgressKey();
+        const characterProgress = { ...(nextProgress[characterKey] ?? {}) };
+        const libraryProgress = { ...(characterProgress[libraryId] ?? {}) };
         const previousStatus = libraryProgress[normalized];
 
         if (previousStatus === 'completed' && status !== 'completed') {
@@ -160,7 +173,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         libraryProgress[normalized] = status;
-        nextProgress[libraryId] = libraryProgress;
+        characterProgress[libraryId] = libraryProgress;
+        nextProgress[characterKey] = characterProgress;
 
         return {
           ...snapshot,
@@ -219,10 +233,20 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       return;
     }
 
-    const progress = currentSnapshot.data.progress[libraryId] ?? {};
+    const characterKey = getCharacterProgressKey();
+    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+    const fallbackProgress =
+      characterKey === DEFAULT_KNOWLEDGE_CHARACTER_KEY
+        ? undefined
+        : currentSnapshot.data.progress[DEFAULT_KNOWLEDGE_CHARACTER_KEY];
+    const libraryProgress = characterProgress[libraryId] ?? {};
+    const fallbackLibraryProgress = fallbackProgress?.[libraryId];
     const header = colorString(library.name, HEADER_COLOR);
     const lines = library.categories.map((category) => {
-      const status = progress[category] ?? 'not_started';
+      const status =
+        libraryProgress[category] ??
+        fallbackLibraryProgress?.[category] ??
+        'not_started';
       return ` - ${formatCategory(client, category, status)}`;
     });
 
