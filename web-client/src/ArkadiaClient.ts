@@ -17,6 +17,10 @@ const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const GMCP_COMMAND_CODE = 201;
 const MCCP_COMMAND_CODE = 86;
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
+const IAC = String.fromCharCode(255);
+const SB = String.fromCharCode(250);
+const SE = String.fromCharCode(240);
+const MCCP_HANDSHAKE_SEQUENCE = `${IAC}${SB}${String.fromCharCode(MCCP_COMMAND_CODE)}${IAC}${SE}`;
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
 
@@ -123,29 +127,78 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
-                }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
-                }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
-            }
+        if (!decodedData) {
+            return decodedData;
         }
-        return decodedData;
+
+        let inflated = "";
+        let remaining = decodedData;
+
+        while (true) {
+            const handshakeIndex = remaining.indexOf(MCCP_HANDSHAKE_SEQUENCE);
+            if (handshakeIndex === -1) {
+                break;
+            }
+
+            const beforeHandshake = remaining.substring(0, handshakeIndex);
+            if (beforeHandshake.length) {
+                inflated += this.mccp ? this.inflateChunk(beforeHandshake) : beforeHandshake;
+            }
+
+            inflated += MCCP_HANDSHAKE_SEQUENCE;
+            remaining = remaining.substring(handshakeIndex + MCCP_HANDSHAKE_SEQUENCE.length);
+
+            // Reset the inflater whenever we encounter a new MCCP handshake.
+            // @ts-ignore
+            this.readInflator = new pako.Inflate();
+            this.mccp = true;
+        }
+
+        if (remaining.length) {
+            inflated += this.mccp ? this.inflateChunk(remaining) : remaining;
+        }
+
+        return inflated;
+    }
+
+    private inflateChunk(data: string): string {
+        if (!data.length) {
+            return "";
+        }
+
+        try {
+            const byteArray = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                byteArray[i] = data.charCodeAt(i) & 0xFF;
+            }
+
+            this.readInflator.push(byteArray, false);
+
+            if (this.readInflator.err) {
+                console.error("MCCP decompression error: " + this.readInflator.msg);
+                return data;
+            }
+
+            const result = this.readInflator.result;
+            if (!result) {
+                return "";
+            }
+
+            let decoded = "";
+            const buffer = result instanceof Uint8Array ? result : new Uint8Array(result);
+            for (let i = 0; i < buffer.length; i++) {
+                decoded += String.fromCharCode(buffer[i]);
+            }
+
+            this.readInflator.result = undefined;
+            this.readInflator.chunks = [];
+            this.readInflator.ended = false;
+
+            return decoded;
+        } catch (error) {
+            console.log("MCCP decompression error: " + error.message);
+            return data;
+        }
     }
 
     /**
