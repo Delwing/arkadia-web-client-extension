@@ -295,7 +295,7 @@ class ArkadiaClient implements ClientAdapter {
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-            this.telnetNegotiator.parseOptionNegotiation(optionData)
+            //this.telnetNegotiator.parseOptionNegotiation(optionData)
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
