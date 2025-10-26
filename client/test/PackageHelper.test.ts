@@ -87,7 +87,7 @@ describe('PackageHelper', () => {
     expect(helper['packages']).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
     expect(client.OutputHandler.makeClickable).toHaveBeenCalledTimes(1);
     const call = client.OutputHandler.makeClickable.mock.calls[0];
-    const expectedColor = colorStringInLine(stripped, 'Bob', findClosestColor('#aaaaaa'));
+    const expectedColor = colorStringInLine(stripped, 'Bob', findClosestColor('#aaaaaa')).toAnsiString();
     expect(call[0]).toBe(expectedColor);
     expect(call[1]).toBe('Bob');
     expect(call[3]).toBe('wybierz paczke 1');
@@ -150,8 +150,8 @@ describe('PackageHelper', () => {
 
     expect(helper.currentPackage).toEqual({ name: 'Bob' });
     expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
-    const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00'));
-    expect(result).toBe(expectedColor);
+    const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00')).toAnsiString();
+    expect(result.toAnsiString()).toBe(expectedColor);
     expect(startSpy).not.toHaveBeenCalled();
     expect(registerSpy).toHaveBeenCalled();
   });

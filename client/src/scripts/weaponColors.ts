@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorStringInLine, findClosestColor, color, RESET } from "../Colors";
+import TriggerLine from "../triggers/TriggerLine";
 import { MAGICS_COLOR } from "./magics";
 
 export const WEAPON_COLOR = findClosestColor("#ffff00");
@@ -13,29 +14,31 @@ export default function initWeaponColors(client: Client) {
     const tag = "weaponColors";
     client.Triggers.registerTrigger(
         /^Trzyma(?:sz)? oburacz (?<weapon1>[a-z ]+)\.$/,
-        (raw, _line, m) => {
+        (raw, _line, m, _type, triggerLine) => {
             const weapon = m.groups!.weapon1;
             if (isMagicColored(raw, weapon)) {
-                return raw;
+                return triggerLine ?? new TriggerLine(raw);
             }
-            return colorStringInLine(raw, weapon, WEAPON_COLOR);
+            return colorStringInLine(triggerLine ?? raw, weapon, WEAPON_COLOR);
         },
         tag
     );
     client.Triggers.registerTrigger(
         /^Trzyma(?:sz)? (?<weapon1>[a-z ]+?) w (?:lewej|prawej) rece(?: oraz (?<weapon2>[a-z ]+?) w (?:lewej|prawej) rece)?\.$/,
-        (raw, _line, m) => {
+        (raw, _line, m, _type, triggerLine) => {
             const { weapon1, weapon2 } = m.groups as { weapon1: string; weapon2?: string };
+            const baseLine = triggerLine ?? new TriggerLine(raw);
+            const text = baseLine.text;
             if (!weapon2) {
                 if (isMagicColored(raw, weapon1)) {
-                    return raw;
+                    return baseLine;
                 }
-                return colorStringInLine(raw, weapon1, WEAPON_COLOR);
+                return colorStringInLine(baseLine, weapon1, WEAPON_COLOR);
             }
 
-            const firstIndex = raw.indexOf(weapon1);
-            const secondIndex = raw.indexOf(weapon2, firstIndex + weapon1.length);
-            let line = raw;
+            const firstIndex = text.indexOf(weapon1);
+            const secondIndex = text.indexOf(weapon2, firstIndex + weapon1.length);
+            let line: TriggerLine = baseLine;
 
             if (!isMagicColored(raw, weapon2) && secondIndex > -1) {
                 line = colorStringInLine(line, weapon2, WEAPON_COLOR, secondIndex);
@@ -51,23 +54,23 @@ export default function initWeaponColors(client: Client) {
     );
     client.Triggers.registerTrigger(
         /^.*przypiet(?:y|a|e).*?(?:pochwe|pochwy|uprzaz|temblak|temblaki).*, zawierajac(?:a|e|y) (?<weapon>[a-z ]+)\.$/,
-        (raw, _line, m) => {
+        (raw, _line, m, _type, triggerLine) => {
             const { weapon } = m.groups as { weapon: string };
             if (isMagicColored(raw, weapon)) {
-                return raw;
+                return triggerLine ?? new TriggerLine(raw);
             }
-            return colorStringInLine(raw, weapon, WEAPON_COLOR);
+            return colorStringInLine(triggerLine ?? raw, weapon, WEAPON_COLOR);
         },
         tag
     );
     client.Triggers.registerTrigger(
         /^.*przypiet(?:y|a|e).*?(?:pochwe|pochwy|uprzaz|temblak|temblaki).* z tkwiac.* w (?:niej|nim|nich) (?<weapon>[a-z ]+)\.$/,
-        (raw, _line, m) => {
+        (raw, _line, m, _type, triggerLine) => {
             const { weapon } = m.groups as { weapon: string };
             if (isMagicColored(raw, weapon)) {
-                return raw;
+                return triggerLine ?? new TriggerLine(raw);
             }
-            return colorStringInLine(raw, weapon, WEAPON_COLOR);
+            return colorStringInLine(triggerLine ?? raw, weapon, WEAPON_COLOR);
         },
         tag
     );

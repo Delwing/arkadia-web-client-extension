@@ -76,7 +76,7 @@ export default class PackageHelper {
 
     init() {
         this.enabled = true;
-        this.client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (rawLine, __, matches): string => {
+        this.client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (rawLine, __, matches, _type, triggerLine) => {
             const name = toTitleCase(matches[1])
             this.leadToPackage(name)
             if (!this.currentPackage || this.currentPackage.name !== name) {
@@ -87,7 +87,7 @@ export default class PackageHelper {
                 this.registerDeliveryTrigger()
             }
             const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
-            return colorStringInLine(rawLine, matches[1], colorCode)
+            return colorStringInLine(triggerLine ?? rawLine, matches[1], colorCode)
         }, tag)
         this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
     }
@@ -133,7 +133,8 @@ export default class PackageHelper {
             const line = this.extendStandardDataLine(rawLine, info)
             const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
             const command = `${pickCommand} ${info.index}`
-            return this.client.OutputHandler.makeClickable(colorStringInLine(line, info.name, colorCode), info.name, () => {
+            const coloredLine = colorStringInLine(line, info.name, colorCode).toAnsiString()
+            return this.client.OutputHandler.makeClickable(coloredLine, info.name, () => {
                 this.client.sendCommand(command)
             }, command)
         };
@@ -170,8 +171,9 @@ export default class PackageHelper {
                     const heavy = info.heavy ? '* ' : '  ';
                     const first = RESET  + `${heavy}${info.index}. ${info.name}${city}`;
                     const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
+                    const coloredFirst = colorStringInLine(first, info.name, colorCode).toAnsiString();
                     const clickable = this.client.OutputHandler.makeClickable(
-                        colorStringInLine(first, info.name, colorCode),
+                        coloredFirst,
                         info.name,
                         () => {
                             this.client.sendCommand('wybierz paczke ' + info.index);
