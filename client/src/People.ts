@@ -122,11 +122,7 @@ export default class People {
     private buildNameHighlight(triggerLine: TriggerLine | undefined, rawLine: string, token: string, index: number, colorCode: number) {
         const line = triggerLine ?? new TriggerLine(rawLine)
         const end = index + token.length
-        line.replace([index, end], color(colorCode) + token + RESET)
-        const esc = "\u001b"
-        const override = line.toAnsiString().replace(new RegExp(`${esc}\\[38;5;`, "g"), `${esc}[22;38;5;`)
-        line.setOverrideAnsi(override)
-        return triggerLine ? line : override
+        return line.replace([index, end], color(colorCode) + token + RESET)
     }
 
     private buildDescHighlight(
@@ -147,11 +143,7 @@ export default class People {
         } else if (state.inGuild && state.guildColor !== undefined) {
             suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
         }
-        line.insert(end, suffixText)
-        const esc = "\u001b"
-        const override = line.toAnsiString().replace(new RegExp(`${esc}\\[38;5;`, "g"), `${esc}[22;38;5;`)
-        line.setOverrideAnsi(override)
-        return triggerLine ? line : override
+        return line.insert(end, suffixText)
     }
 
 }
