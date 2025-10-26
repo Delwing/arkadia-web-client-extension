@@ -22,13 +22,62 @@ const START_LIBRARY_PATTERN =
 const COMPLETE_LIBRARY_PATTERN =
   /^Masz wrazenie, ze tutaj nie dowiesz sie juz niczego wiecej o (.*)\.$/;
 
+const CATEGORY_DECLENSION_TO_BASE: Record<string, string> = {
+  'chaosie i jego tworach': 'chaos i jego twory',
+  goblinoidach: 'goblinoidy',
+  golemach: 'golemy',
+  'istotach demonicznych': 'istoty demoniczne',
+  jaszczuroludziach: 'jaszczuroludzie',
+  'magii i jej tworach': 'magia i jej twory',
+  nieumarlych: 'nieumarli',
+  'pajakach i pajakowatych': 'pajaki i pajakowate',
+  ryboludziach: 'ryboludzie',
+  'smokach i smokowatych': 'smoki i smokowate',
+  'starszych rasach': 'starsze rasy',
+  'stworach pokoniunkcyjnych': 'stwory pokoniunkcyjne',
+  szczuroludziach: 'szczuroludzie',
+  wampirach: 'wampiry',
+};
+
+const CATEGORY_BASE_TO_DATIVE: Record<string, string> = {
+  'chaos i jego twory': 'chaosie i jego tworach',
+  goblinoidy: 'goblinoidach',
+  golemy: 'golemach',
+  'istoty demoniczne': 'istotach demonicznych',
+  jaszczuroludzie: 'jaszczuroludziach',
+  'magia i jej twory': 'magii i jej tworach',
+  nieumarli: 'nieumarlych',
+  'pajaki i pajakowate': 'pajakach i pajakowatych',
+  ryboludzie: 'ryboludziach',
+  'smoki i smokowate': 'smokach i smokowatych',
+  'starsze rasy': 'starszych rasach',
+  'stwory pokoniunkcyjne': 'stworach pokoniunkcyjnych',
+  szczuroludzie: 'szczuroludziach',
+  wampiry: 'wampirach',
+};
+
 function normalizeCategory(category: string, library: KnowledgeLibraryEntry): string | null {
   const trimmed = category.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
+  const baseCandidate =
+    CATEGORY_DECLENSION_TO_BASE[lowerTrimmed] !== undefined
+      ? CATEGORY_DECLENSION_TO_BASE[lowerTrimmed]
+      : trimmed;
+
   for (const entry of library.categories) {
-    if (entry.toLowerCase() === trimmed.toLowerCase()) {
+    if (entry.toLowerCase() === baseCandidate.toLowerCase()) {
       return entry;
     }
   }
+
+  if (baseCandidate !== trimmed) {
+    for (const entry of library.categories) {
+      if (entry.toLowerCase() === trimmed.toLowerCase()) {
+        return entry;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -37,8 +86,10 @@ function formatCategory(
   category: string,
   status: KnowledgeCategoryStatus,
 ): string {
+  const dativeCategory =
+    CATEGORY_BASE_TO_DATIVE[category.toLowerCase()] ?? category;
   const clickable = client.OutputHandler.makeStringClickable(category, () => {
-    client.sendCommand(`zglebiaj wiedze o ${category}`);
+    client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
   });
   return colorString(clickable, STATUS_COLORS[status]);
 }
