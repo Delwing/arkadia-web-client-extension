@@ -23,6 +23,8 @@ const START_LIBRARY_PATTERN =
   /^Zaczynasz zglebiac tutejsze zasoby, probujac dowiedziec sie czegos wiecej o (.*)\.$/;
 const COMPLETE_LIBRARY_PATTERN =
   /^Masz wrazenie, ze tutaj nie dowiesz sie juz niczego wiecej o (.*)\.$/;
+const KNOWLEDGE_PROMPT_PATTERN =
+  /^Wiedze o czym chcesz zglebiac\? (.*)$/;
 
 const CATEGORY_DECLENSION_TO_BASE: Record<string, string> = {
   'chaosie i jego tworach': 'chaos i jego twory',
@@ -101,6 +103,10 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   const store = getKnowledgeStore();
   let currentLibraryId: string | null = null;
   let currentSnapshot: KnowledgeSnapshot | undefined;
+  let pendingPromptTrigger: {
+    trigger: ReturnType<typeof client.Triggers.registerOneTimeTrigger>;
+    timeoutId: number;
+  } | null = null;
 
   function getCharacterProgressKey(): string {
     const current = getCurrentCharacter();
@@ -121,6 +127,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       updateCurrentLibrary(client.Map.currentRoom);
     }
   });
+
+  function clearPendingPrompt(removeTrigger: boolean) {
+    if (!pendingPromptTrigger) {
+      return;
+    }
+
+    window.clearTimeout(pendingPromptTrigger.timeoutId);
+    if (removeTrigger) {
+      client.Triggers.removeTrigger(pendingPromptTrigger.trigger);
+    }
+    pendingPromptTrigger = null;
+  }
 
   function updateCurrentLibrary(room: any) {
     const internalId: string | undefined = room?.userData?.internal_id;
@@ -193,6 +211,32 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     updateCurrentLibrary(event.detail.room);
   });
 
+  client.addEventListener('command', (event: CustomEvent<string>) => {
+    const command = (event.detail ?? '').trim();
+    if (command !== 'zglebiaj wiedze') {
+      return;
+    }
+
+    clearPendingPrompt(true);
+    const trigger = client.Triggers.registerOneTimeTrigger(
+      KNOWLEDGE_PROMPT_PATTERN,
+      (_raw, _line, matches) => {
+        clearPendingPrompt(false);
+        const categoriesText = matches[1];
+        if (categoriesText) {
+          handleKnowledgePrompt(categoriesText);
+        }
+      },
+      'knowledge-progress',
+    );
+
+    const timeoutId = window.setTimeout(() => {
+      clearPendingPrompt(true);
+    }, 5000);
+
+    pendingPromptTrigger = { trigger, timeoutId };
+  });
+
   client.Triggers.registerTrigger(
     START_LIBRARY_PATTERN,
     (_raw, _line, matches) => {
@@ -215,7 +259,49 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     'knowledge-progress',
   );
 
-  function showLibraryCategories() {
+  function getActiveLibraryContext():
+    | {
+        libraryId: string;
+        library: KnowledgeLibraryEntry;
+        libraryProgress: Record<string, KnowledgeCategoryStatus>;
+      }
+    | null {
+    if (!currentSnapshot) {
+      return null;
+    }
+
+    const libraryId = currentLibraryId;
+    if (!libraryId) {
+      return null;
+    }
+
+    const library = currentSnapshot.data.libraries[libraryId];
+    if (!library) {
+      return null;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+    const libraryProgress = characterProgress[libraryId] ?? {};
+
+    return { libraryId, library, libraryProgress };
+  }
+
+  function printLibraryCategories(
+    library: KnowledgeLibraryEntry,
+    libraryProgress: Record<string, KnowledgeCategoryStatus>,
+    categories: string[],
+  ) {
+    const header = colorString(library.name, HEADER_COLOR);
+    const lines = categories.map((category) => {
+      const status = libraryProgress[category] ?? 'not_started';
+      return ` - ${formatCategory(client, category, status)}`;
+    });
+
+    client.println([header, ...lines].join('\n'));
+  }
+
+  function handleKnowledgePrompt(categoriesText: string) {
     if (!currentSnapshot) {
       client.println('Dane wiedzy nie sa jeszcze dostepne.');
       return;
@@ -233,18 +319,88 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       return;
     }
 
+    const cleaned = categoriesText.trim().replace(/\?$/, '').replace(/\s+/g, ' ');
+    const normalizedPrompt = cleaned.replace(/\s+czy o\s+/gi, ', o ');
+    const rawCategories = normalizedPrompt
+      .split(/, o /i)
+      .map((entry) => entry.trim().replace(/^[Oo]\s+/, '').trim())
+      .filter((entry) => entry.length > 0);
+
+    const normalizedCategories: string[] = [];
+    const unrecognized: string[] = [];
+    for (const rawCategory of rawCategories) {
+      const normalized = normalizeCategory(rawCategory, library);
+      if (!normalized) {
+        unrecognized.push(rawCategory);
+        continue;
+      }
+      normalizedCategories.push(normalized);
+    }
+
+    const expectedSet = new Set(library.categories);
+    const seenSet = new Set(normalizedCategories);
+    const missing = library.categories.filter((category) => !seenSet.has(category));
+    const unexpected = normalizedCategories.filter((category) => !expectedSet.has(category));
+
+    if (
+      unrecognized.length > 0 ||
+      missing.length > 0 ||
+      unexpected.length > 0 ||
+      normalizedCategories.length !== library.categories.length
+    ) {
+      const messages: string[] = [];
+      if (unrecognized.length > 0) {
+        messages.push(
+          `Nie rozpoznano kategorii: ${unrecognized.join(', ')}.`,
+        );
+      }
+      if (missing.length > 0) {
+        messages.push(`Brakuje kategorii: ${missing.join(', ')}.`);
+      }
+      if (unexpected.length > 0) {
+        messages.push(`Nieoczekiwane kategorie: ${unexpected.join(', ')}.`);
+      }
+      messages.push('Prosze zglosic to do developera.');
+      client.println(messages.join('\n'));
+      console.warn('Knowledge prompt mismatch', {
+        categoriesText,
+        rawCategories,
+        unrecognized,
+        missing,
+        unexpected,
+      });
+      return;
+    }
+
     const characterKey = getCharacterProgressKey();
     const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
     const libraryProgress = characterProgress[libraryId] ?? {};
-    const header = colorString(library.name, HEADER_COLOR);
-    const lines = library.categories.map((category) => {
-      const status =
-        libraryProgress[category] ??
-        'not_started';
-      return ` - ${formatCategory(client, category, status)}`;
-    });
 
-    client.println([header, ...lines].join('\n'));
+    printLibraryCategories(library, libraryProgress, library.categories);
+  }
+
+  function showLibraryCategories() {
+    if (!currentSnapshot) {
+      client.println('Dane wiedzy nie sa jeszcze dostepne.');
+      return;
+    }
+
+    const context = getActiveLibraryContext();
+    if (!context) {
+      if (!currentLibraryId) {
+        client.println('Nie jestes w bibliotece.');
+        return;
+      }
+
+      client.println('Brak danych o tej bibliotece.');
+      return;
+    }
+
+    printLibraryCategories(
+      context.library,
+      context.libraryProgress,
+      context.library.categories,
+    );
   }
 
   aliasList.push({ pattern: /\/zglebiaj$/, callback: showLibraryCategories });
