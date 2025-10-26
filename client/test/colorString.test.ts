@@ -1,8 +1,11 @@
 import { colorStringInLine } from '../src/Colors';
+import TriggerLine from '../src/triggers/TriggerLine';
 
 describe('colorString', () => {
   test('returns input when substring missing', () => {
-    const input = 'some text';
-    expect(colorStringInLine(input, 'missing', 1)).toBe(input);
+    const input = new TriggerLine('some text');
+    const result = colorStringInLine(input, 'missing', 1);
+    expect(result).toBe(input);
+    expect(result.toAnsiString()).toBe('some text');
   });
 });

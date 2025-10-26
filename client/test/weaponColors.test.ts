@@ -20,15 +20,16 @@ describe('weapon colors trigger', () => {
   test('colors single weapon', () => {
     const line = 'Trzymasz oburacz stalowy miecz.';
     const result = parse(line);
-    const expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR);
+    const expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR).toAnsiString();
     expect(stripAnsiCodes(result)).toBe(line);
     expect(result).toBe(expected);
   });
 
   test('colors two weapons', () => {
     const line = 'Trzymasz stalowy miecz w lewej rece oraz drewniana tarcze w prawej rece.';
-    let expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR);
-    expected = colorStringInLine(expected, 'drewniana tarcze', WEAPON_COLOR);
+    let expectedLine = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR);
+    expectedLine = colorStringInLine(expectedLine, 'drewniana tarcze', WEAPON_COLOR);
+    const expected = expectedLine.toAnsiString();
     const result = parse(line);
     expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));
     expect(result).toBe(expected);
@@ -39,8 +40,9 @@ describe('weapon colors trigger', () => {
     const weapon = 'zebaty szeroki noz bojowy';
     const firstIndex = line.indexOf(weapon);
     const secondIndex = line.indexOf(weapon, firstIndex + weapon.length);
-    let expected = colorStringInLine(line, weapon, WEAPON_COLOR, secondIndex);
-    expected = colorStringInLine(expected, weapon, WEAPON_COLOR, firstIndex);
+    let expectedLine = colorStringInLine(line, weapon, WEAPON_COLOR, secondIndex);
+    expectedLine = colorStringInLine(expectedLine, weapon, WEAPON_COLOR, firstIndex);
+    const expected = expectedLine.toAnsiString();
     const result = parse(line);
     expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));
     expect(result).toBe(expected);
@@ -58,8 +60,8 @@ describe('weapon colors trigger', () => {
     const line = 'Trzymasz stalowy miecz w lewej rece oraz drewniana tarcze w prawej rece.';
     const magicColoredWeapon = color(MAGICS_COLOR) + 'stalowy miecz' + RESET;
     const precolored = line.replace('stalowy miecz', magicColoredWeapon);
-    let expected = precolored;
-    expected = colorStringInLine(expected, 'drewniana tarcze', WEAPON_COLOR);
+    let expectedLine = colorStringInLine(precolored, 'drewniana tarcze', WEAPON_COLOR);
+    const expected = expectedLine.toAnsiString();
     const result = parse(precolored);
     expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));
     expect(result).toBe(expected);
@@ -68,7 +70,7 @@ describe('weapon colors trigger', () => {
   test('colors weapon in scabbard', () => {
     const line = 'Masz do pasa przypieta pochwe, zawierajaca stalowy miecz.';
     const result = parse(line);
-    const expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR);
+    const expected = colorStringInLine(line, 'stalowy miecz', WEAPON_COLOR).toAnsiString();
     expect(stripAnsiCodes(result)).toBe(line);
     expect(result).toBe(expected);
   });
@@ -76,7 +78,7 @@ describe('weapon colors trigger', () => {
   test('colors weapon stuck in scabbard', () => {
     const line = 'Masz do pasa przypieta pochwe z tkwiacym w niej stalowym mieczem.';
     const result = parse(line);
-    const expected = colorStringInLine(line, 'stalowym mieczem', WEAPON_COLOR);
+    const expected = colorStringInLine(line, 'stalowym mieczem', WEAPON_COLOR).toAnsiString();
     expect(stripAnsiCodes(result)).toBe(line);
     expect(result).toBe(expected);
   });

@@ -20,9 +20,9 @@ describe('magic keys', () => {
         const pattern = call[0];
         const callback = call[1];
         const sentence = 'to jest alpha w zdaniu';
-        expect(callback(sentence, sentence, {} as any)).toBe(colorTokenInLine(sentence, pattern, KEYS_COLOR));
+        expect(callback(sentence, sentence, {} as any).toAnsiString()).toBe(colorTokenInLine(sentence, pattern, KEYS_COLOR).toAnsiString());
 
         const titleCase = 'Alpha pojawila sie w zdaniu';
-        expect(callback(titleCase, titleCase, {} as any)).toBe(colorTokenInLine(titleCase, pattern, KEYS_COLOR));
+        expect(callback(titleCase, titleCase, {} as any).toAnsiString()).toBe(colorTokenInLine(titleCase, pattern, KEYS_COLOR).toAnsiString());
     });
 });

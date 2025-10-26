@@ -2,6 +2,7 @@ import xtermArkadia from "./xtermArkadia";
 import xtermProper from "./xtermProper";
 import mudletColors from "./colors.json";
 import { getItemSync } from "./storage";
+import TriggerLine from "./triggers/TriggerLine";
 
 function hexToRgb(hex: string): [number, number, number] {
     const value = parseInt(hex.replace(/^#/, ''), 16);
@@ -45,21 +46,36 @@ export function colorString(string: string, colorCode: number) {
     return color(colorCode) + string + RESET;
 }
 
-export function colorStringInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.indexOf(string, startIndex)
+export function colorStringInLine(
+    rawLine: TriggerLine | string,
+    string: string,
+    colorCode: number,
+    startIndex = 0,
+): TriggerLine {
+    const triggerLine = rawLine instanceof TriggerLine ? rawLine : new TriggerLine(rawLine);
+    const text = triggerLine.text;
+    const matchIndex = text.indexOf(string, startIndex);
     if (matchIndex === -1) {
-        return rawLine
+        return triggerLine;
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + string + RESET + rawLine.substring(matchIndex + string.length)
+    return triggerLine.color([matchIndex, matchIndex + string.length], colorCode);
 }
 
-export function colorTokenInLine(rawLine: string, string: string, colorCode: number, startIndex = 0) {
-    const matchIndex = rawLine.toLowerCase().indexOf(string, startIndex)
-    const endIndex = matchIndex + string.length
+export function colorTokenInLine(
+    rawLine: TriggerLine | string,
+    string: string,
+    colorCode: number,
+    startIndex = 0,
+): TriggerLine {
+    const triggerLine = rawLine instanceof TriggerLine ? rawLine : new TriggerLine(rawLine);
+    const haystack = triggerLine.text.toLowerCase();
+    const needle = string.toLowerCase();
+    const matchIndex = haystack.indexOf(needle, startIndex);
     if (matchIndex === -1) {
-        return rawLine
+        return triggerLine;
     }
-    return rawLine.substring(0, matchIndex) + color(colorCode) + rawLine.substring(matchIndex, endIndex) + RESET + rawLine.substring(endIndex)
+    const endIndex = matchIndex + string.length;
+    return triggerLine.color([matchIndex, endIndex], colorCode);
 }
 
 export function findClosestColor(hex: string | number[]): number {

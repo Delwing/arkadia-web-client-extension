@@ -20,9 +20,9 @@ describe('coin colors trigger', () => {
   test('colors coins in receive sentence', () => {
     const line = 'Otrzymujesz 11 zlotych, 15 srebrnych i 8 miedzianych monet.';
     const result = parse(line);
-    const gold = colorStringInLine('11 zlotych', '11 zlotych', GOLD_COLOR);
-    const silver = colorStringInLine('15 srebrnych', '15 srebrnych', SILVER_COLOR);
-    const copper = colorStringInLine('8 miedzianych', '8 miedzianych', COPPER_COLOR);
+    const gold = colorStringInLine('11 zlotych', '11 zlotych', GOLD_COLOR).toAnsiString();
+    const silver = colorStringInLine('15 srebrnych', '15 srebrnych', SILVER_COLOR).toAnsiString();
+    const copper = colorStringInLine('8 miedzianych', '8 miedzianych', COPPER_COLOR).toAnsiString();
     expect(result).toContain(gold);
     expect(result).toContain(silver);
     expect(result).toContain(copper);
@@ -32,8 +32,8 @@ describe('coin colors trigger', () => {
   test('does not color words without following monety', () => {
     const line = 'Masz 10 srebrnych monet i zlote.';
     const result = parse(line);
-    const silver = colorStringInLine('10 srebrnych', '10 srebrnych', SILVER_COLOR);
-    const gold = colorStringInLine('zlote', 'zlote', GOLD_COLOR);
+    const silver = colorStringInLine('10 srebrnych', '10 srebrnych', SILVER_COLOR).toAnsiString();
+    const gold = colorStringInLine('zlote', 'zlote', GOLD_COLOR).toAnsiString();
     expect(result).toContain(silver);
     expect(result).toContain(' i zlote.');
     expect(result).not.toContain(gold);
