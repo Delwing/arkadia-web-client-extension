@@ -112,7 +112,7 @@ export function registerScripts(client: Client) {
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
         const candidate = tokenized[tokenized.length - 2]
-        const direction = candidate == "na" ? tokenized[tokenized.length - 1] : candidate;
+        const direction = candidate == "na" || candidate == "przez" ? tokenized[tokenized.length - 1] : candidate;
         client.Map.followMove(direction)
     }, 'follow')
 
