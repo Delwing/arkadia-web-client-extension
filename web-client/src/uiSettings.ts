@@ -153,6 +153,8 @@ function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: s
         return '"Fira Code", monospace';
     case 'jetbrains-mono':
         return '"JetBrains Mono", monospace';
+    case 'cascadia-mono':
+        return '"Cascadia Mono", monospace';
     case 'custom': {
         const trimmed = customFontFamily.trim();
         if (!trimmed) {

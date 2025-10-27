@@ -1,14 +1,19 @@
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'custom';
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
 
-const fontStylesheets: Record<'fira-code' | 'jetbrains-mono', string> = {
+const fontStylesheets: Record<'fira-code' | 'jetbrains-mono' | 'cascadia-mono', string> = {
     'fira-code': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap',
     'jetbrains-mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+    'cascadia-mono': 'https://fonts.googleapis.com/css2?family=Cascadia+Mono:wght@400;500;600;700&display=swap',
 };
 
 const loadedFonts = new Map<UiFontSelection, string>();
 
 export function isUiFontSelection(value: unknown): value is UiFontSelection {
-    return value === 'default' || value === 'fira-code' || value === 'jetbrains-mono' || value === 'custom';
+    return value === 'default'
+        || value === 'fira-code'
+        || value === 'jetbrains-mono'
+        || value === 'cascadia-mono'
+        || value === 'custom';
 }
 
 export function ensureFontLoaded(selection: UiFontSelection, customHref?: string) {
