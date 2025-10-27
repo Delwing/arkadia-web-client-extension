@@ -21,10 +21,12 @@ export default class Recorder {
     private playbackTimeout: number | null = null;
     private playbackIndex = 0;
     private playbackDelay = 0;
+    private playbackBaseDelay = 0;
     private playbackStart = 0;
     private pausedDelay = 0;
     private isPlaying = false;
     private paused = false;
+    private playbackSpeed = 1;
 
     constructor(private hooks: RecorderHooks) {
     }
@@ -88,6 +90,9 @@ export default class Recorder {
         this.isPlaying = false;
         this.paused = false;
         this.playbackIndex = 0;
+        this.playbackDelay = 0;
+        this.playbackBaseDelay = 0;
+        this.pausedDelay = 0;
         this.hooks.emit('playback.stop');
     }
 
@@ -96,7 +101,12 @@ export default class Recorder {
         if (this.playbackTimeout !== null) {
             clearTimeout(this.playbackTimeout);
             this.playbackTimeout = null;
-            this.pausedDelay = Math.max(0, this.playbackDelay - (Date.now() - this.playbackStart));
+            const elapsed = Date.now() - this.playbackStart;
+            const elapsedBase = elapsed * this.playbackSpeed;
+            const remainingBase = Math.max(0, this.playbackBaseDelay - elapsedBase);
+            this.pausedDelay = remainingBase;
+        } else {
+            this.pausedDelay = 0;
         }
         this.paused = true;
         this.hooks.emit('playback.pause');
@@ -105,7 +115,7 @@ export default class Recorder {
     resumePlayback() {
         if (!this.isPlaying || !this.paused) return;
         this.paused = false;
-        this.scheduleNext(this.pausedDelay);
+        this.scheduleNext(this.pausedDelay, true);
         this.hooks.emit('playback.resume');
     }
 
@@ -185,6 +195,35 @@ export default class Recorder {
         this.scheduleNext(0);
     }
 
+    setPlaybackSpeed(speed: number) {
+        const normalized = Number.isFinite(speed) && speed > 0 ? speed : 1;
+        const previousSpeed = this.playbackSpeed;
+        if (previousSpeed === normalized) {
+            this.hooks.emit('playback.speed', this.playbackSpeed);
+            return;
+        }
+        this.playbackSpeed = normalized;
+
+        if (this.isPlaying) {
+            if (this.paused) {
+                // pausedDelay already stores the base delay until the next event
+            } else if (this.playbackTimeout !== null) {
+                const elapsed = Date.now() - this.playbackStart;
+                const elapsedBase = elapsed * previousSpeed;
+                const remainingBase = Math.max(0, this.playbackBaseDelay - elapsedBase);
+                clearTimeout(this.playbackTimeout);
+                this.playbackTimeout = null;
+                this.scheduleNext(remainingBase, true);
+            }
+        }
+
+        this.hooks.emit('playback.speed', this.playbackSpeed);
+    }
+
+    getPlaybackSpeed() {
+        return this.playbackSpeed;
+    }
+
     private playEvent(ev: RecordedEvent) {
         const timestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
         if (ev.direction === 'in') {
@@ -251,7 +290,7 @@ export default class Recorder {
         this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
     }
 
-    private scheduleNext(initialDelay: number) {
+    private scheduleNext(initialDelay: number, overrideDelay = false) {
         if (!this.isPlaying) return;
         const ev = this.recordedMessages[this.playbackIndex];
         if (!ev) {
@@ -259,15 +298,27 @@ export default class Recorder {
             this.stopPlayback();
             return;
         }
-        const delay = this.playbackIndex === 0 ? initialDelay :
-            this.recordedMessages[this.playbackIndex].timestamp - this.recordedMessages[this.playbackIndex - 1].timestamp;
-        this.playbackDelay = delay;
+        let baseDelay: number;
+        if (this.playbackIndex === 0 || overrideDelay) {
+            baseDelay = initialDelay;
+        } else {
+            const currentTimestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
+            const previous = this.recordedMessages[this.playbackIndex - 1];
+            const previousTimestamp = typeof previous?.timestamp === 'number' ? previous.timestamp : currentTimestamp;
+            baseDelay = currentTimestamp - previousTimestamp;
+        }
+        if (!Number.isFinite(baseDelay) || baseDelay < 0) {
+            baseDelay = 0;
+        }
+        const adjustedDelay = baseDelay / this.playbackSpeed;
+        this.playbackBaseDelay = baseDelay;
+        this.playbackDelay = adjustedDelay;
         this.playbackStart = Date.now();
         this.playbackTimeout = window.setTimeout(() => {
             if (!this.isPlaying || this.paused) return;
             this.executeCurrent();
             this.scheduleNext(0);
-        }, delay);
+        }, Math.max(0, adjustedDelay));
     }
 }
 

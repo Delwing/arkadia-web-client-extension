@@ -20,6 +20,19 @@ describe('Recorder playback', () => {
     expect(hooks.emit).toHaveBeenCalledWith('message', '→ look', undefined, 0);
   });
 
+  test('setPlaybackSpeed emits playback.speed event', () => {
+    const hooks = {
+      processIncomingData: jest.fn(),
+      sendCommand: jest.fn(),
+      emit: jest.fn(),
+      getCurrentMapLocation: jest.fn(),
+      setMapLocationSilently: jest.fn(),
+    };
+    const recorder = new Recorder(hooks as any);
+    recorder.setPlaybackSpeed(2);
+    expect(hooks.emit).toHaveBeenCalledWith('playback.speed', 2);
+  });
+
   test('stores start location and applies it once during playback', async () => {
     const getCurrentMapLocation = jest.fn()
       .mockReturnValueOnce(3525)

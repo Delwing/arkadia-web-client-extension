@@ -1917,6 +1917,33 @@ h1 {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
+.playback-speed-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.85rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.playback-speed-controls .btn {
+  border-radius: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.35rem 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.playback-speed-controls .btn.is-active {
+  opacity: 1;
+}
+
+.playback-speed-controls .btn:hover {
+  opacity: 1;
+}
+
 .playback-controls-actions .btn {
   border-radius: 0.75rem;
   font-size: 0.75rem;

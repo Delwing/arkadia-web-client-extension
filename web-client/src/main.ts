@@ -481,6 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const playbackReplay = document.getElementById('playback-replay') as HTMLButtonElement | null;
     const playbackStepBack = document.getElementById('playback-step-back') as HTMLButtonElement | null;
     const playbackStep = document.getElementById('playback-step') as HTMLButtonElement | null;
+    const playbackSpeedButtons = playbackControls
+        ? Array.from(playbackControls.querySelectorAll<HTMLButtonElement>('[data-playback-speed]'))
+        : [];
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
@@ -761,6 +764,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const updatePlaybackSpeedButtons = (speed: number) => {
+        playbackSpeedButtons.forEach(button => {
+            const value = Number(button.dataset.playbackSpeed);
+            if (Number.isFinite(value) && value > 0 && Math.abs(value - speed) < 0.001) {
+                button.classList.add('is-active');
+            } else {
+                button.classList.remove('is-active');
+            }
+        });
+    };
+
+    playbackSpeedButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const value = Number(button.dataset.playbackSpeed);
+            if (!Number.isFinite(value) || value <= 0) return;
+            arkadiaClient.setPlaybackSpeed(value);
+        });
+    });
+
+    updatePlaybackSpeedButtons(arkadiaClient.getPlaybackSpeed());
+
     if (playbackControls) {
         const dragTarget =
             (playbackControls.querySelector('[data-drag-handle]') as HTMLElement | null) ?? playbackControls;
@@ -844,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playbackControls) playbackControls.style.display = 'flex';
         if (playbackInfo) playbackInfo.textContent = `0 / ${total}`;
         if (playbackPause) playbackPause.textContent = 'Pause';
+        updatePlaybackSpeedButtons(arkadiaClient.getPlaybackSpeed());
         updateConnectButtons();
     });
 
@@ -863,6 +888,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     arkadiaClient.on('playback.index', (index: number, total: number) => {
         if (playbackInfo) playbackInfo.textContent = `${index} / ${total}`;
+    });
+
+    arkadiaClient.on('playback.speed', (speed: number) => {
+        updatePlaybackSpeedButtons(speed);
     });
 
     if (wakeLockButton) {
