@@ -38,6 +38,19 @@ html, body {
   font-family: "Open Sans", sans-serif;
 }
 
+body[data-ui-font='default'],
+body:not([data-ui-font]) {
+  font-family: "Open Sans", sans-serif;
+}
+
+body[data-ui-font='fira-code'] {
+  font-family: "Fira Code", monospace;
+}
+
+body[data-ui-font='jetbrains-mono'] {
+  font-family: "JetBrains Mono", monospace;
+}
+
 a {
   font-weight: 500;
   color: #646cff;

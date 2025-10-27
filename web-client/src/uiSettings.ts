@@ -1,5 +1,6 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 
 const mapPositions = [
     'top-overlay',
@@ -35,6 +36,7 @@ export interface UiSettings {
     outputBackground: string;
     clearInputOnSend: boolean;
     showTransportLabel: boolean;
+    fontFamily: UiFontSelection;
 }
 
 const defaultSettings: UiSettings = {
@@ -58,9 +60,11 @@ const defaultSettings: UiSettings = {
     outputBackground: '#242424',
     clearInputOnSend: false,
     showTransportLabel: true,
+    fontFamily: 'default',
 };
 
 function apply(settings: UiSettings) {
+    ensureFontLoaded(settings.fontFamily);
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -68,6 +72,7 @@ function apply(settings: UiSettings) {
     }
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
+        document.body.dataset.uiFont = settings.fontFamily;
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
@@ -198,6 +203,9 @@ async function load(): Promise<UiSettings> {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultSettings.outputBackground;
+            const fontFamily = isUiFontSelection(parsed.fontFamily)
+                ? parsed.fontFamily
+                : defaultSettings.fontFamily;
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultSettings.clearInputOnSend;
@@ -222,6 +230,7 @@ async function load(): Promise<UiSettings> {
                 outputBackground,
                 clearInputOnSend,
                 showTransportLabel,
+                fontFamily,
             };
         }
     } catch {
@@ -262,6 +271,7 @@ export default async function initUiSettings() {
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
+    const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -285,6 +295,7 @@ export default async function initUiSettings() {
     outputBackgroundInput.value = current.outputBackground;
     clearInputOnSendInput.checked = current.clearInputOnSend;
     showTransportLabelInput.checked = current.showTransportLabel;
+    fontFamilyInput.value = current.fontFamily;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -365,6 +376,7 @@ export default async function initUiSettings() {
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
             showTransportLabel: showTransportLabelInput.checked,
+            fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultSettings.fontFamily,
         };
     }
 
