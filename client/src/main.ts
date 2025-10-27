@@ -112,9 +112,14 @@ export function registerScripts(client: Client) {
 
     client.Triggers.registerTrigger(/^.*[pP]odazasz (|skradajac sie )za (.*)\.$/, (_, __, matches): undefined => {
         const tokenized = matches[2].split(' ')
-        const candidate = tokenized[tokenized.length - 2]
-        const direction = candidate == "na" || candidate == "przez" ? tokenized[tokenized.length - 1] : candidate;
-        client.Map.followMove(direction)
+
+        for (let i = 1; i < tokenized.length - 1; i++) {
+            const candidate = tokenized[tokenized.length - i]
+            const result = client.Map.followMove(candidate)
+            if (result) {
+                return
+            }
+        }
     }, 'follow')
 
     client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
