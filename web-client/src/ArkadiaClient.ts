@@ -82,6 +82,7 @@ class ArkadiaClient implements ClientAdapter {
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
+                    if (event.data.length === 0) return;
                     const decodedData = this.inflate(atob(event.data));
                     this.processIncomingData(decodedData);
                     this.recordIncoming(decodedData);
@@ -139,8 +140,6 @@ class ArkadiaClient implements ClientAdapter {
                 for (let i = 0; i < length; i++) {
                     decodedData += String.fromCharCode(decompressed[i]);
                 }
-                this.readInflator.chunks = []
-                this.readInflator.ended = false;
             } catch (error) {
                 console.log("MCCP decompression error: " + error.message);
             }
@@ -276,9 +275,9 @@ class ArkadiaClient implements ClientAdapter {
      */
     private processIncomingData(data: string, options?: { timestamp?: number }) {
         const mccp = this.mccp;
-        const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler).trim();
+        const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler)
         if (leftOver.replace(/[ÿù]/g, "").length > 0 && this.mccp !== mccp) {
-            const deflated = this.inflate(leftOver);
+            const deflated = this.inflate(data.substring(5));
             this.processIncomingData(deflated, options);
             return;
         }
@@ -295,7 +294,7 @@ class ArkadiaClient implements ClientAdapter {
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-            //this.telnetNegotiator.parseOptionNegotiation(optionData)
+            this.telnetNegotiator.parseOptionNegotiation(optionData)
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
@@ -562,7 +561,7 @@ class ArkadiaClient implements ClientAdapter {
         return null;
     }
 
-    async getRecordingSnapshot(name: string, options?: {recentMs?: number}): Promise<RecordedEvent[] | null> {
+    async getRecordingSnapshot(name: string, options?: { recentMs?: number }): Promise<RecordedEvent[] | null> {
         const recorder = this.findRecorderByName(name);
         if (recorder) {
             if (options?.recentMs) {
