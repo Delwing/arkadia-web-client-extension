@@ -344,8 +344,9 @@ class ArkadiaClient implements ClientAdapter {
                     this.maybeStartAutoRecording();
                 }
                 if (type === "gmcp_msgs") {
-                    let text = atob(gmcp.text)
-                    this.messageBuffer.push({text, type: gmcp.type})
+                    const text = this.decodeBase64Text(gmcp.text ?? "");
+                    const messageType = typeof gmcp.type === "string" && gmcp.type.length ? gmcp.type : "other";
+                    this.messageBuffer.push({ text, type: messageType });
                 } else if (type === "client.conf.get") {
                     const data = JSON.parse(uncompress(gmcp.data))
                     const filename = gmcp.filename
@@ -587,6 +588,40 @@ class ArkadiaClient implements ClientAdapter {
             console.error('Failed to read recording snapshot:', error);
             return null;
         }
+    }
+
+    private decodeBase64Text(data: string): string {
+        if (typeof data !== "string" || data.length === 0) {
+            return "";
+        }
+
+        try {
+            if (typeof globalThis.atob === "function") {
+                const binary = globalThis.atob(data);
+                if (typeof TextDecoder !== "undefined") {
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) {
+                        bytes[i] = binary.charCodeAt(i);
+                    }
+                    return new TextDecoder().decode(bytes);
+                }
+
+                let result = "";
+                for (let i = 0; i < binary.length; i++) {
+                    result += String.fromCharCode(binary.charCodeAt(i));
+                }
+                return result;
+            }
+
+            const bufferCtor = (globalThis as any).Buffer as { from(data: string, encoding: string): { toString(encoding: string): string } } | undefined;
+            if (bufferCtor) {
+                return bufferCtor.from(data, "base64").toString("utf-8");
+            }
+        } catch (error) {
+            console.error("Error decoding base64 GMCP text:", error);
+        }
+
+        return data;
     }
 
     private findRecorderByName(name: string) {
