@@ -1,5 +1,5 @@
 import Client from '../Client';
-import { colorString, findClosestColor } from '../Colors';
+import { color, colorString, findClosestColor, RESET } from '../Colors';
 import {
   DEFAULT_KNOWLEDGE_CHARACTER_KEY,
   getKnowledgeStore,
@@ -10,11 +10,15 @@ import {
 } from '../dataStores/knowledgeStore';
 import {
   buildNormalizedDefinitions,
+  canonicalizeKnowledgeEntryGender,
   formatKnowledgeEntryForGender,
   getKnowledgeDetailsStore,
   KnowledgeCharacterGender,
+  KnowledgeCharacterProgress,
   KnowledgeDetailsSnapshot,
   KnowledgeDetailsType,
+  KnowledgeEntriesMap,
+  KnowledgeCategoryProgress,
   KNOWLEDGE_DETAILS_TYPES,
   parseKnowledgeGender,
 } from '../dataStores/knowledgeDetailsStore';
@@ -27,6 +31,7 @@ import {
 } from '../knowledgeCategories';
 import { getCurrentCharacter } from '../storage';
 import { stripPolishCharacters } from '../stripPolishCharacters';
+import TriggerLine from '../triggers/TriggerLine';
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
@@ -37,6 +42,14 @@ const STATUS_COLORS: Record<KnowledgeCategoryStatus, number> = {
 };
 
 const HEADER_COLOR = findClosestColor('#7cfc00');
+const KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR = findClosestColor('#ffe066');
+const KNOWLEDGE_ENTRY_TRIGGER_TAG = 'knowledge-entry-triggers';
+
+type KnowledgeEntryTriggerTarget = {
+  category: KnowledgeCategoryBaseName;
+  type: KnowledgeDetailsType;
+  canonical: string;
+};
 
 const START_LIBRARY_PATTERN =
   /^Zaczynasz zglebiac tutejsze zasoby, probujac dowiedziec sie czegos wiecej o (.*)\.$/;
@@ -175,6 +188,36 @@ function createEmptyKnowledgeRunCategoryState(): KnowledgeRunCategoryState {
     knownEntries: createKnowledgeRunSets(),
     unknownEntries: createKnowledgeRunSets(),
   };
+}
+
+function ensureKnowledgeEntriesMap(value?: KnowledgeEntriesMap | null): KnowledgeEntriesMap {
+  const fight = value && Array.isArray(value.fight) ? [...value.fight] : [];
+  const books = value && Array.isArray(value.books) ? [...value.books] : [];
+  const exploration = value && Array.isArray(value.exploration) ? [...value.exploration] : [];
+
+  return {
+    fight,
+    books,
+    exploration,
+  };
+}
+
+function ensureKnowledgeLevels(
+  levels: Partial<Record<KnowledgeDetailsType, string>> | undefined,
+): Partial<Record<KnowledgeDetailsType, string>> {
+  if (!levels || typeof levels !== 'object') {
+    return {};
+  }
+
+  const result: Partial<Record<KnowledgeDetailsType, string>> = {};
+  for (const type of KNOWLEDGE_DETAILS_TYPES) {
+    const value = levels[type];
+    if (typeof value === 'string') {
+      result[type] = value;
+    }
+  }
+
+  return result;
 }
 
 function sanitizeStringArray(value: unknown): string[] {
@@ -565,6 +608,204 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     trigger: ReturnType<typeof client.Triggers.registerOneTimeTrigger>;
     timeoutId: number;
   } | null = null;
+  const pendingEntryUpdates: KnowledgeEntryTriggerTarget[] = [];
+
+  function markKnowledgeEntryKnown(
+    category: KnowledgeCategoryBaseName,
+    type: KnowledgeDetailsType,
+    entry: string,
+  ) {
+    const canonical = canonicalizeKnowledgeEntryGender(entry);
+    const normalized = normalizeKnowledgeEntry(canonical);
+    if (normalized.length === 0) {
+      return;
+    }
+
+    if (!knowledgeDetailsSnapshot) {
+      const alreadyQueued = pendingEntryUpdates.some(
+        (update) =>
+          update.category === category &&
+          update.type === type &&
+          normalizeKnowledgeEntry(update.canonical) === normalized,
+      );
+      if (!alreadyQueued) {
+        pendingEntryUpdates.push({ category, type, canonical });
+      }
+      return;
+    }
+
+    const timestamp = Date.now();
+    const characterKey = getCharacterProgressKey();
+
+    void detailsStore
+      .applyLocalChange((snapshot) => {
+        const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
+        const definitions = baseSnapshot.data.definitions;
+        if (!definitions?.[category]) {
+          return baseSnapshot;
+        }
+
+        const nextProgress = { ...baseSnapshot.data.progress };
+        const previousCharacterProgress =
+          (nextProgress[characterKey] as KnowledgeCharacterProgress | undefined) ?? {};
+        const characterProgress: KnowledgeCharacterProgress = { ...previousCharacterProgress };
+        const previousCategory = characterProgress[category];
+
+        const entriesMap = ensureKnowledgeEntriesMap(previousCategory?.entries);
+        const unknownMap = ensureKnowledgeEntriesMap(previousCategory?.unknownEntries);
+        const levels = ensureKnowledgeLevels(previousCategory?.levels);
+
+        const knownList = entriesMap[type];
+        let changed = false;
+
+        if (!knownList.some((value) => normalizeKnowledgeEntry(value) === normalized)) {
+          knownList.push(canonical);
+          changed = true;
+        }
+
+        const unknownList = unknownMap[type];
+        const filteredUnknown = unknownList.filter(
+          (value) => normalizeKnowledgeEntry(value) !== normalized,
+        );
+
+        if (filteredUnknown.length !== unknownList.length) {
+          unknownMap[type] = filteredUnknown;
+          changed = true;
+        }
+
+        if (!changed) {
+          return baseSnapshot;
+        }
+
+        const nextCategory: KnowledgeCategoryProgress = {
+          entries: entriesMap,
+          unknownEntries: unknownMap,
+          levels,
+          updatedAt: timestamp,
+        };
+
+        characterProgress[category] = nextCategory;
+        nextProgress[characterKey] = characterProgress;
+
+        return {
+          ...baseSnapshot,
+          data: {
+            ...baseSnapshot.data,
+            progress: nextProgress,
+          },
+        };
+      })
+      .catch((error) => {
+        console.error('Failed to mark knowledge entry as known:', error);
+      });
+  }
+
+  function addEntryVariant(
+    variants: Map<string, KnowledgeEntryTriggerTarget[]>,
+    variant: string,
+    target: KnowledgeEntryTriggerTarget,
+  ) {
+    const trimmed = variant.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+
+    const existing = variants.get(trimmed);
+    if (existing) {
+      const alreadyPresent = existing.some(
+        (entry) =>
+          entry.category === target.category &&
+          entry.type === target.type &&
+          normalizeKnowledgeEntry(entry.canonical) === normalizeKnowledgeEntry(target.canonical),
+      );
+      if (!alreadyPresent) {
+        existing.push(target);
+      }
+      return;
+    }
+
+    variants.set(trimmed, [target]);
+  }
+
+  function registerKnowledgeEntryTriggers(snapshot: KnowledgeDetailsSnapshot | undefined) {
+    client.Triggers.removeByTag(KNOWLEDGE_ENTRY_TRIGGER_TAG);
+
+    if (!snapshot) {
+      return;
+    }
+
+    const variantMap = new Map<string, KnowledgeEntryTriggerTarget[]>();
+
+    for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
+      const definition = snapshot.data.definitions[config.base];
+      if (!definition) {
+        continue;
+      }
+
+      for (const type of KNOWLEDGE_DETAILS_TYPES) {
+        const entries = definition[type] ?? [];
+        for (const entry of entries) {
+          if (typeof entry !== 'string') {
+            continue;
+          }
+
+          const canonical = canonicalizeKnowledgeEntryGender(entry);
+          if (canonical.trim().length === 0) {
+            continue;
+          }
+
+          const target: KnowledgeEntryTriggerTarget = {
+            category: config.base,
+            type,
+            canonical,
+          };
+
+          addEntryVariant(variantMap, canonical, target);
+          const femaleVariant = formatKnowledgeEntryForGender(canonical, 'female');
+          if (femaleVariant !== canonical) {
+            addEntryVariant(variantMap, femaleVariant, target);
+          }
+        }
+      }
+    }
+
+    for (const [token, targets] of variantMap.entries()) {
+      client.Triggers.registerTokenTrigger(
+        token,
+        (rawLine, line, matches, _type, triggerLine) => {
+          if (!matches) {
+            return triggerLine ? undefined : rawLine;
+          }
+
+          const tokenText = matches[0];
+          if (!tokenText) {
+            return triggerLine ? undefined : rawLine;
+          }
+
+          const startIndex =
+            typeof matches.index === 'number' && matches.index >= 0
+              ? matches.index
+              : line.indexOf(tokenText);
+
+          const lineInstance = triggerLine ?? new TriggerLine(rawLine);
+          if (startIndex >= 0) {
+            const endIndex = startIndex + tokenText.length;
+            lineInstance.replace(
+              [startIndex, endIndex],
+              color(KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR) + tokenText + RESET,
+            );
+          }
+
+          for (const target of targets) {
+            markKnowledgeEntryKnown(target.category, target.type, target.canonical);
+          }
+
+          return lineInstance;
+        },
+        KNOWLEDGE_ENTRY_TRIGGER_TAG,
+      );
+    }
+  }
 
   function getCharacterProgressKey(): string {
     const current = getCurrentCharacter();
@@ -633,6 +874,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
   detailsStore.subscribe((snapshot) => {
     knowledgeDetailsSnapshot = snapshot ?? undefined;
+
+    registerKnowledgeEntryTriggers(knowledgeDetailsSnapshot);
+
+    if (knowledgeDetailsSnapshot && pendingEntryUpdates.length > 0) {
+      const queued = pendingEntryUpdates.splice(0, pendingEntryUpdates.length);
+      for (const update of queued) {
+        markKnowledgeEntryKnown(update.category, update.type, update.canonical);
+      }
+    }
 
     if (!pendingGenderUpdate || !knowledgeDetailsSnapshot) {
       if (knowledgeDetailsSnapshot && pendingGenderUpdate) {

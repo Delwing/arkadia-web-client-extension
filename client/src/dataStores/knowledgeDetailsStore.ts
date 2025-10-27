@@ -134,28 +134,6 @@ MALE_TO_FEMALE_ENTRY_PREFIX.forEach((female, male) => {
   FEMALE_TO_MALE_ENTRY_PREFIX.set(female, male);
 });
 
-const FEMALE_GENDER_VALUES = new Set<string>([
-  'f',
-  'female',
-  'kobieta',
-  'kobiet',
-  'kobiety',
-  'kobieta?',
-  'woman',
-  'pani',
-  'k',
-]);
-
-const MALE_GENDER_VALUES = new Set<string>([
-  'm',
-  'male',
-  'mezczyzna',
-  'mezczyzn',
-  'mezczyzny',
-  'man',
-  'pan',
-]);
-
 function replaceGenderedPrefix(
   value: string,
   replacements: Map<string, string>,
@@ -187,39 +165,22 @@ export function formatKnowledgeEntryForGender(
 
 export function parseKnowledgeGender(value: unknown): KnowledgeCharacterGender | null {
   const candidate =
-    typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    typeof value === 'string'
       ? value
       : value && typeof value === 'object'
-      ? (value as Record<string, unknown>).gender ??
-        (value as Record<string, unknown>).sex ??
-        (value as Record<string, unknown>).Gender ??
-        (value as Record<string, unknown>).Sex
-      : undefined;
+      ? (value as Record<string, unknown>).gender
+      : null;
 
-  if (candidate == null) {
+  if (typeof candidate !== 'string') {
     return null;
   }
 
-  if (typeof candidate === 'string') {
-    const normalized = stripPolishCharacters(candidate.trim().toLowerCase());
-    if (normalized.length === 0) {
-      return null;
-    }
-    if (FEMALE_GENDER_VALUES.has(normalized)) {
-      return 'female';
-    }
-    if (MALE_GENDER_VALUES.has(normalized)) {
-      return 'male';
-    }
-  } else if (typeof candidate === 'number') {
-    if (candidate === 1) {
-      return 'female';
-    }
-    if (candidate === 0) {
-      return 'male';
-    }
-  } else if (typeof candidate === 'boolean') {
-    return candidate ? 'female' : 'male';
+  const normalized = stripPolishCharacters(candidate.trim().toLowerCase());
+  if (normalized === 'female') {
+    return 'female';
+  }
+  if (normalized === 'male') {
+    return 'male';
   }
 
   return null;
