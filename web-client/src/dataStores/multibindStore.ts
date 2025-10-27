@@ -14,6 +14,14 @@ const DB_CONFIG = {
   metadataStore: 'metadata',
 } as const;
 
+const storage = new IndexedDbCollectionStrategy<StoredMultibindRecord, RefreshMetadata>({
+  dbName: DB_CONFIG.dbName,
+  entriesStore: DB_CONFIG.entriesStore,
+  metadataStore: DB_CONFIG.metadataStore,
+  version: 2,
+  buildEntryId,
+});
+
 function buildEntryId(entry: StoredMultibindRecord): string {
   return `${entry.roomId}:${entry.index}`;
 }
@@ -54,23 +62,62 @@ function normalizeSnapshot(list: unknown): StoredMultibindRecord[] {
 const getMultibindStore = createDataStoreSingleton(() =>
   new DataStore<StoredMultibindRecord[], RefreshMetadata>({
     loader: {
-      async load({ previousSnapshot }) {
-        const snapshot = normalizeSnapshot(previousSnapshot ?? []);
+      async load() {
+        const persisted = await storage.readSnapshot();
+        const snapshot = normalizeSnapshot(persisted ?? []);
         return {
           snapshot,
           metadata: { refreshedAt: Date.now() },
         };
       },
     },
-    storage: new IndexedDbCollectionStrategy<StoredMultibindRecord, RefreshMetadata>({
-      dbName: DB_CONFIG.dbName,
-      entriesStore: DB_CONFIG.entriesStore,
-      metadataStore: DB_CONFIG.metadataStore,
-      version: 2,
-      buildEntryId,
-    }),
+    storage,
   }),
 );
+
+const BROADCAST_CHANNEL_NAME = 'arkadia-multibinds-sync';
+const INSTANCE_ID = Math.random().toString(36).slice(2);
+const broadcastChannel =
+  typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(BROADCAST_CHANNEL_NAME) : null;
+let isHandlingExternalUpdate = false;
+
+if (broadcastChannel) {
+  broadcastChannel.addEventListener('message', (event) => {
+    void handleIncomingMessage(event.data);
+  });
+}
+
+async function handleIncomingMessage(data: unknown): Promise<void> {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+  const message = data as { type?: string; originId?: string };
+  if (message.originId === INSTANCE_ID) {
+    return;
+  }
+  if (message.type === 'sync') {
+    isHandlingExternalUpdate = true;
+    try {
+      storage.invalidateCache();
+      await getMultibindStore().refresh({ force: true });
+    } catch (error) {
+      console.error('Failed to refresh multibinds after external update:', error);
+    } finally {
+      isHandlingExternalUpdate = false;
+    }
+  }
+}
+
+function broadcastSync(): void {
+  if (!broadcastChannel || isHandlingExternalUpdate) {
+    return;
+  }
+  try {
+    broadcastChannel.postMessage({ type: 'sync', originId: INSTANCE_ID });
+  } catch (error) {
+    console.warn('Failed to broadcast multibinds update:', error);
+  }
+}
 
 async function toResolvedSnapshot(
   snapshotPromise: Promise<StoredMultibindRecord[] | undefined>,
@@ -98,6 +145,7 @@ export function subscribe(
 export async function replaceAll(list: unknown): Promise<StoredMultibindRecord[]> {
   const normalized = normalizeSnapshot(list);
   await getMultibindStore().applyLocalChange(() => normalized);
+  broadcastSync();
   return normalized;
 }
 
@@ -109,11 +157,14 @@ export async function applyLocalChange(
     const mutated = mutator([...snapshot]);
     return normalizeSnapshot(mutated);
   });
-  return normalizeSnapshot(result ?? []);
+  const normalized = normalizeSnapshot(result ?? []);
+  broadcastSync();
+  return normalized;
 }
 
-export function clear(): Promise<void> {
-  return getMultibindStore().clear();
+export async function clear(): Promise<void> {
+  await getMultibindStore().clear();
+  broadcastSync();
 }
 
 export function toKey(roomId: number, index: number): string {
