@@ -170,8 +170,14 @@ function buildKnowledgeDetailsReportPayload(
       }
 
       const missing: string[] = [];
+      const entriesList: KnowledgeDetailsReportTypeEntry[] = [];
       for (const [normalizedValue, original] of definitionMap.entries()) {
-        if (!knownSet.has(normalizedValue)) {
+        const isKnown = knownSet.has(normalizedValue);
+        entriesList.push({
+          name: original,
+          status: isKnown ? 'known' : 'missing',
+        });
+        if (!isKnown) {
           missing.push(original);
         }
       }
@@ -196,6 +202,7 @@ function buildKnowledgeDetailsReportPayload(
         known,
         missing,
         unknown,
+        entries: entriesList,
         ...(level ? { level } : {}),
       };
     }
@@ -315,11 +322,17 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+type KnowledgeDetailsReportTypeEntry = {
+  name: string;
+  status: 'known' | 'missing';
+};
+
 type KnowledgeDetailsReportTypeSummary = {
   total: number;
   known: number;
   missing: string[];
   unknown: string[];
+  entries: KnowledgeDetailsReportTypeEntry[];
   level?: string;
 };
 

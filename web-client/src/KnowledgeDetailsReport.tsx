@@ -19,6 +19,7 @@ type KnowledgeDetailsReportTypeSummary = {
   known: number;
   missing: string[];
   unknown: string[];
+  entries: { name: string; status: 'known' | 'missing' }[];
   level?: string;
 };
 
@@ -63,8 +64,10 @@ function formatTimestamp(value: number | null): string | null {
 const KnowledgeDetailsReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<PointerDragState | null>(null);
 
   const close = useCallback(() => {
@@ -163,6 +166,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     }
     setData(detail);
     setIsOpen(true);
+    setHideCompleted(false);
     setPosition(null);
   }, []);
 
@@ -223,6 +227,15 @@ const KnowledgeDetailsReport: React.FC = () => {
     panelRef.current?.focus();
   }, [ensureVisiblePosition, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  }, [data, isOpen]);
+
   const handleStartCategory = useCallback((dative: string) => {
     const client = (window as any).clientExtension as Client | undefined;
     if (!client) {
@@ -231,20 +244,55 @@ const KnowledgeDetailsReport: React.FC = () => {
     client.sendCommand(`zglebiaj wiedze o ${dative}`);
   }, []);
 
-  const content = useMemo(() => {
+  const navItems = useMemo<{ id: string; label: string }[]>(() => {
+    if (!data) {
+      return [];
+    }
+    return data.categories.map((category, index) => ({
+      id: `knowledge-category-${index}`,
+      label: category.name,
+    }));
+  }, [data]);
+
+  const handleNavigate = useCallback((elementId: string) => {
+    const target = panelRef.current?.querySelector<HTMLElement>(`#${elementId}`);
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  }, []);
+
+  const categoriesContent = useMemo(() => {
     if (!data) {
       return null;
     }
-    return data.categories.map((category) => {
+    return data.categories.map((category, index) => {
       const updatedText = formatTimestamp(category.updatedAt);
+      const elementId = `knowledge-category-${index}`;
       return (
-        <div key={category.name} className="knowledge-details-category">
+        <section key={`${category.name}-${index}`} id={elementId} className="knowledge-details-category">
           <div className="knowledge-details-header">
             <div className="knowledge-details-title">
               <span className="knowledge-details-name">{category.name}</span>
               {updatedText && (
                 <span className="knowledge-details-updated">Aktualizacja: {updatedText}</span>
               )}
+              <div className="knowledge-details-counters">
+                {TYPE_CONFIG.map(({ key, label }) => {
+                  const summary = category.types[key];
+                  if (!summary) {
+                    return null;
+                  }
+                  return (
+                    <span key={key} className="knowledge-details-counter">
+                      <span className="knowledge-details-counter-label">{label}</span>
+                      <span className="knowledge-details-counter-value">
+                        {summary.known}/{summary.total}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
             </div>
             <button
               type="button"
@@ -254,64 +302,87 @@ const KnowledgeDetailsReport: React.FC = () => {
               Zglebiaj
             </button>
           </div>
-          <div className="knowledge-details-types">
+          <div className="knowledge-details-type-groups">
             {TYPE_CONFIG.map(({ key, label }) => {
               const summary = category.types[key];
               if (!summary) {
                 return null;
               }
-              const hasDetails = summary.missing.length > 0 || summary.unknown.length > 0;
+
+              const filteredEntries = hideCompleted
+                ? summary.entries.filter((entry) => entry.status !== 'known')
+                : summary.entries;
+
+              const hasEntries = filteredEntries.length > 0;
+              const hasUnknown = summary.unknown.length > 0;
+              const hasLevel = Boolean(summary.level);
+
+              if (!hasEntries && !hasUnknown && !hasLevel && summary.entries.length === 0) {
+                return null;
+              }
+
+              let entriesContent: React.ReactNode = null;
+              if (hasEntries) {
+                entriesContent = (
+                  <ul className="knowledge-details-entries">
+                    {filteredEntries.map((entry) => (
+                      <li
+                        key={`${key}-${entry.name}`}
+                        className={`knowledge-details-entry knowledge-details-entry--${entry.status}`}
+                      >
+                        <span
+                          className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${entry.status}`}
+                        />
+                        <span className="knowledge-details-entry-name">{entry.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              } else if (summary.entries.length === 0) {
+                entriesContent = (
+                  <div className="knowledge-details-empty">Brak zdefiniowanych wpisów.</div>
+                );
+              } else if (hideCompleted) {
+                entriesContent = (
+                  <div className="knowledge-details-empty">Ukryto ukończone wpisy.</div>
+                );
+              }
+
               return (
-                <div key={key} className="knowledge-details-type">
-                  <div className="knowledge-details-type-header">
+                <div key={key} className="knowledge-details-type-group">
+                  <div className="knowledge-details-type-heading">
                     <span className="knowledge-details-type-label">{label}</span>
-                    <span className="knowledge-details-type-count">
-                      {summary.known}/{summary.total}
-                    </span>
                     {summary.level && (
                       <span className="knowledge-details-level">{summary.level}</span>
                     )}
                   </div>
-                  {hasDetails ? (
-                    <div className="knowledge-details-type-body">
-                      {summary.missing.length > 0 && (
-                        <div className="knowledge-details-section">
-                          <div className="knowledge-details-section-title">
-                            Braki ({summary.missing.length}):
-                          </div>
-                          <ul className="knowledge-details-list">
-                            {summary.missing.map((entry) => (
-                              <li key={entry}>{entry}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {summary.unknown.length > 0 && (
-                        <div className="knowledge-details-section">
-                          <div className="knowledge-details-section-title">
-                            Nieznane wpisy ({summary.unknown.length}):
-                          </div>
-                          <ul className="knowledge-details-list">
-                            {summary.unknown.map((entry) => (
-                              <li key={entry}>{entry}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="knowledge-details-type-body knowledge-details-type-body--empty">
-                      Brak dodatkowych informacji.
+                  {entriesContent}
+                  {hasUnknown && (
+                    <div className="knowledge-details-unknown">
+                      <div className="knowledge-details-unknown-title">
+                        Nieznane wpisy ({summary.unknown.length})
+                      </div>
+                      <ul className="knowledge-details-entries">
+                        {summary.unknown.map((entry) => (
+                          <li
+                            key={`${key}-unknown-${entry}`}
+                            className="knowledge-details-entry knowledge-details-entry--unknown"
+                          >
+                            <span className="knowledge-details-entry-indicator knowledge-details-entry-indicator--unknown" />
+                            <span className="knowledge-details-entry-name">{entry}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-        </div>
+        </section>
       );
     });
-  }, [data, handleStartCategory]);
+  }, [data, handleStartCategory, hideCompleted]);
 
   if (!isOpen || !data) {
     return null;
@@ -332,7 +403,35 @@ const KnowledgeDetailsReport: React.FC = () => {
           <button type="button" className="btn-close" onClick={close} />
         </div>
         <div className="knowledge-window-body knowledge-details-body">
-          <div className="knowledge-details-content">{content}</div>
+          <div className="knowledge-details-content" ref={scrollContainerRef}>
+            <div className="knowledge-details-sticky">
+              <div className="knowledge-details-toolbar">
+                <label className="knowledge-details-toggle">
+                  <input
+                    type="checkbox"
+                    checked={hideCompleted}
+                    onChange={(event) => setHideCompleted(event.target.checked)}
+                  />
+                  Ukryj ukończone wpisy
+                </label>
+              </div>
+              {navItems.length > 0 && (
+                <div className="knowledge-details-nav">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="knowledge-details-nav-button"
+                      onClick={() => handleNavigate(item.id)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="knowledge-details-categories">{categoriesContent}</div>
+          </div>
         </div>
       </div>
     </div>
