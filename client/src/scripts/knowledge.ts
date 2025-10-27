@@ -154,6 +154,10 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+type KnowledgeReportAction =
+  | { type: 'completeLibrary'; libraryId: string }
+  | { type: 'resetLibrary'; libraryId: string };
+
 function summarizeLibraryProgress(
   library: KnowledgeLibraryEntry,
   libraryProgress: Record<string, KnowledgeCategoryStatus>,
@@ -213,7 +217,7 @@ function buildKnowledgeReport(
     const libraryProgress = characterProgress[libraryId] ?? {};
     const summary = summarizeLibraryProgress(library, libraryProgress);
 
-    if (summary.total > 0 && summary.remaining > 0) {
+    if (summary.total > 0) {
       libraries.push({
         id: libraryId,
         name: library.name,
@@ -590,6 +594,133 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       getUniqueLibraryCategories(context.library),
     );
   }
+
+  function dispatchKnowledgeReport() {
+    if (!currentSnapshot) {
+      client.sendEvent('knowledgeReport', null);
+      return;
+    }
+
+    const libraryEntries = Object.entries(currentSnapshot.data.libraries);
+    if (libraryEntries.length === 0) {
+      client.sendEvent('knowledgeReport', null);
+      return;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+    const report = buildKnowledgeReport(libraryEntries, characterProgress);
+    client.sendEvent('knowledgeReport', report);
+  }
+
+  async function updateLibraryCategoriesStatus(
+    libraryId: string,
+    status: KnowledgeCategoryStatus,
+  ): Promise<boolean> {
+    if (!currentSnapshot) {
+      return false;
+    }
+
+    const library = currentSnapshot.data.libraries[libraryId];
+    if (!library) {
+      return false;
+    }
+
+    const categories = getUniqueLibraryCategories(library);
+    if (categories.length === 0) {
+      return false;
+    }
+
+    let updated = false;
+
+    try {
+      await store.applyLocalChange((snapshot) => {
+        if (!snapshot) {
+          return snapshot;
+        }
+
+        if (!snapshot.data.libraries[libraryId]) {
+          return snapshot;
+        }
+
+        const nextProgress = { ...snapshot.data.progress };
+        const characterKey = getCharacterProgressKey();
+        const characterProgress = { ...(nextProgress[characterKey] ?? {}) };
+        const libraryProgress = { ...(characterProgress[libraryId] ?? {}) };
+
+        if (status === 'not_started') {
+          let removedAny = false;
+          for (const category of categories) {
+            if (libraryProgress[category]) {
+              delete libraryProgress[category];
+              removedAny = true;
+            }
+          }
+
+          if (!removedAny) {
+            return snapshot;
+          }
+        } else {
+          let changedAny = false;
+          for (const category of categories) {
+            if (libraryProgress[category] === status) {
+              continue;
+            }
+            libraryProgress[category] = status;
+            changedAny = true;
+          }
+
+          if (!changedAny) {
+            return snapshot;
+          }
+        }
+
+        updated = true;
+
+        if (Object.keys(libraryProgress).length === 0) {
+          delete characterProgress[libraryId];
+        } else {
+          characterProgress[libraryId] = libraryProgress;
+        }
+
+        if (Object.keys(characterProgress).length === 0) {
+          delete nextProgress[characterKey];
+        } else {
+          nextProgress[characterKey] = characterProgress;
+        }
+
+        return {
+          ...snapshot,
+          data: {
+            ...snapshot.data,
+            progress: nextProgress,
+          },
+        };
+      });
+    } catch (error) {
+      console.error('Failed to update knowledge library status:', error);
+      return false;
+    }
+
+    if (updated) {
+      dispatchKnowledgeReport();
+    }
+
+    return updated;
+  }
+
+  window.addEventListener('knowledgeReportAction', (event) => {
+    const detail = (event as CustomEvent<KnowledgeReportAction | null | undefined>).detail;
+    if (!detail) {
+      return;
+    }
+
+    if (detail.type === 'completeLibrary') {
+      void updateLibraryCategoriesStatus(detail.libraryId, 'completed');
+    } else if (detail.type === 'resetLibrary') {
+      void updateLibraryCategoriesStatus(detail.libraryId, 'not_started');
+    }
+  });
 
   aliasList.push({ pattern: /\/zglebiaj$/, callback: showLibraryCategories });
   aliasList.push({ pattern: /\/biblioteki$/, callback: showLibrariesReport });

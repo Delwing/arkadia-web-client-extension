@@ -42,6 +42,10 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+type KnowledgeReportAction =
+  | { type: 'completeLibrary'; libraryId: string }
+  | { type: 'resetLibrary'; libraryId: string };
+
 type PointerDragState = {
   pointerId: number;
   offsetX: number;
@@ -280,6 +284,24 @@ const KnowledgeReport: React.FC = () => {
     [],
   );
 
+  const sendKnowledgeReportAction = useCallback((action: KnowledgeReportAction) => {
+    window.dispatchEvent(new CustomEvent('knowledgeReportAction', { detail: action }));
+  }, []);
+
+  const handleCompleteLibrary = useCallback(
+    (libraryId: string) => {
+      sendKnowledgeReportAction({ type: 'completeLibrary', libraryId });
+    },
+    [sendKnowledgeReportAction],
+  );
+
+  const handleResetLibrary = useCallback(
+    (libraryId: string) => {
+      sendKnowledgeReportAction({ type: 'resetLibrary', libraryId });
+    },
+    [sendKnowledgeReportAction],
+  );
+
   const libraryContent = useMemo(() => {
     if (!data) {
       return null;
@@ -289,64 +311,117 @@ const KnowledgeReport: React.FC = () => {
         <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>
       );
     }
-    return (
-      <div className="knowledge-libraries">
-        {data.libraries.map((library) => {
-          const grouped = groupLibraryCategories(library.categories);
-          const libraryExpanded = expandedStatuses[library.id] ?? {};
-          return (
-            <div key={library.id} className="knowledge-library">
-              <div className="knowledge-library-header">
-                <span className="knowledge-library-name">{library.name}</span>
-                <span className="knowledge-library-remaining">
-                  Pozostalo {library.remaining} z {library.total} kategorii
-                </span>
-              </div>
-              <div className="knowledge-library-statuses">
-                {LIBRARY_STATUS_CONFIG.map(({ key, label, chipClass }) => {
-                  const count = library[key];
-                  if (!count) {
-                    return null;
-                  }
-                  const isExpanded = Boolean(libraryExpanded[key]);
-                  return (
-                    <div
-                      key={key}
-                      className={`knowledge-library-status knowledge-library-status--${key}`}
-                    >
-                      <button
-                        type="button"
-                        className={`knowledge-chip knowledge-chip--${chipClass} ${
-                          isExpanded ? 'knowledge-chip--active' : ''
-                        }`}
-                        onClick={() => toggleLibraryStatus(library.id, key)}
-                      >
-                        {label}: {count}
-                      </button>
-                      {isExpanded && grouped[key].length > 0 && (
-                        <div className="knowledge-library-categories">
-                          {grouped[key].map((category) => (
-                            <button
-                              type="button"
-                              key={category.name}
-                              className={`knowledge-library-category knowledge-library-category--${category.status}`}
-                              onClick={() => handleStartCategory(category.dative)}
-                            >
-                              {category.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+
+    const activeLibraries = data.libraries.filter((library) => library.remaining > 0);
+    const completedLibraries = data.libraries.filter((library) => library.remaining === 0);
+
+    if (activeLibraries.length === 0 && completedLibraries.length === 0) {
+      return (
+        <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>
+      );
+    }
+
+    const renderLibrary = (library: KnowledgeReportLibrary, mode: 'active' | 'completed') => {
+      const grouped = groupLibraryCategories(library.categories);
+      const libraryExpanded = expandedStatuses[library.id] ?? {};
+      return (
+        <div key={library.id} className="knowledge-library">
+          <div className="knowledge-library-header">
+            <div className="knowledge-library-info">
+              <span className="knowledge-library-name">{library.name}</span>
+              <span className="knowledge-library-remaining">
+                Pozostalo {library.remaining} z {library.total} kategorii
+              </span>
             </div>
-          );
-        })}
+            <div className="knowledge-library-actions">
+              {mode === 'active' ? (
+                <button
+                  type="button"
+                  className="knowledge-library-action"
+                  onClick={() => handleCompleteLibrary(library.id)}
+                  disabled={library.remaining === 0}
+                >
+                  Zakoncz biblioteke
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="knowledge-library-reset"
+                  onClick={() => handleResetLibrary(library.id)}
+                >
+                  Resetuj biblioteke
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="knowledge-library-statuses">
+            {LIBRARY_STATUS_CONFIG.map(({ key, label, chipClass }) => {
+              const count = library[key];
+              if (!count) {
+                return null;
+              }
+              const isExpanded = Boolean(libraryExpanded[key]);
+              return (
+                <div key={key} className={`knowledge-library-status knowledge-library-status--${key}`}>
+                  <button
+                    type="button"
+                    className={`knowledge-chip knowledge-chip--${chipClass} ${
+                      isExpanded ? 'knowledge-chip--active' : ''
+                    }`}
+                    onClick={() => toggleLibraryStatus(library.id, key)}
+                  >
+                    {label}: {count}
+                  </button>
+                  {isExpanded && grouped[key].length > 0 && (
+                    <div className="knowledge-library-categories">
+                      {grouped[key].map((category) => (
+                        <button
+                          type="button"
+                          key={category.name}
+                          className={`knowledge-library-category knowledge-library-category--${category.status}`}
+                          onClick={() => handleStartCategory(category.dative)}
+                        >
+                          {category.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="knowledge-library-groups">
+        {activeLibraries.length > 0 && (
+          <div className="knowledge-library-group">
+            <div className="knowledge-library-group-title">Do zglebienia</div>
+            <div className="knowledge-libraries">
+              {activeLibraries.map((library) => renderLibrary(library, 'active'))}
+            </div>
+          </div>
+        )}
+        {completedLibraries.length > 0 && (
+          <div className="knowledge-library-group">
+            <div className="knowledge-library-group-title">Ukonczone</div>
+            <div className="knowledge-libraries">
+              {completedLibraries.map((library) => renderLibrary(library, 'completed'))}
+            </div>
+          </div>
+        )}
       </div>
     );
-  }, [data, expandedStatuses, handleStartCategory, toggleLibraryStatus]);
+  }, [
+    data,
+    expandedStatuses,
+    handleCompleteLibrary,
+    handleResetLibrary,
+    handleStartCategory,
+    toggleLibraryStatus,
+  ]);
 
   const categoriesContent = useMemo(() => {
     if (!data) {
