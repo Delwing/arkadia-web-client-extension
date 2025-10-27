@@ -253,25 +253,49 @@ function buildKnowledgeDetailsReportPayload(
   const metadataGender = snapshot.data.characters?.[characterKey]?.gender ?? null;
   const characterGender = overrideGender ?? metadataGender ?? null;
 
-  const normalizedDefinitions = buildNormalizedDefinitions(definitions);
   const categories: KnowledgeDetailsReportCategory[] = [];
 
   for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
     const base = config.base;
-    const normalizedDefinition = normalizedDefinitions[base];
     const progressEntry = characterProgress[base];
 
     if (!progressEntry) {
       continue;
     }
 
+    const definition = definitions[base];
     const summaries = {} as Record<KnowledgeDetailsType, KnowledgeDetailsReportTypeSummary>;
     let hasData = false;
     let totalEntries = 0;
 
     for (const type of KNOWLEDGE_DETAILS_TYPES) {
-      const definitionMap = normalizedDefinition?.[type] ?? new Map<string, string>();
-      const total = definitionMap.size;
+      const rawDefinitionEntries =
+        definition && Array.isArray(definition[type]) ? definition[type] : [];
+      const canonicalEntries: {
+        canonical: string;
+        display: string;
+        normalized: string;
+      }[] = [];
+      const seenCanonical = new Set<string>();
+
+      for (const entry of rawDefinitionEntries) {
+        if (typeof entry !== 'string') {
+          continue;
+        }
+        const canonical = canonicalizeKnowledgeEntryGender(entry);
+        const normalizedCanonical = normalizeKnowledgeEntry(canonical);
+        if (normalizedCanonical.length === 0 || seenCanonical.has(normalizedCanonical)) {
+          continue;
+        }
+        seenCanonical.add(normalizedCanonical);
+        canonicalEntries.push({
+          canonical,
+          display: formatKnowledgeEntryForGender(canonical, characterGender),
+          normalized: normalizedCanonical,
+        });
+      }
+
+      const total = canonicalEntries.length;
       totalEntries += total;
 
       const knownSet = new Set<string>();
@@ -290,9 +314,9 @@ function buildKnowledgeDetailsReportPayload(
 
       const missing: string[] = [];
       const entriesList: KnowledgeDetailsReportTypeEntry[] = [];
-      for (const [normalizedValue, original] of definitionMap.entries()) {
-        const isKnown = knownSet.has(normalizedValue);
-        const displayEntry = formatKnowledgeEntryForGender(original, characterGender);
+      for (const entry of canonicalEntries) {
+        const isKnown = knownSet.has(entry.normalized);
+        const displayEntry = entry.display;
         entriesList.push({
           name: displayEntry,
           status: isKnown ? 'known' : 'missing',
@@ -307,7 +331,10 @@ function buildKnowledgeDetailsReportPayload(
       );
       const rawLevelValue =
         typeof progressEntry?.levels?.[type] === 'string' ? progressEntry?.levels?.[type] : undefined;
-      const known = total > 0 ? Math.min(knownSet.size, total) : knownSet.size;
+      const known = canonicalEntries.reduce(
+        (count, entry) => (knownSet.has(entry.normalized) ? count + 1 : count),
+        0,
+      );
       const levelResult = computeKnowledgeLevel(known, total, rawLevelValue);
 
       if (known > 0 || missing.length > 0 || unknown.length > 0 || levelResult) {
