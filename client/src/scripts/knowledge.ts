@@ -98,6 +98,23 @@ function formatCategory(
   return colorString(clickable, STATUS_COLORS[status]);
 }
 
+function getUniqueLibraryCategories(library: KnowledgeLibraryEntry): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const category of library.categories) {
+    const key = category.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    unique.push(category);
+  }
+
+  return unique;
+}
+
 export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   const aliasList = aliases ?? client.aliases;
   const store = getKnowledgeStore();
@@ -327,6 +344,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       .filter((entry) => entry.length > 0);
 
     const normalizedCategories: string[] = [];
+    const seenNormalized = new Set<string>();
     const unrecognized: string[] = [];
     for (const rawCategory of rawCategories) {
       const normalized = normalizeCategory(rawCategory, library);
@@ -334,19 +352,26 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         unrecognized.push(rawCategory);
         continue;
       }
+      const key = normalized.toLowerCase();
+      if (seenNormalized.has(key)) {
+        continue;
+      }
+
+      seenNormalized.add(key);
       normalizedCategories.push(normalized);
     }
 
-    const expectedSet = new Set(library.categories);
+    const uniqueLibraryCategories = getUniqueLibraryCategories(library);
+    const expectedSet = new Set(uniqueLibraryCategories);
     const seenSet = new Set(normalizedCategories);
-    const missing = library.categories.filter((category) => !seenSet.has(category));
+    const missing = uniqueLibraryCategories.filter((category) => !seenSet.has(category));
     const unexpected = normalizedCategories.filter((category) => !expectedSet.has(category));
 
     if (
       unrecognized.length > 0 ||
       missing.length > 0 ||
       unexpected.length > 0 ||
-      normalizedCategories.length !== library.categories.length
+      normalizedCategories.length !== uniqueLibraryCategories.length
     ) {
       const messages: string[] = [];
       if (unrecognized.length > 0) {
@@ -376,7 +401,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
     const libraryProgress = characterProgress[libraryId] ?? {};
 
-    printLibraryCategories(library, libraryProgress, library.categories);
+    printLibraryCategories(
+      library,
+      libraryProgress,
+      getUniqueLibraryCategories(library),
+    );
   }
 
   function showLibraryCategories() {
@@ -399,7 +428,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     printLibraryCategories(
       context.library,
       context.libraryProgress,
-      context.library.categories,
+      getUniqueLibraryCategories(context.library),
     );
   }
 
