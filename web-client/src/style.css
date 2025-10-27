@@ -1321,7 +1321,16 @@ h1 {
 }
 
 .knowledge-details-type-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
   font-size: 0.92rem;
+}
+
+.knowledge-details-type-count {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .knowledge-details-type-badges {

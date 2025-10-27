@@ -270,11 +270,26 @@ const KnowledgeDetailsReport: React.FC = () => {
   }, [data]);
 
   const handleNavigate = useCallback((elementId: string) => {
-    const target = panelRef.current?.querySelector<HTMLElement>(`#${elementId}`);
-    if (!target) {
+    const container = scrollContainerRef.current;
+    if (!container) {
       return;
     }
-    target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+
+    const section = container.querySelector<HTMLElement>(`#${elementId}`);
+    if (!section) {
+      return;
+    }
+
+    const header =
+      section.querySelector<HTMLElement>('.knowledge-details-header') ?? section;
+    const sticky = container.querySelector<HTMLElement>('.knowledge-details-sticky');
+    const stickyHeight = sticky ? sticky.getBoundingClientRect().height : 0;
+    const containerRect = container.getBoundingClientRect();
+    const headerRect = header.getBoundingClientRect();
+    const offset = headerRect.top - containerRect.top + container.scrollTop;
+    const targetTop = Math.max(offset - stickyHeight, 0);
+
+    container.scrollTo({ top: targetTop, behavior: 'smooth' });
   }, []);
 
   const categoriesContent = useMemo(() => {
@@ -306,21 +321,18 @@ const KnowledgeDetailsReport: React.FC = () => {
                       : 'Brak danych o poziomie wiedzy';
                   const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
                   const levelDisplay = formatLevelDisplay(summary);
-                  const showLevelBadge = key !== 'exploration';
                   return (
                     <span key={key} className="knowledge-details-counter">
                       <span className="knowledge-details-counter-label">{label}</span>
                       <span className="knowledge-details-counter-badges">
-                        {showLevelBadge && (
-                          <span
-                            className={`knowledge-details-badge knowledge-details-badge--level${
-                              summary.level ? '' : ' knowledge-details-badge--empty'
-                            }`}
-                            title={levelTitle}
-                          >
-                            {levelDisplay}
-                          </span>
-                        )}
+                        <span
+                          className={`knowledge-details-badge knowledge-details-badge--level${
+                            summary.level ? '' : ' knowledge-details-badge--empty'
+                          }`}
+                          title={levelTitle}
+                        >
+                          {levelDisplay}
+                        </span>
                         {showDetails && summary.total > 0 && (
                           <span
                             className="knowledge-details-badge knowledge-details-badge--entries"
@@ -392,7 +404,12 @@ const KnowledgeDetailsReport: React.FC = () => {
               return (
                 <div key={key} className="knowledge-details-type-group">
                   <div className="knowledge-details-type-heading">
-                    <span className="knowledge-details-type-label">{label}</span>
+                    <span className="knowledge-details-type-label">
+                      <span>{label}</span>
+                      <span className="knowledge-details-type-count">
+                        {summary.known}/{summary.total}
+                      </span>
+                    </span>
                     <div className="knowledge-details-type-badges">
                       <span
                         className={`knowledge-details-badge knowledge-details-badge--level${
