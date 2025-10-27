@@ -209,4 +209,9 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
       console.warn('Failed to clear collection cache in IndexedDB:', error);
     }
   }
+
+  invalidateCache(): void {
+    this.inMemorySnapshot = undefined;
+    this.inMemoryMetadata = undefined;
+  }
 }
