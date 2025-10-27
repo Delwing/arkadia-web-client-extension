@@ -248,12 +248,12 @@ const KnowledgeDetailsReport: React.FC = () => {
     });
   }, [data, isOpen]);
 
-  const handleStartCategory = useCallback((dative: string) => {
+  const handleBuildKnowledge = useCallback(() => {
     const client = (window as any).clientExtension as Client | undefined;
     if (!client) {
       return;
     }
-    client.sendCommand(`zglebiaj wiedze o ${dative}`);
+    client.sendCommand('/wiedza_buduj');
   }, []);
 
   const navItems = useMemo<{ id: string; label: string }[]>(() => {
@@ -329,13 +329,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                 })}
               </div>
             </div>
-            <button
-              type="button"
-              className="knowledge-details-command"
-              onClick={() => handleStartCategory(category.dative)}
-            >
-              Zglebiaj
-            </button>
           </div>
           <div className="knowledge-details-type-groups">
             {TYPE_CONFIG.filter(({ showDetails }) => showDetails).map(({ key, label }) => {
@@ -438,7 +431,7 @@ const KnowledgeDetailsReport: React.FC = () => {
         </section>
       );
     });
-  }, [data, handleStartCategory, hideCompleted]);
+  }, [data, hideCompleted]);
 
   if (!isOpen || !data) {
     return null;
@@ -470,6 +463,13 @@ const KnowledgeDetailsReport: React.FC = () => {
                   onClick={() => setHideCompleted((prev) => !prev)}
                 >
                   {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+                </button>
+                <button
+                  type="button"
+                  className="knowledge-details-build-button"
+                  onClick={handleBuildKnowledge}
+                >
+                  Odbuduj raport
                 </button>
               </div>
               <div className="knowledge-details-levels-info">
