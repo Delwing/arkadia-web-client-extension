@@ -32,16 +32,18 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     }
 
     function say(lang: string, adj: string, msg: string) {
-       setLanguage(lang);
-        if (lang === 'potoczna' && adj === '') {
-            client.send("'" + msg, false);
+        const trimmedMsg = msg.trim();
+        if (trimmedMsg.length === 0) {
+            client.send("'", false);
         } else {
-            const verb = lang === 'potoczna' ? 'ppowiedz' : 'jppowiedz';
-            if (msg.trim().length == 0) {
-                client.send("'");
+            setLanguage(lang);
+            if (lang === 'potoczna' && adj === '') {
+                client.send("'" + msg, false);
+            } else {
+                const verb = lang === 'potoczna' ? 'ppowiedz' : 'jppowiedz';
+                const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
+                client.sendCommand(cmd, false);
             }
-            const cmd = adj ? `${verb} ${adj} ${msg}` : `${verb} ${msg}`;
-            client.sendCommand(cmd, false);
         }
         client.clientAdapter.output("→ '" + msg, 'command');
         client.clientAdapter.flushMessageBuffer();
