@@ -800,13 +800,21 @@ h1 {
   background-color: var(--surface-elevated);
 }
 
+
 .knowledge-tabs {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
 .knowledge-tab-select {
   flex: 1 1 auto;
+  display: none;
+}
+
+.knowledge-tab-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .knowledge-tab-select-input {
@@ -850,6 +858,22 @@ h1 {
   background-color: rgba(124, 252, 0, 0.18);
   border-color: rgba(124, 252, 0, 0.35);
   color: #d1fae5;
+}
+
+@media (max-width: 520px) {
+  .knowledge-tabs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .knowledge-tab-select {
+    display: block;
+  }
+
+  .knowledge-tab-buttons {
+    display: none;
+  }
 }
 
 .knowledge-content {
