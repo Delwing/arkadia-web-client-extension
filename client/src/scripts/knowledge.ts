@@ -66,6 +66,7 @@ const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
   exploration: ['eksploracji', 'eksploracjach'],
 };
 const KNOWLEDGE_LEVEL_LABELS = [
+  'brak',
   'znikoma',
   'niewielka',
   'czesciowa',
@@ -124,10 +125,6 @@ function sanitizeKnowledgeLevel(level: string | undefined): string | undefined {
     return undefined;
   }
 
-  if (normalized === 'brak') {
-    return KNOWLEDGE_LEVEL_LABELS[0];
-  }
-
   return KNOWLEDGE_LEVEL_SET.has(normalized) ? normalized : undefined;
 }
 
@@ -155,13 +152,22 @@ function computeKnowledgeLevel(
   if (total > 0) {
     const clampedKnown = Math.max(0, Math.min(known, total));
     const ratio = clampedKnown / total;
-    const maxIndex = KNOWLEDGE_LEVEL_LABELS.length - 1;
+    const maxIndex = Math.max(KNOWLEDGE_LEVEL_LABELS.length - 1, 0);
+
+    if (maxIndex === 0) {
+      return { label: KNOWLEDGE_LEVEL_LABELS[0], index: 0 };
+    }
 
     if (ratio >= 1) {
       return { label: KNOWLEDGE_LEVEL_LABELS[maxIndex], index: maxIndex };
     }
 
-    const index = Math.max(0, Math.min(Math.floor(ratio * maxIndex), maxIndex));
+    let index = Math.max(0, Math.min(Math.floor(ratio * maxIndex), maxIndex));
+
+    if (index === 0 && clampedKnown > 0) {
+      index = 1;
+    }
+
     return { label: KNOWLEDGE_LEVEL_LABELS[index], index };
   }
 
@@ -347,7 +353,7 @@ function buildKnowledgeDetailsReportPayload(
         missing,
         unknown,
         entries: entriesList,
-        levelMax: KNOWLEDGE_LEVEL_LABELS.length,
+        levelMax: Math.max(KNOWLEDGE_LEVEL_LABELS.length - 1, 0),
       };
 
       if (levelResult) {

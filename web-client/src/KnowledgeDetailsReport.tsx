@@ -64,13 +64,19 @@ function formatTimestamp(value: number | null): string | null {
 }
 
 function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string {
-  if (summary.level) {
-    if (summary.levelIndex != null) {
-      return `${summary.level} (${summary.levelIndex + 1}/${summary.levelMax})`;
-    }
+  if (!summary.level) {
+    return '—';
+  }
+
+  if (summary.levelIndex == null) {
     return summary.level;
   }
-  return '—';
+
+  if (summary.levelMax > 0) {
+    return `${summary.level} (${summary.levelIndex}/${summary.levelMax})`;
+  }
+
+  return `${summary.level} (${summary.levelIndex})`;
 }
 
 const KnowledgeDetailsReport: React.FC = () => {
@@ -315,9 +321,11 @@ const KnowledgeDetailsReport: React.FC = () => {
                   }
                   const levelTitle =
                     summary.levelIndex != null
-                      ? `Poziom wiedzy: ${summary.levelIndex + 1}/${summary.levelMax}${
-                          summary.level ? ` (${summary.level})` : ''
-                        }`
+                      ? `Poziom wiedzy: ${
+                          summary.levelMax > 0
+                            ? `${summary.levelIndex}/${summary.levelMax}`
+                            : `${summary.levelIndex}`
+                        }${summary.level ? ` (${summary.level})` : ''}`
                       : 'Brak danych o poziomie wiedzy';
                   const levelDisplay = formatLevelDisplay(summary);
                   return (
