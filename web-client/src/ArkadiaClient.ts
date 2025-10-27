@@ -466,6 +466,14 @@ class ArkadiaClient implements ClientAdapter {
         this.recorder.replayRecordedMessagesTimed();
     }
 
+    setPlaybackSpeed(speed: number) {
+        this.recorder.setPlaybackSpeed(speed);
+    }
+
+    getPlaybackSpeed() {
+        return this.recorder.getPlaybackSpeed();
+    }
+
     private maybeStartAutoRecording() {
         if (this.autoRecorder && this.autoRecorder.isRecordingActive()) return;
         const recorder = this.createRecorder(true);
