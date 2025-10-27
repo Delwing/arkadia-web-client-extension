@@ -67,10 +67,32 @@ const defaultSettings: UiSettings = {
     customFontFamily: '',
 };
 
+function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
+    switch (selection) {
+    case 'fira-code':
+        return '"Fira Code", monospace';
+    case 'jetbrains-mono':
+        return '"JetBrains Mono", monospace';
+    case 'custom': {
+        const trimmed = customFontFamily.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        const normalized = /['",]/.test(trimmed)
+            ? trimmed
+            : `"${trimmed}"`;
+        return `${normalized}, monospace`;
+    }
+    default:
+        return undefined;
+    }
+}
+
 function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
     ensureFontLoaded(settings.fontFamily, normalizedHref);
+    const resolvedFontFamily = resolveOutputFontFamily(settings.fontFamily, settings.customFontFamily ?? '');
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -78,19 +100,14 @@ function apply(settings: UiSettings) {
     }
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
-        document.body.dataset.uiFont = settings.fontFamily;
-        const customFontName = settings.customFontFamily?.trim() ?? '';
-        if (settings.fontFamily === 'custom' && customFontName) {
-            const normalizedFontName = /['",]/.test(customFontName)
-                ? customFontName
-                : `"${customFontName}"`;
-            document.body.style.setProperty('--ui-custom-font', normalizedFontName);
-        } else {
-            document.body.style.removeProperty('--ui-custom-font');
-        }
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
+        if (resolvedFontFamily) {
+            content.style.fontFamily = resolvedFontFamily;
+        } else {
+            content.style.removeProperty('font-family');
+        }
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
     }
@@ -101,6 +118,11 @@ function apply(settings: UiSettings) {
     }
     const objects = document.getElementById('objects-list');
     if (objects) {
+        if (resolvedFontFamily) {
+            objects.style.fontFamily = resolvedFontFamily;
+        } else {
+            objects.style.removeProperty('font-family');
+        }
         objects.style.fontSize = settings.objectsFontSize + 'rem';
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
