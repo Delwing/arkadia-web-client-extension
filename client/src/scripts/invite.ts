@@ -6,6 +6,7 @@ export default function initInvite(client: Client) {
     const tag = "invite";
     let enemyGuilds: string[] = [];
     let peopleCache: PersonEntry[] = [];
+    let objectNums: string[] = [];
 
     subscribeToPeopleStore(snapshot => {
         peopleCache = snapshot ?? [];
@@ -35,14 +36,35 @@ export default function initInvite(client: Client) {
         return guild ? enemyGuilds.includes(guild) : false; // If guild not found, allow invite
     }
 
+    client.addEventListener('gmcp.objects.nums', (event: CustomEvent) => {
+        const detail = event.detail;
+        if (Array.isArray(detail)) {
+            objectNums = detail.map(String);
+            return;
+        }
+        if (detail && Array.isArray(detail.nums)) {
+            objectNums = detail.nums.map(String);
+            return;
+        }
+        if (detail && Array.isArray(detail.objects)) {
+            objectNums = detail.objects.map(String);
+            return;
+        }
+        objectNums = [];
+    });
+
     // Function to find object ID for a person by their name
     function findObjectIdByName(name: string): string | null {
         const accumulatedData = client.TeamManager.getAccumulatedObjectsData();
-        for (const [objId, obj] of Object.entries(accumulatedData)) {
-            if (obj && typeof obj === 'object' && 'desc' in obj && obj.desc === name) {
-                return objId;
+
+        for (let index = objectNums.length - 1; index >= 0; index--) {
+            const objectId = objectNums[index];
+            const obj = accumulatedData[objectId];
+            if (obj && typeof obj === 'object' && obj.desc === name) {
+                return objectId;
             }
         }
+
         return null;
     }
 
