@@ -308,7 +308,7 @@ const KnowledgeDetailsReport: React.FC = () => {
                 <span className="knowledge-details-updated">Aktualizacja: {updatedText}</span>
               )}
               <div className="knowledge-details-counters">
-                {TYPE_CONFIG.map(({ key, label, showDetails }) => {
+                {TYPE_CONFIG.map(({ key, label }) => {
                   const summary = category.types[key];
                   if (!summary) {
                     return null;
@@ -319,7 +319,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                           summary.level ? ` (${summary.level})` : ''
                         }`
                       : 'Brak danych o poziomie wiedzy';
-                  const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
                   const levelDisplay = formatLevelDisplay(summary);
                   return (
                     <span key={key} className="knowledge-details-counter">
@@ -332,14 +331,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                       >
                         {levelDisplay}
                       </span>
-                      {showDetails && summary.total > 0 && (
-                        <span
-                          className="knowledge-details-badge knowledge-details-badge--entries"
-                          title={entriesTitle}
-                        >
-                          {summary.known}/{summary.total}
-                        </span>
-                      )}
                     </span>
                   );
                 })}
@@ -364,6 +355,8 @@ const KnowledgeDetailsReport: React.FC = () => {
               if (!hasEntries && !hasUnknown && !hasLevel && summary.entries.length === 0) {
                 return null;
               }
+
+              const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
 
               let entriesContent: React.ReactNode = null;
               if (hasEntries) {
@@ -395,11 +388,12 @@ const KnowledgeDetailsReport: React.FC = () => {
               return (
                 <div key={key} className="knowledge-details-type-group">
                   <div className="knowledge-details-type-heading">
-                    <span className="knowledge-details-type-label">
-                      <span>{label}</span>
-                      <span className="knowledge-details-type-count">
-                        {summary.known}/{summary.total}
-                      </span>
+                    <span className="knowledge-details-type-label">{label}</span>
+                    <span
+                      className="knowledge-details-badge knowledge-details-badge--entries"
+                      title={entriesTitle}
+                    >
+                      {summary.known}/{summary.total}
                     </span>
                   </div>
                   {entriesContent}

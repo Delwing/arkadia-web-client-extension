@@ -1315,6 +1315,7 @@ h1 {
 .knowledge-details-type-heading {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem;
   font-weight: 600;
@@ -1327,12 +1328,6 @@ h1 {
   align-items: baseline;
   gap: 0.4rem;
   font-size: 0.92rem;
-}
-
-.knowledge-details-type-count {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: rgba(226, 232, 240, 0.7);
 }
 
 .knowledge-details-entries {
