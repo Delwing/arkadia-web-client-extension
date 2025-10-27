@@ -196,7 +196,7 @@ function Aliases() {
                 </div>
             )}
             
-            <ul className="list-unstyled ms-3">
+            <ul className="list-unstyled">
                 {filteredAliases.map(a => (
                     editIndex === a.idx ? (
                         <li key={a.idx} className="alias-list-item d-flex flex-column gap-2">

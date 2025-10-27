@@ -208,7 +208,7 @@ function UserTriggers() {
                 </div>
             )}
 
-            <ul className="list-unstyled ms-3">
+            <ul className="list-unstyled">
                 {filteredTriggers.map(t => (
                     editIndex === t.idx ? (
                         <li key={t.idx} className="alias-list-item">

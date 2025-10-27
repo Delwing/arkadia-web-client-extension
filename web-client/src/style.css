@@ -2819,6 +2819,11 @@ body.mobile-command-radial-active {
   word-break: break-word;
 }
 
+.alias-pattern {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .alias-entry code {
   font-family: inherit;
   color: inherit;
@@ -2830,10 +2835,19 @@ body.mobile-command-radial-active {
 .alias-divider {
   color: var(--text-secondary);
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', 'Courier New', monospace;
+  line-height: 1;
+  padding: 0 0.35rem;
 }
 
 .alias-command {
-  color: var(--text-primary);
+  color: rgba(226, 232, 240, 0.82);
+  background-color: rgba(88, 154, 255, 0.14);
+  border-radius: 0.35rem;
+  padding: 0.125rem 0.45rem;
 }
 
 .alias-list-item-actions {
