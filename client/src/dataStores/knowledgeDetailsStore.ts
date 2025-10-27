@@ -12,6 +12,7 @@ import {
   IndexedDBConfig,
   storeInIndexedDB,
 } from '../utils/dataCache';
+import { KNOWLEDGE_DETAILS_DATA } from '../data/knowledgeDetailsData';
 import { stripPolishCharacters } from '../stripPolishCharacters';
 import {
   getBaseCategoryFromName,
@@ -231,26 +232,6 @@ function sanitizeProgress(
   return result;
 }
 
-function normalizeKnowledgeTypeKey(value: string): KnowledgeDetailsType | null {
-  const normalized = stripPolishCharacters(value.trim().toLowerCase());
-  if (normalized.includes('walk')) {
-    return 'fight';
-  }
-  if (normalized.includes('ksi') || normalized.includes('bibliot') || normalized.includes('book')) {
-    return 'books';
-  }
-  if (
-    normalized.includes('eksplor') ||
-    normalized.includes('poznaw') ||
-    normalized.includes('zwiedz') ||
-    normalized.includes('obserw') ||
-    normalized.includes('explor')
-  ) {
-    return 'exploration';
-  }
-  return null;
-}
-
 function assignStrings(
   target: KnowledgeCategoryDefinition,
   type: KnowledgeDetailsType,
@@ -296,76 +277,17 @@ function parseCategoryDefinition(raw: unknown): KnowledgeCategoryDefinition {
     exploration: [],
   };
 
-  const assignFallback = (strings: string[]) => assignStrings(definition, 'exploration', strings);
-
-  if (Array.isArray(raw)) {
-    if (raw.every((entry) => typeof entry === 'string')) {
-      assignFallback(raw as string[]);
-      return definition;
-    }
-    for (const entry of raw) {
-      assignFromValue(definition, entry, null);
-    }
-    return definition;
-  }
-
-  assignFromValue(definition, raw, null);
+  assignStrings(definition, 'exploration', extractStrings(raw));
   return definition;
-}
-
-function assignFromValue(
-  target: KnowledgeCategoryDefinition,
-  value: unknown,
-  typeHint: KnowledgeDetailsType | null,
-) {
-  if (typeof value === 'string') {
-    const strings = extractStrings(value);
-    assignStrings(target, typeHint ?? 'exploration', strings);
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      assignFromValue(target, entry, typeHint);
-    }
-    return;
-  }
-
-  if (!value || typeof value !== 'object') {
-    return;
-  }
-
-  const entries = value as Record<string, unknown>;
-  for (const [key, nested] of Object.entries(entries)) {
-    const detected = normalizeKnowledgeTypeKey(key) ?? typeHint;
-    if (detected) {
-      if (typeof nested === 'string' || Array.isArray(nested)) {
-        assignStrings(target, detected, extractStrings(nested));
-      } else {
-        assignFromValue(target, nested, detected);
-      }
-    } else {
-      assignFromValue(target, nested, typeHint);
-    }
-  }
 }
 
 class KnowledgeDetailsLoader
   implements LoaderStrategy<KnowledgeDetailsSnapshot, RefreshMetadata>
 {
-  private readonly url: string;
-  private readonly fetchImpl: typeof fetch;
-
-  constructor(url: string, fetchImpl?: typeof fetch) {
-    this.url = url;
-    this.fetchImpl = fetchImpl ?? fetch.bind(globalThis);
-  }
-
   async load(
     context: LoaderContext<KnowledgeDetailsSnapshot, RefreshMetadata>,
   ): Promise<LoaderResult<KnowledgeDetailsSnapshot, RefreshMetadata>> {
-    const response = await this.fetchImpl(this.url);
-    const data = (await response.json()) as KnowledgeDetailsFile;
+    const data = KNOWLEDGE_DETAILS_DATA as KnowledgeDetailsFile;
     const categories = Array.isArray(data.categories) ? data.categories : [];
 
     const definitions: KnowledgeDefinitions = {} as KnowledgeDefinitions;
@@ -512,15 +434,12 @@ class KnowledgeDetailsIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshM
   }
 }
 
-export const KNOWLEDGE_DETAILS_URL =
-  'https://ethel.pl/wp-content/themes/arkadia/js/wiedza.json';
-
 const TTL = 24 * 60 * 60 * 1000;
 
 export const getKnowledgeDetailsStore = createDataStoreSingleton(
   () =>
     new DataStore<KnowledgeDetailsSnapshot, RefreshMetadata>({
-      loader: new KnowledgeDetailsLoader(KNOWLEDGE_DETAILS_URL),
+      loader: new KnowledgeDetailsLoader(),
       storage: new KnowledgeDetailsIndexedDbStrategy<RefreshMetadata>({
         data: {
           dbName: 'ArkadiaKnowledgeDetailsDB',
