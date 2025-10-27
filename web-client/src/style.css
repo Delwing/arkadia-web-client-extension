@@ -51,6 +51,10 @@ body[data-ui-font='jetbrains-mono'] {
   font-family: "JetBrains Mono", monospace;
 }
 
+body[data-ui-font='custom'] {
+  font-family: var(--ui-custom-font, "Open Sans", sans-serif);
+}
+
 a {
   font-weight: 500;
   color: #646cff;

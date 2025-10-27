@@ -360,7 +360,20 @@
                                         <option value="default">Domyślna (Open Sans)</option>
                                         <option value="fira-code">Fira Code</option>
                                         <option value="jetbrains-mono">JetBrains Mono</option>
+                                        <option value="custom">Własna (link)</option>
                                     </select>
+                                </div>
+                                <div id="ui-custom-font-settings" class="d-flex flex-column gap-2 d-none">
+                                    <div>
+                                        <label class="form-label" for="ui-custom-font-url">Adres arkusza czcionki</label>
+                                        <input id="ui-custom-font-url" type="url" class="form-control" placeholder="https://..." />
+                                        <div class="form-text">Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).</div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="ui-custom-font-family">Nazwa rodziny czcionki</label>
+                                        <input id="ui-custom-font-family" type="text" class="form-control" placeholder="np. Roboto" />
+                                        <div class="form-text">Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).</div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label" for="ui-content-font">Rozmiar czcionki treści (rem)</label>

@@ -37,6 +37,8 @@ export interface UiSettings {
     clearInputOnSend: boolean;
     showTransportLabel: boolean;
     fontFamily: UiFontSelection;
+    customFontUrl: string;
+    customFontFamily: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -61,10 +63,14 @@ const defaultSettings: UiSettings = {
     clearInputOnSend: false,
     showTransportLabel: true,
     fontFamily: 'default',
+    customFontUrl: '',
+    customFontFamily: '',
 };
 
 function apply(settings: UiSettings) {
-    ensureFontLoaded(settings.fontFamily);
+    const customHref = settings.customFontUrl?.trim();
+    const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
+    ensureFontLoaded(settings.fontFamily, normalizedHref);
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -73,6 +79,15 @@ function apply(settings: UiSettings) {
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
         document.body.dataset.uiFont = settings.fontFamily;
+        const customFontName = settings.customFontFamily?.trim() ?? '';
+        if (settings.fontFamily === 'custom' && customFontName) {
+            const normalizedFontName = /['",]/.test(customFontName)
+                ? customFontName
+                : `"${customFontName}"`;
+            document.body.style.setProperty('--ui-custom-font', normalizedFontName);
+        } else {
+            document.body.style.removeProperty('--ui-custom-font');
+        }
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
@@ -206,6 +221,15 @@ async function load(): Promise<UiSettings> {
             const fontFamily = isUiFontSelection(parsed.fontFamily)
                 ? parsed.fontFamily
                 : defaultSettings.fontFamily;
+            const customFontUrl = typeof parsed.customFontUrl === 'string'
+                ? parsed.customFontUrl.trim()
+                : defaultSettings.customFontUrl;
+            const normalizedCustomFontUrl = /^https?:\/\//i.test(customFontUrl)
+                ? customFontUrl
+                : defaultSettings.customFontUrl;
+            const customFontFamily = typeof parsed.customFontFamily === 'string'
+                ? parsed.customFontFamily.trim()
+                : defaultSettings.customFontFamily;
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultSettings.clearInputOnSend;
@@ -231,6 +255,8 @@ async function load(): Promise<UiSettings> {
                 clearInputOnSend,
                 showTransportLabel,
                 fontFamily,
+                customFontUrl: normalizedCustomFontUrl,
+                customFontFamily,
             };
         }
     } catch {
@@ -272,6 +298,9 @@ export default async function initUiSettings() {
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
     const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
+    const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
+    const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
+    const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -296,6 +325,8 @@ export default async function initUiSettings() {
     clearInputOnSendInput.checked = current.clearInputOnSend;
     showTransportLabelInput.checked = current.showTransportLabel;
     fontFamilyInput.value = current.fontFamily;
+    customFontUrlInput.value = current.customFontUrl;
+    customFontFamilyInput.value = current.customFontFamily;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -305,12 +336,22 @@ export default async function initUiSettings() {
         }
     };
     updateLabelRenderModeState();
+    const updateCustomFontState = () => {
+        const customSelected = fontFamilyInput.value === 'custom';
+        if (customFontSettings) {
+            customFontSettings.classList.toggle('d-none', !customSelected);
+        }
+        customFontUrlInput.disabled = !customSelected;
+        customFontFamilyInput.disabled = !customSelected;
+    };
+    updateCustomFontState();
     outputBackgroundReset?.addEventListener('click', () => {
         outputBackgroundInput.value = defaultSettings.outputBackground;
     });
     apply(current);
 
     transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
+    fontFamilyInput.addEventListener('change', updateCustomFontState);
 
     const updateMapScale = (scale: number) => {
         mapInput.value = String(scale);
@@ -377,6 +418,11 @@ export default async function initUiSettings() {
             clearInputOnSend: clearInputOnSendInput.checked,
             showTransportLabel: showTransportLabelInput.checked,
             fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultSettings.fontFamily,
+            customFontUrl: (() => {
+                const value = customFontUrlInput.value.trim();
+                return /^https?:\/\//i.test(value) ? value : '';
+            })(),
+            customFontFamily: customFontFamilyInput.value.trim(),
         };
     }
 

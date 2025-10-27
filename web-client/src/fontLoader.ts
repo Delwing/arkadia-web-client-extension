@@ -1,41 +1,56 @@
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono';
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'custom';
 
-const fontStylesheets: Record<Exclude<UiFontSelection, 'default'>, string> = {
+const fontStylesheets: Record<'fira-code' | 'jetbrains-mono', string> = {
     'fira-code': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap',
     'jetbrains-mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
 };
 
-const loadedFonts = new Set<UiFontSelection>();
+const loadedFonts = new Map<UiFontSelection, string>();
 
 export function isUiFontSelection(value: unknown): value is UiFontSelection {
-    return value === 'default' || value === 'fira-code' || value === 'jetbrains-mono';
+    return value === 'default' || value === 'fira-code' || value === 'jetbrains-mono' || value === 'custom';
 }
 
-export function ensureFontLoaded(selection: UiFontSelection) {
+export function ensureFontLoaded(selection: UiFontSelection, customHref?: string) {
     if (typeof document === 'undefined') {
         return;
     }
-    if (selection === 'default' || loadedFonts.has(selection)) {
+    if (selection === 'default') {
         return;
     }
-    const href = fontStylesheets[selection];
+    const href = selection === 'custom'
+        ? customHref?.trim()
+        : fontStylesheets[selection];
     if (!href) {
+        if (selection === 'custom') {
+            const existingLink = document.querySelector<HTMLLinkElement>(`link[data-ui-font='${selection}']`);
+            existingLink?.remove();
+            loadedFonts.delete(selection);
+        }
         return;
     }
     const existing = document.querySelector<HTMLLinkElement>(`link[data-ui-font='${selection}']`);
     if (existing) {
-        loadedFonts.add(selection);
-        return;
+        const currentHref = existing.getAttribute('href');
+        if (currentHref === href) {
+            return;
+        }
+        existing.remove();
+        if (loadedFonts.get(selection) === currentHref) {
+            loadedFonts.delete(selection);
+        }
     }
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;
     link.dataset.uiFont = selection;
     link.addEventListener('load', () => {
-        loadedFonts.add(selection);
+        loadedFonts.set(selection, href);
     });
     link.addEventListener('error', () => {
-        loadedFonts.delete(selection);
+        if (loadedFonts.get(selection) === href) {
+            loadedFonts.delete(selection);
+        }
         link.remove();
     });
     document.head.appendChild(link);
