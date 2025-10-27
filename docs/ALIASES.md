@@ -45,6 +45,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 ## Depozyty
 - **/depozyt** - sprawdza zawartość depozytu w aktualnym banku.
 - **/depozyty** - wyświetla listę zapisanych depozytów.
+- **/depozyt_reset** - usuwa wszystkie zapisane depozyty.
 
 ## Zbieranie łupów
 - **/zbieraj_extra _przedmiot_** - dodaje przedmiot do listy ekstra rzeczy zbieranych z ciał.
@@ -85,6 +86,10 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/usun_skroty** - usuwa wszystkie skróty.
 - **/tbind1 [_komenda_]** - ustawia (lub czyści, gdy bez parametru) pierwszy tymczasowy bind na podaną komendę.
 - **/tbind2 [_komenda_]** - ustawia (lub czyści) drugi tymczasowy bind na podaną komendę.
+
+## Wiedza
+- **/zglebiaj** - wyświetla listę kategorii wiedzy dostępnych w aktualnej bibliotece, jeśli dane są dostępne.
+- **/biblioteki** - wyświetla raport z bibliotek i udostępnia go w oknie raportu wiedzy.
 
 ## Zioła
 - **/ziola_buduj** - przegląda wszystkie woreczki z ziołami i podsumowuje ich zawartość.
