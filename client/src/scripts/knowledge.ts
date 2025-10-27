@@ -10,10 +10,13 @@ import {
 } from '../dataStores/knowledgeStore';
 import {
   buildNormalizedDefinitions,
+  formatKnowledgeEntryForGender,
   getKnowledgeDetailsStore,
+  KnowledgeCharacterGender,
   KnowledgeDetailsSnapshot,
   KnowledgeDetailsType,
   KNOWLEDGE_DETAILS_TYPES,
+  parseKnowledgeGender,
 } from '../dataStores/knowledgeDetailsStore';
 import {
   KnowledgeCategoryBaseName,
@@ -195,6 +198,7 @@ function sanitizeStringArray(value: unknown): string[] {
 function buildKnowledgeDetailsReportPayload(
   snapshot: KnowledgeDetailsSnapshot,
   characterKey: string,
+  overrideGender?: KnowledgeCharacterGender | null,
 ): KnowledgeDetailsReportPayload | null {
   const { definitions, progress } = snapshot.data;
   const characterProgress = progress[characterKey];
@@ -202,6 +206,9 @@ function buildKnowledgeDetailsReportPayload(
   if (!characterProgress) {
     return null;
   }
+
+  const metadataGender = snapshot.data.characters?.[characterKey]?.gender ?? null;
+  const characterGender = overrideGender ?? metadataGender ?? null;
 
   const normalizedDefinitions = buildNormalizedDefinitions(definitions);
   const categories: KnowledgeDetailsReportCategory[] = [];
@@ -242,16 +249,19 @@ function buildKnowledgeDetailsReportPayload(
       const entriesList: KnowledgeDetailsReportTypeEntry[] = [];
       for (const [normalizedValue, original] of definitionMap.entries()) {
         const isKnown = knownSet.has(normalizedValue);
+        const displayEntry = formatKnowledgeEntryForGender(original, characterGender);
         entriesList.push({
-          name: original,
+          name: displayEntry,
           status: isKnown ? 'known' : 'missing',
         });
         if (!isKnown) {
-          missing.push(original);
+          missing.push(displayEntry);
         }
       }
 
-      const unknown = sanitizeStringArray(progressEntry?.unknownEntries?.[type]);
+      const unknown = sanitizeStringArray(progressEntry?.unknownEntries?.[type]).map((entry) =>
+        formatKnowledgeEntryForGender(entry, characterGender),
+      );
       const rawLevelValue =
         typeof progressEntry?.levels?.[type] === 'string' ? progressEntry?.levels?.[type] : undefined;
       const known = total > 0 ? Math.min(knownSet.size, total) : knownSet.size;
@@ -546,6 +556,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   let currentLibraryId: string | null = null;
   let currentSnapshot: KnowledgeSnapshot | undefined;
   let knowledgeDetailsSnapshot: KnowledgeDetailsSnapshot | undefined;
+  let currentCharacterGender: KnowledgeCharacterGender | null = null;
+  let pendingGenderUpdate = false;
   let activeKnowledgeRun:
     | { tag: string; abortTimer: number; inactivityTimer: number | null }
     | null = null;
@@ -578,8 +590,78 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     console.error('Failed to refresh knowledge details:', error);
   });
 
+  function persistCharacterGender(gender: KnowledgeCharacterGender) {
+    if (!knowledgeDetailsSnapshot) {
+      pendingGenderUpdate = true;
+      return;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const storedGender = knowledgeDetailsSnapshot.data.characters?.[characterKey]?.gender ?? null;
+    if (storedGender === gender) {
+      pendingGenderUpdate = false;
+      return;
+    }
+
+    const timestamp = Date.now();
+
+    void detailsStore
+      .applyLocalChange((snapshot) => {
+        const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
+        const nextCharacters = { ...(baseSnapshot.data.characters ?? {}) };
+        const previousMetadata = nextCharacters[characterKey] ?? {};
+        nextCharacters[characterKey] = {
+          ...previousMetadata,
+          gender,
+          updatedAt: timestamp,
+        };
+
+        return {
+          ...baseSnapshot,
+          data: {
+            ...baseSnapshot.data,
+            characters: nextCharacters,
+          },
+        };
+      })
+      .catch((error) => {
+        console.error('Failed to store knowledge character metadata:', error);
+      });
+
+    pendingGenderUpdate = false;
+  }
+
   detailsStore.subscribe((snapshot) => {
     knowledgeDetailsSnapshot = snapshot ?? undefined;
+
+    if (!pendingGenderUpdate || !knowledgeDetailsSnapshot) {
+      if (knowledgeDetailsSnapshot && pendingGenderUpdate) {
+        pendingGenderUpdate = false;
+      }
+      return;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const storedGender = knowledgeDetailsSnapshot.data.characters?.[characterKey]?.gender ?? null;
+
+    if (currentCharacterGender && storedGender !== currentCharacterGender) {
+      persistCharacterGender(currentCharacterGender);
+    } else {
+      pendingGenderUpdate = false;
+    }
+  });
+
+  client.addEventListener('gmcp.char.info', (event: CustomEvent<unknown>) => {
+    const parsedGender = parseKnowledgeGender(event.detail);
+    if (!parsedGender) {
+      return;
+    }
+    if (currentCharacterGender === parsedGender) {
+      return;
+    }
+
+    currentCharacterGender = parsedGender;
+    persistCharacterGender(parsedGender);
   });
 
   function clearPendingPrompt(removeTrigger: boolean) {
@@ -882,7 +964,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     }
 
     const characterKey = getCharacterProgressKey();
-    const payload = buildKnowledgeDetailsReportPayload(knowledgeDetailsSnapshot, characterKey);
+    const payload = buildKnowledgeDetailsReportPayload(
+      knowledgeDetailsSnapshot,
+      characterKey,
+      currentCharacterGender,
+    );
 
     if (!payload) {
       client.println(
@@ -976,6 +1062,21 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
           const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
           const nextProgress = { ...baseSnapshot.data.progress };
           const characterProgress = { ...(nextProgress[characterKey] ?? {}) };
+          const nextCharacters = { ...(baseSnapshot.data.characters ?? {}) };
+          const existingMetadata = nextCharacters[characterKey] ?? {};
+
+          if (currentCharacterGender) {
+            nextCharacters[characterKey] = {
+              ...existingMetadata,
+              gender: currentCharacterGender,
+              updatedAt: timestamp,
+            };
+          } else if (existingMetadata && Object.keys(existingMetadata).length > 0) {
+            nextCharacters[characterKey] = {
+              ...existingMetadata,
+              updatedAt: timestamp,
+            };
+          }
 
           for (const [category, state] of results) {
             const knownEntries: Record<KnowledgeDetailsType, string[]> = {
@@ -1017,6 +1118,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             data: {
               ...baseSnapshot.data,
               progress: nextProgress,
+              characters: nextCharacters,
             },
           };
         })

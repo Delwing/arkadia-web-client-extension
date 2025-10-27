@@ -41,6 +41,15 @@ export type KnowledgeLevelMap = Partial<Record<KnowledgeDetailsType, string>>;
 
 export type KnowledgeEntriesMap = Record<KnowledgeDetailsType, string[]>;
 
+export type KnowledgeCharacterGender = 'male' | 'female';
+
+export interface KnowledgeCharacterMetadata {
+  gender?: KnowledgeCharacterGender;
+  updatedAt?: number;
+}
+
+export type KnowledgeCharacterMetadataMap = Record<string, KnowledgeCharacterMetadata>;
+
 export interface KnowledgeCategoryProgress {
   entries: KnowledgeEntriesMap;
   unknownEntries: KnowledgeEntriesMap;
@@ -55,6 +64,7 @@ export type KnowledgeProgressByCharacter = Record<string, KnowledgeCharacterProg
 export interface KnowledgeDetailsSnapshotData {
   definitions: KnowledgeDefinitions;
   progress: KnowledgeProgressByCharacter;
+  characters: KnowledgeCharacterMetadataMap;
   version?: number;
 }
 
@@ -66,6 +76,153 @@ export interface KnowledgeDetailsSnapshot {
 interface KnowledgeDetailsFile {
   version?: number;
   categories: unknown;
+}
+
+const MALE_TO_FEMALE_ENTRY_PREFIX = new Map<string, string>([
+  ['Analizowales', 'Analizowalas'],
+  ['Bladziles', 'Bladzilas'],
+  ['Byles', 'Bylas'],
+  ['Czytales', 'Czytalas'],
+  ['Dales', 'Dalas'],
+  ['Dostarczyles', 'Dostarczylas'],
+  ['Doswiadczyles', 'Doswiadczylas'],
+  ['Dotykales', 'Dotykalas'],
+  ['Dowiedziales', 'Dowiedzialas'],
+  ['dowiedziales', 'dowiedzialas'],
+  ['Odbyles', 'Odbylas'],
+  ['Odczules', 'Odczulas'],
+  ['Odczytales', 'Odczytalas'],
+  ['Odnalazles', 'Odnalazlas'],
+  ['Odprawiles', 'Odprawilas'],
+  ['Ogladales', 'Ogladalas'],
+  ['ogladales', 'ogladalas'],
+  ['Otworzyles', 'Otworzylas'],
+  ['Podrozowales', 'Podrozowalas'],
+  ['Poznales', 'Poznalas'],
+  ['Probowales', 'Probowalas'],
+  ['Przeczytales', 'Przeczytalas'],
+  ['Przekonales', 'Przekonalas'],
+  ['Przemierzales', 'Przemierzalas'],
+  ['Przeszukales', 'Przeszukalas'],
+  ['Przetrwales', 'Przetrwalas'],
+  ['Przezyles', 'Przezylas'],
+  ['Przygladales', 'Przygladalas'],
+  ['Rozerwales', 'Rozerwalas'],
+  ['Rozmawiales', 'Rozmawialas'],
+  ['Sluchales', 'Sluchalas'],
+  ['slyszales', 'slyszalas'],
+  ['Skosztowales', 'Skosztowalas'],
+  ['Spotkales', 'Spotkalas'],
+  ['Stales', 'Stalas'],
+  ['Starles', 'Starlas'],
+  ['Widziales', 'Widzialas'],
+  ['Wkroczyles', 'Wkroczylas'],
+  ['Wpadles', 'Wpadlas'],
+  ['Wyleczyles', 'Wyleczylas'],
+  ['Wypiles', 'Wypilas'],
+  ['Wysluchales', 'Wysluchalas'],
+  ['Wyzwoliles', 'Wyzwolilas'],
+  ['Wzbudziles', 'Wzbudzilas'],
+  ['Zabiles', 'Zabilas'],
+  ['Zebrales', 'Zebralas'],
+  ['Zglebiles', 'Zglebilas'],
+]);
+
+const FEMALE_TO_MALE_ENTRY_PREFIX = new Map<string, string>();
+
+MALE_TO_FEMALE_ENTRY_PREFIX.forEach((female, male) => {
+  FEMALE_TO_MALE_ENTRY_PREFIX.set(female, male);
+});
+
+const FEMALE_GENDER_VALUES = new Set<string>([
+  'f',
+  'female',
+  'kobieta',
+  'kobiet',
+  'kobiety',
+  'kobieta?',
+  'woman',
+  'pani',
+  'k',
+]);
+
+const MALE_GENDER_VALUES = new Set<string>([
+  'm',
+  'male',
+  'mezczyzna',
+  'mezczyzn',
+  'mezczyzny',
+  'man',
+  'pan',
+]);
+
+function replaceGenderedPrefix(
+  value: string,
+  replacements: Map<string, string>,
+): string | null {
+  for (const [from, to] of replacements) {
+    if (value === from) {
+      return to;
+    }
+    if (value.startsWith(from + ' ')) {
+      return to + value.slice(from.length);
+    }
+  }
+  return null;
+}
+
+export function canonicalizeKnowledgeEntryGender(value: string): string {
+  return replaceGenderedPrefix(value, FEMALE_TO_MALE_ENTRY_PREFIX) ?? value;
+}
+
+export function formatKnowledgeEntryForGender(
+  value: string,
+  gender: KnowledgeCharacterGender | null | undefined,
+): string {
+  if (gender === 'female') {
+    return replaceGenderedPrefix(value, MALE_TO_FEMALE_ENTRY_PREFIX) ?? value;
+  }
+  return value;
+}
+
+export function parseKnowledgeGender(value: unknown): KnowledgeCharacterGender | null {
+  const candidate =
+    typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+      ? value
+      : value && typeof value === 'object'
+      ? (value as Record<string, unknown>).gender ??
+        (value as Record<string, unknown>).sex ??
+        (value as Record<string, unknown>).Gender ??
+        (value as Record<string, unknown>).Sex
+      : undefined;
+
+  if (candidate == null) {
+    return null;
+  }
+
+  if (typeof candidate === 'string') {
+    const normalized = stripPolishCharacters(candidate.trim().toLowerCase());
+    if (normalized.length === 0) {
+      return null;
+    }
+    if (FEMALE_GENDER_VALUES.has(normalized)) {
+      return 'female';
+    }
+    if (MALE_GENDER_VALUES.has(normalized)) {
+      return 'male';
+    }
+  } else if (typeof candidate === 'number') {
+    if (candidate === 1) {
+      return 'female';
+    }
+    if (candidate === 0) {
+      return 'male';
+    }
+  } else if (typeof candidate === 'boolean') {
+    return candidate ? 'female' : 'male';
+  }
+
+  return null;
 }
 
 function createEmptyProgress(): KnowledgeEntriesMap {
@@ -100,12 +257,27 @@ export function buildNormalizedDefinitions(
       for (const type of KNOWLEDGE_DETAILS_TYPES) {
         const entries = definition[type] ?? [];
         for (const entry of entries) {
-          const normalized = normalizeEntry(entry);
-          if (normalized.length === 0) {
+          const canonical = canonicalizeKnowledgeEntryGender(entry);
+          const normalizedCanonical = normalizeEntry(canonical);
+          if (normalizedCanonical.length === 0) {
             continue;
           }
-          if (!perType[type].has(normalized)) {
-            perType[type].set(normalized, entry);
+
+          if (!perType[type].has(normalizedCanonical)) {
+            perType[type].set(normalizedCanonical, canonical);
+          }
+
+          const originalNormalized = normalizeEntry(entry);
+          if (!perType[type].has(originalNormalized)) {
+            perType[type].set(originalNormalized, canonical);
+          }
+
+          const femaleVariant = formatKnowledgeEntryForGender(canonical, 'female');
+          if (femaleVariant !== canonical) {
+            const normalizedFemale = normalizeEntry(femaleVariant);
+            if (!perType[type].has(normalizedFemale)) {
+              perType[type].set(normalizedFemale, canonical);
+            }
           }
         }
       }
@@ -232,6 +404,40 @@ function sanitizeProgress(
   return result;
 }
 
+function sanitizeCharacters(
+  previous: KnowledgeCharacterMetadataMap | undefined,
+): KnowledgeCharacterMetadataMap {
+  const result: KnowledgeCharacterMetadataMap = {};
+  if (!previous || typeof previous !== 'object') {
+    return result;
+  }
+
+  for (const [character, metadata] of Object.entries(previous)) {
+    if (!metadata || typeof metadata !== 'object') {
+      continue;
+    }
+
+    const parsedGender =
+      parseKnowledgeGender(metadata.gender) ??
+      parseKnowledgeGender((metadata as Record<string, unknown>).sex);
+    const updatedAt =
+      typeof metadata.updatedAt === 'number' && metadata.updatedAt > 0
+        ? metadata.updatedAt
+        : undefined;
+
+    if (!parsedGender && !updatedAt) {
+      continue;
+    }
+
+    result[character] = {
+      ...(parsedGender ? { gender: parsedGender } : {}),
+      ...(updatedAt ? { updatedAt } : {}),
+    };
+  }
+
+  return result;
+}
+
 function assignStrings(
   target: KnowledgeCategoryDefinition,
   type: KnowledgeDetailsType,
@@ -307,12 +513,14 @@ class KnowledgeDetailsLoader
     }
 
     const progress = sanitizeProgress(context.previousSnapshot?.data.progress, definitions);
+    const characters = sanitizeCharacters(context.previousSnapshot?.data.characters);
 
     return {
       snapshot: {
         data: {
           definitions,
           progress,
+          characters,
           version: data.version,
         },
         timestamp: Date.now(),
@@ -356,6 +564,7 @@ class KnowledgeDetailsIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshM
           data: {
             definitions,
             progress: sanitizeProgress(value.data?.progress, definitions),
+            characters: sanitizeCharacters(value.data?.characters),
             version: value.data?.version,
           },
           timestamp: value.timestamp ?? Date.now(),
