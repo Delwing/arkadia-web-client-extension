@@ -116,17 +116,25 @@ function getUniqueLibraryCategories(library: KnowledgeLibraryEntry): string[] {
   return unique;
 }
 
+type KnowledgeReportLibraryCategory = {
+  name: string;
+  dative: string;
+  status: KnowledgeCategoryStatus;
+};
+
 type LibraryProgressSummary = {
   total: number;
   completed: number;
   in_progress: number;
   not_started: number;
   remaining: number;
+  categories: KnowledgeReportLibraryCategory[];
 };
 
-type KnowledgeReportLibrary = LibraryProgressSummary & {
+type KnowledgeReportLibrary = Omit<LibraryProgressSummary, 'categories'> & {
   id: string;
   name: string;
+  categories: KnowledgeReportLibraryCategory[];
 };
 
 type KnowledgeReportCategoryLibrary = {
@@ -151,16 +159,27 @@ function summarizeLibraryProgress(
   libraryProgress: Record<string, KnowledgeCategoryStatus>,
 ): LibraryProgressSummary {
   const categories = getUniqueLibraryCategories(library);
+  const categoryDetails: KnowledgeReportLibraryCategory[] = [];
   const summary: LibraryProgressSummary = {
     total: categories.length,
     completed: 0,
     in_progress: 0,
     not_started: 0,
     remaining: 0,
+    categories: categoryDetails,
   };
 
   for (const category of categories) {
     const status = libraryProgress[category] ?? 'not_started';
+    const key = category.toLowerCase();
+    const dative = CATEGORY_BASE_TO_DATIVE[key] ?? category;
+
+    categoryDetails.push({
+      name: category,
+      dative,
+      status,
+    });
+
     if (status === 'completed') {
       summary.completed += 1;
     } else if (status === 'in_progress') {
@@ -193,7 +212,6 @@ function buildKnowledgeReport(
   for (const [libraryId, library] of libraryEntries) {
     const libraryProgress = characterProgress[libraryId] ?? {};
     const summary = summarizeLibraryProgress(library, libraryProgress);
-    const uniqueCategories = getUniqueLibraryCategories(library);
 
     if (summary.total > 0 && summary.remaining > 0) {
       libraries.push({
@@ -204,17 +222,17 @@ function buildKnowledgeReport(
         not_started: summary.not_started,
         in_progress: summary.in_progress,
         completed: summary.completed,
+        categories: summary.categories,
       });
     }
 
-    if (uniqueCategories.length === 0) {
+    if (summary.categories.length === 0) {
       continue;
     }
 
-    for (const category of uniqueCategories) {
-      const status = libraryProgress[category] ?? 'not_started';
-      const key = category.toLowerCase();
-      const dative = CATEGORY_BASE_TO_DATIVE[key] ?? category;
+    for (const detail of summary.categories) {
+      const category = detail.name;
+      const { status, dative } = detail;
       let categoryEntry = categoriesMap.get(category);
       if (!categoryEntry) {
         categoryEntry = {
