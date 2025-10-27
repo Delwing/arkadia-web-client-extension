@@ -18,6 +18,7 @@ import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
+import KnowledgeReport from "./KnowledgeReport";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -1178,6 +1179,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const herbRoot = document.getElementById('herb-ui-root');
     if (herbRoot) {
         createRoot(herbRoot).render(createElement(HerbManager));
+    }
+
+    const knowledgeRoot = document.getElementById('knowledge-root');
+    if (knowledgeRoot) {
+        createRoot(knowledgeRoot).render(createElement(KnowledgeReport));
     }
 });
 

@@ -5,6 +5,7 @@ import {
   getKnowledgeStore,
   KnowledgeCategoryStatus,
   KnowledgeLibraryEntry,
+  KnowledgeLibraryProgress,
   KnowledgeSnapshot,
 } from '../dataStores/knowledgeStore';
 import { getCurrentCharacter } from '../storage';
@@ -123,6 +124,28 @@ type LibraryProgressSummary = {
   remaining: number;
 };
 
+type KnowledgeReportLibrary = LibraryProgressSummary & {
+  id: string;
+  name: string;
+};
+
+type KnowledgeReportCategoryLibrary = {
+  id: string;
+  name: string;
+  status: KnowledgeCategoryStatus;
+};
+
+type KnowledgeReportCategory = {
+  name: string;
+  dative: string;
+  libraries: KnowledgeReportCategoryLibrary[];
+};
+
+type KnowledgeReportPayload = {
+  libraries: KnowledgeReportLibrary[];
+  categories: KnowledgeReportCategory[];
+};
+
 function summarizeLibraryProgress(
   library: KnowledgeLibraryEntry,
   libraryProgress: Record<string, KnowledgeCategoryStatus>,
@@ -150,6 +173,87 @@ function summarizeLibraryProgress(
   summary.remaining = summary.not_started + summary.in_progress;
 
   return summary;
+}
+
+function buildKnowledgeReport(
+  libraryEntries: [string, KnowledgeLibraryEntry][],
+  characterProgress: Record<string, KnowledgeLibraryProgress>,
+): KnowledgeReportPayload | null {
+  const libraries: KnowledgeReportLibrary[] = [];
+  const categoriesMap = new Map<
+    string,
+    {
+      category: string;
+      dative: string;
+      libraries: KnowledgeReportCategoryLibrary[];
+      hasRemaining: boolean;
+    }
+  >();
+
+  for (const [libraryId, library] of libraryEntries) {
+    const libraryProgress = characterProgress[libraryId] ?? {};
+    const summary = summarizeLibraryProgress(library, libraryProgress);
+    const uniqueCategories = getUniqueLibraryCategories(library);
+
+    if (summary.total > 0 && summary.remaining > 0) {
+      libraries.push({
+        id: libraryId,
+        name: library.name,
+        total: summary.total,
+        remaining: summary.remaining,
+        not_started: summary.not_started,
+        in_progress: summary.in_progress,
+        completed: summary.completed,
+      });
+    }
+
+    if (uniqueCategories.length === 0) {
+      continue;
+    }
+
+    for (const category of uniqueCategories) {
+      const status = libraryProgress[category] ?? 'not_started';
+      const key = category.toLowerCase();
+      const dative = CATEGORY_BASE_TO_DATIVE[key] ?? category;
+      let categoryEntry = categoriesMap.get(category);
+      if (!categoryEntry) {
+        categoryEntry = {
+          category,
+          dative,
+          libraries: [],
+          hasRemaining: false,
+        };
+        categoriesMap.set(category, categoryEntry);
+      }
+
+      categoryEntry.libraries.push({
+        id: libraryId,
+        name: library.name,
+        status,
+      });
+
+      if (status !== 'completed') {
+        categoryEntry.hasRemaining = true;
+      }
+    }
+  }
+
+  libraries.sort((a, b) => a.name.localeCompare(b.name));
+
+  const categories = Array.from(categoriesMap.values())
+    .filter((entry) => entry.hasRemaining)
+    .map<KnowledgeReportCategory>((entry) => ({
+      name: entry.category,
+      dative: entry.dative,
+      libraries: entry.libraries.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (libraries.length === 0 && categories.length === 0) {
+    return null;
+  }
+
+  return { libraries, categories };
 }
 
 export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
@@ -478,47 +582,24 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       return;
     }
 
-    const characterKey = getCharacterProgressKey();
-    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
     const libraryEntries = Object.entries(currentSnapshot.data.libraries);
-
     if (libraryEntries.length === 0) {
       client.println('Brak danych o bibliotekach.');
+      client.sendEvent('knowledgeReport', null);
       return;
     }
 
-    const lines: string[] = [];
+    const characterKey = getCharacterProgressKey();
+    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+    const report = buildKnowledgeReport(libraryEntries, characterProgress);
 
-    for (const [libraryId, library] of libraryEntries) {
-      const libraryProgress = characterProgress[libraryId] ?? {};
-      const summary = summarizeLibraryProgress(library, libraryProgress);
-
-      if (summary.total === 0 || summary.remaining === 0) {
-        continue;
-      }
-
-      const header = colorString(library.name, HEADER_COLOR);
-      const detailParts: string[] = [];
-
-      if (summary.not_started > 0) {
-        detailParts.push(`nierozpoczete: ${summary.not_started}`);
-      }
-      if (summary.in_progress > 0) {
-        detailParts.push(`w trakcie: ${summary.in_progress}`);
-      }
-
-      const detail = detailParts.length > 0 ? ` (${detailParts.join(', ')})` : '';
-      lines.push(
-        `${header}: pozostalo ${summary.remaining} z ${summary.total} kategorii${detail}`,
-      );
-    }
-
-    if (lines.length === 0) {
+    if (!report) {
       client.println('Brak wiedzy do zglebiania w znanych bibliotekach.');
+      client.sendEvent('knowledgeReport', null);
       return;
     }
 
-    client.println(['Raport bibliotek:', ...lines].join('\n'));
+    client.sendEvent('knowledgeReport', report);
   }
 }
 
