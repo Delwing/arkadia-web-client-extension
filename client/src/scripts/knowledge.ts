@@ -44,11 +44,6 @@ const KNOWLEDGE_PROMPT_PATTERN =
 
 const KNOWLEDGE_COMMANDS = KNOWLEDGE_CATEGORY_CONFIG.map((config) => config.command);
 const KNOWLEDGE_COMMAND_SEQUENCE = KNOWLEDGE_COMMANDS.join(';');
-const KNOWLEDGE_TYPE_LABELS: Record<KnowledgeDetailsType, string> = {
-  fight: 'Z walki',
-  books: 'Z ksiazek i bibliotek',
-  exploration: 'Z eksploracji',
-};
 const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
   fight: ['walki', 'walkach'],
   books: ['ksiazek i bibliotek', 'ksiazkach i bibliotekach', 'bibliotekach i ksiazkach'],
@@ -108,6 +103,125 @@ function createEmptyKnowledgeRunCategoryState(): KnowledgeRunCategoryState {
     knownEntries: createKnowledgeRunSets(),
     unknownEntries: createKnowledgeRunSets(),
   };
+}
+
+function sanitizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const result: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string') {
+      continue;
+    }
+    const trimmed = entry.trim();
+    if (trimmed.length === 0) {
+      continue;
+    }
+    result.push(trimmed);
+  }
+  return result;
+}
+
+function buildKnowledgeDetailsReportPayload(
+  snapshot: KnowledgeDetailsSnapshot,
+  characterKey: string,
+): KnowledgeDetailsReportPayload | null {
+  const { definitions, progress } = snapshot.data;
+  const characterProgress = progress[characterKey];
+
+  if (!characterProgress) {
+    return null;
+  }
+
+  const normalizedDefinitions = buildNormalizedDefinitions(definitions);
+  const categories: KnowledgeDetailsReportCategory[] = [];
+
+  for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
+    const base = config.base;
+    const normalizedDefinition = normalizedDefinitions[base];
+    const progressEntry = characterProgress[base];
+
+    if (!progressEntry) {
+      continue;
+    }
+
+    const summaries = {} as Record<KnowledgeDetailsType, KnowledgeDetailsReportTypeSummary>;
+    let hasData = false;
+    let totalEntries = 0;
+
+    for (const type of KNOWLEDGE_DETAILS_TYPES) {
+      const definitionMap = normalizedDefinition?.[type] ?? new Map<string, string>();
+      const total = definitionMap.size;
+      totalEntries += total;
+
+      const knownSet = new Set<string>();
+      const entries = progressEntry?.entries?.[type];
+      if (Array.isArray(entries)) {
+        for (const entry of entries) {
+          if (typeof entry !== 'string') {
+            continue;
+          }
+          const normalized = normalizeKnowledgeEntry(entry);
+          if (normalized.length > 0) {
+            knownSet.add(normalized);
+          }
+        }
+      }
+
+      const missing: string[] = [];
+      for (const [normalizedValue, original] of definitionMap.entries()) {
+        if (!knownSet.has(normalizedValue)) {
+          missing.push(original);
+        }
+      }
+
+      const unknown = sanitizeStringArray(progressEntry?.unknownEntries?.[type]);
+      const levelValue = progressEntry?.levels?.[type];
+      let level: string | undefined;
+      if (typeof levelValue === 'string') {
+        const trimmed = levelValue.trim();
+        if (trimmed.length > 0) {
+          level = trimmed;
+        }
+      }
+      const known = total > 0 ? Math.min(knownSet.size, total) : knownSet.size;
+
+      if (known > 0 || missing.length > 0 || unknown.length > 0 || level) {
+        hasData = true;
+      }
+
+      summaries[type] = {
+        total,
+        known,
+        missing,
+        unknown,
+        ...(level ? { level } : {}),
+      };
+    }
+
+    const updatedAt =
+      progressEntry && typeof progressEntry.updatedAt === 'number'
+        ? progressEntry.updatedAt
+        : null;
+
+    if (!hasData && totalEntries === 0) {
+      continue;
+    }
+
+    categories.push({
+      name: config.base,
+      dative: getDativeCategoryName(config.base),
+      updatedAt,
+      types: summaries,
+    });
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
+
+  return { categories };
 }
 
 function normalizeCategory(category: string, library: KnowledgeLibraryEntry): string | null {
@@ -199,6 +313,25 @@ type KnowledgeReportCategory = {
 type KnowledgeReportPayload = {
   libraries: KnowledgeReportLibrary[];
   categories: KnowledgeReportCategory[];
+};
+
+type KnowledgeDetailsReportTypeSummary = {
+  total: number;
+  known: number;
+  missing: string[];
+  unknown: string[];
+  level?: string;
+};
+
+type KnowledgeDetailsReportCategory = {
+  name: string;
+  dative: string;
+  updatedAt: number | null;
+  types: Record<KnowledgeDetailsType, KnowledgeDetailsReportTypeSummary>;
+};
+
+type KnowledgeDetailsReportPayload = {
+  categories: KnowledgeDetailsReportCategory[];
 };
 
 function summarizeLibraryProgress(
@@ -652,9 +785,31 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
   aliasList.push({ pattern: /\/zglebiaj$/, callback: showLibraryCategories });
   aliasList.push({ pattern: /\/biblioteki$/, callback: showLibrariesReport });
-  aliasList.push({ pattern: /\/wiedza$/, callback: showKnowledgeDetailsReport });
+  aliasList.push({ pattern: /\/wiedza$/, callback: openKnowledgeDetailsReport });
+  aliasList.push({ pattern: /\/wiedza_buduj$/, callback: buildKnowledgeDetailsData });
 
-  function showKnowledgeDetailsReport() {
+  function openKnowledgeDetailsReport() {
+    if (!knowledgeDetailsSnapshot) {
+      client.println('Dane wiedzy nie sa jeszcze dostepne. Uzyj /wiedza_buduj, aby je zbudowac.');
+      client.sendEvent('knowledgeDetailsReport', null);
+      return;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const payload = buildKnowledgeDetailsReportPayload(knowledgeDetailsSnapshot, characterKey);
+
+    if (!payload) {
+      client.println(
+        'Brak zapisanych danych raportu wiedzy dla tej postaci. Uzyj /wiedza_buduj, aby je zaktualizowac.',
+      );
+      client.sendEvent('knowledgeDetailsReport', null);
+      return;
+    }
+
+    client.sendEvent('knowledgeDetailsReport', payload);
+  }
+
+  function buildKnowledgeDetailsData() {
     if (!knowledgeDetailsSnapshot) {
       client.println('Dane wiedzy nie sa jeszcze dostepne.');
       return;
@@ -716,51 +871,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
       const timestamp = Date.now();
       const characterKey = getCharacterProgressKey();
-      const summaryLines: string[] = [];
-      summaryLines.push(colorString('Raport wiedzy', HEADER_COLOR));
 
-      for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
-        const category = config.base;
-        const state = results.get(category);
-        if (!state) {
-          continue;
-        }
-
-        const definition = definitions[category];
-        if (summaryLines.length > 1) {
-          summaryLines.push('');
-        }
-        summaryLines.push(colorString(config.base, HEADER_COLOR));
-
+      for (const [category, state] of results) {
         for (const type of KNOWLEDGE_DETAILS_TYPES) {
-          const knownCount = state.knownEntries[type].size;
-          const total = definition?.[type]?.length ?? 0;
-          const level = state.levels[type];
-          let line = `  ${KNOWLEDGE_TYPE_LABELS[type]}: ${knownCount}/${total}`;
-          if (level) {
-            line += ` (${level})`;
-          }
-          summaryLines.push(line);
-
-          const missing: string[] = [];
-          if (definition) {
-            const knownNormalized = new Set(
-              Array.from(state.knownEntries[type]).map((entry) => normalizeKnowledgeEntry(entry)),
-            );
-            for (const entry of definition[type] ?? []) {
-              if (!knownNormalized.has(normalizeKnowledgeEntry(entry))) {
-                missing.push(entry);
-              }
-            }
-          }
-
-          if (missing.length > 0) {
-            summaryLines.push(`    Braki: ${missing.join(', ')}`);
-          }
-
           const unknownList = Array.from(state.unknownEntries[type]);
           if (unknownList.length > 0) {
-            summaryLines.push(`    Nieznane wpisy: ${unknownList.join(', ')}`);
             console.warn('Nieznane wpisy wiedzy', {
               category,
               type,
@@ -768,15 +883,6 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             });
           }
         }
-      }
-
-      if (categoriesRemaining.size > 0) {
-        if (summaryLines.length > 0) {
-          summaryLines.push('');
-        }
-        summaryLines.push(
-          `Brak danych dla kategorii: ${Array.from(categoriesRemaining).join(', ')}.`,
-        );
       }
 
       void detailsStore
@@ -832,7 +938,22 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
           console.error('Failed to store knowledge details report:', error);
         });
 
-      client.println(summaryLines.join('\n'));
+      const messages: string[] = [];
+      if (dueToTimeout) {
+        messages.push(
+          'Raport zakonczyl sie z powodu przekroczenia czasu – zebrano dostepne dane.',
+        );
+      }
+      if (categoriesRemaining.size > 0) {
+        messages.push(
+          `Nie odebrano danych dla kategorii: ${Array.from(categoriesRemaining).join(', ')}.`,
+        );
+      }
+      messages.push(
+        'Zaktualizowano dane raportu wiedzy. Uzyj /wiedza, aby wyswietlic raport w oknie.',
+      );
+
+      client.println(messages.join('\n'));
     }
 
     activeKnowledgeRun = {

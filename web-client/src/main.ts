@@ -19,6 +19,7 @@ import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 import KnowledgeReport from "./KnowledgeReport";
+import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -1184,6 +1185,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const knowledgeRoot = document.getElementById('knowledge-root');
     if (knowledgeRoot) {
         createRoot(knowledgeRoot).render(createElement(KnowledgeReport));
+    }
+
+    const knowledgeDetailsRoot = document.getElementById('knowledge-details-root');
+    if (knowledgeDetailsRoot) {
+        createRoot(knowledgeDetailsRoot).render(createElement(KnowledgeDetailsReport));
     }
 });
 
