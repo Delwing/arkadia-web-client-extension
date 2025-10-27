@@ -1112,23 +1112,43 @@ h1 {
   flex-wrap: wrap;
 }
 
-.knowledge-details-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.78);
-  user-select: none;
+.knowledge-details-toggle-button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background-color: rgba(59, 130, 246, 0.12);
+  color: rgba(226, 232, 240, 0.85);
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.knowledge-details-toggle input {
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
-  accent-color: #3b82f6;
-  background-color: var(--input-background);
-  border: 1px solid var(--input-border);
-  border-radius: 0.25rem;
+.knowledge-details-toggle-button:hover,
+.knowledge-details-toggle-button:focus-visible {
+  background-color: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #f8fafc;
+  outline: none;
+}
+
+.knowledge-details-toggle-button--active {
+  background-color: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: rgba(190, 242, 100, 0.95);
+}
+
+.knowledge-details-toggle-button--active:hover,
+.knowledge-details-toggle-button--active:focus-visible {
+  background-color: rgba(34, 197, 94, 0.28);
+  border-color: rgba(34, 197, 94, 0.6);
+  color: #ecfccb;
+}
+
+.knowledge-details-levels-info {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: rgba(226, 232, 240, 0.68);
 }
 
 .knowledge-details-nav {
@@ -1136,16 +1156,7 @@ h1 {
   gap: 0.45rem;
   margin-top: 0.6rem;
   padding-bottom: 0.25rem;
-  overflow-x: auto;
-}
-
-.knowledge-details-nav::-webkit-scrollbar {
-  height: 6px;
-}
-
-.knowledge-details-nav::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.35);
-  border-radius: 999px;
+  flex-wrap: wrap;
 }
 
 .knowledge-details-nav-button {

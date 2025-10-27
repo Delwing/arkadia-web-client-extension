@@ -8,10 +8,10 @@ import React, {
 import type Client from '@client/src/Client';
 import type { KnowledgeDetailsType } from '@client/src/dataStores/knowledgeDetailsStore';
 
-const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string }[] = [
-  { key: 'fight', label: 'Z walki' },
-  { key: 'books', label: 'Z ksiazek i bibliotek' },
-  { key: 'exploration', label: 'Z eksploracji' },
+const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
+  { key: 'fight', label: 'Z walki', showDetails: false },
+  { key: 'books', label: 'Z ksiazek i bibliotek', showDetails: false },
+  { key: 'exploration', label: 'Z eksploracji', showDetails: true },
 ];
 
 type KnowledgeDetailsReportTypeSummary = {
@@ -303,7 +303,7 @@ const KnowledgeDetailsReport: React.FC = () => {
             </button>
           </div>
           <div className="knowledge-details-type-groups">
-            {TYPE_CONFIG.map(({ key, label }) => {
+            {TYPE_CONFIG.filter(({ showDetails }) => showDetails).map(({ key, label }) => {
               const summary = category.types[key];
               if (!summary) {
                 return null;
@@ -406,14 +406,19 @@ const KnowledgeDetailsReport: React.FC = () => {
           <div className="knowledge-details-content" ref={scrollContainerRef}>
             <div className="knowledge-details-sticky">
               <div className="knowledge-details-toolbar">
-                <label className="knowledge-details-toggle">
-                  <input
-                    type="checkbox"
-                    checked={hideCompleted}
-                    onChange={(event) => setHideCompleted(event.target.checked)}
-                  />
-                  Ukryj ukończone wpisy
-                </label>
+                <button
+                  type="button"
+                  className={`knowledge-details-toggle-button${
+                    hideCompleted ? ' knowledge-details-toggle-button--active' : ''
+                  }`}
+                  onClick={() => setHideCompleted((prev) => !prev)}
+                >
+                  {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+                </button>
+              </div>
+              <div className="knowledge-details-levels-info">
+                Dostepne poziomy wiedzy: znikoma, niewielka, czesciowa, niezla, dosc dobra, dobra, bardzo dobra,
+                doskonala, prawie pelna i pelna.
               </div>
               {navItems.length > 0 && (
                 <div className="knowledge-details-nav">
