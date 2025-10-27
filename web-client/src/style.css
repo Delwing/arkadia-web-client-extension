@@ -2793,16 +2793,61 @@ body.mobile-command-radial-active {
   overflow-y: auto;
 }
 
+
 .alias-form-group {
   flex-wrap: wrap;
 }
 
 .alias-list-item {
   flex-wrap: wrap;
+  align-items: stretch;
 }
 
-.alias-list-item span {
+.alias-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  min-width: 0;
   word-break: break-word;
+}
+
+.alias-entry code {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+  white-space: pre-wrap;
+}
+
+.alias-divider {
+  color: var(--text-secondary);
+  flex: none;
+}
+
+.alias-command {
+  color: var(--text-primary);
+}
+
+.alias-list-item-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .alias-list-item-actions {
+    width: auto;
+  }
 }
 
 #options-modal .modal-dialog,
