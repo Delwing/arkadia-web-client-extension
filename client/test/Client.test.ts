@@ -157,9 +157,9 @@ test('createButton creates button attached to panel', () => {
   expect(panel?.contains(button)).toBe(true);
 });
 
-test('sendCommand dispatches event and splits commands', () => {
+test('sendCommand dispatches event and splits commands', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('foo#bar');
+  await client.sendCommand('foo#bar');
   expect(parseCommand).toHaveBeenCalledWith('foo#bar');
   expect(parseCommand).toHaveBeenCalledWith('parsed:foo');
   expect(parseCommand).toHaveBeenCalledWith('bar');
@@ -167,16 +167,16 @@ test('sendCommand dispatches event and splits commands', () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true, undefined);
 });
 
-test('sendCommand leaves casing unchanged by default', () => {
+test('sendCommand leaves casing unchanged by default', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   parseCommand.mockClear();
-  client.sendCommand('LOOK AROUND');
+  await client.sendCommand('LOOK AROUND');
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('LOOK AROUND');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:LOOK AROUND', true, undefined);
 });
 
-test('sendCommand keeps casing for speech commands', () => {
+test('sendCommand keeps casing for speech commands', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const speechCommands = [
     "'SHOUT",
@@ -189,18 +189,18 @@ test('sendCommand keeps casing for speech commands', () => {
     'jszepnij HELLO',
   ];
 
-  speechCommands.forEach((command) => {
+  for (const command of speechCommands) {
     parseCommand.mockClear();
-    client.sendCommand(command);
+    await client.sendCommand(command);
     expect(parseCommand).toHaveBeenCalledTimes(1);
     expect(parseCommand).toHaveBeenCalledWith(command);
-  });
+  }
 });
 
-test('sendCommand preserves casing when requested', () => {
+test('sendCommand preserves casing when requested', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   parseCommand.mockClear();
-  client.sendCommand('UPPER CASE', true, { preserveCase: true });
+  await client.sendCommand('UPPER CASE', true, { preserveCase: true });
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('UPPER CASE');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith(
@@ -212,27 +212,27 @@ test('sendCommand preserves casing when requested', () => {
   );
 });
 
-test('sendCommand allows empty command', () => {
+test('sendCommand allows empty command', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('');
+  await client.sendCommand('');
   expect(parseCommand).toHaveBeenCalledWith('');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true, undefined);
 });
 
-test('sendCommand splits commands returned by parseCommand', () => {
+test('sendCommand splits commands returned by parseCommand', async () => {
   parseCommand.mockImplementationOnce(() => 'foo;bar');
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  client.sendCommand('e');
+  await client.sendCommand('e');
   expect(parseCommand).toHaveBeenCalledWith('e');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true, undefined);
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:bar', true, undefined);
 });
 
-test('sendCommand prints echo commands locally', () => {
+test('sendCommand prints echo commands locally', async () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const printSpy = jest.spyOn(client, 'print').mockImplementation();
-  client.sendCommand('echo <red> text');
+  await client.sendCommand('echo <red> text');
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
   expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
 });
@@ -336,7 +336,7 @@ test('support sends commands to support leader', () => {
   expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wesprzyj ob_5');
 });
 
-test('sendCommand expands object shortcuts', () => {
+test('sendCommand expands object shortcuts', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
     { num: 5, shortcut: '1' },
@@ -344,13 +344,13 @@ test('sendCommand expands object shortcuts', () => {
     { num: 42, shortcut: '@' },
   ] as any);
 
-  client.sendCommand('zabij @1');
+  await client.sendCommand('zabij @1');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:zabij ob_5', true, undefined);
 
-  client.sendCommand('obejrzyj @A');
+  await client.sendCommand('obejrzyj @A');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:obejrzyj ob_7', true, undefined);
 
-  client.sendCommand('help @@');
+  await client.sendCommand('help @@');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', true, undefined);
 });
 
