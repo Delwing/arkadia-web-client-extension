@@ -290,7 +290,7 @@ const KnowledgeDetailsReport: React.FC = () => {
                 <span className="knowledge-details-updated">Aktualizacja: {updatedText}</span>
               )}
               <div className="knowledge-details-counters">
-                {TYPE_CONFIG.map(({ key, label }) => {
+                {TYPE_CONFIG.map(({ key, label, showDetails }) => {
                   const summary = category.types[key];
                   if (!summary) {
                     return null;
@@ -315,12 +315,14 @@ const KnowledgeDetailsReport: React.FC = () => {
                         >
                           {levelDisplay}
                         </span>
-                        <span
-                          className="knowledge-details-badge knowledge-details-badge--entries"
-                          title={entriesTitle}
-                        >
-                          {summary.known}/{summary.total}
-                        </span>
+                        {showDetails && summary.total > 0 && (
+                          <span
+                            className="knowledge-details-badge knowledge-details-badge--entries"
+                            title={entriesTitle}
+                          >
+                            {summary.known}/{summary.total}
+                          </span>
+                        )}
                       </span>
                     </span>
                   );
