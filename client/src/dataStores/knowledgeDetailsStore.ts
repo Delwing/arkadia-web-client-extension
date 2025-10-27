@@ -6,12 +6,6 @@ import {
   RefreshMetadata,
   StorageStrategy,
 } from '../dataStore/types';
-import {
-  clearIndexedDB,
-  getFromIndexedDB,
-  IndexedDBConfig,
-  storeInIndexedDB,
-} from '../utils/dataCache';
 import { KNOWLEDGE_DETAILS_DATA } from '../data/knowledgeDetailsData';
 import { stripPolishCharacters } from '../stripPolishCharacters';
 import {
@@ -448,6 +442,160 @@ function parseCategoryDefinition(raw: unknown): KnowledgeCategoryDefinition {
   return definition;
 }
 
+const KNOWLEDGE_DB_NAME = 'ArkadiaKnowledgeDetailsDBv2';
+const DEFINITIONS_STORE = 'knowledge_definitions';
+const ENTRIES_STORE = 'knowledge_entries';
+const PROGRESS_STORE = 'knowledge_progress';
+const CHARACTERS_STORE = 'knowledge_characters';
+const METADATA_STORE = 'knowledge_metadata';
+
+let knowledgeDatabasePromise: Promise<IDBDatabase> | null = null;
+
+function openKnowledgeDetailsDatabase(): Promise<IDBDatabase> {
+  if (!knowledgeDatabasePromise) {
+    knowledgeDatabasePromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(KNOWLEDGE_DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(DEFINITIONS_STORE)) {
+          db.createObjectStore(DEFINITIONS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(ENTRIES_STORE)) {
+          db.createObjectStore(ENTRIES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(PROGRESS_STORE)) {
+          db.createObjectStore(PROGRESS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(CHARACTERS_STORE)) {
+          db.createObjectStore(CHARACTERS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(METADATA_STORE)) {
+          db.createObjectStore(METADATA_STORE, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error('Failed to open knowledge details database'));
+    });
+  }
+
+  return knowledgeDatabasePromise;
+}
+
+function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'));
+  });
+}
+
+async function withKnowledgeTransaction<T>(
+  storeNames: string[],
+  mode: IDBTransactionMode,
+  handler: (stores: Record<string, IDBObjectStore>) => Promise<T>,
+): Promise<T> {
+  const db = await openKnowledgeDetailsDatabase();
+  return new Promise<T>((resolve, reject) => {
+    const transaction = db.transaction(storeNames, mode);
+    transaction.onabort = () => reject(transaction.error ?? new Error('Knowledge details transaction aborted'));
+    transaction.onerror = () => reject(transaction.error ?? new Error('Knowledge details transaction error'));
+
+    const stores: Record<string, IDBObjectStore> = {};
+    for (const name of storeNames) {
+      stores[name] = transaction.objectStore(name);
+    }
+
+    Promise.resolve(handler(stores))
+      .then((result) => {
+        transaction.oncomplete = () => resolve(result);
+      })
+      .catch((error) => {
+        reject(error);
+        try {
+          transaction.abort();
+        } catch {
+          // ignore
+        }
+      });
+  });
+}
+
+function sanitizeKnownEntriesMap(entries: KnowledgeEntriesMap): KnowledgeEntriesMap {
+  const result = createEmptyProgress();
+  for (const type of KNOWLEDGE_DETAILS_TYPES) {
+    const seen = new Set<string>();
+    const list = Array.isArray(entries[type]) ? entries[type] : [];
+    for (const entry of list) {
+      const canonical = canonicalizeKnowledgeEntryGender(entry);
+      const normalized = normalizeEntry(canonical);
+      if (normalized.length === 0 || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      result[type].push(canonical);
+    }
+    result[type].sort((a, b) => a.localeCompare(b));
+  }
+  return result;
+}
+
+function sanitizeUnknownEntriesMap(entries: KnowledgeEntriesMap): KnowledgeEntriesMap {
+  const result = createEmptyProgress();
+  for (const type of KNOWLEDGE_DETAILS_TYPES) {
+    const seen = new Set<string>();
+    const list = Array.isArray(entries[type]) ? entries[type] : [];
+    for (const entry of list) {
+      const trimmed = typeof entry === 'string' ? entry.trim() : '';
+      if (trimmed.length === 0) {
+        continue;
+      }
+      const normalized = normalizeEntry(trimmed);
+      if (normalized.length === 0 || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      result[type].push(trimmed);
+    }
+    result[type].sort((a, b) => a.localeCompare(b));
+  }
+  return result;
+}
+
+interface KnowledgeDefinitionsRecord {
+  id: 'definitions';
+  definitions: KnowledgeDefinitions;
+  version?: number;
+  timestamp?: number;
+}
+
+interface KnowledgeEntryRecord {
+  id: string;
+  character: string;
+  category: KnowledgeCategoryBaseName;
+  type: KnowledgeDetailsType;
+  canonical: string;
+  updatedAt?: number;
+}
+
+interface KnowledgeProgressRecord {
+  id: string;
+  character: string;
+  category: KnowledgeCategoryBaseName;
+  unknownEntries: KnowledgeEntriesMap;
+  levels: KnowledgeLevelMap;
+  updatedAt: number;
+}
+
+interface KnowledgeCharacterRecord {
+  id: string;
+  character: string;
+  metadata: KnowledgeCharacterMetadata;
+}
+
+interface KnowledgeMetadataRecord<TMeta> {
+  id: string;
+  value: TMeta;
+}
+
 class KnowledgeDetailsLoader
   implements LoaderStrategy<KnowledgeDetailsSnapshot, RefreshMetadata>
 {
@@ -490,27 +638,11 @@ class KnowledgeDetailsLoader
   }
 }
 
-interface KnowledgeDetailsIndexedDbStrategyOptions {
-  data: IndexedDBConfig;
-  metadata?: IndexedDBConfig;
-}
-
 class KnowledgeDetailsIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshMetadata>
   implements StorageStrategy<KnowledgeDetailsSnapshot, TMeta>
 {
-  private readonly dataConfig: IndexedDBConfig;
-  private readonly metadataConfig: IndexedDBConfig;
   private inMemorySnapshot: KnowledgeDetailsSnapshot | undefined;
   private inMemoryMetadata: TMeta | undefined;
-
-  constructor(options: KnowledgeDetailsIndexedDbStrategyOptions) {
-    this.dataConfig = options.data;
-    this.metadataConfig =
-      options.metadata ?? {
-        ...options.data,
-        key: 'metadata',
-      };
-  }
 
   async readSnapshot(): Promise<KnowledgeDetailsSnapshot | undefined> {
     if (this.inMemorySnapshot) {
@@ -518,35 +650,207 @@ class KnowledgeDetailsIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshM
     }
 
     try {
-      const value = await getFromIndexedDB<KnowledgeDetailsSnapshot>(this.dataConfig);
-      if (value) {
-        const definitions = value.data?.definitions ?? ({} as KnowledgeDefinitions);
-        this.inMemorySnapshot = {
-          data: {
-            definitions,
-            progress: sanitizeProgress(value.data?.progress, definitions),
-            characters: sanitizeCharacters(value.data?.characters),
-            version: value.data?.version,
-          },
-          timestamp: value.timestamp ?? Date.now(),
-        };
+      const snapshot = await withKnowledgeTransaction(
+        [DEFINITIONS_STORE, ENTRIES_STORE, PROGRESS_STORE, CHARACTERS_STORE],
+        'readonly',
+        async (stores) => {
+          const definitionsRecord = (await requestToPromise(
+            stores[DEFINITIONS_STORE].get('definitions'),
+          )) as KnowledgeDefinitionsRecord | undefined;
+          if (!definitionsRecord) {
+            return undefined;
+          }
+
+          const [entryRecords, progressRecords, characterRecords] = await Promise.all([
+            requestToPromise<KnowledgeEntryRecord[]>(stores[ENTRIES_STORE].getAll()),
+            requestToPromise<KnowledgeProgressRecord[]>(stores[PROGRESS_STORE].getAll()),
+            requestToPromise<KnowledgeCharacterRecord[]>(stores[CHARACTERS_STORE].getAll()),
+          ]);
+
+          const definitions = definitionsRecord.definitions ?? ({} as KnowledgeDefinitions);
+
+          const progress: KnowledgeProgressByCharacter = {};
+
+          for (const record of progressRecords) {
+            const characterProgress = (progress[record.character] ??= {});
+            const baseCategory = record.category;
+            const unknownEntries = sanitizeUnknownEntriesMap(
+              record.unknownEntries ?? createEmptyProgress(),
+            );
+            const levels = ensureLevelMap(record.levels);
+            characterProgress[baseCategory] = {
+              entries: createEmptyProgress(),
+              unknownEntries,
+              levels,
+              updatedAt:
+                typeof record.updatedAt === 'number' && record.updatedAt > 0
+                  ? record.updatedAt
+                  : Date.now(),
+            };
+          }
+
+          for (const record of entryRecords) {
+            const characterProgress = (progress[record.character] ??= {});
+            const categoryProgress =
+              (characterProgress[record.category] ??= {
+                entries: createEmptyProgress(),
+                unknownEntries: createEmptyProgress(),
+                levels: {},
+                updatedAt:
+                  typeof record.updatedAt === 'number' && record.updatedAt > 0
+                    ? record.updatedAt
+                    : Date.now(),
+              });
+
+            const entries = categoryProgress.entries[record.type];
+            const normalized = normalizeEntry(record.canonical);
+            if (normalized.length === 0) {
+              continue;
+            }
+            if (!entries.some((value) => normalizeEntry(value) === normalized)) {
+              entries.push(record.canonical);
+              entries.sort((a, b) => a.localeCompare(b));
+            }
+          }
+
+          const characters: KnowledgeCharacterMetadataMap = {};
+          for (const record of characterRecords) {
+            characters[record.character] = record.metadata ?? {};
+          }
+
+          const sanitizedCharacters = sanitizeCharacters(characters);
+          const sanitizedProgress = sanitizeProgress(progress, definitions);
+
+          const snapshot: KnowledgeDetailsSnapshot = {
+            data: {
+              definitions,
+              progress: sanitizedProgress,
+              characters: sanitizedCharacters,
+              version: definitionsRecord.version,
+            },
+            timestamp:
+              typeof definitionsRecord.timestamp === 'number'
+                ? definitionsRecord.timestamp
+                : Date.now(),
+          };
+
+          return snapshot;
+        },
+      );
+
+      if (snapshot) {
+        this.inMemorySnapshot = snapshot;
       }
+
+      return snapshot;
     } catch (error) {
       console.warn('Failed to read knowledge details snapshot from IndexedDB:', error);
+      return undefined;
     }
-
-    return this.inMemorySnapshot;
   }
 
   async writeSnapshot(snapshot: KnowledgeDetailsSnapshot | undefined): Promise<void> {
     this.inMemorySnapshot = snapshot;
 
-    if (!snapshot) {
-      await this.safeClear(this.dataConfig);
-      return;
-    }
+    try {
+      await withKnowledgeTransaction(
+        [DEFINITIONS_STORE, ENTRIES_STORE, PROGRESS_STORE, CHARACTERS_STORE],
+        'readwrite',
+        async (stores) => {
+          await Promise.all([
+            requestToPromise(stores[DEFINITIONS_STORE].clear()),
+            requestToPromise(stores[ENTRIES_STORE].clear()),
+            requestToPromise(stores[PROGRESS_STORE].clear()),
+            requestToPromise(stores[CHARACTERS_STORE].clear()),
+          ]);
 
-    await this.safeStore(this.dataConfig, snapshot);
+          if (!snapshot) {
+            return;
+          }
+
+          const definitionsRecord: KnowledgeDefinitionsRecord = {
+            id: 'definitions',
+            definitions: snapshot.data.definitions,
+            version: snapshot.data.version,
+            timestamp: snapshot.timestamp ?? Date.now(),
+          };
+          await requestToPromise(stores[DEFINITIONS_STORE].put(definitionsRecord));
+
+          const characterEntries = Object.entries(snapshot.data.characters ?? {});
+          if (characterEntries.length > 0) {
+            await Promise.all(
+              characterEntries.map(([character, metadata]) => {
+                const record: KnowledgeCharacterRecord = {
+                  id: character,
+                  character,
+                  metadata,
+                };
+                return requestToPromise(stores[CHARACTERS_STORE].put(record));
+              }),
+            );
+          }
+
+          const entryPromises: Promise<unknown>[] = [];
+          const progressPromises: Promise<unknown>[] = [];
+
+          for (const [character, categories] of Object.entries(
+            snapshot.data.progress ?? {},
+          )) {
+            for (const [categoryName, categoryProgress] of Object.entries(categories)) {
+              const category = categoryName as KnowledgeCategoryBaseName;
+              const entriesMap = sanitizeKnownEntriesMap(
+                categoryProgress.entries ?? createEmptyProgress(),
+              );
+              const unknownMap = sanitizeUnknownEntriesMap(
+                categoryProgress.unknownEntries ?? createEmptyProgress(),
+              );
+              const levels = ensureLevelMap(categoryProgress.levels);
+              const updatedAt =
+                typeof categoryProgress.updatedAt === 'number' && categoryProgress.updatedAt > 0
+                  ? categoryProgress.updatedAt
+                  : Date.now();
+
+              const progressRecord: KnowledgeProgressRecord = {
+                id: `${character}::${category}`,
+                character,
+                category,
+                unknownEntries: unknownMap,
+                levels,
+                updatedAt,
+              };
+              progressPromises.push(requestToPromise(stores[PROGRESS_STORE].put(progressRecord)));
+
+              for (const type of KNOWLEDGE_DETAILS_TYPES) {
+                for (const entry of entriesMap[type]) {
+                  const normalized = normalizeEntry(entry);
+                  if (normalized.length === 0) {
+                    continue;
+                  }
+                  const entryRecord: KnowledgeEntryRecord = {
+                    id: `${character}::${category}::${type}::${normalized}`,
+                    character,
+                    category,
+                    type,
+                    canonical: entry,
+                    updatedAt,
+                  };
+                  entryPromises.push(requestToPromise(stores[ENTRIES_STORE].put(entryRecord)));
+                }
+              }
+            }
+          }
+
+          if (progressPromises.length > 0) {
+            await Promise.all(progressPromises);
+          }
+          if (entryPromises.length > 0) {
+            await Promise.all(entryPromises);
+          }
+        },
+      );
+    } catch (error) {
+      console.warn('Failed to store knowledge details in IndexedDB:', error);
+    }
   }
 
   async readMetadata(): Promise<TMeta | undefined> {
@@ -555,49 +859,70 @@ class KnowledgeDetailsIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshM
     }
 
     try {
-      const value = await getFromIndexedDB<TMeta>(this.metadataConfig);
-      if (value != null) {
-        this.inMemoryMetadata = value;
+      const metadata = await withKnowledgeTransaction(
+        [METADATA_STORE],
+        'readonly',
+        async (stores) => {
+          const record = (await requestToPromise(
+            stores[METADATA_STORE].get('metadata'),
+          )) as KnowledgeMetadataRecord<TMeta> | undefined;
+          return record?.value;
+        },
+      );
+
+      if (metadata !== undefined) {
+        this.inMemoryMetadata = metadata;
       }
+
+      return metadata ?? undefined;
     } catch (error) {
       console.warn('Failed to read knowledge details metadata from IndexedDB:', error);
+      return undefined;
     }
-
-    return this.inMemoryMetadata;
   }
 
   async writeMetadata(metadata: TMeta | undefined): Promise<void> {
     this.inMemoryMetadata = metadata;
 
-    if (metadata === undefined) {
-      await this.safeClear(this.metadataConfig);
-      return;
-    }
+    try {
+      await withKnowledgeTransaction([METADATA_STORE], 'readwrite', async (stores) => {
+        if (metadata === undefined) {
+          await requestToPromise(stores[METADATA_STORE].clear());
+          return;
+        }
 
-    await this.safeStore(this.metadataConfig, metadata);
+        const record: KnowledgeMetadataRecord<TMeta> = {
+          id: 'metadata',
+          value: metadata,
+        };
+        await requestToPromise(stores[METADATA_STORE].put(record));
+      });
+    } catch (error) {
+      console.warn('Failed to store knowledge details metadata in IndexedDB:', error);
+    }
   }
 
   async clear(): Promise<void> {
     this.inMemorySnapshot = undefined;
     this.inMemoryMetadata = undefined;
 
-    await Promise.all([
-      this.safeClear(this.dataConfig),
-      this.safeClear(this.metadataConfig),
-    ]);
-  }
-
-  private async safeStore(config: IndexedDBConfig, data: unknown): Promise<void> {
     try {
-      await storeInIndexedDB(config, data);
-    } catch (error) {
-      console.warn('Failed to store knowledge details in IndexedDB:', error);
-    }
-  }
+      await withKnowledgeTransaction(
+        [DEFINITIONS_STORE, ENTRIES_STORE, PROGRESS_STORE, CHARACTERS_STORE],
+        'readwrite',
+        async (stores) => {
+          await Promise.all([
+            requestToPromise(stores[DEFINITIONS_STORE].clear()),
+            requestToPromise(stores[ENTRIES_STORE].clear()),
+            requestToPromise(stores[PROGRESS_STORE].clear()),
+            requestToPromise(stores[CHARACTERS_STORE].clear()),
+          ]);
+        },
+      );
 
-  private async safeClear(config: IndexedDBConfig): Promise<void> {
-    try {
-      await clearIndexedDB(config);
+      await withKnowledgeTransaction([METADATA_STORE], 'readwrite', async (stores) => {
+        await requestToPromise(stores[METADATA_STORE].clear());
+      });
     } catch (error) {
       console.warn('Failed to clear knowledge details from IndexedDB:', error);
     }
@@ -610,13 +935,7 @@ export const getKnowledgeDetailsStore = createDataStoreSingleton(
   () =>
     new DataStore<KnowledgeDetailsSnapshot, RefreshMetadata>({
       loader: new KnowledgeDetailsLoader(),
-      storage: new KnowledgeDetailsIndexedDbStrategy<RefreshMetadata>({
-        data: {
-          dbName: 'ArkadiaKnowledgeDetailsDB',
-          storeName: 'knowledge_details',
-          key: 'knowledge_details',
-        },
-      }),
+      storage: new KnowledgeDetailsIndexedDbStrategy<RefreshMetadata>(),
       ttlMs: TTL,
     }),
 );

@@ -609,6 +609,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     timeoutId: number;
   } | null = null;
   const pendingEntryUpdates: KnowledgeEntryTriggerTarget[] = [];
+  let suppressEntryHighlighting = false;
 
   function markKnowledgeEntryKnown(
     category: KnowledgeCategoryBaseName,
@@ -788,7 +789,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
               : line.indexOf(tokenText);
 
           const lineInstance = triggerLine ?? new TriggerLine(rawLine);
-          if (startIndex >= 0) {
+          if (!suppressEntryHighlighting && startIndex >= 0) {
             const endIndex = startIndex + tokenText.length;
             lineInstance.replace(
               [startIndex, endIndex],
@@ -1284,6 +1285,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         window.clearTimeout(activeKnowledgeRun.inactivityTimer);
       }
       activeKnowledgeRun = null;
+      suppressEntryHighlighting = false;
       client.Triggers.removeByTag(runTag);
 
       if (results.size === 0) {
@@ -1394,6 +1396,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       client.println(messages.join('\n'));
     }
 
+    suppressEntryHighlighting = true;
     activeKnowledgeRun = {
       tag: runTag,
       abortTimer: window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT),
