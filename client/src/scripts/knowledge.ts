@@ -115,6 +115,43 @@ function getUniqueLibraryCategories(library: KnowledgeLibraryEntry): string[] {
   return unique;
 }
 
+type LibraryProgressSummary = {
+  total: number;
+  completed: number;
+  in_progress: number;
+  not_started: number;
+  remaining: number;
+};
+
+function summarizeLibraryProgress(
+  library: KnowledgeLibraryEntry,
+  libraryProgress: Record<string, KnowledgeCategoryStatus>,
+): LibraryProgressSummary {
+  const categories = getUniqueLibraryCategories(library);
+  const summary: LibraryProgressSummary = {
+    total: categories.length,
+    completed: 0,
+    in_progress: 0,
+    not_started: 0,
+    remaining: 0,
+  };
+
+  for (const category of categories) {
+    const status = libraryProgress[category] ?? 'not_started';
+    if (status === 'completed') {
+      summary.completed += 1;
+    } else if (status === 'in_progress') {
+      summary.in_progress += 1;
+    } else {
+      summary.not_started += 1;
+    }
+  }
+
+  summary.remaining = summary.not_started + summary.in_progress;
+
+  return summary;
+}
+
 export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   const aliasList = aliases ?? client.aliases;
   const store = getKnowledgeStore();
@@ -433,5 +470,55 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   }
 
   aliasList.push({ pattern: /\/zglebiaj$/, callback: showLibraryCategories });
+  aliasList.push({ pattern: /\/biblioteki$/, callback: showLibrariesReport });
+
+  function showLibrariesReport() {
+    if (!currentSnapshot) {
+      client.println('Dane wiedzy nie sa jeszcze dostepne.');
+      return;
+    }
+
+    const characterKey = getCharacterProgressKey();
+    const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+    const libraryEntries = Object.entries(currentSnapshot.data.libraries);
+
+    if (libraryEntries.length === 0) {
+      client.println('Brak danych o bibliotekach.');
+      return;
+    }
+
+    const lines: string[] = [];
+
+    for (const [libraryId, library] of libraryEntries) {
+      const libraryProgress = characterProgress[libraryId] ?? {};
+      const summary = summarizeLibraryProgress(library, libraryProgress);
+
+      if (summary.total === 0 || summary.remaining === 0) {
+        continue;
+      }
+
+      const header = colorString(library.name, HEADER_COLOR);
+      const detailParts: string[] = [];
+
+      if (summary.not_started > 0) {
+        detailParts.push(`nierozpoczete: ${summary.not_started}`);
+      }
+      if (summary.in_progress > 0) {
+        detailParts.push(`w trakcie: ${summary.in_progress}`);
+      }
+
+      const detail = detailParts.length > 0 ? ` (${detailParts.join(', ')})` : '';
+      lines.push(
+        `${header}: pozostalo ${summary.remaining} z ${summary.total} kategorii${detail}`,
+      );
+    }
+
+    if (lines.length === 0) {
+      client.println('Brak wiedzy do zglebiania w znanych bibliotekach.');
+      return;
+    }
+
+    client.println(['Raport bibliotek:', ...lines].join('\n'));
+  }
 }
 
