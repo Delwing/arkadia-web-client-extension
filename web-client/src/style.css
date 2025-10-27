@@ -1165,12 +1165,6 @@ h1 {
   outline: none;
 }
 
-.knowledge-details-levels-info {
-  margin-top: 0.35rem;
-  font-size: 0.8rem;
-  color: rgba(226, 232, 240, 0.68);
-}
-
 .knowledge-details-nav {
   display: flex;
   gap: 0.45rem;

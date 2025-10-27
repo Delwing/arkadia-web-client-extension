@@ -262,7 +262,10 @@ const KnowledgeDetailsReport: React.FC = () => {
     }
     return data.categories.map((category, index) => ({
       id: `knowledge-category-${index}`,
-      label: category.name,
+      label:
+        category.types.exploration && category.types.exploration.total > 0
+          ? `${category.name} ${category.types.exploration.known}/${category.types.exploration.total}`
+          : category.name,
     }));
   }, [data]);
 
@@ -303,18 +306,21 @@ const KnowledgeDetailsReport: React.FC = () => {
                       : 'Brak danych o poziomie wiedzy';
                   const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
                   const levelDisplay = formatLevelDisplay(summary);
+                  const showLevelBadge = key !== 'exploration';
                   return (
                     <span key={key} className="knowledge-details-counter">
                       <span className="knowledge-details-counter-label">{label}</span>
                       <span className="knowledge-details-counter-badges">
-                        <span
-                          className={`knowledge-details-badge knowledge-details-badge--level${
-                            summary.level ? '' : ' knowledge-details-badge--empty'
-                          }`}
-                          title={levelTitle}
-                        >
-                          {levelDisplay}
-                        </span>
+                        {showLevelBadge && (
+                          <span
+                            className={`knowledge-details-badge knowledge-details-badge--level${
+                              summary.level ? '' : ' knowledge-details-badge--empty'
+                            }`}
+                            title={levelTitle}
+                          >
+                            {levelDisplay}
+                          </span>
+                        )}
                         {showDetails && summary.total > 0 && (
                           <span
                             className="knowledge-details-badge knowledge-details-badge--entries"
@@ -350,7 +356,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                       summary.level ? ` (${summary.level})` : ''
                     }`
                   : 'Brak danych o poziomie wiedzy';
-              const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
               const levelDisplay = formatLevelDisplay(summary);
 
               if (!hasEntries && !hasUnknown && !hasLevel && summary.entries.length === 0) {
@@ -396,12 +401,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                         title={levelTitle}
                       >
                         {levelDisplay}
-                      </span>
-                      <span
-                        className="knowledge-details-badge knowledge-details-badge--entries"
-                        title={entriesTitle}
-                      >
-                        {summary.known}/{summary.total}
                       </span>
                     </div>
                   </div>
@@ -471,10 +470,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                 >
                   Odbuduj raport
                 </button>
-              </div>
-              <div className="knowledge-details-levels-info">
-                Dostepne poziomy wiedzy: znikoma, niewielka, czesciowa, niezla, dosc dobra, dobra, bardzo dobra,
-                doskonala, prawie pelna i pelna.
               </div>
               {navItems.length > 0 && (
                 <div className="knowledge-details-nav">
