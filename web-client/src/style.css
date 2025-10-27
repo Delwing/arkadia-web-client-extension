@@ -1257,6 +1257,34 @@ h1 {
   flex-wrap: wrap;
 }
 
+.knowledge-details-nav-select {
+  display: none;
+  margin-top: 0.6rem;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.knowledge-details-nav-select-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.knowledge-details-nav-select-input {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background-color: rgba(148, 163, 184, 0.08);
+  color: var(--text-primary);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.knowledge-details-nav-select-input:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.45);
+  outline-offset: 2px;
+}
+
 .knowledge-details-nav-button {
   border: 1px solid rgba(148, 163, 184, 0.28);
   background-color: rgba(148, 163, 184, 0.12);
@@ -1276,6 +1304,16 @@ h1 {
   border-color: rgba(148, 163, 184, 0.45);
   color: #f8fafc;
   outline: none;
+}
+
+@media (max-width: 680px) {
+  .knowledge-details-nav {
+    display: none;
+  }
+
+  .knowledge-details-nav-select {
+    display: flex;
+  }
 }
 
 .knowledge-details-categories {

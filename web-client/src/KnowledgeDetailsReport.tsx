@@ -83,6 +83,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [selectedNav, setSelectedNav] = useState('');
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -274,6 +275,10 @@ const KnowledgeDetailsReport: React.FC = () => {
           : category.name,
     }));
   }, [data]);
+
+  useEffect(() => {
+    setSelectedNav('');
+  }, [navItems]);
 
   const handleNavigate = useCallback((elementId: string) => {
     const container = scrollContainerRef.current;
@@ -483,6 +488,30 @@ const KnowledgeDetailsReport: React.FC = () => {
                       {item.label}
                     </button>
                   ))}
+                </div>
+              )}
+              {navItems.length > 0 && (
+                <div className="knowledge-details-nav-select">
+                  <span className="knowledge-details-nav-select-label">Przejdź do kategorii</span>
+                  <select
+                    className="knowledge-details-nav-select-input"
+                    value={selectedNav}
+                    onChange={(event) => {
+                      const { value } = event.target;
+                      if (!value) {
+                        return;
+                      }
+                      setSelectedNav('');
+                      handleNavigate(value);
+                    }}
+                  >
+                    <option value="">Przejdź do kategorii…</option>
+                    {navItems.map((item) => (
+                      <option key={`select-${item.id}`} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
