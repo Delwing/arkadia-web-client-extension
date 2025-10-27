@@ -1,5 +1,6 @@
 import Client from '../src/Client';
 import initInvite from '../src/scripts/invite';
+import { gmcp } from '../src/gmcp';
 import { refresh, subscribe } from '../src/peopleStore';
 
 jest.mock('../src/peopleStore', () => ({
@@ -25,7 +26,6 @@ describe('Invite functionality', () => {
     let mockAddEventListener: jest.Mock;
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
-    let eventHandlers: Record<string, Array<(event: any) => void>>;
     const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
     beforeEach(async () => {
@@ -52,13 +52,7 @@ describe('Invite functionality', () => {
         };
 
         mockPrintln = jest.fn();
-        eventHandlers = {};
-        mockAddEventListener = jest.fn((eventName: string, handler: (event: any) => void) => {
-            if (!eventHandlers[eventName]) {
-                eventHandlers[eventName] = [];
-            }
-            eventHandlers[eventName].push(handler);
-        });
+        mockAddEventListener = jest.fn();
         mockSendCommand = jest.fn();
 
         mockTeamManager = {
@@ -69,6 +63,8 @@ describe('Invite functionality', () => {
                 "15": { desc: "Vesper", living: true, team: true }
             })
         };
+
+        gmcp.objects = { nums: ['1', '2', '3', '15'] };
 
         client = {
             Triggers: mockTriggers,
@@ -81,15 +77,12 @@ describe('Invite functionality', () => {
 
         initInvite(client);
         await refreshMock.mock.results[0]?.value;
-
-        eventHandlers['gmcp.objects.nums']?.forEach(handler => {
-            handler({ detail: { nums: ['1', '2', '3', '15'] } } as any);
-        });
     });
 
     afterEach(() => {
         jest.clearAllMocks();
         subscribers.length = 0;
+        gmcp.objects = {};
     });
 
     test('should register invite trigger', async () => {
