@@ -8,7 +8,22 @@ import {
   KnowledgeLibraryProgress,
   KnowledgeSnapshot,
 } from '../dataStores/knowledgeStore';
+import {
+  buildNormalizedDefinitions,
+  getKnowledgeDetailsStore,
+  KnowledgeDetailsSnapshot,
+  KnowledgeDetailsType,
+  KNOWLEDGE_DETAILS_TYPES,
+} from '../dataStores/knowledgeDetailsStore';
+import {
+  KnowledgeCategoryBaseName,
+  KNOWLEDGE_CATEGORY_CONFIG,
+  KNOWLEDGE_CATEGORY_ORDER,
+  getBaseCategoryFromName,
+  getDativeCategoryName,
+} from '../knowledgeCategories';
 import { getCurrentCharacter } from '../storage';
+import { stripPolishCharacters } from '../stripPolishCharacters';
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
@@ -27,57 +42,84 @@ const COMPLETE_LIBRARY_PATTERN =
 const KNOWLEDGE_PROMPT_PATTERN =
   /^Wiedze o czym chcesz zglebiac\? (.*)$/;
 
-const CATEGORY_DECLENSION_TO_BASE: Record<string, string> = {
-  'chaosie i jego tworach': 'chaos i jego twory',
-  goblinoidach: 'goblinoidy',
-  golemach: 'golemy',
-  'istotach demonicznych': 'istoty demoniczne',
-  jaszczuroludziach: 'jaszczuroludzie',
-  'magii i jej tworach': 'magia i jej twory',
-  nieumarlych: 'nieumarli',
-  'pajakach i pajakowatych': 'pajaki i pajakowate',
-  ryboludziach: 'ryboludzie',
-  'smokach i smokowatych': 'smoki i smokowate',
-  'starszych rasach': 'starsze rasy',
-  'stworach pokoniunkcyjnych': 'stwory pokoniunkcyjne',
-  szczuroludziach: 'szczuroludzie',
-  wampirach: 'wampiry',
+const KNOWLEDGE_COMMANDS = KNOWLEDGE_CATEGORY_CONFIG.map((config) => config.command);
+const KNOWLEDGE_COMMAND_SEQUENCE = KNOWLEDGE_COMMANDS.join(';');
+const KNOWLEDGE_TYPE_LABELS: Record<KnowledgeDetailsType, string> = {
+  fight: 'Z walki',
+  books: 'Z ksiazek i bibliotek',
+  exploration: 'Z eksploracji',
+};
+const KNOWLEDGE_HEADER_PATTERN = /^Wiedza o (.+?)(?::)?$/;
+const KNOWLEDGE_SUMMARY_PATTERN = /^\s*z\s+(.+?)\s*-\s*(.+)$/i;
+const KNOWLEDGE_SECTION_HEADER_PATTERN = /^Szczegoly(?:\s+z)?\s+(.+?):$/i;
+const KNOWLEDGE_ENTRY_PATTERN = /^\s*[\*\-]\s*(.+)$/;
+const KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT = 1500;
+const KNOWLEDGE_REPORT_HARD_TIMEOUT = 15000;
+
+function normalizeKnowledgeEntry(value: string): string {
+  return stripPolishCharacters(
+    value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.!?]+$/u, ''),
+  );
+}
+
+function detectKnowledgeDetailsType(text: string): KnowledgeDetailsType | null {
+  const normalized = stripPolishCharacters(text.trim().toLowerCase());
+  if (normalized.includes('walk')) {
+    return 'fight';
+  }
+  if (normalized.includes('ksi') || normalized.includes('bibliot') || normalized.includes('book')) {
+    return 'books';
+  }
+  if (
+    normalized.includes('eksplor') ||
+    normalized.includes('poznaw') ||
+    normalized.includes('zwiedz') ||
+    normalized.includes('obserw') ||
+    normalized.includes('explor')
+  ) {
+    return 'exploration';
+  }
+  return null;
+}
+
+type KnowledgeRunCategoryState = {
+  levels: Partial<Record<KnowledgeDetailsType, string>>;
+  knownEntries: Record<KnowledgeDetailsType, Set<string>>;
+  unknownEntries: Record<KnowledgeDetailsType, Set<string>>;
 };
 
-const CATEGORY_BASE_TO_DATIVE: Record<string, string> = {
-  'chaos i jego twory': 'chaosie i jego tworach',
-  goblinoidy: 'goblinoidach',
-  golemy: 'golemach',
-  'istoty demoniczne': 'istotach demonicznych',
-  jaszczuroludzie: 'jaszczuroludziach',
-  'magia i jej twory': 'magii i jej tworach',
-  nieumarli: 'nieumarlych',
-  'pajaki i pajakowate': 'pajakach i pajakowatych',
-  ryboludzie: 'ryboludziach',
-  'smoki i smokowate': 'smokach i smokowatych',
-  'starsze rasy': 'starszych rasach',
-  'stwory pokoniunkcyjne': 'stworach pokoniunkcyjnych',
-  szczuroludzie: 'szczuroludziach',
-  wampiry: 'wampirach',
-};
+function createKnowledgeRunSets(): Record<KnowledgeDetailsType, Set<string>> {
+  return {
+    fight: new Set<string>(),
+    books: new Set<string>(),
+    exploration: new Set<string>(),
+  };
+}
+
+function createEmptyKnowledgeRunCategoryState(): KnowledgeRunCategoryState {
+  return {
+    levels: {},
+    knownEntries: createKnowledgeRunSets(),
+    unknownEntries: createKnowledgeRunSets(),
+  };
+}
 
 function normalizeCategory(category: string, library: KnowledgeLibraryEntry): string | null {
   const trimmed = category.trim();
   const lowerTrimmed = trimmed.toLowerCase();
-  const baseCandidate =
-    CATEGORY_DECLENSION_TO_BASE[lowerTrimmed] !== undefined
-      ? CATEGORY_DECLENSION_TO_BASE[lowerTrimmed]
-      : trimmed;
-
   for (const entry of library.categories) {
-    if (entry.toLowerCase() === baseCandidate.toLowerCase()) {
+    if (entry.toLowerCase() === lowerTrimmed) {
       return entry;
     }
   }
 
-  if (baseCandidate !== trimmed) {
+  const baseCandidate = getBaseCategoryFromName(trimmed);
+  if (baseCandidate) {
     for (const entry of library.categories) {
-      if (entry.toLowerCase() === trimmed.toLowerCase()) {
+      if (getBaseCategoryFromName(entry) === baseCandidate) {
+        return entry;
+      }
+      if (entry.toLowerCase() === baseCandidate.toLowerCase()) {
         return entry;
       }
     }
@@ -91,8 +133,7 @@ function formatCategory(
   category: string,
   status: KnowledgeCategoryStatus,
 ): string {
-  const dativeCategory =
-    CATEGORY_BASE_TO_DATIVE[category.toLowerCase()] ?? category;
+  const dativeCategory = getDativeCategoryName(category);
   const clickable = client.OutputHandler.makeStringClickable(category, () => {
     client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
   });
@@ -171,8 +212,7 @@ function summarizeLibraryProgress(
 
   for (const category of categories) {
     const status = libraryProgress[category] ?? 'not_started';
-    const key = category.toLowerCase();
-    const dative = CATEGORY_BASE_TO_DATIVE[key] ?? category;
+    const dative = getDativeCategoryName(category);
 
     categoryDetails.push({
       name: category,
@@ -277,8 +317,13 @@ function buildKnowledgeReport(
 export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
   const aliasList = aliases ?? client.aliases;
   const store = getKnowledgeStore();
+  const detailsStore = getKnowledgeDetailsStore();
   let currentLibraryId: string | null = null;
   let currentSnapshot: KnowledgeSnapshot | undefined;
+  let knowledgeDetailsSnapshot: KnowledgeDetailsSnapshot | undefined;
+  let activeKnowledgeRun:
+    | { tag: string; abortTimer: number; inactivityTimer: number | null }
+    | null = null;
   let pendingPromptTrigger: {
     trigger: ReturnType<typeof client.Triggers.registerOneTimeTrigger>;
     timeoutId: number;
@@ -302,6 +347,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     if (client.Map.currentRoom) {
       updateCurrentLibrary(client.Map.currentRoom);
     }
+  });
+
+  void detailsStore.refresh().catch((error) => {
+    console.error('Failed to refresh knowledge details:', error);
+  });
+
+  detailsStore.subscribe((snapshot) => {
+    knowledgeDetailsSnapshot = snapshot ?? undefined;
   });
 
   function clearPendingPrompt(removeTrigger: boolean) {
@@ -593,6 +646,273 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
   aliasList.push({ pattern: /\/zglebiaj$/, callback: showLibraryCategories });
   aliasList.push({ pattern: /\/biblioteki$/, callback: showLibrariesReport });
+  aliasList.push({ pattern: /\/wiedza$/, callback: showKnowledgeDetailsReport });
+
+  function showKnowledgeDetailsReport() {
+    if (!knowledgeDetailsSnapshot) {
+      client.println('Dane wiedzy nie sa jeszcze dostepne.');
+      return;
+    }
+
+    if (activeKnowledgeRun) {
+      client.println('Raport wiedzy jest juz generowany.');
+      return;
+    }
+
+    const runTag = `knowledge-details-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+    const definitions = knowledgeDetailsSnapshot.data.definitions;
+    const normalizedDefinitions = buildNormalizedDefinitions(definitions);
+    const results = new Map<KnowledgeCategoryBaseName, KnowledgeRunCategoryState>();
+    const categoriesRemaining = new Set<KnowledgeCategoryBaseName>(KNOWLEDGE_CATEGORY_ORDER);
+    let currentCategory: KnowledgeCategoryBaseName | null = null;
+    let currentSection: KnowledgeDetailsType | null = null;
+
+    function ensureCategoryState(category: KnowledgeCategoryBaseName): KnowledgeRunCategoryState {
+      let state = results.get(category);
+      if (!state) {
+        state = createEmptyKnowledgeRunCategoryState();
+        results.set(category, state);
+      }
+      return state;
+    }
+
+    function scheduleInactivity() {
+      if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
+        return;
+      }
+      if (activeKnowledgeRun.inactivityTimer != null) {
+        window.clearTimeout(activeKnowledgeRun.inactivityTimer);
+      }
+      activeKnowledgeRun.inactivityTimer = window.setTimeout(
+        () => finishRun(false),
+        KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT,
+      );
+    }
+
+    function finishRun(dueToTimeout: boolean) {
+      if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
+        return;
+      }
+
+      window.clearTimeout(activeKnowledgeRun.abortTimer);
+      if (activeKnowledgeRun.inactivityTimer != null) {
+        window.clearTimeout(activeKnowledgeRun.inactivityTimer);
+      }
+      activeKnowledgeRun = null;
+      client.Triggers.removeByTag(runTag);
+
+      if (results.size === 0) {
+        client.println(dueToTimeout ? 'Nie odebrano odpowiedzi raportu wiedzy.' : 'Brak danych o wiedzy.');
+        return;
+      }
+
+      const timestamp = Date.now();
+      const characterKey = getCharacterProgressKey();
+      const summaryLines: string[] = [];
+      summaryLines.push(colorString('Raport wiedzy', HEADER_COLOR));
+
+      for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
+        const category = config.base;
+        const state = results.get(category);
+        if (!state) {
+          continue;
+        }
+
+        const definition = definitions[category];
+        if (summaryLines.length > 1) {
+          summaryLines.push('');
+        }
+        summaryLines.push(colorString(config.base, HEADER_COLOR));
+
+        for (const type of KNOWLEDGE_DETAILS_TYPES) {
+          const knownCount = state.knownEntries[type].size;
+          const total = definition?.[type]?.length ?? 0;
+          const level = state.levels[type];
+          let line = `  ${KNOWLEDGE_TYPE_LABELS[type]}: ${knownCount}/${total}`;
+          if (level) {
+            line += ` (${level})`;
+          }
+          summaryLines.push(line);
+
+          const missing: string[] = [];
+          if (definition) {
+            const knownNormalized = new Set(
+              Array.from(state.knownEntries[type]).map((entry) => normalizeKnowledgeEntry(entry)),
+            );
+            for (const entry of definition[type] ?? []) {
+              if (!knownNormalized.has(normalizeKnowledgeEntry(entry))) {
+                missing.push(entry);
+              }
+            }
+          }
+
+          if (missing.length > 0) {
+            summaryLines.push(`    Braki: ${missing.join(', ')}`);
+          }
+
+          const unknownList = Array.from(state.unknownEntries[type]);
+          if (unknownList.length > 0) {
+            summaryLines.push(`    Nieznane wpisy: ${unknownList.join(', ')}`);
+            console.warn('Nieznane wpisy wiedzy', {
+              category,
+              type,
+              entries: unknownList,
+            });
+          }
+        }
+      }
+
+      if (categoriesRemaining.size > 0) {
+        if (summaryLines.length > 0) {
+          summaryLines.push('');
+        }
+        summaryLines.push(
+          `Brak danych dla kategorii: ${Array.from(categoriesRemaining).join(', ')}.`,
+        );
+      }
+
+      void detailsStore
+        .applyLocalChange((snapshot) => {
+          const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
+          const nextProgress = { ...baseSnapshot.data.progress };
+          const characterProgress = { ...(nextProgress[characterKey] ?? {}) };
+
+          for (const [category, state] of results) {
+            const knownEntries: Record<KnowledgeDetailsType, string[]> = {
+              fight: Array.from(state.knownEntries.fight).sort((a, b) => a.localeCompare(b)),
+              books: Array.from(state.knownEntries.books).sort((a, b) => a.localeCompare(b)),
+              exploration: Array.from(state.knownEntries.exploration).sort((a, b) =>
+                a.localeCompare(b),
+              ),
+            };
+
+            const unknownEntries: Record<KnowledgeDetailsType, string[]> = {
+              fight: Array.from(state.unknownEntries.fight).sort((a, b) => a.localeCompare(b)),
+              books: Array.from(state.unknownEntries.books).sort((a, b) => a.localeCompare(b)),
+              exploration: Array.from(state.unknownEntries.exploration).sort((a, b) =>
+                a.localeCompare(b),
+              ),
+            };
+
+            const levels: Partial<Record<KnowledgeDetailsType, string>> = {};
+            for (const type of KNOWLEDGE_DETAILS_TYPES) {
+              const level = state.levels[type];
+              if (level) {
+                levels[type] = level;
+              }
+            }
+
+            characterProgress[category] = {
+              entries: knownEntries,
+              unknownEntries,
+              levels,
+              updatedAt: timestamp,
+            };
+          }
+
+          nextProgress[characterKey] = characterProgress;
+
+          return {
+            ...baseSnapshot,
+            data: {
+              ...baseSnapshot.data,
+              progress: nextProgress,
+            },
+          };
+        })
+        .catch((error) => {
+          console.error('Failed to store knowledge details report:', error);
+        });
+
+      client.println(summaryLines.join('\n'));
+    }
+
+    activeKnowledgeRun = {
+      tag: runTag,
+      abortTimer: window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT),
+      inactivityTimer: null,
+    };
+    scheduleInactivity();
+
+    client.Triggers.registerTrigger(
+      KNOWLEDGE_HEADER_PATTERN,
+      (_raw, _line, matches) => {
+        scheduleInactivity();
+        const base = getBaseCategoryFromName(matches[1]);
+        if (!base) {
+          currentCategory = null;
+          currentSection = null;
+          return;
+        }
+
+        currentCategory = base;
+        currentSection = null;
+        categoriesRemaining.delete(base);
+        ensureCategoryState(base);
+      },
+      runTag,
+    );
+
+    client.Triggers.registerTrigger(
+      KNOWLEDGE_SUMMARY_PATTERN,
+      (_raw, _line, matches) => {
+        if (!currentCategory) {
+          return;
+        }
+
+        const type = detectKnowledgeDetailsType(matches[1]);
+        if (!type) {
+          return;
+        }
+
+        scheduleInactivity();
+        const state = ensureCategoryState(currentCategory);
+        state.levels[type] = matches[2].trim();
+      },
+      runTag,
+    );
+
+    client.Triggers.registerTrigger(
+      KNOWLEDGE_SECTION_HEADER_PATTERN,
+      (_raw, _line, matches) => {
+        scheduleInactivity();
+        currentSection = detectKnowledgeDetailsType(matches[1]) ?? null;
+      },
+      runTag,
+    );
+
+    client.Triggers.registerTrigger(
+      KNOWLEDGE_ENTRY_PATTERN,
+      (_raw, _line, matches) => {
+        if (!currentCategory || !currentSection) {
+          return;
+        }
+
+        const entry = matches[1].trim();
+        if (entry.length === 0) {
+          return;
+        }
+
+        scheduleInactivity();
+        const normalized = normalizeKnowledgeEntry(entry);
+        const state = ensureCategoryState(currentCategory);
+        const definitionMap = normalizedDefinitions[currentCategory]?.[currentSection];
+
+        if (definitionMap?.has(normalized)) {
+          state.knownEntries[currentSection].add(
+            definitionMap.get(normalized) ?? entry,
+          );
+        } else {
+          state.unknownEntries[currentSection].add(entry);
+        }
+      },
+      runTag,
+    );
+
+    client.sendCommand(KNOWLEDGE_COMMAND_SEQUENCE);
+  }
 
   function showLibrariesReport() {
     if (!currentSnapshot) {
