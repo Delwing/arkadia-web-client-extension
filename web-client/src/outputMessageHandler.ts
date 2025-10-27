@@ -18,6 +18,12 @@ const TIMESTAMP_CLASS = 'output-show-timestamps';
 let timestampsVisible = false;
 let currentOutputWrapper: HTMLElement | null = null;
 let currentStickyArea: HTMLElement | null = null;
+let currentSplitBottom: HTMLElement | null = null;
+let currentIsSplitView: (() => boolean) | null = null;
+
+function isScrolledToBottom(wrapper: HTMLElement, splitBottom: HTMLElement) {
+    return wrapper.scrollTop + wrapper.clientHeight + splitBottom.clientHeight >= wrapper.scrollHeight - 1;
+}
 
 function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp);
@@ -51,8 +57,23 @@ export function areOutputTimestampsVisible() {
 }
 
 export function setOutputTimestampVisibility(visible: boolean) {
+    const shouldMaintainScroll =
+        !!currentOutputWrapper &&
+        !!currentSplitBottom &&
+        (!currentIsSplitView || !currentIsSplitView()) &&
+        isScrolledToBottom(currentOutputWrapper, currentSplitBottom);
+
     timestampsVisible = visible;
     applyTimestampVisibility();
+
+    if (shouldMaintainScroll && currentOutputWrapper && currentSplitBottom) {
+        requestAnimationFrame(() => {
+            if (!currentOutputWrapper || !currentSplitBottom) {
+                return;
+            }
+            currentOutputWrapper.scrollTop = currentOutputWrapper.scrollHeight;
+        });
+    }
 }
 
 export function toggleOutputTimestampVisibility() {
@@ -73,6 +94,8 @@ export function setupOutputMessageHandler(
 ) {
     currentOutputWrapper = outputWrapper;
     currentStickyArea = stickyArea;
+    currentSplitBottom = splitBottom;
+    currentIsSplitView = isSplitView;
     applyTimestampVisibility();
 
     const handleMessage = (message?: string, type?: string, timestamp?: number) => {
@@ -145,6 +168,12 @@ export function setupOutputMessageHandler(
         }
         if (currentStickyArea === stickyArea) {
             currentStickyArea = null;
+        }
+        if (currentSplitBottom === splitBottom) {
+            currentSplitBottom = null;
+        }
+        if (currentIsSplitView === isSplitView) {
+            currentIsSplitView = null;
         }
     };
 }
