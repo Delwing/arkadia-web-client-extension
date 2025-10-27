@@ -89,6 +89,8 @@ function clamp(value: number, min: number, max: number): number {
   return value;
 }
 
+const COMPACT_TABS_BREAKPOINT = 520;
+
 const KnowledgeReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
@@ -97,8 +99,18 @@ const KnowledgeReport: React.FC = () => {
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
+  const [useCompactTabs, setUseCompactTabs] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < COMPACT_TABS_BREAKPOINT : false,
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<PointerDragState | null>(null);
+
+  const updateCompactTabs = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    setUseCompactTabs(window.innerWidth < COMPACT_TABS_BREAKPOINT);
+  }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -253,10 +265,11 @@ const KnowledgeReport: React.FC = () => {
     }
     const handleResize = () => {
       setPosition((prev) => ensureVisiblePosition(prev));
+      updateCompactTabs();
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [ensureVisiblePosition, isOpen]);
+  }, [ensureVisiblePosition, isOpen, updateCompactTabs]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -264,7 +277,12 @@ const KnowledgeReport: React.FC = () => {
     }
     setPosition((prev) => ensureVisiblePosition(prev));
     panelRef.current?.focus();
-  }, [ensureVisiblePosition, isOpen]);
+    updateCompactTabs();
+  }, [ensureVisiblePosition, isOpen, updateCompactTabs]);
+
+  useEffect(() => {
+    updateCompactTabs();
+  }, [updateCompactTabs]);
 
   const handleStartCategory = useCallback((dative: string) => {
     const client = (window as any).clientExtension as Client | undefined;
@@ -508,25 +526,48 @@ const KnowledgeReport: React.FC = () => {
         </div>
         <div className="knowledge-window-body">
           <div className="knowledge-tabs">
-            <button
-              type="button"
-              className={`knowledge-tab-button ${
-                activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
-              }`}
-              onClick={() => setActiveTab('libraries')}
-              disabled={!hasLibraries}
-            >
-              Biblioteki
-            </button>
-            <button
-              type="button"
-              className={`knowledge-tab-button ${
-                activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
-              }`}
-              onClick={() => setActiveTab('categories')}
-            >
-              Kategorie
-            </button>
+            {useCompactTabs ? (
+              <div className="knowledge-tab-select">
+                <select
+                  className="knowledge-tab-select-input"
+                  value={activeTab}
+                  onChange={(event) => {
+                    const nextTab = event.target.value as 'libraries' | 'categories';
+                    if (nextTab === 'libraries' && !hasLibraries) {
+                      return;
+                    }
+                    setActiveTab(nextTab);
+                  }}
+                >
+                  <option value="libraries" disabled={!hasLibraries}>
+                    Biblioteki
+                  </option>
+                  <option value="categories">Kategorie</option>
+                </select>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={`knowledge-tab-button ${
+                    activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
+                  }`}
+                  onClick={() => setActiveTab('libraries')}
+                  disabled={!hasLibraries}
+                >
+                  Biblioteki
+                </button>
+                <button
+                  type="button"
+                  className={`knowledge-tab-button ${
+                    activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
+                  }`}
+                  onClick={() => setActiveTab('categories')}
+                >
+                  Kategorie
+                </button>
+              </>
+            )}
           </div>
           <div className="knowledge-content">
             {activeTab === 'libraries' ? libraryContent : categoriesContent}

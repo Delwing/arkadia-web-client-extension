@@ -805,6 +805,28 @@ h1 {
   gap: 0.5rem;
 }
 
+.knowledge-tab-select {
+  flex: 1 1 auto;
+}
+
+.knowledge-tab-select-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: rgba(241, 245, 249, 0.94);
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.knowledge-tab-select-input:focus {
+  outline: none;
+  border-color: rgba(124, 252, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(124, 252, 0, 0.18);
+}
+
 .knowledge-tab-button {
   flex: 0 0 auto;
   border: 1px solid transparent;
