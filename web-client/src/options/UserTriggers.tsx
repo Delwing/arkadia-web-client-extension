@@ -32,7 +32,7 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                 </Form.Select>
                 {macro.type === 'command' && (
                     <Form.Control
-                        className="mt-1"
+                        className="mt-1 font-monospace"
                         type="text"
                         size="sm"
                         placeholder="Command"
@@ -189,6 +189,7 @@ function UserTriggers() {
                             value={pattern}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
                             style={{ width: '100%' }}
+                            className="font-monospace"
                         />
                         {macros.map((m, i) => (
                             <MacroEditor
@@ -207,7 +208,7 @@ function UserTriggers() {
                 </div>
             )}
 
-            <ul className="list-unstyled ms-3">
+            <ul className="list-unstyled">
                 {filteredTriggers.map(t => (
                     editIndex === t.idx ? (
                         <li key={t.idx} className="alias-list-item">
@@ -221,6 +222,7 @@ function UserTriggers() {
                                         value={pattern}
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
                                         style={{ width: '100%' }}
+                                        className="font-monospace"
                                     />
                                     {macros.map((m, i) => (
                                         <MacroEditor
@@ -239,20 +241,20 @@ function UserTriggers() {
                             </div>
                         </li>
                     ) : (
-                        <li key={t.idx} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
-                            <span>
-                                <span>{t.pattern}</span>
+                        <li key={t.idx} className="alias-list-item d-flex flex-column flex-md-row gap-2 align-items-stretch align-items-md-center">
+                            <div className="alias-entry flex-grow-1">
+                                <code className="alias-pattern">{t.pattern}</code>
                                 {t.macros?.length ? (
                                     <>
-                                        <span className="text-secondary mx-1">→</span>
-                                        <span>{macrosToText(t.macros)}</span>
+                                        <span className="alias-divider">→</span>
+                                        <code className="alias-command">{macrosToText(t.macros)}</code>
                                     </>
                                 ) : null}
-                            </span>
-                            <span className="d-flex gap-2">
+                            </div>
+                            <div className="alias-list-item-actions">
                                 <Button size="sm" variant="secondary" onClick={() => edit(t.idx)}><TiEdit /></Button>
                                 <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
-                            </span>
+                            </div>
                         </li>
                     )
                 ))}

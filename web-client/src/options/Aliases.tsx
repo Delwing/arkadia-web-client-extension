@@ -174,6 +174,7 @@ function Aliases() {
                             placeholder="Pattern"
                             value={pattern}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                            className="font-monospace"
                         />
                         <Form.Control
                             type="text"
@@ -181,6 +182,7 @@ function Aliases() {
                             placeholder="Komenda"
                             value={command}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                            className="font-monospace"
                         />
                         <small className="text-secondary">
                             Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.<br/>
@@ -194,7 +196,7 @@ function Aliases() {
                 </div>
             )}
             
-            <ul className="list-unstyled ms-3">
+            <ul className="list-unstyled">
                 {filteredAliases.map(a => (
                     editIndex === a.idx ? (
                         <li key={a.idx} className="alias-list-item d-flex flex-column gap-2">
@@ -205,6 +207,7 @@ function Aliases() {
                                     placeholder="Pattern"
                                     value={pattern}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                    className="font-monospace"
                                 />
                                 <Form.Control
                                     type="text"
@@ -212,6 +215,7 @@ function Aliases() {
                                     placeholder="Komenda"
                                     value={command}
                                     onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                                    className="font-monospace"
                                 />
                                 <div className="d-flex gap-2">
                                     <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
@@ -220,16 +224,16 @@ function Aliases() {
                             </Form.Group>
                         </li>
                     ) : (
-                        <li key={a.idx} className="d-flex align-items-center justify-content-between gap-2 alias-list-item">
-                            <span>
-                                <span>{a.pattern}</span>
-                                <span className="text-secondary mx-1">→</span>
-                                <span>{a.command}</span>
-                            </span>
-                            <span className="d-flex gap-2">
+                        <li key={a.idx} className="alias-list-item d-flex flex-column flex-md-row gap-2 align-items-stretch align-items-md-center">
+                            <div className="alias-entry flex-grow-1">
+                                <code className="alias-pattern">{a.pattern}</code>
+                                <span className="alias-divider">→</span>
+                                <code className="alias-command">{a.command}</code>
+                            </div>
+                            <div className="alias-list-item-actions">
                                 <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
                                 <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
-                            </span>
+                            </div>
                         </li>
                     )
                 ))}
