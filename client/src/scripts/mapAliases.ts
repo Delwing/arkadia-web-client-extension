@@ -25,8 +25,20 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/prowadz (.*)$/,
             callback: (matches: RegExpMatchArray) => {
-                const dest = getShortcut(matches[1]) ?? matches[1];
-                client.sendEvent('leadTo', dest);
+                const input = matches[1];
+                const shortcutId = getShortcut(input);
+                if (typeof shortcutId === 'number') {
+                    client.sendEvent('leadTo', shortcutId);
+                    return;
+                }
+
+                const numericId = Number(input);
+                if (!Number.isNaN(numericId)) {
+                    client.sendEvent('leadTo', numericId);
+                    return;
+                }
+
+                client.println(`Nie znaleziono celu prowadzenia dla '${input}'.`);
             }
         },
         {
