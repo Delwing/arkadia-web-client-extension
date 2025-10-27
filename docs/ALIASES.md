@@ -90,6 +90,8 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 ## Wiedza
 - **/zglebiaj** - wyświetla listę kategorii wiedzy dostępnych w aktualnej bibliotece, jeśli dane są dostępne.
 - **/biblioteki** - wyświetla raport z bibliotek i udostępnia go w oknie raportu wiedzy.
+- **/wiedza** - otwiera okno raportu wiedzy z ostatnio zapisanymi informacjami o znanych, brakujących i nieznanych wpisach.
+- **/wiedza_buduj** - wykonuje zestaw komend `wiedza o ...` i aktualizuje zapisane dane raportu wiedzy dla bieżącej postaci.
 
 ## Zioła
 - **/ziola_buduj** - przegląda wszystkie woreczki z ziołami i podsumowuje ich zawartość.
