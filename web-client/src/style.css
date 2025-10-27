@@ -878,6 +878,17 @@ h1 {
 .knowledge-library-name {
   font-weight: 600;
   font-size: 1rem;
+  font: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.knowledge-library-name:hover {
+  text-decoration: underline;
 }
 
 .knowledge-library-remaining {
