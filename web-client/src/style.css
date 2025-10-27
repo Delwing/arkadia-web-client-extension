@@ -741,6 +741,7 @@ h1 {
   position: fixed;
   z-index: 1050;
   width: min(960px, calc(100vw - 2rem));
+  height: min(75vh, calc(100vh - 2rem));
   max-height: calc(100vh - 2rem);
   border-radius: 0.5rem;
   background-color: var(--surface-elevated);

@@ -407,7 +407,6 @@ const KnowledgeReport: React.FC = () => {
         }`}
         style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
         tabIndex={-1}
-        onPointerDownCapture={(event) => event.stopPropagation()}
       >
         <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
           <h5 className="knowledge-window-title">Raport wiedzy</h5>
