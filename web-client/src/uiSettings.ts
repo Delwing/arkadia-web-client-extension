@@ -1,5 +1,6 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
+import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 
 const mapPositions = [
     'top-overlay',
@@ -35,6 +36,9 @@ export interface UiSettings {
     outputBackground: string;
     clearInputOnSend: boolean;
     showTransportLabel: boolean;
+    fontFamily: UiFontSelection;
+    customFontUrl: string;
+    customFontFamily: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -58,9 +62,119 @@ const defaultSettings: UiSettings = {
     outputBackground: '#242424',
     clearInputOnSend: false,
     showTransportLabel: true,
+    fontFamily: 'default',
+    customFontUrl: '',
+    customFontFamily: '',
 };
 
+const genericFontFamilyNames = new Set([
+    'serif',
+    'sans-serif',
+    'monospace',
+    'cursive',
+    'fantasy',
+    'system-ui',
+]);
+
+function normalizeFontFamilyCandidate(candidate: string): string | undefined {
+    const primary = candidate.split(',')[0]?.trim();
+    if (!primary) {
+        return undefined;
+    }
+    const withoutQuotes = primary.replace(/^['"]+|['"]+$/g, '').trim();
+    if (!withoutQuotes) {
+        return undefined;
+    }
+    if (genericFontFamilyNames.has(withoutQuotes.toLowerCase())) {
+        return undefined;
+    }
+    return withoutQuotes;
+}
+
+function extractFontFamilyFromCss(css: string): string | undefined {
+    const fontFaceRegex = /@font-face\s*{[\s\S]*?}/gi;
+    let match: RegExpExecArray | null;
+    while ((match = fontFaceRegex.exec(css))) {
+        const block = match[0];
+        const familyMatch = /font-family\s*:\s*([^;]+);/i.exec(block);
+        if (!familyMatch) {
+            continue;
+        }
+        const normalized = normalizeFontFamilyCandidate(familyMatch[1]);
+        if (normalized) {
+            return normalized;
+        }
+    }
+    const fallbackMatch = /font-family\s*:\s*([^;]+);/i.exec(css);
+    return fallbackMatch ? normalizeFontFamilyCandidate(fallbackMatch[1]) : undefined;
+}
+
+function guessFontFamilyFromUrl(href: string): string | undefined {
+    try {
+        const url = new URL(href);
+        let familyParam: string | null = null;
+        url.searchParams.forEach((value, key) => {
+            if (!familyParam && key.toLowerCase() === 'family' && value) {
+                familyParam = value;
+            }
+        });
+        if (!familyParam) {
+            return undefined;
+        }
+        const familyName = familyParam.split(':')[0]?.trim();
+        return familyName ? normalizeFontFamilyCandidate(familyName) : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+async function guessFontFamilyFromStylesheet(href: string): Promise<string | undefined> {
+    if (!/^https?:\/\//i.test(href)) {
+        return undefined;
+    }
+    if (typeof fetch !== 'function') {
+        return guessFontFamilyFromUrl(href);
+    }
+    try {
+        const response = await fetch(href, { mode: 'cors' });
+        if (!response.ok) {
+            return guessFontFamilyFromUrl(href);
+        }
+        const css = await response.text();
+        return extractFontFamilyFromCss(css) ?? guessFontFamilyFromUrl(href);
+    } catch {
+        return guessFontFamilyFromUrl(href);
+    }
+}
+
+function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
+    switch (selection) {
+    case 'fira-code':
+        return '"Fira Code", monospace';
+    case 'jetbrains-mono':
+        return '"JetBrains Mono", monospace';
+    case 'cascadia-mono':
+        return '"Cascadia Mono", monospace';
+    case 'custom': {
+        const trimmed = customFontFamily.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        const normalized = /['",]/.test(trimmed)
+            ? trimmed
+            : `"${trimmed}"`;
+        return `${normalized}, monospace`;
+    }
+    default:
+        return undefined;
+    }
+}
+
 function apply(settings: UiSettings) {
+    const customHref = settings.customFontUrl?.trim();
+    const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
+    ensureFontLoaded(settings.fontFamily, normalizedHref);
+    const resolvedFontFamily = resolveOutputFontFamily(settings.fontFamily, settings.customFontFamily ?? '');
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -71,6 +185,11 @@ function apply(settings: UiSettings) {
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
+        if (resolvedFontFamily) {
+            content.style.fontFamily = resolvedFontFamily;
+        } else {
+            content.style.removeProperty('font-family');
+        }
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
     }
@@ -81,6 +200,11 @@ function apply(settings: UiSettings) {
     }
     const objects = document.getElementById('objects-list');
     if (objects) {
+        if (resolvedFontFamily) {
+            objects.style.fontFamily = resolvedFontFamily;
+        } else {
+            objects.style.removeProperty('font-family');
+        }
         objects.style.fontSize = settings.objectsFontSize + 'rem';
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
@@ -198,6 +322,18 @@ async function load(): Promise<UiSettings> {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultSettings.outputBackground;
+            const fontFamily = isUiFontSelection(parsed.fontFamily)
+                ? parsed.fontFamily
+                : defaultSettings.fontFamily;
+            const customFontUrl = typeof parsed.customFontUrl === 'string'
+                ? parsed.customFontUrl.trim()
+                : defaultSettings.customFontUrl;
+            const normalizedCustomFontUrl = /^https?:\/\//i.test(customFontUrl)
+                ? customFontUrl
+                : defaultSettings.customFontUrl;
+            const customFontFamily = typeof parsed.customFontFamily === 'string'
+                ? parsed.customFontFamily.trim()
+                : defaultSettings.customFontFamily;
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultSettings.clearInputOnSend;
@@ -222,6 +358,9 @@ async function load(): Promise<UiSettings> {
                 outputBackground,
                 clearInputOnSend,
                 showTransportLabel,
+                fontFamily,
+                customFontUrl: normalizedCustomFontUrl,
+                customFontFamily,
             };
         }
     } catch {
@@ -262,6 +401,10 @@ export default async function initUiSettings() {
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
+    const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
+    const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
+    const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
+    const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -285,6 +428,9 @@ export default async function initUiSettings() {
     outputBackgroundInput.value = current.outputBackground;
     clearInputOnSendInput.checked = current.clearInputOnSend;
     showTransportLabelInput.checked = current.showTransportLabel;
+    fontFamilyInput.value = current.fontFamily;
+    customFontUrlInput.value = current.customFontUrl;
+    customFontFamilyInput.value = current.customFontFamily;
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -294,12 +440,122 @@ export default async function initUiSettings() {
         }
     };
     updateLabelRenderModeState();
+    const initialCustomFontFamily = customFontFamilyInput.value.trim();
+    const initialGuessFromUrl = current.customFontUrl ? guessFontFamilyFromUrl(current.customFontUrl) : undefined;
+    let lastAutomaticFontFamily = '';
+    let customFontFamilyTouched = false;
+    if (initialCustomFontFamily) {
+        if (initialGuessFromUrl && initialGuessFromUrl === initialCustomFontFamily) {
+            lastAutomaticFontFamily = initialCustomFontFamily;
+            customFontFamilyTouched = false;
+        } else {
+            customFontFamilyTouched = true;
+        }
+    }
+    let fontGuessTimeout: number | undefined;
+    let fontGuessToken = 0;
+
+    const applyAutomaticFontFamily = (family: string) => {
+        customFontFamilyInput.value = family;
+        lastAutomaticFontFamily = family;
+        customFontFamilyTouched = false;
+    };
+
+    const clearAutomaticFontFamily = () => {
+        if (!customFontFamilyTouched && customFontFamilyInput.value.trim() === lastAutomaticFontFamily) {
+            customFontFamilyInput.value = '';
+        }
+        lastAutomaticFontFamily = '';
+    };
+
+    const triggerFontFamilyGuess = async () => {
+        const isCustomSelected = fontFamilyInput.value === 'custom';
+        if (!isCustomSelected) {
+            fontGuessToken++;
+            return;
+        }
+        const href = customFontUrlInput.value.trim();
+        if (!href) {
+            fontGuessToken++;
+            clearAutomaticFontFamily();
+            return;
+        }
+        if (!/^https?:\/\//i.test(href)) {
+            fontGuessToken++;
+            clearAutomaticFontFamily();
+            return;
+        }
+        const currentToken = ++fontGuessToken;
+        const guess = await guessFontFamilyFromStylesheet(href);
+        if (currentToken !== fontGuessToken) {
+            return;
+        }
+        if (!guess) {
+            clearAutomaticFontFamily();
+            return;
+        }
+        const currentValue = customFontFamilyInput.value.trim();
+        if (customFontFamilyTouched && currentValue && currentValue !== lastAutomaticFontFamily) {
+            return;
+        }
+        applyAutomaticFontFamily(guess);
+    };
+
+    const scheduleFontFamilyGuess = () => {
+        if (fontGuessTimeout !== undefined) {
+            clearTimeout(fontGuessTimeout);
+        }
+        fontGuessTimeout = setTimeout(() => {
+            fontGuessTimeout = undefined;
+            void triggerFontFamilyGuess();
+        }, 300);
+    };
+
+    const updateCustomFontState = () => {
+        const customSelected = fontFamilyInput.value === 'custom';
+        if (customFontSettings) {
+            customFontSettings.classList.toggle('d-none', !customSelected);
+        }
+        customFontUrlInput.disabled = !customSelected;
+        customFontFamilyInput.disabled = !customSelected;
+        if (customSelected && !customFontFamilyTouched) {
+            scheduleFontFamilyGuess();
+        }
+    };
+    updateCustomFontState();
+    if (!customFontFamilyTouched) {
+        scheduleFontFamilyGuess();
+    }
     outputBackgroundReset?.addEventListener('click', () => {
         outputBackgroundInput.value = defaultSettings.outputBackground;
     });
     apply(current);
 
     transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
+    fontFamilyInput.addEventListener('change', () => {
+        updateCustomFontState();
+        if (fontFamilyInput.value !== 'custom') {
+            clearAutomaticFontFamily();
+        }
+    });
+
+    customFontUrlInput.addEventListener('input', scheduleFontFamilyGuess);
+    customFontUrlInput.addEventListener('change', scheduleFontFamilyGuess);
+    customFontUrlInput.addEventListener('blur', scheduleFontFamilyGuess);
+
+    customFontFamilyInput.addEventListener('input', () => {
+        const trimmed = customFontFamilyInput.value.trim();
+        if (!trimmed) {
+            customFontFamilyTouched = false;
+            lastAutomaticFontFamily = '';
+            scheduleFontFamilyGuess();
+            return;
+        }
+        if (trimmed !== lastAutomaticFontFamily) {
+            customFontFamilyTouched = true;
+            lastAutomaticFontFamily = '';
+        }
+    });
 
     const updateMapScale = (scale: number) => {
         mapInput.value = String(scale);
@@ -365,6 +621,12 @@ export default async function initUiSettings() {
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
             showTransportLabel: showTransportLabelInput.checked,
+            fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultSettings.fontFamily,
+            customFontUrl: (() => {
+                const value = customFontUrlInput.value.trim();
+                return /^https?:\/\//i.test(value) ? value : '';
+            })(),
+            customFontFamily: customFontFamilyInput.value.trim(),
         };
     }
 
@@ -383,4 +645,3 @@ export default async function initUiSettings() {
         modal.show();
     });
 }
-
