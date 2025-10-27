@@ -384,13 +384,12 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
-    sendCommand(command: string, echo: boolean = true, options?: CommandOptions) {
+    async sendCommand(command: string, echo: boolean = true, options?: CommandOptions): Promise<void> {
         if (command) {
             command = stripPolishCharacters(command)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
-        let preparse = command
         command = this.Map.parseCommand(command)
         command = this.expandObjectShortcuts(command)
         if (command.startsWith('echo ')) {
@@ -399,31 +398,28 @@ export default class Client {
         }
         const split = command.split(/[#;]/)
         if (split.length > 1) {
-            split.forEach(part => {
-                if (part !== preparse) {
-                    this.sendCommand(part, echo, options)
-                } else {
-                    this.sendMovement(part, echo, options)
-                }
-            })
+            for (const part of split) {
+                await this.sendCommand(part, echo, options)
+            }
             return
         }
 
-        const isAlias = this.aliases.find(alias => {
+        for (const alias of this.aliases) {
             const matches = command.match(alias.pattern)
             if (matches) {
-                alias.callback(matches)
-                return true
-            }
-            return false
-        })
-        if (!isAlias) {
-            if (command.trim().startsWith('/')) {
-                this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
+                const result = alias.callback(matches)
+                if (result && typeof (result as Promise<unknown>).then === 'function') {
+                    await result
+                }
                 return
             }
-            this.sendMovement(command, echo, options)
         }
+
+        if (command.trim().startsWith('/')) {
+            this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
+            return
+        }
+        this.sendMovement(command, echo, options)
     }
 
     sendGMCP(type: string, payload?: any) {
