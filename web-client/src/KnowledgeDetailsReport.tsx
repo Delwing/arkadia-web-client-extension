@@ -21,6 +21,8 @@ type KnowledgeDetailsReportTypeSummary = {
   unknown: string[];
   entries: { name: string; status: 'known' | 'missing' }[];
   level?: string;
+  levelIndex?: number;
+  levelMax: number;
 };
 
 type KnowledgeDetailsReportCategory = {
@@ -59,6 +61,16 @@ function formatTimestamp(value: number | null): string | null {
   } catch {
     return null;
   }
+}
+
+function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string {
+  if (summary.level) {
+    if (summary.levelIndex != null) {
+      return `${summary.level} (${summary.levelIndex + 1}/${summary.levelMax})`;
+    }
+    return summary.level;
+  }
+  return '—';
 }
 
 const KnowledgeDetailsReport: React.FC = () => {
@@ -283,11 +295,32 @@ const KnowledgeDetailsReport: React.FC = () => {
                   if (!summary) {
                     return null;
                   }
+                  const levelTitle =
+                    summary.levelIndex != null
+                      ? `Poziom wiedzy: ${summary.levelIndex + 1}/${summary.levelMax}${
+                          summary.level ? ` (${summary.level})` : ''
+                        }`
+                      : 'Brak danych o poziomie wiedzy';
+                  const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
+                  const levelDisplay = formatLevelDisplay(summary);
                   return (
                     <span key={key} className="knowledge-details-counter">
                       <span className="knowledge-details-counter-label">{label}</span>
-                      <span className="knowledge-details-counter-value">
-                        {summary.known}/{summary.total}
+                      <span className="knowledge-details-counter-badges">
+                        <span
+                          className={`knowledge-details-badge knowledge-details-badge--level${
+                            summary.level ? '' : ' knowledge-details-badge--empty'
+                          }`}
+                          title={levelTitle}
+                        >
+                          {levelDisplay}
+                        </span>
+                        <span
+                          className="knowledge-details-badge knowledge-details-badge--entries"
+                          title={entriesTitle}
+                        >
+                          {summary.known}/{summary.total}
+                        </span>
                       </span>
                     </span>
                   );
@@ -316,6 +349,14 @@ const KnowledgeDetailsReport: React.FC = () => {
               const hasEntries = filteredEntries.length > 0;
               const hasUnknown = summary.unknown.length > 0;
               const hasLevel = Boolean(summary.level);
+              const levelTitle =
+                summary.levelIndex != null
+                  ? `Poziom wiedzy: ${summary.levelIndex + 1}/${summary.levelMax}${
+                      summary.level ? ` (${summary.level})` : ''
+                    }`
+                  : 'Brak danych o poziomie wiedzy';
+              const entriesTitle = `Znane wpisy: ${summary.known} z ${summary.total}`;
+              const levelDisplay = formatLevelDisplay(summary);
 
               if (!hasEntries && !hasUnknown && !hasLevel && summary.entries.length === 0) {
                 return null;
@@ -352,9 +393,22 @@ const KnowledgeDetailsReport: React.FC = () => {
                 <div key={key} className="knowledge-details-type-group">
                   <div className="knowledge-details-type-heading">
                     <span className="knowledge-details-type-label">{label}</span>
-                    {summary.level && (
-                      <span className="knowledge-details-level">{summary.level}</span>
-                    )}
+                    <div className="knowledge-details-type-badges">
+                      <span
+                        className={`knowledge-details-badge knowledge-details-badge--level${
+                          summary.level ? '' : ' knowledge-details-badge--empty'
+                        }`}
+                        title={levelTitle}
+                      >
+                        {levelDisplay}
+                      </span>
+                      <span
+                        className="knowledge-details-badge knowledge-details-badge--entries"
+                        title={entriesTitle}
+                      >
+                        {summary.known}/{summary.total}
+                      </span>
+                    </div>
                   </div>
                   {entriesContent}
                   {hasUnknown && (

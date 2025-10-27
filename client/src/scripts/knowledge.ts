@@ -49,6 +49,20 @@ const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
   books: ['ksiazek i bibliotek', 'ksiazkach i bibliotekach', 'bibliotekach i ksiazkach'],
   exploration: ['eksploracji', 'eksploracjach'],
 };
+const KNOWLEDGE_LEVEL_LABELS = [
+  'znikoma',
+  'niewielka',
+  'czesciowa',
+  'niezla',
+  'dosc dobra',
+  'dobra',
+  'bardzo dobra',
+  'doskonala',
+  'prawie pelna',
+  'pelna',
+] as const;
+const KNOWLEDGE_LEVEL_SET = new Set<string>(KNOWLEDGE_LEVEL_LABELS);
+type KnowledgeLevelResult = { label: string; index: number };
 const KNOWLEDGE_TYPE_LOOKUP: Map<string, KnowledgeDetailsType> = (() => {
   const map = new Map<string, KnowledgeDetailsType>();
   for (const type of KNOWLEDGE_DETAILS_TYPES) {
@@ -81,6 +95,61 @@ function normalizeKnowledgeTypeKey(value: string): string {
 function detectKnowledgeDetailsType(text: string): KnowledgeDetailsType | null {
   const normalized = normalizeKnowledgeTypeKey(text);
   return KNOWLEDGE_TYPE_LOOKUP.get(normalized) ?? null;
+}
+
+function sanitizeKnowledgeLevel(level: string | undefined): string | undefined {
+  if (!level) {
+    return undefined;
+  }
+
+  const normalized = level.trim().toLowerCase();
+
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  if (normalized === 'brak') {
+    return KNOWLEDGE_LEVEL_LABELS[0];
+  }
+
+  return KNOWLEDGE_LEVEL_SET.has(normalized) ? normalized : undefined;
+}
+
+function getKnowledgeLevelFromLabel(level: string | undefined): KnowledgeLevelResult | undefined {
+  const normalized = sanitizeKnowledgeLevel(level);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const index = KNOWLEDGE_LEVEL_LABELS.indexOf(
+    normalized as (typeof KNOWLEDGE_LEVEL_LABELS)[number],
+  );
+  if (index === -1) {
+    return undefined;
+  }
+
+  return { label: KNOWLEDGE_LEVEL_LABELS[index], index };
+}
+
+function computeKnowledgeLevel(
+  known: number,
+  total: number,
+  fallback: string | undefined,
+): KnowledgeLevelResult | undefined {
+  if (total > 0) {
+    const clampedKnown = Math.max(0, Math.min(known, total));
+    const ratio = clampedKnown / total;
+    const maxIndex = KNOWLEDGE_LEVEL_LABELS.length - 1;
+
+    if (ratio >= 1) {
+      return { label: KNOWLEDGE_LEVEL_LABELS[maxIndex], index: maxIndex };
+    }
+
+    const index = Math.max(0, Math.min(Math.floor(ratio * maxIndex), maxIndex));
+    return { label: KNOWLEDGE_LEVEL_LABELS[index], index };
+  }
+
+  return getKnowledgeLevelFromLabel(fallback);
 }
 
 type KnowledgeRunCategoryState = {
@@ -183,28 +252,30 @@ function buildKnowledgeDetailsReportPayload(
       }
 
       const unknown = sanitizeStringArray(progressEntry?.unknownEntries?.[type]);
-      const levelValue = progressEntry?.levels?.[type];
-      let level: string | undefined;
-      if (typeof levelValue === 'string') {
-        const trimmed = levelValue.trim();
-        if (trimmed.length > 0) {
-          level = trimmed;
-        }
-      }
+      const rawLevelValue =
+        typeof progressEntry?.levels?.[type] === 'string' ? progressEntry?.levels?.[type] : undefined;
       const known = total > 0 ? Math.min(knownSet.size, total) : knownSet.size;
+      const levelResult = computeKnowledgeLevel(known, total, rawLevelValue);
 
-      if (known > 0 || missing.length > 0 || unknown.length > 0 || level) {
+      if (known > 0 || missing.length > 0 || unknown.length > 0 || levelResult) {
         hasData = true;
       }
 
-      summaries[type] = {
+      const summary: KnowledgeDetailsReportTypeSummary = {
         total,
         known,
         missing,
         unknown,
         entries: entriesList,
-        ...(level ? { level } : {}),
+        levelMax: KNOWLEDGE_LEVEL_LABELS.length,
       };
+
+      if (levelResult) {
+        summary.level = levelResult.label;
+        summary.levelIndex = levelResult.index;
+      }
+
+      summaries[type] = summary;
     }
 
     const updatedAt =
@@ -334,6 +405,8 @@ type KnowledgeDetailsReportTypeSummary = {
   unknown: string[];
   entries: KnowledgeDetailsReportTypeEntry[];
   level?: string;
+  levelIndex?: number;
+  levelMax: number;
 };
 
 type KnowledgeDetailsReportCategory = {
