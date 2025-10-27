@@ -17,6 +17,7 @@ type KnowledgeReportLibraryCategory = {
 type KnowledgeReportLibrary = {
   id: string;
   name: string;
+  locationId: string;
   total: number;
   remaining: number;
   not_started: number;
@@ -273,6 +274,17 @@ const KnowledgeReport: React.FC = () => {
     client.sendCommand(`zglebiaj wiedze o ${dative}`);
   }, []);
 
+  const handleLeadToLibrary = useCallback((locationId: string) => {
+    if (!locationId) {
+      return;
+    }
+    const client = (window as any).clientExtension as Client | undefined;
+    if (!client) {
+      return;
+    }
+    client.sendCommand(`/prowadz ${locationId}`);
+  }, []);
+
   const toggleLibraryStatus = useCallback(
     (libraryId: string, status: KnowledgeCategoryStatus) => {
       setExpandedStatuses((prev) => {
@@ -328,7 +340,13 @@ const KnowledgeReport: React.FC = () => {
         <div key={library.id} className="knowledge-library">
           <div className="knowledge-library-header">
             <div className="knowledge-library-info">
-              <span className="knowledge-library-name">{library.name}</span>
+              <button
+                type="button"
+                className="knowledge-library-name"
+                onClick={() => handleLeadToLibrary(library.locationId)}
+              >
+                {library.name}
+              </button>
               <span className="knowledge-library-remaining">
                 Pozostalo {library.remaining} z {library.total} kategorii
               </span>
@@ -419,6 +437,7 @@ const KnowledgeReport: React.FC = () => {
     expandedStatuses,
     handleCompleteLibrary,
     handleResetLibrary,
+    handleLeadToLibrary,
     handleStartCategory,
     toggleLibraryStatus,
   ]);

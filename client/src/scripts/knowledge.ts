@@ -134,6 +134,7 @@ type LibraryProgressSummary = {
 type KnowledgeReportLibrary = Omit<LibraryProgressSummary, 'categories'> & {
   id: string;
   name: string;
+  locationId: string;
   categories: KnowledgeReportLibraryCategory[];
 };
 
@@ -221,6 +222,7 @@ function buildKnowledgeReport(
       libraries.push({
         id: libraryId,
         name: library.name,
+        locationId: library.location_id,
         total: summary.total,
         remaining: summary.remaining,
         not_started: summary.not_started,
