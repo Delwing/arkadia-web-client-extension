@@ -1,8 +1,7 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "../Colors";
 import {gmcp} from "../gmcp";
-import { getItemSync, setItemSync } from "../storage";
-import { normalizeAttackCommand } from "../utils/attackCommand";
+import { createAttackController } from "../utils/attackController";
 
 export default function initObjectAliases(
     client: Client,
@@ -67,21 +66,11 @@ export default function initObjectAliases(
         }
     }
 
-    const storedSettings = getItemSync('settings')?.settings;
-    let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
-    });
+    const attackController = createAttackController(client);
 
-    function attackById(id: string, command: string = attackCommand) {
-        client.sendCommand(`${command} ob_${id}`);
-        if (attackMode !== 'A' && client.TeamManager.isLeader?.()) {
-            client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);
-            if (attackMode === 'AWR') {
-                client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`, false);
-            }
-        }
-    }
+    const attackById = (id: string, command?: string) => {
+        attackController.attackById(id, command);
+    };
 
     function attack(short: string) {
         const obj = findByShortcut(short);
@@ -104,14 +93,6 @@ export default function initObjectAliases(
     client.addEventListener('releaseGuard', (event: CustomEvent<boolean>) => {
         releaseGuard = event.detail;
     });
-
-    let attackMode: 'A' | 'AW' | 'AWR' = getItemSync('attack_mode')?.attack_mode ?? 'A';
-    client.addEventListener('attackMode', (event: CustomEvent<'A' | 'AW' | 'AWR'>) => {
-        attackMode = event.detail;
-        setItemSync('attack_mode', attackMode);
-    });
-    client.sendEvent('attackMode', attackMode);
-
 
     if (aliases) {
         aliases.push({

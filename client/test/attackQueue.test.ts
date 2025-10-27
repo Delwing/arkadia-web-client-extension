@@ -2,12 +2,14 @@ import initAttackQueue from '../src/scripts/attackQueue';
 
 jest.mock('../src/storage', () => ({
   getItemSync: jest.fn(() => ({})),
+  setItemSync: jest.fn(),
 }));
 
 class FakeClient {
   TeamManager = {
     addEnemyToQueue: jest.fn(),
     shiftEnemyFromQueue: jest.fn(),
+    isLeader: jest.fn(() => true),
   };
   ObjectManager = {
     getObjectsOnLocation: jest.fn(),
@@ -28,6 +30,8 @@ describe('attack queue aliases', () => {
     initAttackQueue((client as unknown) as any, aliases);
     client.TeamManager.addEnemyToQueue.mockReset();
     client.TeamManager.shiftEnemyFromQueue.mockReset();
+    client.TeamManager.isLeader.mockClear();
+    client.TeamManager.isLeader.mockReturnValue(true);
     client.ObjectManager.getObjectsOnLocation.mockReset();
     client.println.mockClear();
     client.sendCommand.mockClear();
@@ -118,6 +122,37 @@ describe('attack queue aliases', () => {
 
     expect(client.TeamManager.shiftEnemyFromQueue).toHaveBeenCalled();
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_77');
+  });
+
+  test('kills next enemy in AW mode marks target', () => {
+    const alias = aliases.find(a => a.pattern.test('/nn'))!;
+    const attackModeListenerCall = client.addEventListener.mock.calls.find(
+      call => call[0] === 'attackMode',
+    );
+    const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
+    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('12');
+
+    attackModeListener?.({ detail: 'AW' } as any);
+    execAlias(alias, '/nn');
+
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_12');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_12 jako cel ataku', false);
+  });
+
+  test('kills next enemy in AWR mode orders team attack', () => {
+    const alias = aliases.find(a => a.pattern.test('/nn'))!;
+    const attackModeListenerCall = client.addEventListener.mock.calls.find(
+      call => call[0] === 'attackMode',
+    );
+    const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
+    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('34');
+
+    attackModeListener?.({ detail: 'AWR' } as any);
+    execAlias(alias, '/nn');
+
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_34');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_34 jako cel ataku', false);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'rozkaz druzynie zaatakowac ob_34', false);
   });
 
   test('kills next enemy using attack command from settings', () => {
