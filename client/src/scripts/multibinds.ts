@@ -20,6 +20,29 @@ function isValidIndex(index: number) {
 
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const data = new Map<number, Map<number, string>>();
+    let isInitialized = false;
+    const pendingActions: (() => void)[] = [];
+
+    function runWhenReady(action: () => void) {
+        if (isInitialized) {
+            action();
+            return;
+        }
+        pendingActions.push(action);
+    }
+
+    function flushPendingActions() {
+        if (isInitialized && pendingActions.length > 0) {
+            const actions = pendingActions.splice(0, pendingActions.length);
+            actions.forEach(fn => {
+                try {
+                    fn();
+                } catch (err) {
+                    console.error('Failed to execute queued multibind action:', err);
+                }
+            });
+        }
+    }
 
     function serialize(): StoredMultibindRecord[] {
         const entries: StoredMultibindRecord[] = [];
@@ -99,8 +122,10 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             return;
         }
         const normalized = action.trim();
-        set(roomId, index, normalized);
-        persist();
+        runWhenReady(() => {
+            set(roomId, index, normalized);
+            persist();
+        });
     }
 
     function createCurrent(index: number, action: string) {
@@ -118,19 +143,25 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             log('Nie mozna utworzyc binda - brak aktualnej lokacji.');
             return;
         }
-        const roomMap = data.get(roomId);
-        for (let i = 1; i <= MAX_BINDS; i += 1) {
-            if (!roomMap || !roomMap.has(i)) {
-                create(roomId, i, action);
-                return;
+        runWhenReady(() => {
+            const normalized = action.trim();
+            const roomMap = data.get(roomId);
+            for (let i = 1; i <= MAX_BINDS; i += 1) {
+                if (!roomMap || !roomMap.has(i)) {
+                    set(roomId, i, normalized);
+                    persist();
+                    return;
+                }
             }
-        }
-        log(`Lokacja ma juz maksymalna (${MAX_BINDS}) liczbe bindow.`);
+            log(`Lokacja ma juz maksymalna (${MAX_BINDS}) liczbe bindow.`);
+        });
     }
 
     function clearRoom(roomId: number) {
-        removeAll(roomId);
-        persist();
+        runWhenReady(() => {
+            removeAll(roomId);
+            persist();
+        });
     }
 
     function clearCurrent() {
@@ -143,8 +174,10 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     }
 
     function clearIndex(roomId: number, index: number) {
-        remove(roomId, index);
-        persist();
+        runWhenReady(() => {
+            remove(roomId, index);
+            persist();
+        });
     }
 
     function clearCurrentIndex(index: number) {
@@ -204,6 +237,8 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             }
             set(roomId, index, item.action);
         });
+        isInitialized = true;
+        flushPendingActions();
         sendUpdate(getRoomId());
     }
 
