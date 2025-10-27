@@ -49,6 +49,23 @@ const KNOWLEDGE_TYPE_LABELS: Record<KnowledgeDetailsType, string> = {
   books: 'Z ksiazek i bibliotek',
   exploration: 'Z eksploracji',
 };
+const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
+  fight: ['walki', 'walkach'],
+  books: ['ksiazek i bibliotek', 'ksiazkach i bibliotekach', 'bibliotekach i ksiazkach'],
+  exploration: ['eksploracji', 'eksploracjach'],
+};
+const KNOWLEDGE_TYPE_LOOKUP: Map<string, KnowledgeDetailsType> = (() => {
+  const map = new Map<string, KnowledgeDetailsType>();
+  for (const type of KNOWLEDGE_DETAILS_TYPES) {
+    for (const identifier of KNOWLEDGE_TYPE_IDENTIFIERS[type]) {
+      const key = normalizeKnowledgeTypeKey(identifier);
+      if (!map.has(key)) {
+        map.set(key, type);
+      }
+    }
+  }
+  return map;
+})();
 const KNOWLEDGE_HEADER_PATTERN = /^Wiedza o (.+?)(?::)?$/;
 const KNOWLEDGE_SUMMARY_PATTERN = /^\s*z\s+(.+?)\s*-\s*(.+)$/i;
 const KNOWLEDGE_SECTION_HEADER_PATTERN = /^Szczegoly(?:\s+z)?\s+(.+?):$/i;
@@ -62,24 +79,13 @@ function normalizeKnowledgeEntry(value: string): string {
   );
 }
 
+function normalizeKnowledgeTypeKey(value: string): string {
+  return stripPolishCharacters(value.trim().toLowerCase().replace(/\s+/g, ' '));
+}
+
 function detectKnowledgeDetailsType(text: string): KnowledgeDetailsType | null {
-  const normalized = stripPolishCharacters(text.trim().toLowerCase());
-  if (normalized.includes('walk')) {
-    return 'fight';
-  }
-  if (normalized.includes('ksi') || normalized.includes('bibliot') || normalized.includes('book')) {
-    return 'books';
-  }
-  if (
-    normalized.includes('eksplor') ||
-    normalized.includes('poznaw') ||
-    normalized.includes('zwiedz') ||
-    normalized.includes('obserw') ||
-    normalized.includes('explor')
-  ) {
-    return 'exploration';
-  }
-  return null;
+  const normalized = normalizeKnowledgeTypeKey(text);
+  return KNOWLEDGE_TYPE_LOOKUP.get(normalized) ?? null;
 }
 
 type KnowledgeRunCategoryState = {
