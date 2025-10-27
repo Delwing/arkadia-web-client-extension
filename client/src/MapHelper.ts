@@ -218,7 +218,7 @@ export default class MapHelper {
     followMove(direction: string) {
         const result = this.move(direction, true)
         if (result.moved) {
-            return;
+            return result.direction;
         }
 
         if (this.currentRoom?.userData?.team_follow_link) {
@@ -256,7 +256,7 @@ export default class MapHelper {
 
         this.refreshPosition = true;
 
-        return direction
+        return undefined;
     }
 
     refresh() {
