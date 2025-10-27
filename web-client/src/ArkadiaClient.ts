@@ -79,6 +79,7 @@ class ArkadiaClient implements ClientAdapter {
             // Reset the flag when connecting
             this.receivedFirstGmcp = false;
             this.lastConnectManual = manual;
+            this.telnetNegotiator = new TelnetOptionNegotiation(this);
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {

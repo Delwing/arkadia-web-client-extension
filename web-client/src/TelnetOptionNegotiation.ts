@@ -43,8 +43,8 @@ export default class TelnetOptionNegotiation {
     }
 
     parseOptionNegotiation(data: string) {
-        var command = data[1];
-        var option = data[2];
+        const command = data[1];
+        const option = data[2];
 
         switch (command) {
             case this.WILL:
