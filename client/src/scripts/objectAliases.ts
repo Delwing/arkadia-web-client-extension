@@ -215,23 +215,27 @@ export default function initObjectAliases(
         });
         aliases.push({
             pattern: /\/ra ([0-9]+)$/,
-            callback: (m: RegExpMatchArray) => exec(m[1], "rozkaz zaatakowac")
+            callback: (m: RegExpMatchArray) => exec(m[1], "rozkaz druzynie zaatakowac")
         });
         aliases.push({
             pattern: /^\/ra$/,
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
                 if (id) {
-                    client.sendCommand(`rozkaz zaatakowac ob_${id}`);
+                    client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`);
                 }
             }
         });
         aliases.push({
             pattern: /\/rz ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
+                if (m[1] === '@') {
+                    client.sendCommand(`rozkaz druzynie zaslonic ciebie`);
+                    return
+                }
                 const obj = findByShortcut(m[1]);
                 if (obj) {
-                    client.sendCommand(`rozkaz zaslonic ob_${obj.num}`);
+                    client.sendCommand(`rozkaz druzynie zaslonic ob_${obj.num}`);
                 }
             }
         });
@@ -240,7 +244,7 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
                 if (id) {
-                    client.sendCommand(`rozkaz zaslonic ob_${id}`);
+                    client.sendCommand(`rozkaz druzynie zaslonic ob_${id}`);
                 }
             }
         });
@@ -256,6 +260,9 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /\/wz ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
+                if (m[1] === '@') {
+                    client.sendCommand(`wskaz siebie jako cel obrony`);
+                }
                 const obj = findByShortcut(m[1]);
                 if (obj) {
                     client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
