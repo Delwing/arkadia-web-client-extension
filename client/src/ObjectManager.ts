@@ -17,6 +17,8 @@ export default class ObjectManager {
     private nums: string[] = [];
     private data: Record<string, ObjectData> = {};
     private playerNum?: string;
+    private teamShortcutHistory: Map<string, string> = new Map();
+    private nextTeamShortcutCode = 'A'.charCodeAt(0);
 
     constructor(client: Client) {
         this.client = client;
@@ -149,14 +151,13 @@ export default class ObjectManager {
             });
         }
 
-        let teamIndex = 0;
         let restIndex = 1;
         let nonCombatIndex = 50;
         ordered.forEach(o => {
             if (o.__category === 'player') {
                 o.shortcut = '@';
             } else if (o.__category === 'team') {
-                o.shortcut = String.fromCharCode('A'.charCodeAt(0) + teamIndex++);
+                o.shortcut = this.getTeamShortcut(o.num);
             } else if (o.__category === 'rest-noncombat') {
                 o.shortcut = String(nonCombatIndex++);
             } else {
@@ -166,5 +167,17 @@ export default class ObjectManager {
         });
 
         return ordered;
+    }
+
+    private getTeamShortcut(num: number): string {
+        const key = String(num);
+        const existingShortcut = this.teamShortcutHistory.get(key);
+        if (existingShortcut) {
+            return existingShortcut;
+        }
+
+        const shortcut = String.fromCharCode(this.nextTeamShortcutCode++);
+        this.teamShortcutHistory.set(key, shortcut);
+        return shortcut;
     }
 }
