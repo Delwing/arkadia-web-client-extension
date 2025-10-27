@@ -323,25 +323,23 @@ const KnowledgeDetailsReport: React.FC = () => {
                   const levelDisplay = formatLevelDisplay(summary);
                   return (
                     <span key={key} className="knowledge-details-counter">
-                      <span className="knowledge-details-counter-label">{label}</span>
-                      <span className="knowledge-details-counter-badges">
-                        <span
-                          className={`knowledge-details-badge knowledge-details-badge--level${
-                            summary.level ? '' : ' knowledge-details-badge--empty'
-                          }`}
-                          title={levelTitle}
-                        >
-                          {levelDisplay}
-                        </span>
-                        {showDetails && summary.total > 0 && (
-                          <span
-                            className="knowledge-details-badge knowledge-details-badge--entries"
-                            title={entriesTitle}
-                          >
-                            {summary.known}/{summary.total}
-                          </span>
-                        )}
+                      <span className="knowledge-details-counter-type">{label}</span>
+                      <span
+                        className={`knowledge-details-counter-label${
+                          summary.level ? '' : ' knowledge-details-counter-label--empty'
+                        }`}
+                        title={levelTitle}
+                      >
+                        {levelDisplay}
                       </span>
+                      {showDetails && summary.total > 0 && (
+                        <span
+                          className="knowledge-details-badge knowledge-details-badge--entries"
+                          title={entriesTitle}
+                        >
+                          {summary.known}/{summary.total}
+                        </span>
+                      )}
                     </span>
                   );
                 })}
@@ -362,13 +360,6 @@ const KnowledgeDetailsReport: React.FC = () => {
               const hasEntries = filteredEntries.length > 0;
               const hasUnknown = summary.unknown.length > 0;
               const hasLevel = Boolean(summary.level);
-              const levelTitle =
-                summary.levelIndex != null
-                  ? `Poziom wiedzy: ${summary.levelIndex + 1}/${summary.levelMax}${
-                      summary.level ? ` (${summary.level})` : ''
-                    }`
-                  : 'Brak danych o poziomie wiedzy';
-              const levelDisplay = formatLevelDisplay(summary);
 
               if (!hasEntries && !hasUnknown && !hasLevel && summary.entries.length === 0) {
                 return null;
@@ -410,16 +401,6 @@ const KnowledgeDetailsReport: React.FC = () => {
                         {summary.known}/{summary.total}
                       </span>
                     </span>
-                    <div className="knowledge-details-type-badges">
-                      <span
-                        className={`knowledge-details-badge knowledge-details-badge--level${
-                          summary.level ? '' : ' knowledge-details-badge--empty'
-                        }`}
-                        title={levelTitle}
-                      >
-                        {levelDisplay}
-                      </span>
-                    </div>
                   </div>
                   {entriesContent}
                   {hasUnknown && (
