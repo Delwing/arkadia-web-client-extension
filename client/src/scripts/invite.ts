@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { gmcp } from "../gmcp";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '../peopleStore';
 import type { PersonEntry } from '../types/people';
 
@@ -38,11 +39,19 @@ export default function initInvite(client: Client) {
     // Function to find object ID for a person by their name
     function findObjectIdByName(name: string): string | null {
         const accumulatedData = client.TeamManager.getAccumulatedObjectsData();
-        for (const [objId, obj] of Object.entries(accumulatedData)) {
-            if (obj && typeof obj === 'object' && 'desc' in obj && obj.desc === name) {
-                return objId;
+
+        const nums = Array.isArray(gmcp?.objects?.nums)
+            ? gmcp.objects.nums.map(String)
+            : [];
+
+        for (let index = nums.length - 1; index >= 0; index--) {
+            const objectId = nums[index];
+            const obj = accumulatedData[objectId];
+            if (obj && typeof obj === 'object' && obj.desc === name) {
+                return objectId;
             }
         }
+
         return null;
     }
 

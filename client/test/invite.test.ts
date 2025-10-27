@@ -1,5 +1,6 @@
 import Client from '../src/Client';
 import initInvite from '../src/scripts/invite';
+import { gmcp } from '../src/gmcp';
 import { refresh, subscribe } from '../src/peopleStore';
 
 jest.mock('../src/peopleStore', () => ({
@@ -58,9 +59,12 @@ describe('Invite functionality', () => {
             getAccumulatedObjectsData: jest.fn().mockReturnValue({
                 "1": { desc: "Vesper", living: true, team: true },
                 "2": { desc: "Pablo", living: true, team: true },
-                "3": { desc: "Gandalf", living: true, team: true }
+                "3": { desc: "Gandalf", living: true, team: true },
+                "15": { desc: "Vesper", living: true, team: true }
             })
         };
+
+        gmcp.objects = { nums: ['1', '2', '3', '15'] };
 
         client = {
             Triggers: mockTriggers,
@@ -78,6 +82,7 @@ describe('Invite functionality', () => {
     afterEach(() => {
         jest.clearAllMocks();
         subscribers.length = 0;
+        gmcp.objects = {};
     });
 
     test('should register invite trigger', async () => {
@@ -142,8 +147,30 @@ describe('Invite functionality', () => {
         functionalBindCallback();
 
         expect(mockSendCommand).toHaveBeenCalledWith('porzuc druzyne');
-        expect(mockSendCommand).toHaveBeenCalledWith('dolacz do ob_1');
+        expect(mockSendCommand).toHaveBeenCalledWith('dolacz do ob_15');
         expect(mockSendCommand).toHaveBeenCalledTimes(2);
+    });
+
+    test('should use newest object id for inviter name', async () => {
+        const settingsHandler = mockAddEventListener.mock.calls.find(
+            call => call[0] === 'settings'
+        )[1];
+        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
+        await lastCall?.value;
+
+        const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
+
+        triggerHandler(
+            '[Vesper] zaprasza cie do swojej druzyny.',
+            '[Vesper] zaprasza cie do swojej druzyny.',
+            ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper']
+        );
+
+        const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
+        functionalBindCallback();
+
+        expect(mockSendCommand).toHaveBeenCalledWith('dolacz do ob_15');
     });
 
     test('should allow invite from unknown person and fallback to old command', async () => {
