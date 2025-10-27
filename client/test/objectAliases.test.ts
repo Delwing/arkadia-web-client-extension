@@ -266,25 +266,25 @@ describe('object aliases', () => {
   test('/ra alias orders attack on object', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 25, shortcut: '3' }]);
     orderAttack(['', '3'] as unknown as RegExpMatchArray);
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaatakowac ob_25');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz druzynie zaatakowac ob_25');
   });
 
   test('/ra alias orders attack on attack target', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('40');
     orderAttackTarget();
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaatakowac ob_40');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz druzynie zaatakowac ob_40');
   });
 
   test('/rz alias orders shield with object number', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 35, shortcut: 'A' }]);
     orderShield(['', 'A'] as unknown as RegExpMatchArray);
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslonic ob_35');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz druzynie zaslonic ob_35');
   });
 
   test('/rz alias orders shield of defense target', () => {
     client.TeamManager.getDefenseTargetId.mockReturnValue('44');
     orderShieldTarget();
-    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz zaslonic ob_44');
+    expect(client.sendCommand).toHaveBeenCalledWith('rozkaz druzynie zaslonic ob_44');
   });
 
   test('/wa alias marks object as attack target', () => {
