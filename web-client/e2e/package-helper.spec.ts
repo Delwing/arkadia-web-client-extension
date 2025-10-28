@@ -118,8 +118,19 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
             }
             return null;
         };
-        client.sendEvent('settings', {packageHelper: false});
     });
+
+    const optionsModal = page.locator('#options-modal');
+    await page.click('#menu-button');
+    await page.click('#options-button');
+    await expect(optionsModal).toBeVisible();
+
+    const packageHelperToggle = optionsModal.locator('#packageHelper');
+    await expect(packageHelperToggle).toBeChecked();
+    await packageHelperToggle.uncheck();
+
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal).not.toBeVisible();
 
     await expect
         .poll(async () => {
