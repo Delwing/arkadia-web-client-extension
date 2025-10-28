@@ -8,6 +8,7 @@ import LampTimer from "./LampTimer";
 import TransportTimer from "./TransportTimer";
 import CoverTimer from "./CoverTimer";
 import ZaskTimer from "./ZaskTimer";
+import CombatTimer from "./CombatTimer";
 import BreakItemWarning from "./BreakItemWarning";
 import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
@@ -1137,6 +1138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new LampTimer(arkadiaClient);
     new CoverTimer(arkadiaClient);
     new ZaskTimer(arkadiaClient);
+    new CombatTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
     new AttackMode(arkadiaClient);
