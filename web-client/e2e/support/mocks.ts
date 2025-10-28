@@ -93,6 +93,22 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 export async function waitForClientReady(page: Page): Promise<void> {
     await page.waitForFunction(() => Boolean((window as any).clientExtension));
     await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);
+
+    const overlay = page.locator('#auth-overlay');
+    if (await overlay.isVisible()) {
+        const closeButton = overlay.locator('#auth-close');
+        if (await closeButton.count()) {
+            await closeButton.click();
+        } else {
+            await page.evaluate(() => {
+                const element = document.getElementById('auth-overlay');
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+        }
+        await overlay.waitFor({ state: 'hidden' });
+    }
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
