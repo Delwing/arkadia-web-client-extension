@@ -3,11 +3,13 @@ import {
     ensureGameSocket,
     GMCP_PATHS,
     installMockWebSocket,
+    mockNpcDownload,
     pushGmcp,
     waitForClientReady,
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
+    await mockNpcDownload(context);
     await installMockWebSocket(context);
 });
 

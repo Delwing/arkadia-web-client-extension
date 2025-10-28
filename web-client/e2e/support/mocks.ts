@@ -96,6 +96,24 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
     });
 }
 
+const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
+const DEFAULT_NPC_DATA = [
+    {name: 'Borgaf Kriegmann', loc: 200},
+];
+
+export async function mockNpcDownload(
+    context: BrowserContext,
+    data: {name: string; loc: number}[] = DEFAULT_NPC_DATA,
+): Promise<void> {
+    await context.route(NPC_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
+        });
+    });
+}
+
 export async function waitForClientReady(page: Page): Promise<void> {
     await page.waitForFunction(() => Boolean((window as any).clientExtension));
     await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);

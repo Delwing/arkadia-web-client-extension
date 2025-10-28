@@ -4,6 +4,7 @@ import {
     getMultibindRequests,
     installMockWebSocket,
     installMultibindWorkerMock,
+    mockNpcDownload,
     queueMultibindResponse,
     waitForClientReady,
 } from './support/mocks';
@@ -19,6 +20,7 @@ async function openBindsModal(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
+    await mockNpcDownload(context);
     await installMockWebSocket(context);
     await installMultibindWorkerMock(context);
 });
