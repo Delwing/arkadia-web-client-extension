@@ -241,6 +241,23 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => setOutputTimestampVisibility(!isVisible),
         },
     ];
+    const clientExtension = (window as any).clientExtension as { sendCommand?: (command: string) => Promise<void> } | undefined;
+    if (clientExtension?.sendCommand) {
+        items.push(
+            {
+                label: 'Wiedza',
+                action: () => { void clientExtension.sendCommand('/wiedza'); },
+            },
+            {
+                label: 'Biblioteki',
+                action: () => { void clientExtension.sendCommand('/biblioteki'); },
+            },
+            {
+                label: 'Zioła',
+                action: () => { void clientExtension.sendCommand('/ziola'); },
+            },
+        );
+    }
     handler.showContextMenu(items, event.clientX, event.clientY);
 });
 
