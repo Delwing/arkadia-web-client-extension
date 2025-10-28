@@ -217,10 +217,22 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     }
 }
 
-export async function pushText(page: Page, text: string): Promise<void> {
-    await page.evaluate(([payload]) => {
-        (window as any).__pushIncoming(payload);
-    }, [text]);
+export async function pushText(page: Page, text: string, options: { type?: string } = {}): Promise<void> {
+    const type = options.type ?? 'comm';
+    await page.evaluate(([payload, gmcpType]) => {
+        const normalizeLines = (value: string) => {
+            const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const hasTrailingNewline = /\n$/.test(normalized);
+            const parts = normalized.split('\n');
+            const joined = parts.join('\r\n');
+            return hasTrailingNewline ? `${joined}\r\n` : joined;
+        };
+
+        (window as any).__pushGmcp('gmcp_msgs', {
+            type: gmcpType,
+            text: btoa(normalizeLines(payload)),
+        });
+    }, [text, type]);
     await page.evaluate(() => {
         const adapter = (window as any).clientExtension?.clientAdapter as any;
         if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
