@@ -128,10 +128,11 @@ test.describe('GMCP-driven interactions', () => {
 
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Player', object_num: 100 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
-            '100': { desc: 'Player', team: true, team_leader: true },
-            '101': { desc: 'Scout', team: true, state: 4 },
+            '100': { desc: 'Player', team: true, team_leader: true, state: 6 },
+            '101': { desc: 'Scout', team: true, state: 3 },
+            '102': { desc: 'Bandit', attack_num: 1, state: 1 },
         });
-        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 101]);
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 101, 102]);
 
         const teamMembers = page.locator('#objects-list .object-desc[data-teammate="true"]');
         await expect(teamMembers).toHaveCount(1);
@@ -139,6 +140,16 @@ test.describe('GMCP-driven interactions', () => {
 
         const shortcuts = page.locator('#objects-list .object-num');
         await expect(shortcuts.first()).toContainText('A');
+
+        const content = page.locator('#objects-list .objects-list-content');
+        const healthyBar = content.locator('span[style*="color:springgreen"]').filter({ hasText: '#######' });
+        await expect(healthyBar).toHaveCount(1);
+
+        const woundedBar = content.locator('span[style*="color:yellow"]').filter({ hasText: '####---' });
+        await expect(woundedBar).toHaveCount(1);
+
+        const criticalBar = content.locator('span[style*="color:tomato"]').filter({ hasText: '##-----' });
+        await expect(criticalBar).toHaveCount(1);
     });
 
     test('removes enemies when they disappear from GMCP objects.nums', async ({page}) => {
