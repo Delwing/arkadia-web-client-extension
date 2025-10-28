@@ -423,7 +423,7 @@ export default class Client {
             }
         }
 
-        if (command.trim().startsWith('/')) {
+        if (command.startsWith('/') && command.match(/^\/\w+]/)) {
             this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
             return
         }
