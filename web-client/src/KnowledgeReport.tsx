@@ -93,6 +93,7 @@ const KnowledgeReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
   const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
+  const [isPinned, setIsPinned] = useState(false);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
@@ -102,6 +103,10 @@ const KnowledgeReport: React.FC = () => {
 
   const close = useCallback(() => {
     setIsOpen(false);
+  }, []);
+
+  const togglePinned = useCallback(() => {
+    setIsPinned((prev) => !prev);
   }, []);
 
   const ensureVisiblePosition = useCallback((prev: { left: number; top: number } | null) => {
@@ -233,7 +238,7 @@ const KnowledgeReport: React.FC = () => {
   }, [close, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || isPinned) {
       return;
     }
     const handlePointerDownOutside = (event: PointerEvent) => {
@@ -245,7 +250,7 @@ const KnowledgeReport: React.FC = () => {
     };
     window.addEventListener('pointerdown', handlePointerDownOutside);
     return () => window.removeEventListener('pointerdown', handlePointerDownOutside);
-  }, [close, isOpen]);
+  }, [close, isOpen, isPinned]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -504,7 +509,18 @@ const KnowledgeReport: React.FC = () => {
       >
         <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
           <h5 className="knowledge-window-title">Raport wiedzy</h5>
-          <button type="button" className="btn-close" onClick={close} />
+          <div
+            className="window-header-actions"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+              onClick={togglePinned}
+              title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+            />
+            <button type="button" className="btn-close" onClick={close} />
+          </div>
         </div>
         <div className="knowledge-window-body">
           <div className="knowledge-tabs">

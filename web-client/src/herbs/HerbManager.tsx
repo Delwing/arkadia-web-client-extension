@@ -221,6 +221,7 @@ const HerbManager = () => {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [isPinned, setIsPinned] = useState(false);
     const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const dragState = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
@@ -257,6 +258,10 @@ const HerbManager = () => {
         closeContextMenu();
         setIsOpen(false);
     }, [closeContextMenu]);
+
+    const togglePinned = useCallback(() => {
+        setIsPinned(prev => !prev);
+    }, []);
 
     useEffect(() => {
         const client = (window as any).clientExtension as Client | undefined;
@@ -328,7 +333,7 @@ const HerbManager = () => {
     }, [handleClose, isOpen]);
 
     useEffect(() => {
-        if (!isOpen) {
+        if (!isOpen || isPinned) {
             return;
         }
         const handlePointerDownOutside = (event: PointerEvent) => {
@@ -341,7 +346,7 @@ const HerbManager = () => {
         };
         window.addEventListener("pointerdown", handlePointerDownOutside);
         return () => window.removeEventListener("pointerdown", handlePointerDownOutside);
-    }, [handleClose, isOpen]);
+    }, [handleClose, isOpen, isPinned]);
 
     const handleResize = useCallback(() => {
         setPosition(prev => {
@@ -578,6 +583,9 @@ const HerbManager = () => {
     const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
     const handleBackdropClick = () => {
+        if (isPinned) {
+            return;
+        }
         handleClose();
     };
 
@@ -591,7 +599,11 @@ const HerbManager = () => {
 
     return (
         <>
-            <div className="herb-overlay" role="presentation" onClick={handleBackdropClick} />
+            <div
+                className={`herb-overlay${isPinned ? " herb-overlay--pinned" : ""}`}
+                role="presentation"
+                onClick={handleBackdropClick}
+            />
             <div
                 ref={panelRef}
                 className={`herb-window${position ? " herb-window--floating" : " herb-window--center"}`}
@@ -603,7 +615,18 @@ const HerbManager = () => {
             >
                 <div className="herb-window-header" onPointerDown={handlePointerDown}>
                     <h5 className="herb-window-title">Woreczki ziół</h5>
-                    <button type="button" className="btn-close" onClick={handleClose} />
+                    <div
+                        className="window-header-actions"
+                        onPointerDownCapture={event => event.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            className={`window-pin-button${isPinned ? " window-pin-button--active" : ""}`}
+                            onClick={togglePinned}
+                            title={isPinned ? "Odepnij okno" : "Przypnij okno"}
+                        />
+                        <button type="button" className="btn-close" onClick={handleClose} />
+                    </div>
                 </div>
                 <div className="herb-window-body">
                     <div className={`herb-manager${busy ? " herb-manager--busy" : ""}`}>

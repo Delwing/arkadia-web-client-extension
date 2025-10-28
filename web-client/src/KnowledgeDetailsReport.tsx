@@ -83,6 +83,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -90,6 +91,10 @@ const KnowledgeDetailsReport: React.FC = () => {
 
   const close = useCallback(() => {
     setIsOpen(false);
+  }, []);
+
+  const togglePinned = useCallback(() => {
+    setIsPinned((prev) => !prev);
   }, []);
 
   const ensureVisiblePosition = useCallback((prev: { left: number; top: number } | null) => {
@@ -212,7 +217,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   }, [close, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || isPinned) {
       return;
     }
     const handlePointerDownOutside = (event: PointerEvent) => {
@@ -224,7 +229,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     };
     window.addEventListener('pointerdown', handlePointerDownOutside);
     return () => window.removeEventListener('pointerdown', handlePointerDownOutside);
-  }, [close, isOpen]);
+  }, [close, isOpen, isPinned]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -448,7 +453,18 @@ const KnowledgeDetailsReport: React.FC = () => {
       >
         <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
           <h5 className="knowledge-window-title">Raport wiedzy</h5>
-          <button type="button" className="btn-close" onClick={close} />
+          <div
+            className="window-header-actions"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+              onClick={togglePinned}
+              title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+            />
+            <button type="button" className="btn-close" onClick={close} />
+          </div>
         </div>
         <div className="knowledge-window-body knowledge-details-body">
           <div className="knowledge-details-content" ref={scrollContainerRef}>
