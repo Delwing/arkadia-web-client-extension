@@ -1,5 +1,4 @@
 import type {BrowserContext, Page} from '@playwright/test';
-import {Buffer} from 'buffer';
 
 export const GMCP_PATHS = {
     CHAR_INFO: 'char.info',
@@ -79,18 +78,43 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             (window as any).__npcReady = true;
         });
 
+        const getGameSocket = () => {
+            return (
+                sockets
+                    .slice()
+                    .reverse()
+                    .find((item) => typeof item?.url === 'string' && item.url.includes('arkadia.rpg.pl')) ??
+                sockets[sockets.length - 1]
+            );
+        };
+
+        const normalizeLines = (value: string) => {
+            const input = typeof value === 'string' ? value : String(value ?? '');
+            const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const hasTrailingNewline = /\n$/.test(normalized);
+            const parts = normalized.split('\n');
+            const joined = parts.join('\r\n');
+            return hasTrailingNewline ? `${joined}\r\n` : joined;
+        };
+
         (window as any).__pushGmcp = (path: string, payload: unknown) => {
-            const socket = sockets
-                .slice()
-                .reverse()
-                .find((item) => typeof item?.url === 'string' && item.url.includes('arkadia.rpg.pl'))
-                ?? sockets[sockets.length - 1];
+            const socket = getGameSocket();
             if (!socket) {
                 throw new Error('No mock socket connected');
             }
             const serialized = JSON.stringify(payload ?? {});
             const message = `${IAC}${SB}${GMCP}${path} ${serialized}${IAC}${SE}`;
             const encoded = btoa(message);
+            socket.receive(encoded);
+        };
+
+        (window as any).__pushIncoming = (text: string) => {
+            const socket = getGameSocket();
+            if (!socket) {
+                throw new Error('No mock socket connected');
+            }
+            const normalized = normalizeLines(text);
+            const encoded = btoa(normalized);
             socket.receive(encoded);
         };
     });
@@ -180,9 +204,10 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     }
 }
 
-export async function pushText(page: Page, text: string, type = 'main'): Promise<void> {
-    const encoded = Buffer.from(text, 'utf-8').toString('base64');
-    await pushGmcp(page, 'gmcp_msgs', {text: encoded, type});
+export async function pushText(page: Page, text: string): Promise<void> {
+    await page.evaluate(([payload]) => {
+        (window as any).__pushIncoming(payload);
+    }, [text]);
     await page.evaluate(() => {
         const adapter = (window as any).clientExtension?.clientAdapter as any;
         if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
