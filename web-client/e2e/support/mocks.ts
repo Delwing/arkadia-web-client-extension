@@ -189,15 +189,54 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 }
 
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
+const MAGICS_DATA_ROUTE = '**/magics_data.json';
+const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
+
 const DEFAULT_NPC_DATA = [
     {name: 'Borgaf Kriegmann', loc: 200},
 ];
+
+const DEFAULT_MAGICS_DATA = {
+    magics: {
+        'ancient-blade': {regexps: ['magiczny miecz']},
+    },
+};
+
+const DEFAULT_MAGIC_KEYS_DATA = {
+    magic_keys: ['sekretny klucz'],
+};
 
 export async function mockNpcDownload(
     context: BrowserContext,
     data: {name: string; loc: number}[] = DEFAULT_NPC_DATA,
 ): Promise<void> {
     await context.route(NPC_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
+        });
+    });
+}
+
+export async function mockMagicsDownload(
+    context: BrowserContext,
+    data: {magics: Record<string, {regexps?: string[]}>} = DEFAULT_MAGICS_DATA,
+): Promise<void> {
+    await context.route(MAGICS_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
+        });
+    });
+}
+
+export async function mockMagicKeysDownload(
+    context: BrowserContext,
+    data: {magic_keys: string[]} = DEFAULT_MAGIC_KEYS_DATA,
+): Promise<void> {
+    await context.route(MAGIC_KEYS_DATA_ROUTE, async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
