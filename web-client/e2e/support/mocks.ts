@@ -43,6 +43,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             onclose: ((event: CloseEvent) => void) | null = null;
             onerror: ((event: Event) => void) | null = null;
             sent: string[] = [];
+            commands: string[] = [];
 
             constructor(url: string, _protocols?: string | string[]) {
                 this.url = url;
@@ -58,7 +59,12 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
                 this.sent.push(message);
                 const command = decodeCommand(message);
                 if (command) {
-                    commandLog.push(command);
+                    if (this.commands[this.commands.length - 1] !== command) {
+                        this.commands.push(command);
+                    }
+                    if (commandLog[commandLog.length - 1] !== command) {
+                        commandLog.push(command);
+                    }
                 }
             }
 
@@ -114,17 +120,33 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             const handler = (event: CustomEvent<string>) => {
                 const value = typeof event.detail === 'string' ? event.detail.trim() : '';
                 if (value) {
-                    commandLog.push(value);
+                    const socket = getGameSocket();
+                    if (socket && socket.commands[socket.commands.length - 1] !== value) {
+                        socket.commands.push(value);
+                    }
+                    if (commandLog[commandLog.length - 1] !== value) {
+                        commandLog.push(value);
+                    }
                 }
             };
             client.addEventListener('command', handler as unknown as EventListener);
             globalScope.__commandListenerInstalled = true;
         };
 
+        const resetCommandLog = () => {
+            commandLog.length = 0;
+            sockets.forEach((socket) => {
+                if (Array.isArray(socket?.commands)) {
+                    socket.commands.length = 0;
+                }
+            });
+        };
+
         globalScope.__mockSockets = sockets;
         globalScope.__MockWebSocket = MockWebSocket;
         globalScope.__mockCommandLog = commandLog;
         globalScope.__registerCommandListener = registerCommandListener;
+        globalScope.__resetCommandLog = resetCommandLog;
         globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
         globalScope.__npcReady = false;
@@ -239,6 +261,10 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     });
     await page.evaluate(() => {
         const globalScope: any = window;
+        if (typeof globalScope.__resetCommandLog === 'function') {
+            globalScope.__resetCommandLog();
+            return;
+        }
         const log = globalScope.__mockCommandLog;
         if (Array.isArray(log)) {
             log.length = 0;
@@ -282,11 +308,21 @@ export async function pushText(page: Page, text: string, options: { type?: strin
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
     return await page.evaluate(() => {
+        const sockets: any[] = (window as any).__mockSockets ?? [];
+        for (let i = sockets.length - 1; i >= 0; i--) {
+            const commands: unknown = sockets[i]?.commands;
+            if (Array.isArray(commands) && commands.length > 0) {
+                const last = commands[commands.length - 1];
+                if (typeof last === 'string' && last.trim()) {
+                    return last.trim();
+                }
+            }
+        }
         const log: unknown = (window as any).__mockCommandLog;
         if (Array.isArray(log) && log.length > 0) {
             const value = log[log.length - 1];
             if (typeof value === 'string' && value.trim()) {
-                return value;
+                return value.trim();
             }
         }
         return null;

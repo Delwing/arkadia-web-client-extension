@@ -7,6 +7,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
     strategy:
       fail-fast: false
       matrix:
@@ -28,6 +30,14 @@ jobs:
           cache: yarn
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Cache Playwright browsers
+        if: matrix.install_browsers == true
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package.json', 'yarn.lock', 'web-client/package.json', 'web-client/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - name: Install Playwright browsers
         if: matrix.install_browsers == true
         run: yarn --cwd web-client playwright install --with-deps chromium
