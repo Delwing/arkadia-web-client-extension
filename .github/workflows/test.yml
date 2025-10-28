@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package.json', 'yarn.lock', 'web-client/package.json', 'web-client/yarn.lock') }}
+          key: ${{ runner.os }}-playwright-browsers
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install Playwright browsers
