@@ -1,6 +1,6 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
+import { DeleteIcon } from "./Icons";
 import storage from "@client/src/storage";
 
 function Scripts() {
@@ -59,7 +59,7 @@ function Scripts() {
                     <li key={url} className="d-flex align-items-center gap-2">
                         <span>{url}</span>
                         <Button size="sm" variant="secondary" onClick={() => remove(url)}>
-                            <TiDelete />
+                            <DeleteIcon width={20} height={20} />
                         </Button>
                     </li>
                 ))}

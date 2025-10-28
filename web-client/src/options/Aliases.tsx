@@ -1,7 +1,6 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
-import { TiEdit } from "@react-icons/all-files/ti/TiEdit";
+import { DeleteIcon, EditIcon } from "./Icons";
 import storage from "@client/src/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
 import { parseArkadia } from "./importArkadia";
@@ -232,8 +231,8 @@ function Aliases() {
                                 <code className="alias-command">{a.command}</code>
                             </div>
                             <div className="alias-list-item-actions">
-                                <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
-                                <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
+                                <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><EditIcon width={20} height={20} /></Button>
+                                <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><DeleteIcon width={20} height={20} /></Button>
                             </div>
                         </li>
                     )

@@ -1,7 +1,6 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
-import { TiEdit } from "@react-icons/all-files/ti/TiEdit";
+import { DeleteIcon, EditIcon } from "./Icons";
 import storage from "@client/src/storage";
 
 export interface UserMacro {
@@ -61,7 +60,7 @@ function MacroEditor({ macro, onChange, onRemove }: { macro: UserMacro; onChange
                     style={{ width: '100%', maxWidth: '8rem' }}
                 />
             )}
-            <Button size="sm" variant="secondary" onClick={onRemove}><TiDelete /></Button>
+            <Button size="sm" variant="secondary" onClick={onRemove}><DeleteIcon width={20} height={20} /></Button>
         </div>
     );
 }
@@ -253,8 +252,8 @@ function UserTriggers() {
                                 ) : null}
                             </div>
                             <div className="alias-list-item-actions">
-                                <Button size="sm" variant="secondary" onClick={() => edit(t.idx)}><TiEdit /></Button>
-                                <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
+                                <Button size="sm" variant="secondary" onClick={() => edit(t.idx)}><EditIcon width={20} height={20} /></Button>
+                                <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><DeleteIcon width={20} height={20} /></Button>
                             </div>
                         </li>
                     )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
-import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
+import { DeleteIcon } from "./Icons";
 import storage from "@client/src/storage";
 
 interface ShortcutEntry {
@@ -90,7 +90,7 @@ function Shortcuts() {
                         <td>{item.label}</td>
                         <td className="d-flex gap-2">
                             <Button size="sm" onClick={() => (window as any).clientExtension?.sendEvent('leadTo', item.id)}>Prowadź</Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(item.key)}><TiDelete /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(item.key)}><DeleteIcon width={20} height={20} /></Button>
                         </td>
                     </tr>
                 ))}

@@ -1,7 +1,7 @@
 import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
-import {TiDelete} from "@react-icons/all-files/ti/TiDelete";
+import {DeleteIcon} from "./Icons";
 import {
     NpcListEntry,
     clearLocal,
@@ -99,7 +99,7 @@ function Npc() {
                                     disabled={item.source !== 'local'}
                                     className="npc-delete-button"
                                 >
-                                    <TiDelete/>
+                                    <DeleteIcon width={20} height={20}/>
                                 </Button>
                             </td>
                         </tr>
