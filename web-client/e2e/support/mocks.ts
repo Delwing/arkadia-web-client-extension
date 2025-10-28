@@ -27,6 +27,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             onclose: ((event: CloseEvent) => void) | null = null;
             onerror: ((event: Event) => void) | null = null;
             sent: string[] = [];
+            commands: string[] = [];
 
             constructor(url: string, _protocols?: string | string[]) {
                 this.url = url;
@@ -40,6 +41,22 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 
             send(message: string) {
                 this.sent.push(message);
+                try {
+                    const decoded = atob(message);
+                    if (!decoded) {
+                        return;
+                    }
+                    const trimmed = decoded.replace(/\r?\n/g, '').trim();
+                    if (!trimmed) {
+                        return;
+                    }
+                    if (decoded.charCodeAt(0) === 255) {
+                        return;
+                    }
+                    this.commands.push(trimmed);
+                } catch (_error) {
+                    // ignore malformed payloads
+                }
             }
 
             close() {
@@ -245,24 +262,13 @@ export async function pushText(page: Page, text: string, options: { type?: strin
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
     return await page.evaluate(() => {
         const sockets = ((window as any).__mockSockets ?? []).slice().reverse();
-        const IAC = String.fromCharCode(255);
         for (const socket of sockets) {
-            const messages: string[] = Array.isArray(socket?.sent) ? socket.sent : [];
-            for (let index = messages.length - 1; index >= 0; index -= 1) {
-                const encoded = messages[index];
-                if (!encoded) {
-                    continue;
+            const commands: string[] = Array.isArray(socket?.commands) ? socket.commands : [];
+            for (let index = commands.length - 1; index >= 0; index -= 1) {
+                const command = commands[index];
+                if (command) {
+                    return command;
                 }
-                let decoded: string;
-                try {
-                    decoded = atob(encoded);
-                } catch (_error) {
-                    continue;
-                }
-                if (!decoded || decoded.startsWith(IAC)) {
-                    continue;
-                }
-                return decoded.trim();
             }
         }
         return null;
@@ -273,6 +279,18 @@ export type EmbeddedCall = { method: string; value?: unknown };
 
 export async function installEmbeddedMock(context: BrowserContext): Promise<void> {
     await context.addInitScript(() => {
+        const METHOD_NAMES = [
+            'setZoom',
+            'setExplorationMode',
+            'setInstantMove',
+            'setHighlightCurrentRoom',
+            'setTransparentLabels',
+            'setLabelRenderMode',
+            'refresh',
+        ];
+
+        const EMBEDDED_FLAG = '__arkadiaEmbeddedProxy__';
+
         const recordCall = (method: string, value?: unknown) => {
             const store = (window as any).__embeddedCalls;
             if (Array.isArray(store)) {
@@ -280,37 +298,94 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
             }
         };
 
-        (window as any).__embeddedCalls = [];
-        (window as any).embedded = {
-            renderer: {},
-            setZoom(value: number) {
-                recordCall('setZoom', value);
-            },
-            setExplorationMode(value: boolean) {
-                recordCall('setExplorationMode', value);
-            },
-            setInstantMove(value: boolean) {
-                recordCall('setInstantMove', value);
-            },
-            setHighlightCurrentRoom(value: boolean) {
-                recordCall('setHighlightCurrentRoom', value);
-            },
-            setTransparentLabels(value: boolean) {
-                recordCall('setTransparentLabels', value);
-            },
-            setLabelRenderMode(value: 'image' | 'data') {
-                recordCall('setLabelRenderMode', value);
-            },
-            refresh() {
-                recordCall('refresh');
-            },
-            getVisitedCount() {
-                return 0;
-            },
-            getRoomCount() {
-                return 0;
-            },
+        const wrapEmbedded = (target: any) => {
+            if (target && typeof target === 'object' && target[EMBEDDED_FLAG]) {
+                return target;
+            }
+
+            const original = target && typeof target === 'object' ? target : {};
+            if (!original.renderer) {
+                original.renderer = {};
+            }
+
+            const methodWrappers: Record<string, (...args: any[]) => unknown> = {};
+            for (const name of METHOD_NAMES) {
+                const originalFn = typeof original[name] === 'function' ? original[name].bind(original) : undefined;
+                methodWrappers[name] = (...args: any[]) => {
+                    recordCall(name, args[0]);
+                    if (originalFn) {
+                        return originalFn(...args);
+                    }
+                    return undefined;
+                };
+            }
+
+            const proxy = new Proxy(original, {
+                get(target, prop, receiver) {
+                    if (prop === 'renderer') {
+                        return target.renderer ?? {};
+                    }
+                    if (prop in methodWrappers) {
+                        return methodWrappers[prop as keyof typeof methodWrappers];
+                    }
+                    return Reflect.get(target, prop, receiver);
+                },
+                set(target, prop, value, receiver) {
+                    const result = Reflect.set(target, prop, value, receiver);
+                    if (METHOD_NAMES.includes(String(prop))) {
+                        const bound = typeof value === 'function' ? value.bind(target) : undefined;
+                        methodWrappers[String(prop)] = (...args: any[]) => {
+                            recordCall(String(prop), args[0]);
+                            if (bound) {
+                                return bound(...args);
+                            }
+                            return undefined;
+                        };
+                    }
+                    if (prop === 'renderer' && !target.renderer) {
+                        target.renderer = value;
+                    }
+                    return result;
+                },
+            });
+
+            try {
+                Object.defineProperty(original, EMBEDDED_FLAG, {
+                    configurable: true,
+                    value: true,
+                });
+            } catch (_error) {
+                // ignore if property definition fails
+            }
+
+            return proxy;
         };
+
+        (window as any).__embeddedCalls = [];
+
+        const initialEmbeddedValue = (window as any).embedded;
+
+        const setEmbeddedValue = (value: any) => {
+            embeddedValue = wrapEmbedded(value);
+        };
+
+        let embeddedValue: any;
+
+        Object.defineProperty(window, 'embedded', {
+            configurable: true,
+            get() {
+                return embeddedValue;
+            },
+            set(value) {
+                setEmbeddedValue(value);
+            },
+        });
+
+        setEmbeddedValue(initialEmbeddedValue);
+
+        if (!initialEmbeddedValue) {
+            setEmbeddedValue({});
+        }
     });
 }
 
