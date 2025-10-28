@@ -398,35 +398,71 @@ document.addEventListener('visibilitychange', () => {
 });
 
 
-// Numpad key mapping for directions (standard orientation)
-const numpadDirections: { [key: string]: string } = {
-    'Numpad8': 'n',
-    'Numpad2': 's',
-    'Numpad4': 'w',
-    'Numpad6': 'e',
-    'Numpad7': 'nw',
-    'Numpad9': 'ne',
-    'Numpad1': 'sw',
-    'Numpad3': 'se',
-    'NumpadMultiply': 'u',
-    'NumpadSubtract': 'd',
-    'NumpadDivide': 'd',
-    'Numpad0': 'special',
-    'Numpad5': 'zerknij'
+interface DirectionBinding {
+    code: string;
+    direction: string;
+    ctrl?: boolean;
+    alt?: boolean;
+    shift?: boolean;
+}
+
+interface RawDirectionBind {
+    key: string;
+    ctrl?: boolean;
+    alt?: boolean;
+    shift?: boolean;
+}
+
+const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
+    n: { key: 'Numpad8' },
+    s: { key: 'Numpad2' },
+    w: { key: 'Numpad4' },
+    e: { key: 'Numpad6' },
+    nw: { key: 'Numpad7' },
+    ne: { key: 'Numpad9' },
+    sw: { key: 'Numpad1' },
+    se: { key: 'Numpad3' },
+    u: { key: 'NumpadMultiply' },
+    d: { key: 'NumpadSubtract' },
+    special: { key: 'Numpad0' },
 };
 
-function applyDirectionBinds(dirs: any) {
-    Object.keys(numpadDirections).forEach(k => {
-        if (!['NumpadDivide', 'Numpad0', 'Numpad5'].includes(k)) delete numpadDirections[k];
+const CONSTANT_DIRECTION_BINDS: DirectionBinding[] = [
+    { direction: 'd', code: 'NumpadDivide' },
+    { direction: 'zerknij', code: 'Numpad5' },
+];
+
+let directionBindings: DirectionBinding[] = buildDirectionBindings();
+
+function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> | undefined>): DirectionBinding[] {
+    const resolved: DirectionBinding[] = Object.entries(DEFAULT_DIRECTION_BINDS).map(([direction, fallback]) => {
+        const override = dirs?.[direction];
+        const source = (override && override.key) ? override : fallback;
+        return {
+            direction,
+            code: source.key,
+            ctrl: !!source.ctrl,
+            alt: !!source.alt,
+            shift: !!source.shift,
+        };
     });
-    Object.entries(dirs || {}).forEach(([dir, bind]: any) => {
-        if (bind && bind.key) {
-            numpadDirections[bind.key] = dir;
-        }
-    });
-    numpadDirections['NumpadDivide'] = 'd';
-    numpadDirections['Numpad0'] = 'special';
-    numpadDirections['Numpad5'] = 'zerknij';
+
+    if (!resolved.some(bind => bind.code === 'Numpad0')) {
+        resolved.push({ direction: 'special', code: 'Numpad0' });
+    }
+
+    return [...resolved, ...CONSTANT_DIRECTION_BINDS];
+}
+
+function applyDirectionBinds(dirs: Record<string, Partial<RawDirectionBind> | undefined> | undefined) {
+    directionBindings = buildDirectionBindings(dirs || undefined);
+}
+
+function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding) {
+    return event.code === binding.code &&
+        event.ctrlKey === !!binding.ctrl &&
+        event.altKey === !!binding.alt &&
+        event.shiftKey === !!binding.shift;
 }
 
 // Add global keydown event listener for numpad directions
@@ -444,17 +480,17 @@ document.addEventListener('keydown', (e) => {
         (active.matches('input, textarea') || active.isContentEditable)) {
         return;
     }
-    const direction = numpadDirections[e.code];
-    if (direction) {
+    const binding = directionBindings.find(item => matchesDirectionBinding(e, item));
+    if (binding) {
         e.preventDefault();
-        if (direction === 'special') {
+        if (binding.direction === 'special') {
             const exits = (window as any).clientExtension?.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
                 (window as any).clientExtension.sendCommand(first);
             }
         } else {
-            client.sendCommand(direction);
+            client.sendCommand(binding.direction);
         }
     }
 });
