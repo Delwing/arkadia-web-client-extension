@@ -74,6 +74,11 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         const SE = String.fromCharCode(240);
         const GMCP = String.fromCharCode(201);
 
+        (window as any).__npcReady = false;
+        window.addEventListener('npc', () => {
+            (window as any).__npcReady = true;
+        });
+
         (window as any).__pushGmcp = (path: string, payload: unknown) => {
             const socket = sockets
                 .slice()
@@ -110,6 +115,22 @@ export async function waitForClientReady(page: Page): Promise<void> {
         }
         await overlay.waitFor({ state: 'hidden' });
     }
+
+    await page.waitForFunction(() => {
+        const client: any = (window as any).clientExtension;
+        if (!client) {
+            return false;
+        }
+        if ((window as any).__npcReady) {
+            return true;
+        }
+        const helper = client.packageHelper;
+        if (helper && helper.npc && Object.keys(helper.npc).length > 0) {
+            (window as any).__npcReady = true;
+            return true;
+        }
+        return false;
+    });
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
