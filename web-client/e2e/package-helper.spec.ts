@@ -95,3 +95,94 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         });
     }).toBe(true);
 });
+
+test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {
+    await page.goto('/');
+    await waitForClientReady(page);
+    await ensureGameSocket(page);
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
+
+    await page.evaluate(() => {
+        const client: any = (window as any).clientExtension;
+        client.contentWidth = 140;
+        client.Map.currentRoom = {id: 101};
+        (window as any).__leadToEvents = [];
+        (window as any).__findPathCalls = [];
+        window.addEventListener('leadTo', (event: any) => {
+            (window as any).__leadToEvents.push(event.detail);
+        });
+        client.Map.findPath = (from, to) => {
+            (window as any).__findPathCalls.push([from, to]);
+            if (from === 101 && to === 200) {
+                return [101, 150, 175, 200];
+            }
+            return null;
+        };
+        client.sendEvent('settings', {packageHelper: false});
+    });
+
+    await expect
+        .poll(async () => {
+            return await page.evaluate(() => Boolean((window as any).clientExtension?.packageHelper?.enabled));
+        })
+        .toBe(false);
+
+    const boardText = [
+        'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
+        ' o============================================================================o',
+        ' |                Adresat badz                     Cena          Czas na      |',
+        ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
+        ' o -------------------------------------------------------------------------- o',
+        ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
+        " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
+        ' o -------------------------------------------------------------------------- o',
+        ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
+        ' o============================================================================o',
+    ].join('\n');
+
+    await pushText(page, boardText);
+
+    const boardMessage = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+
+    await expect(boardMessage).toContainText('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
+    await expect(boardMessage).not.toContainText('dystans:');
+    await expect(boardMessage.locator('span[data-output-clickable="true"]')).toHaveCount(0);
+
+    await page.evaluate(async () => {
+        const client: any = (window as any).clientExtension;
+        await client.sendCommand('wybierz paczke 1');
+    });
+
+    await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
+
+    await expect
+        .poll(async () => {
+            return await page.evaluate(() => {
+                const element = document.getElementById('package-status');
+                if (!element) {
+                    return false;
+                }
+                const style = window.getComputedStyle(element);
+                if (style.display === 'none' || style.visibility === 'hidden') {
+                    return false;
+                }
+                return Boolean(element.textContent?.trim());
+            });
+        })
+        .toBe(false);
+
+    await expect
+        .poll(async () => {
+            return await page.evaluate(() => (window as any).__leadToEvents?.length ?? 0);
+        })
+        .toBe(0);
+
+    await expect
+        .poll(async () => {
+            return await page.evaluate(() => (window as any).__findPathCalls?.length ?? 0);
+        })
+        .toBe(0);
+});
