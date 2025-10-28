@@ -1,4 +1,5 @@
 import type {BrowserContext, Page} from '@playwright/test';
+import {Buffer} from 'buffer';
 
 export const GMCP_PATHS = {
     CHAR_INFO: 'char.info',
@@ -131,22 +132,15 @@ export async function ensureGameSocket(page: Page): Promise<void> {
 }
 
 export async function pushText(page: Page, text: string, type = 'main'): Promise<void> {
-    await page.evaluate(([lineType, payload]) => {
-        const client = (window as any).clientExtension as any;
-        const adapter = client?.clientAdapter;
-        if (!client || !adapter) {
+    const encoded = Buffer.from(text, 'utf-8').toString('base64');
+    await pushGmcp(page, 'gmcp_msgs', {text: encoded, type});
+    await page.evaluate(() => {
+        const adapter = (window as any).clientExtension?.clientAdapter as any;
+        if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
             throw new Error('Arkadia client is not ready');
         }
-        if (typeof adapter.sendLine === 'function') {
-            adapter.sendLine(payload, lineType, 0);
-        } else {
-            const processed = client.onLine(payload, lineType);
-            const html = adapter.parseAnsiPatterns(processed);
-            adapter.emit('message', html, lineType);
-            adapter.emit('line-sent');
-        }
-        adapter.emit('output-sent', 1);
-    }, [type, text]);
+        adapter.flushMessageBuffer();
+    });
 }
 
 export type MultibindWorkerResponse =
