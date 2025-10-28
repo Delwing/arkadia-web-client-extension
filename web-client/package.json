@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "ansi-to-html": "^0.7.2",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@playwright/test": "^1.56.1",
     "@types/jest": "^29.5.5",
     "@types/node": "^20.11.0",
     "@types/react": "^19.1.2",
