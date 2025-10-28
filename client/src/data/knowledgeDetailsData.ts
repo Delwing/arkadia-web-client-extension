@@ -284,7 +284,7 @@ export const KNOWLEDGE_DETAILS_DATA = {
       "Ogladales kamienne reptilionskie chaty",
       "Ogladales legowiska troglodytow",
       "Ogladales malowidla przedstawiajace zycie i zwyczaje troglodytow",
-      "Ogladales naskalne malowidla troglodytow",
+      "Ogladales naskalne malunki troglodytow",
       "Ogladales prymitywne rysunki i symbole w jaskiniach troglodytow",
       "Ogladales resztki po ucztowaniu troglodytow",
       "Rozmawiales z przewoznikiem Luiggim o zagrozeniu atakiem reptilionow",
@@ -396,7 +396,7 @@ export const KNOWLEDGE_DETAILS_DATA = {
       "Widziales pociski utworzone czysta magia",
       "Widziales przyzwany magia lodowy wicher",
       "Widziales widmowy pancerz utworzony za pomoca magii",
-      "Widziales zmaterializowana magie kwasowa strzale",
+      "Widziales zmaterializowana magia kwasowa strzale",
       "Doswiadczyles jak ktos rozbroil cie przy pomocy magii",
       "Doswiadczyles magicznego paralizu calego ciala",
       "Doswiadczyles jak magia odebrala ci zdolnosc mowy",
@@ -619,7 +619,7 @@ export const KNOWLEDGE_DETAILS_DATA = {
       "Widziales typowe, spizowe ozdoby ryboludzi",
       "Widziales przenosny oltarz ryboludzi",
       "Widziales koralowe tabliczki - zrodlo wiedzy o ryboczlekach",
-      "Widziales nieprzytomna ofiare przygotowana do rytualu ryboludzi",
+      "Widziales nieprzytomna ofiare przygotowana do rytualu ryboczlekow",
       "Ogladales plaskorzezbe przedstawiajaca postac ryboczleka"
     ],
     [
