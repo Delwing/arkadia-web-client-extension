@@ -10,6 +10,7 @@ export interface UserMacro {
     color?: string;
     to?: string;
     command?: string;
+    soundKey?: string;
 }
 
 export interface UserTrigger {
@@ -53,7 +54,7 @@ export default function initUserTriggers(client: Client) {
                                 result = m.to || '';
                                 break;
                             case 'beep':
-                                client.sendEvent("sound:play", { key: "beep" });
+                                client.sendEvent("sound:play", { key: m.soundKey || "beep" });
                                 break;
                             case 'command':
                                 if (m.command) {

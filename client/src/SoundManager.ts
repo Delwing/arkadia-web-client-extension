@@ -1,6 +1,8 @@
 import type {Howl} from "howler";
+import storage from "./storage";
+import { getCustomSound, getCustomSoundSync } from "./customSounds";
 
-export type SoundKey = "beep";
+export type SoundKey = string;
 
 interface PlaySoundDetail {
     key: SoundKey;
@@ -25,8 +27,31 @@ export default class SoundManager {
     }
 
     async prepare(): Promise<void> {
-        const sound = await this.ensureSound("beep");
-        sound?.load();
+        const keys = await this.getKeysToPreload();
+        await Promise.all(
+            Array.from(keys).map(async key => {
+                const sound = await this.ensureSound(key);
+                sound?.load();
+            })
+        );
+    }
+
+    private async getKeysToPreload(): Promise<Set<SoundKey>> {
+        const keys = new Set<SoundKey>(["beep"]);
+        try {
+            const result = await storage.getItem("triggers");
+            const triggers = Array.isArray((result as any)?.triggers) ? (result as any).triggers : [];
+            triggers.forEach((trigger: any) => {
+                trigger?.macros?.forEach((macro: any) => {
+                    if (macro?.type === "beep") {
+                        keys.add(typeof macro.soundKey === "string" && macro.soundKey ? macro.soundKey : "beep");
+                    }
+                });
+            });
+        } catch (error) {
+            console.error("Failed to determine sounds to preload", error);
+        }
+        return keys;
     }
 
     private async loadHowler(): Promise<typeof import('howler').Howl> {
@@ -63,8 +88,21 @@ export default class SoundManager {
                 return sound;
             }
             default:
-                return undefined;
+                return this.createCustomSound(HowlConstructor, key);
         }
+    }
+
+    private async createCustomSound(HowlConstructor: typeof import("howler").Howl, key: SoundKey): Promise<Howl | undefined> {
+        const definition = getCustomSoundSync(key) ?? await getCustomSound(key);
+        if (!definition) {
+            return undefined;
+        }
+        const sound = new HowlConstructor({
+            src: [definition.data],
+            preload: false,
+        });
+        this.sounds[key] = sound;
+        return sound;
     }
 
     private playLoadedSound(sound: Howl) {
