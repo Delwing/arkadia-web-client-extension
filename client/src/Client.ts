@@ -384,13 +384,21 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
-    async sendCommand(command: string, echo: boolean = true, options?: CommandOptions): Promise<void> {
+    async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false): Promise<void> {
         if (command) {
             command = stripPolishCharacters(command)
         }
         this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
 
-        command = this.Map.parseCommand(command)
+        let commandChanged = false
+        if (!skipMapParse) {
+            const parsedCommand = this.Map.parseCommand(command)
+            if (parsedCommand === null) {
+                return
+            }
+            commandChanged = parsedCommand !== command
+            command = parsedCommand
+        }
         command = this.expandObjectShortcuts(command)
         if (command.startsWith('echo ')) {
             this.print(mudletColorLine(command.substring(5)))
@@ -399,7 +407,7 @@ export default class Client {
         const split = command.split(/[#;]/)
         if (split.length > 1) {
             for (const part of split) {
-                await this.sendCommand(part, echo, options)
+                await this.sendCommand(part, echo, options, skipMapParse || commandChanged)
             }
             return
         }
