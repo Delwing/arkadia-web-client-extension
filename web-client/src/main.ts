@@ -313,6 +313,7 @@ function updateConnectButtons() {
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
     const spinner = document.getElementById('connecting-spinner') as HTMLElement | null;
+    const disconnectButton = document.getElementById('disconnect-button') as HTMLButtonElement | null;
 
     if (connectButton) {
         if (isConnected || isConnecting || authClosed) {
@@ -344,6 +345,10 @@ function updateConnectButtons() {
 
     if (authOverlay) {
         authOverlay.style.display = (!isConnected && !playbackMode && !authClosed) ? 'flex' : 'none';
+    }
+
+    if (disconnectButton) {
+        disconnectButton.disabled = !isConnected;
     }
 }
 
@@ -464,6 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
     const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
     const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
+    const disconnectButton = document.getElementById('disconnect-button') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
     const scriptsButton = document.getElementById('scripts-button') as HTMLButtonElement | null;
@@ -593,6 +599,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (menuButton) {
         new Dropdown(menuButton);
+    }
+
+    if (disconnectButton) {
+        disconnectButton.addEventListener('click', () => {
+            if (!isConnected) {
+                return;
+            }
+            isConnecting = false;
+            updateConnectButtons();
+            arkadiaClient.disconnect();
+        });
     }
 
     window.addEventListener('close-options', () => {

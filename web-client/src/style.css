@@ -2173,6 +2173,26 @@ h1 {
   text-align: left;
 }
 
+#input-area .dropdown-menu .menu-disconnect-button {
+  background-color: #dc3545;
+  border: 1px solid #dc3545;
+  color: #fff;
+}
+
+#input-area .dropdown-menu .menu-disconnect-button:hover,
+#input-area .dropdown-menu .menu-disconnect-button:focus {
+  background-color: #bb2d3b;
+  border-color: #bb2d3b;
+  color: #fff;
+}
+
+#input-area .dropdown-menu .menu-disconnect-button:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+  opacity: 0.75;
+}
+
 #input-area button:hover {
   border-color: #fff;
 }
