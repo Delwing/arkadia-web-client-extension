@@ -132,6 +132,16 @@ export async function mockNpcDownload(
     context: BrowserContext,
     data: {name: string; loc: number}[] = DEFAULT_NPC_DATA,
 ): Promise<void> {
+    await context.addInitScript(() => {
+        try {
+            const request = indexedDB.deleteDatabase('ArkadiaNpcDB');
+            request.onerror = () => {
+                console.warn('Failed to clear ArkadiaNpcDB before tests');
+            };
+        } catch (error) {
+            console.warn('Error clearing ArkadiaNpcDB before tests:', error);
+        }
+    });
     await context.route(NPC_DATA_ROUTE, async (route) => {
         await route.fulfill({
             status: 200,
