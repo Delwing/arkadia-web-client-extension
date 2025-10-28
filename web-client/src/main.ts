@@ -961,6 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 arkadiaClient.on('client.connect', sendCreds);
                 isConnecting = true;
                 updateConnectButtons();
+                void client.prepareSounds();
                 arkadiaClient.connect();
             } else {
                 sendCreds();
@@ -1130,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             isConnecting = true;
             updateConnectButtons();
+            void client.prepareSounds();
             arkadiaClient.connect();
         }
     };

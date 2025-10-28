@@ -4,7 +4,6 @@ import Triggers from '../src/Triggers';
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
-  playSound = jest.fn();
   sendEvent = jest.fn();
   sendCommand = jest.fn();
 }
@@ -23,7 +22,9 @@ describe('ships triggers', () => {
 
   test('boarding trigger binds command and beeps', () => {
     parse('Tratwa przybija do brzegu.');
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
@@ -36,16 +37,16 @@ describe('ships triggers', () => {
 
   test('galeon boarding trigger binds command without beep', () => {
     parse('Wielki trojmasztowy galeon.', 'room.contents.object');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
   });
 
   test('statki trigger binds without beep', () => {
-    client.playSound.mockClear();
+    client.sendEvent.mockClear();
     parse('Tajemniczy okret', 'room.contents.object');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
@@ -99,7 +100,9 @@ describe('ships triggers', () => {
 
   test('prom without punctuation binds and beeps', () => {
     parse('Szeroki zielony prom.');
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');

@@ -446,7 +446,7 @@ export default function registerLuaGagTriggers(client: Client) {
 
     (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
     client.addEventListener("playBeep", () => {
-        client.playSound("beep")
+        client.sendEvent("sound:play", { key: "beep" })
     })
 
     let {global, luaEnv} = createLuaEnv();

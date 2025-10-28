@@ -18,6 +18,11 @@ import Client from '../src/Client';
 import { mudletColorLine } from '../src/Colors';
 import { Howl } from 'howler';
 
+jest.mock('../src/sounds', () => ({
+  __esModule: true,
+  beepSound: 'mock-sound',
+}));
+
 jest.mock('howler', () => {
   const instance = {
     state: jest.fn(() => 'loaded'),
@@ -301,12 +306,13 @@ test('onLine preserves final reset at line end', () => {
   expect(result).toBe(line);
 });
 
-test('playSound restarts sound when called twice', () => {
+test('sound playback restarts when triggered twice', async () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  await client.prepareSounds();
   const sound = (Howl as jest.Mock).mock.results[0].value;
 
-  client.playSound('beep');
-  client.playSound('beep');
+  client.sendEvent('sound:play', { key: 'beep' });
+  client.sendEvent('sound:play', { key: 'beep' });
 
   expect(sound.stop).toHaveBeenCalledTimes(2);
   expect(sound.play).toHaveBeenCalledTimes(2);

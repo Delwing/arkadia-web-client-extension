@@ -23,7 +23,7 @@ export default function initLamp(client: Client) {
             client.println(` >> W lampie zostalo oleju na ${secondsToClock(seconds)}.`)
         }
         if (BEEP_TIMES.includes(seconds)) {
-            client.playSound('beep')
+            client.sendEvent("sound:play", { key: "beep" })
         }
         if (seconds <= 0) {
             stopTimer()

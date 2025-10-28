@@ -18,7 +18,7 @@ const MOCK_PEOPLE = [
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  playSound = jest.fn();
+  sendEvent = jest.fn();
   addEventListener = jest.fn();
 }
 
@@ -63,7 +63,9 @@ describe('attack beep triggers', () => {
 
   test('beeps and highlights on attack', () => {
     const result = parse('Intia atakuje cie!');
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     const prefix = `\x1B[22;38;5;${findClosestColor('#ff0000')}m`;
     expect(result.startsWith(prefix)).toBe(true);
     expect(result).toContain('Intia ATAKUJE CIE!');
@@ -78,7 +80,8 @@ describe('attack beep triggers', () => {
 
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
-    expect(client.playSound).not.toHaveBeenCalled();
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(0);
     const prefix = `\x1B[22;38;5;${findClosestColor('#ff0000')}m`;
     expect(result.startsWith(prefix)).toBe(true);
     expect(result).toContain('ATAKUJE CIE');

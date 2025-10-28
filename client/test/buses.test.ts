@@ -4,7 +4,7 @@ import Triggers from '../src/Triggers';
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
-  playSound = jest.fn();
+  sendEvent = jest.fn();
   sendCommand = jest.fn();
 }
 
@@ -22,7 +22,9 @@ describe('buses triggers', () => {
 
   test('exit trigger binds command and beeps', () => {
     parse('Otwarty jadacy powoz powoli zatrzymuje sie.');
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wyjscie');
@@ -32,7 +34,7 @@ describe('buses triggers', () => {
 
   test('boarding trigger binds commands', () => {
     parse('dylizans powoli zatrzymuje sie.');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;wsiadz do dylizansu;wlm');

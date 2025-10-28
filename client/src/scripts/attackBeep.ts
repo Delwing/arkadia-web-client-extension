@@ -61,7 +61,7 @@ export default function initAttackBeep(client: Client) {
             return highlightAttack(raw, upper);
         }
 
-        client.playSound("beep");
+        client.sendEvent("sound:play", { key: "beep" });
         const upper = (matches.groups && (matches.groups as any).upper) as string | undefined;
         return highlightAttack(raw, upper);
     };
