@@ -28,6 +28,7 @@ export interface KnownEvents {
     'moveModeChanged': number;
     'ping': number | null;
     'transportTimer': TransportTimerPayload | null;
+    'combatTimer': number | null;
 }
 
 export type ClientEvents = KnownEvents & {

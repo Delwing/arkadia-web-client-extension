@@ -1780,6 +1780,22 @@ h1 {
   color: tomato;
 }
 
+#combat-timer {
+  display: none;
+}
+
+#combat-timer.green {
+  color: springgreen;
+}
+
+#combat-timer.yellow {
+  color: yellow;
+}
+
+#combat-timer.red {
+  color: tomato;
+}
+
 #state-info {
   display: none;
 }
