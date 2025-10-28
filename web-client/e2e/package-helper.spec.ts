@@ -4,6 +4,8 @@ import {
     getLastOutgoingCommand,
     GMCP_PATHS,
     installMockWebSocket,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
     mockNpcDownload,
     pushGmcp,
     pushText,
@@ -11,6 +13,8 @@ import {
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await installMockWebSocket(context);
 });

@@ -3,12 +3,16 @@ import {
     ensureGameSocket,
     GMCP_PATHS,
     installMockWebSocket,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
     mockNpcDownload,
     pushGmcp,
     waitForClientReady,
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await installMockWebSocket(context);
 });

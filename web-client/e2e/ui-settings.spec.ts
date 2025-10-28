@@ -5,6 +5,8 @@ import {
     getEmbeddedCalls,
     installEmbeddedMock,
     installMockWebSocket,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
     mockNpcDownload,
     resetEmbeddedCalls,
     waitForClientReady,
@@ -23,6 +25,8 @@ async function openUiSettings(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await installMockWebSocket(context);
     await installEmbeddedMock(context);
