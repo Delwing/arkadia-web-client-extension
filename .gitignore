@@ -8,3 +8,5 @@ arkadia-extension.zip
 vite.config.js
 .yarn
 .DS_Store
+web-client/playwright-report/
+web-client/test-results/
