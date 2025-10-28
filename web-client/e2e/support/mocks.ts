@@ -130,6 +130,25 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     });
 }
 
+export async function pushText(page: Page, text: string, type = 'main'): Promise<void> {
+    await page.evaluate(([lineType, payload]) => {
+        const client = (window as any).clientExtension as any;
+        const adapter = client?.clientAdapter;
+        if (!client || !adapter) {
+            throw new Error('Arkadia client is not ready');
+        }
+        if (typeof adapter.sendLine === 'function') {
+            adapter.sendLine(payload, lineType, 0);
+        } else {
+            const processed = client.onLine(payload, lineType);
+            const html = adapter.parseAnsiPatterns(processed);
+            adapter.emit('message', html, lineType);
+            adapter.emit('line-sent');
+        }
+        adapter.emit('output-sent', 1);
+    }, [type, text]);
+}
+
 export type MultibindWorkerResponse =
     | { type: 'success'; payload: { rows: unknown[]; totalRows: number; invalidRows: number } }
     | { type: 'error'; message: string };
