@@ -9,6 +9,7 @@ export const GMCP_PATHS = {
 export async function installMockWebSocket(context: BrowserContext): Promise<void> {
     await context.addInitScript(() => {
         const sockets: MockWebSocket[] = [];
+        const commandLog: string[] = [];
         const CONNECTING = 0;
         const OPEN = 1;
         const CLOSING = 2;
@@ -54,6 +55,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
                         return;
                     }
                     this.commands.push(trimmed);
+                    commandLog.push(trimmed);
                 } catch (_error) {
                     // ignore malformed payloads
                 }
@@ -83,6 +85,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 
         (window as any).__mockSockets = sockets;
         (window as any).__MockWebSocket = MockWebSocket;
+        (window as any).__mockCommandLog = commandLog;
         window.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
         const IAC = String.fromCharCode(255);
@@ -220,6 +223,12 @@ export async function ensureGameSocket(page: Page): Promise<void> {
             adapter.connect();
         }
     });
+    await page.evaluate(() => {
+        const log = (window as any).__mockCommandLog;
+        if (Array.isArray(log)) {
+            log.length = 0;
+        }
+    });
     await page.waitForFunction(() => {
         const sockets: any[] = (window as any).__mockSockets ?? [];
         return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
@@ -261,14 +270,11 @@ export async function pushText(page: Page, text: string, options: { type?: strin
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
     return await page.evaluate(() => {
-        const sockets = ((window as any).__mockSockets ?? []).slice().reverse();
-        for (const socket of sockets) {
-            const commands: string[] = Array.isArray(socket?.commands) ? socket.commands : [];
-            for (let index = commands.length - 1; index >= 0; index -= 1) {
-                const command = commands[index];
-                if (command) {
-                    return command;
-                }
+        const log: unknown = (window as any).__mockCommandLog;
+        if (Array.isArray(log) && log.length > 0) {
+            const value = log[log.length - 1];
+            if (typeof value === 'string' && value.trim()) {
+                return value;
             }
         }
         return null;
