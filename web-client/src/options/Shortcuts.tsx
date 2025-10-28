@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
-import { TiDelete } from 'react-icons/ti';
+import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
 import storage from "@client/src/storage";
 
 interface ShortcutEntry {

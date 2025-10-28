@@ -1,6 +1,7 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete, TiEdit } from "react-icons/ti";
+import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
+import { TiEdit } from "@react-icons/all-files/ti/TiEdit";
 import storage from "@client/src/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
 import { parseArkadia } from "./importArkadia";

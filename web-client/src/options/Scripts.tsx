@@ -1,6 +1,6 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete } from "react-icons/ti";
+import { TiDelete } from "@react-icons/all-files/ti/TiDelete";
 import storage from "@client/src/storage";
 
 function Scripts() {
