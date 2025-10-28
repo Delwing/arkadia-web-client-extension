@@ -1,6 +1,6 @@
 import type {Howl} from "howler";
 import storage from "./storage";
-import { getCustomSound, getCustomSoundSync } from "./customSounds";
+import { getCustomSound } from "./customSounds";
 
 export type SoundKey = string;
 
@@ -93,7 +93,7 @@ export default class SoundManager {
     }
 
     private async createCustomSound(HowlConstructor: typeof import("howler").Howl, key: SoundKey): Promise<Howl | undefined> {
-        const definition = getCustomSoundSync(key) ?? await getCustomSound(key);
+        const definition = await getCustomSound(key);
         if (!definition) {
             return undefined;
         }

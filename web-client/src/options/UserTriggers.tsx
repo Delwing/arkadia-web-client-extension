@@ -228,9 +228,7 @@ function UserTriggers() {
                 updated = [...prev, sound];
                 return updated;
             });
-            if (updated.length) {
-                void saveCustomSounds(updated);
-            }
+            void saveCustomSounds(updated);
             resolver?.(generatedKey);
         };
         reader.onerror = () => {
