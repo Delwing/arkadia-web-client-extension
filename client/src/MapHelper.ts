@@ -158,7 +158,7 @@ export default class MapHelper {
             }
         }
         if (this.currentRoom) {
-            if (this.currentRoom.userData.dir_bind) {
+            if (this.currentRoom.userData && this.currentRoom.userData.dir_bind) {
                 const dirBinds = Object.fromEntries(this.currentRoom.userData.dir_bind.split("&").map((item: string) => item.split("=")))
                 if (dirBinds[getLongDir(command)]) {
                     return dirBinds[getLongDir(command)]
