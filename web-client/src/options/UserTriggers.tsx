@@ -136,6 +136,11 @@ function UserTriggers() {
     const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const pendingSoundResolver = useRef<((value?: string) => void) | null>(null);
+    const customSoundsRef = useRef<CustomSound[]>([]);
+
+    useEffect(() => {
+        customSoundsRef.current = customSounds;
+    }, [customSounds]);
 
     useEffect(() => {
         let active = true;
@@ -212,24 +217,25 @@ function UserTriggers() {
                 return;
             }
             const baseName = file.name.replace(/\.[^/.]+$/, '') || file.name;
-            let updated: CustomSound[] = [];
-            let generatedKey: string | undefined;
-            setCustomSounds(prev => {
-                const existingKeys = new Set(prev.map(sound => sound.key));
-                const slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-                const prefix = slug ? `user:${slug}` : `user:${Date.now()}`;
-                let key = prefix;
-                let counter = 1;
-                while (existingKeys.has(key)) {
-                    key = `${prefix}-${counter++}`;
-                }
-                generatedKey = key;
-                const sound: CustomSound = { key, name: baseName, data: result };
-                updated = [...prev, sound];
-                return updated;
-            });
-            void saveCustomSounds(updated);
-            resolver?.(generatedKey);
+            const existingKeys = new Set(customSoundsRef.current.map(sound => sound.key));
+            const slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const prefix = slug ? `user:${slug}` : `user:${Date.now()}`;
+            let key = prefix;
+            let counter = 1;
+            while (existingKeys.has(key)) {
+                key = `${prefix}-${counter++}`;
+            }
+            const sound: CustomSound = { key, name: baseName, data: result };
+            const nextSounds = [...customSoundsRef.current, sound];
+            customSoundsRef.current = nextSounds;
+            setCustomSounds(nextSounds);
+            void saveCustomSounds(nextSounds)
+                .catch(error => {
+                    console.error('Failed to save custom sound', error);
+                })
+                .finally(() => {
+                    resolver?.(sound.key);
+                });
         };
         reader.onerror = () => {
             resolver?.(undefined);
