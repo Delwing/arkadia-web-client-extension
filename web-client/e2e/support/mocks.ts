@@ -157,7 +157,7 @@ export async function pushGmcp(page: Page, path: string, payload: unknown): Prom
     }, [path, payload]);
 }
 
-const OUTPUT_PRIME_PADDING = '\n'.repeat(40);
+const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')}\n`;
 
 export async function ensureGameSocket(page: Page): Promise<void> {
     await page.evaluate(() => {
