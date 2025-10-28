@@ -220,6 +220,61 @@ export async function pushText(page: Page, text: string): Promise<void> {
     });
 }
 
+export type EmbeddedCall = { method: string; value?: unknown };
+
+export async function installEmbeddedMock(context: BrowserContext): Promise<void> {
+    await context.addInitScript(() => {
+        const recordCall = (method: string, value?: unknown) => {
+            const store = (window as any).__embeddedCalls;
+            if (Array.isArray(store)) {
+                store.push({ method, value });
+            }
+        };
+
+        (window as any).__embeddedCalls = [];
+        (window as any).embedded = {
+            renderer: {},
+            setZoom(value: number) {
+                recordCall('setZoom', value);
+            },
+            setExplorationMode(value: boolean) {
+                recordCall('setExplorationMode', value);
+            },
+            setInstantMove(value: boolean) {
+                recordCall('setInstantMove', value);
+            },
+            setHighlightCurrentRoom(value: boolean) {
+                recordCall('setHighlightCurrentRoom', value);
+            },
+            setTransparentLabels(value: boolean) {
+                recordCall('setTransparentLabels', value);
+            },
+            setLabelRenderMode(value: 'image' | 'data') {
+                recordCall('setLabelRenderMode', value);
+            },
+            refresh() {
+                recordCall('refresh');
+            },
+            getVisitedCount() {
+                return 0;
+            },
+            getRoomCount() {
+                return 0;
+            },
+        };
+    });
+}
+
+export async function resetEmbeddedCalls(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        (window as any).__embeddedCalls = [];
+    });
+}
+
+export async function getEmbeddedCalls(page: Page): Promise<EmbeddedCall[]> {
+    return await page.evaluate(() => (window as any).__embeddedCalls ?? []);
+}
+
 export type MultibindWorkerResponse =
     | { type: 'success'; payload: { rows: unknown[]; totalRows: number; invalidRows: number } }
     | { type: 'error'; message: string };
