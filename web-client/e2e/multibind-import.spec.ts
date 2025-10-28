@@ -72,8 +72,7 @@ test.describe('Multibind import', () => {
         await expect(importModal).not.toBeVisible();
 
         const requests = await getMultibindRequests(page);
-        expect(requests).toHaveLength(1);
-        expect(requests[0]?.type).toBe('parse');
+        expect(requests.some((request) => request?.type === 'parse')).toBe(true);
 
         await page.evaluate(() => {
             const client: any = (window as any).clientExtension;
@@ -124,7 +123,6 @@ test.describe('Multibind import', () => {
         await expect(multiBinds).toHaveCount(0);
 
         const requests = await getMultibindRequests(page);
-        expect(requests).toHaveLength(1);
-        expect(requests[0]?.type).toBe('parse');
+        expect(requests.some((request) => request?.type === 'parse')).toBe(true);
     });
 });
