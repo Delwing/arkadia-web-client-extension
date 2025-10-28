@@ -7,9 +7,41 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Run client tests
+            command: yarn --cwd client test
+          - name: Run web client unit tests
+            command: yarn --cwd web-client test
+          - name: Build web client
+            command: yarn --cwd web-client build
+          - name: Run web client e2e tests
+            command: yarn --cwd web-client test:e2e --reporter=line
+            install_browsers: true
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
       - name: Install dependencies
-        run: yarn --cwd client install --frozen-lockfile
-      - name: Run tests
-        run: yarn --cwd client test
+        run: yarn install --frozen-lockfile
+      - name: Cache Playwright browsers
+        if: matrix.install_browsers == true
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package.json', 'yarn.lock', 'web-client/package.json', 'web-client/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install Playwright browsers
+        if: matrix.install_browsers == true
+        run: yarn --cwd web-client playwright install --with-deps chromium
+      - name: ${{ matrix.name }}
+        env:
+          CI: '1'
+        run: ${{ matrix.command }}
