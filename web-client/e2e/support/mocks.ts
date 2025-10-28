@@ -8,12 +8,27 @@ export const GMCP_PATHS = {
 
 export async function installMockWebSocket(context: BrowserContext): Promise<void> {
     await context.addInitScript(() => {
+        const globalScope: any = window;
         const sockets: MockWebSocket[] = [];
         const commandLog: string[] = [];
+
         const CONNECTING = 0;
         const OPEN = 1;
         const CLOSING = 2;
         const CLOSED = 3;
+
+        const decodeCommand = (message: string): string | null => {
+            try {
+                const decoded = atob(message);
+                if (!decoded || decoded.charCodeAt(0) === 255) {
+                    return null;
+                }
+                const trimmed = decoded.replace(/\r?\n/g, '').trim();
+                return trimmed || null;
+            } catch (_error) {
+                return null;
+            }
+        };
 
         class MockWebSocket {
             static CONNECTING = CONNECTING;
@@ -28,7 +43,6 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             onclose: ((event: CloseEvent) => void) | null = null;
             onerror: ((event: Event) => void) | null = null;
             sent: string[] = [];
-            commands: string[] = [];
 
             constructor(url: string, _protocols?: string | string[]) {
                 this.url = url;
@@ -42,22 +56,9 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 
             send(message: string) {
                 this.sent.push(message);
-                try {
-                    const decoded = atob(message);
-                    if (!decoded) {
-                        return;
-                    }
-                    const trimmed = decoded.replace(/\r?\n/g, '').trim();
-                    if (!trimmed) {
-                        return;
-                    }
-                    if (decoded.charCodeAt(0) === 255) {
-                        return;
-                    }
-                    this.commands.push(trimmed);
-                    commandLog.push(trimmed);
-                } catch (_error) {
-                    // ignore malformed payloads
+                const command = decodeCommand(message);
+                if (command) {
+                    commandLog.push(command);
                 }
             }
 
@@ -74,32 +75,23 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             }
 
             receive(data: string) {
-                if (!this.onmessage) {
-                    return;
-                }
-                this.onmessage({
-                    data,
-                } as MessageEvent<string>);
+                this.onmessage?.({ data } as MessageEvent<string>);
             }
         }
-
-        (window as any).__mockSockets = sockets;
-        (window as any).__MockWebSocket = MockWebSocket;
-        (window as any).__mockCommandLog = commandLog;
-        window.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
         const IAC = String.fromCharCode(255);
         const SB = String.fromCharCode(250);
         const SE = String.fromCharCode(240);
         const GMCP = String.fromCharCode(201);
 
-        (window as any).__npcReady = false;
-        window.addEventListener('npc', (event: Event) => {
-            const detail = (event as CustomEvent)?.detail;
-            if (Array.isArray(detail) && detail.length > 0) {
-                (window as any).__npcReady = true;
-            }
-        });
+        const normalizeLines = (value: string) => {
+            const input = typeof value === 'string' ? value : String(value ?? '');
+            const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const hasTrailingNewline = /\n$/.test(normalized);
+            const parts = normalized.split('\n');
+            const joined = parts.join('\r\n');
+            return hasTrailingNewline ? `${joined}\r\n` : joined;
+        };
 
         const getGameSocket = () => {
             return (
@@ -111,16 +103,39 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             );
         };
 
-        const normalizeLines = (value: string) => {
-            const input = typeof value === 'string' ? value : String(value ?? '');
-            const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            const hasTrailingNewline = /\n$/.test(normalized);
-            const parts = normalized.split('\n');
-            const joined = parts.join('\r\n');
-            return hasTrailingNewline ? `${joined}\r\n` : joined;
+        const registerCommandListener = () => {
+            if (globalScope.__commandListenerInstalled) {
+                return;
+            }
+            const client = globalScope.clientExtension;
+            if (!client || typeof client.addEventListener !== 'function') {
+                return;
+            }
+            const handler = (event: CustomEvent<string>) => {
+                const value = typeof event.detail === 'string' ? event.detail.trim() : '';
+                if (value) {
+                    commandLog.push(value);
+                }
+            };
+            client.addEventListener('command', handler as unknown as EventListener);
+            globalScope.__commandListenerInstalled = true;
         };
 
-        (window as any).__pushGmcp = (path: string, payload: unknown) => {
+        globalScope.__mockSockets = sockets;
+        globalScope.__MockWebSocket = MockWebSocket;
+        globalScope.__mockCommandLog = commandLog;
+        globalScope.__registerCommandListener = registerCommandListener;
+        globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+
+        globalScope.__npcReady = false;
+        window.addEventListener('npc', (event: Event) => {
+            const detail = (event as CustomEvent)?.detail;
+            if (Array.isArray(detail) && detail.length > 0) {
+                globalScope.__npcReady = true;
+            }
+        });
+
+        globalScope.__pushGmcp = (path: string, payload: unknown) => {
             const socket = getGameSocket();
             if (!socket) {
                 throw new Error('No mock socket connected');
@@ -131,7 +146,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             socket.receive(encoded);
         };
 
-        (window as any).__pushIncoming = (text: string) => {
+        globalScope.__pushIncoming = (text: string) => {
             const socket = getGameSocket();
             if (!socket) {
                 throw new Error('No mock socket connected');
@@ -139,6 +154,14 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             const normalized = normalizeLines(text);
             const encoded = btoa(normalized);
             socket.receive(encoded);
+        };
+
+        globalScope.__pushText = (text: string, type: string) => {
+            const normalized = normalizeLines(text);
+            globalScope.__pushGmcp('gmcp_msgs', {
+                type,
+                text: btoa(normalized),
+            });
         };
     });
 }
@@ -152,16 +175,6 @@ export async function mockNpcDownload(
     context: BrowserContext,
     data: {name: string; loc: number}[] = DEFAULT_NPC_DATA,
 ): Promise<void> {
-    await context.addInitScript(() => {
-        try {
-            const request = indexedDB.deleteDatabase('ArkadiaNpcDB');
-            request.onerror = () => {
-                console.warn('Failed to clear ArkadiaNpcDB before tests');
-            };
-        } catch (error) {
-            console.warn('Error clearing ArkadiaNpcDB before tests:', error);
-        }
-    });
     await context.route(NPC_DATA_ROUTE, async (route) => {
         await route.fulfill({
             status: 200,
@@ -218,16 +231,22 @@ const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')
 
 export async function ensureGameSocket(page: Page): Promise<void> {
     await page.evaluate(() => {
-        const adapter: any = (window as any).clientExtension?.clientAdapter;
+        const globalScope: any = window;
+        const adapter = globalScope.clientExtension?.clientAdapter;
         if (adapter?.connect) {
             adapter.connect();
         }
     });
     await page.evaluate(() => {
-        const log = (window as any).__mockCommandLog;
+        const globalScope: any = window;
+        const log = globalScope.__mockCommandLog;
         if (Array.isArray(log)) {
             log.length = 0;
         }
+    });
+    await page.evaluate(() => {
+        const globalScope: any = window;
+        globalScope.__registerCommandListener?.();
     });
     await page.waitForFunction(() => {
         const sockets: any[] = (window as any).__mockSockets ?? [];
@@ -246,18 +265,11 @@ export async function ensureGameSocket(page: Page): Promise<void> {
 export async function pushText(page: Page, text: string, options: { type?: string } = {}): Promise<void> {
     const type = options.type ?? 'comm';
     await page.evaluate(([payload, gmcpType]) => {
-        const normalizeLines = (value: string) => {
-            const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            const hasTrailingNewline = /\n$/.test(normalized);
-            const parts = normalized.split('\n');
-            const joined = parts.join('\r\n');
-            return hasTrailingNewline ? `${joined}\r\n` : joined;
-        };
-
-        (window as any).__pushGmcp('gmcp_msgs', {
-            type: gmcpType,
-            text: btoa(normalizeLines(payload)),
-        });
+        const globalScope: any = window;
+        if (typeof globalScope.__pushText !== 'function') {
+            throw new Error('Mock WebSocket not initialized');
+        }
+        globalScope.__pushText(payload, gmcpType);
     }, [text, type]);
     await page.evaluate(() => {
         const adapter = (window as any).clientExtension?.clientAdapter as any;
