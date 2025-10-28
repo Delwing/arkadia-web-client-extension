@@ -1,6 +1,7 @@
 import {expect, test} from '@playwright/test';
 import type {Page} from '@playwright/test';
 import {
+    ensureGameSocket,
     getMultibindRequests,
     installMockWebSocket,
     installMultibindWorkerMock,
@@ -12,6 +13,7 @@ import {
 async function openBindsModal(page: Page) {
     await page.goto('/');
     await waitForClientReady(page);
+    await ensureGameSocket(page);
     await page.click('#menu-button');
     await page.click('#binds-button');
     const modal = page.locator('#binds-modal');

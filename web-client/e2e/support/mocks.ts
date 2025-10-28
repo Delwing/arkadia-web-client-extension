@@ -157,6 +157,8 @@ export async function pushGmcp(page: Page, path: string, payload: unknown): Prom
     }, [path, payload]);
 }
 
+const OUTPUT_PRIME_PADDING = '\n'.repeat(40);
+
 export async function ensureGameSocket(page: Page): Promise<void> {
     await page.evaluate(() => {
         const adapter: any = (window as any).clientExtension?.clientAdapter;
@@ -168,6 +170,14 @@ export async function ensureGameSocket(page: Page): Promise<void> {
         const sockets: any[] = (window as any).__mockSockets ?? [];
         return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
+
+    const alreadyPrimed = await page.evaluate(() => Boolean((window as any).__outputPrimed));
+    if (!alreadyPrimed) {
+        await pushText(page, OUTPUT_PRIME_PADDING);
+        await page.evaluate(() => {
+            (window as any).__outputPrimed = true;
+        });
+    }
 }
 
 export async function pushText(page: Page, text: string, type = 'main'): Promise<void> {

@@ -38,12 +38,6 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         };
     });
 
-    await page.evaluate(() => {
-        (window as any).clientExtension.sendEvent('npc', [
-            {name: 'Borgaf Kriegmann', loc: 200},
-        ]);
-    });
-
     const boardText = [
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
         ' o============================================================================o',
