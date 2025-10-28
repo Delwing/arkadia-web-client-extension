@@ -1,19 +1,12 @@
 import type { SqlJsStatic } from 'sql.js';
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-
-export interface MultibindImportRow {
-    uniqness: string;
-    roomId: number;
-    index: number;
-    action: string;
-}
-
-export interface ParsedMultibindDatabase {
-    rows: MultibindImportRow[];
-    totalRows: number;
-    invalidRows: number;
-}
+import {
+    type MultibindImportRow,
+    type MultibindImportWorkerRequest,
+    type MultibindImportWorkerResponse,
+    type ParsedMultibindDatabase,
+} from './multibindImport.shared';
 
 const REQUIRED_COLUMNS = ['_row_id', 'index', 'uniqness', 'room_id', 'action'] as const;
 const MAX_MULTIBIND_INDEX = 4;
@@ -23,7 +16,7 @@ let sqlPromise: Promise<SqlJsStatic> | null = null;
 async function getSql(): Promise<SqlJsStatic> {
     if (!sqlPromise) {
         sqlPromise = initSqlJs({
-            locateFile: (file) => file === 'sql-wasm.wasm' ? wasmUrl : file,
+            locateFile: (file) => (file === 'sql-wasm.wasm' ? wasmUrl : file),
         });
     }
     return sqlPromise;
@@ -48,7 +41,7 @@ function extractColumns(result: any): string[] {
         .filter(Boolean);
 }
 
-export async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
+async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
     const SQL = await getSql();
     const db = new SQL.Database(new Uint8Array(buffer));
     try {
@@ -76,7 +69,9 @@ export async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<Pars
         const columnRoom = columnMap.get('room_id')!;
         const columnAction = columnMap.get('action')!;
 
-        const stmt = db.prepare(`SELECT "${columnIndex}" as idx, "${columnUniq}" as uniq, "${columnRoom}" as roomId, "${columnAction}" as action FROM "${tableName}"`);
+        const stmt = db.prepare(
+            `SELECT "${columnIndex}" as idx, "${columnUniq}" as uniq, "${columnRoom}" as roomId, "${columnAction}" as action FROM "${tableName}"`,
+        );
 
         const rows: MultibindImportRow[] = [];
         let totalRows = 0;
@@ -107,3 +102,31 @@ export async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<Pars
         db.close();
     }
 }
+
+const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
+
+ctx.addEventListener('message', (event: MessageEvent<MultibindImportWorkerRequest>) => {
+    const { data } = event;
+    if (!data || data.type !== 'parse') {
+        return;
+    }
+
+    (async () => {
+        try {
+            const result = await parseMultibindsDatabase(data.buffer);
+            const response: MultibindImportWorkerResponse = {
+                type: 'success',
+                payload: result,
+            };
+            ctx.postMessage(response);
+        } catch (error) {
+            const response: MultibindImportWorkerResponse = {
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Nie udało się odczytać bazy danych.',
+            };
+            ctx.postMessage(response);
+        }
+    })();
+});
+
+export {};

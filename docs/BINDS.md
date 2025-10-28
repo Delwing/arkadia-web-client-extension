@@ -13,3 +13,10 @@ Rozszerzenie umożliwia ustawienie kilku skrótów klawiaturowych. Domyślne bin
 Bindy można modyfikować w zakładce **Bindowanie** na stronie opcji rozszerzenia.
 Możesz także dodać własne skróty, które wyślą dowolną komendę.
 Aktualnie ustawione skróty możesz też wypisać w grze komendą `/binds`.
+
+## Ręczne testy importu multibindów
+
+1. Otwórz kartę **Bindowanie** w opcjach rozszerzenia i kliknij przycisk importu multibindów.
+2. Wskaż poprawną bazę `multibinds.sqlite` – po krótkiej chwili powinno pojawić się podsumowanie importu. Parsowanie odbywa się w tle w osobnym wątku (workerze), więc interfejs pozostaje responsywny.
+3. Aby zweryfikować obsługę błędów, spróbuj zaimportować plik, który nie zawiera tabeli `multibinds` (np. pusty plik `.sqlite`). Pojawi się komunikat o błędzie w sekcji importu.
+4. Po zakończeniu testu zamknij okno importu; worker zostanie zwolniony automatycznie przy opuszczaniu widoku.
