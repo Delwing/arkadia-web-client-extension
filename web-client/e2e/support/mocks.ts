@@ -242,6 +242,33 @@ export async function pushText(page: Page, text: string, options: { type?: strin
     });
 }
 
+export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
+    return await page.evaluate(() => {
+        const sockets = ((window as any).__mockSockets ?? []).slice().reverse();
+        const IAC = String.fromCharCode(255);
+        for (const socket of sockets) {
+            const messages: string[] = Array.isArray(socket?.sent) ? socket.sent : [];
+            for (let index = messages.length - 1; index >= 0; index -= 1) {
+                const encoded = messages[index];
+                if (!encoded) {
+                    continue;
+                }
+                let decoded: string;
+                try {
+                    decoded = atob(encoded);
+                } catch (_error) {
+                    continue;
+                }
+                if (!decoded || decoded.startsWith(IAC)) {
+                    continue;
+                }
+                return decoded.trim();
+            }
+        }
+        return null;
+    });
+}
+
 export type EmbeddedCall = { method: string; value?: unknown };
 
 export async function installEmbeddedMock(context: BrowserContext): Promise<void> {

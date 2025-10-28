@@ -1,6 +1,7 @@
 import {expect, test} from '@playwright/test';
 import {
     ensureGameSocket,
+    getLastOutgoingCommand,
     GMCP_PATHS,
     installMockWebSocket,
     mockNpcDownload,
@@ -71,18 +72,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await knownNpc.click();
 
     await expect.poll(async () => {
-        return await page.evaluate(() => {
-            const sockets = ((window as any).__mockSockets ?? []).slice().reverse();
-            for (const socket of sockets) {
-                if (socket.sent && socket.sent.length) {
-                    const encoded = socket.sent[socket.sent.length - 1];
-                    if (encoded) {
-                        return atob(encoded).trim();
-                    }
-                }
-            }
-            return null;
-        });
+        return await getLastOutgoingCommand(page);
     }).toBe('wybierz paczke 1');
 
     await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
