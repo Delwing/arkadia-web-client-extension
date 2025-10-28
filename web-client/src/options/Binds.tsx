@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@client/src/storage";
-import { parseMultibindsDatabase, type MultibindImportRow } from "./multibindImport";
+import {
+    type MultibindImportRow,
+    type MultibindImportWorkerRequest,
+    type MultibindImportWorkerResponse,
+    type ParsedMultibindDatabase,
+} from "./multibindImport.shared";
 import {
     replaceAll as replaceMultibinds,
     subscribe as subscribeMultibinds,
@@ -158,6 +163,66 @@ function Binds() {
     const [importCancelled, setImportCancelled] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const cancelImportRef = useRef(false);
+    const workerRef = useRef<Worker | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
+
+    async function parseInWorker(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
+        if (!workerRef.current) {
+            workerRef.current = new Worker(new URL('./multibindImport.worker.ts', import.meta.url), {
+                type: 'module',
+            });
+        }
+
+        const worker = workerRef.current;
+
+        return new Promise((resolve, reject) => {
+            const cleanup = () => {
+                worker.removeEventListener('message', handleMessage);
+                worker.removeEventListener('error', handleError);
+            };
+
+            const handleMessage = (event: MessageEvent) => {
+                const data = event.data as MultibindImportWorkerResponse | undefined;
+                if (!data) {
+                    return;
+                }
+                if (data.type === 'success') {
+                    cleanup();
+                    resolve(data.payload);
+                }
+                if (data.type === 'error') {
+                    cleanup();
+                    reject(new Error(data.message));
+                }
+            };
+
+            const handleError = (event: ErrorEvent) => {
+                cleanup();
+                if (workerRef.current === worker) {
+                    workerRef.current.terminate();
+                    workerRef.current = null;
+                }
+                reject(event.error ?? new Error(event.message));
+            };
+
+            worker.addEventListener('message', handleMessage);
+            worker.addEventListener('error', handleError);
+
+            const request: MultibindImportWorkerRequest = {
+                type: 'parse',
+                buffer,
+            };
+            worker.postMessage(request, [buffer]);
+        });
+    }
 
     useEffect(() => {
         storage.getItem('binds').then(res => {
@@ -251,7 +316,7 @@ function Binds() {
         setImportResult(null);
         try {
             const buffer = await file.arrayBuffer();
-            const parsed = await parseMultibindsDatabase(buffer);
+            const parsed = await parseInWorker(buffer);
             setImportData({
                 fileName: file.name,
                 rows: parsed.rows,
