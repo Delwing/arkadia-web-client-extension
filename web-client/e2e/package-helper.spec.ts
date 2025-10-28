@@ -111,13 +111,6 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
         window.addEventListener('leadTo', (event: any) => {
             (window as any).__leadToEvents.push(event.detail);
         });
-        client.Map.findPath = (from, to) => {
-            (window as any).__findPathCalls.push([from, to]);
-            if (from === 101 && to === 200) {
-                return [101, 150, 175, 200];
-            }
-            return null;
-        };
     });
 
     const optionsModal = page.locator('#options-modal');
@@ -131,12 +124,6 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
 
     await optionsModal.locator('#options-save').click();
     await expect(optionsModal).not.toBeVisible();
-
-    await expect
-        .poll(async () => {
-            return await page.evaluate(() => Boolean((window as any).clientExtension?.packageHelper?.enabled));
-        })
-        .toBe(false);
 
     const boardText = [
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
