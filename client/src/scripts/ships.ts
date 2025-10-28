@@ -11,7 +11,7 @@ const BOARD_LABEL = BOARD_CMDS.join(";");
 
 function bindShip(client: Client, commands: string[], label: string, beep: boolean) {
     if (beep) {
-        client.playSound("beep");
+        client.sendEvent("sound:play", { key: "beep" });
     }
     client.FunctionalBind.set(label, () => {
         client.sendEvent("refreshPositionWhenAble");

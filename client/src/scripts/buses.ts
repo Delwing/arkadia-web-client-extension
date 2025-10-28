@@ -11,7 +11,7 @@ const BRYCZKA_LABEL = BRYCZKA_CMDS.join(";");
 
 function bindBus(client: Client, commands: string[], label: string, beep: boolean) {
     if (beep) {
-        client.playSound("beep");
+        client.sendEvent("sound:play", { key: "beep" });
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));

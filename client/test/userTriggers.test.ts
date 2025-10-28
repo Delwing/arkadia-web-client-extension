@@ -7,7 +7,7 @@ class FakeClient {
   addEventListener = jest.fn();
   removeEventListener = jest.fn();
   port = { postMessage: jest.fn() } as any;
-  playSound = jest.fn();
+  sendEvent = jest.fn();
   sendCommand = jest.fn();
 }
 
@@ -51,7 +51,7 @@ describe('userTriggers', () => {
     apply({ detail: { key: 'triggers', value: list } } as any);
     const result = client.Triggers.parseLine('foo', '');
     expect(result).toBe('foo');
-    expect(client.playSound).toHaveBeenCalledWith('beep');
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
   });
 
   test('command sends command', () => {

@@ -5,7 +5,6 @@ import { colorString, findClosestColor } from '../src/Colors';
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn() } as any;
-  playSound = jest.fn();
   sendCommand = jest.fn();
   sendEvent = jest.fn();
   prefix = (line: string, prefix: string) => prefix + line;
@@ -25,7 +24,9 @@ describe('break item triggers', () => {
   test('replaces line and beeps', () => {
     const line = 'Nagle topor rozpruwa sie.';
     const result = parse(line);
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     expect(client.sendEvent).toHaveBeenCalledWith('breakItem', { text: line, command: undefined });
     const color = findClosestColor('#ff6347');
     const expected = `\n\n${client.prefix(line, colorString('[  SPRZET  ] ', color))}\n\n`;

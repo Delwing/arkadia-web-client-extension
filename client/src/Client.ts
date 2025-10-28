@@ -3,7 +3,6 @@ import PackageHelper from "./PackageHelper";
 import MapHelper from "./MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
 import Pausers from "./Pausers";
-import {Howl} from "howler";
 import {mudletColorLine, setXtermPalette} from "./Colors";
 import {
     FunctionalBind,
@@ -13,7 +12,6 @@ import {
 import OutputHandler from "./OutputHandler";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
-import {beepSound} from "./sounds";
 import {attachGmcpListener} from "./gmcp";
 import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
@@ -26,6 +24,7 @@ import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "front-client/src/ansiParser";
+import SoundManager from "./SoundManager";
 
 const ANSI_SGR_REGEX = /\x1b\[[0-9;]*m/g;
 const ANSI_RESET = "\x1b[0m";
@@ -82,12 +81,7 @@ export default class Client {
     inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
-    sounds: Record<string, Howl> = {
-        beep: new Howl({
-            src: beepSound,
-            preload: true,
-        }),
-    };
+    private soundManager = new SoundManager(this.eventTarget);
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
@@ -144,8 +138,6 @@ export default class Client {
         this.updateContentWidth()
         window.addEventListener('resize', () => this.updateContentWidth())
         this.addEventListener('uiSettings', () => this.updateContentWidth())
-
-        Object.values(this.sounds).forEach((sound) => sound.load())
 
         window.addEventListener('keydown', (ev) => {
             if (
@@ -579,21 +571,8 @@ export default class Client {
         return button
     }
 
-    playSound(key: string) {
-        const sound = this.sounds[key]
-        if (!sound) {
-            return
-        }
-        const play = () => {
-            sound.stop()
-            sound.play()
-        }
-        if (sound.state() === 'loaded') {
-            play()
-        } else {
-            sound.once('load', play)
-            sound.load()
-        }
+    prepareSounds(): Promise<void> {
+        return this.soundManager.prepare()
     }
 
     enableNotifications() {

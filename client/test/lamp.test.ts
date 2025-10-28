@@ -9,10 +9,10 @@ jest.mock('../src/scripts/bagManager', () => ({
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
-  playSound = jest.fn();
   println = jest.fn();
   aliases: { pattern: RegExp; callback: Function }[] = [];
   sendCommand = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('lamp triggers', () => {

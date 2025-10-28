@@ -4,7 +4,7 @@ import { colorString, findClosestColor } from '../src/Colors';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  playSound = jest.fn();
+  sendEvent = jest.fn();
   println = jest.fn();
 }
 
@@ -27,7 +27,7 @@ describe('no weapon alert', () => {
 
   test('prints colored message on match', () => {
     parse('Probujesz trafic Orka lewym piescia');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     const expected = colorString(' >> Walczysz bez broni!', color);
     expect(client.println).toHaveBeenCalledWith(expected);
   });
@@ -36,11 +36,11 @@ describe('no weapon alert', () => {
     parse('Probujesz trafic Orka lewym piescia');
     jest.advanceTimersByTime(1000);
     parse('Ledwo muskasz Orka prawym kolanem');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.println).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(5000);
     parse('Lekko ranisz Orka lewym stopa');
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.println).toHaveBeenCalledTimes(2);
   });
 });

@@ -53,7 +53,7 @@ export default function initUserTriggers(client: Client) {
                                 result = m.to || '';
                                 break;
                             case 'beep':
-                                client.playSound('beep');
+                                client.sendEvent("sound:play", { key: "beep" });
                                 break;
                             case 'command':
                                 if (m.command) {

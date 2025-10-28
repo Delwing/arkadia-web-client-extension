@@ -5,14 +5,13 @@ import { EventEmitter } from 'events';
 class FakeClient {
   private emitter = new EventEmitter();
   println = jest.fn();
-  playSound = jest.fn();
   notify = jest.fn();
   addEventListener(event: string, cb: any) {
     this.emitter.on(event, cb);
   }
-  sendEvent(type: string, detail?: any) {
+  sendEvent = jest.fn((type: string, detail?: any) => {
     this.emitter.emit(type, { detail });
-  }
+  });
 }
 
 describe('hp alert', () => {
@@ -33,7 +32,9 @@ describe('hp alert', () => {
   test('beeps and prints when hp drops to configured threshold', () => {
     send(3);
     send(1);
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     const plain = 'Jestes ciezko ranny';
     const msg = colorString(plain, color);
     expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
@@ -44,7 +45,11 @@ describe('hp alert', () => {
     send(2);
     send(1);
     send(0);
-    expect(client.playSound).toHaveBeenCalledTimes(2);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(2);
+    beepCalls.forEach(call => {
+      expect(call[1]).toEqual({ key: 'beep' });
+    });
     const first = colorString('Jestes ciezko ranny', color);
     const second = colorString('Jestes ledwo zywy', color);
     expect(client.println).toHaveBeenNthCalledWith(1, `\n\n${first}\n\n`);
@@ -56,10 +61,10 @@ describe('hp alert', () => {
   test('does not trigger when hp rises', () => {
     send(2);
     client.println.mockClear();
-    client.playSound.mockClear();
+    client.sendEvent.mockClear();
     client.notify.mockClear();
     send(4);
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.println).not.toHaveBeenCalled();
     expect(client.notify).not.toHaveBeenCalled();
   });
@@ -68,7 +73,7 @@ describe('hp alert', () => {
     client.sendEvent('settings', { lowHpAlert: 0 });
     send(3);
     send(1);
-    expect(client.playSound).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.println).not.toHaveBeenCalled();
     expect(client.notify).not.toHaveBeenCalled();
   });
@@ -77,7 +82,9 @@ describe('hp alert', () => {
     client.sendEvent('settings', { lowHpAlert: 3 });
     send(4);
     send(2);
-    expect(client.playSound).toHaveBeenCalledTimes(1);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     const plain = 'Jestes w zlej kondycji';
     const msg = colorString(plain, color);
     expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
