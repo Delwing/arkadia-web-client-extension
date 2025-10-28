@@ -74,8 +74,11 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         const GMCP = String.fromCharCode(201);
 
         (window as any).__npcReady = false;
-        window.addEventListener('npc', () => {
-            (window as any).__npcReady = true;
+        window.addEventListener('npc', (event: Event) => {
+            const detail = (event as CustomEvent)?.detail;
+            if (Array.isArray(detail) && detail.length > 0) {
+                (window as any).__npcReady = true;
+            }
         });
 
         const getGameSocket = () => {
