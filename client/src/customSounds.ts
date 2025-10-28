@@ -161,42 +161,15 @@ function normalizeCustomSoundList(list: CustomSound[]): CustomSound[] {
     return result;
 }
 
-async function ensureSoundDataAvailability(sound: StoredCustomSound): Promise<{ data?: string; sanitized: StoredCustomSound }> {
-    let data = typeof sound.data === "string" ? sound.data : undefined;
-    if (data) {
-        try {
-            await saveSoundData(sound.key, data);
-            return { data, sanitized: { key: sound.key, name: sound.name } };
-        } catch (error) {
-            console.warn("Failed to persist custom sound in IndexedDB", error);
-            return { data, sanitized: sound };
-        }
-    }
-    const stored = await getSoundData(sound.key);
-    return { data: stored, sanitized: sound };
-}
-
 export async function getCustomSounds(): Promise<CustomSound[]> {
     const stored = await readStoredSounds();
-    const sanitized: StoredCustomSound[] = [];
     const result: CustomSound[] = [];
-    let metadataChanged = false;
-
     for (const sound of stored) {
-        const { data, sanitized: sanitizedEntry } = await ensureSoundDataAvailability(sound);
-        sanitized.push(sanitizedEntry);
-        if (sanitizedEntry !== sound) {
-            metadataChanged = true;
-        }
+        const data = (await getSoundData(sound.key)) ?? sound.data;
         if (typeof data === "string") {
             result.push({ key: sound.key, name: sound.name, data });
         }
     }
-
-    if (metadataChanged) {
-        await storage.setItem(CUSTOM_SOUNDS_STORAGE_KEY, sanitized);
-    }
-
     return result;
 }
 
@@ -207,12 +180,7 @@ export async function getCustomSound(key: string): Promise<CustomSound | undefin
         return undefined;
     }
     const sound = stored[index];
-    const { data, sanitized } = await ensureSoundDataAvailability(sound);
-    if (sanitized !== sound) {
-        const updated = [...stored];
-        updated[index] = sanitized;
-        await storage.setItem(CUSTOM_SOUNDS_STORAGE_KEY, updated);
-    }
+    const data = (await getSoundData(sound.key)) ?? sound.data;
     if (typeof data !== "string") {
         return undefined;
     }
