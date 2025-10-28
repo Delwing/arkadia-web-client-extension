@@ -707,10 +707,7 @@ export default class MobileDirectionButtons {
     }
 
     private toggleVisibility() {
-        if (!this.container || !this.toggleButton) return;
-
-        const previousRect = this.toggleButton.getBoundingClientRect();
-
+        if (!this.container) return;
         this.collapsed = !this.collapsed;
         if (this.collapsed) {
             this.container.classList.add('collapsed');
@@ -718,36 +715,6 @@ export default class MobileDirectionButtons {
             this.container.classList.remove('collapsed');
         }
         this.updateToggleButton();
-
-        requestAnimationFrame(() => {
-            const currentRect = this.toggleButton?.getBoundingClientRect();
-            if (!currentRect) return;
-
-            const deltaX = previousRect.left - currentRect.left;
-            const deltaY = previousRect.top - currentRect.top;
-
-            if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
-                return;
-            }
-
-            const containerRect = this.container.getBoundingClientRect();
-            let currentLeft = parseFloat(this.container.style.left);
-            if (!Number.isFinite(currentLeft)) {
-                currentLeft = containerRect.left;
-            }
-            let currentTop = parseFloat(this.container.style.top);
-            if (!Number.isFinite(currentTop)) {
-                currentTop = containerRect.top;
-            }
-
-            this.container.style.left = `${currentLeft + deltaX}px`;
-            this.container.style.top = `${currentTop + deltaY}px`;
-
-            this.clampToView();
-            if (!this.collapsed) {
-                this.persistCurrentPosition();
-            }
-        });
     }
 
     private highlightExits(exits: string[]) {
