@@ -188,9 +188,259 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
     });
 }
 
+export async function primeCharInfo(
+    context: BrowserContext,
+    data: {name: string} = {name: 'Tester'},
+): Promise<void> {
+    await context.addInitScript(([payload]) => {
+        const charInfo = payload;
+        const attemptSend = () => {
+            const client = (window as any).clientExtension;
+            if (client?.sendEvent) {
+                client.sendEvent('gmcp.char.info', charInfo);
+                return true;
+            }
+            return false;
+        };
+        if (!attemptSend()) {
+            const interval = setInterval(() => {
+                if (attemptSend()) {
+                    clearInterval(interval);
+                }
+            }, 50);
+        }
+    }, [data]);
+}
+
+type MockMapRoom = {
+    area: number;
+    x: number;
+    y: number;
+    z: number;
+    weight: number;
+    name: string;
+    rawSpecialExits: Record<string, unknown>;
+    symbol: string;
+    userData: Record<string, unknown>;
+    customLines: Record<string, unknown>;
+    stubs: unknown[];
+    doors: Record<string, unknown>;
+    id: number;
+    env: number;
+    exits: Record<string, number>;
+    specialExits: Record<string, unknown>;
+    hash: string;
+};
+
+type MockMapArea = {
+    areaName: string;
+    areaId: string;
+    rooms: MockMapRoom[];
+    labels: unknown[];
+};
+
+type MockMapData = MockMapArea[];
+
+type MockMapColor = {
+    envId: number;
+    colors: [number, number, number];
+};
+
+const MAP_DATA_ROUTE = '**/arkadia-mapa/data/mapExport.json';
+const MAP_COLORS_ROUTE = '**/arkadia-mapa/data/colors.json';
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const MAGICS_DATA_ROUTE = '**/magics_data.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
+
+const DEFAULT_MAP_DATA: MockMapData = [
+    {
+        areaName: 'Miasteczko Poslan',
+        areaId: 'area-1',
+        rooms: [
+            {
+                area: 1,
+                x: 0,
+                y: 0,
+                z: 0,
+                weight: 1,
+                name: 'Poczta',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 101,
+                env: 1,
+                exits: {
+                    east: 150,
+                },
+                specialExits: {},
+                hash: '0:0:0:Miasteczko Poslan',
+            },
+            {
+                area: 1,
+                x: 1,
+                y: 0,
+                z: 0,
+                weight: 1,
+                name: 'Rynek',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 150,
+                env: 1,
+                exits: {
+                    west: 101,
+                    east: 175,
+                },
+                specialExits: {},
+                hash: '1:0:0:Miasteczko Poslan',
+            },
+            {
+                area: 1,
+                x: 2,
+                y: 0,
+                z: 0,
+                weight: 1,
+                name: 'Kamienny Most',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 175,
+                env: 1,
+                exits: {
+                    west: 150,
+                    north: 200,
+                    south: 300,
+                },
+                specialExits: {},
+                hash: '2:0:0:Miasteczko Poslan',
+            },
+            {
+                area: 1,
+                x: 2,
+                y: -1,
+                z: 0,
+                weight: 1,
+                name: 'Rezydencja Borgafa',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 200,
+                env: 1,
+                exits: {
+                    south: 175,
+                },
+                specialExits: {},
+                hash: '2:1:0:Miasteczko Poslan',
+            },
+            {
+                area: 1,
+                x: 4,
+                y: 4,
+                z: 0,
+                weight: 1,
+                name: 'Opuszczona Altana',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 999,
+                env: 1,
+                exits: {},
+                specialExits: {},
+                hash: '4:4:0:Miasteczko Poslan',
+            },
+        ],
+        labels: [],
+    },
+    {
+        areaName: 'Zapomniane Jaskinie',
+        areaId: 'area-2',
+        rooms: [
+            {
+                area: 2,
+                x: 0,
+                y: 1,
+                z: 0,
+                weight: 1,
+                name: 'Wejscie do Jaskin',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 300,
+                env: 2,
+                exits: {
+                    north: 175,
+                    east: 400,
+                },
+                specialExits: {},
+                hash: '0:1:0:Zapomniane Jaskinie',
+            },
+            {
+                area: 2,
+                x: 1,
+                y: 1,
+                z: 0,
+                weight: 1,
+                name: 'Podziemna Sala',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 400,
+                env: 2,
+                exits: {
+                    west: 300,
+                },
+                specialExits: {},
+                hash: '1:1:0:Zapomniane Jaskinie',
+            },
+            {
+                area: 2,
+                x: -2,
+                y: -1,
+                z: 0,
+                weight: 1,
+                name: 'Zapomniana Komnata',
+                rawSpecialExits: {},
+                symbol: '',
+                userData: {},
+                customLines: {},
+                stubs: [],
+                doors: {},
+                id: 500,
+                env: 2,
+                exits: {},
+                specialExits: {},
+                hash: '2:1:0:Zapomniane Jaskinie',
+            },
+        ],
+        labels: [],
+    },
+];
+
+const DEFAULT_MAP_COLORS: MockMapColor[] = [
+    {envId: 1, colors: [80, 160, 80]},
+    {envId: 2, colors: [80, 80, 160]},
+];
 
 const DEFAULT_NPC_DATA = [
     {name: 'Borgaf Kriegmann', loc: 200},
@@ -205,6 +455,30 @@ const DEFAULT_MAGICS_DATA = {
 const DEFAULT_MAGIC_KEYS_DATA = {
     magic_keys: ['sekretny klucz'],
 };
+
+export async function mockMapDownloads(
+    context: BrowserContext,
+    options: {mapData?: MockMapData; colorsData?: MockMapColor[]} = {},
+): Promise<void> {
+    const mapData = options.mapData ?? DEFAULT_MAP_DATA;
+    const colorsData = options.colorsData ?? DEFAULT_MAP_COLORS;
+
+    await context.route(MAP_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(mapData),
+        });
+    });
+
+    await context.route(MAP_COLORS_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(colorsData),
+        });
+    });
+}
 
 export async function mockNpcDownload(
     context: BrowserContext,
@@ -248,6 +522,7 @@ export async function mockMagicKeysDownload(
 export async function waitForClientReady(page: Page): Promise<void> {
     await page.waitForFunction(() => Boolean((window as any).clientExtension));
     await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);
+    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
 
     const overlay = page.locator('#auth-overlay');
     if (await overlay.isVisible()) {
@@ -282,7 +557,19 @@ export async function waitForClientReady(page: Page): Promise<void> {
     });
 }
 
+export async function waitForMapReady(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const client = (window as any).clientExtension;
+        if (!client || !client.Map) {
+            return false;
+        }
+        const map = client.Map as {pathFinder?: unknown; findPath?: unknown};
+        return Boolean(map.pathFinder && typeof map.findPath === 'function');
+    });
+}
+
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
+    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
     await page.evaluate(([gmcpPath, data]) => {
         (window as any).__pushGmcp(gmcpPath, data);
     }, [path, payload]);

@@ -2,46 +2,48 @@ import {expect, test} from '@playwright/test';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
-    GMCP_PATHS,
     installMockWebSocket,
+    mockMapDownloads,
     mockMagicKeysDownload,
     mockMagicsDownload,
     mockNpcDownload,
-    pushGmcp,
+    primeCharInfo,
     pushText,
     waitForClientReady,
+    waitForMapReady,
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
+    await mockMapDownloads(context);
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await installMockWebSocket(context);
+    await primeCharInfo(context);
 });
 
 test('Package helper highlights NPCs and guides selected deliveries', async ({page}) => {
     await page.goto('/');
     await waitForClientReady(page);
     await ensureGameSocket(page);
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
+    await waitForMapReady(page);
+    await waitForClientReady(page);
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
         client.contentWidth = 140;
-        client.Map.currentRoom = {id: 101};
+        client.Map.renderRoomByIdSilently?.(101);
         (window as any).__leadToEvents = [];
-        (window as any).__findPathCalls = [];
         window.addEventListener('leadTo', (event: any) => {
             (window as any).__leadToEvents.push(event.detail);
         });
-        client.Map.findPath = (from, to) => {
-            (window as any).__findPathCalls.push([from, to]);
-            if (from === 101 && to === 200) {
-                return [101, 150, 175, 200];
-            }
-            return null;
-        };
     });
+
+    const path = await page.evaluate(() => {
+        const client: any = (window as any).clientExtension;
+        return client.Map.findPath(101, 200);
+    });
+    expect(path).toEqual([101, 150, 175, 200]);
 
     const boardText = [
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
@@ -91,27 +93,20 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
             return events.length ? events[events.length - 1] : null;
         });
     }).toBe(200);
-
-    await expect.poll(async () => {
-        return await page.evaluate(() => {
-            const calls = (window as any).__findPathCalls ?? [];
-            return calls.some((entry) => Array.isArray(entry) && entry[0] === 101 && entry[1] === 200);
-        });
-    }).toBe(true);
 });
 
 test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {
     await page.goto('/');
     await waitForClientReady(page);
     await ensureGameSocket(page);
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
+    await waitForMapReady(page);
+    await waitForClientReady(page);
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
         client.contentWidth = 140;
-        client.Map.currentRoom = {id: 101};
+        client.Map.renderRoomByIdSilently?.(101);
         (window as any).__leadToEvents = [];
-        (window as any).__findPathCalls = [];
         window.addEventListener('leadTo', (event: any) => {
             (window as any).__leadToEvents.push(event.detail);
         });
@@ -179,12 +174,6 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await expect
         .poll(async () => {
             return await page.evaluate(() => (window as any).__leadToEvents?.length ?? 0);
-        })
-        .toBe(0);
-
-    await expect
-        .poll(async () => {
-            return await page.evaluate(() => (window as any).__findPathCalls?.length ?? 0);
         })
         .toBe(0);
 });
