@@ -41,7 +41,7 @@ function extractColumns(result: any): string[] {
         .filter(Boolean);
 }
 
-async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
+export async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
     const SQL = await getSql();
     const db = new SQL.Database(new Uint8Array(buffer));
     try {
@@ -103,7 +103,15 @@ async function parseMultibindsDatabase(buffer: ArrayBuffer): Promise<ParsedMulti
     }
 }
 
-const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
+export function __resetSqlCacheForTests(): void {
+    sqlPromise = null;
+}
+
+const ctx = self as unknown as {
+    postMessage: typeof postMessage;
+    addEventListener: typeof addEventListener;
+    removeEventListener: typeof removeEventListener;
+};
 
 ctx.addEventListener('message', (event: MessageEvent<MultibindImportWorkerRequest>) => {
     const { data } = event;
@@ -128,5 +136,3 @@ ctx.addEventListener('message', (event: MessageEvent<MultibindImportWorkerReques
         }
     })();
 });
-
-export {};
