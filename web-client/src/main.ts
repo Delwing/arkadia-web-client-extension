@@ -365,7 +365,9 @@ arkadiaClient.on('client.connect', () => {
 arkadiaClient.on('client.disconnect', () => {
     isConnected = false;
     isConnecting = false;
+    authClosed = false;
     updateConnectButtons();
+    client.println('Rozłączono z serwerem Arkadii.');
     console.log('Client disconnected from Arkadia server.');
 });
 
