@@ -607,9 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (document.activeElement !== messageInput) {
-                messageInput.focus();
-            }
+            messageInput.focus();
         };
 
         if (window.PointerEvent) {
