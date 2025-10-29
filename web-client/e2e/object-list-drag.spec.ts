@@ -84,4 +84,8 @@ test('object list drag persists after reload', async ({page}) => {
 
     expect(Math.abs(reloadedBox.x - storedPosition.left), 'should restore horizontal position from storage').toBeLessThan(2);
     expect(Math.abs(reloadedBox.y - storedPosition.top), 'should restore vertical position from storage').toBeLessThan(2);
+
+    await page.evaluate(() => {
+        localStorage.removeItem('objectsListPosition');
+    });
 });

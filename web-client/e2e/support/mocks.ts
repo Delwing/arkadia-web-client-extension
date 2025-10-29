@@ -677,8 +677,19 @@ export async function mockMagicKeysDownload(
 
 export async function waitForClientReady(page: Page): Promise<void> {
     await page.waitForFunction(() => Boolean((window as any).clientExtension));
-    await page.waitForFunction(() => Array.isArray((window as any).__mockSockets));
     await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
+    await page.waitForFunction(() => {
+        const globalScope: any = window;
+        const sockets = globalScope.__mockSockets;
+        if (Array.isArray(sockets)) {
+            return true;
+        }
+        if (typeof sockets === 'undefined' && typeof globalScope.__MockWebSocket === 'function') {
+            globalScope.__mockSockets = [];
+            return true;
+        }
+        return false;
+    });
 
     const overlay = page.locator('#auth-overlay');
     if (await overlay.isVisible()) {
