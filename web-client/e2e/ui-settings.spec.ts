@@ -179,4 +179,57 @@ test.describe('UI settings', () => {
             }),
         );
     });
+
+    test('persist settings after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForClientReady(page);
+        await ensureGameSocket(page);
+
+        const modal = await openUiSettings(page);
+        await modal.locator('#ui-map-position').selectOption('bottom');
+        await modal.locator('#ui-output-background').fill('#123456');
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+
+        await page.waitForFunction(() => document.body.dataset.mapPosition === 'bottom');
+        await page.waitForFunction(() => {
+            const content = document.getElementById('main_text_output_msg_wrapper');
+            return Boolean(content && getComputedStyle(content).backgroundColor === 'rgb(18, 52, 86)');
+        });
+
+        await page.reload();
+
+        await waitForClientReady(page);
+        await ensureGameSocket(page);
+
+        await page.waitForFunction(() => document.body.dataset.mapPosition === 'bottom');
+        await page.waitForFunction(() => {
+            const content = document.getElementById('main_text_output_msg_wrapper');
+            return Boolean(content && getComputedStyle(content).backgroundColor === 'rgb(18, 52, 86)');
+        });
+
+        const persisted = await page.evaluate(() => {
+            const content = document.getElementById('main_text_output_msg_wrapper')!;
+            return {
+                bodyMapPosition: document.body.dataset.mapPosition,
+                contentBackground: getComputedStyle(content).backgroundColor,
+            };
+        });
+
+        expect(persisted.bodyMapPosition, 'should restore saved map position on reload').toBe('bottom');
+        expect(
+            persisted.contentBackground,
+            'should restore saved output background color on reload',
+        ).toBe('rgb(18, 52, 86)');
+
+        const reloadedModal = await openUiSettings(page);
+        await expect(
+            reloadedModal.locator('#ui-map-position'),
+            'should show persisted map position in UI settings',
+        ).toHaveValue('bottom');
+        await expect(
+            reloadedModal.locator('#ui-output-background'),
+            'should show persisted output background color in UI settings',
+        ).toHaveValue('#123456');
+    });
 });
