@@ -9,7 +9,7 @@ export function initSpecialLocations(client: Client) {
     ]
 
     client.Triggers.registerTrigger(locateOnNext, (): undefined => {
-        client.Map.refreshPosition = true
+        client.sendEvent('refreshPositionWhenAble')
     })
 
 }

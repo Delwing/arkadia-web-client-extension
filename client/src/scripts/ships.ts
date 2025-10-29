@@ -14,7 +14,6 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
         client.sendEvent("sound:play", { key: "beep" });
     }
     client.FunctionalBind.set(label, () => {
-        client.sendEvent("refreshPositionWhenAble");
         commands.forEach(cmd => client.sendCommand(cmd));
     });
 }
@@ -31,6 +30,7 @@ export default function initShips(client: Client) {
     };
     const disembark = () => {
         bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
+        client.sendEvent("refreshPositionWhenAble");
         return undefined;
     };
 

@@ -60,7 +60,9 @@ export default class MapHelper {
         })
 
         this.client.addEventListener('refreshPositionWhenAble', () => {
-            this.refreshPosition = true;
+            if (!this.setMapPosition(this.gmcpPosition)) {
+                this.refreshPosition = true;
+            }
         });
 
         this.client.addEventListener('gmcp.char.info', () => {
@@ -260,16 +262,18 @@ export default class MapHelper {
     }
 
     refresh() {
-        return this.setMapPosition(this.gmcpPosition)
+        const roomId = this.currentRoom.id
+        this.setMapPosition(this.gmcpPosition)
+        return roomId == this.currentRoom.id
     }
 
     setMapPosition(data: Position) {
         if (data && data.x && data.y && data.name) {
             const hash = `${data.x}:${data.y}:0:${data.name}`;
             const room = this.hashes[hash];
-            let roomId = this.currentRoom.id
             this.setMapRoom(room)
-            return roomId !== room
+            this.refreshPosition = false;
+            return true
         }
         return false
     }

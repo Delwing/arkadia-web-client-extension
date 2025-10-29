@@ -608,6 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             messageInput.focus();
+            setTimeout(() => {messageInput.focus()}, 1)
         };
 
         if (window.PointerEvent) {
