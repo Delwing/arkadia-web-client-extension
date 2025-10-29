@@ -2,7 +2,7 @@ import BreakItemWarning from '../src/BreakItemWarning';
 
 class MockClient {
   private events: Record<string, Function[]> = {};
-  sendCommand = jest.fn();
+  send = jest.fn();
   on(event: string, listener: Function) {
     (this.events[event] ||= []).push(listener);
   }
@@ -33,14 +33,14 @@ describe('BreakItemWarning', () => {
     expect(container.textContent).toBe('Warning!');
     expect(container.style.display).toBe('block');
     container.click();
-    expect(client.sendCommand).toHaveBeenCalledWith('run');
+    expect(client.send).toHaveBeenCalledWith('run');
     expect(container.style.display).toBe('none');
   });
 
   test('handles click with no command', () => {
     client.emit('breakItem', { text: 'Only text' });
     container.click();
-    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.send).not.toHaveBeenCalled();
     expect(container.style.display).toBe('none');
   });
 });
