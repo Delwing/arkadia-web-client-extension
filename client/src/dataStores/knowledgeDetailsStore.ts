@@ -51,7 +51,9 @@ export interface KnowledgeCategoryProgress {
   updatedAt: number;
 }
 
-export type KnowledgeCharacterProgress = Record<KnowledgeCategoryBaseName, KnowledgeCategoryProgress>;
+export type KnowledgeCharacterProgress = Partial<
+  Record<KnowledgeCategoryBaseName, KnowledgeCategoryProgress>
+>;
 
 export type KnowledgeProgressByCharacter = Record<string, KnowledgeCharacterProgress>;
 

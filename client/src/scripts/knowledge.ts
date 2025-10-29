@@ -226,6 +226,12 @@ function ensureKnowledgeLevels(
   return result;
 }
 
+function ensureKnowledgeCharacterProgress(
+  progress: KnowledgeCharacterProgress | undefined | null,
+): KnowledgeCharacterProgress {
+  return progress ? { ...progress } : {};
+}
+
 function sanitizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -685,9 +691,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         const nextProgress = { ...baseSnapshot.data.progress };
-        const previousCharacterProgress =
-          (nextProgress[characterKey] as KnowledgeCharacterProgress | undefined) ?? {};
-        const characterProgress: KnowledgeCharacterProgress = { ...previousCharacterProgress };
+        const characterProgress = ensureKnowledgeCharacterProgress(
+          nextProgress[characterKey] as KnowledgeCharacterProgress | undefined,
+        );
         const previousCategory = characterProgress[category];
 
         const entriesMap = ensureKnowledgeEntriesMap(previousCategory?.entries);
@@ -1051,6 +1057,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (categoriesText) {
           handleKnowledgePrompt(categoriesText);
         }
+        return undefined;
       },
       'knowledge-progress',
     );
@@ -1069,6 +1076,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       if (category) {
         setProgress(category, 'in_progress');
       }
+      return undefined;
     },
     'knowledge-progress',
   );
@@ -1080,6 +1088,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       if (category) {
         setProgress(category, 'completed');
       }
+      return undefined;
     },
     'knowledge-progress',
   );
@@ -1577,13 +1586,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (!base) {
           currentCategory = null;
           currentSection = null;
-          return;
+          return undefined;
         }
 
         currentCategory = base;
         currentSection = null;
         categoriesRemaining.delete(base);
         ensureCategoryState(base);
+        return undefined;
       },
       runTag,
     );
@@ -1592,17 +1602,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       KNOWLEDGE_SUMMARY_PATTERN,
       (_raw, _line, matches) => {
         if (!currentCategory) {
-          return;
+          return undefined;
         }
 
         const type = detectKnowledgeDetailsType(matches[1]);
         if (!type) {
-          return;
+          return undefined;
         }
 
         scheduleInactivity();
         const state = ensureCategoryState(currentCategory);
         state.levels[type] = matches[2].trim();
+        return undefined;
       },
       runTag,
     );
@@ -1612,6 +1623,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       (_raw, _line, matches) => {
         scheduleInactivity();
         currentSection = detectKnowledgeDetailsType(matches[1]) ?? null;
+        return undefined;
       },
       runTag,
     );
@@ -1620,12 +1632,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       KNOWLEDGE_ENTRY_PATTERN,
       (_raw, _line, matches) => {
         if (!currentCategory || !currentSection) {
-          return;
+          return undefined;
         }
 
         const entry = matches[1].trim();
         if (entry.length === 0) {
-          return;
+          return undefined;
         }
 
         scheduleInactivity();
@@ -1640,6 +1652,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         } else {
           state.unknownEntries[currentSection].add(entry);
         }
+        return undefined;
       },
       runTag,
     );
