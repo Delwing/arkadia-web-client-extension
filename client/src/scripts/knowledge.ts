@@ -1,5 +1,5 @@
 import Client from '../Client';
-import { color, colorString, findClosestColor, RESET } from '../Colors';
+import {color, colorString, findClosestColor, RESET} from '../Colors';
 import {
   DEFAULT_KNOWLEDGE_CHARACTER_KEY,
   getKnowledgeStore,
@@ -13,24 +13,23 @@ import {
   canonicalizeKnowledgeEntryGender,
   formatKnowledgeEntryForGender,
   getKnowledgeDetailsStore,
+  KNOWLEDGE_DETAILS_TYPES,
   KnowledgeCharacterGender,
   KnowledgeCharacterProgress,
   KnowledgeDetailsSnapshot,
   KnowledgeDetailsType,
   KnowledgeEntriesMap,
-  KnowledgeCategoryProgress,
-  KNOWLEDGE_DETAILS_TYPES,
   parseKnowledgeGender,
 } from '../dataStores/knowledgeDetailsStore';
 import {
-  KnowledgeCategoryBaseName,
-  KNOWLEDGE_CATEGORY_CONFIG,
-  KNOWLEDGE_CATEGORY_ORDER,
   getBaseCategoryFromName,
   getDativeCategoryName,
+  KNOWLEDGE_CATEGORY_CONFIG,
+  KNOWLEDGE_CATEGORY_ORDER,
+  KnowledgeCategoryBaseName,
 } from '../knowledgeCategories';
-import { getCurrentCharacter } from '../storage';
-import { stripPolishCharacters } from '../stripPolishCharacters';
+import {getCurrentCharacter} from '../storage';
+import {stripPolishCharacters} from '../stripPolishCharacters';
 import TriggerLine from '../triggers/TriggerLine';
 
 type AliasEntry = { pattern: RegExp; callback: Function };
@@ -92,10 +91,10 @@ const KNOWLEDGE_TYPE_LOOKUP: Map<string, KnowledgeDetailsType> = (() => {
   }
   return map;
 })();
-const KNOWLEDGE_HEADER_PATTERN = /^Wiedza o (.+?)(?::)?$/;
+const KNOWLEDGE_HEADER_PATTERN = /^Wiedza o (.+?):?$/;
 const KNOWLEDGE_SUMMARY_PATTERN = /^\s*z\s+(.+?)\s*-\s*(.+)$/i;
 const KNOWLEDGE_SECTION_HEADER_PATTERN = /^Szczegoly(?:\s+z)?\s+(.+?):$/i;
-const KNOWLEDGE_ENTRY_PATTERN = /^\s*[\*\-]\s*(.+)$/;
+const KNOWLEDGE_ENTRY_PATTERN = /^\s*[*]\s*(.+)$/;
 const KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT = 1500;
 const KNOWLEDGE_REPORT_HARD_TIMEOUT = 15000;
 
@@ -722,14 +721,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
           return baseSnapshot;
         }
 
-        const nextCategory: KnowledgeCategoryProgress = {
+        characterProgress[category] = {
           entries: entriesMap,
           unknownEntries: unknownMap,
           levels,
           updatedAt: timestamp,
         };
-
-        characterProgress[category] = nextCategory;
         nextProgress[characterKey] = characterProgress;
 
         return {
