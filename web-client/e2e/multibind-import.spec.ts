@@ -20,7 +20,7 @@ async function openBindsModal(page: Page) {
     await page.click('#menu-button');
     await page.click('#binds-button');
     const modal = page.locator('#binds-modal');
-    await expect(modal).toBeVisible();
+    await expect(modal, 'should display binds modal after navigation').toBeVisible();
     return modal;
 }
 
@@ -61,28 +61,31 @@ test.describe('Multibind import', () => {
         const importModal = page.locator('.modal.show').filter({
             has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
         });
-        await expect(importModal).toBeVisible();
-        await expect(importModal).toContainText('Łącznie wierszy: 5');
-        await expect(importModal).toContainText('Wiersze do importu: 3');
-        await expect(importModal).toContainText('Nowe wpisy: 3');
-        await expect(importModal).toContainText('Aktualizacje: 0');
-        await expect(importModal).toContainText('Pominięte: 2');
-        await expect(importModal).toContainText('Nieprawidłowe wiersze: 1');
-        await expect(importModal).toContainText('Usunięte konflikty: 1');
+        await expect(importModal, 'should show import summary modal').toBeVisible();
+        await expect(importModal, 'should summarize total rows to process').toContainText('Łącznie wierszy: 5');
+        await expect(importModal, 'should list rows selected for import').toContainText('Wiersze do importu: 3');
+        await expect(importModal, 'should count new entries to import').toContainText('Nowe wpisy: 3');
+        await expect(importModal, 'should report number of updates').toContainText('Aktualizacje: 0');
+        await expect(importModal, 'should report skipped rows').toContainText('Pominięte: 2');
+        await expect(importModal, 'should report invalid rows').toContainText('Nieprawidłowe wiersze: 1');
+        await expect(importModal, 'should report resolved conflicts').toContainText('Usunięte konflikty: 1');
 
         await importModal.getByRole('button', { name: 'Importuj' }).click();
-        await expect(importModal.getByText('Importowanie…')).toBeVisible();
-        await expect(importModal.getByText('Importowanie…')).not.toBeVisible({ timeout: 10_000 });
-        await expect(importModal.getByText('Import zakończony.')).toBeVisible();
-        await expect(importModal).toContainText('Nowe wpisy: 3');
-        await expect(importModal).toContainText('Zaktualizowane: 0');
-        await expect(importModal).toContainText('Pominięte: 2');
+        await expect(importModal.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
+        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible({ timeout: 10_000 });
+        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible();
+        await expect(importModal, 'should reiterate new entries count after import').toContainText('Nowe wpisy: 3');
+        await expect(importModal, 'should reiterate updated entries count after import').toContainText('Zaktualizowane: 0');
+        await expect(importModal, 'should reiterate skipped entries count after import').toContainText('Pominięte: 2');
 
         await importModal.getByRole('button', { name: 'Zamknij' }).click();
-        await expect(importModal).not.toBeVisible();
+        await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
 
         const requests = await getMultibindRequests(page);
-        expect(requests.some((request) => request?.type === 'parse')).toBe(true);
+        expect(
+            requests.some((request) => request?.type === 'parse'),
+            'should send parse request to multibind worker'
+        ).toBe(true);
 
         await page.evaluate(() => {
             const client: any = (window as any).clientExtension;
@@ -91,21 +94,21 @@ test.describe('Multibind import', () => {
         });
 
         const multiBinds = page.locator('#multi-binds');
-        await expect(multiBinds).toHaveClass(/active/);
+        await expect(multiBinds, 'should activate multi-bind list for current room').toHaveClass(/active/);
         const entries = multiBinds.locator('.multi-bind');
-        await expect(entries).toHaveCount(2);
-        await expect(entries.nth(0)).toContainText('[ALT+1]');
-        await expect(entries.nth(0)).toContainText('atak toporem');
-        await expect(entries.nth(1)).toContainText('[ALT+2]');
-        await expect(entries.nth(1)).toContainText('osloń mnie');
+        await expect(entries, 'should render entries for current room').toHaveCount(2);
+        await expect(entries.nth(0), 'should display hotkey for first multibind').toContainText('[ALT+1]');
+        await expect(entries.nth(0), 'should display action text for first multibind').toContainText('atak toporem');
+        await expect(entries.nth(1), 'should display hotkey for second multibind').toContainText('[ALT+2]');
+        await expect(entries.nth(1), 'should display action text for second multibind').toContainText('osloń mnie');
 
         await page.evaluate(() => {
             const client: any = (window as any).clientExtension;
             client.Map.currentRoom = { id: 200 } as any;
             client.eventTarget.emit('enterLocation', { id: 200, room: {} });
         });
-        await expect(entries).toHaveCount(1);
-        await expect(entries.first()).toContainText('skradanie');
+        await expect(entries, 'should update entries when entering different room').toHaveCount(1);
+        await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
@@ -125,14 +128,17 @@ test.describe('Multibind import', () => {
         });
 
         const errorAlert = page.locator('#binds-modal .alert-danger');
-        await expect(errorAlert).toBeVisible();
-        await expect(errorAlert).toHaveText('Nie udało się sparsować bazy.');
-        await expect(triggerButton).toBeEnabled();
+        await expect(errorAlert, 'should display worker error alert').toBeVisible();
+        await expect(errorAlert, 'should show worker error message').toHaveText('Nie udało się sparsować bazy.');
+        await expect(triggerButton, 'should re-enable import trigger after failure').toBeEnabled();
 
         const multiBinds = page.locator('#multi-binds .multi-bind');
-        await expect(multiBinds).toHaveCount(0);
+        await expect(multiBinds, 'should not list multibinds when import fails').toHaveCount(0);
 
         const requests = await getMultibindRequests(page);
-        expect(requests.some((request) => request?.type === 'parse')).toBe(true);
+        expect(
+            requests.some((request) => request?.type === 'parse'),
+            'should still send parse request despite failure'
+        ).toBe(true);
     });
 });

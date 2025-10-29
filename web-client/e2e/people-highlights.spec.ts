@@ -28,13 +28,13 @@ async function openGuildSettings(page: Page) {
     await page.click('#options-button');
 
     const optionsModal = page.locator('#options-modal');
-    await expect(optionsModal).toBeVisible();
+    await expect(optionsModal, 'should open options modal from menu').toBeVisible();
 
     const guildTab = optionsModal.locator('button', {hasText: 'Gildie'});
     await guildTab.click();
 
     const guildToggle = optionsModal.locator('#guild-CKN');
-    await expect(guildToggle).toBeEnabled();
+    await expect(guildToggle, 'should allow enabling guild highlight').toBeEnabled();
 
     return optionsModal;
 }
@@ -51,7 +51,7 @@ async function pushAndWaitForHighlight(
             .filter({hasText: PERSON_DESCRIPTION})
             .last();
         try {
-            await expect(entry).toContainText(expected, {timeout: 2000});
+            await expect(entry, 'should display expected guild suffix highlight').toContainText(expected, {timeout: 2000});
             return entry;
         } catch (error) {
             if (attempt === 9) {
@@ -75,8 +75,10 @@ async function pushAndWaitForNoHighlight(
             .filter({hasText: PERSON_DESCRIPTION})
             .last();
         try {
-            await expect(entry).toContainText(PERSON_DESCRIPTION, {timeout: 2000});
-            await expect(entry).not.toContainText(unexpected, {timeout: 2000});
+            await expect(entry, 'should display base person description').toContainText(PERSON_DESCRIPTION, {timeout: 2000});
+            await expect(entry, 'should not display unexpected highlight suffix').not.toContainText(unexpected, {
+                timeout: 2000,
+            });
             return entry;
         } catch (error) {
             if (attempt === 9) {
@@ -109,7 +111,7 @@ test.describe('People highlights', () => {
         await optionsModal.locator('#guild-color-enabled-CKN').check();
         await optionsModal.locator('#guild-color-CKN').fill('#00ff00');
         await optionsModal.locator('#options-save').click();
-        await expect(optionsModal).not.toBeVisible();
+        await expect(optionsModal, 'should close options modal after enabling highlights').not.toBeVisible();
 
         const allyDescription = await pushAndWaitForHighlight(
             page,
@@ -117,12 +119,12 @@ test.describe('People highlights', () => {
             PERSON_SUFFIX,
         );
         const allySuffix = allyDescription.locator('span', {hasText: PERSON_SUFFIX}).last();
-        await expect(allySuffix).toHaveCSS('color', 'rgb(0, 255, 0)');
+        await expect(allySuffix, 'should color ally suffix using configured highlight').toHaveCSS('color', 'rgb(0, 255, 0)');
 
         const optionsModalSecond = await openGuildSettings(page);
         await optionsModalSecond.locator('#guild-color-CKN').fill('#0000ff');
         await optionsModalSecond.locator('#options-save').click();
-        await expect(optionsModalSecond).not.toBeVisible();
+        await expect(optionsModalSecond, 'should close options modal after updating highlight color').not.toBeVisible();
 
         const updatedDescription = await pushAndWaitForHighlight(
             page,
@@ -130,7 +132,7 @@ test.describe('People highlights', () => {
             PERSON_SUFFIX,
         );
         const updatedSuffix = updatedDescription.locator('span', {hasText: PERSON_SUFFIX}).last();
-        await expect(updatedSuffix).toHaveCSS('color', 'rgb(0, 0, 255)');
+        await expect(updatedSuffix, 'should update ally suffix color after reconfiguration').toHaveCSS('color', 'rgb(0, 0, 255)');
 
         const optionsModalFinal = await openGuildSettings(page);
         const guildToggle = optionsModalFinal.locator('#guild-CKN');
@@ -142,14 +144,14 @@ test.describe('People highlights', () => {
             await colorToggle.uncheck();
         }
         await optionsModalFinal.locator('#options-save').click();
-        await expect(optionsModalFinal).not.toBeVisible();
+        await expect(optionsModalFinal, 'should close options modal after disabling highlights').not.toBeVisible();
 
         const neutralDescription = await pushAndWaitForNoHighlight(
             page,
             'Widzisz wysoki wojownik tutaj.',
             PERSON_NAME,
         );
-        await expect(neutralDescription).not.toContainText(PERSON_SUFFIX);
+        await expect(neutralDescription, 'should remove guild suffix once highlight disabled').not.toContainText(PERSON_SUFFIX);
     });
 
     test('marks enemy guild members in red until disabled', async ({page}) => {
@@ -158,9 +160,9 @@ test.describe('People highlights', () => {
         const optionsModal = await openGuildSettings(page);
         await optionsModal.locator('#enemy-guild-CKN').check();
         const guildColorToggle = optionsModal.locator('#guild-color-enabled-CKN');
-        await expect(guildColorToggle).toBeDisabled();
+        await expect(guildColorToggle, 'should prevent manual color selection for enemy highlight').toBeDisabled();
         await optionsModal.locator('#options-save').click();
-        await expect(optionsModal).not.toBeVisible();
+        await expect(optionsModal, 'should close options modal after configuring enemy highlight').not.toBeVisible();
 
         const enemyDescription = await pushAndWaitForHighlight(
             page,
@@ -168,18 +170,18 @@ test.describe('People highlights', () => {
             PERSON_SUFFIX,
         );
         const enemySuffix = enemyDescription.locator('span', {hasText: PERSON_SUFFIX}).last();
-        await expect(enemySuffix).toHaveCSS('color', 'rgb(255, 0, 0)');
+        await expect(enemySuffix, 'should color enemy suffix with warning color').toHaveCSS('color', 'rgb(255, 0, 0)');
 
         const optionsModalSecond = await openGuildSettings(page);
         await optionsModalSecond.locator('#enemy-guild-CKN').uncheck();
         await optionsModalSecond.locator('#options-save').click();
-        await expect(optionsModalSecond).not.toBeVisible();
+        await expect(optionsModalSecond, 'should close options modal after disabling enemy highlight').not.toBeVisible();
 
         const neutralDescription = await pushAndWaitForNoHighlight(
             page,
             'Widzisz wysoki wojownik tutaj.',
             PERSON_NAME,
         );
-        await expect(neutralDescription).not.toContainText(PERSON_SUFFIX);
+        await expect(neutralDescription, 'should remove enemy suffix once highlight disabled').not.toContainText(PERSON_SUFFIX);
     });
 });

@@ -46,10 +46,13 @@ test.describe('Magic and key highlights', () => {
         await pushText(page, 'Na ziemi lezy magiczny miecz.');
 
         const output = page.locator('#main_text_output_msg_wrapper');
-        await expect(output).toContainText('magiczny miecz');
+        await expect(output, 'should display magic item text in output').toContainText('magiczny miecz');
 
         const magicSpan = output.locator('span', { hasText: 'magiczny miecz' }).last();
-        await expect(magicSpan).toHaveCSS('color', 'rgb(223, 95, 95)');
+        await expect(magicSpan, 'should style magic item text using configured palette').toHaveCSS(
+            'color',
+            'rgb(223, 95, 95)'
+        );
     });
 
     test('colors magic keys using configured palette', async ({page}) => {
@@ -61,9 +64,12 @@ test.describe('Magic and key highlights', () => {
         await pushText(page, 'Sekretny klucz lezy tutaj.');
 
         const output = page.locator('#main_text_output_msg_wrapper');
-        await expect(output).toContainText('Sekretny klucz');
+        await expect(output, 'should display magic key text in output').toContainText('Sekretny klucz');
 
         const keySpan = output.locator('span', { hasText: 'Sekretny klucz' }).last();
-        await expect(keySpan).toHaveCSS('color', 'rgb(0, 255, 135)');
+        await expect(keySpan, 'should style magic key text using configured palette').toHaveCSS(
+            'color',
+            'rgb(0, 255, 135)'
+        );
     });
 });
