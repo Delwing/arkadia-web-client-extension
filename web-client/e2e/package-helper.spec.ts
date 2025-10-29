@@ -6,6 +6,7 @@ import {
     mockMapDownloads,
     mockMagicKeysDownload,
     mockMagicsDownload,
+    mockPeopleDownload,
     mockNpcDownload,
     primeCharInfo,
     pushText,
@@ -18,6 +19,7 @@ test.beforeEach(async ({context}) => {
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
+    await mockPeopleDownload(context);
     await installMockWebSocket(context);
     await primeCharInfo(context);
 });
