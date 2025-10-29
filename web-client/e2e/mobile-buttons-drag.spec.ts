@@ -6,21 +6,19 @@ type Orientation = 'portrait' | 'landscape';
 type StoredPosition = {x: number; y: number; origin: 'left' | 'right'};
 type InputMethod = 'touch' | 'mouse';
 
-async function dispatchPointerEvent(
+async function dispatchTouchEvent(
     page: Page,
     target: string,
-    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    type: 'touchstart' | 'touchmove' | 'touchend',
     x: number,
     y: number,
-    pointerType: Extract<InputMethod, 'touch'>,
-    pointerId: number
+    identifier: number,
 ) {
     await page.evaluate(([
         targetSelector,
         eventType,
         clientX,
         clientY,
-        pointerTypeName,
         pointerIdentifier,
     ]) => {
         const targetNode = targetSelector === 'document'
@@ -28,28 +26,68 @@ async function dispatchPointerEvent(
             : document.querySelector<HTMLElement>(targetSelector);
 
         if (!targetNode) {
-            throw new Error(`Could not find pointer event target: ${targetSelector}`);
+            throw new Error(`Could not find touch event target: ${targetSelector}`);
         }
 
-        const pointerEvent = new PointerEvent(eventType, {
-            bubbles: true,
-            cancelable: true,
-            composed: true,
-            clientX,
-            clientY,
-            pageX: clientX,
-            pageY: clientY,
-            screenX: clientX,
-            screenY: clientY,
-            pointerId: pointerIdentifier,
-            pointerType: pointerTypeName,
-            isPrimary: true,
-            buttons: 1,
-            pressure: pointerTypeName === 'touch' ? 1 : 0.5,
-        });
+        const eventTarget = targetNode instanceof Document ? targetNode.documentElement : targetNode;
+        if (!eventTarget) {
+            throw new Error(`Could not resolve event target for: ${targetSelector}`);
+        }
 
-        targetNode.dispatchEvent(pointerEvent);
-    }, [target, type, x, y, pointerType, pointerId]);
+        const createTouch = () => {
+            const init = {
+                identifier: pointerIdentifier,
+                target: eventTarget,
+                clientX,
+                clientY,
+                screenX: clientX,
+                screenY: clientY,
+                pageX: clientX,
+                pageY: clientY,
+                radiusX: 1,
+                radiusY: 1,
+                rotationAngle: 0,
+                force: 1,
+            };
+
+            if (typeof Touch === 'function') {
+                return new Touch(init);
+            }
+
+            return init as unknown as Touch;
+        };
+
+        const activeTouch = createTouch();
+        const touches = eventType === 'touchend' ? [] : [activeTouch];
+        const changedTouch = createTouch();
+        const changedTouches = [changedTouch];
+
+        let event: TouchEvent;
+        if (typeof TouchEvent === 'function') {
+            event = new TouchEvent(eventType, {
+                bubbles: true,
+                cancelable: true,
+                composed: true,
+                touches,
+                targetTouches: touches,
+                changedTouches,
+            });
+        } else {
+            event = new Event(eventType, {
+                bubbles: true,
+                cancelable: true,
+                composed: true,
+            }) as TouchEvent;
+
+            Object.defineProperties(event, {
+                touches: {value: touches, configurable: true},
+                targetTouches: {value: touches, configurable: true},
+                changedTouches: {value: changedTouches, configurable: true},
+            });
+        }
+
+        targetNode.dispatchEvent(event);
+    }, [target, type, x, y, identifier]);
 }
 
 async function dragAndAssertPersistence(page: Page, method: InputMethod) {
@@ -80,15 +118,7 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
 
     const pointerDown = async () => {
         if (method === 'touch') {
-            await dispatchPointerEvent(
-                page,
-                '#mobile-direction-buttons',
-                'pointerdown',
-                startX,
-                startY,
-                'touch',
-                pointerId,
-            );
+            await dispatchTouchEvent(page, '#mobile-direction-buttons', 'touchstart', startX, startY, pointerId);
             return;
         }
 
@@ -98,15 +128,7 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
 
     const pointerMove = async (x: number, y: number) => {
         if (method === 'touch') {
-            await dispatchPointerEvent(
-                page,
-                'document',
-                'pointermove',
-                x,
-                y,
-                'touch',
-                pointerId,
-            );
+            await dispatchTouchEvent(page, '#mobile-direction-buttons', 'touchmove', x, y, pointerId);
             return;
         }
 
@@ -115,15 +137,7 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
 
     const pointerUp = async (x: number, y: number) => {
         if (method === 'touch') {
-            await dispatchPointerEvent(
-                page,
-                'document',
-                'pointerup',
-                x,
-                y,
-                'touch',
-                pointerId,
-            );
+            await dispatchTouchEvent(page, '#mobile-direction-buttons', 'touchend', x, y, pointerId);
             return;
         }
 
@@ -133,19 +147,16 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     await pointerDown();
 
     try {
+        await page.waitForFunction(() => (
+            document.getElementById('mobile-direction-buttons')?.classList.contains('dragging') ?? false
+        ));
+
         const steps = 12;
         for (let index = 1; index <= steps; index += 1) {
             const progress = index / steps;
             const intermediateX = startX + (targetX - startX) * progress;
             const intermediateY = startY + (targetY - startY) * progress;
             await pointerMove(intermediateX, intermediateY);
-
-            if (index === 1) {
-                await page.waitForFunction(() => (
-                    document.getElementById('mobile-direction-buttons')?.classList.contains('dragging') ?? false
-                ));
-            }
-
             await page.waitForTimeout(16);
         }
     } finally {
