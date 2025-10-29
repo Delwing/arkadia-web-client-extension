@@ -1,11 +1,6 @@
-import {Page, expect, test} from '@playwright/test';
-import {
-    ensureGameSocket, installMockWebSocket, mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload, mockMapDownloads,
-    mockNpcDownload, mockPeopleDownload,
-    waitForClientReady
-} from './support/mocks';
+import {expect, test} from './support/fixtures';
+import type {Page} from '@playwright/test';
+import {ensureGameSocket, waitForClientReady} from './support/mocks';
 
 type Orientation = 'portrait' | 'landscape';
 type StoredPosition = {x: number; y: number; origin: 'left' | 'right'};
@@ -266,16 +261,6 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     expect(reloadedPosition.left, 'should restore stored horizontal position after reload').toBe(storedPosition.x);
     expect(reloadedPosition.top, 'should restore stored vertical position after reload').toBe(storedPosition.y);
 }
-
-test.beforeEach(async ({context}) => {
-    await mockMapDownloads(context)
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
-});
 
 test.describe('Mobile direction buttons drag', () => {
     const prepare = async ({page}: {page: Page}) => {
