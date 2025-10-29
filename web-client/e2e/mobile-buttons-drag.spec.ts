@@ -6,6 +6,52 @@ type Orientation = 'portrait' | 'landscape';
 type StoredPosition = {x: number; y: number; origin: 'left' | 'right'};
 type InputMethod = 'touch' | 'mouse';
 
+async function dispatchPointerEvent(
+    page: Page,
+    target: string,
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    x: number,
+    y: number,
+    pointerType: Extract<InputMethod, 'touch'>,
+    pointerId: number
+) {
+    await page.evaluate(([
+        targetSelector,
+        eventType,
+        clientX,
+        clientY,
+        pointerTypeName,
+        pointerIdentifier,
+    ]) => {
+        const targetNode = targetSelector === 'document'
+            ? document
+            : document.querySelector<HTMLElement>(targetSelector);
+
+        if (!targetNode) {
+            throw new Error(`Could not find pointer event target: ${targetSelector}`);
+        }
+
+        const pointerEvent = new PointerEvent(eventType, {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            clientX,
+            clientY,
+            pageX: clientX,
+            pageY: clientY,
+            screenX: clientX,
+            screenY: clientY,
+            pointerId: pointerIdentifier,
+            pointerType: pointerTypeName,
+            isPrimary: true,
+            buttons: 1,
+            pressure: pointerTypeName === 'touch' ? 1 : 0.5,
+        });
+
+        targetNode.dispatchEvent(pointerEvent);
+    }, [target, type, x, y, pointerType, pointerId]);
+}
+
 async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     await page.goto('/');
     await waitForClientReady(page);
@@ -30,28 +76,57 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     const targetX = startX + 120;
     const targetY = startY + 90;
 
+    const pointerId = 1;
+
     const pointerDown = async () => {
         if (method === 'touch') {
-            await page.touchscreen.down(startX, startY);
+            await dispatchPointerEvent(
+                page,
+                '#mobile-direction-buttons',
+                'pointerdown',
+                startX,
+                startY,
+                'touch',
+                pointerId,
+            );
             return;
         }
+
         await page.mouse.move(startX, startY);
         await page.mouse.down();
     };
 
     const pointerMove = async (x: number, y: number) => {
         if (method === 'touch') {
-            await page.touchscreen.move(x, y);
+            await dispatchPointerEvent(
+                page,
+                'document',
+                'pointermove',
+                x,
+                y,
+                'touch',
+                pointerId,
+            );
             return;
         }
+
         await page.mouse.move(x, y);
     };
 
-    const pointerUp = async () => {
+    const pointerUp = async (x: number, y: number) => {
         if (method === 'touch') {
-            await page.touchscreen.up();
+            await dispatchPointerEvent(
+                page,
+                'document',
+                'pointerup',
+                x,
+                y,
+                'touch',
+                pointerId,
+            );
             return;
         }
+
         await page.mouse.up();
     };
 
@@ -74,7 +149,7 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
             await page.waitForTimeout(16);
         }
     } finally {
-        await pointerUp();
+        await pointerUp(targetX, targetY);
     }
 
     await page.waitForFunction(([initialLeft, initialTop]) => {
