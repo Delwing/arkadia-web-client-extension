@@ -187,6 +187,7 @@ const splitBottom = document.getElementById('split-bottom') as HTMLElement;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 let isSplitView = false;
 const STICKY_LINES = 15;
+const DOUBLE_CLICK_TIMEOUT_MS = 300;
 
 function processSticky(count: number) {
     const handler: any = (window as any).clientExtension?.OutputHandler;
@@ -269,14 +270,29 @@ function closeHistoryScrollback() {
 let lastTap = 0;
 outputWrapper.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTap < 300) {
+    if (now - lastTap < DOUBLE_CLICK_TIMEOUT_MS) {
         e.preventDefault();
         closeHistoryScrollback();
     }
     lastTap = now;
 });
 
-outputWrapper.addEventListener('dblclick', closeHistoryScrollback);
+let lastClick = 0;
+let lastClickTarget: EventTarget | null = null;
+outputWrapper.addEventListener('click', (event) => {
+    if (event.button !== 0) {
+        return;
+    }
+    const now = Date.now();
+    if (lastClickTarget === event.target && now - lastClick < DOUBLE_CLICK_TIMEOUT_MS) {
+        closeHistoryScrollback();
+        lastClick = 0;
+        lastClickTarget = null;
+        return;
+    }
+    lastClick = now;
+    lastClickTarget = event.target;
+});
 
 function updateProgress(p: number, loaded?: number, total?: number) {
     progressContainer.style.display = 'block';
