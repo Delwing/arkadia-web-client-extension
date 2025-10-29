@@ -677,7 +677,7 @@ export async function mockMagicKeysDownload(
 
 export async function waitForClientReady(page: Page): Promise<void> {
     await page.waitForFunction(() => Boolean((window as any).clientExtension));
-    await page.waitForFunction(() => Array.isArray((window as any).__mockSockets));
+    await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);
     await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
 
     const overlay = page.locator('#auth-overlay');

@@ -1,9 +1,15 @@
-import {expect, test} from './support/fixtures';
+import {expect, test} from '@playwright/test';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     getEmbeddedCalls,
     installEmbeddedMock,
+    installMockWebSocket,
+    mockKnowledgeDownload,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
+    mockPeopleDownload,
+    mockNpcDownload,
     resetEmbeddedCalls,
     waitForClientReady,
 } from './support/mocks';
@@ -21,6 +27,12 @@ async function openUiSettings(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
+    await mockNpcDownload(context);
+    await mockPeopleDownload(context);
+    await mockKnowledgeDownload(context);
+    await installMockWebSocket(context);
     await installEmbeddedMock(context);
 });
 

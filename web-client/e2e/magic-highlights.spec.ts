@@ -1,7 +1,13 @@
-import {expect, test} from './support/fixtures';
+import {expect, test} from '@playwright/test';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    installMockWebSocket,
+    mockKnowledgeDownload,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
+    mockPeopleDownload,
+    mockNpcDownload,
     pushText,
     waitForClientReady,
 } from './support/mocks';
@@ -22,6 +28,15 @@ async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
         return false;
     }, tag);
 }
+
+test.beforeEach(async ({context}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
+    await mockNpcDownload(context);
+    await mockPeopleDownload(context);
+    await mockKnowledgeDownload(context);
+    await installMockWebSocket(context);
+});
 
 test.describe('Magic and key highlights', () => {
     test('colors magic items using configured palette', async ({page}) => {

@@ -1,6 +1,17 @@
-import {expect, test} from './support/fixtures';
+import {expect, test} from '@playwright/test';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushText, waitForClientReady} from './support/mocks';
+import {
+    ensureGameSocket,
+    installMockWebSocket,
+    mockKnowledgeDownload,
+    mockMagicKeysDownload,
+    mockMagicsDownload,
+    mockPeopleDownload,
+    mockNpcDownload,
+    primeCharInfo,
+    pushText,
+    waitForClientReady,
+} from './support/mocks';
 
 const PERSON_NAME = 'Aldous';
 const PERSON_DESCRIPTION = 'wysoki wojownik';
@@ -80,7 +91,14 @@ async function pushAndWaitForNoHighlight(
     throw new Error('Highlight was not removed');
 }
 
-test.beforeEach(async ({page}) => {
+test.beforeEach(async ({context, page}) => {
+    await mockMagicsDownload(context);
+    await mockMagicKeysDownload(context);
+    await mockNpcDownload(context);
+    await mockPeopleDownload(context);
+    await mockKnowledgeDownload(context);
+    await installMockWebSocket(context);
+    await primeCharInfo(context);
     await page.addInitScript(() => {
         localStorage.setItem('currentCharacter', 'Tester');
     });
