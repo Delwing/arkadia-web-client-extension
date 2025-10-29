@@ -2,18 +2,11 @@ import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
-    mockMapDownloads,
-    primeCharInfo,
     pushText,
     submitCommand,
     waitForClientReady,
     waitForMapReady,
 } from './support/mocks';
-
-test.beforeEach(async ({context}) => {
-    await mockMapDownloads(context);
-    await primeCharInfo(context);
-});
 
 test('Package helper highlights NPCs and guides selected deliveries', async ({page}) => {
     await page.goto('/');

@@ -4,7 +4,6 @@ import {
     ensureGameSocket,
     getMultibindRequests,
     installMultibindWorkerMock,
-    mockMapDownloads,
     submitCommand,
     queueMultibindResponse,
     waitForClientReady,
@@ -28,7 +27,6 @@ async function closeBindsModal(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
-    await mockMapDownloads(context);
     await installMultibindWorkerMock(context);
 });
 
