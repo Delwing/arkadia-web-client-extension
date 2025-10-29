@@ -7,6 +7,7 @@ import {
     installMockWebSocket,
     mockMagicKeysDownload,
     mockMagicsDownload,
+    mockPeopleDownload,
     mockNpcDownload,
     resetEmbeddedCalls,
     waitForClientReady,
@@ -28,6 +29,7 @@ test.beforeEach(async ({context}) => {
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
+    await mockPeopleDownload(context);
     await installMockWebSocket(context);
     await installEmbeddedMock(context);
 });
