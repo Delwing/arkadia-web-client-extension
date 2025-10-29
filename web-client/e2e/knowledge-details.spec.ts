@@ -1,27 +1,7 @@
-import {expect, test} from '@playwright/test';
-import {
-    ensureGameSocket,
-    installMockWebSocket,
-    mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload,
-    mockPeopleDownload,
-    mockNpcDownload,
-    pushText,
-    submitCommand,
-    waitForClientReady,
-} from './support/mocks';
+import {expect, test} from './support/test-fixture';
+import {ensureGameSocket, pushText, submitCommand, waitForClientReady} from './support/mocks';
 
 const KNOWLEDGE_ENTRY_TEXT = 'Byles w samym sercu zamku Drachenfels';
-
-test.beforeEach(async ({context}) => {
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
-});
 
 test.describe('Knowledge details', () => {
     test('builds report via /wiedza_buduj and displays popup', async ({page}) => {

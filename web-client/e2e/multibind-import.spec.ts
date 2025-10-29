@@ -1,15 +1,9 @@
-import {expect, test} from '@playwright/test';
 import type {Page} from '@playwright/test';
+import {expect, test} from './support/test-fixture';
 import {
     ensureGameSocket,
     getMultibindRequests,
-    installMockWebSocket,
     installMultibindWorkerMock,
-    mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload,
-    mockPeopleDownload,
-    mockNpcDownload,
     queueMultibindResponse,
     waitForClientReady,
 } from './support/mocks';
@@ -26,12 +20,6 @@ async function openBindsModal(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
     await installMultibindWorkerMock(context);
 });
 
