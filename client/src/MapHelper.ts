@@ -355,7 +355,7 @@ export default class MapHelper {
         this.client.addEventListener('output-sent', () => {
             if (room?.userData?.bind) {
                 this.client.FunctionalBind.set(room.userData?.bind, () => this.client.sendCommand(room.userData?.bind))
-            } else if (room.userData?.drinkable) {
+            } else if (room?.userData?.drinkable) {
                 this.client.FunctionalBind.set("napij sie do syta wody", () => this.client.sendCommand("napij sie do syta wody"))
             }
         }, {once: true})

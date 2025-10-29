@@ -790,8 +790,10 @@ export async function pushText(page: Page, text: string, options: { type?: strin
 
 export async function submitCommand(page: Page, command: string): Promise<void> {
     const commandInput = page.locator('#message-input');
+    await commandInput.focus()
     await commandInput.fill(command);
     await commandInput.press('Enter');
+    await page.waitForTimeout(5)
 }
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {

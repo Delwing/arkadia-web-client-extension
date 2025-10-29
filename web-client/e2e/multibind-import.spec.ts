@@ -46,7 +46,7 @@ test.beforeEach(async ({context}) => {
 
 test.describe('Multibind import', () => {
     test('imports database rows and updates multi-bind list', async ({page}) => {
-        await openBindsModal(page);
+        const bindModal = await openBindsModal(page);
 
         await queueMultibindResponse(page, {
             type: 'success',
@@ -92,17 +92,15 @@ test.describe('Multibind import', () => {
         await importModal.getByRole('button', { name: 'Zamknij' }).click();
         await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
 
+        await closeBindsModal(page);
+
         const requests = await getMultibindRequests(page);
         expect(
             requests.some((request) => request?.type === 'parse'),
             'should send parse request to multibind worker'
         ).toBe(true);
 
-        await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 3 } as any;
-            client.eventTarget.emit('enterLocation', { id: 3, room: {} });
-        });
+        await submitCommand(page, '/ustaw 3')
 
         const multiBinds = page.locator('#multi-binds');
         await expect(multiBinds, 'should activate multi-bind list for current room').toHaveClass(/active/);
@@ -113,11 +111,7 @@ test.describe('Multibind import', () => {
         await expect(entries.nth(1), 'should display hotkey for second multibind').toContainText('[ALT+2]');
         await expect(entries.nth(1), 'should display action text for second multibind').toContainText('osloń mnie');
 
-        await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 4 } as any;
-            client.eventTarget.emit('enterLocation', { id: 4, room: {} });
-        });
+        await submitCommand(page, '/ustaw 4')
         await expect(entries, 'should update entries when entering different room').toHaveCount(1);
         await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
 
@@ -133,8 +127,6 @@ test.describe('Multibind import', () => {
         await expect(entries.nth(0), 'should keep action of original multibind after alias creation').toContainText('skradanie');
         await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
         await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
-
-        await closeBindsModal(page);
 
         await page.reload();
         await waitForClientReady(page);

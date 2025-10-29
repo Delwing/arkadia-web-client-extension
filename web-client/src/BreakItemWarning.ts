@@ -15,7 +15,7 @@ export default class BreakItemWarning {
     if (this.container) {
       this.container.addEventListener("click", () => {
         if (this.command) {
-          this.client.sendCommand(this.command);
+          this.client.send(this.command);
         }
         this.update(null);
       });
