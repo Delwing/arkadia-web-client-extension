@@ -1,14 +1,7 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
-    installMockWebSocket,
-    mockMapDownloads,
-    mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload,
-    mockPeopleDownload,
-    mockNpcDownload,
     primeCharInfo,
     pushText,
     submitCommand,
@@ -17,13 +10,6 @@ import {
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
-    await mockMapDownloads(context);
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
     await primeCharInfo(context);
 });
 

@@ -1,17 +1,11 @@
-import {expect, test} from '@playwright/test';
+import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     getEmbeddedCalls,
     installEmbeddedMock,
-    installMockWebSocket,
-    mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload,
-    mockPeopleDownload,
-    mockNpcDownload,
     resetEmbeddedCalls,
-    waitForClientReady, mockMapDownloads,
+    waitForClientReady,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -27,13 +21,6 @@ async function openUiSettings(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
-    await mockMapDownloads(context,)
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
     await installEmbeddedMock(context);
 });
 
