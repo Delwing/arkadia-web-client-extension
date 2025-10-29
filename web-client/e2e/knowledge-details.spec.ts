@@ -39,10 +39,13 @@ test.describe('Knowledge details', () => {
         await pushText(
             page,
             [
-                'Wiedza o chaosie i jego tworach:',
-                ' z walki - dobra',
-                ' Szczegoly z walki:',
-                ` - ${KNOWLEDGE_ENTRY_TEXT}`,
+                'Wiedza o Chaosie i jego tworach:',
+                'z walki - brak',
+                'z ksiazek i bibliotek - znikoma',
+                'z eksploracji - znikoma',
+                '',
+                'Szczegoly eksploracji:',
+                ` * ${KNOWLEDGE_ENTRY_TEXT}.`,
             ].join('\n'),
         );
 
@@ -74,6 +77,7 @@ test.describe('Knowledge details', () => {
             knowledgeEntryIndicator,
             'should highlight knowledge entry as completed',
         ).toHaveClass(/knowledge-details-entry-indicator--known/);
+
     });
 });
 
