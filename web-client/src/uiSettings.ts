@@ -523,6 +523,7 @@ export default async function initUiSettings() {
         if (fontGuessTimeout !== undefined) {
             clearTimeout(fontGuessTimeout);
         }
+        // @ts-ignore
         fontGuessTimeout = setTimeout(() => {
             fontGuessTimeout = undefined;
             void triggerFontFamilyGuess();

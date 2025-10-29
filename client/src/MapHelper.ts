@@ -244,7 +244,7 @@ export default class MapHelper {
                 }
             }
             for (const ex of specials) {
-                const part = ex.substring(0, Math.ceil(ex.length * 0.7))
+                const part = ex.substring(0, Math.round(ex.length * 0.7))
                 if (direction.includes(part)) {
                     const res = this.move(ex, true)
                     if (res.moved) {

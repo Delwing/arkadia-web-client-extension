@@ -119,7 +119,6 @@ export function registerScripts(client: Client) {
         for (let i = 1; i < tokenized.length - 1; i++) {
             const candidate = tokenized[tokenized.length - i]
             const result = client.Map.followMove(candidate)
-            console.log(candidate, result)
             if (result) {
                 return
             }
