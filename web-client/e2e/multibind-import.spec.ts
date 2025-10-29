@@ -46,10 +46,10 @@ test.describe('Multibind import', () => {
             type: 'success',
             payload: {
                 rows: [
-                    { uniqness: '100:1', roomId: 100, index: 1, action: 'atak trolla' },
-                    { uniqness: '100:1', roomId: 100, index: 1, action: 'atak toporem' },
-                    { uniqness: '100:2', roomId: 100, index: 2, action: 'osloń mnie' },
-                    { uniqness: '200:1', roomId: 200, index: 1, action: 'skradanie' },
+                    { uniqness: '3:1', roomId: 3, index: 1, action: 'atak trolla' },
+                    { uniqness: '3:1', roomId: 3, index: 1, action: 'atak toporem' },
+                    { uniqness: '3:2', roomId: 3, index: 2, action: 'osloń mnie' },
+                    { uniqness: '4:1', roomId: 4, index: 1, action: 'skradanie' },
                 ],
                 totalRows: 5,
                 invalidRows: 1,
@@ -94,8 +94,8 @@ test.describe('Multibind import', () => {
 
         await page.evaluate(() => {
             const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 100 } as any;
-            client.eventTarget.emit('enterLocation', { id: 100, room: {} });
+            client.Map.currentRoom = { id: 3 } as any;
+            client.eventTarget.emit('enterLocation', { id: 3, room: {} });
         });
 
         const multiBinds = page.locator('#multi-binds');
@@ -109,8 +109,8 @@ test.describe('Multibind import', () => {
 
         await page.evaluate(() => {
             const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 200 } as any;
-            client.eventTarget.emit('enterLocation', { id: 200, room: {} });
+            client.Map.currentRoom = { id: 4 } as any;
+            client.eventTarget.emit('enterLocation', { id: 4, room: {} });
         });
         await expect(entries, 'should update entries when entering different room').toHaveCount(1);
         await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
@@ -125,7 +125,7 @@ test.describe('Multibind import', () => {
         await page.reload();
         await waitForClientReady(page);
         await ensureGameSocket(page);
-        await submitCommand(page, '/ustaw 200');
+        await submitCommand(page, '/ustaw 4');
 
         const reloadedMultiBinds = page.locator('#multi-binds');
         await expect(reloadedMultiBinds, 'should keep multi-bind list active after reload').toHaveClass(/active/);
