@@ -21,7 +21,7 @@ async function openUiSettings(page: Page) {
     await page.click(MENU_BUTTON);
     await page.click(UI_SETTINGS_BUTTON);
     const modal = page.locator(UI_MODAL);
-    await expect(modal).toBeVisible();
+    await expect(modal, 'should open UI settings modal').toBeVisible();
     return modal;
 }
 
@@ -96,7 +96,7 @@ test.describe('UI settings', () => {
         await ensureUnchecked('#ui-show-combat-timer');
 
         await modal.locator('#ui-settings-save').click();
-        await expect(modal).not.toBeVisible();
+        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
         await page.waitForFunction(() => (window as any).__lastUiSettingsEvent !== null);
 
@@ -127,24 +127,27 @@ test.describe('UI settings', () => {
             };
         });
 
-        expect(styles.contentFontSize).toBe('24px');
-        expect(styles.charStateFontSize).toBe('24px');
-        expect(styles.objectsFontSize).toBe('20px');
-        expect(styles.objectsFontFamily).toBe('"Cascadia Mono", monospace');
-        expect(styles.contentBackground).toBe('rgb(18, 52, 86)');
-        expect(styles.splitBackground).toBe('rgb(18, 52, 86)');
-        expect(styles.footerMode).toBe('2');
-        expect(styles.combatTimerDisplay).toBe('none');
-        expect(styles.combatTimerEnabled).toBe('0');
-        expect(styles.bodyMapPosition).toBe('bottom');
-        expect(styles.contentMapPosition).toBe('bottom');
-        expect(styles.mapSize).toBe('40vh');
-        expect(styles.mobileButtonWidth).toBe('54px');
-        expect(styles.mobileButtonHeight).toBe('54px');
-        expect(styles.mobileButtonFont).toBe('21px');
+        expect(styles.contentFontSize, 'should apply content font size multiplier').toBe('24px');
+        expect(styles.charStateFontSize, 'should apply footer font size multiplier').toBe('24px');
+        expect(styles.objectsFontSize, 'should apply objects font size multiplier').toBe('20px');
+        expect(styles.objectsFontFamily, 'should apply configured font family').toBe('"Cascadia Mono", monospace');
+        expect(styles.contentBackground, 'should apply configured output background color').toBe('rgb(18, 52, 86)');
+        expect(styles.splitBackground, 'should sync split background with output background').toBe('rgb(18, 52, 86)');
+        expect(styles.footerMode, 'should persist selected footer mode').toBe('2');
+        expect(styles.combatTimerDisplay, 'should hide combat timer when disabled').toBe('none');
+        expect(styles.combatTimerEnabled, 'should mark combat timer disabled state').toBe('0');
+        expect(styles.bodyMapPosition, 'should update body map position data attribute').toBe('bottom');
+        expect(styles.contentMapPosition, 'should update content map position attribute').toBe('bottom');
+        expect(styles.mapSize, 'should apply configured map height').toBe('40vh');
+        expect(styles.mobileButtonWidth, 'should scale mobile button width').toBe('54px');
+        expect(styles.mobileButtonHeight, 'should scale mobile button height').toBe('54px');
+        expect(styles.mobileButtonFont, 'should scale mobile button font size').toBe('21px');
 
         const embeddedCalls = await getEmbeddedCalls(page);
-        expect(embeddedCalls).toEqual(
+        expect(
+            embeddedCalls,
+            'should invoke embedded client with updated UI configuration'
+        ).toEqual(
             expect.arrayContaining([
                 { method: 'setZoom', value: 0.5 },
                 { method: 'setExplorationMode', value: true },
@@ -157,7 +160,10 @@ test.describe('UI settings', () => {
         );
 
         const uiSettingsEvent = await page.evaluate(() => (window as any).__lastUiSettingsEvent);
-        expect(uiSettingsEvent).toEqual(
+        expect(
+            uiSettingsEvent,
+            'should emit uiSettings event reflecting applied preferences'
+        ).toEqual(
             expect.objectContaining({
                 mobileDirectionButtons: false,
                 hapticFeedback: false,
