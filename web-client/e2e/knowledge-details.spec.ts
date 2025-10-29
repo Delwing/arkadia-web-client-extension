@@ -1,5 +1,5 @@
 import {expect, test} from '@playwright/test';
-import { 
+import {
     ensureGameSocket,
     installMockWebSocket,
     mockKnowledgeDownload,
@@ -8,6 +8,7 @@ import {
     mockPeopleDownload,
     mockNpcDownload,
     pushText,
+    submitCommand,
     waitForClientReady,
 } from './support/mocks';
 
@@ -28,10 +29,7 @@ test.describe('Knowledge details', () => {
         await waitForClientReady(page);
         await ensureGameSocket(page);
 
-        await page.evaluate(async () => {
-            const client: any = (window as any).clientExtension;
-            await client?.sendCommand('/wiedza_buduj');
-        });
+        await submitCommand(page, '/wiedza_buduj');
 
         await page.waitForFunction(() => {
             const log = (window as any).__mockCommandLog;
@@ -53,10 +51,7 @@ test.describe('Knowledge details', () => {
             'Zaktualizowano dane raportu wiedzy',
         );
 
-        await page.evaluate(async () => {
-            const client: any = (window as any).clientExtension;
-            await client?.sendCommand('/wiedza');
-        });
+        await submitCommand(page, '/wiedza');
 
         const knowledgeWindow = page.locator('#knowledge-details-root .knowledge-window');
         await expect(knowledgeWindow, 'should show knowledge details window').toBeVisible();

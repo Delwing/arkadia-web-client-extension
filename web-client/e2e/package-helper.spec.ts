@@ -11,6 +11,7 @@ import {
     mockNpcDownload,
     primeCharInfo,
     pushText,
+    submitCommand,
     waitForClientReady,
     waitForMapReady,
 } from './support/mocks';
@@ -163,10 +164,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
         'should keep delivery NPCs non-clickable when helper disabled'
     ).toHaveCount(0);
 
-    await page.evaluate(async () => {
-        const client: any = (window as any).clientExtension;
-        await client.sendCommand('wybierz paczke 1');
-    });
+    await submitCommand(page, 'wybierz paczke 1');
 
     await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
 
