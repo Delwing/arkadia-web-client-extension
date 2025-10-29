@@ -1,25 +1,5 @@
-import {expect, test} from '@playwright/test';
-import {
-    ensureGameSocket,
-    GMCP_PATHS,
-    installMockWebSocket,
-    mockKnowledgeDownload,
-    mockMagicKeysDownload,
-    mockMagicsDownload,
-    mockPeopleDownload,
-    mockNpcDownload,
-    pushGmcp,
-    waitForClientReady,
-} from './support/mocks';
-
-test.beforeEach(async ({context}) => {
-    await mockMagicsDownload(context);
-    await mockMagicKeysDownload(context);
-    await mockNpcDownload(context);
-    await mockPeopleDownload(context);
-    await mockKnowledgeDownload(context);
-    await installMockWebSocket(context);
-});
+import {expect, test} from './support/fixtures';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForClientReady} from './support/mocks';
 
 test.describe('GMCP-driven interactions', () => {
     test('renders team members and leader from GMCP updates', async ({page}) => {
