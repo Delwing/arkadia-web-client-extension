@@ -60,6 +60,20 @@ test.describe('Knowledge details', () => {
             hasText: KNOWLEDGE_ENTRY_TEXT,
         });
         await expect(knowledgeEntry, 'should list known knowledge entry after build').toBeVisible();
+
+        const knowledgeEntryRow = knowledgeWindow.locator('.knowledge-details-entry', {
+            has: page.locator('.knowledge-details-entry-name', { hasText: KNOWLEDGE_ENTRY_TEXT }),
+        });
+        await expect(
+            knowledgeEntryRow,
+            'should mark knowledge entry as known after build',
+        ).toHaveClass(/knowledge-details-entry--known/);
+
+        const knowledgeEntryIndicator = knowledgeEntryRow.locator('.knowledge-details-entry-indicator');
+        await expect(
+            knowledgeEntryIndicator,
+            'should highlight knowledge entry as completed',
+        ).toHaveClass(/knowledge-details-entry-indicator--known/);
     });
 });
 
