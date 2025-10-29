@@ -146,6 +146,9 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
 
     await pointerDown();
 
+    // Dragging is gated behind a long-press delay in production code.
+    await page.waitForTimeout(600);
+
     try {
         await page.waitForFunction(() => (
             document.getElementById('mobile-direction-buttons')?.classList.contains('dragging') ?? false
@@ -231,7 +234,11 @@ test.describe('Mobile direction buttons drag', () => {
     const prepare = async ({page}: {page: Page}) => {
         await page.setViewportSize({width: 500, height: 900});
         await page.addInitScript(() => {
-            window.localStorage.removeItem('mobileButtonsPosition');
+            const initFlag = '__mobileButtonsDragTestInitialized';
+            if (!window.sessionStorage.getItem(initFlag)) {
+                window.localStorage.removeItem('mobileButtonsPosition');
+                window.sessionStorage.setItem(initFlag, 'true');
+            }
         });
     };
 
