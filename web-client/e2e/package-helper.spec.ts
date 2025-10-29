@@ -1,3 +1,4 @@
+import type {Page} from '@playwright/test';
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
@@ -24,6 +25,13 @@ const DELIVERY_BOARD_TEXT = [
     ' o============================================================================o',
 ].join('\n');
 
+async function waitForCurrentCharacter(page: Page, name: string): Promise<void> {
+    await page.waitForFunction(
+        (expected) => localStorage.getItem('currentCharacter') === expected,
+        name,
+    );
+}
+
 test.beforeEach(async ({context}) => {
     await primeCharInfo(context);
 });
@@ -34,6 +42,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await ensureGameSocket(page);
     await waitForMapReady(page);
     await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
@@ -100,6 +109,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await ensureGameSocket(page);
     await waitForMapReady(page);
     await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
@@ -177,6 +187,7 @@ test('Package helper persists per-character preferences across GMCP char swaps',
     await ensureGameSocket(page);
     await waitForMapReady(page);
     await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
