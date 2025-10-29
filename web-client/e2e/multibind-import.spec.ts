@@ -9,6 +9,7 @@ import {
     mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
+    mockMapDownloads,
     mockPeopleDownload,
     mockNpcDownload,
     queueMultibindResponse,
@@ -32,6 +33,7 @@ test.beforeEach(async ({context}) => {
     await mockNpcDownload(context);
     await mockPeopleDownload(context);
     await mockKnowledgeDownload(context);
+    await mockMapDownloads(context);
     await installMockWebSocket(context);
     await installMultibindWorkerMock(context);
 });
