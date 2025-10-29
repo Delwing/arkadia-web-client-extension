@@ -261,7 +261,21 @@ outputWrapper.addEventListener('contextmenu', event => {
     handler.showContextMenu(items, event.clientX, event.clientY);
 });
 
-function closeHistoryScrollback() {
+function selectionWithin(element: HTMLElement, selection: Selection): boolean {
+    const { anchorNode, focusNode } = selection;
+    if (!anchorNode || !focusNode) {
+        return false;
+    }
+    return element.contains(anchorNode) && element.contains(focusNode);
+}
+
+function closeHistoryScrollback(event?: MouseEvent | TouchEvent) {
+    if (event instanceof MouseEvent && event.type === 'dblclick') {
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed && selectionWithin(outputWrapper, selection)) {
+            return;
+        }
+    }
     outputWrapper.scrollTop = outputWrapper.scrollHeight;
 }
 
