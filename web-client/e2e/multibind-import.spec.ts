@@ -5,6 +5,7 @@ import {
     getMultibindRequests,
     installMockWebSocket,
     installMultibindWorkerMock,
+    submitCommand,
     mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
@@ -111,6 +112,25 @@ test.describe('Multibind import', () => {
         });
         await expect(entries, 'should update entries when entering different room').toHaveCount(1);
         await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
+
+        await submitCommand(page, '/mbind+ przyczaj sie');
+        await expect(entries, 'should append alias-created multibind for current room').toHaveCount(2);
+        await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('[ALT+1]');
+        await expect(entries.nth(0), 'should keep action of original multibind after alias creation').toContainText('skradanie');
+        await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
+        await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
+
+        await page.reload();
+        await waitForClientReady(page);
+        await ensureGameSocket(page);
+        await submitCommand(page, '/ustaw 200');
+
+        const reloadedMultiBinds = page.locator('#multi-binds');
+        await expect(reloadedMultiBinds, 'should keep multi-bind list active after reload').toHaveClass(/active/);
+        const reloadedEntries = reloadedMultiBinds.locator('.multi-bind');
+        await expect(reloadedEntries, 'should restore multi-bind entries after reload').toHaveCount(2);
+        await expect(reloadedEntries.nth(0), 'should keep original multibind after reload').toContainText('skradanie');
+        await expect(reloadedEntries.nth(1), 'should keep alias-created multibind after reload').toContainText('przyczaj sie');
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
