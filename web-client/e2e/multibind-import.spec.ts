@@ -117,8 +117,10 @@ test.describe('Multibind import', () => {
 
         await submitCommand(page, '/mbind+ przyczaj sie');
         await page.waitForFunction(() => {
-            const log = (window as any).__mockCommandLog;
-            return Array.isArray(log) && log.includes('/mbind+ przyczaj sie');
+            const items = Array.from(
+                document.querySelectorAll<HTMLDivElement>('#multi-binds .multi-bind'),
+            );
+            return items.length >= 2 && items[items.length - 1]?.textContent?.includes('przyczaj sie');
         });
         await expect(entries, 'should append alias-created multibind for current room').toHaveCount(2);
         await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('[ALT+1]');
