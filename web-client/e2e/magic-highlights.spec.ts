@@ -9,7 +9,7 @@ import {
     mockPeopleDownload,
     mockNpcDownload,
     pushText,
-    waitForClientReady,
+    waitForClientReady, mockMapDownloads,
 } from './support/mocks';
 
 async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
@@ -30,6 +30,7 @@ async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
 }
 
 test.beforeEach(async ({context}) => {
+    await mockMapDownloads(context)
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);

@@ -10,7 +10,7 @@ import {
     mockNpcDownload,
     primeCharInfo,
     pushText,
-    waitForClientReady,
+    waitForClientReady, mockMapDownloads,
 } from './support/mocks';
 
 const PERSON_NAME = 'Aldous';
@@ -92,6 +92,7 @@ async function pushAndWaitForNoHighlight(
 }
 
 test.beforeEach(async ({context, page}) => {
+    await mockMapDownloads(context);
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);

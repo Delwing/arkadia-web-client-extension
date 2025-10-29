@@ -11,7 +11,7 @@ import {
     mockPeopleDownload,
     mockNpcDownload,
     resetEmbeddedCalls,
-    waitForClientReady,
+    waitForClientReady, mockMapDownloads,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -27,6 +27,7 @@ async function openUiSettings(page: Page) {
 }
 
 test.beforeEach(async ({context}) => {
+    await mockMapDownloads(context,)
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);

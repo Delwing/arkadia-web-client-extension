@@ -9,10 +9,11 @@ import {
     mockPeopleDownload,
     mockNpcDownload,
     pushGmcp,
-    waitForClientReady,
+    waitForClientReady, mockMapDownloads,
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
+    await mockMapDownloads(context);
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
