@@ -5,9 +5,11 @@ import {
     getMultibindRequests,
     installMockWebSocket,
     installMultibindWorkerMock,
+    submitCommand,
     mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
+    mockMapDownloads,
     mockPeopleDownload,
     mockNpcDownload,
     queueMultibindResponse,
@@ -25,28 +27,35 @@ async function openBindsModal(page: Page) {
     return modal;
 }
 
+async function closeBindsModal(page: Page) {
+    const modal = page.locator('#binds-modal');
+    await modal.locator('.btn-close').click();
+    await expect(modal, 'should close binds modal after finishing checks').not.toBeVisible();
+}
+
 test.beforeEach(async ({context}) => {
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await mockPeopleDownload(context);
     await mockKnowledgeDownload(context);
+    await mockMapDownloads(context);
     await installMockWebSocket(context);
     await installMultibindWorkerMock(context);
 });
 
 test.describe('Multibind import', () => {
     test('imports database rows and updates multi-bind list', async ({page}) => {
-        await openBindsModal(page);
+        const bindModal = await openBindsModal(page);
 
         await queueMultibindResponse(page, {
             type: 'success',
             payload: {
                 rows: [
-                    { uniqness: '100:1', roomId: 100, index: 1, action: 'atak trolla' },
-                    { uniqness: '100:1', roomId: 100, index: 1, action: 'atak toporem' },
-                    { uniqness: '100:2', roomId: 100, index: 2, action: 'osloń mnie' },
-                    { uniqness: '200:1', roomId: 200, index: 1, action: 'skradanie' },
+                    { uniqness: '3:1', roomId: 3, index: 1, action: 'atak trolla' },
+                    { uniqness: '3:1', roomId: 3, index: 1, action: 'atak toporem' },
+                    { uniqness: '3:2', roomId: 3, index: 2, action: 'osloń mnie' },
+                    { uniqness: '4:1', roomId: 4, index: 1, action: 'skradanie' },
                 ],
                 totalRows: 5,
                 invalidRows: 1,
@@ -83,17 +92,15 @@ test.describe('Multibind import', () => {
         await importModal.getByRole('button', { name: 'Zamknij' }).click();
         await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
 
+        await closeBindsModal(page);
+
         const requests = await getMultibindRequests(page);
         expect(
             requests.some((request) => request?.type === 'parse'),
             'should send parse request to multibind worker'
         ).toBe(true);
 
-        await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 100 } as any;
-            client.eventTarget.emit('enterLocation', { id: 100, room: {} });
-        });
+        await submitCommand(page, '/ustaw 3')
 
         const multiBinds = page.locator('#multi-binds');
         await expect(multiBinds, 'should activate multi-bind list for current room').toHaveClass(/active/);
@@ -104,13 +111,34 @@ test.describe('Multibind import', () => {
         await expect(entries.nth(1), 'should display hotkey for second multibind').toContainText('[ALT+2]');
         await expect(entries.nth(1), 'should display action text for second multibind').toContainText('osloń mnie');
 
-        await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            client.Map.currentRoom = { id: 200 } as any;
-            client.eventTarget.emit('enterLocation', { id: 200, room: {} });
-        });
+        await submitCommand(page, '/ustaw 4')
         await expect(entries, 'should update entries when entering different room').toHaveCount(1);
         await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
+
+        await submitCommand(page, '/mbind+ przyczaj sie');
+        await page.waitForFunction(() => {
+            const items = Array.from(
+                document.querySelectorAll<HTMLDivElement>('#multi-binds .multi-bind'),
+            );
+            return items.length >= 2 && items[items.length - 1]?.textContent?.includes('przyczaj sie');
+        });
+        await expect(entries, 'should append alias-created multibind for current room').toHaveCount(2);
+        await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('[ALT+1]');
+        await expect(entries.nth(0), 'should keep action of original multibind after alias creation').toContainText('skradanie');
+        await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
+        await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
+
+        await page.reload();
+        await waitForClientReady(page);
+        await ensureGameSocket(page);
+        await submitCommand(page, '/ustaw 4');
+
+        const reloadedMultiBinds = page.locator('#multi-binds');
+        await expect(reloadedMultiBinds, 'should keep multi-bind list active after reload').toHaveClass(/active/);
+        const reloadedEntries = reloadedMultiBinds.locator('.multi-bind');
+        await expect(reloadedEntries, 'should restore multi-bind entries after reload').toHaveCount(2);
+        await expect(reloadedEntries.nth(0), 'should keep original multibind after reload').toContainText('skradanie');
+        await expect(reloadedEntries.nth(1), 'should keep alias-created multibind after reload').toContainText('przyczaj sie');
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
@@ -136,6 +164,8 @@ test.describe('Multibind import', () => {
 
         const multiBinds = page.locator('#multi-binds .multi-bind');
         await expect(multiBinds, 'should not list multibinds when import fails').toHaveCount(0);
+
+        await closeBindsModal(page);
 
         const requests = await getMultibindRequests(page);
         expect(

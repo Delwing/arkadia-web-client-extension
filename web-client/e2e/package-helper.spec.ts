@@ -37,7 +37,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
         client.contentWidth = 140;
-        client.Map.renderRoomByIdSilently?.(101);
+        client.Map.renderRoomByIdSilently?.(1);
         (window as any).__leadToEvents = [];
         window.addEventListener('leadTo', (event: any) => {
             (window as any).__leadToEvents.push(event.detail);
@@ -46,9 +46,9 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
 
     const path = await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
-        return client.Map.findPath(101, 200);
+        return client.Map.findPath(1, 4);
     });
-    expect(path, 'should calculate path to selected delivery destination').toEqual([101, 150, 175, 200]);
+    expect(path, 'should calculate path to selected delivery destination').toEqual([1, 2, 3, 4]);
 
     const boardText = [
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
@@ -103,7 +103,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
                 return events.length ? events[events.length - 1] : null;
             });
         }, {message: 'should trigger lead to event for target location'})
-        .toBe(200);
+        .toBe(4);
 });
 
 test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {
@@ -116,7 +116,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
         client.contentWidth = 140;
-        client.Map.renderRoomByIdSilently?.(101);
+        client.Map.renderRoomByIdSilently?.(1);
         (window as any).__leadToEvents = [];
         window.addEventListener('leadTo', (event: any) => {
             (window as any).__leadToEvents.push(event.detail);

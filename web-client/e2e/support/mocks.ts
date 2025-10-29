@@ -257,7 +257,7 @@ const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
 const DEFAULT_MAP_DATA: MockMapData = [
     {
         areaName: 'Miasteczko Poslan',
-        areaId: 'area-1',
+        areaId: '1',
         rooms: [
             {
                 area: 1,
@@ -272,10 +272,10 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 101,
+                id: 1,
                 env: 1,
                 exits: {
-                    east: 150,
+                    east: 2,
                 },
                 specialExits: {},
                 hash: '0:0:0:Miasteczko Poslan',
@@ -293,11 +293,11 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 150,
+                id: 2,
                 env: 1,
                 exits: {
-                    west: 101,
-                    east: 175,
+                    west: 1,
+                    east: 3,
                 },
                 specialExits: {},
                 hash: '1:0:0:Miasteczko Poslan',
@@ -315,12 +315,12 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 175,
+                id: 3,
                 env: 1,
                 exits: {
-                    west: 150,
-                    north: 200,
-                    south: 300,
+                    west: 2,
+                    north: 4,
+                    south: 6,
                 },
                 specialExits: {},
                 hash: '2:0:0:Miasteczko Poslan',
@@ -338,10 +338,10 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 200,
+                id: 4,
                 env: 1,
                 exits: {
-                    south: 175,
+                    south: 3,
                 },
                 specialExits: {},
                 hash: '2:1:0:Miasteczko Poslan',
@@ -359,7 +359,7 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 999,
+                id: 5,
                 env: 1,
                 exits: {},
                 specialExits: {},
@@ -370,7 +370,7 @@ const DEFAULT_MAP_DATA: MockMapData = [
     },
     {
         areaName: 'Zapomniane Jaskinie',
-        areaId: 'area-2',
+        areaId: '2',
         rooms: [
             {
                 area: 2,
@@ -385,11 +385,11 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 300,
+                id: 6,
                 env: 2,
                 exits: {
-                    north: 175,
-                    east: 400,
+                    north: 3,
+                    east: 7,
                 },
                 specialExits: {},
                 hash: '0:1:0:Zapomniane Jaskinie',
@@ -407,10 +407,10 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 400,
+                id: 7,
                 env: 2,
                 exits: {
-                    west: 300,
+                    west: 6,
                 },
                 specialExits: {},
                 hash: '1:1:0:Zapomniane Jaskinie',
@@ -428,7 +428,7 @@ const DEFAULT_MAP_DATA: MockMapData = [
                 customLines: {},
                 stubs: [],
                 doors: {},
-                id: 500,
+                id: 8,
                 env: 2,
                 exits: {},
                 specialExits: {},
@@ -445,7 +445,7 @@ const DEFAULT_MAP_COLORS: MockMapColor[] = [
 ];
 
 const DEFAULT_NPC_DATA = [
-    {name: 'Borgaf Kriegmann', loc: 200},
+    {name: 'Borgaf Kriegmann', loc: 4},
 ];
 
 // Contains a tiny SQLite database with a single `people` table. The rows use
@@ -790,8 +790,10 @@ export async function pushText(page: Page, text: string, options: { type?: strin
 
 export async function submitCommand(page: Page, command: string): Promise<void> {
     const commandInput = page.locator('#message-input');
+    await commandInput.focus()
     await commandInput.fill(command);
     await commandInput.press('Enter');
+    await page.waitForTimeout(5)
 }
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
