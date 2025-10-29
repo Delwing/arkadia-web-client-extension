@@ -70,8 +70,16 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await expect(boardMessage, 'should display delivery board header').toContainText(
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
     );
-    await expect(boardMessage, 'should indicate known NPC delivery distance').toContainText('dystans: 3');
-    await expect(boardMessage, 'should indicate unknown NPC delivery distance as unavailable').toContainText('dystans: --');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should indicate known NPC delivery distance',
+        })
+        .toContain('dystans: 3');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should indicate unknown NPC delivery distance as unavailable',
+        })
+        .toContain('dystans: --');
 
     const knownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
     const unknownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Georg Blaskovitz'});
@@ -143,7 +151,11 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await expect(boardMessage, 'should still display delivery board text').toContainText(
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
     );
-    await expect(boardMessage, 'should not display distance annotations when helper disabled').not.toContainText('dystans:');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should not display distance annotations when helper disabled',
+        })
+        .not.toContain('dystans:');
     await expect(
         boardMessage.locator('span[data-output-clickable="true"]'),
         'should keep delivery NPCs non-clickable when helper disabled'
@@ -220,7 +232,11 @@ test('Package helper persists per-character preferences across GMCP char swaps',
         await expect(boardMessage, 'should still display delivery board text').toContainText(
             'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
         );
-        await expect(boardMessage, 'should not display distance annotations when helper disabled').not.toContainText('dystans:');
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should not display distance annotations when helper disabled',
+            })
+            .not.toContain('dystans:');
         await expect(
             boardMessage.locator('span[data-output-clickable="true"]'),
             'should keep delivery NPCs non-clickable when helper disabled'
@@ -232,12 +248,21 @@ test('Package helper persists per-character preferences across GMCP char swaps',
         await expect(boardMessage, 'should display delivery board header').toContainText(
             'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
         );
-        await expect(boardMessage, 'should display known NPC delivery distance when helper enabled').toContainText('dystans: 3');
-        await expect(boardMessage, 'should display unknown NPC delivery distance placeholder when helper enabled').toContainText('dystans: --');
-        await expect(
-            boardMessage.locator('span[data-output-clickable="true"]'),
-            'should make delivery NPCs clickable when helper enabled'
-        ).toHaveCount(2);
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should display known NPC delivery distance when helper enabled',
+            })
+            .toContain('dystans: 3');
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should display unknown NPC delivery distance placeholder when helper enabled',
+            })
+            .toContain('dystans: --');
+        await expect
+            .poll(async () => boardMessage.locator('span[data-output-clickable="true"]').count(), {
+                message: 'should make delivery NPCs clickable when helper enabled',
+            })
+            .toBe(2);
     };
 
     // Disable package helper for the default Tester character and validate helper removal.
