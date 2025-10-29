@@ -27,6 +27,12 @@ async function openBindsModal(page: Page) {
     return modal;
 }
 
+async function closeBindsModal(page: Page) {
+    const modal = page.locator('#binds-modal');
+    await modal.locator('.btn-close').click();
+    await expect(modal, 'should close binds modal after finishing checks').not.toBeVisible();
+}
+
 test.beforeEach(async ({context}) => {
     await mockMagicsDownload(context);
     await mockMagicKeysDownload(context);
@@ -128,6 +134,8 @@ test.describe('Multibind import', () => {
         await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
         await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
 
+        await closeBindsModal(page);
+
         await page.reload();
         await waitForClientReady(page);
         await ensureGameSocket(page);
@@ -164,6 +172,8 @@ test.describe('Multibind import', () => {
 
         const multiBinds = page.locator('#multi-binds .multi-bind');
         await expect(multiBinds, 'should not list multibinds when import fails').toHaveCount(0);
+
+        await closeBindsModal(page);
 
         const requests = await getMultibindRequests(page);
         expect(
