@@ -3,6 +3,7 @@ import {
     ensureGameSocket,
     GMCP_PATHS,
     installMockWebSocket,
+    mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
     mockPeopleDownload,
@@ -16,6 +17,7 @@ test.beforeEach(async ({context}) => {
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await mockPeopleDownload(context);
+    await mockKnowledgeDownload(context);
     await installMockWebSocket(context);
 });
 
