@@ -5,7 +5,10 @@ type Orientation = 'portrait' | 'landscape';
 type StoredPosition = {x: number; y: number; origin: 'left' | 'right'};
 
 test.describe('Mobile direction buttons drag', () => {
+    test.use({hasTouch: true});
+
     test.beforeEach(async ({page}) => {
+        await page.setViewportSize({width: 500, height: 900});
         await page.addInitScript(() => {
             window.localStorage.removeItem('mobileButtonsPosition');
         });
@@ -32,12 +35,27 @@ test.describe('Mobile direction buttons drag', () => {
 
         const startX = box.x + box.width / 2;
         const startY = box.y + box.height / 2;
+        const targetX = startX + 120;
+        const targetY = startY + 90;
 
-        await page.mouse.move(startX, startY);
-        await page.mouse.down();
-        await page.waitForTimeout(600);
-        await page.mouse.move(startX + 120, startY + 90, {steps: 10});
-        await page.mouse.up();
+        await page.touchscreen.down(startX, startY);
+
+        try {
+            await page.waitForFunction(() => (
+                document.getElementById('mobile-direction-buttons')?.classList.contains('dragging') ?? false
+            ));
+
+            const steps = 12;
+            for (let index = 1; index <= steps; index += 1) {
+                const progress = index / steps;
+                const intermediateX = startX + (targetX - startX) * progress;
+                const intermediateY = startY + (targetY - startY) * progress;
+                await page.touchscreen.move(intermediateX, intermediateY);
+                await page.waitForTimeout(16);
+            }
+        } finally {
+            await page.touchscreen.up();
+        }
 
         await page.waitForFunction(([initialLeft, initialTop]) => {
             const element = document.getElementById('mobile-direction-buttons');
