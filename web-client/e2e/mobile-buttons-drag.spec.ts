@@ -14,13 +14,21 @@ async function dispatchTouchEvent(
     y: number,
     identifier: number,
 ) {
-    await page.evaluate(([
-        targetSelector,
-        eventType,
-        clientX,
-        clientY,
-        pointerIdentifier,
-    ]) => {
+    await page.evaluate((params: {
+        targetSelector: string;
+        eventType: 'touchstart' | 'touchmove' | 'touchend';
+        clientX: number;
+        clientY: number;
+        pointerIdentifier: number;
+    }) => {
+        const {
+            targetSelector,
+            eventType,
+            clientX,
+            clientY,
+            pointerIdentifier,
+        } = params;
+
         const targetNode = targetSelector === 'document'
             ? document
             : document.querySelector<HTMLElement>(targetSelector);
@@ -29,32 +37,50 @@ async function dispatchTouchEvent(
             throw new Error(`Could not find touch event target: ${targetSelector}`);
         }
 
-        const eventTarget = targetNode instanceof Document ? targetNode.documentElement : targetNode;
+        const eventTarget = targetNode instanceof Document
+            ? targetNode.documentElement ?? targetNode.body
+            : targetNode;
+
         if (!eventTarget) {
             throw new Error(`Could not resolve event target for: ${targetSelector}`);
         }
 
-        const createTouch = () => {
-            const init = {
-                identifier: pointerIdentifier,
-                target: eventTarget,
-                clientX,
-                clientY,
-                screenX: clientX,
-                screenY: clientY,
-                pageX: clientX,
-                pageY: clientY,
-                radiusX: 1,
-                radiusY: 1,
-                rotationAngle: 0,
-                force: 1,
-            };
+        const touchInit: TouchInit = {
+            identifier: pointerIdentifier,
+            target: eventTarget,
+            clientX,
+            clientY,
+            screenX: clientX,
+            screenY: clientY,
+            pageX: clientX,
+            pageY: clientY,
+            radiusX: 1,
+            radiusY: 1,
+            rotationAngle: 0,
+            force: 1,
+        };
 
+        const createTouch = (): Touch => {
             if (typeof Touch === 'function') {
-                return new Touch(init);
+                return new Touch(touchInit);
             }
 
-            return init as unknown as Touch;
+            const fallback = {
+                identifier: touchInit.identifier,
+                target: touchInit.target,
+                clientX: touchInit.clientX,
+                clientY: touchInit.clientY,
+                screenX: touchInit.screenX,
+                screenY: touchInit.screenY,
+                pageX: touchInit.pageX,
+                pageY: touchInit.pageY,
+                radiusX: touchInit.radiusX ?? 1,
+                radiusY: touchInit.radiusY ?? 1,
+                rotationAngle: touchInit.rotationAngle ?? 0,
+                force: touchInit.force ?? 1,
+            };
+
+            return fallback as unknown as Touch;
         };
 
         const activeTouch = createTouch();
@@ -86,8 +112,14 @@ async function dispatchTouchEvent(
             });
         }
 
-        targetNode.dispatchEvent(event);
-    }, [target, type, x, y, identifier]);
+        eventTarget.dispatchEvent(event);
+    }, {
+        targetSelector: target,
+        eventType: type,
+        clientX: x,
+        clientY: y,
+        pointerIdentifier: identifier,
+    });
 }
 
 async function dragAndAssertPersistence(page: Page, method: InputMethod) {
