@@ -5,6 +5,7 @@ import {
     getMultibindRequests,
     installMockWebSocket,
     installMultibindWorkerMock,
+    mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
     mockPeopleDownload,
@@ -29,6 +30,7 @@ test.beforeEach(async ({context}) => {
     await mockMagicKeysDownload(context);
     await mockNpcDownload(context);
     await mockPeopleDownload(context);
+    await mockKnowledgeDownload(context);
     await installMockWebSocket(context);
     await installMultibindWorkerMock(context);
 });

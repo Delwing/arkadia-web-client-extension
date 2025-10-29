@@ -250,6 +250,7 @@ const MAP_DATA_ROUTE = '**/arkadia-mapa/data/mapExport.json';
 const MAP_COLORS_ROUTE = '**/arkadia-mapa/data/colors.json';
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
+const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
 const MAGICS_DATA_ROUTE = '**/magics_data.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
 
@@ -560,6 +561,25 @@ const DEFAULT_MAGIC_KEYS_DATA = {
     magic_keys: ['sekretny klucz'],
 };
 
+const DEFAULT_KNOWLEDGE_DATA = {
+    version: 1,
+    books: {
+        'ceramiczna wypalona tabliczka': {
+            mianownik: 'ceramiczna wypalona tabliczka',
+            dopelniacz: 'ceramicznej wypalonej tabliczki',
+            biernik: 'ceramiczna wypalona tabliczke',
+            categories: ['chaos i jego twory'],
+        },
+    },
+    libraries: {
+        'library-chaos': {
+            location_id: 'library-chaos',
+            categories: ['chaos i jego twory'],
+            name: 'Biblioteka Chaosu',
+        },
+    },
+};
+
 export async function mockMapDownloads(
     context: BrowserContext,
     options: {mapData?: MockMapData; colorsData?: MockMapColor[]} = {},
@@ -608,6 +628,23 @@ export async function mockPeopleDownload(
             status: 200,
             contentType: 'application/octet-stream',
             body: Buffer.from(body, 'base64'),
+        });
+    });
+}
+
+export async function mockKnowledgeDownload(
+    context: BrowserContext,
+    data: {
+        version?: number;
+        books: Record<string, {mianownik: string; dopelniacz: string; biernik: string; categories: string[]}>;
+        libraries: Record<string, {location_id: string; categories: string[]; name: string}>;
+    } = DEFAULT_KNOWLEDGE_DATA,
+): Promise<void> {
+    await context.route(KNOWLEDGE_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
         });
     });
 }
