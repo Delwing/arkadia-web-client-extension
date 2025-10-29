@@ -116,6 +116,10 @@ test.describe('Multibind import', () => {
         await expect(entries.first(), 'should show action for room-specific bind').toContainText('skradanie');
 
         await submitCommand(page, '/mbind+ przyczaj sie');
+        await page.waitForFunction(() => {
+            const log = (window as any).__mockCommandLog;
+            return Array.isArray(log) && log.includes('/mbind+ przyczaj sie');
+        });
         await expect(entries, 'should append alias-created multibind for current room').toHaveCount(2);
         await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('[ALT+1]');
         await expect(entries.nth(0), 'should keep action of original multibind after alias creation').toContainText('skradanie');
