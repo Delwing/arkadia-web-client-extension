@@ -30,6 +30,13 @@ jobs:
           cache: yarn
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock', 'web-client/package.json', 'web-client/yarn.lock') }}
+          restore-keys: |
+            key: ${{ runner.os }}-dependencies-
       - name: Cache Playwright browsers
         if: matrix.install_browsers == true
         uses: actions/cache@v4
