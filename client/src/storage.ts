@@ -51,13 +51,20 @@ function notifyCharacterChange(prev: string | null) {
         const newKey = currentCharacter ? `${currentCharacter}:${key}` : key;
         const oldRaw = localStorage.getItem(prevKey);
         const newRaw = localStorage.getItem(newKey);
-        if (oldRaw === newRaw || newRaw === null) {
+        if (oldRaw === newRaw) {
             return;
         }
         let oldValue: any = undefined;
-        let newValue: any;
+        let newValue: any = undefined;
         if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
-        { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+        if (newRaw !== null) {
+            try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+        } else {
+            const fallback = getItemSync(key);
+            if (fallback && Object.prototype.hasOwnProperty.call(fallback, key)) {
+                newValue = fallback[key];
+            }
+        }
         const changes: { [key: string]: { oldValue: any, newValue: any } } = {
             [key]: { oldValue, newValue }
         };
