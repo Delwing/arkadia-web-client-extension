@@ -97,6 +97,34 @@ const defaultFilter: (item: ContainerItem) => boolean = () => true;
 let filter = defaultFilter;
 let magicAndKeysFilter = defaultFilter;
 
+type PatternMatcher = (value: string) => string | null;
+
+const noopMatcher: PatternMatcher = () => null;
+
+let findKeyMatch: PatternMatcher = noopMatcher;
+let findMagicMatch: PatternMatcher = noopMatcher;
+
+type NormalizedPattern = { original: string; lower: string };
+
+function createPatternMatcher(patterns: string[]): PatternMatcher {
+    const normalizedPatterns: NormalizedPattern[] = patterns
+        .map(pattern => pattern.trim())
+        .filter(pattern => pattern.length > 0)
+        .map(pattern => ({ original: pattern, lower: pattern.toLowerCase() }))
+        .sort((a, b) => b.lower.length - a.lower.length);
+
+    return (value: string) => {
+        const lowerValue = value.toLowerCase();
+        for (const pattern of normalizedPatterns) {
+            const index = lowerValue.indexOf(pattern.lower);
+            if (index !== -1) {
+                return value.slice(index, index + pattern.original.length).trim();
+            }
+        }
+        return null;
+    };
+}
+
 export function parseItems(content: string): ContainerItem[] {
     let rest = content.trim();
     rest = rest.replace(/\s+i\s+([^,]+)(\.)?$/, ', $1');
@@ -402,20 +430,28 @@ async function loadMagicAndKeysFilter(client: Client) {
         const [keys, magics] = await Promise.all([loadMagicKeys(), loadMagics()]);
         const keyRegexp = createRegexpFilter(keys);
         defs.push({ name: "klucze", filter: keyRegexp });
+        findKeyMatch = createPatternMatcher(keys);
         defaultTransforms.push({
             check: keyRegexp,
             transform: (item) => colorString(
                 plugLinks ?
-                    client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
+                    client.OutputHandler.makeStringClickable(item, () => {
+                        const match = findKeyMatch(item) ?? item;
+                        client.sendCommand(`wybierz ${match}`);
+                    }) :
                     item,
                 KEYS_COLOR),
         });
         const magicRegexp = createRegexpFilter(magics);
+        findMagicMatch = createPatternMatcher(magics);
         defaultTransforms.push({
             check: magicRegexp,
             transform: (item) => colorString(
                 plugLinks ?
-                    client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
+                    client.OutputHandler.makeStringClickable(item, () => {
+                        const match = findMagicMatch(item) ?? item;
+                        client.sendCommand(`wybierz ${match}`);
+                    }) :
                     item,
                 MAGICS_COLOR),
         });
@@ -423,8 +459,15 @@ async function loadMagicAndKeysFilter(client: Client) {
             keyRegexp(item.name) || magicRegexp(item.name);
     } catch (e) {
         console.error('Failed to load magic keys or magics:', e);
+        findKeyMatch = noopMatcher;
+        findMagicMatch = noopMatcher;
     }
 }
+
+
+export const __test = {
+    createPatternMatcher,
+};
 
 
 export default function initContainers(client: Client) {

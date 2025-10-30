@@ -1,7 +1,7 @@
 jest.mock('../src/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue([]));
 jest.mock('../src/scripts/magicsLoader', () => jest.fn().mockResolvedValue([]));
 
-import initContainers, {parseContainer, categorizeItems, createRegexpFilter, formatTable} from '../src/scripts/prettyContainers';
+import initContainers, {parseContainer, categorizeItems, createRegexpFilter, formatTable, __test as prettyContainersTestUtils} from '../src/scripts/prettyContainers';
 
 describe('prettyContainers', () => {
   const input = 'Otwarty szary skorzany plecak zawiera zlocisty piryt, upiorny mglisty calun, skorzany buklak, gornicza lampe, oliwkowozielony serpentyn, zielonkawy awenturyn, zolty celestyn, bezbarwny gorski krysztal, mithrylowa monete, wiele zlotych monet, wiele srebrnych monet i wiele miedzianych monet.';
@@ -169,5 +169,19 @@ describe('prettyContainers', () => {
     const alias = client.aliases[0];
     alias.callback('/przejrzyj'.match(alias.pattern) as RegExpMatchArray);
     expect(client.send).toHaveBeenCalledWith('ob skrzynie');
+  });
+
+  test('createPatternMatcher returns matching fragment', () => {
+    const matcher = prettyContainersTestUtils.createPatternMatcher(['czarne obsydianowe klucze']);
+    expect(matcher('dwa czarne obsydianowe klucze')).toBe('czarne obsydianowe klucze');
+    expect(matcher('brak dopasowania')).toBeNull();
+  });
+
+  test('createPatternMatcher prefers longer matches and is case insensitive', () => {
+    const matcher = prettyContainersTestUtils.createPatternMatcher([
+      'klucze',
+      'Czarne Obsydianowe Klucze',
+    ]);
+    expect(matcher('dwa czarne obsydianowe klucze')).toBe('czarne obsydianowe klucze');
   });
 });
