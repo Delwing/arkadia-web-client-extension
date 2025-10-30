@@ -607,6 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (target.closest('#split-bottom')) {
+                return;
+            }
+
             messageInput.focus();
             setTimeout(() => {messageInput.focus()}, 1)
         };
