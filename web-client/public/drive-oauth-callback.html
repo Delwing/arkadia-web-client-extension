@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <title>Autoryzacja Google Drive</title>
+    <meta http-equiv="Cache-Control" content="no-store">
+</head>
+<body>
+<p>Zamykanie okna…</p>
+<script>
+(function () {
+    function parseParams(input) {
+        const searchParams = new URLSearchParams(input);
+        const result = {};
+        for (const [key, value] of searchParams.entries()) {
+            if (!(key in result)) {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+
+    function postMessage(payload) {
+        if (!window.opener || window.opener.closed) {
+            return;
+        }
+        window.opener.postMessage({type: "arkadia-drive-auth", payload}, window.location.origin);
+    }
+
+    try {
+        const query = parseParams(window.location.search);
+        const hash = window.location.hash ? parseParams(window.location.hash.substring(1)) : {};
+        const payload = Object.assign({}, query, hash);
+        postMessage(payload);
+    } catch (err) {
+        postMessage({
+            error: "authorization_failed",
+            error_description: err && err.message ? err.message : "Unexpected error"
+        });
+    } finally {
+        window.setTimeout(() => {
+            window.close();
+        }, 100);
+    }
+})();
+</script>
+</body>
+</html>
