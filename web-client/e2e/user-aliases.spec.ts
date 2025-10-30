@@ -35,7 +35,7 @@ test.describe('User aliases', () => {
 
         await patternInput.fill(aliasPattern);
         await commandInput.fill(aliasCommand);
-        await aliasesModal.getByRole('button', { name: 'Dodaj' }).click();
+        await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
 
         const createdAlias = aliasesModal.locator('.alias-list-item').filter({ hasText: aliasPattern });
         await expect(createdAlias, 'should list newly created alias entry').toContainText(aliasCommand);
