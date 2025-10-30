@@ -1033,45 +1033,253 @@ document.addEventListener('DOMContentLoaded', () => {
     const commandHistory: string[] = [];
     let historyIndex = -1;
     let currentInput = '';
+    let historySearchTerm: string | null = null;
+    let historyMatches: number[] = [];
+
+    interface TabState {
+        matches: string[];
+        index: number;
+        basePrefix: string;
+        lastApplied: string;
+    }
+
+    let tabState: TabState | null = null;
+
+    function resetTabState() {
+        tabState = null;
+    }
+
+    function resetHistoryNavigation() {
+        historyIndex = -1;
+        historyMatches = [];
+        historySearchTerm = null;
+    }
+
+    function computeHistoryMatches(term: string): number[] {
+        if (!term) {
+            return commandHistory.map((_, index) => index).reverse();
+        }
+        const matches: number[] = [];
+        for (let i = commandHistory.length - 1; i >= 0; i--) {
+            const command = commandHistory[i];
+            if (command.startsWith(term)) {
+                matches.push(i);
+            }
+        }
+        return matches;
+    }
+
+    function findLastWordStart(text: string): number {
+        for (let i = text.length - 1; i >= 0; i--) {
+            if (/\s/.test(text[i])) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    function longestCommonWord(prefix: string, matches: string[]): string {
+        if (!matches.length) return prefix;
+
+        const wordStart = findLastWordStart(prefix);
+        const base = prefix.slice(0, wordStart);
+        const lastWord = prefix.slice(wordStart);
+
+        const candidates: string[] = [];
+        for (const match of matches) {
+            if (!match.startsWith(base)) {
+                return prefix;
+            }
+            const remainder = match.slice(base.length);
+            if (!remainder.toLowerCase().startsWith(lastWord.toLowerCase())) {
+                return prefix;
+            }
+            const [candidateWord] = remainder.split(/\s/, 1);
+            candidates.push(candidateWord ?? '');
+        }
+
+        if (!candidates.length) {
+            return prefix;
+        }
+
+        let common = candidates[0];
+        for (let i = 1; i < candidates.length; i++) {
+            let current = candidates[i];
+            let limit = Math.min(common.length, current.length);
+            let shared = '';
+            for (let j = 0; j < limit; j++) {
+                if (common[j].toLowerCase() !== current[j].toLowerCase()) {
+                    break;
+                }
+                shared += common[j];
+            }
+            common = shared;
+            if (!common) {
+                break;
+            }
+        }
+
+        if (common.length <= lastWord.length) {
+            return prefix;
+        }
+
+        return base + common;
+    }
+
+    function computeTabMatches(prefix: string): string[] {
+        const seen = new Set<string>();
+        const matches: string[] = [];
+        for (let i = commandHistory.length - 1; i >= 0; i--) {
+            const candidate = commandHistory[i];
+            if (!candidate.startsWith(prefix)) continue;
+            if (seen.has(candidate)) continue;
+            seen.add(candidate);
+            matches.push(candidate);
+        }
+
+        const suggestions = client.commandLineSuggestions ?? [];
+        if (Array.isArray(suggestions)) {
+            for (const suggestion of suggestions) {
+                if (typeof suggestion !== 'string') continue;
+                if (!suggestion.startsWith(prefix)) continue;
+                if (seen.has(suggestion)) continue;
+                seen.add(suggestion);
+                matches.push(suggestion);
+            }
+        }
+
+        return matches;
+    }
+
+    function applyTabMatch(value: string, selectionStart?: number) {
+        messageInput.value = value;
+        const end = value.length;
+        if (typeof selectionStart === 'number' && selectionStart >= 0 && selectionStart <= end) {
+            messageInput.setSelectionRange(selectionStart, end);
+        } else {
+            messageInput.setSelectionRange(end, end);
+        }
+    }
+
+    function handleTabCompletion(direction: 'forward' | 'backward') {
+        const selectionStart = messageInput.selectionStart ?? messageInput.value.length;
+        const selectionEnd = messageInput.selectionEnd ?? selectionStart;
+        const selectionTouchesEnd = selectionEnd === messageInput.value.length;
+        if (!selectionTouchesEnd) {
+            return;
+        }
+
+        const prefix = messageInput.value;
+        const matches = computeTabMatches(prefix);
+        if (!matches.length) {
+            resetTabState();
+            return;
+        }
+
+        if (!tabState || tabState.basePrefix !== prefix && tabState.lastApplied !== prefix) {
+            const extended = longestCommonWord(prefix, matches);
+            if (extended.length > prefix.length) {
+                applyTabMatch(extended, prefix.length);
+                tabState = {
+                    matches,
+                    index: -1,
+                    basePrefix: prefix,
+                    lastApplied: extended,
+                };
+                return;
+            }
+
+            const startIndex = direction === 'forward' ? 0 : matches.length - 1;
+            const chosen = matches[startIndex];
+            applyTabMatch(chosen, prefix.length);
+            tabState = {
+                matches,
+                index: startIndex,
+                basePrefix: prefix,
+                lastApplied: chosen,
+            };
+            return;
+        }
+
+        if (!tabState.matches.length) {
+            resetTabState();
+            return;
+        }
+
+        let nextIndex: number;
+        if (tabState.index === -1) {
+            nextIndex = direction === 'forward' ? 0 : tabState.matches.length - 1;
+        } else {
+            nextIndex = direction === 'forward'
+                ? (tabState.index + 1) % tabState.matches.length
+                : (tabState.index - 1 + tabState.matches.length) % tabState.matches.length;
+        }
+
+        const chosen = tabState.matches[nextIndex];
+        const selectionAnchor = tabState.basePrefix.length;
+        applyTabMatch(chosen, selectionAnchor);
+        tabState.index = nextIndex;
+        tabState.lastApplied = chosen;
+    }
+
+    function selectEntireInput() {
+        if (document.activeElement !== messageInput) {
+            messageInput.focus();
+        }
+        messageInput.setSelectionRange(0, messageInput.value.length);
+    }
 
     function navigateHistory(direction: 'up' | 'down') {
         // Only allow command history navigation if we've received the first GMCP event
         if (!arkadiaClient.hasReceivedFirstGmcp()) return;
         if (commandHistory.length === 0) return;
 
-        const wasFocused = document.activeElement === messageInput;
+        resetTabState();
 
         if (historyIndex === -1) {
             currentInput = messageInput.value;
-            // Skip the just sent command if the input wasn't modified
-            if (
-                direction === 'up' &&
-                commandHistory.length > 1 &&
-                messageInput.value === commandHistory[commandHistory.length - 1]
-            ) {
-                historyIndex = 1;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                if (wasFocused) messageInput.select();
+            historySearchTerm = messageInput.value;
+            historyMatches = computeHistoryMatches(historySearchTerm);
+        } else if (!historyMatches.length && historySearchTerm !== null) {
+            historyMatches = computeHistoryMatches(historySearchTerm);
+        }
+
+        if (!historyMatches.length) {
+            return;
+        }
+
+        if (historyIndex >= historyMatches.length) {
+            historyIndex = historyMatches.length - 1;
+        }
+
+        let newIndex = historyIndex;
+
+        if (direction === 'up') {
+            if (historyIndex < historyMatches.length - 1) {
+                newIndex = historyIndex + 1;
+            } else if (historyIndex === -1) {
+                newIndex = 0;
+            } else {
+                return;
+            }
+        } else {
+            if (historyIndex > 0) {
+                newIndex = historyIndex - 1;
+            } else if (historyIndex === 0) {
+                resetHistoryNavigation();
+                messageInput.value = currentInput;
+                selectEntireInput();
+                return;
+            } else {
                 return;
             }
         }
 
-        if (direction === 'up') {
-            if (historyIndex < commandHistory.length - 1) {
-                historyIndex++;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                if (wasFocused) messageInput.select();
-            }
-        } else {
-            if (historyIndex > 0) {
-                historyIndex--;
-                messageInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-                if (wasFocused) messageInput.select();
-            } else if (historyIndex === 0) {
-                historyIndex = -1;
-                messageInput.value = currentInput;
-                if (wasFocused) messageInput.select();
-            }
+        const matchIndex = historyMatches[newIndex];
+        if (matchIndex !== undefined) {
+            messageInput.value = commandHistory[matchIndex];
+            selectEntireInput();
+            historyIndex = newIndex;
         }
     }
 
@@ -1085,8 +1293,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     commandHistory.push(message);
                 }
                 // Reset history index
-                historyIndex = -1;
+                resetHistoryNavigation();
                 currentInput = '';
+                resetTabState();
 
                 client.sendCommand(message);
                 if (clearInputOnSend) {
@@ -1139,7 +1348,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
             navigateHistory('down');
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            handleTabCompletion(e.shiftKey ? 'backward' : 'forward');
+        } else {
+            resetTabState();
         }
+    });
+
+    messageInput.addEventListener('input', () => {
+        if (historyIndex !== -1) {
+            resetHistoryNavigation();
+        }
+        resetTabState();
     });
 
     // Swipe gestures for command history on touch devices
