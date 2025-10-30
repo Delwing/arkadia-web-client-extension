@@ -318,6 +318,20 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                                     Uzywana przy ataku na numery obiektow. Domyslnie "zabij".
                                 </Form.Text>
                             </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda dobycia broni:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.drawWeaponCommand}
+                                    placeholder="dobadz"
+                                    onChange={e => onChangeSetting(s => s.drawWeaponCommand = e.target.value)}
+                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                />
+                                <Form.Text className="text-muted">
+                                    Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.
+                                </Form.Text>
+                            </Form.Group>
                         </div>
                     </section>
                     <section className="character-settings-section">
