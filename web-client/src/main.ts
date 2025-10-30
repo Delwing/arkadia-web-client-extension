@@ -1238,7 +1238,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (historyIndex === -1) {
             currentInput = messageInput.value;
-            historySearchTerm = messageInput.value;
+            let searchTerm = messageInput.value;
+            const selectionStart = messageInput.selectionStart;
+            const selectionEnd = messageInput.selectionEnd;
+            if (
+                document.activeElement === messageInput &&
+                selectionStart !== null &&
+                selectionEnd !== null &&
+                selectionStart === 0 &&
+                selectionEnd === searchTerm.length
+            ) {
+                searchTerm = '';
+            }
+            historySearchTerm = searchTerm;
             historyMatches = computeHistoryMatches(historySearchTerm);
         } else if (!historyMatches.length && historySearchTerm !== null) {
             historyMatches = computeHistoryMatches(historySearchTerm);
