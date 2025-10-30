@@ -22,6 +22,7 @@ import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
+import { DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand } from "./utils/drawWeaponCommand";
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "front-client/src/ansiParser";
 import SoundManager from "./SoundManager";
@@ -97,6 +98,7 @@ export default class Client {
         shift?: boolean;
     };
     attackCommand = DEFAULT_ATTACK_COMMAND;
+    drawWeaponCommand = DEFAULT_DRAW_WEAPON_COMMAND;
     supportBind = {key: "KeyQ", ctrl: true} as {
         key: string;
         ctrl?: boolean;
@@ -262,11 +264,13 @@ export default class Client {
 
         const initialSettings = getItemSync('settings')?.settings;
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
+        this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
 
         this.addEventListener('settings', (ev: CustomEvent) => {
             const settings = ev.detail || {};
             applyBinds(settings?.binds)
             this.attackCommand = normalizeAttackCommand(settings?.attackCommand);
+            this.drawWeaponCommand = normalizeDrawWeaponCommand(settings?.drawWeaponCommand);
         })
 
         this.addEventListener('binds', (ev: CustomEvent) => {

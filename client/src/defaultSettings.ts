@@ -1,4 +1,5 @@
 import { DEFAULT_ATTACK_COMMAND } from "./utils/attackCommand";
+import { DEFAULT_DRAW_WEAPON_COMMAND } from "./utils/drawWeaponCommand";
 
 export interface Settings {
     packageHelper: boolean;
@@ -15,6 +16,7 @@ export interface Settings {
     herbPreUseCommand: string;
     herbPostUseCommand: string;
     attackCommand: string;
+    drawWeaponCommand: string;
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
@@ -35,6 +37,7 @@ export const defaultSettings: Settings = {
     herbPreUseCommand: '',
     herbPostUseCommand: '',
     attackCommand: DEFAULT_ATTACK_COMMAND,
+    drawWeaponCommand: DEFAULT_DRAW_WEAPON_COMMAND,
     fullHpMessage: false,
     lowHpAlert: 2,
     letterLineWidth: 72,

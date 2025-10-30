@@ -4,7 +4,7 @@ import { takeFromBag, containerAction } from "./bagManager";
 export default function initSmith(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const tag = "smith";
     const REPAIR_CMD = "naostrz wszystkie bronie;napraw wszystkie zbroje";
-    const DEFAULT_CMD = "wlm;dobadz wszystkich broni;zaloz wszystkie zbroje";
+    const getDefaultCommand = () => `wlm;${client.drawWeaponCommand} wszystkich broni;zaloz wszystkie zbroje`;
 
     let working = false;
     let timer: number | null = null;
@@ -15,7 +15,7 @@ export default function initSmith(client: Client, aliases?: { pattern: RegExp; c
         }
         timer = window.setTimeout(() => {
             if (!working) {
-                client.FunctionalBind.set(DEFAULT_CMD);
+                client.FunctionalBind.set(getDefaultCommand());
             }
             timer = null;
         }, 1000);

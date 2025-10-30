@@ -362,7 +362,7 @@ export default function registerLuaGagTriggers(client: Client) {
             }),
             inv: new luainjs.Table({
                 weapons: new luainjs.Table({
-                    wield: "dobadz wszystkich broni"
+                    wield: `${client.drawWeaponCommand} wszystkich broni`
                 })
             })
         }
