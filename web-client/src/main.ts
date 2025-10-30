@@ -1142,17 +1142,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return matches;
     }
 
-    function applyTabMatch(value: string) {
+    function applyTabMatch(value: string, selectionStart?: number) {
         messageInput.value = value;
-        const pos = value.length;
-        messageInput.setSelectionRange(pos, pos);
+        const end = value.length;
+        if (typeof selectionStart === 'number' && selectionStart >= 0 && selectionStart <= end) {
+            messageInput.setSelectionRange(selectionStart, end);
+        } else {
+            messageInput.setSelectionRange(end, end);
+        }
     }
 
     function handleTabCompletion(direction: 'forward' | 'backward') {
         const selectionStart = messageInput.selectionStart ?? messageInput.value.length;
         const selectionEnd = messageInput.selectionEnd ?? selectionStart;
-        const caretAtEnd = selectionStart === selectionEnd && selectionEnd === messageInput.value.length;
-        if (!caretAtEnd) {
+        const selectionTouchesEnd = selectionEnd === messageInput.value.length;
+        if (!selectionTouchesEnd) {
             return;
         }
 
@@ -1166,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tabState || tabState.basePrefix !== prefix && tabState.lastApplied !== prefix) {
             const extended = longestCommonWord(prefix, matches);
             if (extended.length > prefix.length) {
-                applyTabMatch(extended);
+                applyTabMatch(extended, prefix.length);
                 tabState = {
                     matches,
                     index: -1,
@@ -1178,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const startIndex = direction === 'forward' ? 0 : matches.length - 1;
             const chosen = matches[startIndex];
-            applyTabMatch(chosen);
+            applyTabMatch(chosen, prefix.length);
             tabState = {
                 matches,
                 index: startIndex,
@@ -1203,17 +1207,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const chosen = tabState.matches[nextIndex];
-        applyTabMatch(chosen);
+        const selectionAnchor = tabState.basePrefix.length;
+        applyTabMatch(chosen, selectionAnchor);
         tabState.index = nextIndex;
         tabState.lastApplied = chosen;
+    }
+
+    function selectEntireInput() {
+        if (document.activeElement !== messageInput) {
+            messageInput.focus();
+        }
+        messageInput.setSelectionRange(0, messageInput.value.length);
     }
 
     function navigateHistory(direction: 'up' | 'down') {
         // Only allow command history navigation if we've received the first GMCP event
         if (!arkadiaClient.hasReceivedFirstGmcp()) return;
         if (commandHistory.length === 0) return;
-
-        const wasFocused = document.activeElement === messageInput;
 
         resetTabState();
 
@@ -1249,7 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (historyIndex === 0) {
                 resetHistoryNavigation();
                 messageInput.value = currentInput;
-                if (wasFocused) messageInput.select();
+                selectEntireInput();
                 return;
             } else {
                 return;
@@ -1259,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const matchIndex = historyMatches[newIndex];
         if (matchIndex !== undefined) {
             messageInput.value = commandHistory[matchIndex];
-            if (wasFocused) messageInput.select();
+            selectEntireInput();
             historyIndex = newIndex;
         }
     }
