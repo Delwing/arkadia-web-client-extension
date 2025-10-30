@@ -596,6 +596,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const enableNotificationsSettings = document.getElementById('ui-enable-notifications') as HTMLButtonElement | null;
     const contentArea = document.getElementById('content-area') as HTMLElement | null;
 
+    const focusCommandInputOnConnect = () => {
+        if (!messageInput) return;
+        const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
+        if (isMobileLike) return;
+        if (document.hidden) return;
+        messageInput.focus();
+    };
+    arkadiaClient.on('client.connect', focusCommandInputOnConnect);
+
     if (contentArea) {
         const focusMessageInput = (target: EventTarget | null) => {
             if (!target || !(target instanceof Element)) {
