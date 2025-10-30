@@ -851,6 +851,14 @@ h1 {
   color: rgba(241, 245, 249, 0.94);
 }
 
+.knowledge-window-progress {
+  margin-left: 0.75rem;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: rgba(241, 245, 249, 0.75);
+  white-space: nowrap;
+}
+
 .knowledge-window-body {
   flex: 1 1 auto;
   display: flex;

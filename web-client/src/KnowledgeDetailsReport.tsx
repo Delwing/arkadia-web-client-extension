@@ -437,6 +437,34 @@ const KnowledgeDetailsReport: React.FC = () => {
     });
   }, [data, hideCompleted]);
 
+  const overallProgress = useMemo(() => {
+    if (!data) {
+      return null;
+    }
+
+    const totals = data.categories.reduce(
+      (acc, category) => {
+        TYPE_CONFIG.forEach(({ key }) => {
+          const summary = category.types[key];
+          if (!summary) {
+            return;
+          }
+
+          acc.total += summary.total;
+          acc.known += summary.known;
+        });
+
+        return acc;
+      },
+      { total: 0, known: 0 },
+    );
+
+    const percentage =
+      totals.total > 0 ? Math.round((totals.known / totals.total) * 100) : 0;
+
+    return { ...totals, percentage };
+  }, [data]);
+
   if (!isOpen || !data) {
     return null;
   }
@@ -452,7 +480,17 @@ const KnowledgeDetailsReport: React.FC = () => {
         tabIndex={-1}
       >
         <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
-          <h5 className="knowledge-window-title">Raport wiedzy</h5>
+          <h5 className="knowledge-window-title">
+            Raport wiedzy
+            {overallProgress && (
+              <span className="knowledge-window-progress">
+                {overallProgress.known}/{overallProgress.total} ({
+                  overallProgress.percentage
+                }
+                %)
+              </span>
+            )}
+          </h5>
           <div
             className="window-header-actions"
             onPointerDownCapture={(event) => event.stopPropagation()}
