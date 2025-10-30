@@ -2,6 +2,7 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getLastOutgoingCommand,
     getMultibindRequests,
     installMultibindWorkerMock,
     submitCommand,
@@ -24,6 +25,14 @@ async function closeBindsModal(page: Page) {
     const modal = page.locator('#binds-modal');
     await modal.locator('.btn-close').click();
     await expect(modal, 'should close binds modal after finishing checks').not.toBeVisible();
+}
+
+async function openAliasesModal(page: Page) {
+    await page.click('#menu-button');
+    await page.click('#aliases-button');
+    const modal = page.locator('#aliases-modal');
+    await expect(modal, 'should display aliases modal when requested').toBeVisible();
+    return modal;
 }
 
 test.beforeEach(async ({context}) => {
@@ -114,6 +123,52 @@ test.describe('Multibind import', () => {
         await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
         await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
 
+        const aliasPattern = 'fooalias';
+        const aliasCommand = 'powiedz czesc';
+        const aliasesModal = await openAliasesModal(page);
+
+        await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
+        await aliasesModal.getByPlaceholder('Pattern').fill(aliasPattern);
+        await aliasesModal.getByPlaceholder('Komenda').fill(aliasCommand);
+        await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
+        await expect(
+            aliasesModal.locator('.alias-list-item').filter({ hasText: aliasPattern }),
+            'should display newly created alias entry',
+        ).toContainText(aliasCommand);
+
+        await aliasesModal.locator('.btn-close').click();
+        await expect(aliasesModal, 'should close aliases modal after creating alias').not.toBeVisible();
+
+        await submitCommand(page, `/mbind 3 ${aliasPattern}`);
+        await expect(entries, 'should include alias multi-bind entry for current room').toHaveCount(3);
+
+        const aliasBind = entries.nth(2);
+        await expect(aliasBind, 'should assign key to alias multi-bind entry').toContainText('[ALT+3]');
+        await expect(aliasBind, 'should list alias command for multi-bind entry').toContainText(aliasPattern);
+
+        await page.evaluate(() => {
+            const scope: any = window;
+            scope.__resetCommandLog?.();
+        });
+        await aliasBind.click();
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {
+                message: 'should execute alias command when clicking multi-bind entry',
+            })
+            .toBe(aliasCommand);
+
+        await page.evaluate(() => {
+            const scope: any = window;
+            scope.__resetCommandLog?.();
+        });
+        await page.locator('body').click();
+        await page.keyboard.press('Alt+Digit3');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {
+                message: 'should execute alias command when using multi-bind shortcut',
+            })
+            .toBe(aliasCommand);
+
         await page.reload();
         await waitForClientReady(page);
         await ensureGameSocket(page);
@@ -122,9 +177,10 @@ test.describe('Multibind import', () => {
         const reloadedMultiBinds = page.locator('#multi-binds');
         await expect(reloadedMultiBinds, 'should keep multi-bind list active after reload').toHaveClass(/active/);
         const reloadedEntries = reloadedMultiBinds.locator('.multi-bind');
-        await expect(reloadedEntries, 'should restore multi-bind entries after reload').toHaveCount(2);
+        await expect(reloadedEntries, 'should restore multi-bind entries after reload').toHaveCount(3);
         await expect(reloadedEntries.nth(0), 'should keep original multibind after reload').toContainText('skradanie');
         await expect(reloadedEntries.nth(1), 'should keep alias-created multibind after reload').toContainText('przyczaj sie');
+        await expect(reloadedEntries.nth(2), 'should keep alias multi-bind after reload').toContainText(aliasPattern);
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
