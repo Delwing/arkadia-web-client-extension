@@ -1,13 +1,36 @@
+import type {Page} from '@playwright/test';
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
     primeCharInfo,
+    pushGmcp,
     pushText,
     submitCommand,
     waitForClientReady,
     waitForMapReady,
+    GMCP_PATHS,
 } from './support/mocks';
+
+const DELIVERY_BOARD_TEXT = [
+    'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
+    ' o============================================================================o',
+    ' |                Adresat badz                     Cena          Czas na      |',
+    ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
+    ' o -------------------------------------------------------------------------- o',
+    ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
+    " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
+    ' o -------------------------------------------------------------------------- o',
+    ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
+    ' o============================================================================o',
+].join('\n');
+
+async function waitForCurrentCharacter(page: Page, name: string): Promise<void> {
+    await page.waitForFunction(
+        (expected) => localStorage.getItem('currentCharacter') === expected,
+        name,
+    );
+}
 
 test.beforeEach(async ({context}) => {
     await primeCharInfo(context);
@@ -19,6 +42,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await ensureGameSocket(page);
     await waitForMapReady(page);
     await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
@@ -36,20 +60,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     });
     expect(path, 'should calculate path to selected delivery destination').toEqual([1, 2, 3, 4]);
 
-    const boardText = [
-        'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
-        ' o============================================================================o',
-        ' |                Adresat badz                     Cena          Czas na      |',
-        ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
-        ' o -------------------------------------------------------------------------- o',
-        ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
-        " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
-        ' o -------------------------------------------------------------------------- o',
-        ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
-        ' o============================================================================o',
-    ].join('\n');
-
-    await pushText(page, boardText);
+    await pushText(page, DELIVERY_BOARD_TEXT);
 
     const boardMessage = page
         .locator('#main_text_output_msg_wrapper .output_msg')
@@ -59,8 +70,16 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await expect(boardMessage, 'should display delivery board header').toContainText(
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
     );
-    await expect(boardMessage, 'should indicate known NPC delivery distance').toContainText('dystans: 3');
-    await expect(boardMessage, 'should indicate unknown NPC delivery distance as unavailable').toContainText('dystans: --');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should indicate known NPC delivery distance',
+        })
+        .toContain('dystans: 3');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should indicate unknown NPC delivery distance as unavailable',
+        })
+        .toContain('dystans: --');
 
     const knownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
     const unknownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Georg Blaskovitz'});
@@ -98,6 +117,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await ensureGameSocket(page);
     await waitForMapReady(page);
     await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
@@ -121,20 +141,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await optionsModal.locator('#options-save').click();
     await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
 
-    const boardText = [
-        'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
-        ' o============================================================================o',
-        ' |                Adresat badz                     Cena          Czas na      |',
-        ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
-        ' o -------------------------------------------------------------------------- o',
-        ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
-        " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
-        ' o -------------------------------------------------------------------------- o',
-        ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
-        ' o============================================================================o',
-    ].join('\n');
-
-    await pushText(page, boardText);
+    await pushText(page, DELIVERY_BOARD_TEXT);
 
     const boardMessage = page
         .locator('#main_text_output_msg_wrapper .output_msg')
@@ -144,7 +151,11 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await expect(boardMessage, 'should still display delivery board text').toContainText(
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
     );
-    await expect(boardMessage, 'should not display distance annotations when helper disabled').not.toContainText('dystans:');
+    await expect
+        .poll(async () => boardMessage.textContent(), {
+            message: 'should not display distance annotations when helper disabled',
+        })
+        .not.toContain('dystans:');
     await expect(
         boardMessage.locator('span[data-output-clickable="true"]'),
         'should keep delivery NPCs non-clickable when helper disabled'
@@ -175,4 +186,132 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
             return await page.evaluate(() => (window as any).__leadToEvents?.length ?? 0);
         }, {message: 'should not emit lead to events when helper disabled'})
         .toBe(0);
+});
+
+// Character-specific package helper coverage:
+// - verifies disabling the helper for one character removes delivery assistance
+// - pre-creates an alternate character to capture default helper settings
+// - confirms a different character falls back to the default enabled helper state
+// - ensures toggles persist per character without requiring an additional save
+// - checks scoped storage keys store independent package helper preferences
+test('Package helper persists per-character preferences across GMCP char swaps', async ({page}) => {
+    await page.goto('/');
+    await waitForClientReady(page);
+    await ensureGameSocket(page);
+    await waitForMapReady(page);
+    await waitForClientReady(page);
+    await waitForCurrentCharacter(page, 'Tester');
+
+    // Initialize alternate character while defaults are untouched so it doesn't inherit
+    // Tester overrides. This mirrors the game behaviour where a freshly created character
+    // copies settings from the currently active one.
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Alt'});
+    await waitForCurrentCharacter(page, 'Alt');
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
+    await waitForCurrentCharacter(page, 'Tester');
+
+    await page.evaluate(() => {
+        const client: any = (window as any).clientExtension;
+        client.contentWidth = 140;
+        client.Map.renderRoomByIdSilently?.(1);
+        (window as any).__leadToEvents = [];
+        window.addEventListener('leadTo', (event: any) => {
+            (window as any).__leadToEvents.push(event.detail);
+        });
+    });
+
+    const optionsModal = page.locator('#options-modal');
+    const openOptions = async () => {
+        await page.click('#menu-button');
+        await page.click('#options-button');
+        await expect(optionsModal, 'should open options modal').toBeVisible();
+    };
+    const closeOptionsWithoutSaving = async () => {
+        await optionsModal.locator('button[data-bs-dismiss="modal"]').click();
+        await expect(optionsModal, 'should close options modal without saving').not.toBeVisible();
+    };
+    const getBoardMessage = () =>
+        page
+            .locator('#main_text_output_msg_wrapper .output_msg')
+            .filter({hasText: 'Borgaf Kriegmann'})
+            .last();
+    const expectHelperDisabledOnBoard = async () => {
+        await pushText(page, DELIVERY_BOARD_TEXT);
+        const boardMessage = getBoardMessage();
+        await expect(boardMessage, 'should still display delivery board text').toContainText(
+            'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
+        );
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should not display distance annotations when helper disabled',
+            })
+            .not.toContain('dystans:');
+        await expect(
+            boardMessage.locator('span[data-output-clickable="true"]'),
+            'should keep delivery NPCs non-clickable when helper disabled'
+        ).toHaveCount(0);
+    };
+    const expectHelperEnabledOnBoard = async () => {
+        await pushText(page, DELIVERY_BOARD_TEXT);
+        const boardMessage = getBoardMessage();
+        await expect(boardMessage, 'should display delivery board header').toContainText(
+            'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:'
+        );
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should display known NPC delivery distance when helper enabled',
+            })
+            .toContain('dystans: 3');
+        await expect
+            .poll(async () => boardMessage.textContent(), {
+                message: 'should display unknown NPC delivery distance placeholder when helper enabled',
+            })
+            .toContain('dystans: --');
+        await expect
+            .poll(async () => boardMessage.locator('span[data-output-clickable="true"]').count(), {
+                message: 'should make delivery NPCs clickable when helper enabled',
+            })
+            .toBe(2);
+    };
+
+    // Disable package helper for the default Tester character and validate helper removal.
+    await openOptions();
+    const packageHelperToggle = optionsModal.locator('#packageHelper');
+    await expect(packageHelperToggle, 'should enable package helper by default').toBeChecked();
+    await packageHelperToggle.uncheck();
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
+    await expectHelperDisabledOnBoard();
+
+    // Switch to Alt character where helper should revert to enabled defaults.
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Alt'});
+    await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Alt');
+    await expectHelperEnabledOnBoard();
+
+    await openOptions();
+    await expect(packageHelperToggle, 'should enable package helper by default for new character').toBeChecked();
+    await packageHelperToggle.uncheck();
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
+    await expectHelperDisabledOnBoard();
+
+    // Swap back to Tester without saving again; helper should remain disabled.
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
+    await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Tester');
+    await openOptions();
+    await expect(packageHelperToggle, 'should keep package helper disabled for Tester without re-saving').not.toBeChecked();
+    await closeOptionsWithoutSaving();
+    await expectHelperDisabledOnBoard();
+
+    // Confirm character-scoped storage retains independent helper preferences.
+    const storedSettings = await page.evaluate(() => {
+        const testerRaw = localStorage.getItem('Tester:settings');
+        const altRaw = localStorage.getItem('Alt:settings');
+        return {
+            tester: testerRaw ? JSON.parse(testerRaw) : null,
+            alt: altRaw ? JSON.parse(altRaw) : null,
+        };
+    });
+    expect(storedSettings.tester?.packageHelper, 'should store disabled helper preference for Tester').toBe(false);
+    expect(storedSettings.alt?.packageHelper, 'should store disabled helper preference for Alt').toBe(false);
 });
