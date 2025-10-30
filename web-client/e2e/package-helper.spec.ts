@@ -194,6 +194,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
 // - confirms a different character falls back to the default enabled helper state
 // - ensures toggles persist per character without requiring an additional save
 // - checks scoped storage keys store independent package helper preferences
+// - waits for helper enablement state changes before asserting delivery board output
 test('Package helper persists per-character preferences across GMCP char swaps', async ({page}) => {
     await page.goto('/');
     await waitForClientReady(page);
@@ -205,10 +206,13 @@ test('Package helper persists per-character preferences across GMCP char swaps',
     // Initialize alternate character while defaults are untouched so it doesn't inherit
     // Tester overrides. This mirrors the game behaviour where a freshly created character
     // copies settings from the currently active one.
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Alt'});
-    await waitForCurrentCharacter(page, 'Alt');
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
-    await waitForCurrentCharacter(page, 'Tester');
+    const switchToCharacter = async (name: string) => {
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name});
+        await waitForCurrentCharacter(page, name);
+    };
+
+    await switchToCharacter('Alt');
+    await switchToCharacter('Tester');
 
     await page.evaluate(() => {
         const client: any = (window as any).clientExtension;
@@ -235,7 +239,21 @@ test('Package helper persists per-character preferences across GMCP char swaps',
             .locator('#main_text_output_msg_wrapper .output_msg')
             .filter({hasText: 'Borgaf Kriegmann'})
             .last();
-    const expectHelperDisabledOnBoard = async () => {
+    const waitForPackageHelperState = async (expected: boolean, message: string) => {
+        await expect
+            .poll(async () => {
+                return await page.evaluate(() => {
+                    const client: any = (window as any).clientExtension;
+                    if (!client?.packageHelper) {
+                        return null;
+                    }
+                    return client.packageHelper.enabled;
+                });
+            }, {message})
+            .toBe(expected);
+    };
+    const expectHelperDisabledOnBoard = async (message = 'should keep helper disabled before verifying delivery board output') => {
+        await waitForPackageHelperState(false, message);
         await pushText(page, DELIVERY_BOARD_TEXT);
         const boardMessage = getBoardMessage();
         await expect(boardMessage, 'should still display delivery board text').toContainText(
@@ -251,7 +269,8 @@ test('Package helper persists per-character preferences across GMCP char swaps',
             'should keep delivery NPCs non-clickable when helper disabled'
         ).toHaveCount(0);
     };
-    const expectHelperEnabledOnBoard = async () => {
+    const expectHelperEnabledOnBoard = async (message = 'should enable helper before verifying delivery board output') => {
+        await waitForPackageHelperState(true, message);
         await pushText(page, DELIVERY_BOARD_TEXT);
         const boardMessage = getBoardMessage();
         await expect(boardMessage, 'should display delivery board header').toContainText(
@@ -281,27 +300,26 @@ test('Package helper persists per-character preferences across GMCP char swaps',
     await packageHelperToggle.uncheck();
     await optionsModal.locator('#options-save').click();
     await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
-    await expectHelperDisabledOnBoard();
+    await expectHelperDisabledOnBoard('should disable helper for Tester after saving settings');
 
     // Switch to Alt character where helper should revert to enabled defaults.
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Alt'});
-    await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Alt');
-    await expectHelperEnabledOnBoard();
+    await switchToCharacter('Alt');
+    await expectHelperEnabledOnBoard('should restore helper UI for Alt after switching characters');
 
     await openOptions();
     await expect(packageHelperToggle, 'should enable package helper by default for new character').toBeChecked();
     await packageHelperToggle.uncheck();
     await optionsModal.locator('#options-save').click();
     await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
-    await expectHelperDisabledOnBoard();
+    await expectHelperDisabledOnBoard('should disable helper for Alt after saving settings');
 
     // Swap back to Tester without saving again; helper should remain disabled.
-    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester'});
-    await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Tester');
+    await switchToCharacter('Tester');
+    await waitForPackageHelperState(false, 'should keep helper disabled for Tester when switching back');
     await openOptions();
     await expect(packageHelperToggle, 'should keep package helper disabled for Tester without re-saving').not.toBeChecked();
     await closeOptionsWithoutSaving();
-    await expectHelperDisabledOnBoard();
+    await expectHelperDisabledOnBoard('should continue to keep helper disabled for Tester without additional saves');
 
     // Confirm character-scoped storage retains independent helper preferences.
     const storedSettings = await page.evaluate(() => {
