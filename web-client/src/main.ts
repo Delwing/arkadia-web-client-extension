@@ -603,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (target.closest('a, button, input, textarea, select')) {
+            if (target.closest('a, button, input, textarea, select, [data-output-clickable]')) {
                 return;
             }
 
