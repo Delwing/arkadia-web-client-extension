@@ -1221,49 +1221,46 @@ document.addEventListener('DOMContentLoaded', () => {
             currentInput = messageInput.value;
             historySearchTerm = messageInput.value;
             historyMatches = computeHistoryMatches(historySearchTerm);
-            if (!historyMatches.length) {
-                return;
-            }
-
-            if (
-                direction === 'up' &&
-                historyMatches.length > 1 &&
-                currentInput === commandHistory[historyMatches[0]]
-            ) {
-                historyIndex = 1;
-            } else {
-                historyIndex = 0;
-            }
-
-            if (historyIndex >= historyMatches.length) {
-                historyIndex = historyMatches.length - 1;
-            }
         } else if (!historyMatches.length && historySearchTerm !== null) {
             historyMatches = computeHistoryMatches(historySearchTerm);
-            if (!historyMatches.length) {
-                return;
-            }
         }
+
+        if (!historyMatches.length) {
+            return;
+        }
+
+        if (historyIndex >= historyMatches.length) {
+            historyIndex = historyMatches.length - 1;
+        }
+
+        let newIndex = historyIndex;
 
         if (direction === 'up') {
             if (historyIndex < historyMatches.length - 1) {
-                historyIndex++;
+                newIndex = historyIndex + 1;
+            } else if (historyIndex === -1) {
+                newIndex = 0;
+            } else {
+                return;
             }
         } else {
             if (historyIndex > 0) {
-                historyIndex--;
+                newIndex = historyIndex - 1;
             } else if (historyIndex === 0) {
                 resetHistoryNavigation();
                 messageInput.value = currentInput;
                 if (wasFocused) messageInput.select();
                 return;
+            } else {
+                return;
             }
         }
 
-        const matchIndex = historyMatches[historyIndex];
+        const matchIndex = historyMatches[newIndex];
         if (matchIndex !== undefined) {
             messageInput.value = commandHistory[matchIndex];
             if (wasFocused) messageInput.select();
+            historyIndex = newIndex;
         }
     }
 
