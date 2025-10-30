@@ -81,6 +81,7 @@ export default class Client {
     inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
+    commandLineSuggestions: string[] = [];
     private soundManager = new SoundManager(this.eventTarget);
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
