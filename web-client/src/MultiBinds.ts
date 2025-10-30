@@ -1,4 +1,7 @@
-import ArkadiaClient from "./ArkadiaClient";
+interface MultiBindsClient {
+  on(event: "multibinds", handler: (payload: { list?: DisplayMultibind[] }) => void): void;
+  send(command: string): void;
+}
 
 interface DisplayMultibind {
   index: number;
@@ -9,7 +12,7 @@ interface DisplayMultibind {
 export default class MultiBinds {
   private container: HTMLElement | null;
 
-  constructor(private readonly client: ArkadiaClient) {
+  constructor(private readonly client: MultiBindsClient) {
     this.container = document.getElementById("multi-binds");
     this.client.on(
       "multibinds",
@@ -49,6 +52,15 @@ export default class MultiBinds {
         if (action.trim()) {
           wrapper.addEventListener("click", (event) => {
             event.preventDefault();
+            const clientExtension = (window as any).clientExtension as {
+              sendCommand?: (command: string) => Promise<void>;
+            } | undefined;
+
+            if (clientExtension?.sendCommand) {
+              void clientExtension.sendCommand(action);
+              return;
+            }
+
             this.client.send(action);
           });
         } else {
