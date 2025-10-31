@@ -17,7 +17,7 @@ class FakeClient {
   println = jest.fn();
   sendCommand = jest.fn();
   sendEvent = jest.fn();
-  addEventListener = jest.fn();
+  on = jest.fn();
 }
 
 describe('attack queue aliases', () => {
@@ -126,13 +126,13 @@ describe('attack queue aliases', () => {
 
   test('kills next enemy in AW mode marks target', () => {
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    const attackModeListenerCall = client.addEventListener.mock.calls.find(
+    const attackModeListenerCall = client.on.mock.calls.find(
       call => call[0] === 'attackMode',
     );
     const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
     client.TeamManager.shiftEnemyFromQueue.mockReturnValue('12');
 
-    attackModeListener?.({ detail: 'AW' } as any);
+    attackModeListener?.('AW');
     execAlias(alias, '/nn');
 
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_12');
@@ -141,13 +141,13 @@ describe('attack queue aliases', () => {
 
   test('kills next enemy in AWR mode orders team attack', () => {
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    const attackModeListenerCall = client.addEventListener.mock.calls.find(
+    const attackModeListenerCall = client.on.mock.calls.find(
       call => call[0] === 'attackMode',
     );
     const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
     client.TeamManager.shiftEnemyFromQueue.mockReturnValue('34');
 
-    attackModeListener?.({ detail: 'AWR' } as any);
+    attackModeListener?.('AWR');
     execAlias(alias, '/nn');
 
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_34');
@@ -157,13 +157,13 @@ describe('attack queue aliases', () => {
 
   test('kills next enemy using attack command from settings', () => {
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    const settingsListenerCall = client.addEventListener.mock.calls.find(
+    const settingsListenerCall = client.on.mock.calls.find(
       call => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
     client.TeamManager.shiftEnemyFromQueue.mockReturnValue('44');
 
-    settingsListener?.({ detail: { attackCommand: 'atak' } } as any);
+    settingsListener?.({ attackCommand: 'atak' });
     execAlias(alias, '/nn');
 
     expect(client.sendCommand).toHaveBeenCalledWith('atak ob_44');

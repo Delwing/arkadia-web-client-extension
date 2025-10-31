@@ -48,34 +48,35 @@ export default class MapHelper {
         if (saved) {
             this.savedRoomId = parseInt(saved);
         }
-        this.client.addEventListener('enterLocation', (event) => this.handleNewLocation(event.detail))
+        this.client.on('enterLocation', detail => this.handleNewLocation(detail as { room: any }))
 
-        this.client.addEventListener('gmcp.room.info', (event: CustomEvent) => {
+        this.client.on('gmcp.room.info', (eventDetail) => {
             this.setBlockable(false);
-            this.gmcpPosition = event.detail.map;
+            const detail = eventDetail as { map?: any };
+            this.gmcpPosition = detail?.map;
             if (this.refreshPosition) {
                 this.setMapPosition(this.gmcpPosition)
                 this.refreshPosition = false
             }
         })
 
-        this.client.addEventListener('refreshPositionWhenAble', () => {
+        this.client.on('refreshPositionWhenAble', () => {
             if (!this.setMapPosition(this.gmcpPosition)) {
                 this.refreshPosition = true;
             }
         });
 
-        this.client.addEventListener('gmcp.char.info', () => {
-            const listener = (event: CustomEvent) => {
-                if (event.detail.key === STORAGE_KEY) {
-                    const value = parseInt(event.detail.value);
-                    if (!isNaN(value)) {
-                        this.savedRoomId = value;
+        this.client.on('gmcp.char.info', () => {
+            const unsubscribe = this.client.on('storage', ({ key, value }) => {
+                if (key === STORAGE_KEY) {
+                    const parsed = parseInt(String(value));
+                    if (!isNaN(parsed)) {
+                        this.savedRoomId = parsed;
                         this.setMapRoomById(this.savedRoomId);
                     }
+                    unsubscribe?.();
                 }
-            };
-            this.client.addEventListener('storage', listener);
+            });
         });
 
         this.client.sendEvent('refreshPositionWhenAble');
@@ -356,7 +357,7 @@ export default class MapHelper {
     }
 
     handleNewLocation({room: room}) {
-        this.client.addEventListener('output-sent', () => {
+        this.client.on('output-sent', () => {
             if (room?.userData?.bind) {
                 this.client.FunctionalBind.set(room.userData?.bind, () => this.client.sendCommand(room.userData?.bind))
             } else if (room?.userData?.drinkable) {

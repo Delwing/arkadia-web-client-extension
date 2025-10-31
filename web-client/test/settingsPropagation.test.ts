@@ -10,12 +10,13 @@ class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   println = jest.fn();
   private handlers: Record<string, Array<(ev: any) => void>> = {};
-  addEventListener(event: string, handler: (ev: any) => void) {
+  on(event: string, handler: (payload: any) => void) {
     (this.handlers[event] = this.handlers[event] || []).push(handler);
   }
   dispatch(event: string, detail: any) {
-    (this.handlers[event] || []).forEach(h => h({ detail }));
+    (this.handlers[event] || []).forEach(h => h(detail));
   }
+  addEventListener = this.on;
 }
 
 describe('settings propagation to scripts', () => {

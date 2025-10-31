@@ -14,13 +14,14 @@ export default class Pausers {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            if (e.detail?.object_num !== undefined) {
-                this.playerId = String(e.detail.object_num);
+        this.client.on('gmcp.char.info', (info) => {
+            const detail = info as { object_num?: unknown };
+            if (detail?.object_num !== undefined) {
+                this.playerId = String(detail.object_num);
             }
         });
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.check(e.detail as Record<string, OwnData>);
+        this.client.on('gmcp.objects.data', (data) => {
+            this.check((data ?? {}) as Record<string, OwnData>);
         });
     }
 

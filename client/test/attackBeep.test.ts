@@ -19,7 +19,7 @@ const MOCK_PEOPLE = [
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   sendEvent = jest.fn();
-  addEventListener = jest.fn();
+  on = jest.fn();
 }
 
 describe('attack beep triggers', () => {
@@ -47,9 +47,9 @@ describe('attack beep triggers', () => {
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
     // initialize with enemy guilds so beeping is enabled only for configured guilds
-    const handler = client.addEventListener.mock.calls[0]?.[1];
+    const handler = client.on.mock.calls[0]?.[1];
     if (handler) {
-      handler({ detail: { enemyGuilds: ['CKN'] } } as any);
+      handler({ enemyGuilds: ['CKN'] } as any);
     }
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;

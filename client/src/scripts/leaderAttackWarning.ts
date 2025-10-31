@@ -51,16 +51,16 @@ export default function initLeaderAttackWarning(client: Client) {
         print(text);
     }
 
-    client.addEventListener('teamLeaderTargetNoAvatar', (e: CustomEvent) => {
-        activeTargetId = e.detail;
+    client.on('teamLeaderTargetNoAvatar', (id) => {
+        activeTargetId = id;
         printWarning(activeTargetId, true);
     });
-    client.addEventListener('gmcp.objects.data', () => {
+    client.on('gmcp.objects.data', () => {
         if (!activeTargetId) {
             return;
         }
 
         printWarning(activeTargetId);
     });
-    client.addEventListener('teamLeaderTargetAvatar', clearActiveTarget);
+    client.on('teamLeaderTargetAvatar', clearActiveTarget);
 }

@@ -23,7 +23,7 @@ class FakeClient {
   sendGMCP = jest.fn();
   print = jest.fn();
   sendEvent = jest.fn();
-  addEventListener = jest.fn();
+  on = jest.fn();
 }
 
 describe('object aliases', () => {
@@ -46,7 +46,7 @@ describe('object aliases', () => {
   let orderShieldTarget: () => void;
   let markAttack: (m: RegExpMatchArray) => void;
   let markDefense: (m: RegExpMatchArray) => void;
-  let setAttackMode: (ev: { detail: 'A' | 'AW' | 'AWR' }) => void;
+  let setAttackMode: (mode: 'A' | 'AW' | 'AWR') => void;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -87,7 +87,7 @@ describe('object aliases', () => {
 
     (setItemSync as jest.Mock).mockClear();
 
-    const attackModeCall = client.addEventListener.mock.calls.find(c => c[0] === 'attackMode');
+    const attackModeCall = client.on.mock.calls.find(c => c[0] === 'attackMode');
     setAttackMode = attackModeCall && attackModeCall[1];
   });
 
@@ -104,13 +104,13 @@ describe('object aliases', () => {
   });
 
   test('kill alias uses attack command from settings when provided', () => {
-    const settingsListenerCall = client.addEventListener.mock.calls.find(
+    const settingsListenerCall = client.on.mock.calls.find(
       call => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
 
-    settingsListener?.({ detail: { attackCommand: 'atak' } } as any);
+    settingsListener?.({ attackCommand: 'atak' });
     kill(['', '1'] as unknown as RegExpMatchArray);
 
     expect(client.sendCommand).toHaveBeenCalledWith('atak ob_5');
@@ -118,7 +118,7 @@ describe('object aliases', () => {
 
   test('kill alias in AW mode marks target', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AW' });
+    setAttackMode?.('AW');
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AW');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
@@ -127,7 +127,7 @@ describe('object aliases', () => {
 
   test('kill alias in AWR mode orders attack', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AWR' });
+    setAttackMode?.('AWR');
     expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AWR');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
@@ -138,7 +138,7 @@ describe('object aliases', () => {
   test('kill alias in AW mode without leadership only sends zabij', () => {
     client.TeamManager.isLeader.mockReturnValue(false);
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AW' });
+    setAttackMode?.('AW');
     client.sendCommand.mockClear();
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
@@ -147,7 +147,7 @@ describe('object aliases', () => {
 
   test('kill alias resumes extra commands when becoming leader again', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
-    setAttackMode({ detail: 'AWR' });
+    setAttackMode?.('AWR');
     client.TeamManager.isLeader.mockReturnValue(false);
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledTimes(1);

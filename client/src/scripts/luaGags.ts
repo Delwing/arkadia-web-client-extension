@@ -124,13 +124,13 @@ function getDeleteMode(type: string): LuaGagDeleteMode {
 export default function registerLuaGagTriggers(client: Client) {
     applyDeleteLinesConfig(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]);
 
-    client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail?.key === LUA_GAGS_STORAGE_KEY) {
-            applyDeleteLinesConfig(event.detail.value);
+    client.on("storage", ({ key, value }) => {
+        if (key === LUA_GAGS_STORAGE_KEY) {
+            applyDeleteLinesConfig(value);
         }
     });
 
-    client.addEventListener("port-connected", () => {
+    client.on("port-connected", () => {
         client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
     });
 
@@ -445,7 +445,7 @@ export default function registerLuaGagTriggers(client: Client) {
 
 
     (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
-    client.addEventListener("playBeep", () => {
+    client.on("playBeep", () => {
         client.sendEvent("sound:play", { key: "beep" })
     })
 
@@ -457,4 +457,3 @@ export default function registerLuaGagTriggers(client: Client) {
         luaEnv.parse(file.default).exec()
     });
 }
-

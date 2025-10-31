@@ -10,8 +10,8 @@ export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const st = ev.detail || {};
+    client.on('settings', (settings) => {
+        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];

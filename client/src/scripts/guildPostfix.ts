@@ -11,9 +11,10 @@ export default function initGuildPostfix(client: Client) {
     let guildColors: GuildColorMap = {};
     let enemyGuilds = new Set<string>();
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const colors: Record<string, string | undefined> = ev.detail.guildColors || {};
-        const enemies: string[] = ev.detail.enemyGuilds || [];
+    client.on('settings', (payload) => {
+        const detail = (payload ?? {}) as { guildColors?: Record<string, string | undefined>; enemyGuilds?: string[] };
+        const colors: Record<string, string | undefined> = detail.guildColors || {};
+        const enemies: string[] = detail.enemyGuilds || [];
         guildColors = {};
         enemyGuilds = new Set(enemies);
         Object.entries(colors).forEach(([g, hex]) => {

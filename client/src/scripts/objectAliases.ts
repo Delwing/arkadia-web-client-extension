@@ -90,8 +90,8 @@ export default function initObjectAliases(
     const ON_COLOR = findClosestColor("#7cfc00");
     const OFF_COLOR = findClosestColor("#ff6347");
     client.sendEvent('releaseGuard', releaseGuard);
-    client.addEventListener('releaseGuard', (event: CustomEvent<boolean>) => {
-        releaseGuard = event.detail;
+    client.on('releaseGuard', (value) => {
+        releaseGuard = value;
     });
 
     if (aliases) {

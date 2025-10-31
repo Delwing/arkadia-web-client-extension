@@ -127,9 +127,9 @@ export default class ImproveCounter {
         this.client = client;
         this.killCounter = killCounter;
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === ImproveCounter.STORAGE_KEY) {
-                this.load(event.detail.value ?? {});
+        this.client.on("storage", ({ key, value }) => {
+            if (key === ImproveCounter.STORAGE_KEY) {
+                this.load(value ?? {});
                 this.loaded = true;
                 if (this.pendingLevel !== undefined) {
                     const level = this.pendingLevel;
@@ -137,8 +137,8 @@ export default class ImproveCounter {
                     this.handleLevel(level);
                 }
             }
-            if (event.detail.key === ImproveCounter.LIFETIME_KEY) {
-                this.loadLifetime(event.detail.value ?? {});
+            if (key === ImproveCounter.LIFETIME_KEY) {
+                this.loadLifetime(value ?? {});
                 this.lifetimeLoaded = true;
                 if (this.pendingLifetime.length) {
                     for (const p of this.pendingLifetime) {
@@ -149,7 +149,7 @@ export default class ImproveCounter {
             }
         });
 
-        this.client.addEventListener("reset", () => this.reset());
+        this.client.on("reset", () => this.reset());
 
         window.addEventListener("beforeunload", this.persist);
 
@@ -162,8 +162,8 @@ export default class ImproveCounter {
             key: ImproveCounter.LIFETIME_KEY,
         });
 
-        this.client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
-            const level = ev.detail?.improve;
+        this.client.on("gmcp.char.state", (state) => {
+            const level = (state as { improve?: number })?.improve;
             if (typeof level === "number") {
                 this.handleLevel(level);
             }
@@ -389,7 +389,7 @@ export default class ImproveCounter {
     removeLifetime(id: number, count?: number) {
         const idx = id - 1;
         if (idx < 0 || idx >= this.lifetime.length) return;
-        let removed = 0;
+        let removed: number;
         if (typeof count === "number") {
             const day = this.lifetime[idx];
             const n = Math.min(Math.max(1, count), day.count);

@@ -18,12 +18,15 @@ export default class FightTitle {
     client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
     client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
     client.on("client.disconnect", () => this.reset());
-    (window as any).clientExtension?.eventTarget.addEventListener("uiSettings", (ev: CustomEvent) => {
-      if (typeof ev.detail?.fightTitleIcon === "boolean") {
-        this.enabled = ev.detail.fightTitleIcon;
-        this.updateTitle(this.isFighting, true);
-      }
-    });
+    const ext: any = (window as any).clientExtension;
+    if (typeof ext?.on === "function") {
+      ext.on("uiSettings", (payload: { fightTitleIcon?: boolean } | undefined) => {
+        if (payload && typeof payload.fightTitleIcon === "boolean") {
+          this.enabled = payload.fightTitleIcon;
+          this.updateTitle(this.isFighting, true);
+        }
+      });
+    }
   }
 
   private handleCharInfo(info: any) {
@@ -66,4 +69,3 @@ export default class FightTitle {
     return this.originalTitle;
   }
 }
-

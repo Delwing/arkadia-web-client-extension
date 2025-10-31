@@ -11,14 +11,14 @@ class FakeClient {
   print = jest.fn();
   port = { postMessage: jest.fn() } as any;
 
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
   dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
+    this.emitter.emit(event, detail);
   }
 }
 

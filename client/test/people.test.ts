@@ -24,7 +24,7 @@ const MOCK_PEOPLE = [
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  addEventListener = jest.fn();
+  on = jest.fn();
 }
 
 describe('people triggers enemy highlight', () => {
@@ -56,9 +56,9 @@ describe('people triggers enemy highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
+    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
     if (handler) {
-      handler({ detail: { guilds: [], enemyGuilds: ['CKN'] } } as any);
+      handler({ guilds: [], enemyGuilds: ['CKN'] });
     }
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
@@ -121,8 +121,8 @@ describe('people triggers enemy highlight', () => {
 describe('people triggers guild highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => string;
-  type SettingsEvent = { detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> } };
-  let settingsHandler: ((event: SettingsEvent) => void) | undefined;
+  type SettingsPayload = { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> };
+  let settingsHandler: ((event: SettingsPayload) => void) | undefined;
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
@@ -145,7 +145,9 @@ describe('people triggers guild highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: SettingsEvent) => void);
+    settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1] as
+      | ((event: SettingsPayload) => void)
+      | undefined;
     const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastGuildCall?.value;
   });
@@ -156,7 +158,7 @@ describe('people triggers guild highlight', () => {
   });
 
   const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
-    settingsHandler?.({ detail } as any);
+    settingsHandler?.(detail);
   };
 
   test('adds name after description without red color', () => {

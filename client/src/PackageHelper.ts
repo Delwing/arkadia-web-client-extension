@@ -43,9 +43,9 @@ export default class PackageHelper {
     private packages: { name: string; time?: string; distance?: number }[] = []
     private listTime = 0
     private timer: number | undefined
-    private remover = () => {
-    };
-    private locationListener;
+    private remover = () => {};
+    private locationListener?: (payload: { id?: number }) => void;
+    private locationSubscription?: () => void;
 
     private pick: number
     private currentPackage: { name: string; time?: string; distance?: number };
@@ -56,13 +56,15 @@ export default class PackageHelper {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        this.client.addEventListener('npc', (event) => {
-            event.detail.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
+        this.client.on('npc', (data) => {
+            const list = Array.isArray(data) ? data : [];
+            list.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
         })
 
 
-        this.client.addEventListener('settings', (event) => {
-            const setting = event.detail?.packageHelper
+        this.client.on('settings', (event) => {
+            const detail = (event ?? {}) as { packageHelper?: boolean };
+            const setting = detail?.packageHelper
             const shouldEnable = setting === undefined ? true : setting
             if (!this.enabled && shouldEnable) {
                 this.init()
@@ -101,7 +103,7 @@ export default class PackageHelper {
             this.client.sendEvent('packageStatus', null)
         }
         this.remover();
-        this.remover = this.client.addEventListener("command", ({detail: command}) => this.handleCommand(command));
+        this.remover = this.client.on("command", (command = "") => this.handleCommand(command));
     }
 
     private handleCommand(command: string) {
@@ -346,20 +348,23 @@ export default class PackageHelper {
         if (location) {
             this.client.sendEvent('leadTo', location)
         }
-        if (this.locationListener) {
-            this.client.removeEventListener('enterLocation', this.locationListener)
+        if (this.locationSubscription) {
+            this.locationSubscription();
+            this.locationSubscription = undefined;
         }
-        this.locationListener = ({detail: {id: roomId}}) => {
+        this.locationListener = (payload) => {
+            const roomId = payload?.id;
             if (roomId === location) {
-                this.client.removeEventListener('enterLocation', this.locationListener)
-                this.client.addEventListener('gmcp_msg.room.exits', () => {
-                    this.client.FunctionalBind.set('oddaj paczke', () => {
-                        return this.client.sendCommand('oddaj paczke');
-                    })
-                }, {once: true})
+                this.locationSubscription?.();
+                this.locationSubscription = undefined;
+                this.client.on('gmcp_msg.room.exits', () => {
+                    this.client.FunctionalBind.set('oddaj paczke', () => this.client.sendCommand('oddaj paczke'));
+                }, {once: true});
             }
         }
-        this.client.addEventListener('enterLocation', this.locationListener)
+        this.locationSubscription = this.client.on('enterLocation', (detail) => {
+            this.locationListener?.((detail ?? {}) as { id?: number });
+        });
     }
 
     private findNpcLocation(name: string): number | undefined {

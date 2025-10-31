@@ -81,9 +81,9 @@ if (!isNaN(initialLocationId)) {
         const rest = params.toString();
         window.history.replaceState({}, '', rest ? `${base}?${rest}` : base);
 
-        client.removeEventListener('gmcp.room.info', handleInitialLocation);
+        unsubscribe();
     };
-    client.addEventListener('gmcp.room.info', handleInitialLocation);
+    const unsubscribe = client.on('gmcp.room.info', handleInitialLocation);
 }
 
 // Prevent tab sleep on mobile when switching tabs
@@ -136,15 +136,34 @@ function disableTabSleepPrevention() {
     updateWakeLockButton();
 }
 
-arkadiaClient.on('settings', (detail: any) => {
-    if (detail?.binds?.directions) {
-        applyDirectionBinds(detail.binds.directions);
+const isDirectionMap = (value: unknown): value is Record<string, Partial<RawDirectionBind> | undefined> => {
+    if (!value || typeof value !== 'object') return false;
+    const entries = Object.entries(value as Record<string, unknown>);
+    return entries.every(([, entry]) => {
+        if (entry === undefined) return true;
+        if (!entry || typeof entry !== 'object') return false;
+        const candidate = entry as Record<string, unknown>;
+        if ('key' in candidate && typeof candidate.key !== 'string') {
+            return false;
+        }
+        const flags: Array<'ctrl' | 'alt' | 'shift'> = ['ctrl', 'alt', 'shift'];
+        return flags.every(flag => !(flag in candidate) || typeof candidate[flag] === 'boolean');
+    });
+};
+
+arkadiaClient.on('settings', (detail) => {
+    const payload = detail as { binds?: { directions?: unknown } } | undefined;
+    const directions = payload?.binds?.directions;
+    if (isDirectionMap(directions)) {
+        applyDirectionBinds(directions);
     }
 });
 
-client.addEventListener('binds', (ev: CustomEvent) => {
-    if (ev.detail?.directions) {
-        applyDirectionBinds(ev.detail.directions);
+client.on('binds', (detail) => {
+    const payload = detail as { directions?: unknown } | undefined;
+    const directions = payload?.directions;
+    if (isDirectionMap(directions)) {
+        applyDirectionBinds(directions);
     }
 });
 
@@ -527,9 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const uiSettingsData = getItemSync('uiSettings');
     let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
-    client.eventTarget.addEventListener('uiSettings', (ev: Event) => {
-        const detail = (ev as CustomEvent).detail;
-        if (detail && typeof detail.clearInputOnSend === 'boolean') {
+    client.on('uiSettings', (payload) => {
+        const detail = (payload ?? {}) as { clearInputOnSend?: boolean };
+        if (typeof detail.clearInputOnSend === 'boolean') {
             clearInputOnSend = detail.clearInputOnSend;
         }
     });
@@ -666,11 +685,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (notificationCenter) {
-        client.eventTarget.addEventListener('notify', (ev: CustomEvent<{ text: string; time?: number }>) => {
-            const detail = ev.detail || {} as any;
+        client.on('notify', (payload) => {
+            const detail = (payload ?? {}) as { text?: string; time?: number };
             const div = document.createElement('div');
             div.className = 'notification';
-            div.textContent = detail.text || '';
+            div.textContent = detail.text ?? '';
             notificationCenter.appendChild(div);
             const timeout = typeof detail.time === 'number' ? detail.time : 2000;
             setTimeout(() => div.remove(), timeout);

@@ -17,7 +17,7 @@ import { setCurrentCharacter, getItemSync, setItemSync } from "./storage";
 import {color, Colors} from "./Colors";
 import {SKIP_LINE} from "./ControlConstants";
 import {stripPolishCharacters} from "./stripPolishCharacters";
-import eventBus from "./eventBus";
+import eventBus, { type ClientEvents } from "./eventBus";
 import { openMapContextMenu } from "./contextMenus";
 import type { HerbManagerApi } from "./types/herbs";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
@@ -52,6 +52,15 @@ function hasPrintableContent(segment: string): boolean {
     return false;
 }
 
+type EventKey = keyof ClientEvents;
+type EventParams<K extends EventKey> = ClientEvents[K] extends void
+    ? []
+    : ClientEvents[K] extends any[]
+        ? ClientEvents[K]
+        : [ClientEvents[K]];
+type ClientEventListener<K extends EventKey> = (...args: EventParams<K>) => void;
+type ListenerOptions = boolean | { once?: boolean; signal?: AbortSignal };
+
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
 
@@ -69,7 +78,6 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     port?: any;
-    eventTarget = eventBus;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
@@ -83,7 +91,7 @@ export default class Client {
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
-    private soundManager = new SoundManager(this.eventTarget);
+    private soundManager = new SoundManager(this);
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
@@ -131,16 +139,9 @@ export default class Client {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
-        window.addEventListener('extension-message', (ev: Event) => {
-            const data: any = (ev as CustomEvent).detail;
-            if (data && data.data !== undefined) {
-                this.eventTarget.dispatchEvent(new CustomEvent(data.type, {detail: data.data}))
-            }
-        })
-
-        this.updateContentWidth()
-        window.addEventListener('resize', () => this.updateContentWidth())
-        this.addEventListener('uiSettings', () => this.updateContentWidth())
+        this.updateContentWidth();
+        window.addEventListener('resize', () => this.updateContentWidth());
+        this.on('uiSettings', () => this.updateContentWidth());
 
         window.addEventListener('keydown', (ev) => {
             if (
@@ -266,52 +267,55 @@ export default class Client {
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
         this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
 
-        this.addEventListener('settings', (ev: CustomEvent) => {
-            const settings = ev.detail || {};
-            applyBinds(settings?.binds)
-            this.attackCommand = normalizeAttackCommand(settings?.attackCommand);
-            this.drawWeaponCommand = normalizeDrawWeaponCommand(settings?.drawWeaponCommand);
-        })
+        this.on('settings', (settings) => {
+            const detail = (settings ?? {}) as Record<string, any>;
+            applyBinds(detail?.binds);
+            this.attackCommand = normalizeAttackCommand(detail?.attackCommand);
+            this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
+        });
 
-        this.addEventListener('binds', (ev: CustomEvent) => {
-            applyBinds(ev.detail)
-        })
+        this.on('binds', (binds) => {
+            applyBinds(binds as any);
+        });
 
-        this.addEventListener('uiSettings', (ev: CustomEvent) => {
-            if (ev.detail?.xtermPalette) {
-                setXtermPalette(ev.detail.xtermPalette);
+        this.on('uiSettings', (uiSettings) => {
+            const detail = uiSettings as any;
+            if (detail?.xtermPalette) {
+                setXtermPalette(detail.xtermPalette);
             }
-        })
+        });
 
-        this.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
-            if (ev.detail?.name) {
-                setCurrentCharacter(ev.detail.name);
+        this.on('gmcp.char.info', (info) => {
+            const detail = info as any;
+            if (detail?.name) {
+                setCurrentCharacter(detail.name);
                 if (this.port) {
                     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
                     });
                 }
             }
-            if (typeof ev.detail?.object_num !== 'undefined') {
-                const newNum = String(ev.detail.object_num);
+            if (typeof detail?.object_num !== 'undefined') {
+                const newNum = String(detail.object_num);
                 const stored = getItemSync('object_num')?.object_num;
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
                     this.sendEvent('reset');
                 }
                 setItemSync('object_num', newNum);
             }
-        })
+        });
 
-        this.addEventListener('gmcp.char.colors', (ev: CustomEvent) => {
-            this.defaultColor = ev.detail.text ?? 255
-        })
+        this.on('gmcp.char.colors', (data) => {
+            const detail = data as any;
+            this.defaultColor = detail?.text ?? 255;
+        });
 
-        this.addEventListener('output-sent', () => {
+        this.on('output-sent', () => {
             if (this.buffer.length == 0) return
             this.buffer.forEach(item => this.clientAdapter.output(item.out, item.type))
             this.sendEvent('buffer-sent', this.buffer.length)
             this.buffer = []
-        })
+        });
 
         this.port = port
         port.onMessage.addListener((message) => {
@@ -325,6 +329,18 @@ export default class Client {
                 })
             }
         })
+    }
+
+    on<K extends EventKey>(event: K, listener: ClientEventListener<K>, options?: ListenerOptions): () => void {
+        return eventBus.on(event, listener, options);
+    }
+
+    off<K extends EventKey>(event: K, listener: ClientEventListener<K>): void {
+        eventBus.off(event, listener);
+    }
+
+    emit<K extends EventKey>(event: K, ...args: EventParams<K>): void {
+        eventBus.emit(event, ...args);
     }
 
     setTempBind(index: number, command: string) {
@@ -347,18 +363,8 @@ export default class Client {
             port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
         }
         this.port = port
-        this.eventTarget.dispatchEvent(new CustomEvent('port-connected'))
+        this.sendEvent('port-connected')
         console.log("Client connected to background service.")
-    }
-
-    addEventListener(event: string, listener: (arg: CustomEvent) => void, options?: AddEventListenerOptions | boolean) {
-        const reference = listener
-        this.eventTarget.addEventListener(event, reference, options)
-        return () => this.eventTarget.removeEventListener(event, reference, options)
-    }
-
-    removeEventListener(event: string, listener: EventListenerOrEventListenerObject | null) {
-        this.eventTarget.removeEventListener(event, listener)
     }
 
     send(command: string, echo: boolean = true, options?: CommandOptions) {
@@ -385,7 +391,7 @@ export default class Client {
         if (command) {
             command = stripPolishCharacters(command)
         }
-        this.eventTarget.dispatchEvent(new CustomEvent('command', {detail: command}))
+        this.sendEvent('command', command)
 
         let commandChanged = false
         if (!skipMapParse) {
@@ -460,7 +466,7 @@ export default class Client {
 
     onLine(line: string, type: string) {
         this.inLineProcess = true
-        this.eventTarget.dispatchEvent(new CustomEvent(LINE_START_EVENT))
+        this.sendEvent(LINE_START_EVENT)
         const triggerEngineActive =
             typeof this.Triggers.isTriggerEngineActive === 'function'
                 ? this.Triggers.isTriggerEngineActive()
@@ -532,9 +538,11 @@ export default class Client {
         return result
     }
 
-    sendEvent(type: string, payload?: any) {
-        this.eventTarget.dispatchEvent(new CustomEvent(type, {detail: payload}))
-        window.dispatchEvent(new CustomEvent(type, {detail: payload}))
+    sendEvent<K extends EventKey>(type: K, ...args: EventParams<K>): void;
+    sendEvent(type: string, ...args: unknown[]): void;
+    sendEvent(type: string, ...args: unknown[]): void {
+        const eventName = type as EventKey;
+        (eventBus.emit as (...emitArgs: any[]) => number)(eventName, ...args);
     }
 
     openMapContextMenu(roomId: number, x: number, y: number) {

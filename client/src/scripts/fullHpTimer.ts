@@ -28,16 +28,16 @@ export default function initFullHpTimer(client: Client) {
         }, 180000);
     }
 
-    client.addEventListener("settings", (ev: CustomEvent) => {
-        const settings = ev.detail || {};
+    client.on("settings", (payload) => {
+        const settings = (payload ?? {}) as { fullHpMessage?: boolean };
         enabled = !!settings.fullHpMessage;
         if (!enabled) {
             clearTimer();
         }
     });
 
-    client.addEventListener("gmcp.char.state", (ev: CustomEvent) => {
-        const hp = ev.detail?.hp;
+    client.on("gmcp.char.state", (state) => {
+        const hp = (state as { hp?: number })?.hp;
         if (typeof hp !== "number") {
             previousHp = null;
             return;
@@ -52,26 +52,25 @@ export default function initFullHpTimer(client: Client) {
         previousHp = hp;
     });
 
-    client.addEventListener("gmcp.char.info", (ev: CustomEvent) => {
-        const info = ev.detail || {};
-        if (info && typeof info.object_num !== "undefined") {
-            playerNum = String(info.object_num);
+    client.on("gmcp.char.info", (info) => {
+        const detail = info as { object_num?: number };
+        if (detail && typeof detail.object_num !== "undefined") {
+            playerNum = String(detail.object_num);
         }
     });
 
-    client.addEventListener("gmcp.objects.data", (ev: CustomEvent) => {
+    client.on("gmcp.objects.data", (data: Record<string, { attack_num?: boolean | number } | undefined>) => {
         if (!playerNum) return;
-        const obj = ev.detail?.[playerNum];
+        const obj = data?.[playerNum];
         if (!obj || obj.attack_num === undefined) return;
         if (obj.attack_num !== false) {
             clearTimer();
         }
     });
 
-    client.addEventListener("client.disconnect", () => {
+    client.on("client.disconnect", () => {
         playerNum = undefined;
         clearTimer();
         previousHp = null;
     });
 }
-

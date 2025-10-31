@@ -20,9 +20,9 @@ class FakeClient {
   } as any;
   FunctionalBind = { set: jest.fn() } as any;
   contentWidth = 80;
-  addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
-  removeEventListener(event: string, cb: any) { this.emitter.off(event, cb); }
-  dispatch(event: string, detail: any) { this.emitter.emit(event, { detail }); }
+  on(event: string, cb: any) { this.emitter.on(event, cb); }
+  off(event: string, cb: any) { this.emitter.off(event, cb); }
+  dispatch(event: string, detail: any) { this.emitter.emit(event, detail); }
 }
 
 describe('herb counter', () => {

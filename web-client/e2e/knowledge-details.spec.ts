@@ -30,8 +30,9 @@ test.describe('Knowledge details', () => {
         await page.evaluate(() => {
             const globalScope: any = window;
             globalScope.__capturedKnowledgeReport = null;
-            globalScope.addEventListener('knowledgeDetailsReport', (event: Event) => {
-                globalScope.__capturedKnowledgeReport = (event as CustomEvent).detail;
+            const extension = globalScope.clientExtension;
+            extension?.on?.('knowledgeDetailsReport', (detail: unknown) => {
+                globalScope.__capturedKnowledgeReport = detail;
             });
         });
 
@@ -195,4 +196,3 @@ test.describe('Knowledge details', () => {
         ).toHaveText(`${totals.known}/${totals.total} (${percentage}%)`);
     });
 });
-

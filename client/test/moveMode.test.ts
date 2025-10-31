@@ -1,16 +1,29 @@
 import initMoveMode from '../src/scripts/moveMode';
 
-class FakeClient extends EventTarget {
+import { EventEmitter } from 'events';
+
+class FakeClient {
+  private emitter = new EventEmitter();
   moveMode = 0;
   carriageMode = false;
   moveModeButton?: HTMLInputElement | HTMLButtonElement;
   moveModeBind = { key: 'Backquote' } as { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean };
   println = jest.fn();
-  sendEvent = jest.fn();
+  sendEvent = jest.fn((type: string, detail?: any) => {
+    this.emitter.emit(type, detail);
+  });
   leader = false;
   TeamManager = {
     isLeader: () => this.leader,
   };
+  on(event: string, cb: (payload: any) => void) {
+    this.emitter.on(event, cb);
+    return () => this.emitter.off(event, cb);
+  }
+  dispatchEvent(event: Event) {
+    const payload = (event as CustomEvent).detail;
+    this.emitter.emit(event.type, payload);
+  }
   createButton(_name: string, callback: () => void) {
     const btn = document.createElement('input');
     btn.type = 'button';

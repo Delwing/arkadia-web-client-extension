@@ -54,7 +54,7 @@ const buildBags = (source: HerbCounts, allocateId: () => string): HerbBag[] => {
         return [];
     }
     const entries = Object.entries(source);
-    const bags: HerbBag[] = entries
+    return entries
         .map(([key, contents]) => {
             const bagNumber = Number(key);
             if (!Number.isFinite(bagNumber)) {
@@ -75,7 +75,6 @@ const buildBags = (source: HerbCounts, allocateId: () => string): HerbBag[] => {
         })
         .filter((bag): bag is HerbBag => !!bag)
         .sort((a, b) => a.bagNumber - b.bagNumber);
-    return bags;
 };
 
 const sortItems = (items: HerbStack[]): HerbStack[] => {
@@ -268,14 +267,14 @@ const HerbManager = () => {
         if (!client) {
             return;
         }
-        const handleSettings = (event: CustomEvent) => {
-            const detail = event.detail as Record<string, unknown> | null | undefined;
+        const handleSettings = (settings: unknown) => {
+            const detail = settings as Record<string, unknown> | null | undefined;
             const pre = parseCommandList(detail?.herbPreUseCommand);
             const post = parseCommandList(detail?.herbPostUseCommand);
             preUseCommandsRef.current = pre;
             postUseCommandsRef.current = post;
         };
-        const unsubscribe = client.addEventListener("settings", handleSettings);
+        const unsubscribe = client.on("settings", handleSettings as any);
         return () => {
             unsubscribe?.();
         };

@@ -13,12 +13,25 @@ class MockClient {
 describe("CombatTimer", () => {
   let container: HTMLElement;
   let client: MockClient;
+  let extension: any;
 
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '<span id="combat-timer" data-enabled="1"></span>';
     container = document.getElementById("combat-timer")!;
-    (window as any).clientExtension = { eventTarget: new EventTarget() };
+    extension = {
+      listeners: {} as Record<string, Function[]>,
+      on(event: string, listener: Function) {
+        (this.listeners[event] ||= []).push(listener);
+        return () => {
+          this.listeners[event] = (this.listeners[event] || []).filter(fn => fn !== listener);
+        };
+      },
+      emit(event: string, payload: any) {
+        (this.listeners[event] || []).forEach(fn => fn(payload));
+      },
+    };
+    (window as any).clientExtension = extension;
     client = new MockClient();
     new CombatTimer(client as any);
   });
@@ -48,18 +61,16 @@ describe("CombatTimer", () => {
   });
 
   test("respects ui setting toggle", () => {
-    const target = (window as any).clientExtension.eventTarget as EventTarget;
     client.emit("combatTimer", 12);
     expect(container.style.display).toBe("block");
 
-    target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showCombatTimer: false } }));
+    extension.emit("uiSettings", { showCombatTimer: false });
     expect(container.style.display).toBe("none");
     expect(container.textContent).toBe("");
 
-    target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showCombatTimer: true } }));
+    extension.emit("uiSettings", { showCombatTimer: true });
     client.emit("combatTimer", 8);
     expect(container.style.display).toBe("block");
     expect(container.textContent).toBe("Walka: 8");
   });
 });
-

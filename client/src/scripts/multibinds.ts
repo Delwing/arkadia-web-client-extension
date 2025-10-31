@@ -242,8 +242,9 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         sendUpdate(getRoomId());
     }
 
-    client.addEventListener('enterLocation', (ev: CustomEvent) => {
-        const roomId = typeof ev.detail?.id === 'number' ? ev.detail.id : Number(ev.detail?.id);
+    client.on('enterLocation', (detail) => {
+        const payload = detail as { id?: number };
+        const roomId = typeof payload?.id === 'number' ? payload.id : Number(payload?.id);
         sendUpdate(Number.isNaN(roomId) ? null : roomId);
     });
 

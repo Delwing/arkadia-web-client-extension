@@ -9,11 +9,11 @@ export default class OutputHandler {
 
     constructor(clientExtension: Client) {
         this.client = clientExtension
-        this.client.addEventListener('output-sent', (event: CustomEvent) => {
-            this.processOutput(event);
+        this.client.on('output-sent', (count) => {
+            this.processOutput(count);
         })
-        this.client.addEventListener('buffer-sent', (event: CustomEvent) => {
-                this.processOutput(event);
+        this.client.on('buffer-sent', (count) => {
+                this.processOutput(count);
             }
         )
         document.addEventListener('click', this.hideContextMenu)
@@ -138,8 +138,8 @@ export default class OutputHandler {
     }
 
     private parseClickTags(msg: HTMLElement) {
-        const openReg = /\{clickOpen:(\d+)(?::([^}]+))?\}/
-        const closeReg = /\{clickClose\}/
+        const openReg = /\{clickOpen:(\d+)(?::([^}]+))?}/
+        const closeReg = /\{clickClose}/
         let currentIndex: number | null = null
         let currentTitle: string | undefined
 
@@ -204,12 +204,12 @@ export default class OutputHandler {
         Array.from(msg.childNodes).forEach(processNode)
     }
 
-    private processOutput(event: CustomEvent) {
+    private processOutput(count: number) {
         if (!this.output.children) {
             return
         }
         const offset = this.output.querySelector('#split-bottom') ? 2 : 1
-        for (let i = 0; i < event.detail; i++) {
+        for (let i = 0; i < count; i++) {
             const element = this.output.children[this.output.children.length - offset - i]
             if (!element) {
                 return;

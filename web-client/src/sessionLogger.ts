@@ -2,7 +2,7 @@ import storage, { getItemSync } from "@client/src/storage";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
-const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?\}|\{clickClose\}/g;
+const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?}|\{clickClose}/g;
 
 let loggingEnabled = true;
 const saved = getItemSync("loggingEnabled");
@@ -59,11 +59,11 @@ async function save(db: IDBDatabase, text: string, type?: string, timestamp?: nu
   }
 }
 
-interface Client {
-  on(event: string, handler: (text?: string, type?: string, timestamp?: number) => void): void;
+interface SessionClient {
+  on(event: 'message', handler: (text?: string, type?: string, timestamp?: number) => void): void;
 }
 
-export default async function initSessionLogger(client: Client) {
+export default async function initSessionLogger(client: SessionClient) {
   let db: IDBDatabase;
   try {
     db = await openOrCreateStore(storeName);

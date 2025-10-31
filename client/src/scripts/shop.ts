@@ -55,8 +55,8 @@ export function formatItem(
 
 export default function initShop(client: Client, opts: ShopOptions) {
     let width = client.contentWidth;
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
+    client.on('contentWidth', (value) => {
+        width = value;
     });
 
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - stripAnsiCodes(str).length));

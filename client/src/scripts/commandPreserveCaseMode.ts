@@ -62,8 +62,7 @@ export default function initCommandPreserveCaseMode(client: Client) {
         preserverCaseMode = false;
     };
 
-    client.addEventListener('command', (ev: CustomEvent<string>) => {
-        const command = ev.detail ?? '';
+    client.on('command', (command = '') => {
         if (typeof command !== 'string') {
             return;
         }
@@ -73,21 +72,21 @@ export default function initCommandPreserveCaseMode(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.info', (ev: CustomEvent<{ object_num?: number }>) => {
-        if (typeof ev.detail?.object_num !== 'undefined') {
-            playerNum = ev.detail.object_num;
+    client.on('gmcp.char.info', (info) => {
+        const detail = info as { object_num?: number };
+        if (typeof detail?.object_num !== 'undefined') {
+            playerNum = detail.object_num;
         }
     });
 
-    client.addEventListener('gmcp.objects.data', (ev: CustomEvent<Record<string, { editing?: boolean }>>) => {
+    client.on('gmcp.objects.data', (objects) => {
         if (!playerNum) {
             return;
         }
-        const objects = ev.detail;
         if (!objects || typeof objects !== 'object') {
             return;
         }
-        const own = objects[playerNum];
+        const own = (objects as Record<string, { editing?: boolean }>)[playerNum];
         if (!own || typeof own.editing === 'undefined') {
             return;
         }

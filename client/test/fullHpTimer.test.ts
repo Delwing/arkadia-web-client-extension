@@ -7,11 +7,12 @@ describe('full hp timer', () => {
     private emitter = new EventEmitter();
     notify = jest.fn();
     println = jest.fn();
-    addEventListener(event: string, cb: any) {
+    on(event: string, cb: any) {
       this.emitter.on(event, cb);
+      return () => this.emitter.off(event, cb);
     }
     sendEvent(type: string, detail?: any) {
-      this.emitter.emit(type, { detail });
+      this.emitter.emit(type, detail);
     }
   }
 
@@ -73,4 +74,3 @@ describe('full hp timer', () => {
       expect(client.notify).not.toHaveBeenCalled();
     });
 });
-

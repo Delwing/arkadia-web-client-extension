@@ -4,11 +4,11 @@ import { EventEmitter } from 'events';
 describe('idle timer', () => {
   class FakeClient {
     private emitter = new EventEmitter();
-    addEventListener(event: string, cb: any) {
+    on(event: string, cb: any) {
       this.emitter.on(event, cb);
     }
     sendEvent(type: string, detail?: any) {
-      this.emitter.emit(type, { detail });
+      this.emitter.emit(type, detail);
     }
   }
 

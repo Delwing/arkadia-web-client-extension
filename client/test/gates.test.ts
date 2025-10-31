@@ -5,7 +5,7 @@ import initGates from '../src/scripts/gates';
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
-  addEventListener = jest.fn();
+  on = jest.fn();
   sendCommand = jest.fn();
 }
 
@@ -40,4 +40,3 @@ describe('gates triggers', () => {
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(2);
   });
 });
-

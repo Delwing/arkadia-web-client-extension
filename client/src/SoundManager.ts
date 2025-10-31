@@ -1,29 +1,21 @@
 import type {Howl} from "howler";
 import storage from "./storage";
 import { getCustomSound } from "./customSounds";
+import type Client from "./Client";
 
 export type SoundKey = string;
-
-interface PlaySoundDetail {
-    key: SoundKey;
-}
 
 export default class SoundManager {
     private sounds: Partial<Record<SoundKey, Howl>> = {};
     private soundLoaders: Partial<Record<SoundKey, Promise<Howl | undefined>>> = {};
     private howlConstructorPromise: Promise<typeof import('howler').Howl> | null = null;
-    private readonly playHandler: (event: Event) => void;
 
-    constructor(private readonly eventTarget: EventTarget) {
-        this.playHandler = (event: Event) => {
-            const detail = (event as CustomEvent<PlaySoundDetail>).detail;
-            const key = detail?.key;
-            if (!key) {
-                return;
+    constructor(private readonly client: Client) {
+        this.client.on("sound:play", ({ key }) => {
+            if (typeof key === "string" && key) {
+                void this.play(key);
             }
-            void this.play(key);
-        };
-        this.eventTarget.addEventListener("sound:play", this.playHandler as EventListener);
+        });
     }
 
     async prepare(): Promise<void> {

@@ -36,20 +36,20 @@ export default class ObjectList {
         this.isMobile = this.isMobileBrowser();
         const storedSettings = getItemSync("settings")?.settings;
         this.attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
-        this.client.addEventListener("settings", (ev: CustomEvent) => {
-            this.attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
+        this.client.on("settings", (settings) => {
+            this.attackCommand = normalizeAttackCommand((settings as any)?.attackCommand);
         });
         this.setupDraggable();
         if (!this.isMobile) {
             this.container?.addEventListener("click", this.onClick);
         }
         window.addEventListener("resize", this.clampToViewport);
-        this.client.addEventListener("attackQueueChange", () => this.render());
-        this.client.addEventListener("gmcp.objects.nums", () => this.render());
-        this.client.addEventListener("gmcp.objects.data", () => this.render());
-        this.client.addEventListener("gmcp.char.state", () => this.render());
-        this.client.addEventListener("output-sent", this.handleOutputUpdate);
-        this.client.addEventListener("buffer-sent", this.handleOutputUpdate);
+        this.client.on("attackQueueChange", () => this.render());
+        this.client.on("gmcp.objects.nums", () => this.render());
+        this.client.on("gmcp.objects.data", () => this.render());
+        this.client.on("gmcp.char.state", () => this.render());
+        this.client.on("output-sent", () => this.handleOutputUpdate());
+        this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();
         this.render();
     }
@@ -313,8 +313,7 @@ export default class ObjectList {
             return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
         });
         this.objectLines = lines;
-        const html = lines.join("<br>");
-        this.content.innerHTML = html;
+        this.content.innerHTML = lines.join("<br>");
         this.rebuildPictureInPictureHtml();
     }
 

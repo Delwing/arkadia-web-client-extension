@@ -3,15 +3,15 @@ import { EventEmitter } from 'events';
 
 class FakeClient {
   private emitter = new EventEmitter();
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
   sendEvent(type: string, detail?: any) {
-    this.emitter.emit(type, { detail });
+    this.emitter.emit(type, detail);
   }
 }
 

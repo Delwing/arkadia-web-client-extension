@@ -7,14 +7,15 @@ class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   contentWidth = 40;
 
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
+    return () => this.emitter.off(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
   dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
+    this.emitter.emit(event, detail);
   }
 }
 

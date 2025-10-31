@@ -254,7 +254,7 @@ function parseRadialSettings(raw: any): RadialSettings {
     if (!raw || typeof raw !== 'object') {
         return { enabled: true, commands: cloneDefaultRadialCommands() };
     }
-    const enabled = raw.enabled === false ? false : true;
+    const enabled = raw.enabled !== false;
     const list = Array.isArray(raw.commands) ? raw.commands : [];
     const commands: RadialCommandSetting[] = [];
     const usedIds = new Set<string>();
@@ -434,11 +434,6 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('mobileButtonsSettings', { detail: set.buttons })
-        );
-    }
+    (window as any).clientExtension?.sendEvent?.('mobileButtonsSettings', set.buttons);
 }
-
 

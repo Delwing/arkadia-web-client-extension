@@ -22,17 +22,17 @@ export default class ObjectManager {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
-            this.handleNums(e.detail);
+        this.client.on('gmcp.objects.nums', detail => {
+            this.handleNums(detail);
         });
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.handleData(e.detail);
+        this.client.on('gmcp.objects.data', detail => {
+            this.handleData(detail as Record<string, ObjectData>);
         });
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            this.handleCharInfo(e.detail);
+        this.client.on('gmcp.char.info', detail => {
+            this.handleCharInfo(detail);
         });
-        this.client.addEventListener('gmcp.char.state', (e: CustomEvent) => {
-            this.handleCharState(e.detail);
+        this.client.on('gmcp.char.state', detail => {
+            this.handleCharState(detail);
         });
     }
 

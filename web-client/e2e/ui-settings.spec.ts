@@ -33,9 +33,9 @@ test.describe('UI settings', () => {
 
         await page.evaluate(() => {
             (window as any).__lastUiSettingsEvent = null;
-            const target: EventTarget | undefined = (window as any).clientExtension?.eventTarget;
-            target?.addEventListener('uiSettings', (event: CustomEvent) => {
-                (window as any).__lastUiSettingsEvent = event.detail;
+            const extension = (window as any).clientExtension;
+            extension?.on?.('uiSettings', (detail: unknown) => {
+                (window as any).__lastUiSettingsEvent = detail;
             });
             if (!document.querySelector('[data-test-mobile-button]')) {
                 const button = document.createElement('button');

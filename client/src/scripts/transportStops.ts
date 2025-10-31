@@ -363,11 +363,11 @@ class TransportTracker {
     }
 
     private registerListeners() {
-        this.client.addEventListener("command", (ev: CustomEvent<string>) => {
-            this.handleCommand(ev.detail ?? "");
+        this.client.on("command", (cmd = "") => {
+            this.handleCommand(cmd);
         });
-        this.client.addEventListener("enterLocation", (ev: CustomEvent<{ id: number }>) => {
-            const nextId = typeof ev.detail?.id === "number" ? ev.detail.id : null;
+        this.client.on("enterLocation", (payload) => {
+            const nextId = typeof (payload as { id?: number })?.id === "number" ? (payload as { id: number }).id : null;
             const previous = this.currentLocationId;
             this.previousLocationId = previous;
             this.currentLocationId = nextId;
@@ -765,9 +765,7 @@ class TransportTracker {
             return journey.activeIndex;
         }
         if (journey.candidateIndexes.size === 1) {
-            for (const index of journey.candidateIndexes) {
-                return index;
-            }
+            return journey.candidateIndexes.values().next().value;
         }
         return undefined;
     }

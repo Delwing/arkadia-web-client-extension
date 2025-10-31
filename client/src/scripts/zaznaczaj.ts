@@ -11,11 +11,11 @@ export default function initZaznaczaj(
         client.sendEvent('highlights', Array.from(highlights));
     };
 
-    client.addEventListener('enterLocation', (ev: CustomEvent<{ id: number }>) => {
+    client.on('enterLocation', (payload) => {
         if (!active) {
             return;
         }
-        const id = ev.detail?.id;
+        const id = (payload as { id?: number })?.id;
         if (typeof id !== 'number') {
             return;
         }

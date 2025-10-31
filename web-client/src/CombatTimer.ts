@@ -28,18 +28,15 @@ export default class CombatTimer {
 
   private subscribeToUiSettings() {
     const ext: any = (window as any).clientExtension;
-    const target: EventTarget | undefined = ext?.eventTarget;
-    if (!target) {
+    if (typeof ext?.on !== "function") {
       return;
     }
-    const handler: EventListener = (event: Event) => {
-      const detail = (event as CustomEvent<Partial<UiSettings>>).detail;
-      if (detail && typeof detail.showCombatTimer === "boolean") {
-        this.enabled = detail.showCombatTimer;
+    ext.on("uiSettings", (payload: Partial<UiSettings> | undefined) => {
+      if (payload && typeof payload.showCombatTimer === "boolean") {
+        this.enabled = payload.showCombatTimer;
         this.update(this.lastSeconds);
       }
-    };
-    target.addEventListener("uiSettings", handler);
+    });
   }
 
   private update(seconds: number | null) {
@@ -62,4 +59,3 @@ export default class CombatTimer {
     }
   }
 }
-

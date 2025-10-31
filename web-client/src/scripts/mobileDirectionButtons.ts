@@ -128,8 +128,10 @@ export default class MobileDirectionButtons {
         this.updateViewportBaseline(true);
         this.setupKeyboardHandlers();
 
-        this.client.addEventListener('gmcp.room.info', (ev: CustomEvent) => {
-            const exits = Array.isArray(ev.detail?.exits) ? ev.detail.exits : [];
+        this.client.on('gmcp.room.info', (detail) => {
+            const exits = Array.isArray((detail as { exits?: unknown })?.exits)
+                ? (detail as { exits: unknown[] }).exits
+                : [];
             this.highlightExits(exits);
         });
 
@@ -149,15 +151,15 @@ export default class MobileDirectionButtons {
                 this.renderIdzList();
             }
         };
-        this.client.addEventListener('gmcp.objects.nums', () => {
+        this.client.on('gmcp.objects.nums', () => {
             updateLists();
             this.updateTeamMode();
         });
-        this.client.addEventListener('gmcp.objects.data', () => {
+        this.client.on('gmcp.objects.data', () => {
             updateLists();
             this.updateTeamMode();
         });
-        this.client.addEventListener('teamChange', () => {
+        this.client.on('teamChange', () => {
             this.updateTeamMode();
         });
 
@@ -180,8 +182,8 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for UI settings changes
-        this.client.addEventListener("uiSettings", (event: CustomEvent) => {
-            const detail = event.detail || {};
+        this.client.on("uiSettings", (event) => {
+            const detail = (event ?? {}) as Record<string, unknown>;
             if (Object.prototype.hasOwnProperty.call(detail, "hapticFeedback")) {
                 this.hapticEnabled = detail.hapticFeedback !== false;
             }
@@ -195,8 +197,8 @@ export default class MobileDirectionButtons {
             }
         });
 
-        this.client.addEventListener('mobileButtonsSettings', (ev: CustomEvent) => {
-            this.buttonSettings = ev.detail || this.buttonSettings;
+        this.client.on('mobileButtonsSettings', (settings) => {
+            this.buttonSettings = (settings ?? this.buttonSettings) as typeof this.buttonSettings;
             this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement | null;
             this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
             this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
@@ -231,8 +233,8 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for bind settings changes
-        this.client.addEventListener('settings', (ev: CustomEvent) => {
-            const bind = ev.detail?.binds?.main;
+        this.client.on('settings', (settings) => {
+            const bind = (settings as any)?.binds?.main;
             if (bind) {
                 this.boundKey = bind.key;
                 this.boundCtrl = !!bind.ctrl;
@@ -991,7 +993,7 @@ export default class MobileDirectionButtons {
                     newBtn.title = '';
                 }
             };
-            this.client.addEventListener('enterLocation', updateLabel as EventListener);
+            this.client.on('enterLocation', () => updateLabel());
             updateLabel();
         }
     }

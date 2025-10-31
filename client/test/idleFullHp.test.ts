@@ -6,9 +6,9 @@ describe('idle full hp notification', () => {
     private emitter = new EventEmitter();
     notify = jest.fn();
     sendEvent(type: string, detail?: any) {
-      this.emitter.emit(type, { detail });
+      this.emitter.emit(type, detail);
     }
-    addEventListener(event: string, cb: any) {
+    on(event: string, cb: any) {
       this.emitter.on(event, cb);
     }
   }

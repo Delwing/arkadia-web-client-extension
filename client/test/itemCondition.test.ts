@@ -3,8 +3,8 @@ import Triggers, { stripAnsiCodes } from '../src/Triggers';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  addEventListener = jest.fn();
-  removeEventListener = jest.fn();
+  on = jest.fn();
+  off = jest.fn();
 }
 
 describe('itemCondition trigger', () => {

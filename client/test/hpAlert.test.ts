@@ -6,11 +6,11 @@ class FakeClient {
   private emitter = new EventEmitter();
   println = jest.fn();
   notify = jest.fn();
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
   }
-  sendEvent = jest.fn((type: string, detail?: any) => {
-    this.emitter.emit(type, { detail });
+  sendEvent = jest.fn((type: string, payload?: any) => {
+    this.emitter.emit(type, payload);
   });
 }
 

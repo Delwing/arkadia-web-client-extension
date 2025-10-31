@@ -8,9 +8,9 @@ class FakeClient {
   send = jest.fn();
   sendCommand = jest.fn();
   contentWidth = 120;
-  addEventListener(event: string, cb: any) { this.emitter.on(event, cb); }
-  removeEventListener(event: string, cb: any) { this.emitter.off(event, cb); }
-  dispatch(event: string, detail: any) { this.emitter.emit(event, { detail }); }
+  on(event: string, cb: any) { this.emitter.on(event, cb); }
+  off(event: string, cb: any) { this.emitter.off(event, cb); }
+  dispatch(event: string, detail: any) { this.emitter.emit(event, detail); }
 }
 
 const LINE1 = 'akrobatyka:             troche           alchemia:               troche';
@@ -32,9 +32,9 @@ describe('skills alias', () => {
       expect(client.sendCommand).not.toHaveBeenCalled();
       const printed = stripAnsiCodes(processed).split('\n');
       expect(printed.length).toBe(3);
-      expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10\]\s+alchemia:\s+troche\s+\[2\/10\]/);
-      expect(printed[1]).toMatch(/gornictwo:\s+ledwo\s+\[1\/10\]\s+lowiectwo:\s+pobieznie\s+\[3\/10\]/);
-      expect(printed[2]).toMatch(/zielarstwo:\s+troche\s+\[2\/10\]/);
+      expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10]\s+alchemia:\s+troche\s+\[2\/10]/);
+      expect(printed[1]).toMatch(/gornictwo:\s+ledwo\s+\[1\/10]\s+lowiectwo:\s+pobieznie\s+\[3\/10]/);
+      expect(printed[2]).toMatch(/zielarstwo:\s+troche\s+\[2\/10]/);
     });
 
     test('splits columns when width is small', () => {

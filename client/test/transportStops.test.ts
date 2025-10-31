@@ -14,14 +14,16 @@ class FakeClient {
     this.Triggers = new Triggers({} as unknown as any);
   }
 
-  addEventListener(event: string, listener: Function) {
+  on(event: string, listener: Function) {
     (this.listeners[event] ||= []).push(listener);
     return () => {};
   }
 
   dispatchEvent(event: string, detail?: any) {
-    (this.listeners[event] || []).forEach(listener => listener({ detail }));
+    (this.listeners[event] || []).forEach(listener => listener(detail));
   }
+
+  addEventListener = this.on;
 }
 
 describe('transport stop triggers', () => {

@@ -274,23 +274,17 @@ function apply(settings: UiSettings) {
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    if ((window as any).clientExtension?.eventTarget) {
-        (window as any).clientExtension.eventTarget.dispatchEvent(
-            new CustomEvent('uiSettings', {
-                detail: {
-                    mobileDirectionButtons: settings.showButtons,
-                    hapticFeedback: settings.hapticFeedback,
-                    emojiLabels: settings.emojiLabels,
-                    xtermPalette: settings.xtermPalette,
-                    footerMode: settings.footerMode,
-                    fightTitleIcon: settings.fightTitleIcon,
-                    clearInputOnSend: settings.clearInputOnSend,
-                    showTransportLabel: settings.showTransportLabel,
-                    showCombatTimer: settings.showCombatTimer,
-                },
-            })
-        );
-    }
+    (window as any).clientExtension?.sendEvent?.('uiSettings', {
+        mobileDirectionButtons: settings.showButtons,
+        hapticFeedback: settings.hapticFeedback,
+        emojiLabels: settings.emojiLabels,
+        xtermPalette: settings.xtermPalette,
+        footerMode: settings.footerMode,
+        fightTitleIcon: settings.fightTitleIcon,
+        clearInputOnSend: settings.clearInputOnSend,
+        showTransportLabel: settings.showTransportLabel,
+        showCombatTimer: settings.showCombatTimer,
+    });
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }

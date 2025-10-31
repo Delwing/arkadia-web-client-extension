@@ -25,8 +25,8 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         client.contentWidth = 140;
         client.Map.renderRoomByIdSilently?.(1);
         (window as any).__leadToEvents = [];
-        window.addEventListener('leadTo', (event: any) => {
-            (window as any).__leadToEvents.push(event.detail);
+        client.on('leadTo', (id: number | undefined) => {
+            (window as any).__leadToEvents.push(id ?? null);
         });
     });
 
@@ -104,8 +104,8 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
         client.contentWidth = 140;
         client.Map.renderRoomByIdSilently?.(1);
         (window as any).__leadToEvents = [];
-        window.addEventListener('leadTo', (event: any) => {
-            (window as any).__leadToEvents.push(event.detail);
+        client.on('leadTo', (id: number | undefined) => {
+            (window as any).__leadToEvents.push(id ?? null);
         });
     });
 

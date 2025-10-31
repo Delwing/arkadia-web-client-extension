@@ -26,18 +26,15 @@ export default class TransportTimer {
 
   private subscribeToUiSettings() {
     const ext: any = (window as any).clientExtension;
-    const target: EventTarget | undefined = ext?.eventTarget;
-    if (!target) {
+    if (typeof ext?.on !== "function") {
       return;
     }
-    const handler: EventListener = (event: Event) => {
-      const detail = (event as CustomEvent<Partial<UiSettings>>).detail;
-      if (detail && typeof detail.showTransportLabel === "boolean") {
-        this.showTransportLabel = detail.showTransportLabel;
+    ext.on("uiSettings", (payload: Partial<UiSettings> | undefined) => {
+      if (payload && typeof payload.showTransportLabel === "boolean") {
+        this.showTransportLabel = payload.showTransportLabel;
         this.update(this.lastPayload);
       }
-    };
-    target.addEventListener("uiSettings", handler);
+    });
   }
 
   private update(payload: TransportTimerPayload | null) {

@@ -56,17 +56,17 @@ export default function initInvite(client: Client) {
     }
 
     // Listen for settings updates to get enemy guilds list
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail;
-        if (Array.isArray(settings.enemyGuilds)) {
-            enemyGuilds = [...settings.enemyGuilds];
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as { enemyGuilds?: unknown };
+        if (Array.isArray(detail.enemyGuilds)) {
+            enemyGuilds = [...detail.enemyGuilds];
         }
         ensurePeopleLoaded().catch(() => undefined);
     });
 
     // Register trigger for invite pattern
     // Pattern: ^\[?([A-Z][a-z ]+?)\]? zaprasza cie do swojej druzyny\.$
-    const invitePattern = /^\[?([A-Z][a-z ]+?)\]? zaprasza cie do swojej druzyny\.$/;
+    const invitePattern = /^\[?([A-Z][a-z ]+?)]? zaprasza cie do swojej druzyny\.$/;
 
     client.Triggers.registerTrigger(invitePattern, (rawLine, _line, matches): string | undefined => {
         const inviterName = matches[1];

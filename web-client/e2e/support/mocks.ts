@@ -114,22 +114,25 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
                 return;
             }
             const client = globalScope.clientExtension;
-            if (!client || typeof client.addEventListener !== 'function') {
+            if (!client || typeof client.on !== 'function') {
                 return;
             }
-            const handler = (event: CustomEvent<string>) => {
-                const value = typeof event.detail === 'string' ? event.detail.trim() : '';
-                if (value) {
+            const handler = (value?: unknown) => {
+                if (typeof value !== 'string') {
+                    return;
+                }
+                const trimmed = value.trim();
+                if (trimmed) {
                     const socket = getGameSocket();
-                    if (socket && socket.commands[socket.commands.length - 1] !== value) {
-                        socket.commands.push(value);
+                    if (socket && socket.commands[socket.commands.length - 1] !== trimmed) {
+                        socket.commands.push(trimmed);
                     }
-                    if (commandLog[commandLog.length - 1] !== value) {
-                        commandLog.push(value);
+                    if (commandLog[commandLog.length - 1] !== trimmed) {
+                        commandLog.push(trimmed);
                     }
                 }
             };
-            client.addEventListener('command', handler as unknown as EventListener);
+            client.on('command', handler as any);
             globalScope.__commandListenerInstalled = true;
         };
 

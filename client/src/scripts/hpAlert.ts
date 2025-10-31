@@ -16,13 +16,13 @@ export default function initHpAlert(client: Client) {
     let prev = Infinity;
     let alertLevel = 2;
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const settings = ev.detail || {};
-        if (typeof settings.lowHpAlert === 'boolean') {
-            alertLevel = settings.lowHpAlert ? 2 : 0;
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as { lowHpAlert?: unknown };
+        if (typeof detail.lowHpAlert === 'boolean') {
+            alertLevel = detail.lowHpAlert ? 2 : 0;
             return;
         }
-        const value = Number(settings.lowHpAlert);
+        const value = Number(detail.lowHpAlert);
         if (Number.isFinite(value)) {
             const max = CONDITIONS.length - 1;
             alertLevel = Math.max(0, Math.min(max, Math.floor(value)));
@@ -31,8 +31,9 @@ export default function initHpAlert(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.state', (ev: CustomEvent) => {
-        let hp = ev.detail?.hp;
+    client.on('gmcp.char.state', (state) => {
+        const detail = state as { hp?: number };
+        let hp = detail?.hp;
         if (typeof hp !== 'number') return;
         hp++;
         if (alertLevel <= 0) {

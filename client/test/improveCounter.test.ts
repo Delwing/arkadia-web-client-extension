@@ -14,14 +14,14 @@ class FakeClient {
   println = jest.fn();
   port = { postMessage: jest.fn() } as any;
 
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
   dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
+    this.emitter.emit(event, detail);
   }
 }
 
@@ -105,7 +105,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 3 });
     showLifetime();
     const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
-    expect(printed).toMatch(/\[\s*1\]/);
+    expect(printed).toMatch(/\[\s*1]/);
     expect(printed).toMatch(/- male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
     client.print.mockClear();

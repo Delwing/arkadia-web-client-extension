@@ -27,10 +27,15 @@ export default class People {
                 this.client.Triggers.removeByTag(this.tag)
             }
         })
-        this.client.addEventListener('settings', (event: CustomEvent) => {
-            this.guildFilter = event.detail.guilds || []
-            this.enemyGuilds = event.detail.enemyGuilds || []
-            this.guildColors = event.detail.guildColors || {}
+        this.client.on('settings', (settings) => {
+            const detail = (settings ?? {}) as {
+                guilds?: string[];
+                enemyGuilds?: string[];
+                guildColors?: Record<string, string | undefined>;
+            };
+            this.guildFilter = detail.guilds || []
+            this.enemyGuilds = detail.enemyGuilds || []
+            this.guildColors = detail.guildColors || {}
             this.ensurePeopleTriggers()
         })
         this.ensurePeopleTriggers()

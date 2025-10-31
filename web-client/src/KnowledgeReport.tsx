@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import type Client from '@client/src/Client';
 import type { KnowledgeCategoryStatus } from '@client/src/dataStores/knowledgeStore';
+import type { KnowledgeReportAction } from '@client/src/eventBus';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -42,10 +43,6 @@ type KnowledgeReportPayload = {
   libraries: KnowledgeReportLibrary[];
   categories: KnowledgeReportCategory[];
 };
-
-type KnowledgeReportAction =
-  | { type: 'completeLibrary'; libraryId: string }
-  | { type: 'resetLibrary'; libraryId: string };
 
 type PointerDragState = {
   pointerId: number;
@@ -215,12 +212,16 @@ const KnowledgeReport: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const custom = event as CustomEvent<KnowledgeReportPayload | null | undefined>;
-      handleReport(custom.detail);
+    const client = (window as any).clientExtension as Client | undefined;
+    if (!client?.on) {
+      return;
+    }
+    const unsubscribe = client.on('knowledgeReport', (payload) => {
+      handleReport(payload as KnowledgeReportPayload | null | undefined);
+    });
+    return () => {
+      unsubscribe?.();
     };
-    window.addEventListener('knowledgeReport', handler as EventListener);
-    return () => window.removeEventListener('knowledgeReport', handler as EventListener);
   }, [handleReport]);
 
   useEffect(() => {
@@ -302,7 +303,8 @@ const KnowledgeReport: React.FC = () => {
   );
 
   const sendKnowledgeReportAction = useCallback((action: KnowledgeReportAction) => {
-    window.dispatchEvent(new CustomEvent('knowledgeReportAction', { detail: action }));
+    const client = (window as any).clientExtension as Client | undefined;
+    client?.sendEvent?.('knowledgeReportAction', action);
   }, []);
 
   const handleCompleteLibrary = useCallback(
@@ -554,4 +556,3 @@ const KnowledgeReport: React.FC = () => {
 };
 
 export default KnowledgeReport;
-

@@ -13,6 +13,7 @@ export default class InlineCompassRose {
     private client: Client;
     private exits = new Set<string>();
     private enabled = false;
+    private unsubscribeExits?: () => void;
     private listener = () => {
         const data = gmcp?.room?.info;
         this.exits = new Set(this.parseExits(data));
@@ -21,8 +22,9 @@ export default class InlineCompassRose {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener("settings", (event: CustomEvent) => {
-            const enabled = !!event.detail.inlineCompassRose;
+        this.client.on("settings", (payload) => {
+            const detail = (payload ?? {}) as { inlineCompassRose?: boolean };
+            const enabled = !!detail.inlineCompassRose;
             if (enabled) {
                 this.enable();
             } else {
@@ -34,13 +36,14 @@ export default class InlineCompassRose {
     enable() {
         if (this.enabled) return;
         this.enabled = true;
-        this.client.addEventListener("gmcp_msg.room.exits", this.listener);
+        this.unsubscribeExits = this.client.on("gmcp_msg.room.exits", () => this.listener());
     }
 
     disable() {
         if (!this.enabled) return;
         this.enabled = false;
-        this.client.removeEventListener("gmcp_msg.room.exits", this.listener);
+        this.unsubscribeExits?.();
+        this.unsubscribeExits = undefined;
     }
 
     private parseExits(detail: any): string[] {

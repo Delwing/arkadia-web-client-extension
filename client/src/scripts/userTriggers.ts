@@ -70,13 +70,13 @@ export default function initUserTriggers(client: Client) {
         });
     };
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            apply(Array.isArray(ev.detail.value) ? ev.detail.value : []);
+    client.on('storage', ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            apply(Array.isArray(value) ? value : []);
         }
     });
 
-    client.addEventListener('port-connected', () => {
+    client.on('port-connected', () => {
         client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
     });
 

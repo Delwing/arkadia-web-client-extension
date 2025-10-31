@@ -1,29 +1,21 @@
 import initZaskTimer from "../src/scripts/zaskTimer";
+import { EventEmitter } from 'events';
 
 describe("zask timer", () => {
-  class FakeClient extends EventTarget {
+  class FakeClient {
+    private emitter = new EventEmitter();
     moveMode = 0;
     sendEvent = jest.fn((type: string, detail?: any) => {
-      super.dispatchEvent(new CustomEvent(type, { detail }));
+      this.emitter.emit(type, detail);
     });
 
-    addEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-      options?: AddEventListenerOptions | boolean,
-    ) {
-      super.addEventListener(type, listener as EventListener, options);
-      return () => super.removeEventListener(type, listener as EventListener, options as any);
+    on(event: string, cb: (payload: any) => void) {
+      this.emitter.on(event, cb);
+      return () => this.emitter.off(event, cb);
     }
 
-    removeEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject | null,
-      options?: EventListenerOptions,
-    ) {
-      if (listener) {
-        super.removeEventListener(type, listener as EventListener, options);
-      }
+    dispatchEvent(event: Event) {
+      this.emitter.emit(event.type, (event as CustomEvent).detail);
     }
   }
 

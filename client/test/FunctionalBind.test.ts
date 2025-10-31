@@ -4,7 +4,7 @@ import { color } from '../src/Colors';
 describe('FunctionalBind clickable text', () => {
   test('set makes printed text clickable', () => {
     const client = {
-      addEventListener: jest.fn(),
+      on: jest.fn(),
       println: jest.fn(),
       createButton: jest.fn(() => ({ remove: jest.fn() })),
       OutputHandler: { makeClickable: jest.fn(() => 'clickable') },
@@ -22,7 +22,7 @@ describe('FunctionalBind clickable text', () => {
   test('set updates button callback when called again with same text', () => {
     const button: any = { remove: jest.fn(), onclick: () => {} };
     const client = {
-      addEventListener: jest.fn(),
+      on: jest.fn(),
       println: jest.fn(),
       createButton: jest.fn(() => button),
       OutputHandler: { makeClickable: jest.fn(() => 'clickable') },

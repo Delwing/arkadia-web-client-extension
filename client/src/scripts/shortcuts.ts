@@ -32,14 +32,14 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: Object.values(shortcuts) });
     }
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            const value = Array.isArray(ev.detail.value) ? ev.detail.value : [];
-            apply(value);
+    client.on("storage", ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            const valueArray = Array.isArray(value) ? value : [];
+            apply(valueArray);
         }
     });
 
-    client.addEventListener("port-connected", () => {
+    client.on("port-connected", () => {
         client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
     });
 

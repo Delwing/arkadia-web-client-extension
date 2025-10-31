@@ -38,9 +38,9 @@ function isBankRoom(room: any): boolean {
 }
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    client.addEventListener("storage", (event: CustomEvent) => {
-        if (event.detail.key === STORAGE_KEY) {
-            const nextDeposits = cloneDeposits(event.detail.value as Record<number, DepositInfo> | undefined);
+    client.on("storage", ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            const nextDeposits = cloneDeposits(value as Record<number, DepositInfo> | undefined);
             Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
             Object.assign(deposits, nextDeposits);
         }
@@ -61,11 +61,12 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
 
     let columns = 1;
     let width = client.contentWidth;
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        columns = ev.detail.containerColumns ?? columns;
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as { containerColumns?: number };
+        columns = detail.containerColumns ?? columns;
     });
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
+    client.on('contentWidth', (value) => {
+        width = value;
     });
 
     function update(items: ContainerItem[] | null) {

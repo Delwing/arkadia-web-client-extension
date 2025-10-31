@@ -50,7 +50,7 @@ export default function initZaskTimer(client: Client) {
         timer = window.setInterval(updateTimer, 1000);
     }
 
-    client.addEventListener('gmcp.room.info', () => {
+    client.on('gmcp.room.info', () => {
         if (client.moveMode > 0) {
             startTimer();
         } else {
@@ -58,8 +58,8 @@ export default function initZaskTimer(client: Client) {
         }
     });
 
-    client.addEventListener('moveModeChanged', (event: CustomEvent<number>) => {
-        if (event.detail === 0) {
+    client.on('moveModeChanged', (mode) => {
+        if (mode === 0) {
             stopTimer();
         }
     });

@@ -1,8 +1,14 @@
 import InlineCompassRose from '../src/scripts/inlineCompassRose';
+import { EventEmitter } from 'events';
 
 class FakeClient {
-  addEventListener() {}
-  removeEventListener() {}
+  private emitter = new EventEmitter();
+  on(event: string, cb: (...args: any[]) => void) {
+    this.emitter.on(event, cb);
+  }
+  off(event: string, cb: (...args: any[]) => void) {
+    this.emitter.off(event, cb);
+  }
   println = jest.fn();
 }
 

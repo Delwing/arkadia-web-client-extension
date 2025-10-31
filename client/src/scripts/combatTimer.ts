@@ -70,10 +70,10 @@ export default function initCombatTimer(client: Client) {
         }
     }
 
-    client.addEventListener('gmcp.char.info', (event: CustomEvent) => {
-        const info = event.detail || {};
-        const newPlayerNum = typeof info.object_num !== 'undefined'
-            ? String(info.object_num)
+    client.on('gmcp.char.info', info => {
+        const detail = (info ?? {}) as { object_num?: unknown };
+        const newPlayerNum = typeof detail.object_num !== 'undefined'
+            ? String(detail.object_num)
             : undefined;
         if (newPlayerNum !== playerNum) {
             playerNum = newPlayerNum;
@@ -82,15 +82,14 @@ export default function initCombatTimer(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.objects.data', (event: CustomEvent<Record<string, any>>) => {
+    client.on('gmcp.objects.data', (detail) => {
         if (!playerNum) {
             return;
         }
-        const detail = event.detail;
         if (!detail || typeof detail !== 'object') {
             return;
         }
-        const playerData = detail[playerNum];
+        const playerData = (detail as Record<string, any>)[playerNum];
         if (!playerData || typeof playerData !== 'object') {
             return;
         }
@@ -102,7 +101,7 @@ export default function initCombatTimer(client: Client) {
         setCombatState(inCombat);
     });
 
-    client.addEventListener('client.disconnect', () => {
+    client.on('client.disconnect', () => {
         playerNum = undefined;
         lastCombatState = null;
         stopTimer();
@@ -110,4 +109,3 @@ export default function initCombatTimer(client: Client) {
 
     emit(null);
 }
-

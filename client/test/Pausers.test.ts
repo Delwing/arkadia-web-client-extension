@@ -11,12 +11,12 @@ class FakeMap {
 class FakeClient {
   private emitter = new EventEmitter();
   Map = new FakeMap();
-  addEventListener(event: string, cb: any, _options?: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
   }
-  sendEvent(type: string, detail?: any) {
-    this.emitter.emit(type, { detail });
+  sendEvent(type: string, ...args: any[]) {
+    this.emitter.emit(type, ...args);
   }
 }
 
@@ -48,8 +48,8 @@ describe('Pausers', () => {
   test('emits events when pause starts and ends', () => {
     let started = false;
     let ended = false;
-    client.addEventListener('pauserStart', () => { started = true; });
-    client.addEventListener('pauserEnd', () => { ended = true; });
+    client.on('pauserStart', () => { started = true; });
+    client.on('pauserEnd', () => { ended = true; });
     client.sendEvent('gmcp.objects.data', { '1': { paralyzed: true } });
     expect(started).toBe(true);
     client.sendEvent('gmcp.objects.data', { '1': { paralyzed: false } });

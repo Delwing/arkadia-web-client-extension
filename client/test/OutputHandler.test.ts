@@ -2,12 +2,19 @@ import OutputHandler from '../src/OutputHandler';
 
 class FakeClient {
   eventTarget = new EventTarget();
-  addEventListener(event: string, cb: any, options?: any) {
-    this.eventTarget.addEventListener(event, cb, options);
-    return () => this.eventTarget.removeEventListener(event, cb, options);
+  private listenerMap = new Map<Function, EventListener>();
+  on(event: string, cb: any, options?: any) {
+    const wrapped: EventListener = (ev: Event) => cb((ev as CustomEvent).detail);
+    this.listenerMap.set(cb, wrapped);
+    this.eventTarget.addEventListener(event, wrapped, options);
+    return () => this.off(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
-    this.eventTarget.removeEventListener(event, cb);
+  off(event: string, cb: any) {
+    const wrapped = this.listenerMap.get(cb);
+    if (wrapped) {
+      this.eventTarget.removeEventListener(event, wrapped);
+      this.listenerMap.delete(cb);
+    }
   }
   dispatch(type: string, detail?: any) {
     this.eventTarget.dispatchEvent(new CustomEvent(type, { detail }));
@@ -118,7 +125,7 @@ describe('OutputHandler clickable text', () => {
     sticky.appendChild(div.cloneNode(true));
     const prev = (handler as any).output;
     (handler as any).output = sticky;
-    handler['processOutput']!(new CustomEvent('output-sent', { detail: 1 }));
+    handler['processOutput']!(1);
     (handler as any).output = prev;
 
     // process original line

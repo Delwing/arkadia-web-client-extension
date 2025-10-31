@@ -18,7 +18,7 @@ type MockedClient = {
   port: {
     postMessage: jest.Mock;
   };
-  addEventListener: jest.Mock;
+  on: jest.Mock;
 };
 
 type ClientTestContext = {
@@ -52,16 +52,19 @@ function createMockClient(): ClientTestContext {
     port: {
       postMessage: postMessageMock,
     },
-    addEventListener: jest.fn((event: string, callback: (ev: any) => void) => {
+    on: jest.fn((event: string, callback: (ev: any) => void) => {
       if (!listeners[event]) {
         listeners[event] = [];
       }
       listeners[event]!.push(callback);
+      return () => {
+        listeners[event] = (listeners[event] || []).filter(cb => cb !== callback);
+      };
     }),
   };
 
   const dispatch = (event: string, detail: any) => {
-    listeners[event]?.forEach((callback) => callback({ detail }));
+    listeners[event]?.forEach((callback) => callback(detail));
   };
 
   const triggerAlias = (input: string) => {

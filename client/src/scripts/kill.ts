@@ -221,6 +221,31 @@ function formatLifetimeTable(counts: KillCounts): string {
 
 export { parseName, formatSessionTable, formatLifetimeTable };
 
+function isNumberRecord(value: unknown): value is Record<string, number> {
+    if (!value || typeof value !== "object") {
+        return false;
+    }
+    return Object.values(value as Record<string, unknown>).every(entry => typeof entry === "number");
+}
+
+type SessionRecord = { mySession?: number; teamSession?: number };
+
+function isSessionRecord(value: unknown): value is Record<string, SessionRecord> {
+    if (!value || typeof value !== "object") {
+        return false;
+    }
+    return Object.values(value as Record<string, unknown>).every(entry => {
+        if (!entry || typeof entry !== "object") {
+            return false;
+        }
+        const candidate = entry as SessionRecord;
+        return (
+            (candidate.mySession === undefined || typeof candidate.mySession === "number") &&
+            (candidate.teamSession === undefined || typeof candidate.teamSession === "number")
+        );
+    });
+}
+
 class KillCounter {
     private client: Client;
     private kills: KillCounts = {};
@@ -228,22 +253,22 @@ class KillCounter {
     constructor(client: Client) {
         this.client = client;
 
-        this.client.addEventListener("storage", (event: CustomEvent) => {
-            if (event.detail.key === STORAGE_KEY) {
-                this.loadTotals(event.detail.value ?? {});
+        this.client.on("storage", ({ key, value }) => {
+            if (key === STORAGE_KEY) {
+                this.loadTotals(isNumberRecord(value) ? value : {});
             }
-            if (event.detail.key === SESSION_STORAGE_KEY) {
-                this.loadSession(event.detail.value ?? {});
+            if (key === SESSION_STORAGE_KEY) {
+                this.loadSession(isSessionRecord(value) ? value : {});
             }
         });
 
-        this.client.addEventListener("reset", () => this.resetSession());
+        this.client.on("reset", () => this.resetSession());
 
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
 
         const myKillRegex = /^[ >]*(Zabil(?:es|as) (?<name>[A-Za-z ()!,]+))\.$/;
-        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?:a)? (?<name>[a-zA-Z (),!]+)\.$/;
+        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabila? (?<name>[a-zA-Z (),!]+)\.$/;
 
         this.client.Triggers.registerTrigger(
             myKillRegex,
@@ -298,11 +323,13 @@ class KillCounter {
         });
     };
 
-    private loadSession(session: Record<string, { mySession: number; teamSession: number }> = {}): void {
+    private loadSession(
+        session: Record<string, Partial<{ mySession: number; teamSession: number }>> = {}
+    ): void {
         Object.entries(session).forEach(([name, data]) => {
             const entry = this.kills[name] ?? { mySession: 0, myTotal: 0, teamSession: 0 };
-            entry.mySession = data.mySession ?? 0;
-            entry.teamSession = data.teamSession ?? 0;
+            entry.mySession = typeof data.mySession === "number" ? data.mySession : 0;
+            entry.teamSession = typeof data.teamSession === "number" ? data.teamSession : 0;
             this.kills[name] = entry;
         });
     }

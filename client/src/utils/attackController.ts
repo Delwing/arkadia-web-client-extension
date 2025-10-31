@@ -7,13 +7,14 @@ export type AttackMode = "A" | "AW" | "AWR";
 export function createAttackController(client: Client) {
     const storedSettings = getItemSync("settings")?.settings;
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
-    client.addEventListener("settings", (ev: CustomEvent) => {
-        attackCommand = normalizeAttackCommand(ev.detail?.attackCommand);
+    client.on("settings", (settings) => {
+        const detail = (settings ?? {}) as { attackCommand?: string };
+        attackCommand = normalizeAttackCommand(detail?.attackCommand);
     });
 
     let attackMode: AttackMode = getItemSync("attack_mode")?.attack_mode ?? "A";
-    client.addEventListener("attackMode", (event: CustomEvent<AttackMode>) => {
-        attackMode = event.detail;
+    client.on("attackMode", (mode) => {
+        attackMode = mode as AttackMode;
         setItemSync("attack_mode", attackMode);
     });
     client.sendEvent("attackMode", attackMode);

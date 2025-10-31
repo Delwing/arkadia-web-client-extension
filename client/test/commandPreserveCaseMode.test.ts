@@ -7,9 +7,10 @@ describe('commandPreserveCaseMode', () => {
       registerTrigger: jest.fn(),
     } as any;
 
-    addEventListener(event: string, listener: (arg: CustomEvent) => void) {
-      this.eventTarget.addEventListener(event, listener as unknown as EventListener);
-      return () => this.eventTarget.removeEventListener(event, listener as unknown as EventListener);
+    on(event: string, listener: (arg: any) => void) {
+      const wrapped = (ev: Event) => listener((ev as CustomEvent).detail);
+      this.eventTarget.addEventListener(event, wrapped as EventListener);
+      return () => this.eventTarget.removeEventListener(event, wrapped as EventListener);
     }
 
     emit(event: string, detail: any) {

@@ -9,9 +9,18 @@ jest.mock('@client/src/storage', () => ({
 }));
 
 class MockClient {
+  private emitter = new EventEmitter();
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
   TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
-  addEventListener() {}
+  on(event: string, handler: (...args: any[]) => void) {
+    this.emitter.on(event, handler);
+  }
+  off(event: string, handler: (...args: any[]) => void) {
+    this.emitter.off(event, handler);
+  }
+  dispatch(event: string, payload: any) {
+    this.emitter.emit(event, payload);
+  }
   sendCommand = jest.fn();
 }
 
@@ -201,11 +210,11 @@ describe('ObjectList', () => {
       ObjectManager = new ObjectManager(this as any);
       TeamManager = { isInTeam: (_d: string) => false };
       sendCommand = jest.fn();
-      addEventListener(event: string, cb: any) {
+      on(event: string, cb: any) {
         this.emitter.on(event, cb);
       }
       sendEvent(type: string, detail?: any) {
-        this.emitter.emit(type, { detail });
+        this.emitter.emit(type, detail);
       }
     }
     const client = new TestClient();

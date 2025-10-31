@@ -1,5 +1,6 @@
 import Client from '../Client';
 import {color, colorString, findClosestColor, RESET} from '../Colors';
+import type { KnowledgeReportAction } from '../eventBus';
 import {
   DEFAULT_KNOWLEDGE_CHARACTER_KEY,
   getKnowledgeStore,
@@ -511,10 +512,6 @@ type KnowledgeDetailsReportCategory = {
 type KnowledgeDetailsReportPayload = {
   categories: KnowledgeDetailsReportCategory[];
 };
-type KnowledgeReportAction =
-  | { type: 'completeLibrary'; libraryId: string }
-  | { type: 'resetLibrary'; libraryId: string };
-
 function summarizeLibraryProgress(
   library: KnowledgeLibraryEntry,
   libraryProgress: Record<string, KnowledgeCategoryStatus>,
@@ -943,8 +940,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     }
   });
 
-  client.addEventListener('gmcp.char.info', (event: CustomEvent<unknown>) => {
-    const parsedGender = parseKnowledgeGender(event.detail);
+  client.on('gmcp.char.info', (detail) => {
+    const parsedGender = parseKnowledgeGender(detail);
     if (!parsedGender) {
       return;
     }
@@ -1035,13 +1032,13 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
       });
   }
 
-  client.addEventListener('enterLocation', (event: CustomEvent<{ room: any }>) => {
-    updateCurrentLibrary(event.detail.room);
+  client.on('enterLocation', (detail) => {
+    updateCurrentLibrary((detail as { room?: any })?.room);
   });
 
-  client.addEventListener('command', (event: CustomEvent<string>) => {
-    const command = (event.detail ?? '').trim();
-    if (command !== 'zglebiaj wiedze') {
+  client.on('command', (command = '') => {
+    const normalized = command.trim();
+    if (normalized !== 'zglebiaj wiedze') {
       return;
     }
 
@@ -1360,16 +1357,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     return updated;
   }
 
-  window.addEventListener('knowledgeReportAction', (event) => {
-    const detail = (event as CustomEvent<KnowledgeReportAction | null | undefined>).detail;
-    if (!detail) {
+  client.on('knowledgeReportAction', (detail) => {
+    const action = detail as KnowledgeReportAction | undefined | null;
+    if (!action) {
       return;
     }
-
-    if (detail.type === 'completeLibrary') {
-      void updateLibraryCategoriesStatus(detail.libraryId, 'completed');
-    } else if (detail.type === 'resetLibrary') {
-      void updateLibraryCategoriesStatus(detail.libraryId, 'not_started');
+    if (action.type === 'completeLibrary') {
+      void updateLibraryCategoriesStatus(action.libraryId, 'completed');
+    } else if (action.type === 'resetLibrary') {
+      void updateLibraryCategoriesStatus(action.libraryId, 'not_started');
     }
   });
 
@@ -1683,4 +1679,3 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     client.sendEvent('knowledgeReport', report);
   }
 }
-

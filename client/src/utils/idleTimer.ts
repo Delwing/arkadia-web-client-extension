@@ -10,11 +10,10 @@ export default function createIdleTimer(client: Client, timeout = 120000) {
     const isIdle = () => Date.now() - lastActivity >= timeout;
 
     reset();
-    client.addEventListener('command', reset);
+    client.on('command', () => reset());
 
     return {
         isIdle,
         reset,
     };
 }
-

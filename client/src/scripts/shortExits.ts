@@ -8,7 +8,7 @@ export { getShortDir as toShort };
 
 export function parseExitString(str: string): string[] {
     return str
-        .replace(/(?: i | oraz | albo | lub )/g, ",")
+        .replace(/ i | oraz | albo | lub /g, ",")
         .split(/,\s*/)
         .map(s => s.trim())
         .filter(Boolean);
@@ -48,9 +48,9 @@ const EXIT_PATTERNS: RegExp[] = [
 export default function initShortExits(client: Client) {
     let enabled = false;
 
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail || {};
-        enabled = !!settings.shortenExits;
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as { shortenExits?: boolean };
+        enabled = !!detail.shortenExits;
     });
 
     const callback = (_r: string, _l: string, m: RegExpMatchArray) => {

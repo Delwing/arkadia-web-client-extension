@@ -24,8 +24,8 @@ export default class ItemCollector {
     constructor(client: Client) {
         this.client = client;
         this.client.FunctionalBind.set(null, () => this.keyPressed(true));
-        this.client.addEventListener("settings", (ev: CustomEvent) => {
-            const s = ev.detail || {};
+        this.client.on("settings", (payload) => {
+            const s = (payload ?? {}) as { collectMode?: number; collectMoneyType?: number; collectExtra?: string[] };
             if (typeof s.collectMode === "number") {
                 this.setMode(s.collectMode);
             }

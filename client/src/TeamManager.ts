@@ -50,17 +50,20 @@ export default class TeamManager {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
-            this.handleObjectsData(e.detail);
+        this.client.on('gmcp.objects.data', detail => {
+            this.handleObjectsData(detail as Record<string, AccumulatedObjectData>);
         });
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
-            this.handleObjectsNums(e.detail);
+        this.client.on('gmcp.objects.nums', detail => {
+            this.handleObjectsNums(detail);
         });
-        this.client.addEventListener('gmcp.char.info', (e: CustomEvent) => {
-            this.playerNum = String(e.detail.object_num);
+        this.client.on('gmcp.char.info', info => {
+            const detail = info as { object_num?: unknown };
+            if (detail?.object_num !== undefined) {
+                this.playerNum = String(detail.object_num);
+            }
         });
-        this.client.addEventListener('gmcp.room.info', (e: CustomEvent) => {
-            this.handleRoomInfo(e.detail);
+        this.client.on('gmcp.room.info', detail => {
+            this.handleRoomInfo(detail);
         });
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
@@ -192,20 +195,20 @@ export default class TeamManager {
     private registerTriggers() {
         const triggers = this.client.Triggers;
         const tag = this.tag;
-        triggers.registerTrigger(/^Zmuszasz \[?([A-Za-z][a-z ]+?)\]? do opuszczenia druzyny\.$/, (_r, _l, m): undefined => {
+        triggers.registerTrigger(/^Zmuszasz \[?([A-Za-z][a-z ]+?)]? do opuszczenia druzyny\.$/, (_r, _l, m): undefined => {
             this.removeMember(m[1]);
         }, tag);
-        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)\]? porzuca twoja druzyne\.$/, (_r, _l, m): undefined => {
+        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? porzuca twoja druzyne\.$/, (_r, _l, m): undefined => {
             this.removeMember(m[1]);
         }, tag);
         const clear = (): undefined => {
             this.clearTeam();
         };
-        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)\]? zmusza cie do opuszczenia druzyny\.$/, clear, tag);
+        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? zmusza cie do opuszczenia druzyny\.$/, clear, tag);
         triggers.registerTrigger("Nie jestes w zadnej druzynie.", clear, tag);
-        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)\]? rozwiazuje druzyne\.$/, clear, tag);
+        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? rozwiazuje druzyne\.$/, clear, tag);
         triggers.registerTrigger(/^Porzucasz (?:swoja druzyne|druzyne, ktorej przewodzil[ea]s)\.$/, clear, tag);
-        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?:\:|) (?<team>.*)\.$/, (_r, _l, m): undefined => {
+        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (_r, _l, m): undefined => {
             this.clearTeam();
             const list = m.groups?.team ?? '';
             this.parseNames(list).forEach(n => this.addMember(n));

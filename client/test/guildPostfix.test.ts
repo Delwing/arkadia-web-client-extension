@@ -5,7 +5,7 @@ import { color, findClosestColor, RESET } from "../src/Colors";
 describe("guildPostfix", () => {
   class FakeClient {
     Triggers = new Triggers(({} as unknown) as any);
-    addEventListener = jest.fn();
+    on = jest.fn();
     postfix = jest.fn((raw: string, postfix: string) => raw + postfix);
   }
 
@@ -13,13 +13,13 @@ describe("guildPostfix", () => {
 
   let client: FakeClient;
   let parse: (line: string) => string;
-  let settingsHandler: ((event: { detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> } }) => void) | undefined;
+  let settingsHandler: ((detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> }) => void) | undefined;
 
   beforeEach(() => {
     client = new FakeClient();
     initGuildPostfix((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, "");
-    settingsHandler = client.addEventListener.mock.calls[0]?.[1] as ((event: { detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> } }) => void) | undefined;
+    settingsHandler = client.on.mock.calls[0]?.[1] as typeof settingsHandler;
   });
 
   afterEach(() => {
@@ -27,7 +27,7 @@ describe("guildPostfix", () => {
   });
 
   function emitSettings(detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> }) {
-    settingsHandler?.({ detail });
+    settingsHandler?.(detail);
   }
 
   test("colors guild postfix with configured color", () => {

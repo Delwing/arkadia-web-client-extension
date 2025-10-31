@@ -3,9 +3,6 @@ import {RecordedEvent, getRecording} from './recordingStorage';
 import Recorder from './Recorder';
 import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
-import TelnetOptionNegotiation from "./TelnetOptionNegotiation.ts";
-import {md5} from 'js-md5';
-import {uncompress} from "./compression.ts";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 import PingTracker from "./PingTracker.ts";
 
@@ -15,17 +12,12 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const GMCP_COMMAND_CODE = 201;
-const MCCP_COMMAND_CODE = 86;
 const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
 
 class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
-    private telnetNegotiator = new TelnetOptionNegotiation(this)
-    private mccp = false;
-    // @ts-ignore
-    private readInflator = new pako.Inflate()
     private receivedFirstGmcp: boolean = false;
     private userCommand: string | null = null;
     private passwordCommand: string | null = null;
@@ -79,12 +71,11 @@ class ArkadiaClient implements ClientAdapter {
             // Reset the flag when connecting
             this.receivedFirstGmcp = false;
             this.lastConnectManual = manual;
-            this.telnetNegotiator = new TelnetOptionNegotiation(this);
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
                     if (event.data.length === 0) return;
-                    const decodedData = this.inflate(atob(event.data));
+                    const decodedData = atob(event.data);
                     this.processIncomingData(decodedData);
                     this.recordIncoming(decodedData);
                 } catch (error) {
@@ -102,15 +93,11 @@ class ArkadiaClient implements ClientAdapter {
                 this.pingTracker.stop();
 
                 void this.stopAutoRecording(true);
-
-                // @ts-ignore
-                this.readInflator = new pako.Inflate()
             };
 
             this.socket.onopen = (event: Event) => {
                 this.emit('open', event);
                 this.emit('client.connect');
-                this.mccp = false;
                 this.pingTracker.start();
                 if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
                     this.send(this.userCommand, false);
@@ -124,30 +111,6 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    private inflate(decodedData: string) {
-        if (this.mccp) {
-            try {
-                const byteArray = decodedData.split("").map(function (char) {
-                    return char.charCodeAt(0);
-                });
-                this.readInflator.push(byteArray, 2);
-                if (this.readInflator.err) {
-                    console.error("MCCP decompression error: " + this.readInflator.msg);
-                    return decodedData;
-                }
-                const decompressed = new Uint16Array(this.readInflator.result);
-                const length = decompressed.length;
-                decodedData = "";
-                for (let i = 0; i < length; i++) {
-                    decodedData += String.fromCharCode(decompressed[i]);
-                }
-            } catch (error) {
-                console.log("MCCP decompression error: " + error.message);
-            }
-        }
-        return decodedData;
-    }
-
     /**
      * Disconnect from the WebSocket server
      */
@@ -155,7 +118,6 @@ class ArkadiaClient implements ClientAdapter {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.close();
         }
-        this.mccp = false;
         this.pingTracker.stop();
     }
 
@@ -250,17 +212,6 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    setConfig(payload: any, filename: string) {
-        const serialized = JSON.stringify(payload)
-        const data = {
-            data: payload,
-            md5: md5(serialized),
-            compressed: false,
-            filename: filename,
-        }
-        this.sendGmcp('client.conf.set', data)
-    }
-
     output(text?: string, type?: string, timestamp?: number) {
         const ts = typeof timestamp === 'number' ? timestamp : Date.now();
         this.emit('message', text, type, ts)
@@ -275,13 +226,7 @@ class ArkadiaClient implements ClientAdapter {
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string, options?: { timestamp?: number }) {
-        const mccp = this.mccp;
         const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler)
-        if (leftOver.replace(/[ÿù]/g, "").length > 0 && this.mccp !== mccp) {
-            const deflated = this.inflate(data.substring(5));
-            this.processIncomingData(deflated, options);
-            return;
-        }
         const sanitized = leftOver.replace(/[ÿù]/g, "");
         if (sanitized.length > 0) {
             const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
@@ -295,7 +240,7 @@ class ArkadiaClient implements ClientAdapter {
      */
     private parseTelnetOption(optionData: string): string {
         if (optionData.length === 3) {
-            //this.telnetNegotiator.parseOptionNegotiation(optionData)
+            //Nothing to do at the moment
         } else {
             this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
         }
@@ -309,10 +254,6 @@ class ArkadiaClient implements ClientAdapter {
         if (data.length === 0) return;
 
         const firstChar = data.charCodeAt(0);
-        if (firstChar === MCCP_COMMAND_CODE) {
-            this.mccp = true;
-            console.log("MCCP enabled")
-        }
 
         if (firstChar === GMCP_COMMAND_CODE) {
             const gmcpData = data.substring(1);
@@ -339,9 +280,6 @@ class ArkadiaClient implements ClientAdapter {
                 if (type === "gmcp_msgs") {
                     let text = atob(gmcp.text)
                     this.messageBuffer.push({text, type: gmcp.type})
-                } else if (type === "client.conf.get") {
-                    const data = JSON.parse(uncompress(gmcp.data))
-                    const filename = gmcp.filename
                 } else {
                     this.emit(`gmcp.${type}`, gmcp);
                     this.emit('gmcp', {path: type, value: gmcp});
@@ -362,8 +300,7 @@ class ArkadiaClient implements ClientAdapter {
                 return;
             }
 
-            const index = groupCount;
-            this.sendLine(currentText, currentType, index);
+            this.sendLine(currentText, currentType);
             groupCount += 1;
             currentType = null;
             currentText = "";
@@ -385,7 +322,7 @@ class ArkadiaClient implements ClientAdapter {
         this.messageBuffer = []
     }
 
-    private sendLine(text: string, type: string, i: number) {
+    private sendLine(text: string, type: string) {
         text = window.clientExtension.onLine(text, type)
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         this.emit("message", parseAnsiPatterns(text), type);
@@ -539,7 +476,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('recording.auto.stop', recorder.getCurrentRecordingName(), ...args);
             }
         }
-        this.emit(event as any, ...args);
+        (this.emit as (...emitArgs: any[]) => void)(event as keyof ClientEvents, ...args);
     }
 
     private async stopAutoRecording(save?: boolean) {

@@ -116,14 +116,15 @@ test('registers service worker using base path', () => {
   delete (global as any).Notification;
 });
 
-test('port messages trigger window events', () => {
-  new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+test('port messages emit client events', () => {
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
+  const handler = jest.fn();
+  client.on('npc', handler as any);
   const detail = [{ name: 'Foo', loc: 1 }];
   listener({ npc: detail });
-  expect((window as any).dispatchEvent).toHaveBeenCalledWith(
-    expect.objectContaining({ type: 'npc', detail })
-  );
+  expect(handler).toHaveBeenCalledWith(detail);
+  expect((window as any).dispatchEvent).not.toHaveBeenCalled();
 });
 
 test('createEvent returns object with type and data', () => {
@@ -131,14 +132,14 @@ test('createEvent returns object with type and data', () => {
   expect(client.createEvent('t', 123)).toEqual({ type: 't', data: 123 });
 });
 
-test('addEventListener allows removal', () => {
+test('on allows removal', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   const handler = jest.fn();
-  const remove = client.addEventListener('foo', handler);
-  client.eventTarget.dispatchEvent(new CustomEvent('foo', { detail: 'bar' }));
+  const remove = client.on('command', handler as any);
+  client.emit('command', 'bar');
   expect(handler).toHaveBeenCalledTimes(1);
-  remove();
-  client.eventTarget.dispatchEvent(new CustomEvent('foo', { detail: 'bar' }));
+  remove?.();
+  client.emit('command', 'baz');
   expect(handler).toHaveBeenCalledTimes(1);
 });
 
@@ -358,4 +359,3 @@ test('sendCommand expands object shortcuts', async () => {
   await client.sendCommand('help @@');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', true, undefined);
 });
-

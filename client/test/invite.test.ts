@@ -23,7 +23,7 @@ describe('Invite functionality', () => {
     let mockTriggers: any;
     let mockFunctionalBind: any;
     let mockPrintln: jest.Mock;
-    let mockAddEventListener: jest.Mock;
+    let mockOn: jest.Mock;
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
     const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
@@ -52,7 +52,7 @@ describe('Invite functionality', () => {
         };
 
         mockPrintln = jest.fn();
-        mockAddEventListener = jest.fn();
+        mockOn = jest.fn();
         mockSendCommand = jest.fn();
 
         mockTeamManager = {
@@ -71,7 +71,7 @@ describe('Invite functionality', () => {
             FunctionalBind: mockFunctionalBind,
             println: mockPrintln,
             sendCommand: mockSendCommand,
-            addEventListener: mockAddEventListener,
+            on: mockOn,
             TeamManager: mockTeamManager
         } as any;
 
@@ -97,10 +97,10 @@ describe('Invite functionality', () => {
 
     test('should block invite from enemy guild member', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
+        const settingsHandler = mockOn.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        settingsHandler({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -119,10 +119,10 @@ describe('Invite functionality', () => {
 
     test('should allow invite from non-enemy guild member and execute two commands', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
+        const settingsHandler = mockOn.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        settingsHandler({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -152,10 +152,10 @@ describe('Invite functionality', () => {
     });
 
     test('should use newest object id for inviter name', async () => {
-        const settingsHandler = mockAddEventListener.mock.calls.find(
+        const settingsHandler = mockOn.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        settingsHandler({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -175,10 +175,10 @@ describe('Invite functionality', () => {
 
     test('should allow invite from unknown person and fallback to old command', async () => {
         // Set up enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
+        const settingsHandler = mockOn.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
-        settingsHandler({ detail: { enemyGuilds: ['Templariusze'] } });
+        settingsHandler({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -199,7 +199,7 @@ describe('Invite functionality', () => {
 
     test('should allow all invites when no enemy guilds are set and fallback to old command', async () => {
         // Set up empty enemy guilds
-        const settingsHandler = mockAddEventListener.mock.calls.find(
+        const settingsHandler = mockOn.mock.calls.find(
             call => call[0] === 'settings'
         )[1];
         settingsHandler({ detail: { enemyGuilds: [] } });

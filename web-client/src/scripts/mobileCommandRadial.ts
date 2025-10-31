@@ -80,16 +80,16 @@ export default class MobileCommandRadial {
         this.contentArea.addEventListener('touchend', this.handleTouchEnd, { passive: false });
         this.contentArea.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
 
-        this.client.addEventListener('mobileButtonsSettings', () => {
+        this.client.on('mobileButtonsSettings', () => {
             this.reloadSettings();
         });
-        this.client.addEventListener('teamChange', () => {
+        this.client.on('teamChange', () => {
             this.updateActiveLayout();
         });
-        this.client.addEventListener('gmcp.objects.nums', () => {
+        this.client.on('gmcp.objects.nums', () => {
             this.updateActiveLayout();
         });
-        this.client.addEventListener('gmcp.objects.data', () => {
+        this.client.on('gmcp.objects.data', () => {
             this.updateActiveLayout();
         });
     }

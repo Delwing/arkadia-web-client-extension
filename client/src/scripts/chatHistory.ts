@@ -44,13 +44,12 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         client.print(lines.join("\n"));
     }
 
-    client.addEventListener("gmcp_msg.comm", (ev: CustomEvent<string>) => {
-        const text = ev.detail;
+    client.on("gmcp_msg.comm", (text) => {
         if (typeof text !== "string" || !text.trim()) return;
         addEntry(text);
     });
 
-    client.addEventListener("client.disconnect", () => {
+    client.on("client.disconnect", () => {
         history.length = 0;
     });
 

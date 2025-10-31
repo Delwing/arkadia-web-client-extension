@@ -7,7 +7,7 @@ const ORANGE = findClosestColor('#ffa500');
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   println = jest.fn();
-  addEventListener = jest.fn();
+  on = jest.fn();
 }
 
 describe('short exits trigger', () => {
@@ -18,9 +18,9 @@ describe('short exits trigger', () => {
     client = new FakeClient();
     initShortExits(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
-    const handler = client.addEventListener.mock.calls[0]?.[1];
+    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
     if (handler) {
-      handler({ detail: { shortenExits: true } } as any);
+      handler({ shortenExits: true });
     }
     jest.clearAllMocks();
   });

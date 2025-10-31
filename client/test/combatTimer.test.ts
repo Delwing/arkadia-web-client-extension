@@ -6,24 +6,13 @@ describe("combat timer", () => {
       super.dispatchEvent(new CustomEvent(type, { detail }));
     });
 
-    addEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-      options?: AddEventListenerOptions | boolean,
-    ) {
-      super.addEventListener(type, listener as EventListener, options);
-      return () => super.removeEventListener(type, listener as EventListener, options as any);
+    on(type: string, listener: (payload: any) => void, options?: AddEventListenerOptions | boolean) {
+      const wrapped = (ev: Event) => listener((ev as CustomEvent).detail);
+      super.addEventListener(type, wrapped as EventListener, options);
+      return () => super.removeEventListener(type, wrapped as EventListener, options as any);
     }
 
-    removeEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject | null,
-      options?: EventListenerOptions,
-    ) {
-      if (listener) {
-        super.removeEventListener(type, listener as EventListener, options);
-      }
-    }
+    off(): void {}
   }
 
   beforeEach(() => {
@@ -87,4 +76,3 @@ describe("combat timer", () => {
     expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 30);
   });
 });
-

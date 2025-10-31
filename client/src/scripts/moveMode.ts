@@ -90,16 +90,16 @@ export default function initMoveMode(client: Client) {
         }
     });
 
-    client.addEventListener('gmcp.char.info', (ev: CustomEvent) => {
-        const detail = ev.detail || {};
-        if (detail && typeof detail.object_num !== 'undefined') {
-            playerNum = String(detail.object_num);
+    client.on('gmcp.char.info', detail => {
+        const info = detail as { object_num?: unknown };
+        if (info && typeof info.object_num !== 'undefined') {
+            playerNum = String(info.object_num);
         }
     });
 
-    client.addEventListener('gmcp.objects.data', (ev: CustomEvent<Record<string, { attack_num?: boolean | number | string }>>) => {
+    client.on('gmcp.objects.data', (payload) => {
         if (!playerNum) return;
-        const detail = ev.detail;
+        const detail = payload as Record<string, { attack_num?: boolean | number | string }>;
         if (!detail || typeof detail !== 'object') return;
         const obj = detail[playerNum];
         if (!obj || obj.attack_num === undefined) return;
@@ -108,11 +108,11 @@ export default function initMoveMode(client: Client) {
         }
     });
 
-    client.addEventListener('client.disconnect', () => {
+    client.on('client.disconnect', () => {
         playerNum = undefined;
     });
 
-    client.addEventListener('teamChange', () => {
+    client.on('teamChange', () => {
         const changed = clampMoveMode(client);
         update();
         if (changed) {

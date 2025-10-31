@@ -67,10 +67,10 @@ export default function initAttackBeep(client: Client) {
     };
 
     // Listen for settings changes
-    client.addEventListener('settings', (event: CustomEvent) => {
-        const settings = event.detail || {};
-        if (Array.isArray(settings.enemyGuilds)) {
-            enemyGuilds = [...settings.enemyGuilds];
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as { enemyGuilds?: unknown };
+        if (Array.isArray(detail.enemyGuilds)) {
+            enemyGuilds = [...detail.enemyGuilds];
         }
         ensurePeopleLoaded().catch(() => undefined);
     });

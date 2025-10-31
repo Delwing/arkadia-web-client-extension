@@ -159,7 +159,7 @@ describe('prettyContainers', () => {
       send = jest.fn();
       sendCommand = jest.fn();
       OutputHandler = { makeStringClickable: (s: string) => s };
-      addEventListener = jest.fn();
+      on = jest.fn();
       Triggers = { removeByTag: jest.fn(), registerTrigger: jest.fn() };
       print = jest.fn();
       contentWidth = 80;

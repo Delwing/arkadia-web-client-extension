@@ -198,9 +198,9 @@ export default function initBagManager(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY && ev.detail.value) {
-            Object.assign(containerConfig, ev.detail.value);
+    client.on("storage", ({ key, value }) => {
+        if (key === STORAGE_KEY && value) {
+            Object.assign(containerConfig, value);
         }
     });
     client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });

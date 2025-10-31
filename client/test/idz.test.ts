@@ -20,7 +20,7 @@ describe('idz walking', () => {
         getRoomById: jest.fn(() => null),
         tryGetMapReader: jest.fn(() => ({ getRooms: jest.fn(() => []) })),
       },
-      addEventListener: jest.fn(() => () => {}),
+      on: jest.fn(() => () => {}),
       sendEvent: jest.fn(),
       sendCommand: jest.fn(),
       port: { postMessage: jest.fn() },

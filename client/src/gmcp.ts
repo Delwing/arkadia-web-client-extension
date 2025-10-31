@@ -9,9 +9,10 @@ export function setGmcp(path: string, value: any) {
     obj[parts[parts.length - 1]] = value;
 }
 
-export function attachGmcpListener(target: { addEventListener: Function }) {
-    target.addEventListener('gmcp', (event: CustomEvent<{ path: string; value: any }>) => {
-        const { path, value } = event.detail || {};
+type GmcpPayload = { path?: string; value?: unknown };
+
+export function attachGmcpListener(target: { on: (event: 'gmcp', handler: (payload: GmcpPayload) => void) => unknown }) {
+    target.on('gmcp', ({ path, value }: GmcpPayload = {}) => {
         if (typeof path === 'string') {
             setGmcp(path, value);
         }

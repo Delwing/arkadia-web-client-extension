@@ -13,13 +13,13 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     let lastLang = '';
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
 
-    client.addEventListener('storage', (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            lastLang = ev.detail.value || '';
+    client.on('storage', ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            lastLang = (value as string) || '';
         }
     });
 
-    client.addEventListener('port-connected', () => {
+    client.on('port-connected', () => {
         client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
     });
 
@@ -79,8 +79,12 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         customAliases.forEach(a => aliases.push(a));
     };
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const detail = ev.detail || {};
+    client.on('settings', (settings) => {
+        const detail = (settings ?? {}) as {
+            language?: string;
+            languageAdjective?: string;
+            languageAliases?: { alias: string; adjective: string; language: string }[];
+        };
         currentLang = detail.language || 'potoczna';
         adjective = detail.languageAdjective || '';
         applyAliases(detail.languageAliases || []);

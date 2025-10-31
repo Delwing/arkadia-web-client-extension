@@ -6,15 +6,15 @@ class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers({} as any);
   println = jest.fn();
-  addEventListener(event: string, cb: any, _options?: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
-  sendEvent(type: string, detail?: any) {
-    this.emitter.emit(type, { detail });
+  sendEvent(type: string, ...args: any[]) {
+    this.emitter.emit(type, ...args);
   }
 }
 
@@ -68,7 +68,7 @@ describe('TeamManager', () => {
 
   test('emits event when leader attacks different target', () => {
     const callback = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', callback);
+    client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': {
         desc: 'Eamon',
@@ -84,7 +84,7 @@ describe('TeamManager', () => {
 
   test('emits event when leader attacks and avatar does not', () => {
     const callback = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', callback);
+    client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': {
         desc: 'Eamon',
@@ -101,8 +101,8 @@ describe('TeamManager', () => {
   test('does not emit event when targets match', () => {
     const noAvatar = jest.fn();
     const avatar = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', noAvatar);
-    client.addEventListener('teamLeaderTargetAvatar', avatar);
+    client.on('teamLeaderTargetNoAvatar', noAvatar);
+    client.on('teamLeaderTargetAvatar', avatar);
     client.sendEvent('gmcp.objects.data', {
       '1': {
         desc: 'Eamon',
@@ -119,7 +119,7 @@ describe('TeamManager', () => {
 
   test('emits event on each gmcp update while mismatch persists', () => {
     const callback = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', callback);
+    client.on('teamLeaderTargetNoAvatar', callback);
     const data = {
       desc: 'Eamon',
       living: true,
@@ -135,7 +135,7 @@ describe('TeamManager', () => {
 
   test('emits event again after target changes', () => {
     const callback = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', callback);
+    client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },
@@ -153,7 +153,7 @@ describe('TeamManager', () => {
 
   test('emits event again when leader number changes', () => {
     const callback = jest.fn();
-    client.addEventListener('teamLeaderTargetNoAvatar', callback);
+    client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
       '99': { desc: 'You', living: true, team: true, attack_num: '2' },

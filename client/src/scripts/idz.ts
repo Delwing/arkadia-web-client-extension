@@ -10,7 +10,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let index = 0;
     let delay = 1;
     let lastDelay = 1;
-    let settings: any = {};
+    let settings: Record<string, unknown> = {};
     let timer: number | null = null;
     let paused = false;
     let target: number | null = null;
@@ -18,9 +18,10 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
     const isWalking = () => !paused && path.length > 0;
 
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        settings = ev.detail || {};
-        const value = parseFloat(settings.autoWalkDelay);
+    client.on('settings', (payload) => {
+        const detail = (payload ?? {}) as { autoWalkDelay?: unknown } & Record<string, unknown>;
+        settings = detail;
+        const value = detail.autoWalkDelay !== undefined ? parseFloat(String(detail.autoWalkDelay)) : NaN;
         if (!isNaN(value)) {
             lastDelay = value;
         }
@@ -131,18 +132,16 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         startWalk(target, d, 'resume');
     };
 
-
-
-    client.addEventListener('stepBack', stopWalk);
-    client.addEventListener('mapMove', stopWalk);
-    client.addEventListener('pauserStart', () => {
+    client.on('stepBack', stopWalk);
+    client.on('mapMove', stopWalk);
+    client.on('pauserStart', () => {
         if (!paused && path.length > 0) {
             paused = true;
             pausedByPauser = true;
             clearTimer();
         }
     });
-    client.addEventListener('pauserEnd', () => {
+    client.on('pauserEnd', () => {
         if (pausedByPauser) {
             paused = false;
             pausedByPauser = false;
@@ -227,4 +226,3 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
     });
 }
-

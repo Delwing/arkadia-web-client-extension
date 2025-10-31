@@ -65,7 +65,7 @@ export class FunctionalBind {
             }
         })
 
-        this.client.addEventListener(LINE_START_EVENT, () => this.newMessage());
+        this.client.on(LINE_START_EVENT, () => this.newMessage());
     }
 
     newMessage() {

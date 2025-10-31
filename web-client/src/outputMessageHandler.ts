@@ -1,6 +1,6 @@
 type MessageHandlerClient = {
-    on(event: string, listener: (message?: string, type?: string, timestamp?: number) => void): void;
-    off(event: string, listener: (message?: string, type?: string, timestamp?: number) => void): void;
+    on(event: 'message', listener: (message?: string, type?: string, timestamp?: number) => void): void;
+    off(event: 'message', listener: (message?: string, type?: string, timestamp?: number) => void): void;
 };
 
 type OutputHandlerOptions = {

@@ -13,12 +13,25 @@ class MockClient {
 describe("TransportTimer", () => {
   let container: HTMLElement;
   let client: MockClient;
+  let extension: any;
 
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '<span id="transport-timer"></span>';
     container = document.getElementById("transport-timer")!;
-    (window as any).clientExtension = { eventTarget: new EventTarget() };
+    extension = {
+      listeners: {} as Record<string, Function[]>,
+      on(event: string, listener: Function) {
+        (this.listeners[event] ||= []).push(listener);
+        return () => {
+          this.listeners[event] = (this.listeners[event] || []).filter(fn => fn !== listener);
+        };
+      },
+      emit(event: string, payload: any) {
+        (this.listeners[event] || []).forEach(fn => fn(payload));
+      },
+    };
+    (window as any).clientExtension = extension;
     client = new MockClient();
     new TransportTimer(client as any);
   });
@@ -60,8 +73,7 @@ describe("TransportTimer", () => {
   });
 
   test("hides label when option disabled", () => {
-    const target = (window as any).clientExtension.eventTarget as EventTarget;
-    target.dispatchEvent(new CustomEvent("uiSettings", { detail: { showTransportLabel: false } }));
+    extension.emit("uiSettings", { showTransportLabel: false });
     client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
     expect(container.style.display).toBe("none");
     expect(container.textContent).toBe("");

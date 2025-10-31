@@ -118,7 +118,7 @@ window.addEventListener('load', () => {
         client.sendEvent('gmcp.objects.nums', Array.from(objectNums));
     }
 
-    client.addEventListener?.('teamChange', renderTeam);
+    client.on?.('teamChange', renderTeam);
 
     const playerName = 'Player';
     client.sendEvent('gmcp.char.info', { name: playerName, object_num: id });

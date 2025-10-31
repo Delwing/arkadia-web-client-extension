@@ -194,12 +194,16 @@ const KnowledgeDetailsReport: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      const custom = event as CustomEvent<KnowledgeDetailsReportPayload | null | undefined>;
-      handleReport(custom.detail);
+    const client = (window as any).clientExtension as Client | undefined;
+    if (!client?.on) {
+      return;
+    }
+    const unsubscribe = client.on('knowledgeDetailsReport', (payload) => {
+      handleReport(payload as KnowledgeDetailsReportPayload | null | undefined);
+    });
+    return () => {
+      unsubscribe?.();
     };
-    window.addEventListener('knowledgeDetailsReport', handler as EventListener);
-    return () => window.removeEventListener('knowledgeDetailsReport', handler as EventListener);
   }, [handleReport]);
 
   useEffect(() => {

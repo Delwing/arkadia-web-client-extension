@@ -4,6 +4,7 @@ jest.mock('front-client/src/dataStores/npcStore', () => ({
 
 import PackageHelper from '../src/PackageHelper';
 import { colorStringInLine, findClosestColor } from '../src/Colors';
+import { EventEmitter } from 'events';
 
 describe('PackageHelper', () => {
   let helper: any;
@@ -11,6 +12,7 @@ describe('PackageHelper', () => {
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
+    const emitter = new EventEmitter();
     client = {
       Triggers: {
         registerTrigger: jest.fn(),
@@ -22,9 +24,16 @@ describe('PackageHelper', () => {
       OutputHandler: {
         makeClickable: jest.fn(),
       },
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      sendEvent: jest.fn(),
+      on: jest.fn((event: string, handler: (...args: any[]) => void) => {
+        emitter.on(event, handler);
+        return () => emitter.off(event, handler);
+      }),
+      off: jest.fn((event: string, handler: (...args: any[]) => void) => {
+        emitter.off(event, handler);
+      }),
+      sendEvent: jest.fn((type: string, detail?: any) => {
+        emitter.emit(type, detail);
+      }),
       createButton: jest.fn(() => ({ remove: jest.fn() })),
       println: jest.fn(),
       Map: {
@@ -46,6 +55,7 @@ describe('PackageHelper', () => {
   });
 
   test('constructor initializes helper by default', () => {
+    const emitter = new EventEmitter();
     const c = {
       Triggers: {
         registerTrigger: jest.fn(),
@@ -57,9 +67,16 @@ describe('PackageHelper', () => {
       OutputHandler: {
         makeClickable: jest.fn(),
       },
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      sendEvent: jest.fn(),
+      on: jest.fn((event: string, handler: (...args: any[]) => void) => {
+        emitter.on(event, handler);
+        return () => emitter.off(event, handler);
+      }),
+      off: jest.fn((event: string, handler: (...args: any[]) => void) => {
+        emitter.off(event, handler);
+      }),
+      sendEvent: jest.fn((type: string, detail?: any) => {
+        emitter.emit(type, detail);
+      }),
       createButton: jest.fn(() => ({ remove: jest.fn() })),
       println: jest.fn(),
       Map: { currentRoom: { id: 1 }, findPath: jest.fn() },

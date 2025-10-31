@@ -45,14 +45,14 @@ export default function initExternalScripts(client: Client) {
         window.location.replace(rest ? `${base}?${rest}` : base);
     };
 
-    client.addEventListener("storage", (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            known = Array.isArray(ev.detail.value) ? ev.detail.value : [];
+    client.on("storage", ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            known = Array.isArray(value) ? value : [];
             apply(known);
         }
     });
 
-    client.addEventListener("port-connected", () => {
+    client.on("port-connected", () => {
         checkParam();
     })
 }

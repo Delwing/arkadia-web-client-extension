@@ -4,7 +4,7 @@ import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
 import {color, colorString, findClosestColor, mudletColorLine} from "../Colors";
 import { openHerbContextMenu } from "../contextMenus";
-import type { HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState } from "../types/herbs";
+import type { HerbMoveOptions, HerbBagsState, HerbBagState } from "../types/herbs";
 import { clampHerbBagCondition, normalizeHerbBagsState } from "../types/herbs";
 import { getWearValue } from "./wearUsed";
 
@@ -108,8 +108,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let loading: Promise<void> | null = null;
     const herbMap: Record<string, string> = {};
     let width = client.contentWidth;
-    client.addEventListener('contentWidth', (ev: CustomEvent) => {
-        width = ev.detail;
+    client.on('contentWidth', (value) => {
+        width = value;
     });
     let storedBags: HerbBagsState = {};
     let currentBagForEvaluation = 1;
@@ -146,9 +146,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     };
 
-    client.addEventListener('storage', async (ev: CustomEvent) => {
-        if (ev.detail.key === STORAGE_KEY) {
-            storedBags = normalizeHerbBagsState(ev.detail.value);
+    client.on('storage', async ({ key, value }) => {
+        if (key === STORAGE_KEY) {
+            storedBags = normalizeHerbBagsState(value);
             await ensureData();
             broadcastBags();
         }
@@ -158,8 +158,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
-    client.addEventListener('settings', (ev: CustomEvent) => {
-        const st = ev.detail || {};
+    client.on('settings', (settings) => {
+        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
@@ -512,23 +512,22 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     }
 
-    const herbManager: HerbManagerApi = {
+    client.herbManager = {
         getBags: cloneBags,
         take,
         put,
         move,
     };
 
-    client.herbManager = herbManager;
-
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({pattern: /\/woreczki_buduj$/, callback: evaluateBagConditions});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
-                const listener = async (ev: CustomEvent) => {
-                    if (ev.detail.key === STORAGE_KEY) {
-                        const bags = normalizeHerbBagsState(ev.detail.value);
+                let unsubscribe: (() => void) | undefined;
+                unsubscribe = client.on('storage', async ({ key, value }) => {
+                    if (key === STORAGE_KEY) {
+                        const bags = normalizeHerbBagsState(value);
                         await ensureData();
                         const lines = buildSummary(bags, false, false);
                         if (lines.length > 0) {
@@ -536,10 +535,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                         } else {
                             client.println('Brak podsumowania.');
                         }
-                        client.removeEventListener('storage', listener);
+                        unsubscribe?.();
                     }
-                };
-                client.addEventListener('storage', listener);
+                });
                 client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
             }
         });

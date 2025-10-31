@@ -67,7 +67,7 @@ describe('object_num persistence and reset event', () => {
 
   test('stores object_num and emits reset when changed', () => {
     let resets = 0;
-    client.addEventListener('reset', () => { resets++; });
+    client.on('reset', () => { resets++; });
 
     client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 1 });
     expect(getItemSync('object_num')?.object_num).toBe('1');
@@ -81,4 +81,3 @@ describe('object_num persistence and reset event', () => {
     expect(getItemSync('object_num')?.object_num).toBe('2');
   });
 });
-

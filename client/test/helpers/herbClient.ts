@@ -11,16 +11,17 @@ export class FakeClient {
   port = { postMessage: jest.fn() } as any;
   herbManager: any;
   sendEvent(type: string, detail: any) {
-    this.dispatch(type, detail);
+    this.emitter.emit(type, detail);
   }
-  addEventListener(event: string, cb: any) {
+  on(event: string, cb: any) {
     this.emitter.on(event, cb);
+    return () => this.emitter.off(event, cb);
   }
-  removeEventListener(event: string, cb: any) {
+  off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
   dispatch(event: string, detail: any) {
-    this.emitter.emit(event, { detail });
+    this.emitter.emit(event, detail);
   }
 }
 
