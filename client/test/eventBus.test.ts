@@ -38,4 +38,25 @@ describe('EventBus', () => {
     bus.emit('single', 1);
     expect(handler).not.toHaveBeenCalled();
   });
+
+  test('supports once flag via boolean', () => {
+    const handler = jest.fn();
+    bus.on('single', handler, true);
+    bus.emit('single', 1);
+    bus.emit('single', 2);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(1);
+  });
+
+  test('respects AbortSignal option', () => {
+    const handler = jest.fn();
+    const controller = new AbortController();
+
+    bus.on('single', handler, { signal: controller.signal });
+    controller.abort();
+
+    bus.emit('single', 1);
+
+    expect(handler).not.toHaveBeenCalled();
+  });
 });

@@ -127,8 +127,11 @@ class EventBus<Events extends Record<PropertyKey, any>> {
         options?: EventOptions | boolean
     ): () => void {
         const key = event as unknown as PropertyKey;
-        const opts = (typeof options === 'object' && options !== null) ? options as EventOptions : undefined;
-        const once = Boolean(opts?.once);
+        const isBooleanOption = typeof options === 'boolean';
+        const opts = (!isBooleanOption && typeof options === 'object' && options !== null)
+            ? options as EventOptions
+            : undefined;
+        const once = isBooleanOption ? options : Boolean(opts?.once);
         const signal = opts?.signal;
 
         const unsubscribe = () => this.off(event, listener);
