@@ -1,5 +1,13 @@
-import {MapReader, Renderer, PathFinder, Settings, RoomContextMenuEventDetail, LabelRenderMode} from "mudlet-map-renderer";
+import {
+    MapReader,
+    Renderer,
+    PathFinder,
+    Settings,
+    RoomContextMenuEventDetail,
+    LabelRenderMode
+} from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
+import eventBus from "@client/src/eventBus.ts";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
@@ -79,13 +87,13 @@ export class EmbeddedMap {
         this.pathFinder = pathFinder;
         this.totalRooms = this.reader.getRooms().length;
 
-        window.addEventListener('pauserStart', () => {
+        eventBus.on('pauserStart', () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = false;
             }
         });
-        window.addEventListener('pauserEnd', () => {
+        eventBus.on('pauserEnd', () => {
             const icon = document.getElementById('pause-icon');
             if (icon) {
                 icon.hidden = true;
@@ -143,20 +151,24 @@ export class EmbeddedMap {
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
 
-        window.addEventListener('enterLocation', async (ev: any) => {
-            const id = ev.detail.id;
+        eventBus.on('enterLocation', async (ev) => {
+            const id = ev.id;
             this.visited.add(id);
             this.reader.addVisitedRoom(id);
             setItemSync(STORAGE_KEY, id.toString());
             saveVisitedRooms(Array.from(this.visited));
-            this.renderRoomById(parseInt(id));
+            this.renderRoomById(id);
         });
 
-        window.addEventListener('leadTo', (ev: any) => {
-            this.leadTo(ev.detail);
+        eventBus.on('leadTo', (target) => {
+            this.leadTo(target);
         });
 
-        window.addEventListener('highlights', (ev: any) => {
+        eventBus.on('clearLeadTo', () => {
+            this.clearLeadTo();
+        })
+
+        eventBus.on('highlights', (ev: any) => {
             this.highlights = ev.detail;
             this.refresh();
         })
@@ -306,12 +318,13 @@ export class EmbeddedMap {
         this.renderRoom(this.currentRoom);
     }
 
-    leadTo(id?: string) {
-        if (id) {
-            this.destinations = [parseInt(id)];
-        } else {
-            this.destinations = [];6
-        }
+    leadTo(id: number) {
+        this.destinations = [id]
+        this.refresh();
+    }
+
+    clearLeadTo() {
+        this.destinations = [];
         this.refresh();
     }
 }

@@ -15,7 +15,7 @@ type MultibindList = {
     list: { index: number; action: string; label: string }[];
 };
 
-type MessageEventPayload = [text?: string, type?: string, timestamp?: number];
+type MessageEventPayload = [text: string, type?: string, timestamp?: number];
 
 type RecordingAutoStopPayload = [name: string | null, save?: boolean];
 
@@ -32,7 +32,8 @@ export interface KnownEvents {
     'buffer-sent': number;
     'mapMove': void;
     'stepBack': void;
-    'leadTo': [number?];
+    'leadTo': number;
+    'clearLeadTo': void;
     'notify': NotificationPayload;
     'lampTimer': number | null;
     'coverTimer': number | null;

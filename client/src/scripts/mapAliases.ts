@@ -44,7 +44,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/prowadz-$/,
             callback: () => {
-                client.sendEvent('leadTo');
+                client.sendEvent('clearLeadTo');
             }
         },
         {

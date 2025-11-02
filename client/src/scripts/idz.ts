@@ -41,7 +41,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
                 path = [];
                 const reached = target;
                 target = null;
-                client.sendEvent('leadTo');
+                client.sendEvent('clearLeadTo');
                 if (reached !== null) {
                     client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
                 }
@@ -53,7 +53,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         if (!current) {
             clearTimer();
             path = [];
-            client.sendEvent('leadTo');
+            client.sendEvent('clearLeadTo');
             return;
         }
         const nextId = path[index + 1];
@@ -62,7 +62,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         if (!dir) {
             clearTimer();
             path = [];
-            client.sendEvent('leadTo');
+            client.sendEvent('clearLeadTo');
             return;
         }
 
@@ -109,7 +109,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         paused = true;
         clearTimer();
         if (wasWalking) {
-            client.sendEvent('leadTo');
+            client.sendEvent('clearLeadTo');
             client.sendEvent('notify', { text: `[WALK] stopped` });
         }
     };

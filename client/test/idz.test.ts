@@ -45,6 +45,6 @@ describe('idz walking', () => {
     expect(client.Map.getRoomById).toHaveBeenCalled();
     expect(client.sendCommand).not.toHaveBeenCalled();
     expect(client.sendEvent).toHaveBeenCalledWith('leadTo', 2);
-    expect(client.sendEvent).toHaveBeenCalledWith('leadTo');
+    expect(client.sendEvent).toHaveBeenCalledWith('clearLeadTo');
   });
 });

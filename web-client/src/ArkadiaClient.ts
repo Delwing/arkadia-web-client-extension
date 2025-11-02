@@ -149,19 +149,6 @@ class ArkadiaClient implements ClientAdapter {
         this.userCommand = character;
     }
 
-    sendRaw(message: string): void {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not connected');
-            return;
-        }
-        try {
-            this.socket.send(message);
-        } catch (error) {
-            console.error('Error sending message:', error);
-            this.emit('error', error);
-        }
-    }
-
     /**
      * Send a message through the WebSocket
      */
