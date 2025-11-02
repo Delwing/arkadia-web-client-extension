@@ -172,9 +172,9 @@ export default class ItemCollector {
             case CollectionMode.All:
                 return true;
             case CollectionMode.Leader:
-                return this.client.TeamManager.isLeader();
+                return !this.client.TeamManager.isInAnyTeam() || this.client.TeamManager.isLeader();
             case CollectionMode.Team:
-                return killer === "ME" || killer === "TEAM";
+                return !this.client.TeamManager.isInAnyTeam() || killer === "ME" || killer === "TEAM";
             default:
                 return false;
         }
@@ -278,7 +278,7 @@ export default class ItemCollector {
         if (this.collectionMode === CollectionMode.None) {
             return false;
         }
-        return this.kills.some((record) => record.hasBody && !record.collected && this.shouldCollectForKill(record.killer));
+        return this.kills.some((record) => this.shouldCollectForKill(record.killer));
     }
 
     private scheduleCollectBind() {
@@ -303,6 +303,7 @@ export default class ItemCollector {
         for (let i = this.kills.length - 1; i >= 0; i--) {
             const record = this.kills[i];
             if (!record.hasBody) {
+                record.collected = true;
                 continue;
             }
             currentBodyIndex++;
