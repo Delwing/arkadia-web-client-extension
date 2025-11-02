@@ -9,6 +9,7 @@ export interface ObjectData {
     defense_target?: boolean;
     avatar_target?: boolean;
     state?: any;
+
     [key: string]: any;
 }
 
@@ -22,7 +23,7 @@ export default class ObjectManager {
 
     constructor(client: Client) {
         this.client = client;
-        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent) => {
+        this.client.addEventListener('gmcp.objects.nums', (e: CustomEvent<number[]>) => {
             this.handleNums(e.detail);
         });
         this.client.addEventListener('gmcp.objects.data', (e: CustomEvent) => {
@@ -36,14 +37,11 @@ export default class ObjectManager {
         });
     }
 
-    private handleNums(detail: any) {
+    private handleNums(detail: number[]) {
         if (Array.isArray(detail)) {
             this.nums = detail.map(String);
-        } else if (detail && Array.isArray(detail.nums)) {
-            this.nums = detail.nums.map(String);
-        } else if (detail && Array.isArray(detail.objects)) {
-            this.nums = detail.objects.map(String);
         }
+        this.client.eventTarget.emit('parsedNums', {nums: detail})
     }
 
     private getOrCreateData(num: string): ObjectData {
@@ -60,6 +58,7 @@ export default class ObjectManager {
                 Object.assign(data, detail[num]);
             });
         }
+        this.client.eventTarget.emit('parsedObjects')
     }
 
     private handleCharInfo(detail: any) {
@@ -124,12 +123,8 @@ export default class ObjectManager {
             o => o && o.attack_num !== false && o.attack_num !== undefined
         );
 
-        const combatRest = inCombat
-            ? rest.filter(o => o.attack_num !== false && o.attack_num !== undefined)
-            : rest;
-        const nonCombatRest = inCombat
-            ? rest.filter(o => o.attack_num === false || o.attack_num === undefined)
-            : [];
+        const combatRest = rest.filter(o => o.attack_num !== false && o.attack_num !== undefined)
+        const nonCombatRest = rest.filter(o => o.attack_num === false || o.attack_num === undefined)
 
         const ordered: Obj[] = [];
         if (playerObj) {
@@ -144,15 +139,13 @@ export default class ObjectManager {
             o.__category = 'rest';
             ordered.push(o);
         });
-        if (inCombat) {
-            nonCombatRest.forEach(o => {
-                o.__category = 'rest-noncombat';
-                ordered.push(o);
-            });
-        }
+        nonCombatRest.forEach(o => {
+            o.__category = 'rest-noncombat';
+            ordered.push(o);
+        });
 
         let restIndex = 1;
-        let nonCombatIndex = 50;
+        let nonCombatIndex = inCombat ? 50 : 1;
         ordered.forEach(o => {
             if (o.__category === 'player') {
                 o.shortcut = '@';
@@ -163,10 +156,13 @@ export default class ObjectManager {
             } else {
                 o.shortcut = String(restIndex++);
             }
-            delete o.__category;
         });
 
         return ordered;
+    }
+
+    public hasEnemiesOnLocation() {
+        return this.getObjectsOnLocation().filter(item => item.__category == "rest").length > 0;
     }
 
     private getTeamShortcut(num: number): string {

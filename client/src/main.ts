@@ -88,6 +88,7 @@ import initTropBind from './scripts/trop'
 import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
 import { emitFakeLine } from "./scripts/fakeLine";
+import initKillTracker from "@client/src/killTracker.ts";
 
 export function registerScripts(client: Client) {
     const aliases = client.aliases
@@ -247,5 +248,7 @@ export function registerScripts(client: Client) {
     new People(client)
     registerGagTriggers(client)
     registerLuaGagTriggers(client)
+
+    initKillTracker(client)
 
 }
