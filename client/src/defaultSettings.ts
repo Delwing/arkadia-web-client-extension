@@ -8,10 +8,7 @@ export interface Settings {
     prettyContainers: boolean;
     containerColumns: number;
     collectMode: number;
-    collectCopper: boolean;
-    collectSilver: boolean;
-    collectGold: boolean;
-    collectGems: boolean;
+    collectMoneyType: number;
     collectExtra: string[];
     language: string;
     languageAdjective: string;
@@ -31,11 +28,8 @@ export const defaultSettings: Settings = {
     shortenExits: false,
     prettyContainers: true,
     containerColumns: 2,
-    collectMode: 1,
-    collectCopper: true,
-    collectSilver: true,
-    collectGold: true,
-    collectGems: true,
+    collectMode: 3,
+    collectMoneyType: 1,
     collectExtra: [],
     language: 'potoczna',
     languageAdjective: '',

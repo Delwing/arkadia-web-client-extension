@@ -9,75 +9,16 @@ interface FormSettings extends BaseSettings {
 }
 
 const collectModeOptions = [
-    "zawsze",
-    "lider",
-    "wlasne",
+    "monety",
+    "kamienie",
+    "monety i kamienie",
+    "druzynowe monety",
+    "druzynowe kamienie",
+    "druzynowe monety i kamienie",
     "nic",
-];
+]
 
-const LEGACY_COIN_MODES = new Set([1, 3, 4, 6]);
-const LEGACY_GEM_MODES = new Set([2, 3, 5, 6]);
-
-function translateLegacyCollectMode(value?: number): number {
-    if (value === 7) {
-        return 4;
-    }
-    if (typeof value === "number" && value >= 4 && value <= 6) {
-        return 3;
-    }
-    return 1;
-}
-
-function normalizeCollectMode(value: any): number {
-    const parsed = Number(value);
-    const numeric = Number.isFinite(parsed) ? Math.round(parsed) : defaultSettings.collectMode;
-    if (numeric < 1 || numeric > 4) {
-        return 1;
-    }
-    return numeric;
-}
-
-function normalizeSettingsValue(saved: any): FormSettings {
-    const merged: any = Object.assign({}, defaultSettings, saved ?? {});
-    const isLegacy = typeof saved?.collectMoneyType === "number";
-
-    if (isLegacy) {
-        const legacyMode = typeof saved?.collectMode === "number" ? saved.collectMode : undefined;
-        merged.collectMode = translateLegacyCollectMode(legacyMode);
-        const collectsCoins = legacyMode === undefined ? true : LEGACY_COIN_MODES.has(legacyMode);
-        if (!collectsCoins) {
-            merged.collectCopper = false;
-            merged.collectSilver = false;
-            merged.collectGold = false;
-        } else {
-            const moneyType = saved?.collectMoneyType ?? 1;
-            if (moneyType === 3) {
-                merged.collectCopper = false;
-                merged.collectSilver = false;
-                merged.collectGold = true;
-            } else if (moneyType === 2) {
-                merged.collectCopper = false;
-                merged.collectSilver = true;
-                merged.collectGold = true;
-            } else {
-                merged.collectCopper = true;
-                merged.collectSilver = true;
-                merged.collectGold = true;
-            }
-        }
-        merged.collectGems = legacyMode === undefined ? defaultSettings.collectGems : LEGACY_GEM_MODES.has(legacyMode);
-    } else {
-        merged.collectMode = normalizeCollectMode(merged.collectMode);
-        merged.collectCopper = !!merged.collectCopper;
-        merged.collectSilver = !!merged.collectSilver;
-        merged.collectGold = !!merged.collectGold;
-        merged.collectGems = !!merged.collectGems;
-    }
-
-    delete merged.collectMoneyType;
-
-    return merged as FormSettings;
-}
+const collectMoneyOptions = ["wszystkie", "srebrne", "zlote"]
 
 const languageOptions = [
     "potoczna",
@@ -151,7 +92,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
     useEffect(() => {
         const load = () => {
             storage.getItem("settings").then(res => {
-                const merged = normalizeSettingsValue(res?.settings);
+                const merged = Object.assign({}, defaultSettings, res?.settings);
                 if (typeof merged.lowHpAlert !== 'number') {
                     merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
                 }
@@ -289,38 +230,18 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                                     ))}
                                 </Form.Select>
                             </Form.Group>
-                            <Form.Group>
-                                <Form.Label className="me-1 mb-0">Co zbierac:</Form.Label>
-                                <div className="d-flex flex-wrap gap-3">
-                                    <Form.Check
-                                        type="checkbox"
-                                        id="collectCopper"
-                                        label="Miedziane monety"
-                                        checked={settings.collectCopper}
-                                        onChange={e => onChangeSetting(s => s.collectCopper = e.target.checked)}
-                                    />
-                                    <Form.Check
-                                        type="checkbox"
-                                        id="collectSilver"
-                                        label="Srebrne monety"
-                                        checked={settings.collectSilver}
-                                        onChange={e => onChangeSetting(s => s.collectSilver = e.target.checked)}
-                                    />
-                                    <Form.Check
-                                        type="checkbox"
-                                        id="collectGold"
-                                        label="Zlote monety"
-                                        checked={settings.collectGold}
-                                        onChange={e => onChangeSetting(s => s.collectGold = e.target.checked)}
-                                    />
-                                    <Form.Check
-                                        type="checkbox"
-                                        id="collectGems"
-                                        label="Kamienie"
-                                        checked={settings.collectGems}
-                                        onChange={e => onChangeSetting(s => s.collectGems = e.target.checked)}
-                                    />
-                                </div>
+                            <Form.Group className="d-flex align-items-center">
+                                <Form.Label className="me-1 mb-0">Rodzaj monet:</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    value={settings.collectMoneyType}
+                                    onChange={e => onChangeSetting(s => s.collectMoneyType = parseInt(e.target.value))}
+                                    className="w-auto"
+                                >
+                                    {collectMoneyOptions.map((label, i) => (
+                                        <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
+                                    ))}
+                                </Form.Select>
                             </Form.Group>
                             <Form.Group>
                                 <Form.Label className="me-1">Dodatkowe przedmioty:</Form.Label>
