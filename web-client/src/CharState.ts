@@ -169,17 +169,14 @@ export default class CharState {
       }
     });
 
-    const ext: any = (window as any).clientExtension;
-    if (ext?.addEventListener) {
-      ext.addEventListener('uiSettings', (ev: CustomEvent) => {
-        if (typeof ev.detail?.emojiLabels === 'boolean') {
-          this.applyLabelMode(ev.detail.emojiLabels);
-        }
-        if (typeof ev.detail?.footerMode === 'number') {
-          this.applyMode(ev.detail.footerMode);
-        }
-      });
-    }
+    this.client.on('uiSettings', (detail) => {
+      if (detail && typeof detail.emojiLabels === 'boolean') {
+        this.applyLabelMode(detail.emojiLabels);
+      }
+      if (detail && typeof detail.footerMode === 'number') {
+        this.applyMode(detail.footerMode);
+      }
+    });
 
     this.client.on(
       "gmcp.char.state",
@@ -292,7 +289,7 @@ export default class CharState {
       const reverse = def === 0 || this.config[key].flip === true;
       const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
       const color = COLOR_TEXT[colorLevel];
-      let text = "";
+      let text: string;
       if (this.mode === 1 || this.mode === 2) {
         const barMax = this.mode === 2 ? 10 : maxValue;
         const filledLen = Math.round((value / maxValue) * barMax);

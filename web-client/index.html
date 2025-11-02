@@ -252,9 +252,6 @@
                     <button class="w-100 p-1" id="logs-button">Logi</button>
                 </li>
                 <li>
-                    <button class="w-100 p-1" id="debug-button">Debugowanie</button>
-                </li>
-                <li>
                     <button class="w-100 p-1" id="share-location-button">Kod QR lokacji</button>
                 </li>
                 <li>
@@ -484,23 +481,6 @@
             </div>
         </div>
     </div>
-    <div id="debug-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Debug Log</h5>
-                    <div class="d-flex gap-2 align-items-center">
-                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-tester-button">Tester triggerów</button>
-                        <button type="button" class="btn btn-secondary btn-sm" id="trigger-finder-button">Trigger finder</button>
-                        <button type="button" class="btn btn-secondary btn-sm" id="notification-schedule-button">Powiadomienie</button>
-                        <span id="debug-ping" class="badge text-bg-secondary">Ping: --</span>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                </div>
-                <div id="debug-content" class="debug-content modal-body overflow-auto"></div>
-            </div>
-        </div>
-    </div>
 
     <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -679,7 +659,6 @@
 <div id="context-menu" class="context-menu"></div>
 <script type="module" src="/src/main.ts"></script>
 <script type="module" src="/src/docs.ts"></script>
-<script type="module" src="/src/debug.ts"></script>
 <script type="module" src="/src/logBrowser.ts"></script>
 </body>
 </html>

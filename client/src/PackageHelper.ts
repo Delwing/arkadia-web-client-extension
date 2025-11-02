@@ -54,8 +54,8 @@ export default class PackageHelper {
     private pickTrigger: Trigger;
     private failTrigger: Trigger;
 
-    constructor(clientExtension: Client) {
-        this.client = clientExtension
+    constructor(client: Client) {
+        this.client = client
         this.client.on('npc', (data) => {
             const list = Array.isArray(data) ? data : [];
             list.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)

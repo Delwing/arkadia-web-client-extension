@@ -41,8 +41,8 @@ export default class MapHelper {
     private colors?: any;
     private mapReady = false;
 
-    constructor(clientExtension: Client) {
-        this.client = clientExtension
+    constructor(client: Client) {
+        this.client = client
         const savedData = getItemSync(STORAGE_KEY);
         const saved = savedData ? savedData[STORAGE_KEY] : null;
         if (saved) {

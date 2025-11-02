@@ -279,9 +279,8 @@ export default class Client {
         });
 
         this.on('uiSettings', (uiSettings) => {
-            const detail = uiSettings as any;
-            if (detail?.xtermPalette) {
-                setXtermPalette(detail.xtermPalette);
+            if (uiSettings?.xtermPalette === 'arkadia' || uiSettings?.xtermPalette === 'proper') {
+                setXtermPalette(uiSettings.xtermPalette);
             }
         });
 

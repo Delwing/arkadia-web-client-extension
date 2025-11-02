@@ -190,6 +190,8 @@ export default class TeamManager {
             this.joined = false;
             this.client.sendEvent('teamChange');
         }
+
+        this.client.sendEvent("isTeamLeader", this.getLeaderId() === this.playerNum);
     }
 
     private registerTriggers() {

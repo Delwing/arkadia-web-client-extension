@@ -10,7 +10,7 @@ export default class CombatTimer {
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("combat-timer");
     this.enabled = this.getInitialEnabled();
-    this.subscribeToUiSettings();
+    this.subscribeToUiSettings(client);
     client.on("combatTimer", (seconds: number | null) => this.update(seconds));
     this.update(null);
   }
@@ -26,12 +26,8 @@ export default class CombatTimer {
     return true;
   }
 
-  private subscribeToUiSettings() {
-    const ext: any = (window as any).clientExtension;
-    if (typeof ext?.on !== "function") {
-      return;
-    }
-    ext.on("uiSettings", (payload: Partial<UiSettings> | undefined) => {
+  private subscribeToUiSettings(client: typeof ArkadiaClient) {
+    client.on("uiSettings", (payload) => {
       if (payload && typeof payload.showCombatTimer === "boolean") {
         this.enabled = payload.showCombatTimer;
         this.update(this.lastSeconds);

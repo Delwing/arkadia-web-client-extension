@@ -45,8 +45,6 @@ import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
 } from "./mobileButtonSettings"
-import "./triggerTester"
-import "./triggerFinder"
 import {getItemSync} from "@client/src/storage"
 import {
     areOutputTimestampsVisible,
@@ -410,7 +408,7 @@ arkadiaClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     updateConnectButtons();
-    window.clientExtension.sendEvent('refreshPositionWhenAble');
+    eventBus.emit('refreshPositionWhenAble');
     console.log('Client connected to Arkadia server.');
 });
 
@@ -547,9 +545,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const uiSettingsData = getItemSync('uiSettings');
     let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
     client.on('uiSettings', (payload) => {
-        const detail = (payload ?? {}) as { clearInputOnSend?: boolean };
-        if (typeof detail.clearInputOnSend === 'boolean') {
-            clearInputOnSend = detail.clearInputOnSend;
+        if (typeof payload?.clearInputOnSend === 'boolean') {
+            clearInputOnSend = payload.clearInputOnSend;
         }
     });
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
@@ -1593,3 +1590,4 @@ import MobileCommandRadial from "./scripts/mobileCommandRadial"
 import initUiSettings from "./uiSettings";
 import Client from "@client/src/Client.ts";
 import {registerScripts} from "@client/src/main.ts";
+import eventBus from "@client/src/eventBus.ts";

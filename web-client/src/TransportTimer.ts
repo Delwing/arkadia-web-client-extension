@@ -11,7 +11,7 @@ export default class TransportTimer {
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("transport-timer");
     this.showTransportLabel = this.getInitialShowTransportLabel();
-    this.subscribeToUiSettings();
+    this.subscribeToUiSettings(client);
     client.on("transportTimer", (payload: TransportTimerPayload | null) => this.update(payload));
     this.update(null);
   }
@@ -24,12 +24,8 @@ export default class TransportTimer {
     return true;
   }
 
-  private subscribeToUiSettings() {
-    const ext: any = (window as any).clientExtension;
-    if (typeof ext?.on !== "function") {
-      return;
-    }
-    ext.on("uiSettings", (payload: Partial<UiSettings> | undefined) => {
+  private subscribeToUiSettings(client: typeof ArkadiaClient) {
+    client.on("uiSettings", (payload) => {
       if (payload && typeof payload.showTransportLabel === "boolean") {
         this.showTransportLabel = payload.showTransportLabel;
         this.update(this.lastPayload);

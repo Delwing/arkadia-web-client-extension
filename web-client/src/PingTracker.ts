@@ -33,10 +33,6 @@ class PingTracker {
         }
     }
 
-    getLastDuration() {
-        return this.lastDuration;
-    }
-
     private sendPing() {
         this.lastSentAt = performance.now();
         this.sendPingCommand();

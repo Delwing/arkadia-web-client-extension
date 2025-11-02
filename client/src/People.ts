@@ -15,8 +15,8 @@ export default class People {
     private loadErrorLogged = false
     private refreshPromise: Promise<PersonEntry[] | undefined> | null = null
 
-    constructor(clientExtension: Client) {
-        this.client = clientExtension
+    constructor(client: Client) {
+        this.client = client
         subscribeToPeopleStore(snapshot => {
             if (snapshot) {
                 this.people = snapshot

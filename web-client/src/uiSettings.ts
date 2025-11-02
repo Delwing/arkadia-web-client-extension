@@ -1,6 +1,8 @@
 import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
 import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
+import eventBus from "@client/src/eventBus.ts";
+import type { UiSettingsEventPayload } from "@client/src/types/uiSettingsEvent.ts";
 
 const mapPositions = [
     'top-overlay',
@@ -274,7 +276,7 @@ function apply(settings: UiSettings) {
     (window as any).embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    (window as any).clientExtension?.sendEvent?.('uiSettings', {
+    const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
         hapticFeedback: settings.hapticFeedback,
         emojiLabels: settings.emojiLabels,
@@ -284,7 +286,8 @@ function apply(settings: UiSettings) {
         clearInputOnSend: settings.clearInputOnSend,
         showTransportLabel: settings.showTransportLabel,
         showCombatTimer: settings.showCombatTimer,
-    });
+    };
+    eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }

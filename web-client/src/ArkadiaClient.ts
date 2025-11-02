@@ -181,10 +181,6 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    sendCommand(message: string, echo: boolean = true, options?: CommandOptions): void {
-        this.send(message, echo, options);
-    }
-
     sendGmcp(path: string, payload: any = {}): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             return;
@@ -340,10 +336,6 @@ class ArkadiaClient implements ClientAdapter {
 
     listRecordings() {
         return this.recorder.listRecordings();
-    }
-
-    getLastPingDuration(): number | null {
-        return this.pingTracker.getLastDuration();
     }
 
     deleteRecording(name: string) {

@@ -145,7 +145,7 @@ export class Trigger {
 
 export default class Triggers {
 
-    clientExtension: Client;
+    client: Client;
     triggers: Map<string, Trigger> = new Map();
     multilineTriggers: Map<string, Trigger> = new Map();
     private static readonly ZERO_LENGTH_BUCKET_KEY = Symbol("zero-length-token-trigger");
@@ -153,8 +153,8 @@ export default class Triggers {
     private tokenTriggers: Map<string | symbol, { words: string[]; trigger: Trigger }[]> = new Map();
     private triggerEngineActive = true;
 
-    constructor(clientExtension: Client) {
-        this.clientExtension = clientExtension;
+    constructor(client: Client) {
+        this.client = client;
     }
 
     isTriggerEngineActive(): boolean {

@@ -1,5 +1,6 @@
 import type { LetterSubmitPayload } from "./types/letter";
 import type { TransportTimerPayload } from "./types/transport";
+import type { UiSettingsEventPayload } from "./types/uiSettingsEvent";
 
 type NotificationPayload = {
     text: string;
@@ -57,6 +58,7 @@ export interface KnownEvents {
     'teamLeaderTargetNoAvatar': string;
     'teamLeaderTargetAvatar': void;
     'teamChange': void;
+    'isTeamLeader': boolean;
     'reset': void;
     'refreshPositionWhenAble': void;
     'knowledgeReport': unknown | null;
@@ -72,7 +74,7 @@ export interface KnownEvents {
     'storage': StorageEventPayload;
     'settings': unknown;
     'binds': unknown;
-    'uiSettings': unknown;
+    'uiSettings': UiSettingsEventPayload | null | undefined;
     'mobileButtonsSettings': unknown;
     'pauserStart': void;
     'pauserEnd': void;

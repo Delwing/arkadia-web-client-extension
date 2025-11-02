@@ -7,8 +7,8 @@ export default class OutputHandler {
     clickerCallbacks: any[] = [];
     private contextMenu = document.getElementById('context-menu') as HTMLElement | null;
 
-    constructor(clientExtension: Client) {
-        this.client = clientExtension
+    constructor(client: Client) {
+        this.client = client
         this.client.on('output-sent', (count) => {
             this.processOutput(count);
         })

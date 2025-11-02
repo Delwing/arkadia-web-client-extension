@@ -52,16 +52,12 @@ export default class MultiBinds {
         if (action.trim()) {
           wrapper.addEventListener("click", (event) => {
             event.preventDefault();
-            const clientExtension = (window as any).clientExtension as {
-              sendCommand?: (command: string) => Promise<void>;
-            } | undefined;
-
-            if (clientExtension?.sendCommand) {
-              void clientExtension.sendCommand(action);
-              return;
+            const ext: unknown = (window as any).clientExtension;
+            if (ext && typeof (ext as { sendCommand?: (command: string) => Promise<void> }).sendCommand === "function") {
+              void (ext as { sendCommand: (command: string) => Promise<void> }).sendCommand(action);
+            } else {
+              this.client.send(action);
             }
-
-            this.client.send(action);
           });
         } else {
           wrapper.disabled = true;

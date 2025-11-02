@@ -182,13 +182,15 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for UI settings changes
-        this.client.on("uiSettings", (event) => {
-            const detail = (event ?? {}) as Record<string, unknown>;
-            if (Object.prototype.hasOwnProperty.call(detail, "hapticFeedback")) {
-                this.hapticEnabled = detail.hapticFeedback !== false;
+        this.client.on("uiSettings", (settings) => {
+            if (!settings) {
+                return;
             }
-            if (Object.prototype.hasOwnProperty.call(detail, "mobileDirectionButtons")) {
-                const disabled = detail.mobileDirectionButtons === false;
+            if ("hapticFeedback" in settings) {
+                this.hapticEnabled = settings.hapticFeedback !== false;
+            }
+            if ("mobileDirectionButtons" in settings) {
+                const disabled = settings.mobileDirectionButtons === false;
                 if (disabled) {
                     this.disable();
                 } else {
