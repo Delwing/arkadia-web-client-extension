@@ -61,6 +61,8 @@ export interface KnownEvents {
     'knowledgeReport': unknown | null;
     'knowledgeDetailsReport': unknown | null;
     'knowledgeReportAction': KnowledgeReportAction;
+    'requestHerbCounts': void;
+    'herbManagerClose': void;
     'herbCounts': unknown;
     'herbManagerOpen': void;
     'sound:play': { key: string };

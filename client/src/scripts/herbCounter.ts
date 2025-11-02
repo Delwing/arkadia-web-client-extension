@@ -154,7 +154,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     });
     client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
-    window.addEventListener('request-herb-counts', requestBagsIfNeeded);
+    client.on('requestHerbCounts', () => requestBagsIfNeeded());
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];

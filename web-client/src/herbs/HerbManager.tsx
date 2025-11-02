@@ -281,38 +281,43 @@ const HerbManager = () => {
     }, []);
 
     useEffect(() => {
-        const handler = (ev: Event) => {
-            const detail = (ev as CustomEvent<unknown>).detail;
+        const client = (window as any).clientExtension as Client | undefined;
+        if (!client?.on) {
+            return;
+        }
+        const unsubscribe = client.on("herbCounts", (detail) => {
             if (detail && typeof detail === "object") {
                 setError(null);
                 setBags(rebuildBags(detail as HerbCounts));
             }
-        };
-        window.addEventListener("herbCounts", handler as EventListener);
-        return () => window.removeEventListener("herbCounts", handler as EventListener);
+        });
+        return () => unsubscribe?.();
     }, []);
 
     useEffect(() => {
         if (!isOpen) {
             return;
         }
-        window.dispatchEvent(new Event("request-herb-counts"));
+        const client = (window as any).clientExtension as Client | undefined;
+        client?.sendEvent?.('requestHerbCounts');
         panelRef.current?.focus();
     }, [isOpen]);
 
     useEffect(() => {
-        const openHandler = () => {
+        const client = (window as any).clientExtension as Client | undefined;
+        if (!client?.on) {
+            return;
+        }
+        const unsubscribeOpen = client.on("herbManagerOpen", () => {
             setError(null);
             setIsOpen(true);
-        };
-        const closeHandler = () => {
+        });
+        const unsubscribeClose = client.on("herbManagerClose", () => {
             handleClose();
-        };
-        window.addEventListener("herbManagerOpen", openHandler);
-        window.addEventListener("herbManagerClose", closeHandler);
+        });
         return () => {
-            window.removeEventListener("herbManagerOpen", openHandler);
-            window.removeEventListener("herbManagerClose", closeHandler);
+            unsubscribeOpen?.();
+            unsubscribeClose?.();
         };
     }, [handleClose]);
 
@@ -492,14 +497,14 @@ const HerbManager = () => {
         if (!manager) {
             setError("Brak połączenia z licznikiem ziół.");
             setBusy(false);
-            window.dispatchEvent(new Event("request-herb-counts"));
+            (window as any).clientExtension?.sendEvent?.('requestHerbCounts');
             return;
         }
         Promise.resolve(manager.move(payload))
             .catch(err => {
                 const message = err instanceof Error ? err.message : "Nie udało się przenieść ziół.";
                 setError(message);
-                window.dispatchEvent(new Event("request-herb-counts"));
+                (window as any).clientExtension?.sendEvent?.('requestHerbCounts');
             })
             .finally(() => {
                 setBusy(false);
