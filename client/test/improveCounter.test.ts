@@ -16,12 +16,16 @@ class FakeClient {
 
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
+    return () => this.off(event, cb);
   }
   off(event: string, cb: any) {
     this.emitter.off(event, cb);
   }
-  dispatch(event: string, detail: any) {
+  emit(event: string, detail?: any) {
     this.emitter.emit(event, detail);
+  }
+  dispatch(event: string, detail: any) {
+    this.emit(event, detail);
   }
 }
 

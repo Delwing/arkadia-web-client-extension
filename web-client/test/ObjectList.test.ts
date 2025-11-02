@@ -14,12 +14,16 @@ class MockClient {
   TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
   on(event: string, handler: (...args: any[]) => void) {
     this.emitter.on(event, handler);
+    return () => this.off(event, handler);
   }
   off(event: string, handler: (...args: any[]) => void) {
     this.emitter.off(event, handler);
   }
-  dispatch(event: string, payload: any) {
+  emit(event: string, payload?: any) {
     this.emitter.emit(event, payload);
+  }
+  dispatch(event: string, payload: any) {
+    this.emit(event, payload);
   }
   sendCommand = jest.fn();
 }
@@ -212,9 +216,16 @@ describe('ObjectList', () => {
       sendCommand = jest.fn();
       on(event: string, cb: any) {
         this.emitter.on(event, cb);
+        return () => this.off(event, cb);
+      }
+      off(event: string, cb: any) {
+        this.emitter.off(event, cb);
+      }
+      emit(event: string, detail?: any) {
+        this.emitter.emit(event, detail);
       }
       sendEvent(type: string, detail?: any) {
-        this.emitter.emit(type, detail);
+        this.emit(type, detail);
       }
     }
     const client = new TestClient();

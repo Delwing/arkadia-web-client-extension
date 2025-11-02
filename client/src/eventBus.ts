@@ -97,6 +97,11 @@ export interface KnownEvents {
 }
 
 export type ClientEvents = KnownEvents & {
+    'parsedObjects': void;
+    'parsedNums': { nums: number[] };
+    'kill': { killer: "ME" | "TEAM" | "OTHER" };
+    'enemyKilled': { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
+    'allEnemiesKilled': void;
     [key: `gmcp.${string}`]: unknown;
     [key: `gmcp_msg.${string}`]: string;
 };
