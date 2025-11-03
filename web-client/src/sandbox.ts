@@ -7,7 +7,7 @@ arkadiaClient.connect = () => {
 };
 arkadiaClient.sendGmcp = () => {};
 arkadiaClient.send = (message: string, echo: boolean = true) => {
-    arkadiaClient.recorder?.handleOutgoing?.(message);
+    arkadiaClient.getRecorder().handleOutgoing(message);
     if ((arkadiaClient as any).receivedFirstGmcp && message) {
         const formatted = `→ ${message}`;
         if (echo) {

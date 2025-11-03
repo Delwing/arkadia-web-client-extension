@@ -6,6 +6,7 @@ import { normalizeHerbBagsState } from "@client/src/types/herbs";
 import { openHerbContextMenu } from "@client/src/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
 import type Client from "@client/src/Client";
+import eventBus from "@client/src/eventBus.ts";
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -263,10 +264,6 @@ const HerbManager = () => {
     }, []);
 
     useEffect(() => {
-        const client = (window as any).clientExtension as Client | undefined;
-        if (!client) {
-            return;
-        }
         const handleSettings = (settings: unknown) => {
             const detail = settings as Record<string, unknown> | null | undefined;
             const pre = parseCommandList(detail?.herbPreUseCommand);
@@ -274,50 +271,41 @@ const HerbManager = () => {
             preUseCommandsRef.current = pre;
             postUseCommandsRef.current = post;
         };
-        const unsubscribe = client.on("settings", handleSettings as any);
+        const unsubscribe = eventBus.on("settings", handleSettings as any);
         return () => {
-            unsubscribe?.();
+            unsubscribe();
         };
     }, []);
 
     useEffect(() => {
-        const client = (window as any).clientExtension as Client | undefined;
-        if (!client?.on) {
-            return;
-        }
-        const unsubscribe = client.on("herbCounts", (detail) => {
+        const unsubscribe = eventBus.on("herbCounts", (detail) => {
             if (detail && typeof detail === "object") {
                 setError(null);
                 setBags(rebuildBags(detail as HerbCounts));
             }
         });
-        return () => unsubscribe?.();
+        return () => unsubscribe();
     }, []);
 
     useEffect(() => {
         if (!isOpen) {
             return;
         }
-        const client = (window as any).clientExtension as Client | undefined;
-        client?.sendEvent?.('requestHerbCounts');
+        eventBus.emit('requestHerbCounts');
         panelRef.current?.focus();
     }, [isOpen]);
 
     useEffect(() => {
-        const client = (window as any).clientExtension as Client | undefined;
-        if (!client?.on) {
-            return;
-        }
-        const unsubscribeOpen = client.on("herbManagerOpen", () => {
+        const unsubscribeOpen = eventBus.on("herbManagerOpen", () => {
             setError(null);
             setIsOpen(true);
         });
-        const unsubscribeClose = client.on("herbManagerClose", () => {
+        const unsubscribeClose = eventBus.on("herbManagerClose", () => {
             handleClose();
         });
         return () => {
-            unsubscribeOpen?.();
-            unsubscribeClose?.();
+            unsubscribeOpen();
+            unsubscribeClose();
         };
     }, [handleClose]);
 
@@ -497,14 +485,14 @@ const HerbManager = () => {
         if (!manager) {
             setError("Brak połączenia z licznikiem ziół.");
             setBusy(false);
-            (window as any).clientExtension?.sendEvent?.('requestHerbCounts');
+            eventBus.emit('requestHerbCounts');
             return;
         }
         Promise.resolve(manager.move(payload))
             .catch(err => {
                 const message = err instanceof Error ? err.message : "Nie udało się przenieść ziół.";
                 setError(message);
-                (window as any).clientExtension?.sendEvent?.('requestHerbCounts');
+                eventBus.emit('requestHerbCounts');
             })
             .finally(() => {
                 setBusy(false);

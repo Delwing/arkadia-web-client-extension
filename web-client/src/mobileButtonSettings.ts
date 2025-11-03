@@ -1,4 +1,5 @@
 import storage from "@client/src/storage";
+import eventBus from "@client/src/eventBus.ts";
 
 export type MacroType =
     | 'functional'
@@ -434,6 +435,5 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             div.style.gridAutoRows = baseRow * sizeRatio + 'px';
         });
     }
-    (window as any).clientExtension?.sendEvent?.('mobileButtonsSettings', set.buttons);
+    eventBus.emit('mobileButtonsSettings', set.buttons);
 }
-

@@ -6,7 +6,11 @@ import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 import PingTracker from "./PingTracker.ts";
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+type Params<T> = [T] extends [void]
+    ? []
+    : [T] extends [any[]]
+        ? T
+        : [T];
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
 // WebSocket configuration
@@ -19,9 +23,6 @@ const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
     private receivedFirstGmcp: boolean = false;
-    private userCommand: string | null = null;
-    private passwordCommand: string | null = null;
-    private lastConnectManual = true;
     private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
     private readonly telnetOptionHandler: (optionData: string) => string;
@@ -66,11 +67,10 @@ class ArkadiaClient implements ClientAdapter {
     /**
      * Connect to the WebSocket server
      */
-    connect(manual: boolean = true): void {
+    connect(): void {
         try {
             // Reset the flag when connecting
             this.receivedFirstGmcp = false;
-            this.lastConnectManual = manual;
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
@@ -99,12 +99,6 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('open', event);
                 this.emit('client.connect');
                 this.pingTracker.start();
-                if (!this.lastConnectManual && this.userCommand && this.passwordCommand) {
-                    this.send(this.userCommand, false);
-                    if (this.passwordCommand !== this.userCommand) {
-                        this.send(this.passwordCommand, false);
-                    }
-                }
             };
         } catch (error) {
             this.emit('error', error);
@@ -136,20 +130,6 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     /**
-     * Manually set the stored password for automatic credential sending
-     */
-    setStoredPassword(password: string | null): void {
-        this.passwordCommand = password;
-    }
-
-    /**
-     * Manually set the stored character for automatic credential sending
-     */
-    setStoredCharacter(character: string | null): void {
-        this.userCommand = character;
-    }
-
-    /**
      * Send a message through the WebSocket
      */
     send(message: string, echo: boolean = true, options?: CommandOptions): void {
@@ -158,18 +138,12 @@ class ArkadiaClient implements ClientAdapter {
             return;
         }
 
-        if (!this.receivedFirstGmcp) {
-            if (!this.userCommand) {
-                this.userCommand = message;
-            }
-            this.passwordCommand = message;
-        } else {
+        if (this.receivedFirstGmcp) {
             message = normalizeCommand(message, options)
+            this.recordOutgoing(message);
         }
 
-
         try {
-            this.recordOutgoing(message);
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
             if (echo && this.receivedFirstGmcp && message) {
@@ -198,6 +172,20 @@ class ArkadiaClient implements ClientAdapter {
     output(text?: string, type?: string, timestamp?: number) {
         const ts = typeof timestamp === 'number' ? timestamp : Date.now();
         this.emit('message', text, type, ts)
+    }
+
+    getRecorder(): Recorder {
+        return this.recorder;
+    }
+
+    setStoredPassword(_password: string | null): void {
+        void _password;
+        // Intentionally no-op; kept for API compatibility.
+    }
+
+    setStoredCharacter(_character: string | null): void {
+        void _character;
+        // Intentionally no-op; kept for API compatibility.
     }
 
     //Should be done on all ouput

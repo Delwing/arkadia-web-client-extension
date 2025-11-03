@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import type Client from '@client/src/Client';
 import type { KnowledgeDetailsType } from '@client/src/dataStores/knowledgeDetailsStore';
+import eventBus from '@client/src/eventBus.ts';
 
 const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
   { key: 'fight', label: 'Z walki', showDetails: false },
@@ -194,15 +195,11 @@ const KnowledgeDetailsReport: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const client = (window as any).clientExtension as Client | undefined;
-    if (!client?.on) {
-      return;
-    }
-    const unsubscribe = client.on('knowledgeDetailsReport', (payload) => {
+    const unsubscribe = eventBus.on('knowledgeDetailsReport', (payload) => {
       handleReport(payload as KnowledgeDetailsReportPayload | null | undefined);
     });
     return () => {
-      unsubscribe?.();
+      unsubscribe();
     };
   }, [handleReport]);
 

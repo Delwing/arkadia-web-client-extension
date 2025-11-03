@@ -1,9 +1,15 @@
 import AttackMode from '../src/AttackMode';
+import eventBus from '@client/src/eventBus.ts';
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),
 }));
 import { getItemSync } from '@client/src/storage.ts';
+
+const emitIsLeaderEvent = () => {
+  const isLeader = Boolean((window as any).clientExtension?.TeamManager?.isLeader?.());
+  eventBus.emit('isTeamLeader', isLeader);
+};
 
 class MockClient {
   private events: Record<string, Function[]> = {};
@@ -12,6 +18,10 @@ class MockClient {
   }
   emit = jest.fn((event: string, ...args: any[]) => {
     (this.events[event] || []).forEach(fn => fn(...args));
+    (eventBus.emit as (...emitArgs: any[]) => number)(event, ...args);
+    if (event === 'teamChange') {
+      emitIsLeaderEvent();
+    }
   });
 }
 
@@ -20,12 +30,14 @@ describe('AttackMode', () => {
   let client: MockClient;
 
   beforeEach(() => {
+    eventBus.clear();
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
     (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
     (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => true) } };
     new AttackMode(client as any);
+    emitIsLeaderEvent();
   });
 
   test('updates mode display', () => {
@@ -58,6 +70,7 @@ describe('AttackMode', () => {
     client = new MockClient();
     (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => false) } };
     new AttackMode(client as any);
+    emitIsLeaderEvent();
     expect(container.style.display).toBe('none');
     (window as any).clientExtension.TeamManager.isLeader.mockReturnValue(true);
     client.emit('teamChange');

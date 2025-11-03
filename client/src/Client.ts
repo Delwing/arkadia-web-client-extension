@@ -53,9 +53,9 @@ function hasPrintableContent(segment: string): boolean {
 }
 
 type EventKey = keyof ClientEvents;
-type EventParams<K extends EventKey> = ClientEvents[K] extends void
+type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
     ? []
-    : ClientEvents[K] extends any[]
+    : [ClientEvents[K]] extends [any[]]
         ? ClientEvents[K]
         : [ClientEvents[K]];
 type ClientEventListener<K extends EventKey> = (...args: EventParams<K>) => void;

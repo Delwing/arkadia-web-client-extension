@@ -109,7 +109,11 @@ export type ClientEvents = KnownEvents & {
     [key: `gmcp_msg.${string}`]: string;
 };
 
-type Params<T> = T extends void ? [] : T extends any[] ? T : [T];
+type Params<T> = [T] extends [void]
+    ? []
+    : [T] extends [any[]]
+        ? T
+        : [T];
 type Handler<T> = (...args: Params<T>) => void;
 type ListenerEntry<T> = {
     handler: Handler<T>;

@@ -1,5 +1,5 @@
 import type { PersonEntry } from '../../types/people';
-import { LoaderStrategy, type LoaderContext, type LoaderResult } from '../types';
+import { LoaderStrategy, type LoaderContext, type LoaderResult, type RefreshMetadata } from '../types';
 
 type LoadPeopleRequest = {
   id: number;
@@ -10,7 +10,7 @@ type WorkerSuccessMessage = { id: number; status: 'success'; people: PersonEntry
 type WorkerErrorMessage = { id: number; status: 'error'; error: string };
 type WorkerMessage = WorkerSuccessMessage | WorkerErrorMessage;
 
-export interface WorkerLoaderMetadata {
+export interface WorkerLoaderMetadata extends RefreshMetadata {
   count: number;
 }
 
@@ -49,7 +49,7 @@ export class WorkerLoader<TMeta extends WorkerLoaderMetadata = WorkerLoaderMetad
 
     return {
       snapshot: people,
-      metadata: { count: people.length } as Partial<TMeta>,
+      metadata: { count: people.length, refreshedAt: Date.now() } as Partial<TMeta>,
     };
   }
 

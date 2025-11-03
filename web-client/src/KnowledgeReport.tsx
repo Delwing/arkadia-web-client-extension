@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import type Client from '@client/src/Client';
 import type { KnowledgeCategoryStatus } from '@client/src/dataStores/knowledgeStore';
-import type { KnowledgeReportAction } from '@client/src/eventBus';
+import eventBus, { type KnowledgeReportAction } from '@client/src/eventBus.ts';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -212,15 +212,11 @@ const KnowledgeReport: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const client = (window as any).clientExtension as Client | undefined;
-    if (!client?.on) {
-      return;
-    }
-    const unsubscribe = client.on('knowledgeReport', (payload) => {
+    const unsubscribe = eventBus.on('knowledgeReport', (payload) => {
       handleReport(payload as KnowledgeReportPayload | null | undefined);
     });
     return () => {
-      unsubscribe?.();
+      unsubscribe();
     };
   }, [handleReport]);
 
@@ -303,8 +299,7 @@ const KnowledgeReport: React.FC = () => {
   );
 
   const sendKnowledgeReportAction = useCallback((action: KnowledgeReportAction) => {
-    const client = (window as any).clientExtension as Client | undefined;
-    client?.sendEvent?.('knowledgeReportAction', action);
+    eventBus.emit('knowledgeReportAction', action);
   }, []);
 
   const handleCompleteLibrary = useCallback(
