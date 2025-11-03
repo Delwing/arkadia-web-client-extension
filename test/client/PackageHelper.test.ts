@@ -1,4 +1,4 @@
-jest.mock('front-client/src/dataStores/npcStore', () => ({
+jest.mock('../../src/web/dataStores/npcStore', () => ({
   addLocalNpc: jest.fn().mockResolvedValue(undefined),
 }));
 

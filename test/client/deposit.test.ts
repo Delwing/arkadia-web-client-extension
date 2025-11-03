@@ -1,5 +1,5 @@
 jest.mock('@client/scripts/prettyContainers', () => {
-  const actual = jest.requireActual('../client/scripts/prettyContainers');
+  const actual = jest.requireActual('@client/scripts/prettyContainers');
   return { ...actual, prettyPrintContainer: jest.fn(() => 'table') };
 });
 

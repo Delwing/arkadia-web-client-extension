@@ -2,7 +2,7 @@ import {
     AnsiAwareBuffer,
     FormatStateSnapshot,
     formatStatesEqual,
-} from "../../src/ansi/FormatState";
+} from "../../../src/client/ansi/FormatState";
 
 describe("AnsiAwareBuffer", () => {
     const extractStates = (buffer: AnsiAwareBuffer): (FormatStateSnapshot | undefined)[] =>

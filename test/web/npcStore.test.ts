@@ -4,7 +4,7 @@ declare const global: typeof globalThis & { fetch: jest.Mock };
 
 const fetchMock = jest.fn();
 
-type NpcStoreModule = typeof import('../src/dataStores/npcStore');
+type NpcStoreModule = typeof import('../../src/web/dataStores/npcStore');
 let npcStore: NpcStoreModule;
 
 function mockFetchResponse(data: NpcRecord[]) {
@@ -18,7 +18,7 @@ async function loadStoreModule() {
   jest.resetModules();
   fetchMock.mockReset();
   global.fetch = fetchMock;
-  npcStore = await import('../src/dataStores/npcStore');
+  npcStore = await import('../../src/web/dataStores/npcStore');
 }
 
 describe('npcStore', () => {

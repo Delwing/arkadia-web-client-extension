@@ -1,4 +1,4 @@
-import TriggerLine from '../../src/triggers/TriggerLine';
+import TriggerLine from "../../../src/client/triggers/TriggerLine";
 
 describe('TriggerLine formatting helpers', () => {
   it('infers formatting when replacing text inside coloured segments', () => {
