@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, installEmbeddedMock, waitForClientReady} from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
 const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
@@ -14,6 +14,10 @@ async function openMobileButtonsSettings(page: Page) {
     await expect(modal, 'should open mobile buttons settings modal').toBeVisible();
     return modal;
 }
+
+test.beforeEach(async ({context}) => {
+    await installEmbeddedMock(context);
+});
 
 test.describe('Mobile button color and command configuration', () => {
     test('change button color and command, verify persistence', async ({page}) => {
