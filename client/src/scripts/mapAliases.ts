@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {longToShort} from "../MapHelper";
+import { longToShort } from "@shared/map/directions";
 import {getShortcut} from "./shortcuts";
 
 type SearchableRoom = {

@@ -8,7 +8,7 @@ import {
     defaultBackground,
 } from "../mobileButtonSettings";
 import { getItemSync, setItemSync } from "@client/src/storage";
-import { getShortDir } from "@client/src/utils/directions.ts";
+import { getShortDir } from "@shared/map/directions";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];

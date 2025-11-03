@@ -55,7 +55,7 @@ export default function initShortExits(client: Client) {
 
     const callback = (_r: string, _l: string, m: RegExpMatchArray) => {
         if (!enabled) return undefined;
-        const dirs = parseExitString(m[1]).map(getShortDir);
+        const dirs: string[] = parseExitString(m[1]).map(getShortDir);
         if (dirs.length === 0) return undefined;
         const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
         return colorString(str, ORANGE);

@@ -1,6 +1,6 @@
 import Triggers from "./Triggers";
 import PackageHelper from "./PackageHelper";
-import MapHelper from "./MapHelper";
+import MapHelper from "@shared/map/MapHelper";
 import InlineCompassRose from "./scripts/inlineCompassRose";
 import Pausers from "./Pausers";
 import {mudletColorLine, setXtermPalette} from "./Colors";
@@ -83,7 +83,16 @@ export default class Client {
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
     packageHelper = new PackageHelper(this);
-    Map = new MapHelper(this);
+    Map = new MapHelper({
+        on: this.on.bind(this),
+        sendCommand: this.sendCommand.bind(this),
+        sendEvent: this.sendEvent.bind(this),
+        getSuppressMapMoveEvent: () => this.suppressMapMoveEvent,
+        setSuppressMapMoveEvent: (value: boolean) => {
+            this.suppressMapMoveEvent = value;
+        },
+        functionalBind: this.FunctionalBind,
+    });
     Pausers = new Pausers(this);
     OutputHandler = new OutputHandler(this);
     TeamManager = new TeamManager(this);

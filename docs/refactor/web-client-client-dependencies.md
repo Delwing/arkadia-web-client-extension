@@ -23,10 +23,10 @@ This document tracks the most significant coupling points between the legacy `cl
 - **Action**: Relocate recorder logic to `src/shared/recorder/` with platform adapters. Ensure tests mock the shared entry points.
 
 ## 4. Map & Location Services
-- **Shared pieces**: `MapHelper`, location restoration logic, map data loaders (`loadMapData`, `loadColors`), Playwright location-restoration e2e suite.
-- **Problem**: `web-client` and `client` both rely on `MapHelper` to translate GMCP data into UI state. Differences in initialization cause inconsistent state restoration.
+- **Shared pieces**: `src/shared/map/MapHelper.ts`, location restoration helpers, shared map data loader factory (`src/shared/map/dataLoader.ts`), Playwright location-restoration e2e suite.
+- **Problem**: `web-client` and `client` both rely on the same helpers to translate GMCP data into UI state. Differences in initialization cause inconsistent state restoration.
 - **Impact**: High — broken map or wrong location affects gameplay drastically.
-- **Action**: Extract map utilities into a shared module; keep Mudlet-specific renderer adapters isolated. Tests should run against the shared helper.
+- **Action**: Keep platform-specific adapters thin while continuing to pipe map data through the shared helpers. Tests should run against the shared implementations.
 
 ## 5. Socket & GMCP Plumbing
 - **Shared behavior**: `web-client/src/ArkadiaClient.ts` WebSocket setup, recorder hooks, push/pull of GMCP messages, command emission outbound.

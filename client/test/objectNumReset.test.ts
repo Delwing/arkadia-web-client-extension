@@ -42,7 +42,7 @@ jest.mock('howler', () => {
   return { Howl: jest.fn(() => instance) };
 });
 
-jest.mock('../src/MapHelper', () => ({
+jest.mock('@shared/map/MapHelper', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     parseCommand,

@@ -52,7 +52,7 @@ jest.mock('../src/scripts/functionalBind', () => ({
 }));
 
 
-jest.mock('../src/MapHelper', () => {
+jest.mock('@shared/map/MapHelper', () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
