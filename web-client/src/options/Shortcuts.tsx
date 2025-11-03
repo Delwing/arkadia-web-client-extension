@@ -3,7 +3,7 @@ import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "@client/src/storage";
 import eventBus from "@client/src/eventBus.ts";
-import { getClientInstance } from "../clientRegistry";
+import { getClientInstance } from "@shared/runtime";
 
 interface ShortcutEntry {
     key: string;

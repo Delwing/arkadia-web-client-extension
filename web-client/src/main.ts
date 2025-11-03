@@ -6,7 +6,7 @@ import eventBus from "@client/src/eventBus.ts";
 import type { SendCommandEvent } from "@shared/events";
 import { registerScripts } from "@client/src/main.ts";
 import { showContextMenu } from "@shared/dom/contextMenu";
-import { setClientInstance } from "./clientRegistry";
+import { setClientInstance } from "@shared/runtime";
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";

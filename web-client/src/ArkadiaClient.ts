@@ -6,7 +6,7 @@ import eventBus from "@client/src/eventBus.ts";
 import type { ClientEvents } from "@shared/events";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 import PingTracker from "./PingTracker.ts";
-import { getClientInstance } from "./clientRegistry";
+import { getClientInstance } from "@shared/runtime";
 
 type Params<T> = [T] extends [void]
     ? []

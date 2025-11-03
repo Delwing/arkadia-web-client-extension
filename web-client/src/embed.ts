@@ -8,7 +8,7 @@ import {
 } from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@client/src/storage";
 import eventBus from "@client/src/eventBus.ts";
-import { getClientInstance } from "./clientRegistry";
+import { getClientInstance } from "@shared/runtime";
 
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';

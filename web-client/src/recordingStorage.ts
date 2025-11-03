@@ -1,10 +1,4 @@
-export interface RecordedEvent {
-    message: string;
-    timestamp: number;
-    direction: 'in' | 'out';
-    locationId?: number;
-    initialLocationId?: number;
-}
+import type { RecordedEvent } from "@shared/recorder";
 
 function openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -65,3 +59,5 @@ export async function deleteRecording(id: string): Promise<void> {
         req.onerror = () => reject(new Error('Failed to delete recording'));
     });
 }
+
+export type { RecordedEvent } from "@shared/recorder";

@@ -14,7 +14,7 @@ import {
     defaultBackground,
     defaultFontColor,
 } from "../mobileButtonSettings";
-import { getClientInstance } from "../clientRegistry";
+import { getClientInstance } from "@shared/runtime";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
 

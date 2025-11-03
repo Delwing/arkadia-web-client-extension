@@ -7,7 +7,7 @@ import {
     Settings,
     RadialCommandSetting,
 } from "../mobileButtonSettings";
-import { getClientInstance } from "../clientRegistry";
+import { getClientInstance } from "@shared/runtime";
 
 function createRadialId() {
     const globalCrypto = typeof crypto !== "undefined" ? crypto : undefined;

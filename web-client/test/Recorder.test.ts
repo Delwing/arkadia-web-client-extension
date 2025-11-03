@@ -1,5 +1,5 @@
 import Recorder from '../src/Recorder';
-import { clearClientInstance, setClientInstance } from "../src/clientRegistry";
+import { clearClientInstance, setClientInstance } from "@shared/runtime";
 
 describe('Recorder playback', () => {
   test('replayRecordedMessagesTimed echoes outgoing commands', () => {

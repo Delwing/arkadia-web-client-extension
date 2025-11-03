@@ -1,5 +1,5 @@
 import eventBus from "@client/src/eventBus.ts";
-import { clearClientInstance } from "../src/clientRegistry";
+import { clearClientInstance } from "@shared/runtime";
 import MultiBinds from "../src/MultiBinds";
 
 describe("MultiBinds", () => {

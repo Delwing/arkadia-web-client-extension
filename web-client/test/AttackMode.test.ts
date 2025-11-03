@@ -1,6 +1,6 @@
 import AttackMode from '../src/AttackMode';
 import eventBus from '@client/src/eventBus.ts';
-import { getClientInstance, setClientInstance, clearClientInstance } from "../src/clientRegistry";
+import { getClientInstance, setClientInstance, clearClientInstance } from "@shared/runtime";
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),
