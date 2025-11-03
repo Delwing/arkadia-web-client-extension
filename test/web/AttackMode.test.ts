@@ -5,7 +5,7 @@ jest.mock("@web-ui/components/panels/PackageStatus", () => ({
     PackageStatus: () => null,
 }));
 
-import mountStatusIndicators from "../src/statusIndicators";
+import mountStatusIndicators from "../../src/web/statusIndicators";
 
 jest.mock("@modules/core/storage", () => ({
     getItemSync: jest.fn(() => ({})),

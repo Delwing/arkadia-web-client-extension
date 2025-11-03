@@ -1,4 +1,4 @@
-import CombatTimer from "../src/CombatTimer";
+import CombatTimer from "../../src/web/CombatTimer";
 
 class MockClient {
   private events: Record<string, Function[]> = {};

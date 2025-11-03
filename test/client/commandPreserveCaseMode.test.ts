@@ -24,7 +24,7 @@ describe('commandPreserveCaseMode', () => {
 
   beforeEach(async () => {
     jest.resetModules();
-    const module = await import('../src/scripts/commandPreserveCaseMode');
+    const module = await import('../../src/client/scripts/commandPreserveCaseMode');
     normalizeCommand = module.normalizeCommand;
     initCommandPreserveCaseMode = module.default;
     client = new FakeClient();

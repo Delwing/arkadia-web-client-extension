@@ -1,6 +1,6 @@
 import eventBus from "@modules/core/eventBus";
 import { clearClientInstance } from "@shared/runtime";
-import MultiBinds from "../src/MultiBinds";
+import MultiBinds from "../../src/web/MultiBinds";
 
 describe("MultiBinds", () => {
   beforeEach(() => {

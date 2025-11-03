@@ -1,4 +1,4 @@
-import TransportTimer from "../src/TransportTimer";
+import TransportTimer from "../../src/web/TransportTimer";
 
 class MockClient {
   private events: Record<string, Function[]> = {};

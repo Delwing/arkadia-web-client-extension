@@ -1,4 +1,4 @@
-import { parseArkadia } from "../src/options/importArkadia";
+import {parseArkadia} from "../../src/web/options/importArkadia";
 
 describe("parseArkadia", () => {
     it("parses aliases and reports skipped ones", () => {

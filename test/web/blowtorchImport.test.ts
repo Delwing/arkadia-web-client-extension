@@ -1,4 +1,4 @@
-import { parseBlowtorch } from "../src/options/importBlowtorch";
+import {parseBlowtorch} from "../../src/web/options/importBlowtorch";
 
 describe("parseBlowtorch", () => {
     it("parses aliases with parameters", () => {

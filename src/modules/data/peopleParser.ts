@@ -1,8 +1,8 @@
 import type { SqlJsStatic } from 'sql.js';
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import type { PersonEntry } from './types/people';
 import { resolveGuild } from './peopleGuilds';
+import {PersonEntry} from "@client/types/people.ts";
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
