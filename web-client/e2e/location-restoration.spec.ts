@@ -25,13 +25,13 @@ test.describe('Location restoration', () => {
 
         // Wait for the map to process the location
         await page.waitForFunction(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             return client?.Map?.currentRoom?.id === 2;
         }, { timeout: 5000 });
 
         // Verify the location is set correctly by hash
         const currentLocation = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             return {
                 id: client?.Map?.currentRoom?.id,
                 hash: client?.Map?.currentRoom?.hash,
@@ -72,13 +72,13 @@ test.describe('Location restoration', () => {
 
         // Wait for the map to process the location
         await page.waitForFunction(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             return client?.Map?.currentRoom?.id === 2;
         }, { timeout: 5000 });
 
         // Verify the location is still set correctly after reload using hash
         const currentLocationAfterReload = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             return {
                 id: client?.Map?.currentRoom?.id,
                 hash: client?.Map?.currentRoom?.hash,
@@ -101,23 +101,21 @@ test.describe('Location restoration', () => {
 
         // Verify map is initialized with default location from map data
         const initialLocation = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             return client?.Map?.currentRoom?.id;
         });
         expect(initialLocation, 'initial location should be set from map data').toBeTruthy();
 
         // Set up event listener
         await page.evaluate(() => {
-            (window as any).__roomInfoReceived1 = false;
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
+            (globalThis as any).__roomInfoReceived1 = false;
+            const client: any = (globalThis as any).clientExtension;
+            const unsubscribe = client.on('gmcp.room.info', (detail: any) => {
                 if (detail?.id === 3 && detail?.name === 'Kamienny Most') {
-                    (window as any).__roomInfoReceived1 = true;
-                    client.removeEventListener('gmcp.room.info', handler);
+                    (globalThis as any).__roomInfoReceived1 = true;
+                    unsubscribe?.();
                 }
-            };
-            client.addEventListener('gmcp.room.info', handler);
+            });
         });
 
         // Send GMCP room.info event
@@ -136,25 +134,23 @@ test.describe('Location restoration', () => {
 
         // Wait for event to be received
         await page.waitForFunction(() => {
-            return (window as any).__roomInfoReceived1 === true;
+            return (globalThis as any).__roomInfoReceived1 === true;
         }, { timeout: 5000 });
 
         // Verify the GMCP event was received
-        const roomInfoReceived1 = await page.evaluate(() => (window as any).__roomInfoReceived1);
+        const roomInfoReceived1 = await page.evaluate(() => (globalThis as any).__roomInfoReceived1);
         expect(roomInfoReceived1, 'room.info event should be received').toBe(true);
 
         // Set up event listener for second event
         await page.evaluate(() => {
-            (window as any).__roomInfoReceived2 = false;
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
+            (globalThis as any).__roomInfoReceived2 = false;
+            const client: any = (globalThis as any).clientExtension;
+            const unsubscribe = client.on('gmcp.room.info', (detail: any) => {
                 if (detail?.id === 4 && detail?.name === 'Rezydencja Borgafa') {
-                    (window as any).__roomInfoReceived2 = true;
-                    client.removeEventListener('gmcp.room.info', handler);
+                    (globalThis as any).__roomInfoReceived2 = true;
+                    unsubscribe?.();
                 }
-            };
-            client.addEventListener('gmcp.room.info', handler);
+            });
         });
 
         // Send another GMCP room.info event
@@ -173,11 +169,11 @@ test.describe('Location restoration', () => {
 
         // Wait for event to be received
         await page.waitForFunction(() => {
-            return (window as any).__roomInfoReceived2 === true;
+            return (globalThis as any).__roomInfoReceived2 === true;
         }, { timeout: 5000 });
 
         // Verify the second GMCP event was received
-        const roomInfoReceived2 = await page.evaluate(() => (window as any).__roomInfoReceived2);
+        const roomInfoReceived2 = await page.evaluate(() => (globalThis as any).__roomInfoReceived2);
         expect(roomInfoReceived2, 'second room.info event should be received').toBe(true);
     });
 
@@ -189,18 +185,16 @@ test.describe('Location restoration', () => {
 
         // Set up event listener for cave location
         await page.evaluate(() => {
-            (window as any).__caveLocationReceived = false;
-            (window as any).__caveExits = [];
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
+            (globalThis as any).__caveLocationReceived = false;
+            (globalThis as any).__caveExits = [];
+            const client: any = (globalThis as any).clientExtension;
+            const unsubscribe = client.on('gmcp.room.info', (detail: any) => {
                 if (detail?.id === 6 && detail?.zone === 'Zapomniane Jaskinie') {
-                    (window as any).__caveLocationReceived = true;
-                    (window as any).__caveExits = detail?.exits ? Object.keys(detail.exits) : [];
-                    client.removeEventListener('gmcp.room.info', handler);
+                    (globalThis as any).__caveLocationReceived = true;
+                    (globalThis as any).__caveExits = detail?.exits ? Object.keys(detail.exits) : [];
+                    unsubscribe?.();
                 }
-            };
-            client.addEventListener('gmcp.room.info', handler);
+            });
         });
 
         // Test room.info for a location in a different area
@@ -219,30 +213,28 @@ test.describe('Location restoration', () => {
 
         // Wait for event to be received
         await page.waitForFunction(() => {
-            return (window as any).__caveLocationReceived === true;
+            return (globalThis as any).__caveLocationReceived === true;
         }, { timeout: 5000 });
 
         // Verify the cave location event was received
-        const caveLocationReceived = await page.evaluate(() => (window as any).__caveLocationReceived);
-        const caveExits = await page.evaluate(() => (window as any).__caveExits);
+        const caveLocationReceived = await page.evaluate(() => (globalThis as any).__caveLocationReceived);
+        const caveExits = await page.evaluate(() => (globalThis as any).__caveExits);
         expect(caveLocationReceived, 'room.info event for caves should be received').toBe(true);
         expect(caveExits, 'exits should be included in room.info').toContain('north');
         expect(caveExits, 'exits should be included in room.info').toContain('east');
 
         // Set up event listener for town location
         await page.evaluate(() => {
-            (window as any).__townLocationReceived = false;
-            (window as any).__townExits = [];
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
+            (globalThis as any).__townLocationReceived = false;
+            (globalThis as any).__townExits = [];
+            const client: any = (globalThis as any).clientExtension;
+            const unsubscribe = client.on('gmcp.room.info', (detail: any) => {
                 if (detail?.id === 1 && detail?.zone === 'Miasteczko Poslan') {
-                    (window as any).__townLocationReceived = true;
-                    (window as any).__townExits = detail?.exits ? Object.keys(detail.exits) : [];
-                    client.removeEventListener('gmcp.room.info', handler);
+                    (globalThis as any).__townLocationReceived = true;
+                    (globalThis as any).__townExits = detail?.exits ? Object.keys(detail.exits) : [];
+                    unsubscribe?.();
                 }
-            };
-            client.addEventListener('gmcp.room.info', handler);
+            });
         });
 
         // Move to a location in the town area
@@ -261,12 +253,12 @@ test.describe('Location restoration', () => {
 
         // Wait for event to be received
         await page.waitForFunction(() => {
-            return (window as any).__townLocationReceived === true;
+            return (globalThis as any).__townLocationReceived === true;
         }, { timeout: 5000 });
 
         // Verify the town location event was received
-        const townLocationReceived = await page.evaluate(() => (window as any).__townLocationReceived);
-        const townExits = await page.evaluate(() => (window as any).__townExits);
+        const townLocationReceived = await page.evaluate(() => (globalThis as any).__townLocationReceived);
+        const townExits = await page.evaluate(() => (globalThis as any).__townExits);
         expect(townLocationReceived, 'room.info event for town should be received').toBe(true);
         expect(townExits, 'exits should be included in room.info').toContain('east');
     });
