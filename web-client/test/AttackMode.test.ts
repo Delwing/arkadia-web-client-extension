@@ -1,8 +1,8 @@
 import { act } from "react";
 import eventBus from "@client/src/eventBus.ts";
-jest.mock("@web-ui/components/PackageStatusWidget", () => ({
+jest.mock("@web-ui/components/panels/PackageStatus", () => ({
     __esModule: true,
-    default: () => null,
+    PackageStatus: () => null,
 }));
 
 import mountStatusIndicators from "../src/statusIndicators";
@@ -37,15 +37,17 @@ describe("AttackMode indicator", () => {
         act(() => {
             eventBus.emit("isTeamLeader", true);
         });
-        expect(container.textContent).toBe("Atk: A");
-        expect(container.style.display).toBe("block");
-        expect(container.className).toBe("A");
+        const span = container.querySelector("span");
+        expect(span).toBeTruthy();
+        expect(span!.textContent).toBe("Atk: A");
+        expect(span!.className).toBe("A");
 
         act(() => {
             eventBus.emit("attackMode", "AW");
         });
-        expect(container.textContent).toBe("Atk: AW");
-        expect(container.className).toBe("AW");
+        const spanAfter = container.querySelector("span");
+        expect(spanAfter!.textContent).toBe("Atk: AW");
+        expect(spanAfter!.className).toBe("AW");
     });
 
     test("click cycles mode and emits event", () => {
@@ -55,23 +57,29 @@ describe("AttackMode indicator", () => {
         const emitSpy = jest.spyOn(eventBus, "emit");
         emitSpy.mockClear();
 
+        let span = container.querySelector("span");
+        expect(span).toBeTruthy();
+
         act(() => {
-            container.click();
+            span!.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AW");
-        expect(container.textContent).toBe("Atk: AW");
+        span = container.querySelector("span");
+        expect(span!.textContent).toBe("Atk: AW");
 
         act(() => {
-            container.click();
+            span!.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AWR");
-        expect(container.textContent).toBe("Atk: AWR");
+        span = container.querySelector("span");
+        expect(span!.textContent).toBe("Atk: AWR");
 
         act(() => {
-            container.click();
+            span!.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "A");
-        expect(container.textContent).toBe("Atk: A");
+        span = container.querySelector("span");
+        expect(span!.textContent).toBe("Atk: A");
 
         emitSpy.mockRestore();
     });
@@ -80,11 +88,14 @@ describe("AttackMode indicator", () => {
         act(() => {
             eventBus.emit("isTeamLeader", false);
         });
-        expect(container.style.display).toBe("none");
+        let span = container.querySelector("span");
+        expect(span).toBeNull();
 
         act(() => {
             eventBus.emit("isTeamLeader", true);
         });
-        expect(container.style.display).toBe("block");
+        span = container.querySelector("span");
+        expect(span).toBeTruthy();
+        expect(span!.textContent).toBe("Atk: A");
     });
 });

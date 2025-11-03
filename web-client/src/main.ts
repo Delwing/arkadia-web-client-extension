@@ -8,17 +8,8 @@ import { registerScripts } from "@client/src/main.ts";
 import { showContextMenu } from "@shared/dom/contextMenu";
 import { setClientInstance } from "@shared/runtime";
 import {Modal, Dropdown} from 'bootstrap';
-import CharState from "./CharState";
 import ObjectList from "./ObjectList";
-import LampTimer from "./LampTimer";
-import TransportTimer from "./TransportTimer";
-import CoverTimer from "./CoverTimer";
-import ZaskTimer from "./ZaskTimer";
-import CombatTimer from "./CombatTimer";
-import BreakItemWarning from "./BreakItemWarning";
-import CharStateInfo from "./CharStateInfo";
-import MultiBinds from "./MultiBinds";
-import ReleaseGuard from "./ReleaseGuard";
+import { mountMigratedComponents } from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
@@ -28,7 +19,6 @@ import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
-import mountStatusIndicators from "./statusIndicators.tsx";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -1474,18 +1464,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize button state
     updateConnectButtons();
 
-    // Display character state and lamp timer
-    new MultiBinds(arkadiaClient);
-    new CharState(arkadiaClient);
-    new CharStateInfo(arkadiaClient);
-    new TransportTimer(arkadiaClient);
-    new LampTimer(arkadiaClient);
-    new CoverTimer(arkadiaClient);
-    new ZaskTimer(arkadiaClient);
-    new CombatTimer(arkadiaClient);
-    new BreakItemWarning(arkadiaClient);
-    new ReleaseGuard(arkadiaClient);
-    mountStatusIndicators();
+    // Mount React components
+    mountMigratedComponents();
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
     new ObjectList(client);
