@@ -1,9 +1,9 @@
-import type { ProgressListener, SubscriptionOptions } from "../../../client/src/dataStore/types";
+/// <reference path="../../../client/src/types/MapData.d.ts" />
 
 type MapDataStore<T> = {
-    refresh(options?: { onProgress?: ProgressListener }): Promise<{ data: T } | undefined>;
+    refresh(options?: { onProgress?: MapProgressListener }): Promise<{ data: T } | undefined>;
     getSnapshot(): Promise<{ data: T } | undefined>;
-    subscribe(listener: (snapshot: { data: T } | undefined) => void, options?: SubscriptionOptions): () => void;
+    subscribe(listener: (snapshot: { data: T } | undefined) => void, options?: MapSubscriptionOptions): () => void;
 };
 
 export interface MapStoreProvider {
@@ -11,31 +11,39 @@ export interface MapStoreProvider {
     getMapColorsStore(): MapDataStore<MapData.Env[]>;
 }
 
+export type MapProgressListener = (progress: number, loaded?: number, total?: number) => void;
+
+export interface MapSubscriptionOptions {
+    emitInitial?: boolean;
+}
+
 const buildProgressHandler = (
-    listeners: Set<ProgressListener>,
-    onProgress?: ProgressListener,
-): ProgressListener | undefined => {
-    const allListeners: ProgressListener[] = [];
+    listeners: Set<MapProgressListener>,
+    onProgress?: MapProgressListener,
+): MapProgressListener | undefined => {
+    const allListeners: MapProgressListener[] = [];
     if (onProgress) {
         allListeners.push(onProgress);
     }
     if (listeners.size > 0) {
-        allListeners.push(...listeners);
+        listeners.forEach(listener => {
+            allListeners.push(listener);
+        });
     }
     if (allListeners.length === 0) {
         return undefined;
     }
     return (progress, loaded, total) => {
-        for (const listener of [...allListeners]) {
+        for (const listener of allListeners) {
             listener(progress, loaded, total);
         }
     };
 };
 
 export function createMapDataLoader(provider: MapStoreProvider) {
-    const progressListeners = new Set<ProgressListener>();
+    const progressListeners = new Set<MapProgressListener>();
 
-    const loadMapData = async (onProgress?: ProgressListener): Promise<MapData.Map> => {
+    const loadMapData = async (onProgress?: MapProgressListener): Promise<MapData.Map> => {
         const store = provider.getMapDataStore();
         const combinedProgress = buildProgressHandler(progressListeners, onProgress);
         try {
@@ -72,7 +80,7 @@ export function createMapDataLoader(provider: MapStoreProvider) {
 
     const subscribeToMapData = (
         listener: (map: MapData.Map | undefined) => void,
-        options?: SubscriptionOptions,
+        options?: MapSubscriptionOptions,
     ) => {
         const store = provider.getMapDataStore();
         return store.subscribe(snapshot => listener(snapshot?.data), options);
@@ -80,13 +88,13 @@ export function createMapDataLoader(provider: MapStoreProvider) {
 
     const subscribeToMapColors = (
         listener: (colors: MapData.Env[] | undefined) => void,
-        options?: SubscriptionOptions,
+        options?: MapSubscriptionOptions,
     ) => {
         const store = provider.getMapColorsStore();
         return store.subscribe(snapshot => listener(snapshot?.data), options);
     };
 
-    const subscribeToMapDataProgress = (listener: ProgressListener) => {
+    const subscribeToMapDataProgress = (listener: MapProgressListener) => {
         progressListeners.add(listener);
         return () => {
             progressListeners.delete(listener);
