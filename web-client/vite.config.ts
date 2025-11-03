@@ -31,7 +31,6 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 client: resolve('index.html'),
-                sandbox: resolve('sandbox.html'),
             }
         }
     }
