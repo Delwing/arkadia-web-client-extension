@@ -2,7 +2,7 @@ import { gmcp, setGmcp } from '../src/gmcp';
 
 describe('setGmcp', () => {
   beforeEach(() => {
-    (window as any).gmcp = {};
+    (globalThis as any).gmcp = {};
   });
 
   test('sets nested value', () => {

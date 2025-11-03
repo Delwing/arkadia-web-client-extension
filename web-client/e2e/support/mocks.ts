@@ -8,7 +8,7 @@ export const GMCP_PATHS = {
 
 export async function installMockWebSocket(context: BrowserContext): Promise<void> {
     await context.addInitScript(() => {
-        const globalScope: any = window;
+        const globalScope: any = globalThis;
         const sockets: MockWebSocket[] = [];
         const commandLog: string[] = [];
 
@@ -153,7 +153,7 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
         globalScope.__npcReady = false;
-        window.addEventListener('npc', (event: Event) => {
+        globalThis.addEventListener('npc', (event: Event) => {
             const detail = (event as CustomEvent)?.detail;
             if (Array.isArray(detail) && detail.length > 0) {
                 globalScope.__npcReady = true;
@@ -198,7 +198,7 @@ export async function primeCharInfo(
     await context.addInitScript(([payload]) => {
         const charInfo = payload;
         const attemptSend = () => {
-            const client = (window as any).clientExtension;
+            const client = (globalThis as any).clientExtension;
             if (client?.sendEvent) {
                 client.sendEvent('gmcp.char.info', charInfo);
                 return true;
@@ -679,9 +679,9 @@ export async function mockMagicKeysDownload(
 }
 
 export async function waitForClientReady(page: Page): Promise<void> {
-    await page.waitForFunction(() => Boolean((window as any).clientExtension));
-    await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);
-    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
+    await page.waitForFunction(() => Boolean((globalThis as any).clientExtension));
+    await page.waitForFunction(() => Array.isArray((globalThis as any).__mockSockets) && (globalThis as any).__mockSockets.length > 0);
+    await page.waitForFunction(() => typeof (globalThis as any).__pushGmcp === 'function');
 
     const overlay = page.locator('#auth-overlay');
     if (await overlay.isVisible()) {
@@ -700,16 +700,16 @@ export async function waitForClientReady(page: Page): Promise<void> {
     }
 
     await page.waitForFunction(() => {
-        const client: any = (window as any).clientExtension;
+        const client: any = (globalThis as any).clientExtension;
         if (!client) {
             return false;
         }
-        if ((window as any).__npcReady) {
+        if ((globalThis as any).__npcReady) {
             return true;
         }
         const helper = client.packageHelper;
         if (helper && helper.npc && Object.keys(helper.npc).length > 0) {
-            (window as any).__npcReady = true;
+            (globalThis as any).__npcReady = true;
             return true;
         }
         return false;
@@ -718,7 +718,7 @@ export async function waitForClientReady(page: Page): Promise<void> {
 
 export async function waitForMapReady(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const client = (window as any).clientExtension;
+        const client = (globalThis as any).clientExtension;
         if (!client || !client.Map) {
             return false;
         }
@@ -728,9 +728,9 @@ export async function waitForMapReady(page: Page): Promise<void> {
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
-    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
+    await page.waitForFunction(() => typeof (globalThis as any).__pushGmcp === 'function');
     await page.evaluate(([gmcpPath, data]) => {
-        (window as any).__pushGmcp(gmcpPath, data);
+        (globalThis as any).__pushGmcp(gmcpPath, data);
     }, [path, payload]);
 }
 
@@ -760,15 +760,15 @@ export async function ensureGameSocket(page: Page): Promise<void> {
         globalScope.__registerCommandListener?.();
     });
     await page.waitForFunction(() => {
-        const sockets: any[] = (window as any).__mockSockets ?? [];
+        const sockets: any[] = (globalThis as any).__mockSockets ?? [];
         return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
 
-    const alreadyPrimed = await page.evaluate(() => Boolean((window as any).__outputPrimed));
+    const alreadyPrimed = await page.evaluate(() => Boolean((globalThis as any).__outputPrimed));
     if (!alreadyPrimed) {
         await pushText(page, OUTPUT_PRIME_PADDING);
         await page.evaluate(() => {
-            (window as any).__outputPrimed = true;
+            (globalThis as any).__outputPrimed = true;
         });
     }
 }
@@ -783,7 +783,7 @@ export async function pushText(page: Page, text: string, options: { type?: strin
         globalScope.__pushText(payload, gmcpType);
     }, [text, type]);
     await page.evaluate(() => {
-        const adapter = (window as any).clientExtension?.clientAdapter as any;
+        const adapter = (globalThis as any).clientExtension?.clientAdapter as any;
         if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
             throw new Error('Arkadia client is not ready');
         }
@@ -801,7 +801,7 @@ export async function submitCommand(page: Page, command: string): Promise<void> 
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
     return await page.evaluate(() => {
-        const sockets: any[] = (window as any).__mockSockets ?? [];
+        const sockets: any[] = (globalThis as any).__mockSockets ?? [];
         for (let i = sockets.length - 1; i >= 0; i--) {
             const commands: unknown = sockets[i]?.commands;
             if (Array.isArray(commands) && commands.length > 0) {
@@ -811,7 +811,7 @@ export async function getLastOutgoingCommand(page: Page): Promise<string | null>
                 }
             }
         }
-        const log: unknown = (window as any).__mockCommandLog;
+        const log: unknown = (globalThis as any).__mockCommandLog;
         if (Array.isArray(log) && log.length > 0) {
             const value = log[log.length - 1];
             if (typeof value === 'string' && value.trim()) {
@@ -839,7 +839,7 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
         const EMBEDDED_FLAG = '__arkadiaEmbeddedProxy__';
 
         const recordCall = (method: string, value?: unknown) => {
-            const store = (window as any).__embeddedCalls;
+            const store = (globalThis as any).__embeddedCalls;
             if (Array.isArray(store)) {
                 store.push({ method, value });
             }
@@ -908,9 +908,9 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
             return proxy;
         };
 
-        (window as any).__embeddedCalls = [];
+        (globalThis as any).__embeddedCalls = [];
 
-        const initialEmbeddedValue = (window as any).embedded;
+        const initialEmbeddedValue = (globalThis as any).embedded;
 
         const setEmbeddedValue = (value: any) => {
             embeddedValue = wrapEmbedded(value);
@@ -938,12 +938,12 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
 
 export async function resetEmbeddedCalls(page: Page): Promise<void> {
     await page.evaluate(() => {
-        (window as any).__embeddedCalls = [];
+        (globalThis as any).__embeddedCalls = [];
     });
 }
 
 export async function getEmbeddedCalls(page: Page): Promise<EmbeddedCall[]> {
-    return await page.evaluate(() => (window as any).__embeddedCalls ?? []);
+    return await page.evaluate(() => (globalThis as any).__embeddedCalls ?? []);
 }
 
 export type MultibindWorkerResponse =
@@ -1030,19 +1030,19 @@ export async function installMultibindWorkerMock(context: BrowserContext): Promi
             value: MockWorker,
         });
 
-        (window as any).__queueMultibindResponse = (response: any) => {
+        (globalThis as any).__queueMultibindResponse = (response: any) => {
             queuedResponses.push(response);
         };
-        (window as any).__getMultibindRequests = () => capturedRequests.slice();
+        (globalThis as any).__getMultibindRequests = () => capturedRequests.slice();
     });
 }
 
 export async function queueMultibindResponse(page: Page, response: MultibindWorkerResponse): Promise<void> {
     await page.evaluate(([payload]) => {
-        (window as any).__queueMultibindResponse(payload);
+        (globalThis as any).__queueMultibindResponse(payload);
     }, [response]);
 }
 
 export async function getMultibindRequests(page: Page): Promise<any[]> {
-    return await page.evaluate(() => (window as any).__getMultibindRequests?.() ?? []);
+    return await page.evaluate(() => (globalThis as any).__getMultibindRequests?.() ?? []);
 }

@@ -1,5 +1,6 @@
 import './sandbox.css';
 import arkadiaClient from "./ArkadiaClient.ts";
+import { getClientInstance } from "./clientRegistry";
 
 // Disable real network and echo commands locally
 arkadiaClient.connect = () => {
@@ -20,7 +21,10 @@ arkadiaClient.send = (message: string, echo: boolean = true) => {
 (arkadiaClient as any).receivedFirstGmcp = true;
 
 window.addEventListener('load', () => {
-    const client: any = (window as any).clientExtension;
+    const client = getClientInstance() as any;
+    if (!client) {
+        return;
+    }
     arkadiaClient.emit('client.connect');
     const memberInput = document.getElementById('sandbox-member-name') as HTMLInputElement | null;
     const addMemberButton = document.getElementById('sandbox-add-member') as HTMLButtonElement | null;

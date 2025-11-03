@@ -28,7 +28,7 @@ test.describe('Knowledge details', () => {
         await ensureGameSocket(page);
 
         await page.evaluate(() => {
-            const globalScope: any = window;
+            const globalScope: any = globalThis;
             globalScope.__capturedKnowledgeReport = null;
             const extension = globalScope.clientExtension;
             extension?.on?.('knowledgeDetailsReport', (detail: unknown) => {
@@ -39,7 +39,7 @@ test.describe('Knowledge details', () => {
         await submitCommand(page, '/wiedza_buduj');
 
         await page.waitForFunction(() => {
-            const log = (window as any).__mockCommandLog;
+            const log = (globalThis as any).__mockCommandLog;
             return Array.isArray(log) && log.some((entry) => typeof entry === 'string' && entry.includes('wiedza o chaosie'));
         });
 
@@ -99,7 +99,7 @@ test.describe('Knowledge details', () => {
         }
 
         const knowledgeReport = (await page.evaluate(() => {
-            return (window as any).__capturedKnowledgeReport;
+            return (globalThis as any).__capturedKnowledgeReport;
         })) as KnowledgeDetailsReportPayload | null;
 
         expect(knowledgeReport, 'should capture knowledge report payload').toBeTruthy();

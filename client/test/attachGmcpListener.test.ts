@@ -13,7 +13,7 @@ class FakeClient {
 
 describe('attachGmcpListener', () => {
   beforeEach(() => {
-    (window as any).gmcp = {};
+    (globalThis as any).gmcp = {};
   });
 
   test('updates gmcp on gmcp event', () => {

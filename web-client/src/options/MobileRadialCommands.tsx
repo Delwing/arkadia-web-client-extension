@@ -7,6 +7,7 @@ import {
     Settings,
     RadialCommandSetting,
 } from "../mobileButtonSettings";
+import { getClientInstance } from "../clientRegistry";
 
 function createRadialId() {
     const globalCrypto = typeof crypto !== "undefined" ? crypto : undefined;
@@ -116,8 +117,9 @@ function MobileRadialCommands() {
         };
         setSettings(normalizedSettings);
         saveSettings(normalizedSettings);
-        const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
+        const extension = getClientInstance();
+        const teamActive = !!extension?.TeamManager?.isInAnyTeam?.();
+        const leaderActive = !!extension?.TeamManager?.isLeader?.();
         applySettings(normalizedSettings, teamActive, leaderActive);
         window.dispatchEvent(new Event("close-options"));
     }

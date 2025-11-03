@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type Client from '@client/src/Client';
 import type { KnowledgeCategoryStatus } from '@client/src/dataStores/knowledgeStore';
 import eventBus, { type KnowledgeReportAction } from '@client/src/eventBus.ts';
 
@@ -269,22 +268,18 @@ const KnowledgeReport: React.FC = () => {
   }, [ensureVisiblePosition, isOpen]);
 
   const handleStartCategory = useCallback((dative: string) => {
-    const client = (window as any).clientExtension as Client | undefined;
-    if (!client) {
-      return;
-    }
-    client.sendCommand(`zglebiaj wiedze o ${dative}`);
+    eventBus.emit('sendCommand', {
+      command: `zglebiaj wiedze o ${dative}`,
+    });
   }, []);
 
   const handleLeadToLibrary = useCallback((locationId: string) => {
     if (!locationId) {
       return;
     }
-    const client = (window as any).clientExtension as Client | undefined;
-    if (!client) {
-      return;
-    }
-    client.sendCommand(`/prowadz ${locationId}`);
+    eventBus.emit('sendCommand', {
+      command: `/prowadz ${locationId}`,
+    });
   }, []);
 
   const toggleLibraryStatus = useCallback(

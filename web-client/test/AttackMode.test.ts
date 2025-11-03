@@ -1,5 +1,6 @@
 import AttackMode from '../src/AttackMode';
 import eventBus from '@client/src/eventBus.ts';
+import { getClientInstance, setClientInstance, clearClientInstance } from "../src/clientRegistry";
 
 jest.mock('@client/src/storage.ts', () => ({
   getItemSync: jest.fn(() => ({})),
@@ -7,7 +8,7 @@ jest.mock('@client/src/storage.ts', () => ({
 import { getItemSync } from '@client/src/storage.ts';
 
 const emitIsLeaderEvent = () => {
-  const isLeader = Boolean((window as any).clientExtension?.TeamManager?.isLeader?.());
+  const isLeader = Boolean(getClientInstance()?.TeamManager?.isLeader?.());
   eventBus.emit('isTeamLeader', isLeader);
 };
 
@@ -31,11 +32,12 @@ describe('AttackMode', () => {
 
   beforeEach(() => {
     eventBus.clear();
+    clearClientInstance();
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
     (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => true) } };
+    setClientInstance({ TeamManager: { isLeader: jest.fn(() => true), isInAnyTeam: jest.fn(() => true) } } as any);
     new AttackMode(client as any);
     emitIsLeaderEvent();
   });
@@ -68,12 +70,17 @@ describe('AttackMode', () => {
     document.body.innerHTML = '<span id="attack-mode"></span>';
     container = document.getElementById('attack-mode')!;
     client = new MockClient();
-    (window as any).clientExtension = { TeamManager: { isLeader: jest.fn(() => false) } };
+    setClientInstance({ TeamManager: { isLeader: jest.fn(() => false), isInAnyTeam: jest.fn(() => true) } } as any);
     new AttackMode(client as any);
     emitIsLeaderEvent();
     expect(container.style.display).toBe('none');
-    (window as any).clientExtension.TeamManager.isLeader.mockReturnValue(true);
+    const instance = getClientInstance();
+    (instance?.TeamManager?.isLeader as jest.Mock)?.mockReturnValue(true);
     client.emit('teamChange');
     expect(container.style.display).toBe('block');
+  });
+
+  afterEach(() => {
+    clearClientInstance();
   });
 });

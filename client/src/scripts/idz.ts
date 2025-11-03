@@ -117,7 +117,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     const resumeWalk = (d?: number) => {
         if (target === null) {
             const current: any = client.Map.currentRoom;
-            const dest = (window as any).embedded?.destinations?.[0];
+            const dest = (globalThis as any).embedded?.destinations?.[0];
             if (!current || !dest) return;
             const p = client.Map.findPath(current.id, parseInt(dest));
             if (!p || p.length < 2) return;

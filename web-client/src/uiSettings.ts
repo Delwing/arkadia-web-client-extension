@@ -262,20 +262,21 @@ function apply(settings: UiSettings) {
         const baseRow = 36; // default row height in px
         div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
     });
-    if ((window as any).embedded?.renderer) {
-        (window as any).embedded.setZoom?.(settings.mapScale);
-        (window as any).embedded.setExplorationMode?.(settings.explorationMode);
-        (window as any).embedded.refresh();
+    const embedded = (globalThis as any).embedded;
+    if (embedded?.renderer) {
+        embedded.setZoom?.(settings.mapScale);
+        embedded.setExplorationMode?.(settings.explorationMode);
+        embedded.refresh();
     }
     Settings.transparentLabels = settings.transparentLabels;
     const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
     Settings.labelRenderMode = labelRenderMode;
-    (window as any).embedded?.setTransparentLabels?.(settings.transparentLabels);
-    (window as any).embedded?.setLabelRenderMode?.(labelRenderMode);
+    embedded?.setTransparentLabels?.(settings.transparentLabels);
+    embedded?.setLabelRenderMode?.(labelRenderMode);
     Settings.instantMapMove = settings.instantMove;
-    (window as any).embedded?.setInstantMove?.(settings.instantMove);
+    embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
-    (window as any).embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
+    embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
     const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
         hapticFeedback: settings.hapticFeedback,
@@ -596,7 +597,7 @@ export default async function initUiSettings() {
     storage.onChanged?.addListener(handleStorageChange);
 
     function refreshExplorationStats() {
-        const map = (window as any).embedded;
+        const map = (globalThis as any).embedded;
         if (map?.getVisitedCount && map?.getRoomCount && explorationStats) {
             const visited = map.getVisitedCount();
             const total = map.getRoomCount();

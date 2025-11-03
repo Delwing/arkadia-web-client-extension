@@ -1,3 +1,5 @@
+import eventBus from "@client/src/eventBus.ts";
+
 interface MultiBindsClient {
   on(event: "multibinds", handler: (payload: { list?: DisplayMultibind[] }) => void): void;
   send(command: string): void;
@@ -52,10 +54,8 @@ export default class MultiBinds {
         if (action.trim()) {
           wrapper.addEventListener("click", (event) => {
             event.preventDefault();
-            const ext: unknown = (window as any).clientExtension;
-            if (ext && typeof (ext as { sendCommand?: (command: string) => Promise<void> }).sendCommand === "function") {
-              void (ext as { sendCommand: (command: string) => Promise<void> }).sendCommand(action);
-            } else {
+            const invoked = eventBus.emit("sendCommand", { command: action });
+            if (!invoked) {
               this.client.send(action);
             }
           });

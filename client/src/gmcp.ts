@@ -1,4 +1,4 @@
-export const gmcp: Record<string, any> = (window as any).gmcp || ((window as any).gmcp = {});
+export const gmcp: Record<string, any> = (globalThis as any).gmcp || ((globalThis as any).gmcp = {});
 
 export function setGmcp(path: string, value: any) {
     const parts = path.split('.');

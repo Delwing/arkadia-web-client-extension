@@ -1,5 +1,6 @@
 import {saveRecording, getRecording, getRecordingNames, deleteRecording, RecordedEvent} from './recordingStorage';
 import {CommandOptions} from "@client/src/scripts/commandPreserveCaseMode.ts";
+import eventBus from "@client/src/eventBus.ts";
 
 export interface RecorderHooks {
     processIncomingData(data: string, options?: { timestamp?: number }): void;
@@ -103,8 +104,7 @@ export default class Recorder {
             this.playbackTimeout = null;
             const elapsed = Date.now() - this.playbackStart;
             const elapsedBase = elapsed * this.playbackSpeed;
-            const remainingBase = Math.max(0, this.playbackBaseDelay - elapsedBase);
-            this.pausedDelay = remainingBase;
+            this.pausedDelay = Math.max(0, this.playbackBaseDelay - elapsedBase);;
         } else {
             this.pausedDelay = 0;
         }
@@ -230,7 +230,7 @@ export default class Recorder {
             this.hooks.processIncomingData(ev.message, { timestamp });
         } else {
             this.hooks.emit("message", '→ ' + ev.message, undefined, timestamp);
-            window.clientExtension.sendCommand(ev.message, false);
+            eventBus.emit('sendCommand', { command: ev.message, echo: false });
             this.hooks.sendCommand(ev.message, false);
         }
     }
@@ -321,4 +321,3 @@ export default class Recorder {
         }, Math.max(0, adjustedDelay));
     }
 }
-

@@ -1,6 +1,10 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import arkadiaClient from "./ArkadiaClient.ts";
+import Client from "@client/src/Client.ts";
+import eventBus, { type SendCommandEvent } from "@client/src/eventBus.ts";
+import { registerScripts } from "@client/src/main.ts";
+import { setClientInstance } from "./clientRegistry";
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
 import ObjectList from "./ObjectList";
@@ -21,6 +25,9 @@ import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 import KnowledgeReport from "./KnowledgeReport";
 import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
+import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
+import MobileCommandRadial from "./scripts/mobileCommandRadial";
+import initUiSettings from "./uiSettings";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -55,10 +62,19 @@ import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./data
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-const client = new Client(arkadiaClient, new MockPort())
-window.clientExtension = client;
-registerScripts(client)
-client.connect(client.port, true)
+const client = new Client(arkadiaClient, new MockPort());
+setClientInstance(client);
+registerScripts(client);
+client.connect(client.port, true);
+
+const handleClientCommand = ({ command, echo = true, options }: SendCommandEvent) => {
+    if (typeof command !== 'string') {
+        return;
+    }
+    void client.sendCommand(command, echo, options);
+};
+
+eventBus.on('sendCommand', handleClientCommand);
 
 subscribeNpcStore(snapshot => {
     const payload = snapshot?.all.data.map(({name, loc}) => ({name, loc})) ?? []
@@ -207,7 +223,7 @@ const STICKY_LINES = 15;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
 
 function processSticky(count: number) {
-    const handler: any = (window as any).clientExtension?.OutputHandler;
+    const handler: any = client.OutputHandler;
     if (handler && typeof handler.processOutput === 'function') {
         const prev = handler.output;
         handler.output = stickyArea;
@@ -247,7 +263,7 @@ outputWrapper.addEventListener('contextmenu', event => {
     if (target && target.closest('a, [data-output-clickable]')) {
         return;
     }
-    const handler: any = (window as any).clientExtension?.OutputHandler;
+    const handler: any = client.OutputHandler;
     if (!handler || typeof handler.showContextMenu !== 'function') {
         return;
     }
@@ -259,23 +275,20 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => setOutputTimestampVisibility(!isVisible),
         },
     ];
-    const clientExtension = (window as any).clientExtension as { sendCommand?: (command: string) => Promise<void> } | undefined;
-    if (clientExtension?.sendCommand) {
-        items.push(
-            {
-                label: 'Wiedza',
-                action: () => { void clientExtension.sendCommand('/wiedza'); },
-            },
-            {
-                label: 'Biblioteki',
-                action: () => { void clientExtension.sendCommand('/biblioteki'); },
-            },
-            {
-                label: 'Zioła',
-                action: () => { void clientExtension.sendCommand('/ziola'); },
-            },
-        );
-    }
+    items.push(
+        {
+            label: 'Wiedza',
+            action: () => { eventBus.emit('sendCommand', { command: '/wiedza' }); },
+        },
+        {
+            label: 'Biblioteki',
+            action: () => { eventBus.emit('sendCommand', { command: '/biblioteki' }); },
+        },
+        {
+            label: 'Zioła',
+            action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
+        },
+    );
     handler.showContextMenu(items, event.clientX, event.clientY);
 });
 
@@ -333,7 +346,7 @@ Promise.all([mapDataPromise, colorsPromise])
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        (window as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
+        (globalThis as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
     })
     .catch(error => {
         progressContainer.style.display = 'none';
@@ -517,10 +530,10 @@ document.addEventListener('keydown', (e) => {
     if (binding) {
         e.preventDefault();
         if (binding.direction === 'special') {
-            const exits = (window as any).clientExtension?.Map.currentRoom?.specialExits ?? {};
+            const exits = client.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
-                (window as any).clientExtension.sendCommand(first);
+                eventBus.emit('sendCommand', { command: first });
             }
         } else {
             client.sendCommand(binding.direction);
@@ -826,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shareLocationButton && locationQrImage && locationShareModal) {
         shareLocationButton.addEventListener('click', () => {
-            const roomId = (window as any).clientExtension?.Map?.currentRoom?.id;
+            const roomId = client.Map.currentRoom?.id;
             if (!roomId) {
                 return;
             }
@@ -1582,12 +1595,3 @@ window.addEventListener('resize', () => {
 
 // @ts-ignore
 window.client = arkadiaClient
-
-// background communication disabled
-
-import MobileDirectionButtons from "./scripts/mobileDirectionButtons"
-import MobileCommandRadial from "./scripts/mobileCommandRadial"
-import initUiSettings from "./uiSettings";
-import Client from "@client/src/Client.ts";
-import {registerScripts} from "@client/src/main.ts";
-import eventBus from "@client/src/eventBus.ts";

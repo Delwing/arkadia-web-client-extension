@@ -5,8 +5,8 @@ import type { HerbBagState, HerbBagsState, HerbManagerApi, HerbMoveOptions } fro
 import { normalizeHerbBagsState } from "@client/src/types/herbs";
 import { openHerbContextMenu } from "@client/src/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
-import type Client from "@client/src/Client";
 import eventBus from "@client/src/eventBus.ts";
+import { getClientInstance } from "../clientRegistry";
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -249,8 +249,7 @@ const HerbManager = () => {
     }, []);
 
     const closeContextMenu = useCallback(() => {
-        const client = (window as any).clientExtension as Client | undefined;
-        const outputHandler = client?.OutputHandler
+        const outputHandler = getClientInstance()?.OutputHandler;
         outputHandler?.hideContextMenu?.();
     }, []);
 
@@ -475,7 +474,7 @@ const HerbManager = () => {
         setError(null);
         setBags(moveResult.next);
         setBusy(true);
-        const manager = (window as any).clientExtension?.herbManager as HerbManagerApi | undefined;
+        const manager = getClientInstance()?.herbManager as HerbManagerApi | undefined;
         const payload: HerbMoveOptions = {
             herbId: moveResult.moved.herbId,
             amount: moveResult.moved.count,
@@ -549,7 +548,7 @@ const HerbManager = () => {
     const handleContextMenu = (stack: HerbStack) => async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         const { pageX, pageY } = event;
-        const client = (window as any).clientExtension as Client | undefined;
+        const client = getClientInstance();
         if (!client) {
             return;
         }

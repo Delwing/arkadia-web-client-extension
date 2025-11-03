@@ -3,6 +3,7 @@ import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
 import storage from "@client/src/storage";
 import eventBus from "@client/src/eventBus.ts";
+import { getClientInstance } from "../clientRegistry";
 
 interface ShortcutEntry {
     key: string;
@@ -52,7 +53,7 @@ function Shortcuts() {
     }
 
     function useCurrent() {
-        const id = (window as any).clientExtension?.Map?.currentRoom?.id;
+        const id = getClientInstance()?.Map?.currentRoom?.id;
         if (id) {
             setLoc(String(id));
         }

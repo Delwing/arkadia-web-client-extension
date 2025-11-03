@@ -4,7 +4,7 @@ import {ensureGameSocket, pushText, waitForClientReady} from './support/mocks';
 
 async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
     await page.waitForFunction((expectedTag) => {
-        const client: any = (window as any).clientExtension;
+        const client: any = (globalThis as any).clientExtension;
         const triggers: any = client?.Triggers;
         const tokenTriggers: any = triggers?.tokenTriggers;
         if (!tokenTriggers || typeof tokenTriggers.values !== 'function') {

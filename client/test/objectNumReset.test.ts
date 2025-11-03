@@ -1,16 +1,16 @@
 import Client from '../src/Client';
 import { getItemSync } from '../src/storage';
 
-(window as any).Input = { send: jest.fn() };
-(window as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(window as any).Maps = {
+(globalThis as any).Input = { send: jest.fn() };
+(globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
+(globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
+(globalThis as any).Maps = {
   refresh_position: jest.fn(),
   set_position: jest.fn(),
   unset_position: jest.fn(),
   data: undefined,
 };
-(window as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
+(globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
 jest.mock('../src/Triggers', () => ({
@@ -57,9 +57,9 @@ describe('object_num persistence and reset event', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
-    (window as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-    (window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-    (window as any).dispatchEvent = jest.fn();
+    (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
+    (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
+    (globalThis as any).dispatchEvent = jest.fn();
     (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
     (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
     client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);

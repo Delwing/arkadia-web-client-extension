@@ -269,7 +269,7 @@ describe('ObjectList', () => {
       close: jest.fn(),
     } as unknown as DocumentPictureInPictureWindow;
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
-    (window as any).documentPictureInPicture = { requestWindow };
+    (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
@@ -297,7 +297,7 @@ describe('ObjectList', () => {
     handlers.pagehide?.call(pipWindow, undefined);
     expect(button.classList.contains('objects-list-button-active')).toBe(false);
 
-    delete (window as any).documentPictureInPicture;
+    delete (globalThis as any).documentPictureInPicture;
   });
 
   test('picture-in-picture entries remain clickable', async () => {
@@ -310,7 +310,7 @@ describe('ObjectList', () => {
       close: jest.fn(),
     } as unknown as DocumentPictureInPictureWindow;
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
-    (window as any).documentPictureInPicture = { requestWindow };
+    (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
@@ -357,7 +357,7 @@ describe('ObjectList', () => {
     (objectList as any).onClick({ target: foreignTarget } as unknown as MouseEvent);
     expect(client.sendCommand).toHaveBeenCalledWith('/z 1');
 
-    delete (window as any).documentPictureInPicture;
+    delete (globalThis as any).documentPictureInPicture;
   });
 
   test('picture-in-picture shows status header and footer', async () => {
@@ -378,7 +378,7 @@ describe('ObjectList', () => {
       close: jest.fn(),
     } as unknown as DocumentPictureInPictureWindow;
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
-    (window as any).documentPictureInPicture = { requestWindow };
+    (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
@@ -431,7 +431,7 @@ describe('ObjectList', () => {
     expect(footerHtml).toContain('All clear');
     expect(footerHtml.split('<br>').length).toBe(2);
 
-    delete (window as any).documentPictureInPicture;
+    delete (globalThis as any).documentPictureInPicture;
   });
 
   test('picture-in-picture footer shows last two lines of multiline message', async () => {
@@ -452,7 +452,7 @@ describe('ObjectList', () => {
       close: jest.fn(),
     } as unknown as DocumentPictureInPictureWindow;
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
-    (window as any).documentPictureInPicture = { requestWindow };
+    (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
@@ -481,7 +481,7 @@ describe('ObjectList', () => {
     expect(footerHtml).toContain('Third line');
     expect(footerHtml.split('<br>').length).toBe(2);
 
-    delete (window as any).documentPictureInPicture;
+    delete (globalThis as any).documentPictureInPicture;
   });
 
   test('picture-in-picture inherits objects list styling changes', async () => {
@@ -495,7 +495,7 @@ describe('ObjectList', () => {
       close: jest.fn(),
     } as unknown as DocumentPictureInPictureWindow;
     const requestWindow = jest.fn().mockResolvedValue(pipWindow);
-    (window as any).documentPictureInPicture = { requestWindow };
+    (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
     new ObjectList(client as any);
@@ -515,6 +515,6 @@ describe('ObjectList', () => {
     expect(pipDoc.body.style.fontSize).toBe('1.5rem');
     expect(pipDoc.body.style.fontFamily).toContain('serif');
 
-    delete (window as any).documentPictureInPicture;
+    delete (globalThis as any).documentPictureInPicture;
   });
 });

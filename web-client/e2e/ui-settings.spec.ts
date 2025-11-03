@@ -32,10 +32,10 @@ test.describe('UI settings', () => {
         await resetEmbeddedCalls(page);
 
         await page.evaluate(() => {
-            (window as any).__lastUiSettingsEvent = null;
-            const extension = (window as any).clientExtension;
+            (globalThis as any).__lastUiSettingsEvent = null;
+            const extension = (globalThis as any).clientExtension;
             extension?.on?.('uiSettings', (detail: unknown) => {
-                (window as any).__lastUiSettingsEvent = detail;
+                (globalThis as any).__lastUiSettingsEvent = detail;
             });
             if (!document.querySelector('[data-test-mobile-button]')) {
                 const button = document.createElement('button');
@@ -88,7 +88,7 @@ test.describe('UI settings', () => {
         await modal.locator('#ui-settings-save').click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
-        await page.waitForFunction(() => (window as any).__lastUiSettingsEvent !== null);
+        await page.waitForFunction(() => (globalThis as any).__lastUiSettingsEvent !== null);
 
         const styles = await page.evaluate(() => {
             const content = document.getElementById('main_text_output_msg_wrapper')!;
@@ -149,7 +149,7 @@ test.describe('UI settings', () => {
             ]),
         );
 
-        const uiSettingsEvent = await page.evaluate(() => (window as any).__lastUiSettingsEvent);
+        const uiSettingsEvent = await page.evaluate(() => (globalThis as any).__lastUiSettingsEvent);
         expect(
             uiSettingsEvent,
             'should emit uiSettings event reflecting applied preferences'

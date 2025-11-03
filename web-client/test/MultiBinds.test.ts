@@ -1,3 +1,5 @@
+import eventBus from "@client/src/eventBus.ts";
+import { clearClientInstance } from "../src/clientRegistry";
 import MultiBinds from "../src/MultiBinds";
 
 describe("MultiBinds", () => {
@@ -6,10 +8,11 @@ describe("MultiBinds", () => {
   });
 
   afterEach(() => {
-    delete (window as any).clientExtension;
+    clearClientInstance();
+    eventBus.clear("sendCommand");
   });
 
-  it("uses clientExtension.sendCommand when available", () => {
+  it("emits sendCommand when available", () => {
     const listeners: Record<string, (payload: unknown) => void> = {};
     const client = {
       on: (event: string, handler: (payload: unknown) => void) => {
@@ -18,8 +21,8 @@ describe("MultiBinds", () => {
       send: jest.fn(),
     } as any;
 
-    const sendCommand = jest.fn().mockResolvedValue(undefined);
-    (window as any).clientExtension = { sendCommand };
+    const commandListener = jest.fn();
+    const unsubscribe = eventBus.on("sendCommand", commandListener as any);
 
     new MultiBinds(client);
 
@@ -35,8 +38,9 @@ describe("MultiBinds", () => {
     expect(button).not.toBeNull();
     button!.click();
 
-    expect(sendCommand).toHaveBeenCalledWith("=aliasRun");
+    expect(commandListener).toHaveBeenCalledWith({ command: "=aliasRun" });
     expect(client.send).not.toHaveBeenCalled();
+    unsubscribe();
   });
 
   it("falls back to ArkadiaClient.send when clientExtension is missing", () => {
@@ -66,4 +70,3 @@ describe("MultiBinds", () => {
     expect(send).toHaveBeenCalledWith("say hello");
   });
 });
-

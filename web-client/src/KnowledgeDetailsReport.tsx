@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type Client from '@client/src/Client';
 import type { KnowledgeDetailsType } from '@client/src/dataStores/knowledgeDetailsStore';
 import eventBus from '@client/src/eventBus.ts';
 
@@ -261,11 +260,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   }, [data, isOpen]);
 
   const handleBuildKnowledge = useCallback(() => {
-    const client = (window as any).clientExtension as Client | undefined;
-    if (!client) {
-      return;
-    }
-    client.sendCommand('/wiedza_buduj');
+    eventBus.emit('sendCommand', { command: '/wiedza_buduj' });
   }, []);
 
   const navItems = useMemo<{ id: string; label: string }[]>(() => {

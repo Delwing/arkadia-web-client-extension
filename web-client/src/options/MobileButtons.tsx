@@ -14,6 +14,7 @@ import {
     defaultBackground,
     defaultFontColor,
 } from "../mobileButtonSettings";
+import { getClientInstance } from "../clientRegistry";
 
 import ButtonGrid, { Mode } from "./ButtonGrid";
 
@@ -306,8 +307,9 @@ function MobileButtons() {
 
     function save() {
         saveSettings(settings);
-        const teamActive = !!(window as any).clientExtension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!(window as any).clientExtension?.TeamManager?.isLeader?.();
+        const extension = getClientInstance();
+        const teamActive = !!extension?.TeamManager?.isInAnyTeam?.();
+        const leaderActive = !!extension?.TeamManager?.isLeader?.();
         applySettings(settings, teamActive, leaderActive);
         window.dispatchEvent(new Event('close-options'));
     }

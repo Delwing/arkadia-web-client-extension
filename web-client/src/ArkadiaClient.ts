@@ -5,6 +5,7 @@ import {ClientAdapter} from "@client/src/Client.ts";
 import eventBus, {ClientEvents} from "@client/src/eventBus.ts";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 import PingTracker from "./PingTracker.ts";
+import { getClientInstance } from "./clientRegistry";
 
 type Params<T> = [T] extends [void]
     ? []
@@ -294,7 +295,10 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private sendLine(text: string, type: string) {
-        text = window.clientExtension.onLine(text, type)
+        const client = getClientInstance();
+        if (client) {
+            text = client.onLine(text, type);
+        }
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
         this.emit("message", parseAnsiPatterns(text), type);
         this.emit('line-sent')
@@ -400,13 +404,12 @@ class ArkadiaClient implements ClientAdapter {
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
             getCurrentMapLocation: () => {
-                const ext: any = (window as any).clientExtension;
+                const ext = getClientInstance();
                 const id = ext?.Map?.currentRoom?.id;
                 return typeof id === 'number' ? id : null;
             },
             setMapLocationSilently: (locationId: number) => {
-                const ext: any = (window as any).clientExtension;
-                const map = ext?.Map;
+                const map = getClientInstance()?.Map;
                 if (!map || typeof locationId !== 'number') {
                     return;
                 }

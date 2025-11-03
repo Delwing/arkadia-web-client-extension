@@ -1,6 +1,13 @@
 import type { LetterSubmitPayload } from "./types/letter";
 import type { TransportTimerPayload } from "./types/transport";
 import type { UiSettingsEventPayload } from "./types/uiSettingsEvent";
+import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
+
+export type SendCommandEvent = {
+    command: string;
+    echo?: boolean;
+    options?: CommandOptions;
+};
 
 type NotificationPayload = {
     text: string;
@@ -64,6 +71,7 @@ export interface KnownEvents {
     'knowledgeReport': unknown | null;
     'knowledgeDetailsReport': unknown | null;
     'knowledgeReportAction': KnowledgeReportAction;
+    'sendCommand': SendCommandEvent;
     'requestHerbCounts': void;
     'herbManagerClose': void;
     'herbCounts': unknown;

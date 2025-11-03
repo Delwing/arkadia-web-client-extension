@@ -1,13 +1,13 @@
-(window as any).Input = { send: jest.fn() };
-(window as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(window as any).Maps = {
+(globalThis as any).Input = { send: jest.fn() };
+(globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
+(globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
+(globalThis as any).Maps = {
   refresh_position: jest.fn(),
   set_position: jest.fn(),
   unset_position: jest.fn(),
   data: undefined,
 };
-(window as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
+(globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
 jest.mock('../src/main', () => ({
@@ -65,9 +65,9 @@ jest.mock('../src/MapHelper', () => {
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
-  (window as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-  (window as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-  (window as any).dispatchEvent = jest.fn();
+  (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
+  (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
+  (globalThis as any).dispatchEvent = jest.fn();
   (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
 });
@@ -124,7 +124,7 @@ test('port messages emit client events', () => {
   const detail = [{ name: 'Foo', loc: 1 }];
   listener({ npc: detail });
   expect(handler).toHaveBeenCalledWith(detail);
-  expect((window as any).dispatchEvent).not.toHaveBeenCalled();
+  expect((globalThis as any).dispatchEvent).not.toHaveBeenCalled();
 });
 
 test('createEvent returns object with type and data', () => {

@@ -8,7 +8,7 @@ test.describe('GMCP-driven interactions', () => {
         await ensureGameSocket(page);
 
         const attemptedUrls = await page.evaluate(() => {
-            const sockets: any[] = (window as any).__mockSockets ?? [];
+            const sockets: any[] = (globalThis as any).__mockSockets ?? [];
             return sockets.map((socket) => socket?.url);
         });
         expect(
@@ -55,7 +55,7 @@ test.describe('GMCP-driven interactions', () => {
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [200, 300]);
 
         await page.waitForFunction(() => {
-            const client: any = (window as any).clientExtension;
+            const client: any = (globalThis as any).clientExtension;
             const objects = client?.ObjectManager?.getObjectsOnLocation?.();
             if (!Array.isArray(objects)) {
                 return false;

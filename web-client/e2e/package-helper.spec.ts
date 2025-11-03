@@ -21,17 +21,17 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await waitForClientReady(page);
 
     await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
+        const client: any = (globalThis as any).clientExtension;
         client.contentWidth = 140;
         client.Map.renderRoomByIdSilently?.(1);
-        (window as any).__leadToEvents = [];
+        (globalThis as any).__leadToEvents = [];
         client.on('leadTo', (id: number) => {
-            (window as any).__leadToEvents.push(id ?? null);
+            (globalThis as any).__leadToEvents.push(id ?? null);
         });
     });
 
     const path = await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
+        const client: any = (globalThis as any).clientExtension;
         return client.Map.findPath(1, 4);
     });
     expect(path, 'should calculate path to selected delivery destination').toEqual([1, 2, 3, 4]);
@@ -85,7 +85,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await expect
         .poll(async () => {
             return await page.evaluate(() => {
-                const events = (window as any).__leadToEvents ?? [];
+                const events = (globalThis as any).__leadToEvents ?? [];
                 return events.length ? events[events.length - 1] : null;
             });
         }, {message: 'should trigger lead to event for target location'})
@@ -100,12 +100,12 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await waitForClientReady(page);
 
     await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
+        const client: any = (globalThis as any).clientExtension;
         client.contentWidth = 140;
         client.Map.renderRoomByIdSilently?.(1);
-        (window as any).__leadToEvents = [];
+        (globalThis as any).__leadToEvents = [];
         client.on('leadTo', (id: number) => {
-            (window as any).__leadToEvents.push(id ?? null);
+            (globalThis as any).__leadToEvents.push(id ?? null);
         });
     });
 
@@ -172,7 +172,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
 
     await expect
         .poll(async () => {
-            return await page.evaluate(() => (window as any).__leadToEvents?.length ?? 0);
+            return await page.evaluate(() => (globalThis as any).__leadToEvents?.length ?? 0);
         }, {message: 'should not emit lead to events when helper disabled'})
         .toBe(0);
 });
