@@ -54,10 +54,7 @@ export default class MultiBinds {
         if (action.trim()) {
           wrapper.addEventListener("click", (event) => {
             event.preventDefault();
-            const invoked = eventBus.emit("sendCommand", { command: action });
-            if (!invoked) {
-              this.client.send(action);
-            }
+            eventBus.emit("sendCommand", { command: action });
           });
         } else {
           wrapper.disabled = true;

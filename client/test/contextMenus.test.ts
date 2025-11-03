@@ -1,4 +1,9 @@
 import { buildHerbContextMenuItems, openHerbContextMenu } from "../src/contextMenus";
+import { showContextMenu } from "../src/dom/contextMenu";
+
+jest.mock("../src/dom/contextMenu", () => ({
+    showContextMenu: jest.fn(),
+}));
 
 describe("buildHerbContextMenuItems", () => {
     const mockClient = {
@@ -53,10 +58,9 @@ describe("buildHerbContextMenuItems", () => {
     });
 
     it("shows empty menu with header when no bindable actions remain", () => {
-        const showContextMenu = jest.fn();
+        (showContextMenu as jest.Mock).mockClear();
         const clientWithMenu = {
             sendCommand: jest.fn(),
-            OutputHandler: { showContextMenu },
         } as any;
 
         openHerbContextMenu(clientWithMenu, {
@@ -71,7 +75,7 @@ describe("buildHerbContextMenuItems", () => {
         });
 
         expect(showContextMenu).toHaveBeenCalledTimes(1);
-        expect(showContextMenu.mock.calls[0][0]).toEqual([]);
-        expect(showContextMenu.mock.calls[0][3]).toEqual({ header: "Ziolo: rumianek", smallHeader: true });
+        expect((showContextMenu as jest.Mock).mock.calls[0][0]).toEqual([]);
+        expect((showContextMenu as jest.Mock).mock.calls[0][3]).toEqual({ header: "Ziolo: rumianek", smallHeader: true });
     });
 });

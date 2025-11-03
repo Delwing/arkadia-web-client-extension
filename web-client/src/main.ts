@@ -4,6 +4,7 @@ import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/src/Client.ts";
 import eventBus, { type SendCommandEvent } from "@client/src/eventBus.ts";
 import { registerScripts } from "@client/src/main.ts";
+import { showContextMenu } from "@client/src/dom/contextMenu";
 import { setClientInstance } from "./clientRegistry";
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -263,10 +264,6 @@ outputWrapper.addEventListener('contextmenu', event => {
     if (target && target.closest('a, [data-output-clickable]')) {
         return;
     }
-    const handler: any = client.OutputHandler;
-    if (!handler || typeof handler.showContextMenu !== 'function') {
-        return;
-    }
     event.preventDefault();
     const isVisible = areOutputTimestampsVisible();
     const items = [
@@ -289,7 +286,7 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
         },
     );
-    handler.showContextMenu(items, event.clientX, event.clientY);
+    showContextMenu(items, event.clientX, event.clientY);
 });
 
 function closeHistoryScrollback() {

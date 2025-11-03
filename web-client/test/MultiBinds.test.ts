@@ -42,31 +42,4 @@ describe("MultiBinds", () => {
     expect(client.send).not.toHaveBeenCalled();
     unsubscribe();
   });
-
-  it("falls back to ArkadiaClient.send when clientExtension is missing", () => {
-    const listeners: Record<string, (payload: unknown) => void> = {};
-    const send = jest.fn();
-    const client = {
-      on: (event: string, handler: (payload: unknown) => void) => {
-        listeners[event] = handler;
-      },
-      send,
-    } as any;
-
-    new MultiBinds(client);
-
-    const payload = {
-      list: [
-        { index: 2, action: "say hello", label: "ALT+2" },
-      ],
-    };
-
-    listeners.multibinds?.(payload);
-
-    const button = document.querySelector<HTMLButtonElement>("#multi-binds .multi-bind");
-    expect(button).not.toBeNull();
-    button!.click();
-
-    expect(send).toHaveBeenCalledWith("say hello");
-  });
 });

@@ -9,6 +9,15 @@ const STORAGE_KEY = 'mapperRoomId';
 export { longToShort };
 
 
+type Position = {
+    x: number;
+    y: number;
+    z: number;
+    id: string;
+    name: string;
+};
+
+
 const directionDeltas = {
     north: {x: 0, y: -1, z: 0},
     south: {x: 0, y: 1, z: 0},

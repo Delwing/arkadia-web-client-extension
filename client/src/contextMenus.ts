@@ -2,6 +2,7 @@ import type Client from "./Client";
 import { mudletColorLine } from "./Colors";
 import { stripAnsiCodes } from "./stripAnsiCodes";
 import type { HerbUse } from "./scripts/herbsLoader";
+import { showContextMenu } from "./dom/contextMenu";
 
 export interface ContextMenuItem {
     label: string;
@@ -78,7 +79,7 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
         amounts,
     );
 
-    client.OutputHandler.showContextMenu(items, x, y, {
+    showContextMenu(items, x, y, {
         header: `Ziolo: ${herbId}`,
         smallHeader: true,
     });
@@ -100,7 +101,7 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
         },
     ];
 
-    client.OutputHandler.showContextMenu(items, x, y, {
+    showContextMenu(items, x, y, {
         header: `Lokacja: ${roomId}`,
         smallHeader: true,
     });

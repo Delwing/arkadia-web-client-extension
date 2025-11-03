@@ -1,4 +1,5 @@
 import OutputHandler from '../src/OutputHandler';
+import { showContextMenu, hideContextMenu } from '../src/dom/contextMenu';
 
 class FakeClient {
   eventTarget = new EventTarget();
@@ -180,7 +181,7 @@ describe('OutputHandler context menu positioning', () => {
       .spyOn(menu, 'getBoundingClientRect')
       .mockReturnValue(rect);
 
-    handler.showContextMenu(
+    showContextMenu(
       [
         {
           label: 'Action',
@@ -208,6 +209,7 @@ describe('OutputHandler context menu positioning', () => {
       delete (document.documentElement as any).clientHeight;
     }
 
+    hideContextMenu();
     getBoundingClientRectSpy.mockRestore();
   });
 });
