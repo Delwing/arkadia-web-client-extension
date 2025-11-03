@@ -125,6 +125,63 @@ test.describe('Mobile buttons color and command configuration', () => {
             return window.getComputedStyle(el).backgroundColor;
         });
         expect(actualButtonStyle, 'actual button background color should be red').toBe('rgb(255, 0, 0)');
+
+        // Reload the page to verify persistence
+        await page.reload();
+        await waitForClientReady(page);
+        await ensureGameSocket(page);
+
+        // Verify the actual mobile button still has the correct configuration after reload
+        const actualMobileButtonsAfterReload = page.locator('#mobile-direction-buttons');
+        await expect(actualMobileButtonsAfterReload, 'mobile buttons container should be visible after reload').toBeVisible();
+
+        const actualButton2AfterReload = actualMobileButtonsAfterReload.locator('#button-2');
+        await expect(actualButton2AfterReload, 'actual button-2 should be visible after reload').toBeVisible();
+
+        // Verify the label is still correct after reload
+        const actualButtonTextAfterReload = await actualButton2AfterReload.textContent();
+        expect(actualButtonTextAfterReload, 'actual button label should still be Test Button after reload').toBe('Test Button');
+
+        // Verify the color is still correct after reload
+        const actualButtonStyleAfterReload = await actualButton2AfterReload.evaluate((el) => {
+            return window.getComputedStyle(el).backgroundColor;
+        });
+        expect(actualButtonStyleAfterReload, 'actual button background color should still be red after reload').toBe('rgb(255, 0, 0)');
+
+        // Open the modal again to verify the configuration is persisted
+        const modalAfterReload = await openMobileButtonsSettings(page);
+        await expect(modalAfterReload, 'mobile buttons modal should be visible after reload').toBeVisible();
+
+        const soloPreviewAfterReload = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        await expect(soloPreviewAfterReload, 'solo preview grid should be visible after reload').toBeVisible();
+
+        const button2AfterReload = soloPreviewAfterReload.locator('[data-button-id="button-2"]');
+        await button2AfterReload.click();
+
+        // Wait for the configuration panel to appear
+        const configPanelAfterReload = page.locator('.mobile-button-config');
+        await expect(configPanelAfterReload, 'configuration panel should be visible after reload').toBeVisible();
+
+        // Verify the macro is still set to "command"
+        const macroSelectAfterReload = configPanelAfterReload.locator('.mobile-button-macro');
+        const selectedMacro = await macroSelectAfterReload.inputValue();
+        expect(selectedMacro, 'macro should still be command after reload').toBe('command');
+
+        // Verify the command is still set
+        const commandInputAfterReload = configPanelAfterReload.locator('.mobile-button-command');
+        await expect(commandInputAfterReload, 'command input should be visible after reload').toBeVisible();
+        const commandValue = await commandInputAfterReload.inputValue();
+        expect(commandValue, 'command should still be test command after reload').toBe('test command');
+
+        // Verify the label is still set
+        const labelInputAfterReload = configPanelAfterReload.locator('.mobile-button-label');
+        const labelValue = await labelInputAfterReload.inputValue();
+        expect(labelValue, 'label should still be Test Button after reload').toBe('Test Button');
+
+        // Verify the color is still set
+        const colorInputAfterReload = configPanelAfterReload.locator('.mobile-button-color');
+        const colorValue = await colorInputAfterReload.first().inputValue();
+        expect(colorValue, 'color should still be #ff0000 after reload').toBe('#ff0000');
     });
 
     test('should configure button with different macro types', async ({ page }) => {
