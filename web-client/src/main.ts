@@ -633,6 +633,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (contentArea) {
         const focusMessageInput = (target: EventTarget | null) => {
+            // Check if there's a text selection
+            const selection = window.getSelection();
+            if (selection && selection.toString().length > 0) {
+                return;
+            }
+
             if (!target || !(target instanceof Element)) {
                 messageInput.focus();
                 return;
@@ -647,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (window.PointerEvent) {
-            contentArea.addEventListener('pointerdown', (event: PointerEvent) => {
+            contentArea.addEventListener('pointerup', (event: PointerEvent) => {
                 if (event.button !== 0) return;
                 const pointerType = event.pointerType || '';
                 const isTouchPointer = pointerType === 'touch' || (pointerType === '' && isLikelyTouchDevice());

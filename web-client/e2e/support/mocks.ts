@@ -4,6 +4,7 @@ export const GMCP_PATHS = {
     CHAR_INFO: 'char.info',
     OBJECTS_DATA: 'objects.data',
     OBJECTS_NUMS: 'objects.nums',
+    ROOM_INFO: 'room.info',
 } as const;
 
 export async function installMockWebSocket(context: BrowserContext): Promise<void> {

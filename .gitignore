@@ -10,3 +10,4 @@ vite.config.js
 .DS_Store
 web-client/playwright-report/
 web-client/test-results/
+.claude
