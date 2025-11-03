@@ -1,10 +1,24 @@
 import { expect, test } from './support/fixtures';
-import type { Page } from '@playwright/test';
 import { ensureGameSocket, waitForClientReady } from './support/mocks';
+import {Page} from "@playwright/test";
+
+const MENU_BUTTON = '#menu-button';
+const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
+const MOBILE_BUTTONS_MODAL = '#mobile-buttons-modal';
+const MOBILE_BUTTONS_SAVE = '#mobile-buttons-save';
+
+async function openMobileButtonsSettings(page: Page) {
+    await page.click(MENU_BUTTON);
+    await page.click(MOBILE_BUTTONS_BUTTON);
+    const modal = page.locator(MOBILE_BUTTONS_MODAL);
+    await expect(modal, 'should open mobile buttons settings modal').toBeVisible();
+    return modal;
+}
+
 
 test.describe('Mobile buttons color and command configuration', () => {
     test.beforeEach(async ({ page }) => {
-        await page.setViewportSize({ width: 500, height: 900 });
+        await page.setViewportSize({ width: 1280, height: 900 });
     });
 
     test('should display mobile buttons modal and configure button colors', async ({ page }) => {
@@ -12,23 +26,8 @@ test.describe('Mobile buttons color and command configuration', () => {
         await waitForClientReady(page);
         await ensureGameSocket(page);
 
-        // Open the mobile buttons modal
-        // First, we need to find and click the button that opens the modal
-        // Looking for a button or link that opens mobile-buttons-modal
-        await page.evaluate(() => {
-            const modalElement = document.getElementById('mobile-buttons-modal');
-            if (modalElement) {
-                // Use Bootstrap modal API to show the modal
-                const bootstrap = (window as any).bootstrap;
-                if (bootstrap && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                }
-            }
-        });
-
-        // Wait for the modal to be visible
-        const modal = page.locator('#mobile-buttons-modal');
+        // Open mobile buttons settings modal
+        const modal = await openMobileButtonsSettings(page);
         await expect(modal, 'mobile buttons modal should be visible').toBeVisible();
 
         // Check that the modal body container is visible
@@ -39,18 +38,22 @@ test.describe('Mobile buttons color and command configuration', () => {
         const optionsContainer = page.locator('#mobile-buttons-options');
         await expect(optionsContainer, 'mobile buttons options container should be visible').toBeVisible();
 
-        // Wait for buttons to be rendered
-        await page.waitForSelector('[data-button-id="button-0"]', { timeout: 5000 });
+        // Get the current visible preview grid (solo mode by default)
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        await expect(soloPreview, 'solo preview grid should be visible').toBeVisible();
 
-        // Check that specific buttons are visible using data-button-id attribute
-        const button0 = page.locator('[data-button-id="button-0"]');
-        await expect(button0, 'button-0 should be visible').toBeVisible();
+        // Wait for buttons to be rendered in the visible grid
+        await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
-        const button1 = page.locator('[data-button-id="button-1"]');
+        // Check that specific buttons are visible in the current tab
+        const button1 = soloPreview.locator('[data-button-id="button-1"]');
         await expect(button1, 'button-1 should be visible').toBeVisible();
 
-        const button2 = page.locator('[data-button-id="button-2"]');
+        const button2 = soloPreview.locator('[data-button-id="button-2"]');
         await expect(button2, 'button-2 should be visible').toBeVisible();
+
+        const button3 = soloPreview.locator('[data-button-id="button-3"]');
+        await expect(button3, 'button-3 should be visible').toBeVisible();
 
         // Click on button-2 to open its configuration
         await button2.click();
@@ -74,12 +77,12 @@ test.describe('Mobile buttons color and command configuration', () => {
         // Change the button color
         await colorInput.first().fill('#ff0000');
 
-        // Verify the button color changed
+        // Verify the button color changed in the preview
         const buttonStyle = await button2.evaluate((el) => {
             return window.getComputedStyle(el).backgroundColor;
         });
         // RGB value of #ff0000 is rgb(255, 0, 0)
-        expect(buttonStyle, 'button background color should be red').toBe('rgb(255, 0, 0)');
+        expect(buttonStyle, 'button background color should be red in preview').toBe('rgb(255, 0, 0)');
 
         // Change the macro type to "command"
         await macroSelect.selectOption('command');
@@ -94,17 +97,34 @@ test.describe('Mobile buttons color and command configuration', () => {
         // Set a label
         await labelInput.fill('Test Button');
 
-        // Verify the label changed
+        // Verify the label changed in the preview
         const buttonText = await button2.textContent();
-        expect(buttonText, 'button label should be updated').toBe('Test Button');
+        expect(buttonText, 'button label should be updated in preview').toBe('Test Button');
 
         // Save the configuration
-        const saveButton = page.locator('#mobile-buttons-save');
+        const saveButton = page.locator(MOBILE_BUTTONS_SAVE);
         await expect(saveButton, 'save button should be visible').toBeVisible();
         await saveButton.click();
 
         // Verify the modal closes
         await expect(modal, 'modal should be hidden after save').not.toBeVisible({ timeout: 5000 });
+
+        // Verify the actual mobile button (outside the modal) has the correct color and label
+        const actualMobileButtons = page.locator('#mobile-direction-buttons');
+        await expect(actualMobileButtons, 'mobile buttons container should be visible').toBeVisible();
+
+        const actualButton2 = actualMobileButtons.locator('#button-2');
+        await expect(actualButton2, 'actual button-2 should be visible').toBeVisible();
+
+        // Verify the actual button has the correct label
+        const actualButtonText = await actualButton2.textContent();
+        expect(actualButtonText, 'actual button label should be Test Button').toBe('Test Button');
+
+        // Verify the actual button has the correct color
+        const actualButtonStyle = await actualButton2.evaluate((el) => {
+            return window.getComputedStyle(el).backgroundColor;
+        });
+        expect(actualButtonStyle, 'actual button background color should be red').toBe('rgb(255, 0, 0)');
     });
 
     test('should configure button with different macro types', async ({ page }) => {
@@ -112,25 +132,18 @@ test.describe('Mobile buttons color and command configuration', () => {
         await waitForClientReady(page);
         await ensureGameSocket(page);
 
-        // Open the mobile buttons modal programmatically
-        await page.evaluate(() => {
-            const modalElement = document.getElementById('mobile-buttons-modal');
-            if (modalElement) {
-                const bootstrap = (window as any).bootstrap;
-                if (bootstrap && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                }
-            }
-        });
-
-        const modal = page.locator('#mobile-buttons-modal');
+        // Open mobile buttons settings modal
+        const modal = await openMobileButtonsSettings(page);
         await expect(modal).toBeVisible();
 
-        // Wait for buttons to be rendered
-        await page.waitForSelector('[data-button-id="button-1"]', { timeout: 5000 });
+        // Get the current visible preview grid (solo mode by default)
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        await expect(soloPreview, 'solo preview grid should be visible').toBeVisible();
 
-        const button1 = page.locator('[data-button-id="button-1"]');
+        // Wait for buttons to be rendered in the visible grid
+        await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
+
+        const button1 = soloPreview.locator('[data-button-id="button-1"]');
         await button1.click();
 
         const configPanel = page.locator('.mobile-button-config');
@@ -151,7 +164,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(configPanel).not.toBeVisible();
 
         // Test another button with command macro
-        const button3 = page.locator('[data-button-id="button-3"]');
+        const button3 = soloPreview.locator('[data-button-id="button-3"]');
         await button3.click();
 
         await expect(configPanel).toBeVisible();
@@ -168,19 +181,8 @@ test.describe('Mobile buttons color and command configuration', () => {
         await waitForClientReady(page);
         await ensureGameSocket(page);
 
-        // Open the mobile buttons modal
-        await page.evaluate(() => {
-            const modalElement = document.getElementById('mobile-buttons-modal');
-            if (modalElement) {
-                const bootstrap = (window as any).bootstrap;
-                if (bootstrap && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                }
-            }
-        });
-
-        const modal = page.locator('#mobile-buttons-modal');
+        // Open mobile buttons settings modal
+        const modal = await openMobileButtonsSettings(page);
         await expect(modal).toBeVisible();
 
         // Check that mode toggle buttons exist
