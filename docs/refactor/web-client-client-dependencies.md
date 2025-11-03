@@ -14,7 +14,7 @@ This document tracks the most significant coupling points between the legacy `cl
 - **Shared logic**: context menu interactions, timestamp toggles, clickable text markers, sticky output clone logic.
 - **Problem**: Historically duplicated between extension and SPA; `web-client` recently adopted the extension’s helpers.
 - **Impact**: Medium to High — differences cause inconsistent UX (e.g., context menu placement, command history).
-- **Action**: Keep `client/src/dom/contextMenu.ts` and `web-client/src/outputMessageHandler.ts` aligned; migrate remaining helpers into `src/shared/ui/`. Remove residual references to `window.clientExtension` in favor of shared registries.
+- **Action**: Keep `src/shared/dom/contextMenu.ts` and `src/shared/dom/outputMessageHandler.ts` aligned; migrate remaining helpers into `src/shared/ui/`. Remove residual references to `window.clientExtension` in favor of shared registries.
 
 ## 3. Recorder & Playback
 - **Shared artifacts**: `Recorder` class, `ArkadiaClient` recorder hooks, sandbox/test harnesses.

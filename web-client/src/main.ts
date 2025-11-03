@@ -5,7 +5,7 @@ import Client from "@client/src/Client.ts";
 import eventBus from "@client/src/eventBus.ts";
 import type { SendCommandEvent } from "@shared/events";
 import { registerScripts } from "@client/src/main.ts";
-import { showContextMenu } from "@client/src/dom/contextMenu";
+import { showContextMenu } from "@shared/dom/contextMenu";
 import { setClientInstance } from "./clientRegistry";
 import {Modal, Dropdown} from 'bootstrap';
 import CharState from "./CharState";
@@ -59,7 +59,7 @@ import {
     areOutputTimestampsVisible,
     setOutputTimestampVisibility,
     setupOutputMessageHandler,
-} from "./outputMessageHandler";
+} from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));

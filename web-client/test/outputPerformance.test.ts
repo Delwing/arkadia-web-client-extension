@@ -1,5 +1,5 @@
 import arkadiaClient from '../src/ArkadiaClient';
-import {setupOutputMessageHandler} from '../src/outputMessageHandler';
+import {setupOutputMessageHandler} from '@shared/dom/outputMessageHandler';
 
 describe('output performance measurements', () => {
   beforeEach(() => {

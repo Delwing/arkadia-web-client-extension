@@ -2,7 +2,7 @@ import type Client from "./Client";
 import { mudletColorLine } from "./Colors";
 import { stripAnsiCodes } from "./stripAnsiCodes";
 import type { HerbUse } from "./scripts/herbsLoader";
-import { showContextMenu } from "./dom/contextMenu";
+import { showContextMenu } from "@shared/dom/contextMenu";
 
 export interface ContextMenuItem {
     label: string;

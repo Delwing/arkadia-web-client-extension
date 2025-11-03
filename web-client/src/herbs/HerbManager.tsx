@@ -6,7 +6,7 @@ import { normalizeHerbBagsState } from "@client/src/types/herbs";
 import { openHerbContextMenu } from "@client/src/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/src/scripts/herbsLoader";
 import eventBus from "@client/src/eventBus.ts";
-import { hideContextMenu } from "@client/src/dom/contextMenu";
+import { hideContextMenu } from "@shared/dom/contextMenu";
 import { getClientInstance } from "../clientRegistry";
 
 type HerbCounts = HerbBagsState | undefined;

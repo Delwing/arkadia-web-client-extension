@@ -1,5 +1,5 @@
 import OutputHandler from '../src/OutputHandler';
-import { showContextMenu, hideContextMenu } from '../src/dom/contextMenu';
+import { showContextMenu, hideContextMenu } from '@shared/dom/contextMenu';
 
 class FakeClient {
   eventTarget = new EventTarget();
