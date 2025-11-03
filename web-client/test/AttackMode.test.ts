@@ -1,5 +1,10 @@
 import { act } from "react";
 import eventBus from "@client/src/eventBus.ts";
+jest.mock("@web-ui/components/PackageStatusWidget", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
 import mountStatusIndicators from "../src/statusIndicators";
 
 jest.mock("@client/src/storage.ts", () => ({

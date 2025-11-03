@@ -1,7 +1,7 @@
-import type { CommandOptions } from "../../../client/src/scripts/commandPreserveCaseMode";
-import type { LetterSubmitPayload } from "../../../client/src/types/letter";
-import type { TransportTimerPayload } from "../../../client/src/types/transport";
-import type { UiSettingsEventPayload } from "../../../client/src/types/uiSettingsEvent";
+import type {CommandOptions} from "../../../client/src/scripts/commandPreserveCaseMode";
+import type {LetterSubmitPayload} from "../../../client/src/types/letter";
+import type {TransportTimerPayload} from "../../../client/src/types/transport";
+import type {UiSettingsEventPayload} from "../../../client/src/types/uiSettingsEvent";
 
 export type SendCommandEvent = {
     command: string;
@@ -33,6 +33,11 @@ export type KnowledgeReportAction =
     | { type: "completeLibrary"; libraryId: string }
     | { type: "resetLibrary"; libraryId: string };
 
+export type PackageStatus = {
+    recipient: string;
+    seconds?: number
+}
+
 export interface KnownEvents {
     "command": string;
     "port-connected": void;
@@ -46,7 +51,7 @@ export interface KnownEvents {
     "lampTimer": number | null;
     "coverTimer": number | null;
     "breakItem": { text: string; command?: string } | null;
-    "packageStatus": { recipient: string; seconds?: number } | null;
+    "packageStatus": PackageStatus | null;
     "releaseGuard": boolean;
     "attackMode": "A" | "AW" | "AWR";
     "contentWidth": number;
