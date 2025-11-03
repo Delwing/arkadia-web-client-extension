@@ -1,38 +1,45 @@
-import PackageStatus from '../src/PackageStatus';
+import { act } from "react";
+import eventBus from "@client/src/eventBus.ts";
+import mountStatusIndicators from "../src/statusIndicators";
 
-class MockClient {
-  private events: Record<string, Function[]> = {};
-  on(event: string, listener: Function) {
-    (this.events[event] ||= []).push(listener);
-  }
-  emit(event: string, ...args: any[]) {
-    (this.events[event] || []).forEach(fn => fn(...args));
-  }
-}
-
-describe('PackageStatus', () => {
+describe("PackageStatus indicator", () => {
+  let cleanup: ReturnType<typeof mountStatusIndicators> | undefined;
   let container: HTMLElement;
-  let client: MockClient;
 
   beforeEach(() => {
-    document.body.innerHTML = '<div id="package-status"></div>';
-    container = document.getElementById('package-status')!;
-    client = new MockClient();
-    new PackageStatus(client as any);
+    eventBus.clear();
+    document.body.innerHTML = '<div id="status-indicators"></div>';
+    act(() => {
+      cleanup = mountStatusIndicators();
+    });
+    container = document.getElementById("package-status")!;
   });
 
-  test('hides when no data', () => {
-    client.emit('packageStatus', null);
-    expect(container.style.display).toBe('none');
-    expect(container.textContent).toBe('');
+  afterEach(() => {
+    act(() => {
+      cleanup?.destroy();
+    });
+    eventBus.clear();
   });
 
-  test('shows recipient and time', () => {
-    client.emit('packageStatus', { recipient: 'Bob', seconds: 70 });
-    expect(container.textContent).toBe('📦: Bob 1:10');
-    expect(container.style.display).toBe('block');
+  test("hides when no data", () => {
+    act(() => {
+      eventBus.emit("packageStatus", null);
+    });
+    expect(container.style.display).toBe("none");
+    expect(container.textContent).toBe("");
+  });
 
-    client.emit('packageStatus', { recipient: 'Alice' });
-    expect(container.textContent).toBe('📦: Alice');
+  test("shows recipient and time", () => {
+    act(() => {
+      eventBus.emit("packageStatus", { recipient: "Bob", seconds: 70 });
+    });
+    expect(container.textContent).toBe("📦: Bob 1:10");
+    expect(container.style.display).toBe("block");
+
+    act(() => {
+      eventBus.emit("packageStatus", { recipient: "Alice" });
+    });
+    expect(container.textContent).toBe("📦: Alice");
   });
 });

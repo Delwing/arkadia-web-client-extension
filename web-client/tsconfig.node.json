@@ -19,14 +19,17 @@
       "./src/types",
       "node_modules/@types"
     ],
-  },
-  "paths": {
-    "@client/*": [
-      "../client/*"
-    ],
-    "@shared/*": [
-      "../src/shared/*"
-    ],
+    "paths": {
+      "@client/*": [
+        "../client/*"
+      ],
+      "@shared/*": [
+        "../src/shared/*"
+      ],
+      "@web-ui/*": [
+        "../src/ui/web/*"
+      ],
+    }
   },
   "include": [
     "vite.config.ts",

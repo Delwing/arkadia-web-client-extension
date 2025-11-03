@@ -8,6 +8,7 @@
   },
   "include": [
     "src",
-    "test"
+    "test",
+    "../src/ui/web"
   ]
 }

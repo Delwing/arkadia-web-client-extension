@@ -16,11 +16,9 @@ import CoverTimer from "./CoverTimer";
 import ZaskTimer from "./ZaskTimer";
 import CombatTimer from "./CombatTimer";
 import BreakItemWarning from "./BreakItemWarning";
-import PackageStatus from "./PackageStatus";
 import CharStateInfo from "./CharStateInfo";
 import MultiBinds from "./MultiBinds";
 import ReleaseGuard from "./ReleaseGuard";
-import AttackMode from "./AttackMode";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
@@ -30,6 +28,7 @@ import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
+import mountStatusIndicators from "./statusIndicators.tsx";
 
 import "@client/src/main.ts"
 import MockPort from "./MockPort.ts";
@@ -1486,8 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new CombatTimer(arkadiaClient);
     new BreakItemWarning(arkadiaClient);
     new ReleaseGuard(arkadiaClient);
-    new AttackMode(arkadiaClient);
-    new PackageStatus(arkadiaClient);
+    mountStatusIndicators();
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
     new ObjectList(client);

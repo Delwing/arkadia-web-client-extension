@@ -1,86 +1,85 @@
-import AttackMode from '../src/AttackMode';
-import eventBus from '@client/src/eventBus.ts';
-import { getClientInstance, setClientInstance, clearClientInstance } from "@shared/runtime";
+import { act } from "react";
+import eventBus from "@client/src/eventBus.ts";
+import mountStatusIndicators from "../src/statusIndicators";
 
-jest.mock('@client/src/storage.ts', () => ({
-  getItemSync: jest.fn(() => ({})),
+jest.mock("@client/src/storage.ts", () => ({
+    getItemSync: jest.fn(() => ({})),
 }));
-import { getItemSync } from '@client/src/storage.ts';
+import { getItemSync } from "@client/src/storage.ts";
 
-const emitIsLeaderEvent = () => {
-  const isLeader = Boolean(getClientInstance()?.TeamManager?.isLeader?.());
-  eventBus.emit('isTeamLeader', isLeader);
-};
+describe("AttackMode indicator", () => {
+    let cleanup: ReturnType<typeof mountStatusIndicators> | undefined;
+    let container: HTMLElement;
 
-class MockClient {
-  private events: Record<string, Function[]> = {};
-  on(event: string, listener: Function) {
-    (this.events[event] ||= []).push(listener);
-  }
-  emit = jest.fn((event: string, ...args: any[]) => {
-    (this.events[event] || []).forEach(fn => fn(...args));
-    (eventBus.emit as (...emitArgs: any[]) => number)(event, ...args);
-    if (event === 'teamChange') {
-      emitIsLeaderEvent();
-    }
-  });
-}
+    beforeEach(() => {
+        eventBus.clear();
+        document.body.innerHTML = '<div id="status-indicators"></div>';
+        (getItemSync as jest.Mock).mockReturnValue({ attack_mode: "A" });
+        act(() => {
+            cleanup = mountStatusIndicators();
+        });
+        container = document.getElementById("attack-mode")!;
+    });
 
-describe('AttackMode', () => {
-  let container: HTMLElement;
-  let client: MockClient;
+    afterEach(() => {
+        act(() => {
+            cleanup?.destroy();
+        });
+        eventBus.clear();
+    });
 
-  beforeEach(() => {
-    eventBus.clear();
-    clearClientInstance();
-    document.body.innerHTML = '<span id="attack-mode"></span>';
-    container = document.getElementById('attack-mode')!;
-    client = new MockClient();
-    (getItemSync as jest.Mock).mockReturnValue({ attack_mode: 'A' });
-    setClientInstance({ TeamManager: { isLeader: jest.fn(() => true), isInAnyTeam: jest.fn(() => true) } } as any);
-    new AttackMode(client as any);
-    emitIsLeaderEvent();
-  });
+    test("updates mode display", () => {
+        act(() => {
+            eventBus.emit("isTeamLeader", true);
+        });
+        expect(container.textContent).toBe("Atk: A");
+        expect(container.style.display).toBe("block");
+        expect(container.className).toBe("A");
 
-  test('updates mode display', () => {
-    expect(container.textContent).toBe('Atk: A');
-    expect(container.style.display).toBe('block');
-    expect(container.className).toBe('A');
+        act(() => {
+            eventBus.emit("attackMode", "AW");
+        });
+        expect(container.textContent).toBe("Atk: AW");
+        expect(container.className).toBe("AW");
+    });
 
-    client.emit('attackMode', 'AW');
-    expect(container.textContent).toBe('Atk: AW');
-    expect(container.className).toBe('AW');
-  });
+    test("click cycles mode and emits event", () => {
+        act(() => {
+            eventBus.emit("isTeamLeader", true);
+        });
+        const emitSpy = jest.spyOn(eventBus, "emit");
+        emitSpy.mockClear();
 
-  test('click cycles mode and emits event', () => {
-    container.click();
-    expect(client.emit).toHaveBeenLastCalledWith('attackMode', 'AW');
-    expect(container.textContent).toBe('Atk: AW');
+        act(() => {
+            container.click();
+        });
+        expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AW");
+        expect(container.textContent).toBe("Atk: AW");
 
-    container.click();
-    expect(client.emit).toHaveBeenLastCalledWith('attackMode', 'AWR');
-    expect(container.textContent).toBe('Atk: AWR');
+        act(() => {
+            container.click();
+        });
+        expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AWR");
+        expect(container.textContent).toBe("Atk: AWR");
 
-    container.click();
-    expect(client.emit).toHaveBeenLastCalledWith('attackMode', 'A');
-    expect(container.textContent).toBe('Atk: A');
-  });
+        act(() => {
+            container.click();
+        });
+        expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "A");
+        expect(container.textContent).toBe("Atk: A");
 
-  test('hides when not leader', () => {
-    document.body.innerHTML = '<span id="attack-mode"></span>';
-    container = document.getElementById('attack-mode')!;
-    client = new MockClient();
-    setClientInstance({ TeamManager: { isLeader: jest.fn(() => false), isInAnyTeam: jest.fn(() => true) } } as any);
-    new AttackMode(client as any);
-    emitIsLeaderEvent();
-    expect(container.style.display).toBe('none');
-    const instance = getClientInstance();
-    (instance?.TeamManager?.isLeader as jest.Mock)?.mockReturnValue(true);
-    client.emit('teamChange');
-    expect(container.style.display).toBe('block');
-  });
+        emitSpy.mockRestore();
+    });
 
-  afterEach(() => {
-    clearClientInstance();
-  });
+    test("hides when not leader", () => {
+        act(() => {
+            eventBus.emit("isTeamLeader", false);
+        });
+        expect(container.style.display).toBe("none");
+
+        act(() => {
+            eventBus.emit("isTeamLeader", true);
+        });
+        expect(container.style.display).toBe("block");
+    });
 });

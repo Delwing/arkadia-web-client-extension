@@ -4,7 +4,8 @@ module.exports = {
   setupFiles: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@client/(.*)$': '<rootDir>/../client/$1',
-    '^@shared/(.*)$': '<rootDir>/../src/shared/$1'
+    '^@shared/(.*)$': '<rootDir>/../src/shared/$1',
+    '^@web-ui/(.*)$': '<rootDir>/../src/ui/web/$1'
   },
   transform: {
     '^.+\\.tsx?$': [

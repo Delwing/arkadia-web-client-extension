@@ -48,7 +48,7 @@ export interface KnownEvents {
     "breakItem": { text: string; command?: string } | null;
     "packageStatus": { recipient: string; seconds?: number } | null;
     "releaseGuard": boolean;
-    "attackMode": string;
+    "attackMode": "A" | "AW" | "AWR";
     "contentWidth": number;
     "enterLocation": { id: number; room: unknown };
     "highlights": number[];
@@ -105,14 +105,14 @@ export interface KnownEvents {
     "playback.index": PlaybackIndexPayload;
     "message": MessageEventPayload;
     "attackQueueChange": string[];
-}
-
-export type ClientEvents = KnownEvents & {
     "parsedObjects": void;
     "parsedNums": { nums: number[] };
     "kill": { killer: "ME" | "TEAM" | "OTHER" };
     "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
     "allEnemiesKilled": void;
+}
+
+export type ClientEvents = KnownEvents & {
     [key: `gmcp.${string}`]: unknown;
     [key: `gmcp_msg.${string}`]: string;
 };

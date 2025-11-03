@@ -20,6 +20,13 @@ export default defineConfig({
         react(),
         tsconfigPaths()
     ] as unknown as PluginOption[],
+    resolve: {
+        alias: {
+            "@client": resolve("../client"),
+            "@shared": resolve("../src/shared"),
+            "@web-ui": resolve("../src/ui/web"),
+        },
+    },
     base: "./",
     define: {
         __COMMIT_SHA__: JSON.stringify(commitSha),
