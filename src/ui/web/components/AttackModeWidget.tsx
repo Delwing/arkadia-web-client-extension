@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import eventBus from "../../../../client/src/eventBus";
 import { getItemSync } from "../../../../client/src/storage";
 

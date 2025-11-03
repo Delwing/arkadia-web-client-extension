@@ -45,6 +45,13 @@
 1. Identify non-React UI islands (status panels, modal controls, settings forms) and migrate them one-by-one into typed React components under `src/ui/web/components/`.
 2. Maintain imperative wrappers during migration so legacy scripts can mount/unmount new components without large rewrites.
 3. Explicitly exclude the map renderer and main output div from this pass; they remain imperative until a dedicated rendering strategy is approved.
+4. When creating a new React wrapper, follow the pattern established by `AttackModeWidget.tsx`:
+   - Define the React component in `src/ui/web/components/` and keep state local (e.g. `useState`, `useEffect`).
+   - Subscribe to `eventBus` inside the component; derive the minimal surface required from the payload and emit follow-up events as needed.
+   - Normalise any stored data at the boundary (similar to how `AttackModeWidget` reads the stored attack mode before subscribing).
+   - Expose a small formatter/helper inside the component, and keep the DOM node styling (`className`, `style`) within the React tree rather than in the legacy caller.
+   - Provide a shared `mount…` helper (e.g. `src/statusIndicators.tsx`) that mounts/unmounts the component into the legacy DOM, returning an optional destroy handle the tests can use.
+   - Update the existing imperative entry point (such as `main.ts`) to call the shared mount helper instead of instantiating the old class.
 
 ## Slice 8 — Build/Config Alignment
 1. Move TypeScript `tsconfig` bases into `tsconfig.base.json`; have both projects extend from it.
