@@ -2,7 +2,8 @@ import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/src/Client.ts";
-import eventBus, { type SendCommandEvent } from "@client/src/eventBus.ts";
+import eventBus from "@client/src/eventBus.ts";
+import type { SendCommandEvent } from "@shared/events";
 import { registerScripts } from "@client/src/main.ts";
 import { showContextMenu } from "@client/src/dom/contextMenu";
 import { setClientInstance } from "./clientRegistry";

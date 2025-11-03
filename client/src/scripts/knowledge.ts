@@ -1,6 +1,6 @@
 import Client from '../Client';
 import {color, colorString, findClosestColor, RESET} from '../Colors';
-import type { KnowledgeReportAction } from '../eventBus';
+import type { KnowledgeReportAction } from '@shared/events';
 import {
   DEFAULT_KNOWLEDGE_CHARACTER_KEY,
   getKnowledgeStore,

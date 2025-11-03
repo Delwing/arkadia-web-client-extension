@@ -46,7 +46,7 @@ describe('OutputHandler clickable text', () => {
     expect(msg.textContent).toBe('Click');
     span!.onclick!(new MouseEvent('click'));
     expect(cb).toHaveBeenCalledTimes(1);
-  expect((handler as any).clickerCallbacks[0]).toBeUndefined();
+    expect((handler as any).clickerCallbacks[0]).toBeUndefined();
   });
 
   test('handles right click', () => {
@@ -146,6 +146,7 @@ describe('OutputHandler context menu positioning', () => {
       '<div id="main_text_output_msg_wrapper"><div id="split-bottom"></div></div><div id="context-menu"></div>';
     const client = new FakeClient();
     const handler = new OutputHandler((client as unknown) as any);
+    expect(handler).toBeInstanceOf(OutputHandler);
     const menu = document.getElementById('context-menu') as HTMLElement;
 
     const originalWidthDescriptor = Object.getOwnPropertyDescriptor(

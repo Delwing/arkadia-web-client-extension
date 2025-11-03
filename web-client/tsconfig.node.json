@@ -24,6 +24,9 @@
     "@client/*": [
       "../client/*"
     ],
+    "@shared/*": [
+      "../src/shared/*"
+    ],
   },
   "include": [
     "vite.config.ts",

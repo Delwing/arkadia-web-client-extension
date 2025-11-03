@@ -8,7 +8,8 @@
     "baseUrl": "./",
     "paths": {
       "@client": ["./"],
-      "@client/*": ["./*"]
+      "@client/*": ["./*"],
+      "@shared/*": ["../src/shared/*"]
     },
     "allowImportingTsExtensions": true,
     /* Linting */

@@ -6,7 +6,8 @@ import React, {
   useState,
 } from 'react';
 import type { KnowledgeCategoryStatus } from '@client/src/dataStores/knowledgeStore';
-import eventBus, { type KnowledgeReportAction } from '@client/src/eventBus.ts';
+import eventBus from '@client/src/eventBus.ts';
+import type { KnowledgeReportAction } from '@shared/events';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
