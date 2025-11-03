@@ -1,7 +1,7 @@
-import type {CommandOptions} from "../../../client/src/scripts/commandPreserveCaseMode";
-import type {LetterSubmitPayload} from "../../../client/src/types/letter";
-import type {TransportTimerPayload} from "../../../client/src/types/transport";
-import type {UiSettingsEventPayload} from "../../../client/src/types/uiSettingsEvent";
+import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
+import {LetterSubmitPayload} from "@client/types/letter.ts";
+import {TransportTimerPayload} from "@client/types/transport.ts";
+import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
 
 export type SendCommandEvent = {
     command: string;

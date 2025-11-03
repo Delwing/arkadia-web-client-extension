@@ -1,5 +1,3 @@
-/// <reference path="../../../client/src/types/MapData.d.ts" />
-
 type MapDataStore<T> = {
     refresh(options?: { onProgress?: MapProgressListener }): Promise<{ data: T } | undefined>;
     getSnapshot(): Promise<{ data: T } | undefined>;

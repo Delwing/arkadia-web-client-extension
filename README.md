@@ -1,18 +1,20 @@
 # Arkadia Web Client
 
-Przeglądarkowy klient Arkadii z wbudowaną mapą, własnymi triggerami oraz konfigurowalną stroną ustawień. Repozytorium jest zorganizowane jako monorepo Yarn workspaces.
+Przeglądarkowy klient Arkadii z wbudowaną mapą, własnymi triggerami oraz konfigurowalną stroną ustawień.
 
-## Pakiety
+## Struktura projektu
 
-| Pakiet | Opis |
-|--------|------|
-| `client` | Skrypt uruchamiany w kliencie Arkadii; zawiera poprawki, triggery i towarzyszące skrypty. |
-| `web-client` | Aplikacja React używana podczas rozwoju oraz jako strona ustawień. |
+| Katalog | Opis |
+|---------|------|
+| `src/client` | Skrypt uruchamiany w kliencie Arkadii; zawiera poprawki, triggery i towarzyszące skrypty. |
+| `src/web` | Aplikacja React używana jako interfejs klienta i strona ustawień. |
+| `src/shared` | Wspólny kod używany zarówno przez klienta jak i interfejs webowy. |
+| `e2e` | Testy end-to-end używające Playwright. |
 | `scripts` | Skrypty pomocnicze do generowania danych dla projektu. |
 
 ## Instalacja
 
-Zainstaluj zależności dla wszystkich przestrzeni roboczych:
+Zainstaluj zależności:
 
 ```bash
 yarn install
@@ -20,33 +22,32 @@ yarn install
 
 ## Rozwój
 
-- Uruchom serwer deweloperski web-clienta:
+Uruchom serwer deweloperski:
 
-  ```bash
-  yarn --cwd web-client dev
-  ```
-
-- Przebuduj skrypt klienta przy zmianie plików:
-
-  ```bash
-  yarn --cwd client watch
-  ```
+```bash
+yarn dev
+```
 
 ## Testy
 
-Uruchom testy jednostkowe dla każdego pakietu:
+Uruchom testy jednostkowe:
 
 ```bash
-yarn --cwd client test
-yarn --cwd web-client test
+yarn test
+```
+
+Uruchom testy end-to-end:
+
+```bash
+yarn test:e2e
 ```
 
 ## Budowanie
 
-Zbuduj aplikację React web-client:
+Zbuduj aplikację:
 
 ```bash
-yarn --cwd web-client build
+yarn build
 ```
 
 ## Licencja

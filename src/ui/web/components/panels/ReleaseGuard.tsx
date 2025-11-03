@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClientEvent } from "../../hooks";
-import eventBus from "../../../../../client/src/eventBus";
+import eventBus from "@modules/core/eventBus";
 
 /**
  * ReleaseGuard component - toggle button for release guard state

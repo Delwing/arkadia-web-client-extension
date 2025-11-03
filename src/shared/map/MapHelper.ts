@@ -1,7 +1,6 @@
-/// <reference path="../../../client/src/types/MapData.d.ts" />
 import { MapReader, PathFinder } from "mudlet-map-renderer";
 import { getLongDir, getShortDir, longToShort } from "./directions";
-import { getItemSync, setItemSync } from "../../../client/src/storage";
+import { getItemSync, setItemSync } from "@modules/core/storage";
 
 const STORAGE_KEY = "mapperRoomId";
 

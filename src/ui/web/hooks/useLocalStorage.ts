@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { getItemSync, setItemSync } from "../../../../client/src/storage";
+import { getItemSync, setItemSync } from "@modules/core/storage";
 
 /**
  * Hook for localStorage with type safety and React state synchronization

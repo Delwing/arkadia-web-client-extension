@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClientEvent } from "../../hooks";
-import { requireClientInstance } from "../../../../shared/runtime";
+import { requireClientInstance } from "@shared/runtime";
 
 interface BreakItemData {
   text: string;

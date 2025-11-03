@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import eventBus, {ClientEvents} from "../../../../client/src/eventBus";
+import eventBus, {ClientEvents} from "@modules/core/eventBus";
 
 /**
  * Hook to subscribe to ArkadiaClient events via eventBus

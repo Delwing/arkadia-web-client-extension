@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useClientEvent } from "../../hooks";
-import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "../../../../../web-client/src/colors";
+import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "@web/colors";
 
 export interface CharStateData {
   hp: number;
@@ -23,6 +23,10 @@ export interface CharStateConfig {
   default?: number;
   flip?: boolean;
   transform?: (value: number, max: number) => { value: number; max: number };
+}
+
+interface CharOptions {
+  form?: number;
 }
 
 const TEXT_LABELS: Record<keyof CharStateData, string> = {
@@ -71,10 +75,6 @@ const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
   panic: { label: TEXT_LABELS.panic, max: 4, default: 0 },
 };
 
-interface CharOptions {
-  form?: number;
-}
-
 /**
  * CharState component - displays character state with multiple modes
  * Modes: 0=text, 1=text bar, 2=compact bar, 3=progress bars
@@ -90,7 +90,7 @@ export const CharState: React.FC = () => {
   const [mode, setMode] = useState(0);
   const [useEmoji, setUseEmoji] = useState(false);
   const [config, setConfig] = useState<Record<keyof CharStateData, CharStateConfig>>(
-    { ...DEFAULT_CONFIG }
+      { ...DEFAULT_CONFIG }
   );
 
   const [textContainer, setTextContainer] = useState<HTMLElement | null>(null);
@@ -138,118 +138,6 @@ export const CharState: React.FC = () => {
     }
   });
 
-  // Filter entries that should be displayed
-  const visibleEntries = (Object.keys(config) as (keyof CharStateData)[]).filter((key) => {
-    if (key === "form" && state[key] === 0 && options.form === 0) {
-      return false;
-    }
-    return (
-      state[key] !== undefined &&
-      (config[key].default === undefined || state[key] !== config[key].default)
-    );
-  });
-
-  // Render progress bars (mode 3)
-  const renderBars = () => {
-    if (!barsContainer) return null;
-
-    return createPortal(
-      <>
-        {visibleEntries.map((key) => {
-          let value = state[key] as number;
-          const { max, label, transform, default: def } = config[key];
-          let maxValue = max;
-          if (transform && typeof value === "number") {
-            ({ value, max: maxValue } = transform(value, maxValue));
-          }
-          value = Math.max(0, Math.min(maxValue, value));
-          const ratio = value / maxValue;
-          const reverse = def === 0 || config[key].flip === true;
-          const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
-          const colorClass = COLOR_BAR_CLASS[colorLevel];
-          const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
-          const highlight = opposite !== null && value === opposite;
-
-          return (
-            <div key={key} className="char-state-bar" title={key}>
-              <span style={{ color: highlight ? "tomato" : undefined }}>{label}:</span>
-              <div className="progress position-relative">
-                <div className={`progress-bar ${colorClass}`} style={{ width: `${Math.floor(ratio * 100)}%` }} />
-                <span className="progress-value" style={{ color: "white" }}>
-                  {value}/{maxValue}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </>,
-      barsContainer
-    );
-  };
-
-  // Render text mode (modes 0, 1, 2)
-  const renderText = () => {
-    if (!textContainer) return null;
-
-    return createPortal(
-      <>
-        {visibleEntries.map((key, idx) => {
-          let value = state[key] as number;
-          const { max, label, transform, default: def } = config[key];
-          let maxValue = max;
-          if (transform && typeof value === "number") {
-            ({ value, max: maxValue } = transform(value, maxValue));
-          }
-          value = Math.max(0, Math.min(maxValue, value));
-          const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
-          const highlight = opposite !== null && value === opposite;
-          const reverse = def === 0 || config[key].flip === true;
-          const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
-          const color = COLOR_TEXT[colorLevel];
-
-          let text: string;
-          if (mode === 1 || mode === 2) {
-            const barMax = mode === 2 ? 10 : maxValue;
-            const filledLen = Math.round((value / maxValue) * barMax);
-            const emptyLen = barMax - filledLen;
-            const bar = "#".repeat(filledLen) + "-".repeat(emptyLen);
-            text = `${label}: [${bar}]`;
-          } else {
-            text = `${label}: [${value}/${maxValue}]`;
-          }
-
-          return (
-            <span key={key} style={{ display: "" }}>
-              {idx > 0 && " "}
-              {highlight ? (
-                <span style={{ color: "tomato" }}>
-                  {mode === 1 || mode === 2 ? (
-                    <>
-                      {label}: <span style={{ color }}>[{mode === 1 ? "#".repeat(Math.round((value / maxValue) * maxValue)) + "-".repeat(maxValue - Math.round((value / maxValue) * maxValue)) : "#".repeat(Math.round((value / maxValue) * 10)) + "-".repeat(10 - Math.round((value / maxValue) * 10))}]</span>
-                    </>
-                  ) : (
-                    <>
-                      {label}: <span style={{ color }}>[{value}/{maxValue}]</span>
-                    </>
-                  )}
-                </span>
-              ) : mode === 1 || mode === 2 ? (
-                <>
-                  {label}: <span style={{ color }}>[{mode === 1 ? "#".repeat(Math.round((value / maxValue) * maxValue)) + "-".repeat(maxValue - Math.round((value / maxValue) * maxValue)) : "#".repeat(Math.round((value / maxValue) * 10)) + "-".repeat(10 - Math.round((value / maxValue) * 10))}]</span>
-                </>
-              ) : (
-                <>
-                  {label}: <span style={{ color }}>[{value}/{maxValue}]</span>
-                </>
-              )}
-            </span>
-          );
-        })}
-      </>,
-      textContainer
-    );
-  };
-
   // Control visibility of text/bars containers based on mode
   useEffect(() => {
     if (textContainer && barsContainer) {
@@ -263,11 +151,116 @@ export const CharState: React.FC = () => {
     }
   }, [mode, textContainer, barsContainer]);
 
-  return (
-    <>
-      {mode === 3 ? renderBars() : renderText()}
-    </>
-  );
+  // Filter entries that should be displayed
+  const visibleEntries = (Object.keys(config) as (keyof CharStateData)[]).filter((key) => {
+    if (key === "form" && state[key] === 0 && options.form === 0) {
+      return false;
+    }
+    return (
+        state[key] !== undefined &&
+        (config[key].default === undefined || state[key] !== config[key].default)
+    );
+  });
+
+  // Calculate normalized stat values and metadata
+  const getStatData = (key: keyof CharStateData) => {
+    let value = state[key] as number;
+    const { max, label, transform, default: def, flip } = config[key];
+    let maxValue = max;
+
+    if (transform && typeof value === "number") {
+      ({ value, max: maxValue } = transform(value, maxValue));
+    }
+
+    value = Math.max(0, Math.min(maxValue, value));
+    const ratio = value / maxValue;
+    const reverse = def === 0 || flip === true;
+    const colorLevel = getColorLevel(value, maxValue, reverse, key === "hp");
+    const opposite = def !== undefined ? (def > 0 ? 0 : maxValue) : null;
+    const highlight = opposite !== null && value === opposite;
+
+    return { value, maxValue, ratio, label, colorLevel, highlight };
+  };
+
+  // Generate bar visualization string
+  const getBarString = (ratio: number, maxValue: number, mode: number) => {
+    if (mode === 1) {
+      const filled = Math.round(ratio * maxValue);
+      return "#".repeat(filled) + "-".repeat(maxValue - filled);
+    } else {
+      const filled = Math.round(ratio * 10);
+      return "#".repeat(filled) + "-".repeat(10 - filled);
+    }
+  };
+
+  // Render progress bars (mode 3)
+  const renderBars = () => {
+    if (!barsContainer) return null;
+
+    return createPortal(
+        <>
+          {visibleEntries.map((key) => {
+            const { value, maxValue, ratio, label, colorLevel, highlight } = getStatData(key);
+            const colorClass = COLOR_BAR_CLASS[colorLevel];
+
+            return (
+                <div key={key} className="char-state-bar" title={key}>
+                  <span style={{ color: highlight ? "tomato" : undefined }}>{label}:</span>
+                  <div className="progress position-relative">
+                    <div
+                        className={`progress-bar ${colorClass}`}
+                        style={{ width: `${Math.floor(ratio * 100)}%` }}
+                    />
+                    <span className="progress-value" style={{ color: "white" }}>
+                  {value}/{maxValue}
+                </span>
+                  </div>
+                </div>
+            );
+          })}
+        </>,
+        barsContainer
+    );
+  };
+
+  // Render text mode (modes 0, 1, 2)
+  const renderText = () => {
+    if (!textContainer) return null;
+
+    return createPortal(
+        <>
+          {visibleEntries.map((key, idx) => {
+            const { value, maxValue, ratio, label, colorLevel, highlight } = getStatData(key);
+            const color = COLOR_TEXT[colorLevel];
+
+            const content =
+                mode === 1 || mode === 2 ? (
+                    <>
+                      {label}:{" "}
+                      <span style={{ color }}>[{getBarString(ratio, maxValue, mode)}]</span>
+                    </>
+                ) : (
+                    <>
+                      {label}:{" "}
+                      <span style={{ color }}>
+                  [{value}/{maxValue}]
+                </span>
+                    </>
+                );
+
+            return (
+                <span key={key}>
+              {idx > 0 && " "}
+                  {highlight ? <span style={{ color: "tomato" }}>{content}</span> : content}
+            </span>
+            );
+          })}
+        </>,
+        textContainer
+    );
+  };
+
+  return <>{mode === 3 ? renderBars() : renderText()}</>;
 };
 
 export default CharState;

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import eventBus from "../../../../client/src/eventBus";
+import eventBus from "@modules/core/eventBus";
 
 /**
  * Hook to send commands to ArkadiaClient via eventBus

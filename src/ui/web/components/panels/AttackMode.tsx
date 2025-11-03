@@ -1,5 +1,5 @@
 import {useCallback, useState} from "react";
-import eventBus from "../../../../../client/src/eventBus";
+import eventBus from "@modules/core/eventBus";
 import {useClientEvent, useLocalStorage} from "../../hooks";
 
 const MODES = ["A", "AW", "AWR"] as const;

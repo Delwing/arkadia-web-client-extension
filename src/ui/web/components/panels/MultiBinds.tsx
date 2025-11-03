@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { useClientEvent } from "../../hooks";
-import eventBus from "@client/src/eventBus";
-import { subscribe as subscribeMultibinds, type StoredMultibindRecord } from "../../../../../web-client/src/dataStores/multibindStore";
-import { getMultibindLabel } from "@client/src/multibindKeys";
-import { getClientInstance } from "@shared/runtime";
+import {useEffect, useState} from "react";
+import {useClientEvent} from "../../hooks";
+import eventBus from "@modules/core/eventBus";
+import {type StoredMultibindRecord, subscribe as subscribeMultibinds} from "@web/dataStores/multibindStore";
+import {getMultibindLabel} from "@client/multibindKeys";
+import {getClientInstance} from "@shared/runtime";
 
 interface DisplayMultibind {
   index: number;
@@ -26,7 +26,7 @@ export const MultiBinds: React.FC = () => {
 
   // Subscribe to store for initial state and updates
   useEffect(() => {
-    const unsubscribe = subscribeMultibinds((stored: StoredMultibindRecord[]) => {
+    return subscribeMultibinds((stored: StoredMultibindRecord[]) => {
       const client = getClientInstance();
       const currentRoomId = client?.Map?.currentRoom?.id;
 
@@ -37,18 +37,16 @@ export const MultiBinds: React.FC = () => {
 
       // Filter and convert to display format
       const display = stored
-        .filter(record => record.roomId === currentRoomId)
-        .map(({ index, action }) => ({
-          index,
-          action,
-          label: getMultibindLabel(index),
-        }))
-        .sort((a, b) => a.index - b.index);
+          .filter(record => record.roomId === currentRoomId)
+          .map(({index, action}) => ({
+            index,
+            action,
+            label: getMultibindLabel(index),
+          }))
+          .sort((a, b) => a.index - b.index);
 
       setBinds(display);
     });
-
-    return unsubscribe;
   }, []);
 
   // Also listen to client event for room changes

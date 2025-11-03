@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
-import type { UiSettings } from "front-client/src/uiSettings";
+import type { UiSettings } from "@web/uiSettings";
 
 /**
  * CombatTimer component - displays combat timer

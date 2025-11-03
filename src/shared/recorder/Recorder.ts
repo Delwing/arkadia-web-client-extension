@@ -29,7 +29,6 @@ export default class Recorder<CommandOptions = unknown> {
     private pendingInitialLocationId: number | null = null;
     private playbackTimeout: number | null = null;
     private playbackIndex = 0;
-    private playbackDelay = 0;
     private playbackBaseDelay = 0;
     private playbackStart = 0;
     private pausedDelay = 0;
@@ -101,7 +100,6 @@ export default class Recorder<CommandOptions = unknown> {
         this.isPlaying = false;
         this.paused = false;
         this.playbackIndex = 0;
-        this.playbackDelay = 0;
         this.playbackBaseDelay = 0;
         this.pausedDelay = 0;
         this.hooks.emit('playback.stop');
@@ -324,7 +322,6 @@ export default class Recorder<CommandOptions = unknown> {
         }
         const adjustedDelay = baseDelay / this.playbackSpeed;
         this.playbackBaseDelay = baseDelay;
-        this.playbackDelay = adjustedDelay;
         this.playbackStart = Date.now();
         this.playbackTimeout = window.setTimeout(() => {
             if (!this.isPlaying || this.paused) return;

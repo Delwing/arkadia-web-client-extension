@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
-import type { UiSettings } from "../../../../../web-client/src/uiSettings";
-import type { TransportTimerPayload } from "../../../../../client/src/types/transport";
+import type { UiSettings } from "@web/uiSettings";
+import {TransportTimerPayload} from "@client/types/transport.ts";
 
 /**
  * TransportTimer component - displays transport timer with label

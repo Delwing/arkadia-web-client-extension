@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    /* Common Language Options */
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+
+    /* Linting */
+    "strict": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    /* Path Mappings - to be overridden in child configs */
+    "baseUrl": "./",
+    "paths": {
+      "@client/*": ["./src/client/*"],
+      "@web/*": ["./src/web/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@web-ui/*": ["./src/ui/web/*"]
+    }
+  }
+}
