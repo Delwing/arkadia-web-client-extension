@@ -7,6 +7,12 @@ import type { ClientEvents } from "@shared/events";
 import {CommandOptions, normalizeCommand} from "@client/src/scripts/commandPreserveCaseMode.ts";
 import PingTracker from "./PingTracker.ts";
 import { getClientInstance } from "@shared/runtime";
+import {
+    createGmcpStream,
+    createTelnetOptionParser,
+    encodeGmcp,
+    stripTelnetSequences,
+} from "@shared/socket";
 
 type Params<T> = [T] extends [void]
     ? []
@@ -17,8 +23,6 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
-const GMCP_COMMAND_CODE = 201;
-const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
 
@@ -27,6 +31,7 @@ class ArkadiaClient implements ClientAdapter {
     private receivedFirstGmcp: boolean = false;
     private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
+    private readonly gmcpStream: (data: string) => void;
     private readonly telnetOptionHandler: (optionData: string) => string;
     private recorder: Recorder;
     private autoRecorder: Recorder | null = null;
@@ -35,7 +40,25 @@ class ArkadiaClient implements ClientAdapter {
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
-        this.telnetOptionHandler = this.parseTelnetOption.bind(this);
+        this.gmcpStream = createGmcpStream({
+            onEnvelope: ({ path, value }) => {
+                if (path === "char.info") {
+                    this.receivedFirstGmcp = true;
+                }
+                this.emit(`gmcp.${path}`, value);
+                this.emit('gmcp', { path, value });
+            },
+            onMessage: (text, type) => {
+                this.messageBuffer.push({ text, type });
+            },
+            onFirstCharInfo: () => {
+                if (!this.receivedFirstGmcp) {
+                    this.receivedFirstGmcp = true;
+                    this.maybeStartAutoRecording();
+                }
+            },
+        });
+        this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.recorder = this.createRecorder(false);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -162,8 +185,7 @@ class ArkadiaClient implements ClientAdapter {
             return;
         }
         try {
-            const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-            const gmcpMessage = `\xFF\xFA${String.fromCharCode(GMCP_COMMAND_CODE)}${path} ${data}\xFF\xF0`;
+            const gmcpMessage = encodeGmcp(path, payload);
             this.socket.send(btoa(gmcpMessage));
         } catch (error) {
             console.error('Error sending GMCP message:', error);
@@ -199,68 +221,12 @@ class ArkadiaClient implements ClientAdapter {
      * Process incoming WebSocket data by removing telnet options
      */
     private processIncomingData(data: string, options?: { timestamp?: number }) {
-        const leftOver = data.replace(TELNET_OPTION_REGEX, this.telnetOptionHandler)
-        const sanitized = leftOver.replace(/[ÿù]/g, "");
+        const sanitized = stripTelnetSequences(data, this.telnetOptionHandler);
         if (sanitized.length > 0) {
             const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
             this.emit('message', sanitized, undefined, timestamp)
         }
         this.flushMessageBuffer()
-    }
-
-    /**
-     * Parse telnet option from incoming data
-     */
-    private parseTelnetOption(optionData: string): string {
-        if (optionData.length === 3) {
-            //Nothing to do at the moment
-        } else {
-            this.parseTelnetSubnegotiation(optionData.substring(2, optionData.length - 2));
-        }
-        return "";
-    }
-
-    /**
-     * Parse telnet subnegotiation, specifically GMCP (Generic MUD Communication Protocol)
-     */
-    private parseTelnetSubnegotiation(data: string): void {
-        if (data.length === 0) return;
-
-        const firstChar = data.charCodeAt(0);
-
-        if (firstChar === GMCP_COMMAND_CODE) {
-            const gmcpData = data.substring(1);
-            if (!gmcpData.length) return;
-
-            const spaceIndex = gmcpData.indexOf(" ");
-            if (spaceIndex === -1) return;
-
-            const type = gmcpData.substring(0, spaceIndex).toLowerCase();
-            let payload = gmcpData.substring(spaceIndex + 1);
-
-            // Handle special case for gmcp_msgs
-            if (type === "gmcp_msgs") {
-                payload = payload.replace(//g, "\\u001B");
-            }
-
-            try {
-                const gmcp = JSON.parse(payload);
-                const isFirstGmcpEvent = type === "char.info" && !this.receivedFirstGmcp;
-                this.receivedFirstGmcp = this.receivedFirstGmcp || type === "char.info";
-                if (isFirstGmcpEvent) {
-                    this.maybeStartAutoRecording();
-                }
-                if (type === "gmcp_msgs") {
-                    let text = atob(gmcp.text)
-                    this.messageBuffer.push({text, type: gmcp.type})
-                } else {
-                    this.emit(`gmcp.${type}`, gmcp);
-                    this.emit('gmcp', {path: type, value: gmcp});
-                }
-            } catch (error) {
-                console.error('Error parsing GMCP JSON:', error);
-            }
-        }
     }
 
     flushMessageBuffer() {

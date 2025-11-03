@@ -29,10 +29,10 @@ This document tracks the most significant coupling points between the legacy `cl
 - **Action**: Keep platform-specific adapters thin while continuing to pipe map data through the shared helpers. Tests should run against the shared implementations.
 
 ## 5. Socket & GMCP Plumbing
-- **Shared behavior**: `web-client/src/ArkadiaClient.ts` WebSocket setup, recorder hooks, push/pull of GMCP messages, command emission outbound.
+- **Shared behavior**: `src/shared/socket/gmcp.ts` handles telnet stripping, GMCP framing, and first-event tracking; `web-client/src/ArkadiaClient.ts` wires it into the browser WebSocket alongside recorder hooks and command emission.
 - **Problem**: Extension background scripts also own socket logic; `web-client` reimplemented subsets. Code drift leads to subtle GMCP differences.
 - **Impact**: High — network protocol mismatches break command/GMCP flows.
-- **Action**: Design `src/shared/socket/` to host handshakes, telnet/GMCP parsing, and recorder hookups. Consumers inject platform-specific transport (browser WebSocket vs extension port).
+- **Action**: Keep GMCP/telnet helpers in `src/shared/socket/`, with platform adapters (browser WebSocket vs extension port) responsible for connection lifecycle.
 
 ## 6. Client Registry & Global Access
 - **Shared state**: `clientRegistry` ensures both environments access the active `Client` instance via `globalThis.clientExtension`.
