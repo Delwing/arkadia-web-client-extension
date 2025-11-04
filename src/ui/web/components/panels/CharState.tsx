@@ -110,7 +110,7 @@ export const CharState: React.FC = () => {
       newConfig[key] = { ...newConfig[key], label: labels[key] };
     });
     setConfig(newConfig);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional read-then-update pattern
   }, [useEmoji]);
 
   useClientEvent<Partial<CharStateData>>("gmcp.char.state", (newState) => {

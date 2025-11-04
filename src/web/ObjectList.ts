@@ -71,7 +71,7 @@ export default class ObjectList {
         const saved = savedData?.objectsListPosition;
         if (saved) {
             try {
-                // eslint-disable-next-line prefer-const
+                // eslint-disable-next-line prefer-const -- left and top are conditionally reassigned below
                 let { left, top, right, x, y } = saved as any;
                 if (left === undefined && (right !== undefined || x !== undefined)) {
                     const oldRight = right ?? x ?? 0;

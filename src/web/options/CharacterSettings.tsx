@@ -18,13 +18,13 @@ function CharacterSettings() {
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
-    function changeTab(next: Tab) {
+    const changeTab = useCallback((next: Tab) => {
         const current = scrollRefs[tab].current;
         if (current) {
             scrollPos.current[tab] = current.scrollTop;
         }
         setTab(next);
-    }
+    }, [tab]);
 
     useEffect(() => {
         const showGeneral = () => changeTab("general");
@@ -35,8 +35,7 @@ function CharacterSettings() {
             window.removeEventListener("show-general-settings", showGeneral);
             window.removeEventListener("show-guild-settings", showGuild);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tab]);
+    }, [changeTab]);
 
     useEffect(() => {
         const update = () => {
@@ -84,7 +83,7 @@ function CharacterSettings() {
         if (current) {
             current.scrollTop = scrollPos.current[tab];
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollRefs and scrollPos are refs, don't need deps
     }, [tab]);
 
     return (
