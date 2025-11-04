@@ -56,3 +56,5 @@ if (typeof globalThis.pako === 'undefined') {
     ungzip: (input) => input,
   };
 }
+
+jest.mock('mudlet-map-renderer', () => require('./__mocks__/mudlet-map-renderer.js'));
