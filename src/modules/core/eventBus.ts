@@ -102,7 +102,7 @@ class EventBus<Events extends Record<PropertyKey, any>> {
         for (const entry of [...bucket]) {
             try {
                 (entry.handler as Handler<Events[K]>)(...args);
-            } catch (err) {
+            } catch (_err) {
                 // Swallow by default; if you want, you could re-emit an 'error' event here.
                 // this.emit('error' as unknown as K, err as any);
             }

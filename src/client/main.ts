@@ -102,7 +102,7 @@ export function registerScripts(client: Client) {
     initZaznaczaj(client, aliases)
 
     blockers.forEach(blocker => {
-        let blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
+        const blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
         client.Triggers.registerTrigger(blockerPattern, (): undefined => {
             client.Map.moveBack()
         }, 'blocker')

@@ -299,7 +299,7 @@ import storage from "@modules/core/storage";
 async function load(): Promise<UiSettings> {
     try {
         const uiData = await storage.getItem('uiSettings');
-        let raw = uiData?.uiSettings;
+        const raw = uiData?.uiSettings;
         let parsed: any = {};
         if (raw) {
             parsed = raw as any;
@@ -521,7 +521,6 @@ export default async function initUiSettings() {
         if (fontGuessTimeout !== undefined) {
             clearTimeout(fontGuessTimeout);
         }
-        // @ts-ignore
         fontGuessTimeout = setTimeout(() => {
             fontGuessTimeout = undefined;
             void triggerFontFamilyGuess();

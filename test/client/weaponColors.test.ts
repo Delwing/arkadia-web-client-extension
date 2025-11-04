@@ -60,7 +60,7 @@ describe('weapon colors trigger', () => {
     const line = 'Trzymasz stalowy miecz w lewej rece oraz drewniana tarcze w prawej rece.';
     const magicColoredWeapon = color(MAGICS_COLOR) + 'stalowy miecz' + RESET;
     const precolored = line.replace('stalowy miecz', magicColoredWeapon);
-    let expectedLine = colorStringInLine(precolored, 'drewniana tarcze', WEAPON_COLOR);
+    const expectedLine = colorStringInLine(precolored, 'drewniana tarcze', WEAPON_COLOR);
     const expected = expectedLine.toAnsiString();
     const result = parse(precolored);
     expect(stripAnsiCodes(result)).toBe(stripAnsiCodes(expected));

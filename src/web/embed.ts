@@ -75,7 +75,6 @@ export class EmbeddedMap {
     private highlights: number[] = []
     private zoom: number;
     private explorationMode = false;
-    private highlightCurrentRoom = true;
     private visited = new Set<number>();
     private totalRooms: number;
 
@@ -195,7 +194,7 @@ export class EmbeddedMap {
     }
 
     private onZoom() {
-        let shouldSave = this.renderer.getZoom() !== this.zoom;
+        const shouldSave = this.renderer.getZoom() !== this.zoom;
         this.zoom = this.renderer.getZoom();
         if (shouldSave) {
             this.saveZoom();
@@ -288,7 +287,6 @@ export class EmbeddedMap {
     }
 
     setHighlightCurrentRoom(on: boolean) {
-        this.highlightCurrentRoom = on;
         Settings.highlightCurrentRoom = on;
         this.renderer.setPosition(this.currentRoom);
 

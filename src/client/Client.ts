@@ -569,7 +569,6 @@ export default class Client {
         if (typeof printable === 'object') {
             printable = JSON.stringify(printable)
         }
-        // @ts-ignore
         const text = parseAnsiPatterns(printable)
         this.buffer.push({out: text})
         if (!this.inLineProcess) {
@@ -584,7 +583,7 @@ export default class Client {
     }
 
     createButton(name: string, callback: () => void) {
-        let button = document.createElement('input')
+        const button = document.createElement('input')
         button.value = name
         button.type = 'button'
         button.className = 'panel_button button k-button'

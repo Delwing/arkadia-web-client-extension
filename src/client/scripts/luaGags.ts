@@ -201,7 +201,7 @@ export default function registerLuaGagTriggers(client: Client) {
         if (!node.multiline) {
             triggers.push(registerTrigger(container, triggerPatterns, callback, node, parent))
         } else {
-            let prev = container;
+            const prev = container;
             triggerPatterns.forEach(pattern => {
                 registerTrigger(prev, [pattern], callback, node, parent)
             })
@@ -253,7 +253,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 gags.gag_prefix(null, prefix, "moje_spece")
             },
             gag_spec: (_, prefix: string, power: string, maxPower: string, type: string) => {
-                let ownPrefix = prefix == "" ? "" : prefix + " "
+                const ownPrefix = prefix == "" ? "" : prefix + " "
                 gags.gag_prefix(null, `${ownPrefix}${power}/${maxPower}`, type)
             },
             attacker_target: (_, value: string) => {
@@ -390,7 +390,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 selection = [0, global.line.length]
             },
             selectString: (string: string, index: number) => {
-                let startIndex = global.line.indexOf(string, index - 1)
+                const startIndex = global.line.indexOf(string, index - 1)
                 selection = [startIndex, startIndex + string.length]
             },
             raiseEvent(event: string, ...args: any[]) {
@@ -437,9 +437,9 @@ export default function registerLuaGagTriggers(client: Client) {
     }
 
     function createMatches(matches: RegExpMatchArray) {
-        let namedGroups = matches.groups ? Object.entries(matches.groups).filter(([_, value]) => value !== undefined).map(([key, value]) => `["${key}"] = "${value}"`) : []
-        let indexedGroups = matches.filter((value) => value !== undefined).map((value, index) => `[${index + 1}] = "${value}"`)
-        let groups = [...namedGroups, ...indexedGroups]
+        const namedGroups = matches.groups ? Object.entries(matches.groups).filter(([_, value]) => value !== undefined).map(([key, value]) => `["${key}"] = "${value}"`) : []
+        const indexedGroups = matches.filter((value) => value !== undefined).map((value, index) => `[${index + 1}] = "${value}"`)
+        const groups = [...namedGroups, ...indexedGroups]
         return `matches = {${groups.join(",")}}`
     }
 
@@ -449,11 +449,11 @@ export default function registerLuaGagTriggers(client: Client) {
         client.sendEvent("sound:play", { key: "beep" })
     })
 
-    let {global, luaEnv} = createLuaEnv();
-    // @ts-ignore
+    const {global, luaEnv} = createLuaEnv();
+    // @ts-expect-error - import.meta.glob type
     const luaFiles = import.meta.glob("../lua/**/*.lua", {query: "?raw", eager: true});
     Object.values(luaFiles).forEach((file) => {
-        // @ts-ignore
+        // @ts-expect-error - file.default type
         luaEnv.parse(file.default).exec()
     });
 }

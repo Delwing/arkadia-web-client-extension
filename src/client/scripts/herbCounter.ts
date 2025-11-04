@@ -525,6 +525,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: () => {
                 let unsubscribe: (() => void) | undefined;
+                // eslint-disable-next-line prefer-const
                 unsubscribe = client.on('storage', async ({ key, value }) => {
                     if (key === STORAGE_KEY) {
                         const bags = normalizeHerbBagsState(value);

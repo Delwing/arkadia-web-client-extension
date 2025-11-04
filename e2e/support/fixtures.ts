@@ -18,6 +18,7 @@ const test = base.extend({
         await mockPeopleDownload(context);
         await mockKnowledgeDownload(context);
         await installMockWebSocket(context);
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         await use(context);
     },
 });

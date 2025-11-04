@@ -100,7 +100,6 @@ function initLogBrowser(): boolean {
   let searchResultsData: SearchResultData[] = [];
   let searchSessionsData: SearchSessionData[] = [];
   let activeResultIndex = -1;
-  let activeSession: SearchSessionData | null = null;
   let activeHighlight: HTMLElement[] = [];
   let highlightTimeout: number | null = null;
   let currentSessionName: string | null = null;
@@ -302,7 +301,6 @@ function initLogBrowser(): boolean {
     searchResultsData = [];
     searchSessionsData = [];
     activeResultIndex = -1;
-    activeSession = null;
     clearHighlight();
     updateNavigationButtons();
   }
@@ -316,7 +314,6 @@ function initLogBrowser(): boolean {
     searchResultsData = [];
     searchSessionsData = [];
     activeResultIndex = -1;
-    activeSession = null;
     clearHighlight();
     const info = document.createElement("div");
     info.classList.add("logs-search-empty");
@@ -353,7 +350,6 @@ function initLogBrowser(): boolean {
   }
 
   function setActiveSession(session: SearchSessionData | null) {
-    activeSession = session;
     for (const entry of searchSessionsData) {
       if (entry === session) {
         entry.container.classList.add("logs-search-session-active");
@@ -444,7 +440,6 @@ function initLogBrowser(): boolean {
     searchResultsData = [];
     searchSessionsData = [];
     activeResultIndex = -1;
-    activeSession = null;
     const sessionsByName = new Map<string, SearchSessionData>();
     matches.forEach(item => {
       let session = sessionsByName.get(item.sessionName);

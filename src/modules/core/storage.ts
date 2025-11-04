@@ -147,7 +147,7 @@ class LocalStorage implements Storage {
             try {
                 const parsed = JSON.parse(value)
                 return Promise.resolve({[key]: parsed})
-            } catch (e) {
+            } catch (_e) {
                 return Promise.resolve({[key]: value})
             }
         }

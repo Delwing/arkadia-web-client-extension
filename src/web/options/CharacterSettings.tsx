@@ -35,6 +35,7 @@ function CharacterSettings() {
             window.removeEventListener("show-general-settings", showGeneral);
             window.removeEventListener("show-guild-settings", showGuild);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab]);
 
     useEffect(() => {
@@ -83,6 +84,7 @@ function CharacterSettings() {
         if (current) {
             current.scrollTop = scrollPos.current[tab];
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab]);
 
     return (

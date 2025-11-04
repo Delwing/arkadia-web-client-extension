@@ -55,7 +55,7 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     }
 
     function gagOwnRegularHits(rawLine: string, matches: RegExpMatchArray | { index: number }, power: string, triggerLine?: TriggerLine) {
-        let ignoreList = [
+        const ignoreList = [
             "opalizujacego runicznego",
             "czarnoblekitnego pulsujacego morgensterna",
             "czarnego smuklego topora",
@@ -87,7 +87,7 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     }
 
     function gagOtherRegularHits(rawLine: string, matches: RegExpMatchArray, type: string, triggerLine?: TriggerLine) {
-        let damage = matches.groups.damage
+        const damage = matches.groups.damage
         let value = 0
         switch (damage) {
             case "ledwo muska":

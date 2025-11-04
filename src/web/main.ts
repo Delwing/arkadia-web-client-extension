@@ -324,8 +324,8 @@ function updateProgress(p: number, loaded?: number, total?: number) {
 }
 
 // Load map data and colors asynchronously
-let mapDataPromise = loadMapData(updateProgress);
-let colorsPromise = loadColors();
+const mapDataPromise = loadMapData(updateProgress);
+const colorsPromise = loadColors();
 
 // When both are loaded, dispatch events
 Promise.all([mapDataPromise, colorsPromise])
@@ -1126,8 +1126,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let common = candidates[0];
         for (let i = 1; i < candidates.length; i++) {
-            let current = candidates[i];
-            let limit = Math.min(common.length, current.length);
+            const current = candidates[i];
+            const limit = Math.min(common.length, current.length);
             let shared = '';
             for (let j = 0; j < limit; j++) {
                 if (common[j].toLowerCase() !== current[j].toLowerCase()) {
@@ -1575,5 +1575,4 @@ window.addEventListener('resize', () => {
     }
 });
 
-// @ts-ignore
 window.client = arkadiaClient

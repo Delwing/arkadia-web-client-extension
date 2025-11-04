@@ -394,7 +394,7 @@ export default class PackageHelper {
                 return undefined
             }
             return path.length - 1
-        } catch (e) {
+        } catch (_e) {
             return undefined
         }
     }
