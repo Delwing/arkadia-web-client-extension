@@ -9,7 +9,8 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
 
     function run(container: string) {
         const found: string[] = [];
-        const trigger = client.Triggers.registerTrigger(/^.*$/, (_raw, line) => {
+        const trigger = client.Triggers.registerTrigger(/^.*$/, (triggerLine) => {
+            const line = triggerLine.text;
             regexps.forEach((re, idx) => {
                 if (re.test(line)) {
                     const item = patterns[idx];
@@ -26,9 +27,9 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
                 } else {
                     client.FunctionalBind.set(null);
                 }
-                return undefined;
+                return triggerLine;
             }
-            return undefined;
+            return triggerLine;
         }, tag);
         client.sendCommand('i');
     }

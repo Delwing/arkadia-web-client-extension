@@ -64,10 +64,11 @@ export default function initGps(client: Client) {
                         { stayOpenLines: delta }
                     );
                     if (lines.length > 1) {
-                        parent.registerChild((_, line) => {
+                        parent.registerChild(/.*/, (triggerLine) => {
                             if (!checkContext()) {
-                                return undefined;
+                                return triggerLine;
                             }
+                            const line = triggerLine.text;
                             if (line === lines[current]) {
                                 current++;
                                 if (current === lines.length) {
@@ -77,9 +78,9 @@ export default function initGps(client: Client) {
                                     }
                                     current = 1;
                                 }
-                                return [line];
+                                return triggerLine;
                             }
-                            return undefined;
+                            return triggerLine;
                         });
                     }
                 });

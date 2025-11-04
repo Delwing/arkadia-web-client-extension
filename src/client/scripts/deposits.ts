@@ -81,29 +81,34 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         persist();
     }
 
-    const matchContents = (_raw: string, line: string) => {
+    const matchContents = (triggerLine: any) => {
+        const line = triggerLine.text;
         const match = stripAnsiCodes(line).match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
         if (match) {
             match.groups = Object.assign({ container: 'depozyt' }, match.groups);
         }
         return match;
     };
-    const matchEmpty = (_raw: string, line: string) => {
+    const matchEmpty = (triggerLine: any) => {
+        const line = triggerLine.text;
         return stripAnsiCodes(line).match(/^Twoj depozyt jest pusty\./);
     };
-    const matchNone = (_raw: string, line: string) => {
+    const matchNone = (triggerLine: any) => {
+        const line = triggerLine.text;
         return stripAnsiCodes(line).match(/^Nie posiadasz wykupionego depozytu\./);
     };
 
-    client.Triggers.registerTrigger(matchContents, (_r, _l, m) => {
+    client.Triggers.registerTrigger(matchContents, (triggerLine) => {
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         const text = (m.groups?.content || m[1]).replace(/\.$/, "");
         const items = parseItems(text);
         update(items);
         client.print(prettyPrintContainer(m as RegExpMatchArray, columns, 'DEPOZYT', 5, width));
-        return undefined;
+        return triggerLine;
     });
-    client.Triggers.registerTrigger(matchEmpty, () => { update([] as ContainerItem[]); return undefined; });
-    client.Triggers.registerTrigger(matchNone, () => { update(null); return undefined; });
+    client.Triggers.registerTrigger(matchEmpty, (triggerLine) => { update([] as ContainerItem[]); return triggerLine; });
+    client.Triggers.registerTrigger(matchNone, (triggerLine) => { update(null); return triggerLine; });
 
     function printDeposits() {
         const lines: string[] = [];

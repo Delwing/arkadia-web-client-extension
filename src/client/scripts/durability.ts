@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
+import TriggerLine from "../triggers/TriggerLine";
 
 export type DurabilityEntry = {
     patterns: string[];
@@ -46,9 +47,12 @@ export default function initDurability(client: Client) {
     ];
     const tag = "durability";
     patterns.forEach((pattern) => {
-        client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
+        client.Triggers.registerTrigger(pattern, (triggerLine) => {
+            const m = triggerLine.matches.matches;
+            if (!m) return triggerLine;
+            const raw = triggerLine.toAnsiString();
             const phrase = m[1];
-            return processDurability(raw, phrase);
+            return new TriggerLine(processDurability(raw, phrase));
         }, tag);
     });
 }

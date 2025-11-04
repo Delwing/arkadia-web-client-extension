@@ -1,6 +1,7 @@
 import Triggers, {stripAnsiCodes, Trigger} from "../Triggers";
 import gagsData from "./gags_lua.json";
 import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
+import TriggerLine from "../triggers/TriggerLine";
 
 import * as luainjs from 'lua-in-js'
 import {gmcp} from "../gmcp";
@@ -8,7 +9,6 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
-import TriggerLine from "../triggers/TriggerLine";
 import { getItemSync } from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -50,22 +50,18 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
 }
 
 function isCombatMsg(
-    _rawLine: string,
-    _line: string,
-    _matches: any,
-    type: string
+    triggerLine: TriggerLine
 ): RegExpMatchArray | undefined {
+    const type = triggerLine.matches.type || "";
     return combatTypes.indexOf(type) > -1 ? new EmptyMatches() : undefined;
 }
 
 function gagsIsType(
     checkedType: string,
-    _rawLine: string,
-    _line: string,
-    _matches: any,
-    type: string
+    triggerLine: TriggerLine
 ): RegExpMatchArray | undefined {
-    return checkedType.match(type)
+    const type = triggerLine.matches.type || "";
+    return checkedType.match(type);
 }
 
 type PatternObj = { pattern: string; type?: number | null };
@@ -80,21 +76,12 @@ type GagNode = {
 };
 
 
-type LuaGagCallback = (
-    rawLine: string,
-    line: string,
-    matches: RegExpMatchArray,
-    type: string,
-    triggerLine?: TriggerLine,
-) => string | TriggerLine;
+type TriggerMatchFunction = (triggerLine: TriggerLine) => RegExpMatchArray | undefined;
+type LuaGagCallback = (triggerLine: TriggerLine) => TriggerLine;
 
 function registerTrigger(
     container: Triggers | Trigger,
-    triggerPatterns: (
-        | RegExp
-        | ((raw: string, line: string, matches: any, type: string) => RegExpMatchArray)
-        | string
-    )[],
+    triggerPatterns: (RegExp | TriggerMatchFunction | string)[],
     callback: LuaGagCallback,
     node: GagNode,
     parent: Triggers | Trigger,
@@ -143,13 +130,13 @@ export default function registerLuaGagTriggers(client: Client) {
         if (p.type === 4) {
             const code = p.pattern.trim();
             if (code === "return is_combat_msg()") {
-                return (raw: string, line: string, matches: any, type: string) =>
-                    isCombatMsg(raw, line, matches, type);
+                return (triggerLine: TriggerLine) =>
+                    isCombatMsg(triggerLine);
             }
             const m = code.match(/^return scripts\.gags:is_type\("(.+)"\)$/);
             if (m) {
-                return (raw: string, line: string, matches: any, type: string) =>
-                    gagsIsType(m[1], raw, line, matches, type);
+                return (triggerLine: TriggerLine) =>
+                    gagsIsType(m[1], triggerLine);
             }
             return () => undefined;
         }
@@ -163,37 +150,44 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback: LuaGagCallback = (rawLine, line, matches, _type, triggerLine) => {
+        const callback: LuaGagCallback = (triggerLine) => {
             if (node.script != undefined) {
-                global.line = triggerLine ? triggerLine.toAnsiString() : rawLine
-                global.matches = matches
-                luaEnv.parse(`line = "${rawLine}"`).exec()
-                luaEnv.parse(createMatches(matches)).exec()
+                const rawLine = triggerLine.toAnsiString();
+                const matches = triggerLine.matches.matches as RegExpMatchArray | undefined;
+
+                global.line = rawLine;
+                global.matches = matches;
+
+                // Set Lua variables with proper escaping
+                luaEnv.parse(`line = "${escapeLuaString(rawLine)}"`).exec();
+                if (matches) {
+                    luaEnv.parse(createMatchesLuaCode(matches)).exec();
+                } else {
+                    luaEnv.parse("matches = {}").exec();
+                }
+
                 try {
-                    luaEnv.parse(node.script).exec()
+                    luaEnv.parse(node.script).exec();
                 } catch (e) {
-                    const warn = `Zgłoś błąd w powyższej linii (kliknij w komunikat aby skopiować): ${e.message}`
+                    const warn = `Zgłoś błąd w powyższej linii (kliknij w komunikat aby skopiować): ${e.message}`;
                     const clickable = client.OutputHandler.makeClickable(
                         warn,
                         warn,
-                        () => navigator.clipboard.writeText(line),
+                        () => navigator.clipboard.writeText(triggerLine.text),
                         'Kopiuj linie'
-                    )
-                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR)
-
-                }
-                rawLine = global.line
-                if (triggerLine) {
-                    const updatedLine = new TriggerLine(
-                        rawLine,
-                        triggerLine.matches,
-                        triggerLine.isMutable(),
                     );
-                    updatedLine.setOverrideAnsi(rawLine);
-                    return updatedLine;
+                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR);
                 }
+
+                const updatedLine = new TriggerLine(
+                    global.line,
+                    triggerLine.matches,
+                    triggerLine.isMutable(),
+                );
+                updatedLine.setOverrideAnsi(global.line);
+                return updatedLine;
             }
-            return triggerLine ?? rawLine;
+            return triggerLine;
         }
 
         const triggers: Trigger[] = []
@@ -436,11 +430,35 @@ export default function registerLuaGagTriggers(client: Client) {
         return {global, luaEnv};
     }
 
-    function createMatches(matches: RegExpMatchArray) {
-        const namedGroups = matches.groups ? Object.entries(matches.groups).filter(([_, value]) => value !== undefined).map(([key, value]) => `["${key}"] = "${value}"`) : []
-        const indexedGroups = matches.filter((value) => value !== undefined).map((value, index) => `[${index + 1}] = "${value}"`)
-        const groups = [...namedGroups, ...indexedGroups]
-        return `matches = {${groups.join(",")}}`
+    function escapeLuaString(str: string): string {
+        return str
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+    }
+
+    function createMatchesLuaCode(matches: RegExpMatchArray): string {
+        const entries: string[] = [];
+
+        // Add indexed groups (1-based for Lua)
+        matches.forEach((value, index) => {
+            if (value !== undefined) {
+                entries.push(`[${index + 1}] = "${escapeLuaString(value)}"`);
+            }
+        });
+
+        // Add named groups
+        if (matches.groups) {
+            Object.entries(matches.groups).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    entries.push(`["${key}"] = "${escapeLuaString(value)}"`);
+                }
+            });
+        }
+
+        return `matches = {${entries.join(", ")}}`;
     }
 
 
@@ -450,10 +468,8 @@ export default function registerLuaGagTriggers(client: Client) {
     })
 
     const {global, luaEnv} = createLuaEnv();
-    // @ts-expect-error - import.meta.glob type
     const luaFiles = import.meta.glob("../lua/**/*.lua", {query: "?raw", eager: true});
-    Object.values(luaFiles).forEach((file) => {
-        // @ts-expect-error - file.default type
+    Object.values(luaFiles).forEach((file: any) => {
         luaEnv.parse(file.default).exec()
     });
 }

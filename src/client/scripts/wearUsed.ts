@@ -56,8 +56,13 @@ export default function initWearUsed(client: Client) {
         /^Ubranie to.* wyglada na (.*)$/,
         /^Ten element ekwipunku wyglada na (.*)$/
     ];
-    client.Triggers.registerTrigger(patterns, (raw, _line, m) => {
+    client.Triggers.registerTrigger(patterns, (triggerLine) => {
+        const m = triggerLine.matches.matches;
+        if (!m || !m[1]) return triggerLine;
         const desc = m[1];
-        return processWearUsed(raw, desc);
+        const raw = triggerLine.toAnsiString();
+        const result = processWearUsed(raw, desc);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, "wear-used");
 }

@@ -1,6 +1,5 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
-import { SKIP_LINE } from "../ControlConstants";
 import { EFFECTIVENESS } from "./evaluationConstants";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
@@ -11,20 +10,22 @@ export default function initParryShieldEvaluation(client: Client) {
 
   client.Triggers.registerTrigger(
     regex,
-    (_r, _l, m) => {
+    (triggerLine) => {
       if (client.suppressItemEvaluation) {
-        return SKIP_LINE;
+        return null;
       }
+      const m = triggerLine.matches.matches;
+      if (!m) return triggerLine;
       const parryText = m[1].trim();
       const key = Object.keys(EFFECTIVENESS).find((k) =>
         parryText.toLowerCase().startsWith(k),
       );
-      if (!key) return SKIP_LINE;
+      if (!key) return null;
       const parry = EFFECTIVENESS[key];
       const pad = 15;
       const line = `${colorString("Typ zbroi", LABEL_COLOR)}: ${"puklerz".padEnd(pad, " ")}${colorString("Parowanie", LABEL_COLOR)}: ${parry.label}`;
       client.print(line);
-      return SKIP_LINE;
+      return null;
     },
     tag,
   );

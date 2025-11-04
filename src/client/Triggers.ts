@@ -3,19 +3,11 @@ import TriggerLine from "./triggers/TriggerLine";
 export { stripAnsiCodes } from "./stripAnsiCodes";
 
 type TriggerCallback = (
-    rawLine: string,
-    line: string,
-    matches: RegExpMatchArray,
-    type: string,
-    triggerLine?: TriggerLine,
-) => string | TriggerLine | undefined;
+    triggerLine: TriggerLine,
+) => TriggerLine | null;
 
 type TriggerMatchFunction = (
-    rawLine: string,
-    line: string,
-    _matches: RegExpMatchArray | undefined,
-    type: string,
-    triggerLine?: TriggerLine,
+    triggerLine: TriggerLine,
 ) => RegExpMatchArray | undefined;
 
 type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
@@ -29,8 +21,8 @@ export interface TriggerOptions {
 export function isType(type: string): TriggerMatchFunction {
     const matches = [] as unknown as RegExpMatchArray;
     matches.index = 0
-    return (_raw, _line, _matches, _type) => {
-        return _type === type ? matches : undefined;
+    return (triggerLine) => {
+        return triggerLine.matches.type === type ? matches : undefined;
     };
 }
 
@@ -67,9 +59,9 @@ export class Trigger {
     ) {
         const child = this.registerChild(
             pattern,
-            (rawLine, line, matches, type, triggerLine) => {
+            (triggerLine) => {
                 this.manager.removeTrigger(child);
-                return callback(rawLine, line, matches, type, triggerLine);
+                return callback(triggerLine);
             },
             tag,
             options
@@ -77,7 +69,7 @@ export class Trigger {
         return child;
     }
 
-    execute(line: TriggerLine, type: string) {
+    execute(line: TriggerLine, type: string): TriggerLine | null {
         const plainLine = line.text.replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
@@ -98,7 +90,7 @@ export class Trigger {
                     matches.input = plainLine;
                 }
             } else if (typeof pattern === "function") {
-                matches = pattern(line.toAnsiString(), plainLine, undefined, type, line);
+                matches = pattern(line);
             }
             if (matches) {
                 break;
@@ -119,25 +111,21 @@ export class Trigger {
         if (matched) {
             if (matches && this.callback) {
                 line.setMatches({ matches, type, triggerId: this.id });
-                const result = this.callback(
-                    line.toAnsiString(),
-                    plainLine,
-                    matches,
-                    type,
-                    line,
-                );
-                if (this.manager.isTriggerEngineActive()) {
-                    if (result instanceof TriggerLine) {
-                        line = result;
-                    } else if (typeof result === "string") {
-                        line = new TriggerLine(result, line.matches, this.manager.isTriggerEngineActive());
-                        line.setOverrideAnsi(result);
-                    }
+                const result = this.callback(line);
+                if (result === null) {
+                    return null;
+                }
+                if (this.manager.isTriggerEngineActive() && result instanceof TriggerLine) {
+                    line = result;
                 }
             }
-            this.children.forEach(child => {
-                line = child.execute(line, type);
-            });
+            for (const child of this.children.values()) {
+                const childResult = child.execute(line, type);
+                if (childResult === null) {
+                    return null;
+                }
+                line = childResult;
+            }
         }
         return line;
     }
@@ -190,9 +178,9 @@ export default class Triggers {
     registerOneTimeTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerTrigger(
             pattern,
-            (rawLine, line, matches, type, triggerLine) => {
+            (triggerLine) => {
                 this.removeTrigger(trigger);
-                return callback(rawLine, line, matches, type, triggerLine);
+                return callback(triggerLine);
             },
             tag,
             options
@@ -216,9 +204,9 @@ export default class Triggers {
     registerOneTimeMultilineTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerMultilineTrigger(
             pattern,
-            (rawLine, line, matches, type, triggerLine) => {
+            (triggerLine) => {
                 this.removeTrigger(trigger);
-                return callback(rawLine, line, matches, type, triggerLine);
+                return callback(triggerLine);
             },
             tag,
             options
@@ -256,7 +244,7 @@ export default class Triggers {
         }
     }
 
-    parseLine(rawLine: string | TriggerLine, type: string): string {
+    parseLine(rawLine: string | TriggerLine, type: string): string | null {
         let triggerLine =
             rawLine instanceof TriggerLine
                 ? rawLine
@@ -273,20 +261,28 @@ export default class Triggers {
             return tokens!;
         };
 
-        this.triggers.forEach(trigger => {
-            triggerLine = trigger.execute(triggerLine, type);
-        });
+        for (const trigger of this.triggers.values()) {
+            const result = trigger.execute(triggerLine, type);
+            if (result === null) {
+                return null;
+            }
+            triggerLine = result;
+        }
 
         if (this.tokenTriggers.size > 0) {
             const seen = new Set<string>();
             const zeroBucket = this.tokenTriggers.get(Triggers.ZERO_LENGTH_BUCKET_KEY);
             if (zeroBucket) {
-                zeroBucket.forEach(({ trigger }) => {
+                for (const { trigger } of zeroBucket) {
                     if (!seen.has(trigger.id)) {
                         seen.add(trigger.id);
-                        triggerLine = trigger.execute(triggerLine, type);
+                        const result = trigger.execute(triggerLine, type);
+                        if (result === null) {
+                            return null;
+                        }
+                        triggerLine = result;
                     }
-                });
+                }
             }
             const hasOtherBuckets = this.tokenTriggers.size > (zeroBucket ? 1 : 0);
             if (hasOtherBuckets) {
@@ -313,7 +309,11 @@ export default class Triggers {
                         }
                         if (matches) {
                             seen.add(trigger.id);
-                            triggerLine = trigger.execute(triggerLine, type);
+                            const result = trigger.execute(triggerLine, type);
+                            if (result === null) {
+                                return null;
+                            }
+                            triggerLine = result;
                         }
                     }
                 }
@@ -322,14 +322,18 @@ export default class Triggers {
         return triggerLine.toAnsiString();
     }
 
-    parseMultiline(rawLine: string | TriggerLine, type: string): string {
+    parseMultiline(rawLine: string | TriggerLine, type: string): string | null {
         let triggerLine =
             rawLine instanceof TriggerLine
                 ? rawLine
                 : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
-        this.multilineTriggers.forEach(trigger => {
-            triggerLine = trigger.execute(triggerLine, type);
-        });
+        for (const trigger of this.multilineTriggers.values()) {
+            const result = trigger.execute(triggerLine, type);
+            if (result === null) {
+                return null;
+            }
+            triggerLine = result;
+        }
         return triggerLine.toAnsiString();
     }
 

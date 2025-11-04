@@ -34,13 +34,23 @@ jest.mock('howler', () => {
   return { Howl: jest.fn(() => instance) };
 });
 
-jest.mock('@client/Triggers', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    parseLine: jest.fn((l: string) => l),
-    parseMultiline: jest.fn((l: string) => l),
-  })),
-}));
+jest.mock('@client/Triggers', () => {
+  const TriggerLine = require('@client/triggers/TriggerLine').default;
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => ({
+      parseLine: jest.fn((l: string | typeof TriggerLine) => {
+        if (typeof l === 'string') return l;
+        return l instanceof TriggerLine ? l.toAnsiString() : l;
+      }),
+      parseMultiline: jest.fn((l: string | typeof TriggerLine) => {
+        if (typeof l === 'string') return l;
+        return l instanceof TriggerLine ? l.toAnsiString() : l;
+      }),
+      isTriggerEngineActive: jest.fn(() => true),
+    })),
+  };
+});
 jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@client/OutputHandler', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@client/scripts/functionalBind', () => ({

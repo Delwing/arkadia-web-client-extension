@@ -9,5 +9,8 @@ export default function initNewMail(client: Client) {
 
     const format = (line: string) => `\n\n${client.prefix(colorString(line, TOMATO), prefix)}\n\n`;
 
-    client.Triggers.registerTrigger(pattern, (_raw, line) => format(line), tag);
+    client.Triggers.registerTrigger(pattern, (triggerLine) => {
+        triggerLine.setOverrideAnsi(format(triggerLine.text));
+        return triggerLine;
+    }, tag);
 }

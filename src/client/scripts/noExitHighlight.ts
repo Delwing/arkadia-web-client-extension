@@ -8,6 +8,10 @@ export default function initNoExitHighlight(client: Client) {
         /^[ >]*Jestes tak zmeczon[ya], ze nie mozesz dalej podazac w tym kierunku\.$/
     ];
     patterns.forEach(p => {
-        client.Triggers.registerTrigger(p, (raw) => colorString(raw, TAN), "no-exit-highlight");
+        client.Triggers.registerTrigger(p, (triggerLine) => {
+            const colored = colorString(triggerLine.toAnsiString(), TAN);
+            triggerLine.setOverrideAnsi(colored);
+            return triggerLine;
+        }, "no-exit-highlight");
     });
 }

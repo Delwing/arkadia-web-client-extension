@@ -6,10 +6,10 @@ interface Localizer {
 }
 
 function createHandler(client: Client, roomId: number) {
-    return () => {
+    return (triggerLine) => {
         client.Map.setMapRoomById(roomId);
         client.sendEvent('notify', { text: `Map Sync: localizer ${roomId}` });
-        return undefined;
+        return triggerLine;
     };
 }
 
@@ -22,7 +22,7 @@ export default function initLocalizers(client: Client) {
         "Woznica oznajmia glosno",
     ];
 
-    const parent = client.Triggers.registerTrigger(parentPatterns, () => undefined, 'localizers');
+    const parent = client.Triggers.registerTrigger(parentPatterns, (triggerLine) => triggerLine, 'localizers');
 
     const entries: Localizer[] = [
         // kz-nuln
@@ -100,7 +100,8 @@ export default function initLocalizers(client: Client) {
         parent.registerChild(entry.pattern, handler, 'localizers');
     });
 
-    client.Triggers.registerTrigger("Otworzyly sie drzwi klatki.", (): undefined => {
+    client.Triggers.registerTrigger("Otworzyly sie drzwi klatki.", (triggerLine) => {
         client.Map.refreshPosition = true
+        return triggerLine
     })
 }

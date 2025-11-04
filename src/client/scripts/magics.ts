@@ -8,8 +8,8 @@ export default async function initMagics(client: Client) {
     try {
         const magics = await loadMagics();
         magics.forEach((pattern: string) => {
-            client.Triggers.registerTokenTrigger(pattern, (raw, _line, _matches, _type, triggerLine) => {
-                return colorTokenInLine(triggerLine ?? raw, pattern, MAGICS_COLOR);
+            client.Triggers.registerTokenTrigger(pattern, (triggerLine) => {
+                return colorTokenInLine(triggerLine, pattern, MAGICS_COLOR);
             }, tag, {caseInsensitive: true});
         });
     } catch (e) {

@@ -235,16 +235,23 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
         currentStats = [];
         currentSteps = [];
         client.Triggers.removeByTag(tag);
-        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.$/, (raw, _l, m) => {
-            return formatLine(raw, m[1], m[2]);
+        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.$/, (triggerLine) => {
+            const m = triggerLine.matches.matches as RegExpMatchArray;
+            const formatted = formatLine(triggerLine.text, m[1], m[2]);
+            triggerLine.setOverrideAnsi(formatted);
+            return triggerLine;
         }, tag);
-        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.$/, (raw, _l, m) => {
-            return formatLine(raw, m[1]);
+        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.$/, (triggerLine) => {
+            const m = triggerLine.matches.matches as RegExpMatchArray;
+            const formatted = formatLine(triggerLine.text, m[1]);
+            triggerLine.setOverrideAnsi(formatted);
+            return triggerLine;
         }, tag);
-        client.Triggers.registerOneTimeTrigger(/^Obecnie do waznych cech zaliczasz/, (): undefined => {
+        client.Triggers.registerOneTimeTrigger(/^Obecnie do waznych cech zaliczasz/, (triggerLine) => {
             calculateLvl();
             client.Triggers.removeByTag(tag);
             isRunning = false;
+            return triggerLine;
         }, tag);
         client.send("cechy");
         setTimeout(() => {

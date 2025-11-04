@@ -6,9 +6,9 @@ export default function initGates(client: Client) {
     };
     client.FunctionalBind.set(null, knock);
 
-    const showMessage = () => {
+    const showMessage = (triggerLine) => {
         client.FunctionalBind.set("zastukaj we wrota", knock);
-        return undefined;
+        return triggerLine;
     };
 
     const patterns = [

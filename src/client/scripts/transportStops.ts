@@ -386,9 +386,10 @@ class TransportTracker {
                 }, "transport-tracker");
             }
             if (definition.exitPattern) {
-                this.client.Triggers.registerTrigger(definition.exitPattern, (_raw, line) => {
+                this.client.Triggers.registerTrigger(definition.exitPattern, (triggerLine) => {
+                    const line = triggerLine.text;
                     this.handleExit(definition, line);
-                    return undefined;
+                    return triggerLine;
                 }, "transport-tracker");
             }
             if (definition.startPattern) {
@@ -414,9 +415,10 @@ class TransportTracker {
 
     private registerExitFailureTriggers() {
         EXIT_FAILURE_PATTERNS.forEach(pattern => {
-            this.client.Triggers.registerTrigger(pattern, (_raw, line) => {
+            this.client.Triggers.registerTrigger(pattern, (triggerLine) => {
+                const line = triggerLine.text;
                 this.handleExitFailure(line);
-                return undefined;
+                return triggerLine;
             }, "transport-tracker");
         });
     }

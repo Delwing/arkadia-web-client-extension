@@ -272,27 +272,38 @@ class KillCounter {
 
         this.client.Triggers.registerTrigger(
             myKillRegex,
-            (rawLine, _line, matches): string => {
+            (triggerLine) => {
+                const matches = triggerLine.matches.matches;
+                if (!matches) return triggerLine;
+                const rawLine = triggerLine.toAnsiString();
                 this.client.emit("kill", { killer: "ME" });
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
-                return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
+                const formatted = this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
+                triggerLine.setOverrideAnsi(formatted);
+                return triggerLine;
             }
         );
 
         this.client.Triggers.registerTrigger(
             teamKillRegex,
-            (rawLine, _line, matches): string => {
+            (triggerLine) => {
+                const matches = triggerLine.matches.matches;
+                if (!matches) return triggerLine;
+                const rawLine = triggerLine.toAnsiString();
                 const player = stripAnsiCodes(matches.groups?.player ?? "").trim();
                 const mob = parseName(matches.groups?.name ?? "");
+                let formatted: string;
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);
                     this.client.emit("kill", { killer: "TEAM" });
-                    return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
+                    formatted = this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
                 } else {
                     this.client.emit("kill", { killer: "OTHER" });
-                    return this.formatPrefix(rawLine, null, "[   ZABIL   ] ", false);
+                    formatted = this.formatPrefix(rawLine, null, "[   ZABIL   ] ", false);
                 }
+                triggerLine.setOverrideAnsi(formatted);
+                return triggerLine;
             }
         );
 

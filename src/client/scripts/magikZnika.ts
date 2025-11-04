@@ -10,8 +10,10 @@ export default function initMagikZnika(client: Client) {
 
     client.Triggers.registerTrigger(
         /^Bialy, zimny plomien ogarnia (.*), w kilka chwil spopielajac .* calkowicie\.$/,
-        (_raw, line) => {
-            return format(line);
+        (triggerLine) => {
+            const formatted = format(triggerLine.text);
+            triggerLine.setOverrideAnsi(formatted);
+            return triggerLine;
         },
         tag
     );

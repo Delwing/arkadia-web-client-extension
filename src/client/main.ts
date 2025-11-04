@@ -1,5 +1,7 @@
 import People from "./People";
 import registerLuaGagTriggers from "./scripts/./luaGags";
+import initPackageHelper from './PackageHelper'
+import initInlineCompassRose from './scripts/inlineCompassRose'
 
 import blockers from './blockers.json'
 import initShips from './scripts/ships'
@@ -87,7 +89,7 @@ import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
 import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
-import { emitFakeLine } from "./scripts/fakeLine";
+import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
 
 export function registerScripts(client: Client) {
@@ -103,8 +105,9 @@ export function registerScripts(client: Client) {
 
     blockers.forEach(blocker => {
         const blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
-        client.Triggers.registerTrigger(blockerPattern, (): undefined => {
+        client.Triggers.registerTrigger(blockerPattern, (triggerLine) => {
             client.Map.moveBack()
+            return triggerLine
         }, 'blocker')
     })
 
@@ -115,48 +118,59 @@ export function registerScripts(client: Client) {
     client.Triggers.registerTrigger([
         /^.*[pP]odazasz (|skradajac sie )za (.*)\.$/,
 
-    ], (_, __, matches): undefined => {
+    ], (triggerLine) => {
+        const matches = triggerLine.matches.matches
+        if (!matches) return triggerLine
         const tokenized = matches[2].split(' ')
         for (let i = 1; i < tokenized.length - 1; i++) {
             const candidate = tokenized[tokenized.length - i]
             const result = client.Map.followMove(candidate)
             if (result) {
-                return
+                return triggerLine
             }
         }
+        return triggerLine
     }, 'follow')
 
-    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (_r, _l, matches: any): undefined => {
-        client.Map.followMove(matches.groups.direction)
+    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (triggerLine) => {
+        const matches = triggerLine.matches.matches
+        if (matches?.groups?.direction) {
+            client.Map.followMove((matches.groups as any).direction)
+        }
+        return triggerLine
     }, 'follow')
 
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
-    ], (): undefined => {
+    ], (triggerLine) => {
+        return triggerLine
     }, 'follow', {stayOpenLines: 1})
     const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
-    idzTrigger.registerChild(/.*/, (_, line): undefined => {
+    idzTrigger.registerChild(/.*/, (triggerLine) => {
+        const line = triggerLine.text
         const matches = line.match(movePattern)
         if (matches?.groups?.direction) {
             client.Map.followMove(matches.groups.direction)
-            return
+            return triggerLine
         }
         if (line.startsWith("Wykonuje komende 'idz ")) {
-            return
+            return triggerLine
         }
         if (client.Map.refresh()) {
-            return
+            return triggerLine
         }
         client.Map.refreshPosition = true
+        return triggerLine
     })
 
-    client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (): undefined => {
+    client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (triggerLine) => {
         client.Map.refreshPosition = false
+        return triggerLine
     })
 
-    client.Triggers.registerTrigger('ENTER by przejsc dalej', (): string => {
+    client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
         client.sendCommand('')
-        return ""
+        return null
     })
 
     initShips(client)
@@ -243,7 +257,8 @@ export function registerScripts(client: Client) {
     new People(client)
     registerGagTriggers(client)
     registerLuaGagTriggers(client)
-
     initKillTracker(client)
+    initPackageHelper(client)
+    initInlineCompassRose(client)
 
 }

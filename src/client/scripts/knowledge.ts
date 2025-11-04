@@ -31,7 +31,6 @@ import {
 } from '../knowledgeCategories';
 import {getCurrentCharacter} from '@modules/core/storage';
 import {stripPolishCharacters} from '../stripPolishCharacters';
-import TriggerLine from '../triggers/TriggerLine';
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
@@ -811,25 +810,26 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     for (const [token, targets] of variantMap.entries()) {
       client.Triggers.registerTokenTrigger(
         token,
-        (rawLine, line, matches, _type, triggerLine) => {
+        (triggerLine) => {
+          const matches = triggerLine.matches.matches;
           if (!matches) {
-            return triggerLine ? undefined : rawLine;
+            return triggerLine;
           }
 
           const tokenText = matches[0];
           if (!tokenText) {
-            return triggerLine ? undefined : rawLine;
+            return triggerLine;
           }
 
+          const line = triggerLine.text;
           const startIndex =
             typeof matches.index === 'number' && matches.index >= 0
               ? matches.index
               : line.indexOf(tokenText);
 
-          const lineInstance = triggerLine ?? new TriggerLine(rawLine);
           if (!suppressEntryHighlighting && startIndex >= 0) {
             const endIndex = startIndex + tokenText.length;
-            lineInstance.replace(
+            triggerLine.replace(
               [startIndex, endIndex],
               color(KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR) + tokenText + RESET,
             );
@@ -839,7 +839,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             markKnowledgeEntryKnown(target.category, target.type, target.canonical);
           }
 
-          return lineInstance;
+          return triggerLine;
         },
         KNOWLEDGE_ENTRY_TRIGGER_TAG,
       );
@@ -1045,13 +1045,16 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     clearPendingPrompt(true);
     const trigger = client.Triggers.registerOneTimeTrigger(
       KNOWLEDGE_PROMPT_PATTERN,
-      (_raw, _line, matches) => {
+      (triggerLine) => {
         clearPendingPrompt(false);
-        const categoriesText = matches[1];
-        if (categoriesText) {
-          handleKnowledgePrompt(categoriesText);
+        const matches = triggerLine.matches.matches;
+        if (matches) {
+          const categoriesText = matches[1];
+          if (categoriesText) {
+            handleKnowledgePrompt(categoriesText);
+          }
         }
-        return undefined;
+        return triggerLine;
       },
       'knowledge-progress',
     );
@@ -1065,24 +1068,30 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
   client.Triggers.registerTrigger(
     START_LIBRARY_PATTERN,
-    (_raw, _line, matches) => {
-      const category = matches[1];
-      if (category) {
-        setProgress(category, 'in_progress');
+    (triggerLine) => {
+      const matches = triggerLine.matches.matches;
+      if (matches) {
+        const category = matches[1];
+        if (category) {
+          setProgress(category, 'in_progress');
+        }
       }
-      return undefined;
+      return triggerLine;
     },
     'knowledge-progress',
   );
 
   client.Triggers.registerTrigger(
     COMPLETE_LIBRARY_PATTERN,
-    (_raw, _line, matches) => {
-      const category = matches[1];
-      if (category) {
-        setProgress(category, 'completed');
+    (triggerLine) => {
+      const matches = triggerLine.matches.matches;
+      if (matches) {
+        const category = matches[1];
+        if (category) {
+          setProgress(category, 'completed');
+        }
       }
-      return undefined;
+      return triggerLine;
     },
     'knowledge-progress',
   );
@@ -1573,64 +1582,72 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     client.Triggers.registerTrigger(
       KNOWLEDGE_HEADER_PATTERN,
-      (_raw, _line, matches) => {
+      (triggerLine) => {
         scheduleInactivity();
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
         const base = getBaseCategoryFromName(matches[1]);
         if (!base) {
           currentCategory = null;
           currentSection = null;
-          return undefined;
+          return triggerLine;
         }
 
         currentCategory = base;
         currentSection = null;
         categoriesRemaining.delete(base);
         ensureCategoryState(base);
-        return undefined;
+        return triggerLine;
       },
       runTag,
     );
 
     client.Triggers.registerTrigger(
       KNOWLEDGE_SUMMARY_PATTERN,
-      (_raw, _line, matches) => {
+      (triggerLine) => {
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
         if (!currentCategory) {
-          return undefined;
+          return triggerLine;
         }
 
         const type = detectKnowledgeDetailsType(matches[1]);
         if (!type) {
-          return undefined;
+          return triggerLine;
         }
 
         scheduleInactivity();
         const state = ensureCategoryState(currentCategory);
         state.levels[type] = matches[2].trim();
-        return undefined;
+        return triggerLine;
       },
       runTag,
     );
 
     client.Triggers.registerTrigger(
       KNOWLEDGE_SECTION_HEADER_PATTERN,
-      (_raw, _line, matches) => {
+      (triggerLine) => {
         scheduleInactivity();
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
         currentSection = detectKnowledgeDetailsType(matches[1]) ?? null;
-        return undefined;
+        return triggerLine;
       },
       runTag,
     );
 
     client.Triggers.registerTrigger(
       KNOWLEDGE_ENTRY_PATTERN,
-      (_raw, _line, matches) => {
+      (triggerLine) => {
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
         if (!currentCategory || !currentSection) {
-          return undefined;
+          return triggerLine;
         }
 
         const entry = matches[1].trim();
         if (entry.length === 0) {
-          return undefined;
+          return triggerLine;
         }
 
         scheduleInactivity();
@@ -1645,7 +1662,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         } else {
           state.unknownEntries[currentSection].add(entry);
         }
-        return undefined;
+        return triggerLine;
       },
       runTag,
     );

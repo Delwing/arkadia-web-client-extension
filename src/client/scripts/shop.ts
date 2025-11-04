@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 import { stripAnsiCodes } from "../Triggers";
+import TriggerLine from "../triggers/TriggerLine";
 
 export interface ShopOptions {
     normalWidth: number;
@@ -61,18 +62,20 @@ export default function initShop(client: Client, opts: ShopOptions) {
 
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - stripAnsiCodes(str).length));
 
-    client.Triggers.registerTrigger(opts.splitReg, () => {
-        if (width >= opts.normalWidth) return undefined;
-        return opts.makeSplit(width);
+    client.Triggers.registerTrigger(opts.splitReg, (triggerLine) => {
+        if (width >= opts.normalWidth) return triggerLine;
+        return new TriggerLine(opts.makeSplit(width));
     }, opts.tag);
 
-    client.Triggers.registerTrigger(opts.headerReg, () => {
-        if (width >= opts.normalWidth) return undefined;
-        return opts.makeHeader(width, pad);
+    client.Triggers.registerTrigger(opts.headerReg, (triggerLine) => {
+        if (width >= opts.normalWidth) return triggerLine;
+        return new TriggerLine(opts.makeHeader(width, pad));
     }, opts.tag);
 
-    client.Triggers.registerTrigger(opts.itemReg, (_raw, _line, m) => {
-        if (width >= opts.normalWidth) return undefined;
-        return opts.makeItem(width, pad, m);
+    client.Triggers.registerTrigger(opts.itemReg, (triggerLine) => {
+        if (width >= opts.normalWidth) return triggerLine;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
+        return new TriggerLine(opts.makeItem(width, pad, m));
     }, opts.tag);
 }

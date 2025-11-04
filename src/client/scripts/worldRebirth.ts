@@ -25,12 +25,15 @@ function parseRebirthTime(rebirth: string): number | undefined {
 export default function initWorldRebirth(client: Client) {
     const tag = "world-rebirth";
     const pattern = /Swiat odrodzil sie\s*:\s*(.+)\s[\s\S]*Ciemnosc\.$/m;
-    client.Triggers.registerMultilineTrigger(pattern, (_raw, _line, matches) => {
-        const ts = parseRebirthTime(matches[1]);
-        if (ts !== undefined) {
-            setItemSync("last_world_rebirth", ts);
-            client.sendEvent("systemRebirth", ts);
+    client.Triggers.registerMultilineTrigger(pattern, (triggerLine) => {
+        const matches = triggerLine.matches.matches;
+        if (matches && matches[1]) {
+            const ts = parseRebirthTime(matches[1]);
+            if (ts !== undefined) {
+                setItemSync("last_world_rebirth", ts);
+                client.sendEvent("systemRebirth", ts);
+            }
         }
-        return undefined;
+        return triggerLine;
     }, tag);
 }

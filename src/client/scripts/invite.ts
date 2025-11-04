@@ -68,12 +68,14 @@ export default function initInvite(client: Client) {
     // Pattern: ^\[?([A-Z][a-z ]+?)\]? zaprasza cie do swojej druzyny\.$
     const invitePattern = /^\[?([A-Z][a-z ]+?)]? zaprasza cie do swojej druzyny\.$/;
 
-    client.Triggers.registerTrigger(invitePattern, (rawLine, _line, matches): string | undefined => {
+    client.Triggers.registerTrigger(invitePattern, (triggerLine) => {
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
         const inviterName = matches[1];
 
         if (isInEnemyGuild(inviterName)) {
             // If inviter is in enemy guild, block the invite
-            return ""; // Return empty string to hide the original message
+            return null; // Return null to skip the line
         } else {
             const objId = findObjectIdByName(inviterName);
             if (objId) {
@@ -85,7 +87,7 @@ export default function initInvite(client: Client) {
             }
 
             // Show the original message
-            return rawLine;
+            return triggerLine;
         }
     }, tag);
 }

@@ -197,41 +197,51 @@ export default class TeamManager {
     private registerTriggers() {
         const triggers = this.client.Triggers;
         const tag = this.tag;
-        triggers.registerTrigger(/^Zmuszasz \[?([A-Za-z][a-z ]+?)]? do opuszczenia druzyny\.$/, (_r, _l, m): undefined => {
-            this.removeMember(m[1]);
+        triggers.registerTrigger(/^Zmuszasz \[?([A-Za-z][a-z ]+?)]? do opuszczenia druzyny\.$/, (triggerLine) => {
+            const m = triggerLine.matches.matches;
+            if (m) this.removeMember(m[1]);
+            return triggerLine;
         }, tag);
-        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? porzuca twoja druzyne\.$/, (_r, _l, m): undefined => {
-            this.removeMember(m[1]);
+        triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? porzuca twoja druzyne\.$/, (triggerLine) => {
+            const m = triggerLine.matches.matches;
+            if (m) this.removeMember(m[1]);
+            return triggerLine;
         }, tag);
-        const clear = (): undefined => {
+        const clear = (triggerLine: any) => {
             this.clearTeam();
+            return triggerLine;
         };
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? zmusza cie do opuszczenia druzyny\.$/, clear, tag);
         triggers.registerTrigger("Nie jestes w zadnej druzynie.", clear, tag);
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? rozwiazuje druzyne\.$/, clear, tag);
         triggers.registerTrigger(/^Porzucasz (?:swoja druzyne|druzyne, ktorej przewodzil[ea]s)\.$/, clear, tag);
-        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (_r, _l, m): undefined => {
+        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (triggerLine) => {
             this.clearTeam();
-            const list = m.groups?.team ?? '';
+            const m = triggerLine.matches.matches;
+            const list = m?.groups?.team ?? '';
             this.parseNames(list).forEach(n => this.addMember(n));
+            return triggerLine;
         }, tag);
-        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (_r, _l, m): undefined => {
+        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (triggerLine) => {
             this.clearTeam();
-            const leader = m.groups?.leader?.trim();
+            const m = triggerLine.matches.matches;
+            const leader = m?.groups?.leader?.trim();
             if (leader) {
                 this.leader = leader;
                 this.addMember(leader);
             }
-            const list = m.groups?.team;
+            const list = m?.groups?.team;
             if (list) {
                 this.parseNames(list).forEach(n => this.addMember(n));
             }
+            return triggerLine;
         }, tag);
-        triggers.registerTrigger(/^Dolaczasz do druzyny/, (): undefined => {
+        triggers.registerTrigger(/^Dolaczasz do druzyny/, (triggerLine) => {
             this.joined = true;
             this.client.sendGMCP("objects.nums")
             this.client.sendGMCP("objects.data")
             this.client.sendEvent('teamChange');
+            return triggerLine;
         })
     }
 

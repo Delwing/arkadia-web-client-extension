@@ -102,9 +102,9 @@ export default function initCommandPreserveCaseMode(client: Client) {
     });
 
     EXIT_PATTERNS.forEach(pattern => {
-        client.Triggers.registerTrigger(pattern, () => {
+        client.Triggers.registerTrigger(pattern, (triggerLine) => {
             exitMode();
-            return undefined;
+            return triggerLine;
         }, 'command-preserve-case-mode');
     });
 }

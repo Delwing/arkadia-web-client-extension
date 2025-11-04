@@ -12,18 +12,19 @@ const teamBlockerPatterns: RegExp[] = [
 
 export default function initTeamBlockers(client: Client) {
     teamBlockerPatterns.forEach(pattern => {
-        client.Triggers.registerTrigger(pattern, (): undefined => {
+        client.Triggers.registerTrigger(pattern, (triggerLine) => {
             if (!client.TeamManager.isInAnyTeam()) {
-                return;
+                return triggerLine;
             }
             if (client.TeamManager.isLeader()) {
-                return;
+                return triggerLine;
             }
             if (!client.Map.isBlockable) {
-                return;
+                return triggerLine;
             }
             client.Map.moveBack();
             client.Map.setBlockable(false);
+            return triggerLine;
         }, 'blocker');
     });
 }

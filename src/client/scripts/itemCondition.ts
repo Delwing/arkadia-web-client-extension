@@ -47,8 +47,13 @@ export function processItemCondition(rawLine: string, phrase: string): string {
 
 export default function initItemCondition(client: Client) {
     const pattern = /^(?:.* jest (?:juz )?|Wyglada na to, ze (?:sa |jest )?)(.+)\.$/;
-    client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
+    client.Triggers.registerTrigger(pattern, (triggerLine) => {
+        const m = triggerLine.matches.matches;
+        if (!m || !m[1]) return triggerLine;
         const phrase = m[1];
-        return processItemCondition(raw, phrase);
+        const raw = triggerLine.toAnsiString();
+        const result = processItemCondition(raw, phrase);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, "item-condition");
 }

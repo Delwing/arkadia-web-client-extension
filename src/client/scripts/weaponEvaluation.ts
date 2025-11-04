@@ -1,6 +1,5 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
-import { SKIP_LINE } from "../ControlConstants";
 import { EFFECTIVENESS, BALANCE } from "./evaluationConstants";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
@@ -16,10 +15,12 @@ export default function initWeaponEvaluation(client: Client) {
 
   client.Triggers.registerTrigger(
     gripRegex,
-    (_r, _l, m) => {
+    (triggerLine) => {
       if (client.suppressItemEvaluation) {
-        return SKIP_LINE;
+        return null;
       }
+      const m = triggerLine.matches.matches;
+      if (!m) return triggerLine;
       const grip = m[2];
       let wound = "";
       let weaponType = "";
@@ -28,16 +29,21 @@ export default function initWeaponEvaluation(client: Client) {
 
       client.Triggers.registerOneTimeTrigger(
         dmgRegex,
-        (_r2, _l2, m2) => {
-          wound = m2[2];
-          return SKIP_LINE;
+        (triggerLine) => {
+          const m2 = triggerLine.matches.matches;
+          if (m2) {
+            wound = m2[2];
+          }
+          return null;
         },
         tag,
       );
 
       client.Triggers.registerOneTimeTrigger(
         statsRegex,
-        (_r3, _l3, m3) => {
+        (triggerLine) => {
+          const m3 = triggerLine.matches.matches;
+          if (!m3) return triggerLine;
           weaponType = m3[1];
           balanceRaw = m3[4].trim();
           effectRaw = m3[6].trim();
@@ -63,12 +69,12 @@ export default function initWeaponEvaluation(client: Client) {
             ];
             client.print(lines.join("\n"));
           }
-          return SKIP_LINE;
+          return null;
         },
         tag,
       );
 
-      return SKIP_LINE;
+      return null;
     },
     tag,
   );

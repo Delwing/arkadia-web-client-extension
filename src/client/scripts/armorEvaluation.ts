@@ -1,6 +1,5 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
-import { SKIP_LINE } from "../ControlConstants";
 import { ARMOR_QUALITY, EFFECTIVENESS } from "./evaluationConstants";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
@@ -88,19 +87,21 @@ export default function initArmorEvaluation(client: Client) {
 
   client.Triggers.registerTrigger(
     mainRegex,
-    (_r, _l, m) => {
+    (triggerLine) => {
       if (client.suppressItemEvaluation) {
-        return SKIP_LINE;
+        return null;
       }
+      const m = triggerLine.matches.matches;
+      if (!m) return triggerLine;
       const equipmentType = m[2] ? m[2] : "tarcza";
       const desc = m[6].trim();
       const extracted = extractProtection(desc);
-      if (!extracted) return SKIP_LINE;
+      if (!extracted) return null;
       const { prot, parry } = extracted;
       const k = ARMOR_QUALITY[prot.klute.toLowerCase()];
       const c = ARMOR_QUALITY[prot.ciete.toLowerCase()];
       const o = ARMOR_QUALITY[prot.obuchowe.toLowerCase()];
-      if (!k || !c || !o) return SKIP_LINE;
+      if (!k || !c || !o) return null;
       const sum = k.value + c.value + o.value;
       const avg = Math.round((sum / 3) * 100) / 100;
       const pad = 15;
@@ -124,7 +125,7 @@ export default function initArmorEvaluation(client: Client) {
         `${colorString("Suma", LABEL_COLOR)}: ${String(sum).padEnd(pad + 5)}${colorString("Srednia", LABEL_COLOR)}: ${avg}`,
       );
       client.print(lines.join("\n"));
-      return SKIP_LINE;
+      return null;
     },
     tag,
   );

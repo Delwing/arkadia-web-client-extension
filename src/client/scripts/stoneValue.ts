@@ -12,10 +12,15 @@ export default function initStoneValue(
 
     function run() {
         sum = 0;
-        client.Triggers.registerTrigger(pattern, (raw, _line, m) => {
+        client.Triggers.registerTrigger(pattern, (triggerLine) => {
+            const m = triggerLine.matches.matches;
+            if (!m || !m[1]) return triggerLine;
             const amount = parseInt(m[1], 10);
             sum += amount;
-            return processItemValue(raw, amount);
+            const raw = triggerLine.toAnsiString();
+            const result = processItemValue(raw, amount);
+            triggerLine.setOverrideAnsi(result);
+            return triggerLine;
         }, tag);
         client.sendCommand("ocen kamienie");
         setTimeout(() => {

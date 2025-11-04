@@ -1,5 +1,4 @@
 import Client from "../Client";
-import { SKIP_LINE } from "../ControlConstants";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 
 export default function initSelfEvaluation(
@@ -15,6 +14,41 @@ export default function initSelfEvaluation(
     const GREEN = findClosestColor("#00ff00");
     const YELLOW = findClosestColor("#ffff00");
     const RED = findClosestColor("#ff0000");
+
+    // Map condition phrases to state values (without brackets - colorState adds them)
+    const conditionMap: Record<string, string> = {
+        "w znakomitym stanie": "max",
+        "lekko podniszczony": "4/5",
+        "lekko podniszczona": "4/5",
+        "lekko podniszczone": "4/5",
+        "w kiepskim stanie": "3/5",
+        "w oplakanym stanie": "2/5",
+        "gotowy sie rozpasc": "1/5",
+        "gotowa sie rozpasc": "1/5",
+        "gotowe sie rozpasc": "1/5",
+        "w dobrym stanie": "6/7",
+        "w zlym stanie": "4/7",
+        "w bardzo zlym stanie": "3/7",
+    };
+
+    function matchCondition(text: string): string | null {
+        const lower = text.toLowerCase().trim();
+        // Direct match
+        if (conditionMap[lower]) {
+            return conditionMap[lower];
+        }
+        // Pattern matches
+        if (/liczne walki wyryly.*swoje pietno/.test(lower)) {
+            return "5/7";
+        }
+        if (/wymaga.{0,2} natychmiastowej konserwacji/.test(lower)) {
+            return "2/7";
+        }
+        if (/moze peknac w kazdej chwili/.test(lower)) {
+            return "1/7";
+        }
+        return null;
+    }
 
     function colorState(state: string) {
         let color = RED;
@@ -61,28 +95,37 @@ export default function initSelfEvaluation(
 
         const parent = client.Triggers.registerTrigger(
             /^Oceniasz [^,]+? ([^.]+)\.$/,
-            (_r, _line, m) => {
+            (triggerLine) => {
                 if (fallback) {
                     clearTimeout(fallback);
                     fallback = undefined;
                 }
+                const m = triggerLine.matches.matches;
+                if (!m) return triggerLine;
                 current = m[1].trim();
                 startTimer();
-                return SKIP_LINE;
+                return null;
             },
             tag,
             { stayOpenLines: 50 }
         );
 
         parent.registerChild(
-            /^Wyglada na to, ze .* \[(.+)]$/,
-            (_r, _line, m) => {
+            /^Wyglada na to, ze (?:sa |jest )?(.+)\.$/,
+            (triggerLine) => {
                 if (current) {
-                    summary.push({ name: current, state: m[1] });
-                    current = "";
+                    const m = triggerLine.matches.matches;
+                    if (m) {
+                        const conditionPhrase = m[1];
+                        const state = matchCondition(conditionPhrase);
+                        if (state) {
+                            summary.push({ name: current, state });
+                            current = "";
+                        }
+                    }
                 }
                 startTimer();
-                return SKIP_LINE;
+                return null;
             },
             tag
         );
@@ -91,7 +134,7 @@ export default function initSelfEvaluation(
             /^.*$/,
             () => {
                 startTimer();
-                return SKIP_LINE;
+                return null;
             },
             tag
         );

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 import { getShortDir } from "@shared/map";
+import TriggerLine from "../triggers/TriggerLine";
 
 const ORANGE = findClosestColor('#ffa500');
 
@@ -53,12 +54,14 @@ export default function initShortExits(client: Client) {
         enabled = !!detail.shortenExits;
     });
 
-    const callback = (_r: string, _l: string, m: RegExpMatchArray) => {
-        if (!enabled) return undefined;
+    const callback = (triggerLine: TriggerLine) => {
+        if (!enabled) return triggerLine;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         const dirs: string[] = parseExitString(m[1]).map(getShortDir);
-        if (dirs.length === 0) return undefined;
+        if (dirs.length === 0) return triggerLine;
         const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
-        return colorString(str, ORANGE);
+        return new TriggerLine(colorString(str, ORANGE));
     };
 
     client.Triggers.registerTrigger(EXIT_PATTERNS, callback, 'shortExits');

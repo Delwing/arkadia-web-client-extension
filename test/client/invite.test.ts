@@ -108,13 +108,15 @@ describe('Invite functionality', () => {
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
         // Test invite from enemy guild member
-        const result = triggerHandler(
-            '[Mordimer] zaprasza cie do swojej druzyny.',
-            '[Mordimer] zaprasza cie do swojej druzyny.',
-            ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer']
-        );
+        const TriggerLine = require('@client/triggers/TriggerLine').default;
+        const triggerLine = new TriggerLine('[Mordimer] zaprasza cie do swojej druzyny.');
+        triggerLine.setMatches({
+            matches: ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer'] as RegExpMatchArray,
+            type: ''
+        });
+        const result = triggerHandler(triggerLine);
 
-        expect(result).toBe('');
+        expect(result).toBe(null);
     });
 
     test('should allow invite from non-enemy guild member and execute two commands', async () => {
@@ -130,17 +132,19 @@ describe('Invite functionality', () => {
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
         // Test invite from non-enemy guild member
-        const result = triggerHandler(
-            '[Vesper] zaprasza cie do swojej druzyny.',
-            '[Vesper] zaprasza cie do swojej druzyny.',
-            ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper']
-        );
+        const TriggerLine = require('@client/triggers/TriggerLine').default;
+        const triggerLine = new TriggerLine('[Vesper] zaprasza cie do swojej druzyny.');
+        triggerLine.setMatches({
+            matches: ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray,
+            type: ''
+        });
+        const result = triggerHandler(triggerLine);
 
         expect(mockFunctionalBind.set).toHaveBeenCalledWith(
             'Przyjmij zaproszenie od Vesper',
             expect.any(Function)
         );
-        expect(result).toBe('[Vesper] zaprasza cie do swojej druzyny.');
+        expect(result).toBe(triggerLine);
 
         // Test that the functional bind executes both commands
         const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
@@ -161,11 +165,13 @@ describe('Invite functionality', () => {
 
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        triggerHandler(
-            '[Vesper] zaprasza cie do swojej druzyny.',
-            '[Vesper] zaprasza cie do swojej druzyny.',
-            ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper']
-        );
+        const TriggerLine = require('@client/triggers/TriggerLine').default;
+        const triggerLine = new TriggerLine('[Vesper] zaprasza cie do swojej druzyny.');
+        triggerLine.setMatches({
+            matches: ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray,
+            type: ''
+        });
+        triggerHandler(triggerLine);
 
         const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
         functionalBindCallback();
@@ -186,14 +192,16 @@ describe('Invite functionality', () => {
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
         // Test invite from unknown person
-        const result = triggerHandler(
-            '[UnknownPlayer] zaprasza cie do swojej druzyny.',
-            '[UnknownPlayer] zaprasza cie do swojej druzyny.',
-            ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer']
-        );
+        const TriggerLine = require('@client/triggers/TriggerLine').default;
+        const triggerLine = new TriggerLine('[UnknownPlayer] zaprasza cie do swojej druzyny.');
+        triggerLine.setMatches({
+            matches: ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer'] as RegExpMatchArray,
+            type: ''
+        });
+        const result = triggerHandler(triggerLine);
 
         expect(mockFunctionalBind.set).not.toHaveBeenCalled();
-        expect(result).toBe('[UnknownPlayer] zaprasza cie do swojej druzyny.');
+        expect(result).toBe(triggerLine);
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
@@ -208,13 +216,14 @@ describe('Invite functionality', () => {
 
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        const result = triggerHandler(
-            '[Friendly] zaprasza cie do swojej druzyny.',
-            '[Friendly] zaprasza cie do swojej druzyny.',
-            ['[Friendly] zaprasza cie do swojej druzyny.', 'Friendly']
-        );
+        const triggerLine = new (require('@client/triggers/TriggerLine').default)('[Friendly] zaprasza cie do swojej druzyny.');
+        triggerLine.setMatches({
+            matches: ['[Friendly] zaprasza cie do swojej druzyny.', 'Friendly'] as RegExpMatchArray,
+            type: ''
+        });
+        const result = triggerHandler(triggerLine);
 
-        expect(result).toBe('[Friendly] zaprasza cie do swojej druzyny.');
+        expect(result).toBe(triggerLine);
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 });

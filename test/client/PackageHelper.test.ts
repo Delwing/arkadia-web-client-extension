@@ -2,9 +2,10 @@ jest.mock('../../src/web/dataStores/npcStore', () => ({
   addLocalNpc: jest.fn().mockResolvedValue(undefined),
 }));
 
-import PackageHelper from '@client/PackageHelper';
+import initPackageHelper from '@client/PackageHelper';
 import { colorStringInLine, findClosestColor } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
+import TriggerLine from '@client/triggers/TriggerLine';
 
 describe('PackageHelper', () => {
   let helper: any;
@@ -49,7 +50,7 @@ describe('PackageHelper', () => {
       FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
       sendCommand: jest.fn(),
     };
-    helper = new PackageHelper(client);
+    helper = initPackageHelper(client);
     client.Triggers.registerTrigger.mockClear();
     client.Triggers.registerMultilineTrigger.mockClear();
   });
@@ -84,24 +85,25 @@ describe('PackageHelper', () => {
       FunctionalBind: { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() },
       sendCommand: jest.fn(),
     };
-    const h = new PackageHelper(c as any);
+    const h = initPackageHelper(c as any);
     expect(c.Triggers.registerTrigger).toHaveBeenCalled();
-    expect(h.enabled).toBe(true);
+    expect(h.enabled()).toBe(true);
   });
 
   test('packageLineCallback returns clickable line and stores package', () => {
-    const cb = helper['packageLineCallback']();
+    const cb = helper.packageLineCallback();
     client.OutputHandler.makeClickable.mockImplementation(line => line);
 
     const rawLine = " |   1. Bob                     1/ 2/ 3        5           |";
     const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/;
     const match = rawLine.match(packageLineRegex)!;
-    const result = cb(rawLine, '', match);
+    const triggerLine = new TriggerLine(rawLine, { matches: match });
+    const result = cb(triggerLine);
 
-    const stripped = result.replace(/\x1B\[[0-9;]*m/g, '');
+    const stripped = result.toAnsiString().replace(/\x1B\[[0-9;]*m/g, '');
     expect(stripped).toContain('dystans: --');
     expect(stripped.trimEnd().endsWith('|')).toBe(true);
-    expect(helper['packages']).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
+    expect(helper.packages()).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
     expect(client.OutputHandler.makeClickable).toHaveBeenCalledTimes(1);
     const call = client.OutputHandler.makeClickable.mock.calls[0];
     const expectedColor = colorStringInLine(stripped, 'Bob', findClosestColor('#aaaaaa')).toAnsiString();
@@ -113,43 +115,43 @@ describe('PackageHelper', () => {
   });
 
   test('handleCommand ignores commands without pick', () => {
-    helper['handleCommand']('foo');
+    helper.handleCommand('foo');
     expect(client.Triggers.registerOneTimeTrigger).not.toHaveBeenCalled();
   });
 
   test('handleCommand registers triggers when picking package', () => {
-    helper['packages'] = [{ name: 'Bob' }];
-    jest.spyOn(helper as any, 'leadToPackage').mockImplementation();
+    helper.setPackages([{ name: 'Bob' }]);
     client.Triggers.registerOneTimeTrigger
       .mockReturnValueOnce('pickTrigger')
       .mockReturnValueOnce('failTrigger')
       .mockReturnValueOnce('delivery');
 
-    helper['handleCommand']('wybierz paczke 1');
+    // Call handleCommand directly
+    helper.handleCommand('wybierz paczke 1');
 
-    expect(helper['pick']).toBe(1);
     expect(client.Triggers.registerOneTimeTrigger).toHaveBeenCalledTimes(2);
 
     const successCb = client.Triggers.registerOneTimeTrigger.mock.calls[0][1];
-    successCb('', '', {} as any);
+    const successTriggerLine = new TriggerLine('');
+    successCb(successTriggerLine);
 
-    expect(helper.leadToPackage).toHaveBeenCalledWith('Bob');
-    expect(helper.currentPackage).toEqual({ name: 'Bob', time: undefined });
+    expect(helper.currentPackage()).toEqual({ name: 'Bob' });
     expect(client.Triggers.registerOneTimeTrigger).toHaveBeenCalledTimes(3);
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('failTrigger');
-    expect(helper.deliveryTrigger).toBe('delivery');
+    expect(helper.deliveryTrigger()).toBe('delivery');
   });
 
   test('handleCommand cancels pick when not trusted', () => {
-    helper['packages'] = [{ name: 'Bob' }];
+    helper.setPackages([{ name: 'Bob' }]);
     client.Triggers.registerOneTimeTrigger
       .mockReturnValueOnce('pickTrigger')
       .mockReturnValueOnce('failTrigger');
 
-    helper['handleCommand']('wybierz paczke 1');
+    helper.handleCommand('wybierz paczke 1');
 
     const failCb = client.Triggers.registerOneTimeTrigger.mock.calls[1][1];
-    failCb('', '', {} as any);
+    const failTriggerLine = new TriggerLine('');
+    failCb(failTriggerLine);
 
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('pickTrigger');
   });
@@ -157,61 +159,60 @@ describe('PackageHelper', () => {
   test('label trigger updates package status without starting timer', () => {
     helper.init();
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
-    const startSpy = jest.spyOn(helper as any, 'startTimer');
-    const registerSpy = jest.spyOn(helper as any, 'registerDeliveryTrigger');
     const raw = 'Wypisano na niej duzymi literami: Bob';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
+    const triggerLine = new TriggerLine(raw, { matches: match });
 
-    const result = trigger(raw, '', match);
+    const result = trigger(triggerLine);
 
-    expect(helper.currentPackage).toEqual({ name: 'Bob' });
+    expect(helper.currentPackage()).toEqual({ name: 'Bob' });
     expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
     const expectedColor = colorStringInLine(raw, 'Bob', findClosestColor('#ffff00')).toAnsiString();
     expect(result.toAnsiString()).toBe(expectedColor);
-    expect(startSpy).not.toHaveBeenCalled();
-    expect(registerSpy).toHaveBeenCalled();
   });
 
   test('label trigger does not overwrite current package when name matches', () => {
     helper.init();
-    helper.currentPackage = { name: 'Bob', time: '5' } as any;
+    helper.setCurrentPackage({ name: 'Bob', time: '5' });
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
     const raw = 'Wypisano na niej duzymi literami: Bob';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
+    const triggerLine = new TriggerLine(raw, { matches: match });
 
-    trigger(raw, '', match);
+    trigger(triggerLine);
 
-    expect(helper.currentPackage).toEqual({ name: 'Bob', time: '5' });
+    expect(helper.currentPackage()).toEqual({ name: 'Bob', time: '5' });
     expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Bob' });
   });
 
   test('label trigger skips registering delivery trigger when already registered', () => {
     helper.init();
-    helper.deliveryTrigger = 'exists' as any;
+    helper.setDeliveryTrigger('exists' as any);
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
-    const spy = jest.spyOn(helper as any, 'registerDeliveryTrigger');
     const raw = 'Wypisano na niej duzymi literami: Bob';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
+    const triggerLine = new TriggerLine(raw, { matches: match });
 
-    trigger(raw, '', match);
+    trigger(triggerLine);
 
-    expect(spy).not.toHaveBeenCalled();
+    expect(helper.deliveryTrigger()).toBe('exists');
   });
 
   test('label trigger replaces current package when name differs', () => {
     helper.init();
-    helper.currentPackage = { name: 'Bob', time: '5' } as any;
+    helper.setCurrentPackage({ name: 'Bob', time: '5' });
     const trigger = client.Triggers.registerTrigger.mock.calls[0][1];
     const raw = 'Wypisano na niej duzymi literami: Tom';
     const regex = /^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/;
     const match = raw.match(regex)!;
+    const triggerLine = new TriggerLine(raw, { matches: match });
 
-    trigger(raw, '', match);
+    trigger(triggerLine);
 
-    expect(helper.currentPackage).toEqual({ name: 'Tom' });
+    expect(helper.currentPackage()).toEqual({ name: 'Tom' });
     expect(client.sendEvent).toHaveBeenCalledWith('packageStatus', { recipient: 'Tom' });
   });
 
@@ -221,15 +222,16 @@ describe('PackageHelper', () => {
 
     helper.npc['Bob'] = 123;
     helper.npc['Tom'] = 456;
-    const cb = helper['packageTableCallback']();
+    const cb = helper.packageTableCallback();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
       ' |   1. Bob                     0/ 1/ 2        nieogr.      |\n' +
       " | * 2. Tom, Foo                1/ 2/ 3        5           |\n" +
       'Symbolem * oznaczono przesylki ciezkie.';
 
-    const result = cb(raw);
-    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    const triggerLine = new TriggerLine(raw);
+    const result = cb(triggerLine);
+    const lines = result.toAnsiString().split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
     expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('  1. Bob');
@@ -237,7 +239,7 @@ describe('PackageHelper', () => {
     expect(lines[4]).toBe('');
     expect(lines[5]).toBe('* 2. Tom, Foo');
     expect(lines[6]).toBe('   1/2/3 5 godz. dystans: 1');
-    expect(helper['packages']).toEqual([
+    expect(helper.packages()).toEqual([
       { name: 'Bob', time: undefined, distance: 0 },
       { name: 'Tom', time: '5', distance: 1 },
     ]);
@@ -251,15 +253,16 @@ describe('PackageHelper', () => {
 
     helper.npc['Bob'] = 123;
     helper.npc['Tom'] = 456;
-    const cb = helper['packageTableCallback']();
+    const cb = helper.packageTableCallback();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
       ' |   1. Bob                     0/ 1/ 2        nieogr.      |\n' +
       " | * 2. Tom, Foo                1/ 2/ 3        5           |\n" +
       'Symbolem * oznaczono przesylki ciezkie.';
 
-    const result = cb(raw);
-    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    const triggerLine = new TriggerLine(raw);
+    const result = cb(triggerLine);
+    const lines = result.toAnsiString().split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
     expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('  1. Bob');
@@ -267,7 +270,7 @@ describe('PackageHelper', () => {
     expect(lines[4]).toBe('');
     expect(lines[5]).toBe('* 2. Tom, Foo');
     expect(lines[6]).toBe('   1/2/3 5 godz. dystans: 1');
-    expect(helper['packages']).toEqual([
+    expect(helper.packages()).toEqual([
       { name: 'Bob', time: undefined, distance: 0 },
       { name: 'Tom', time: '5', distance: 1 },
     ]);
@@ -280,7 +283,7 @@ describe('PackageHelper', () => {
 
     helper.npc['Borgaf Kriegmann'] = 123;
     helper.npc['Georg Blaskovitz'] = 456;
-    const cb = helper['packageTableCallback']();
+    const cb = helper.packageTableCallback();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
       ' o============================================================================o\n' +
@@ -293,8 +296,9 @@ describe('PackageHelper', () => {
       ' |      Symbolem * oznaczono przesylki ciezkie.                               |\n' +
       ' o============================================================================o';
 
-    const result = cb(raw);
-    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    const triggerLine = new TriggerLine(raw);
+    const result = cb(triggerLine);
+    const lines = result.toAnsiString().split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
 
     expect(lines[0]).toBe('Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:');
     const rawBorderLength = ' o============================================================================o'.length;
@@ -325,7 +329,7 @@ describe('PackageHelper', () => {
     expect(secondRow!.trimEnd().endsWith('|')).toBe(true);
     expect(footer!.trimEnd().endsWith('|')).toBe(true);
 
-    expect(helper['packages']).toEqual([
+    expect(helper.packages()).toEqual([
       { name: 'Borgaf Kriegmann', time: undefined, distance: 0 },
       { name: 'Georg Blaskovitz', time: '8', distance: 1 },
     ]);
@@ -336,7 +340,7 @@ describe('PackageHelper', () => {
     client.OutputHandler.makeClickable.mockImplementation(l => l);
     helper.npc['Borgaf Kriegmann'] = 123;
 
-    const cb = helper['packageTableCallback']();
+    const cb = helper.packageTableCallback();
     const raw =
       'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n' +
       ' o============================================================================o\n' +
@@ -347,8 +351,9 @@ describe('PackageHelper', () => {
       ' o -------------------------------------------------------------------------- o\n' +
       'Symbolem * oznaczono przesylki ciezkie.';
 
-    const result = cb(raw);
-    const lines = result.split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
+    const triggerLine = new TriggerLine(raw);
+    const result = cb(triggerLine);
+    const lines = result.toAnsiString().split('\n').map(l => l.replace(/\x1B\[[0-9;]*m/g, ''));
 
     const topBorder = lines[1];
     const header = lines[2];

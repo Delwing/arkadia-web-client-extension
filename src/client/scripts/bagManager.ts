@@ -177,8 +177,8 @@ function showInterface(client: Client, bags: string[]) {
 function configure(client: Client) {
     const found: string[] = [];
     const tag = "bag-config";
-    client.Triggers.registerTrigger(/.*/, (raw, line) => {
-        const l = stripAnsiCodes(line).toLowerCase();
+    client.Triggers.registerTrigger(/.*/, (triggerLine) => {
+        const l = stripAnsiCodes(triggerLine.text).toLowerCase();
         if (l.startsWith("masz przy sobie")) {
             client.Triggers.removeByTag(tag);
             showInterface(client, found);
@@ -189,7 +189,7 @@ function configure(client: Client) {
                 }
             });
         }
-        return raw;
+        return triggerLine;
     }, tag);
     client.sendCommand("i");
 }

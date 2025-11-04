@@ -21,7 +21,13 @@ describe('/odloz_magie alias', () => {
     alias.callback(m);
     expect(client.sendCommand).toHaveBeenCalledWith('i');
     const cb = client.Triggers.registerTrigger.mock.calls[0][1];
-    cb('Masz przy sobie magiczny miecz', 'Masz przy sobie magiczny miecz');
+    const TriggerLine = require('@client/triggers/TriggerLine').default;
+    const triggerLine = new TriggerLine('Masz przy sobie magiczny miecz');
+    triggerLine.setMatches({
+        matches: ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray,
+        type: ''
+    });
+    cb(triggerLine);
     expect(client.FunctionalBind.set).toHaveBeenCalledWith('wloz magiczny miecz do skrzyni');
     expect(client.Triggers.removeTrigger).toHaveBeenCalled();
   });
@@ -34,7 +40,13 @@ describe('/odloz_magie alias', () => {
     alias.callback(m);
     expect(client.sendCommand).toHaveBeenCalledWith('i');
     const cb = client.Triggers.registerTrigger.mock.calls[0][1];
-    cb('Masz przy sobie magiczny miecz', 'Masz przy sobie magiczny miecz');
+    const TriggerLine = require('@client/triggers/TriggerLine').default;
+    const triggerLine = new TriggerLine('Masz przy sobie magiczny miecz');
+    triggerLine.setMatches({
+        matches: ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray,
+        type: ''
+    });
+    cb(triggerLine);
     expect(client.FunctionalBind.set).toHaveBeenCalledWith('wloz magiczny miecz do kufra');
     expect(client.Triggers.removeTrigger).toHaveBeenCalled();
   });

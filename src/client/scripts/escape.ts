@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "@modules/core/Colors";
+import TriggerLine from "../triggers/TriggerLine";
 
 const COLOR = findClosestColor('#6a5acd');
 const PANIC_COLOR = findClosestColor('#ff8c00');
@@ -10,30 +11,42 @@ export default function initEscape(client: Client) {
     const tag = 'escape';
     const parent = client.Triggers.registerTrigger(
         /(.*) uciekl.* ci\.$/,
-        (_, line) => colorString(line, COLOR),
+        (triggerLine) => {
+            const line = triggerLine.text;
+            return new TriggerLine(colorString(line, COLOR));
+        },
         tag,
         {stayOpenLines: 20}
     );
 
-    parent.registerChild(/(.*) podaza(?:ja)? na ([a-z-]+)\.$/, (_, line, m) => {
+    parent.registerChild(/(.*) podaza(?:ja)? na ([a-z-]+)\.$/, (triggerLine) => {
+        const line = triggerLine.text;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         const dir = m[2];
         printArrow(dir, COLOR);
-        return colorString(line, COLOR);
+        return new TriggerLine(colorString(line, COLOR));
     });
 
-    parent.registerChild(/(.*) w panice .* na ([a-z-]+)\.$/, (_, line, m) => {
+    parent.registerChild(/(.*) w panice .* na ([a-z-]+)\.$/, (triggerLine) => {
+        const line = triggerLine.text;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         const dir = m[2];
         printArrow(dir, PANIC_COLOR);
-        return colorString(line, PANIC_COLOR);
+        return new TriggerLine(colorString(line, PANIC_COLOR));
     });
 
     client.Triggers.registerTrigger(
         /^Udalo ci sie gdzies uciec!$/,
-        (_r, line) =>
-            client.prefix(
+        (triggerLine) => {
+            const line = triggerLine.text;
+            const result = client.prefix(
                 colorString(line, SUCCESS_COLOR),
                 colorString('--- ', PREFIX_COLOR)
-            ),
+            );
+            return new TriggerLine(result);
+        },
         tag
     );
 

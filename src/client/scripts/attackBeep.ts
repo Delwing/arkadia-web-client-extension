@@ -2,17 +2,18 @@ import Client from "../Client";
 import {colorString, findClosestColor} from "@modules/core/Colors";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from '../types/people';
+import TriggerLine from "../triggers/TriggerLine";
 
 const RED = findClosestColor("#ff0000");
 
-function highlightAttack(line: string, upper?: string) {
+function highlightAttack(line: string, upper?: string): string {
     if (upper && line.includes(upper)) {
         line = line.replace(upper, upper.toUpperCase());
     }
     return colorString(line, RED);
 }
 
-function highlightPhrase(line: string) {
+function highlightPhrase(line: string): string {
     const phrase = "atakuje cie";
     const colored = colorString(line, RED);
     return colored.replace(phrase, phrase.toUpperCase());
@@ -52,18 +53,22 @@ export default function initAttackBeep(client: Client) {
         return !!guild && enemyGuilds.includes(guild);
     }
 
-    const beep = (raw: string, _line: string, matches: RegExpMatchArray): string => {
+    const beep = (triggerLine: TriggerLine): TriggerLine => {
+        const matches = triggerLine.matches.matches;
+        if (!matches) return triggerLine;
+
+        const raw = triggerLine.toAnsiString();
         const attackerName = (matches.groups && (matches.groups as any).name) as string | undefined;
 
         if (attackerName && !shouldBeep(attackerName)) {
             // Don't beep, but still highlight the attack
             const upper = (matches.groups && (matches.groups as any).upper) as string | undefined;
-            return highlightAttack(raw, upper);
+            return new TriggerLine(highlightAttack(raw, upper));
         }
 
         client.sendEvent("sound:play", { key: "beep" });
         const upper = (matches.groups && (matches.groups as any).upper) as string | undefined;
-        return highlightAttack(raw, upper);
+        return new TriggerLine(highlightAttack(raw, upper));
     };
 
     // Listen for settings changes
@@ -85,5 +90,8 @@ export default function initAttackBeep(client: Client) {
         /^\w+(?: \w+){0,4} z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/
     ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
 
-    client.Triggers.registerTrigger('atakuje cie!', (_r, line) => highlightPhrase(line), tag);
+    client.Triggers.registerTrigger('atakuje cie!', (triggerLine) => {
+        const line = triggerLine.text;
+        return new TriggerLine(highlightPhrase(line));
+    }, tag);
 }

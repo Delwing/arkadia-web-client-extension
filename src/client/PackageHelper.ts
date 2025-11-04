@@ -34,127 +34,127 @@ const pickFailMessages = [
 const KNOWN_NPC_COLOR = findClosestColor('#63ba41');
 const UNKNOWN_NPC_COLOR = findClosestColor('#aaaaaa');
 
-export default class PackageHelper {
+export default function initPackageHelper(client: Client) {
+    const npc: Record<string, number> = {};
+    let enabled = false;
 
-    private client: Client
-    npc: Record<string, number> = {}
-    enabled = false;
+    let packages: { name: string; time?: string; distance?: number }[] = [];
+    let listTime = 0;
+    let timer: number | undefined;
+    let remover = () => {};
+    let locationListener: ((payload: { id?: number }) => void) | undefined;
+    let locationSubscription: (() => void) | undefined;
 
-    private packages: { name: string; time?: string; distance?: number }[] = []
-    private listTime = 0
-    private timer: number | undefined
-    private remover = () => {};
-    private locationListener?: (payload: { id?: number }) => void;
-    private locationSubscription?: () => void;
+    let pick: number;
+    let currentPackage: { name: string; time?: string; distance?: number } | undefined;
 
-    private pick: number
-    private currentPackage: { name: string; time?: string; distance?: number };
+    let deliveryTrigger: Trigger | undefined;
+    let pickTrigger: Trigger | undefined;
+    let failTrigger: Trigger | undefined;
 
-    deliveryTrigger: Trigger;
-    private pickTrigger: Trigger;
-    private failTrigger: Trigger;
+    client.on('npc', (data) => {
+        const list = Array.isArray(data) ? data : [];
+        list.forEach((item: { name: string | number; loc: number; }) => npc[item.name] = item.loc)
+    })
 
-    constructor(client: Client) {
-        this.client = client
-        this.client.on('npc', (data) => {
-            const list = Array.isArray(data) ? data : [];
-            list.forEach((item: { name: string | number; loc: number; }) => this.npc[item.name] = item.loc)
-        })
-
-
-        this.client.on('settings', (event) => {
-            const detail = (event ?? {}) as { packageHelper?: boolean };
-            const setting = detail?.packageHelper
-            const shouldEnable = setting === undefined ? true : setting
-            if (!this.enabled && shouldEnable) {
-                this.init()
-            } else if (this.enabled && !shouldEnable) {
-                this.disable()
-            }
-        })
-
-        this.init()
-    }
-
-    init() {
-        this.enabled = true;
-        this.client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (rawLine, __, matches, _type, triggerLine) => {
-            const name = toTitleCase(matches[1])
-            this.leadToPackage(name)
-            if (!this.currentPackage || this.currentPackage.name !== name) {
-                this.currentPackage = { name }
-            }
-            this.client.sendEvent('packageStatus', { recipient: name })
-            if (!this.deliveryTrigger) {
-                this.registerDeliveryTrigger()
-            }
-            const colorCode = this.npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
-            return colorStringInLine(triggerLine ?? rawLine, matches[1], colorCode)
-        }, tag)
-        this.client.Triggers.registerMultilineTrigger(packageTableRegex, this.packageTableCallback(), tag)
-    }
-
-    private onPackageList() {
-        this.packages = []
-        this.listTime = Date.now()
-        if (this.timer) {
-            clearInterval(this.timer)
-            this.timer = undefined
-            this.client.sendEvent('packageStatus', null)
+    client.on('settings', (event) => {
+        const detail = (event ?? {}) as { packageHelper?: boolean };
+        const setting = detail?.packageHelper
+        const shouldEnable = setting === undefined ? true : setting
+        if (!enabled && shouldEnable) {
+            init()
+        } else if (enabled && !shouldEnable) {
+            disable()
         }
-        this.remover();
-        this.remover = this.client.on("command", (command = "") => this.handleCommand(command));
+    })
+
+    function init() {
+        enabled = true;
+        client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (triggerLine) => {
+            const matches = triggerLine.matches.matches;
+            if (!matches) return triggerLine;
+            const name = toTitleCase(matches[1])
+            leadToPackage(name)
+            if (!currentPackage || currentPackage.name !== name) {
+                currentPackage = { name }
+            }
+            client.sendEvent('packageStatus', { recipient: name })
+            if (!deliveryTrigger) {
+                registerDeliveryTrigger()
+            }
+            const colorCode = npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
+            return colorStringInLine(triggerLine, matches[1], colorCode)
+        }, tag)
+        client.Triggers.registerMultilineTrigger(packageTableRegex, packageTableCallback(), tag)
     }
 
-    private handleCommand(command: string) {
+    function onPackageList() {
+        packages = []
+        listTime = Date.now()
+        if (timer) {
+            clearInterval(timer)
+            timer = undefined
+            client.sendEvent('packageStatus', null)
+        }
+        remover();
+        remover = client.on("command", (command = "") => handleCommand(command));
+    }
+
+    function handleCommand(command: string) {
         if (!command.startsWith(pickCommand)) {
             return;
         }
-        this.pick = parseInt(command.substring(pickCommand.length + 1).trim())
-        this.pickTrigger = this.client.Triggers.registerOneTimeTrigger(/^.* przekazuje ci jakas paczke\./, (): undefined => {
-            if (this.failTrigger) {
-                this.client.Triggers.removeTrigger(this.failTrigger)
-                this.failTrigger = undefined
+        pick = parseInt(command.substring(pickCommand.length + 1).trim())
+        pickTrigger = client.Triggers.registerOneTimeTrigger(/^.* przekazuje ci jakas paczke\./, (triggerLine) => {
+            if (failTrigger) {
+                client.Triggers.removeTrigger(failTrigger)
+                failTrigger = undefined
             }
-            this.currentPackage = this.packages[this.pick - 1]
-            this.leadToPackage(this.currentPackage.name)
-            this.startTimer()
-            this.registerDeliveryTrigger()
+            currentPackage = packages[pick - 1]
+            leadToPackage(currentPackage.name)
+            startTimer()
+            registerDeliveryTrigger()
+            return triggerLine;
         })
-        this.failTrigger = this.client.Triggers.registerOneTimeTrigger(pickFailMessages, (): undefined => {
-            if (this.pickTrigger) {
-                this.client.Triggers.removeTrigger(this.pickTrigger)
-                this.pickTrigger = undefined
+        failTrigger = client.Triggers.registerOneTimeTrigger(pickFailMessages, (triggerLine) => {
+            if (pickTrigger) {
+                client.Triggers.removeTrigger(pickTrigger)
+                pickTrigger = undefined
             }
+            return triggerLine;
         })
     }
 
-    private packageLineCallback() {
-        return (rawLine: string, _line: string, matches: RegExpMatchArray) => {
-            const info = this.parsePackageLine(matches)
-            const line = this.extendStandardDataLine(rawLine, info)
-            const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
+    function packageLineCallback() {
+        return (triggerLine: any) => {
+            const matches = triggerLine.matches.matches;
+            if (!matches) return triggerLine;
+            const info = parsePackageLine(matches)
+            const line = extendStandardDataLine(triggerLine.toAnsiString(), info)
+            const colorCode = npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
             const command = `${pickCommand} ${info.index}`
             const coloredLine = colorStringInLine(line, info.name, colorCode).toAnsiString()
-            return this.client.OutputHandler.makeClickable(coloredLine, info.name, () => {
-                this.client.sendCommand(command)
+            const clickable = client.OutputHandler.makeClickable(coloredLine, info.name, () => {
+                client.sendCommand(command)
             }, command)
+            triggerLine.setOverrideAnsi(clickable);
+            return triggerLine;
         };
     }
 
-    private isMobileBrowser() {
+    function isMobileBrowser() {
         return typeof navigator !== 'undefined' &&
             /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
-    private packageTableCallback() {
-        const lineCallback = this.packageLineCallback();
+    function packageTableCallback() {
+        const lineCallback = packageLineCallback();
         const widthLimit = 78;
-        return (raw: string): string => {
-            this.onPackageList();
-            const lines = raw.split('\n');
-            const narrow = this.isMobileBrowser() ||
-                (this.client.contentWidth && this.client.contentWidth < widthLimit);
+        return (triggerLine: any) => {
+            onPackageList();
+            const lines = triggerLine.text.split('\n');
+            const narrow = isMobileBrowser() ||
+                (client.contentWidth && client.contentWidth < widthLimit);
             if (narrow) {
                 const out = [shortInfo];
                 lines.forEach(line => {
@@ -168,17 +168,17 @@ export default class PackageHelper {
                     if (!matches) {
                         return;
                     }
-                    const info = this.parsePackageLine(matches);
+                    const info = parsePackageLine(matches);
                     const city = info.city ? `, ${info.city}` : '';
                     const heavy = info.heavy ? '* ' : '  ';
                     const first = RESET  + `${heavy}${info.index}. ${info.name}${city}`;
-                    const colorCode = this.npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
+                    const colorCode = npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
                     const coloredFirst = colorStringInLine(first, info.name, colorCode).toAnsiString();
-                    const clickable = this.client.OutputHandler.makeClickable(
+                    const clickable = client.OutputHandler.makeClickable(
                         coloredFirst,
                         info.name,
                         () => {
-                            this.client.sendCommand('wybierz paczke ' + info.index);
+                            client.sendCommand('wybierz paczke ' + info.index);
                         },
                         'wybierz paczke ' + info.index
                     ) + RESET   ;
@@ -187,41 +187,45 @@ export default class PackageHelper {
                     const second = `   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`;
                     out.push(clickable, second);
                 });
-                return out.join('\n');
+                triggerLine.setOverrideAnsi(out.join('\n'));
+                return triggerLine;
             }
-            return lines
+            const processedLines = lines
                 .map(line => {
                     const matches = line.match(packageLineRegex);
                     if (matches) {
-                        return lineCallback(line, '', matches) || line;
+                        const lineTrigger = new (triggerLine.constructor as any)(line, { matches });
+                        const result = lineCallback(lineTrigger);
+                        return result ? result.toAnsiString() : line;
                     }
-                    if (this.isStandardTopOrBottomBorder(line)) {
-                        return this.extendBorderLine(line, '=');
+                    if (isStandardTopOrBottomBorder(line)) {
+                        return extendBorderLine(line, '=');
                     }
-                    if (this.isStandardSeparator(line)) {
-                        return this.extendBorderLine(line, '-');
+                    if (isStandardSeparator(line)) {
+                        return extendBorderLine(line, '-');
                     }
-                    if (this.isStandardHeaderLine(line)) {
-                        return this.appendDistanceColumn(line, ' Dystans');
+                    if (isStandardHeaderLine(line)) {
+                        return appendDistanceColumn(line, ' Dystans');
                     }
-                    if (this.isStandardSubHeaderLine(line)) {
-                        return this.appendDistanceColumn(line, ' w krokach');
+                    if (isStandardSubHeaderLine(line)) {
+                        return appendDistanceColumn(line, ' w krokach');
                     }
-                    if (this.isStandardFooterLine(line)) {
-                        return this.appendDistanceColumn(line, '');
+                    if (isStandardFooterLine(line)) {
+                        return appendDistanceColumn(line, '');
                     }
                     if (line.startsWith(' |')) {
-                        return this.appendDistanceColumn(line, '');
+                        return appendDistanceColumn(line, '');
                     }
                     return line;
-                })
-                .join('\n');
+                });
+            triggerLine.setOverrideAnsi(processedLines.join('\n'));
+            return triggerLine;
         };
     }
 
-    private parsePackageLine(matches: RegExpMatchArray): PackageLineInfo {
+    function parsePackageLine(matches: RegExpMatchArray): PackageLineInfo {
         const name = matches.groups.name.trimEnd()
-        const distance = this.getDistanceToNpc(name)
+        const distance = getDistanceToNpc(name)
         const info: PackageLineInfo = {
             index: matches.groups.number,
             heavy: !!matches.groups.heavy,
@@ -233,16 +237,16 @@ export default class PackageHelper {
             time: matches.groups.time,
             distance,
         }
-        this.packages.push({ name, time: info.time, distance })
+        packages.push({ name, time: info.time, distance })
         return info
     }
 
-    private extendStandardDataLine(rawLine: string, info: PackageLineInfo): string {
+    function extendStandardDataLine(rawLine: string, info: PackageLineInfo): string {
         const distanceValue = info.distance !== undefined ? `${info.distance}` : '--'
-        return this.appendDistanceColumn(rawLine, ` dystans: ${distanceValue}`)
+        return appendDistanceColumn(rawLine, ` dystans: ${distanceValue}`)
     }
 
-    private appendDistanceColumn(line: string, content: string): string {
+    function appendDistanceColumn(line: string, content: string): string {
         const index = line.lastIndexOf('|')
         if (index === -1) {
             return line
@@ -251,11 +255,11 @@ export default class PackageHelper {
         const normalized = content
             ? (content.startsWith(' ') ? content : ` ${content}`)
             : ''
-        const padded = this.padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH)
+        const padded = padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH)
         return `${prefix}${padded}|`
     }
 
-    private extendBorderLine(line: string, fill: '=' | '-') {
+    function extendBorderLine(line: string, fill: '=' | '-') {
         const first = line.indexOf(fill)
         const last = line.lastIndexOf(fill)
         if (first === -1 || last === -1) {
@@ -265,112 +269,114 @@ export default class PackageHelper {
         return line.slice(0, first) + fill.repeat(repeat) + line.slice(last + 1)
     }
 
-    private isStandardTopOrBottomBorder(line: string): boolean {
+    function isStandardTopOrBottomBorder(line: string): boolean {
         const trimmed = line.trim()
         return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('=')
     }
 
-    private isStandardSeparator(line: string): boolean {
+    function isStandardSeparator(line: string): boolean {
         const trimmed = line.trim()
         return trimmed.startsWith('o') && trimmed.endsWith('o') && trimmed.includes('-')
     }
 
-    private isStandardHeaderLine(line: string): boolean {
+    function isStandardHeaderLine(line: string): boolean {
         return line.startsWith(' |') && line.includes('Adresat badz')
     }
 
-    private isStandardSubHeaderLine(line: string): boolean {
+    function isStandardSubHeaderLine(line: string): boolean {
         return line.startsWith(' |') && line.includes('urzad pocztowy')
     }
 
-    private isStandardFooterLine(line: string): boolean {
+    function isStandardFooterLine(line: string): boolean {
         return line.startsWith(' |') && line.includes('Symbolem *')
     }
 
-    private padRight(value: string, length: number): string {
+    function padRight(value: string, length: number): string {
         if (value.length >= length) {
             return value
         }
         return value + ' '.repeat(length - value.length)
     }
 
-    private startTimer() {
-        if (!this.currentPackage) {
+    function startTimer() {
+        if (!currentPackage) {
             return
         }
-        const hours = this.currentPackage.time ? parseInt(this.currentPackage.time as any) : null
-        if (this.timer) {
-            clearInterval(this.timer)
+        const hours = currentPackage.time ? parseInt(currentPackage.time as any) : null
+        if (timer) {
+            clearInterval(timer)
         }
         if (hours == null) {
-            this.client.sendEvent('packageStatus', {recipient: this.currentPackage.name})
-            this.timer = undefined
+            client.sendEvent('packageStatus', {recipient: currentPackage.name})
+            timer = undefined
             return
         }
         const total = hours * 120
         const update = () => {
-            const left = total - Math.floor((Date.now() - this.listTime) / 1000)
-            this.client.sendEvent('packageStatus', {recipient: this.currentPackage!.name, seconds: left})
-            if (left <= 0 && this.timer) {
-                clearInterval(this.timer)
-                this.timer = undefined
+            const left = total - Math.floor((Date.now() - listTime) / 1000)
+            client.sendEvent('packageStatus', {recipient: currentPackage!.name, seconds: left})
+            if (left <= 0 && timer) {
+                clearInterval(timer)
+                timer = undefined
             }
         }
         update()
-        this.timer = window.setInterval(update, 1000)
+        timer = window.setInterval(update, 1000)
     }
 
-    private stopTimer() {
-        if (this.timer) {
-            clearInterval(this.timer)
-            this.timer = undefined
+    function stopTimer() {
+        if (timer) {
+            clearInterval(timer)
+            timer = undefined
         }
-        this.client.sendEvent('packageStatus', null)
+        client.sendEvent('packageStatus', null)
     }
 
-    private registerDeliveryTrigger() {
-        this.deliveryTrigger = this.client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (_, __, matches): undefined => {
-            if (matches[1] === 'Oddajesz') {
-                if (!this.npc[this.currentPackage.name]) {
-                    this.client.println(`Nowy adresat: ${this.currentPackage.name} | ${this.client.Map.currentRoom.id}`)
-                    void addLocalNpc({ name: this.currentPackage.name, loc: this.client.Map.currentRoom.id })
+    function registerDeliveryTrigger() {
+        deliveryTrigger = client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (triggerLine) => {
+            const matches = triggerLine.matches.matches;
+            if (matches && matches[1] === 'Oddajesz') {
+                if (!npc[currentPackage!.name]) {
+                    client.println(`Nowy adresat: ${currentPackage!.name} | ${client.Map.currentRoom.id}`)
+                    void addLocalNpc({ name: currentPackage!.name, loc: client.Map.currentRoom.id })
                         .catch(err => console.error('Failed to add NPC:', err))
                 }
             }
-            this.currentPackage = undefined;
-            this.stopTimer();
-            this.deliveryTrigger = undefined;
+            currentPackage = undefined;
+            stopTimer();
+            deliveryTrigger = undefined;
+            return triggerLine;
         })
     }
 
-    private leadToPackage(name: string) {
-        const location = this.findNpcLocation(name)
+    function leadToPackage(name: string) {
+        const location = findNpcLocation(name)
         if (location) {
-            this.client.sendEvent('leadTo', location)
+            client.sendEvent('leadTo', location)
         }
-        if (this.locationSubscription) {
-            this.locationSubscription();
-            this.locationSubscription = undefined;
+        if (locationSubscription) {
+            locationSubscription();
+            locationSubscription = undefined;
         }
-        this.locationListener = (payload) => {
+        locationListener = (payload) => {
             const roomId = payload?.id;
             if (roomId === location) {
-                this.locationSubscription?.();
-                this.locationSubscription = undefined;
-                this.client.on('gmcp_msg.room.exits', () => {
-                    this.client.FunctionalBind.set('oddaj paczke', () => this.client.sendCommand('oddaj paczke'));
+                locationSubscription?.();
+                locationSubscription = undefined;
+                client.on('gmcp_msg.room.exits', () => {
+                    client.FunctionalBind.set('oddaj paczke', () => client.sendCommand('oddaj paczke'));
                 }, {once: true});
             }
         }
-        this.locationSubscription = this.client.on('enterLocation', (detail) => {
-            this.locationListener?.((detail ?? {}) as { id?: number });
+        locationSubscription = client.on('enterLocation', (detail) => {
+            locationListener?.((detail ?? {}) as { id?: number });
         });
     }
 
-    private findNpcLocation(name: string): number | undefined {
-        let location = this.npc[name]
+    function findNpcLocation(name: string): number | undefined {
+        let location = npc[name]
         if (!location) {
-            const found = Object.entries(this.npc).find(([npc]) => name.toLowerCase() === npc.toLowerCase())
+            const found = Object.entries(npc).find(([n]) => name.toLowerCase() === n.toLowerCase())
             if (found) {
                 [, location] = found
             }
@@ -378,13 +384,13 @@ export default class PackageHelper {
         return location
     }
 
-    private getDistanceToNpc(name: string): number | undefined {
-        const location = this.findNpcLocation(name)
-        const currentRoom = this.client.Map.currentRoom
+    function getDistanceToNpc(name: string): number | undefined {
+        const location = findNpcLocation(name)
+        const currentRoom = client.Map.currentRoom
         if (!location || !currentRoom?.id) {
             return undefined
         }
-        const findPath = this.client.Map.findPath?.bind(this.client.Map)
+        const findPath = client.Map.findPath?.bind(client.Map)
         if (!findPath) {
             return undefined
         }
@@ -399,9 +405,27 @@ export default class PackageHelper {
         }
     }
 
-    disable() {
-        this.client.Triggers.removeByTag(tag)
-        this.stopTimer()
+    function disable() {
+        client.Triggers.removeByTag(tag)
+        stopTimer()
     }
 
+    init()
+
+    return {
+        npc,
+        enabled: () => enabled,
+        packages: () => packages,
+        setPackages: (p: any[]) => { packages = p },
+        currentPackage: () => currentPackage,
+        setCurrentPackage: (pkg: any) => { currentPackage = pkg },
+        deliveryTrigger: () => deliveryTrigger,
+        setDeliveryTrigger: (t: any) => { deliveryTrigger = t },
+        init,
+        disable,
+        packageLineCallback,
+        packageTableCallback,
+        handleCommand,
+        leadToPackage,
+    }
 }

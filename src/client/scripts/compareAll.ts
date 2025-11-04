@@ -1,5 +1,4 @@
 import Client from "../Client";
-import {SKIP_LINE} from "../ControlConstants";
 
 export interface ComparisonStats {
     sil?: number;
@@ -96,8 +95,10 @@ export default function initCompareAll(
 ) {
     const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jest(?<mod>es)? (?<desc>.*?)[aey] (?:jak|niz) (?<osoba>.*)\.$/;
 
-    client.Triggers.registerTrigger(triggerPattern, (_raw, _line, m) => {
-        if (!queue.length) return undefined;
+    client.Triggers.registerTrigger(triggerPattern, (triggerLine) => {
+        if (!queue.length) return triggerLine;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         const item = queue.shift()!;
         const osoba = m.groups?.osoba?.trim() || item.target;
         const desc = m.groups?.desc?.trim() || "";
@@ -110,7 +111,7 @@ export default function initCompareAll(
         }
         comparisonResults[osoba][item.stat] = val;
         pending--;
-        return SKIP_LINE;
+        return null;
     }, "compare-all");
 
     function send(statWord: string, stat: keyof ComparisonStats, id: string) {

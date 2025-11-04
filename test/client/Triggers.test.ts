@@ -1,9 +1,13 @@
 import Triggers from '@client/Triggers';
+import TriggerLine from '@client/triggers/TriggerLine';
 
 describe('Triggers', () => {
   test('parseLine executes registered trigger and returns callback output', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn(() => 'processed');
+    const cb = jest.fn((tl: TriggerLine) => {
+      tl.setOverrideAnsi('processed');
+      return tl;
+    });
     triggers.registerTrigger(/foo/, cb);
 
     const result = triggers.parseLine('foo', '');
@@ -37,7 +41,10 @@ describe('Triggers', () => {
 
   test('parseMultiline executes registered multiline trigger', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn(() => 'changed');
+    const cb = jest.fn((tl: TriggerLine) => {
+      tl.setOverrideAnsi('changed');
+      return tl;
+    });
     triggers.registerMultilineTrigger(/foo\nbar/, cb);
 
     const result = triggers.parseMultiline('foo\nbar', '');
@@ -102,8 +109,13 @@ describe('Triggers', () => {
 
   test('token trigger passes correct substring to callback', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn((raw, _line, matches) => {
-      return raw.substring(0, matches.index!) + '[' + matches[0] + ']' + raw.substring(matches.index! + matches[0].length);
+    const cb = jest.fn((triggerLine: TriggerLine) => {
+      const matches = triggerLine.matches.matches;
+      if (!matches) return triggerLine;
+      const raw = triggerLine.toAnsiString();
+      const result = raw.substring(0, matches.index!) + '[' + matches[0] + ']' + raw.substring(matches.index! + matches[0].length);
+      triggerLine.setOverrideAnsi(result);
+      return triggerLine;
     });
     triggers.registerTokenTrigger('Dargoth MC', cb);
 
@@ -133,16 +145,19 @@ describe('Triggers', () => {
     triggers.parseLine('bar', '');
 
     expect(cb).toHaveBeenCalledTimes(1);
-    const matches = cb.mock.calls[0][2];
-    expect(matches[0]).toBe('bar');
+    const triggerLine = cb.mock.calls[0][0] as TriggerLine;
+    const matches = triggerLine.matches.matches;
+    expect(matches![0]).toBe('bar');
   });
 
   test('triggerLine replace preserves ANSI formatting without manual handling', () => {
     const triggers = new Triggers({} as any);
-    triggers.registerTrigger(/Azure/, (_raw, _line, matches, _type, triggerLine) => {
+    triggers.registerTrigger(/Azure/, (triggerLine) => {
       expect(triggerLine).toBeDefined();
-      triggerLine!.replace([matches.index!, matches.index! + matches[0].length], 'Blue');
-      return undefined;
+      const matches = triggerLine.matches.matches;
+      if (!matches) return triggerLine;
+      triggerLine.replace([matches.index!, matches.index! + matches[0].length], 'Blue');
+      return triggerLine;
     });
 
     const result = triggers.parseLine('\u001b[34mAzure\u001b[0m sea', '');
@@ -152,10 +167,12 @@ describe('Triggers', () => {
 
   test('triggerLine insert retains hyperlink metadata', () => {
     const triggers = new Triggers({} as any);
-    triggers.registerTrigger(/Map/, (_raw, _line, matches, _type, triggerLine) => {
+    triggers.registerTrigger(/Map/, (triggerLine) => {
       expect(triggerLine).toBeDefined();
-      triggerLine!.insert(matches.index! + matches[0].length, ' link');
-      return undefined;
+      const matches = triggerLine.matches.matches;
+      if (!matches) return triggerLine;
+      triggerLine.insert(matches.index! + matches[0].length, ' link');
+      return triggerLine;
     });
 
     const raw = '{clickOpen:9:map}Map{clickClose} ahead';
@@ -167,13 +184,15 @@ describe('Triggers', () => {
   test('multiline triggers keep plain-text indices aligned with metadata', () => {
     const triggers = new Triggers({} as any);
     let observedIndex: number | undefined;
-    triggers.registerMultilineTrigger(/Second/, (_raw, _line, matches, _type, triggerLine) => {
+    triggers.registerMultilineTrigger(/Second/, (triggerLine) => {
       expect(triggerLine).toBeDefined();
-      const metadata = triggerLine!.matches.matches;
+      const metadata = triggerLine.matches.matches;
+      const matches = triggerLine.matches.matches;
+      if (!matches) return triggerLine;
       expect(metadata?.index).toBe(matches.index);
-      expect(triggerLine!.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Second');
+      expect(triggerLine.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Second');
       observedIndex = matches.index;
-      return undefined;
+      return triggerLine;
     });
 
     const raw = '\u001b[31mFirst\u001b[0m line\n{clickOpen:7}Second{clickClose} line';
@@ -185,13 +204,15 @@ describe('Triggers', () => {
   test('token triggers expose plain-text indices despite formatting', () => {
     const triggers = new Triggers({} as any);
     let observedIndex: number | undefined;
-    triggers.registerTokenTrigger('Eamon', (_raw, _line, matches, _type, triggerLine) => {
+    triggers.registerTokenTrigger('Eamon', (triggerLine) => {
       expect(triggerLine).toBeDefined();
-      const metadata = triggerLine!.matches.matches;
+      const metadata = triggerLine.matches.matches;
+      const matches = triggerLine.matches.matches;
+      if (!matches) return triggerLine;
       expect(metadata?.index).toBe(matches.index);
-      expect(triggerLine!.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Eamon');
+      expect(triggerLine.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Eamon');
       observedIndex = matches.index;
-      return undefined;
+      return triggerLine;
     });
 
     const raw = '\u001b[32mEamon\u001b[0m arrives in style';

@@ -81,16 +81,18 @@ export default class People {
                 return
             }
 
-            const descCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, triggerLine?: TriggerLine) => {
+            const descCallback = (triggerLine: TriggerLine) => {
+                const matches = triggerLine.matches.matches;
+                if (!matches) return triggerLine;
                 const index = matches.index || 0
                 const token = matches[0]
-                const lineInstance = triggerLine ?? new TriggerLine(rawLine)
-                const plainSuffix = lineInstance.text.substring(index + token.length)
+                const rawLine = triggerLine.toAnsiString()
+                const plainSuffix = triggerLine.text.substring(index + token.length)
                 const nextWord = plainSuffix
                     .toLowerCase()
                     .replace(/^\s+/, '')
                 if (nextWord.startsWith('chaosu')) {
-                    return triggerLine ? undefined : rawLine
+                    return triggerLine
                 }
                 return this.buildDescHighlight(triggerLine, rawLine, token, index, replacement, state, RED)
             }
@@ -101,17 +103,18 @@ export default class People {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
-                    const nameCallback = (rawLine: string, _line: string, matches: RegExpMatchArray, _type: string, triggerLine?: TriggerLine) => {
+                    const nameCallback = (triggerLine: TriggerLine) => {
+                        const matches = triggerLine.matches.matches;
+                        if (!matches) return triggerLine;
                         const token = matches[0]
-                        const lineInstance = triggerLine ?? new TriggerLine(rawLine)
-                        const indices = this.findTokenIndices(lineInstance.text, token)
+                        const indices = this.findTokenIndices(triggerLine.text, token)
                         if (indices.length === 0) {
-                            return triggerLine ? undefined : rawLine
+                            return triggerLine
                         }
                         for (let i = indices.length - 1; i >= 0; i -= 1) {
-                            this.buildNameHighlight(lineInstance, token, indices[i], chosenColor)
+                            this.buildNameHighlight(triggerLine, token, indices[i], chosenColor)
                         }
-                        return lineInstance
+                        return triggerLine
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)

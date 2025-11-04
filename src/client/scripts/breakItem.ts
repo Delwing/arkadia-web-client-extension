@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
+import TriggerLine from "../triggers/TriggerLine";
 
 export default function initBreakItem(client: Client) {
     const COLOR = findClosestColor("#ff6347");
@@ -20,7 +21,8 @@ export default function initBreakItem(client: Client) {
     const format = (line: string) => `\n\n${client.prefix(line, colorString("[  SPRZET  ] ", COLOR))}\n\n`;
 
     entries.forEach(({ pattern, command }) => {
-        client.Triggers.registerTrigger(pattern, (_raw, line) => {
+        client.Triggers.registerTrigger(pattern, (triggerLine) => {
+            const line = triggerLine.text;
             client.sendEvent("sound:play", { key: "beep" });
             client.sendEvent('breakItem', { text: line, command });
             const label = command ? ` >> ${command}` : " >> Sprzet zniszczony";
@@ -29,7 +31,8 @@ export default function initBreakItem(client: Client) {
                     client.sendCommand(command);
                 }
             }, true);
-            return format(line);
+            const formatted = format(line);
+            return new TriggerLine(formatted);
         }, tag);
     });
 }

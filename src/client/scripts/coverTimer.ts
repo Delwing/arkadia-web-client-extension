@@ -49,9 +49,9 @@ export default function initCoverTimer(client: Client) {
     }
 
     [...successPatterns, ...failurePatterns].forEach(p => {
-        client.Triggers.registerTrigger(p, () => {
+        client.Triggers.registerTrigger(p, (triggerLine) => {
             startTimer();
-            return undefined;
+            return triggerLine;
         }, tag);
     });
 }

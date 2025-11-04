@@ -35,11 +35,9 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
 
 
     function isCombatMsg(
-        _rawLine: string,
-        _line: string,
-        _matches: any,
-        type: string
+        triggerLine: TriggerLine
     ): RegExpMatchArray | undefined {
+        const type = triggerLine.matches.type || "";
         return combatTypes.indexOf(type) > -1 ? new EmptyMatches() : undefined;
     }
 
@@ -116,13 +114,47 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     }
 
     const combatMessages = client.Triggers.registerTrigger(isCombatMsg)
-    combatMessages.registerChild(/^Ledwo muskasz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "1", triggerLine))
-    combatMessages.registerChild(/^Lekko ranisz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "2", triggerLine))
-    combatMessages.registerChild(/^Ranisz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "3", triggerLine))
-    combatMessages.registerChild(/^Powaznie ranisz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "4", triggerLine))
-    combatMessages.registerChild(/^Bardzo ciezko ranisz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "5", triggerLine))
-    combatMessages.registerChild(/^Masakrujesz/, (rawLine, _, matches, __, triggerLine) => gagOwnRegularHits(rawLine, matches, "6", triggerLine))
-    combatMessages.registerChild(/^(?<attacker>\w+(?: \w+){0,4}?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|smiertelnie rani) (?<target>cie) (?<weapon>.+?), trafiajac cie w (?<where>.*)\.$/, (rawLine, _, matches, type, triggerLine) => gagOtherRegularHits(rawLine, matches, type, triggerLine))
-    combatMessages.registerChild(/^(?<attacker>\w+(?: \w+){0,4}?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|smiertelnie rani) (?<target_weapon>.+?), trafiajac (?:go|ja|je) w (?<where>.*)\.$/, (rawLine, _, matches, type, triggerLine) => gagOtherRegularHits(rawLine, matches, type, triggerLine))
+    combatMessages.registerChild(/^Ledwo muskasz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "1", triggerLine);
+    })
+    combatMessages.registerChild(/^Lekko ranisz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "2", triggerLine);
+    })
+    combatMessages.registerChild(/^Ranisz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "3", triggerLine);
+    })
+    combatMessages.registerChild(/^Powaznie ranisz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "4", triggerLine);
+    })
+    combatMessages.registerChild(/^Bardzo ciezko ranisz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "5", triggerLine);
+    })
+    combatMessages.registerChild(/^Masakrujesz/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        return gagOwnRegularHits(rawLine, matches, "6", triggerLine);
+    })
+    combatMessages.registerChild(/^(?<attacker>\w+(?: \w+){0,4}?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|smiertelnie rani) (?<target>cie) (?<weapon>.+?), trafiajac cie w (?<where>.*)\.$/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        const type = triggerLine.matches.type || "";
+        return gagOtherRegularHits(rawLine, matches, type, triggerLine);
+    })
+    combatMessages.registerChild(/^(?<attacker>\w+(?: \w+){0,4}?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|smiertelnie rani) (?<target_weapon>.+?), trafiajac (?:go|ja|je) w (?<where>.*)\.$/, (triggerLine) => {
+        const rawLine = triggerLine.toAnsiString();
+        const matches = triggerLine.matches.matches as RegExpMatchArray;
+        const type = triggerLine.matches.type || "";
+        return gagOtherRegularHits(rawLine, matches, type, triggerLine);
+    })
 }
 

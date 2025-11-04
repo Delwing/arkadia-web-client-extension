@@ -105,7 +105,8 @@ export default class TriggerLine {
     }
 
     clearMatches(): void {
-        this.metadata = {};
+        const type = this.metadata.type;
+        this.metadata = type !== undefined ? { type } : {};
     }
 
     replace(range: TextRange, text: string, style?: FormatStyle): this {

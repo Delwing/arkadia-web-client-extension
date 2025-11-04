@@ -76,29 +76,29 @@ export default function initLamp(client: Client) {
     ]
     const noBottlePattern = /^Czym chcesz napelnic(?: [a-z ]+)? lampe/
 
-    client.Triggers.registerTrigger(startPattern, () => {
+    client.Triggers.registerTrigger(startPattern, (triggerLine) => {
         startTimer()
-        return undefined
+        return triggerLine
     }, tag)
 
-    offPatterns.forEach(p => client.Triggers.registerTrigger(p, () => {
+    offPatterns.forEach(p => client.Triggers.registerTrigger(p, (triggerLine) => {
         stopTimer()
-        return undefined
+        return triggerLine
     }, tag))
 
-    client.Triggers.registerTrigger(refillPattern, () => {
+    client.Triggers.registerTrigger(refillPattern, (triggerLine) => {
         resetTimer()
-        return undefined
+        return triggerLine
     }, tag)
 
-    emptyPatterns.forEach(p => client.Triggers.registerTrigger(p, () => {
+    emptyPatterns.forEach(p => client.Triggers.registerTrigger(p, (triggerLine) => {
         client.FunctionalBind.set(' >> Odloz olej, wez butelke do reki i napelnij lampe', emptyBottle)
-        return undefined
+        return triggerLine
     }, tag))
 
-    client.Triggers.registerTrigger(noBottlePattern, () => {
+    client.Triggers.registerTrigger(noBottlePattern, (triggerLine) => {
         client.FunctionalBind.set(' >> Wez butelke do reki.', takeBottle)
-        return undefined
+        return triggerLine
     }, tag)
 
     client.aliases.push({

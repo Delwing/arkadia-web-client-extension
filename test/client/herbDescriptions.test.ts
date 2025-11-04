@@ -74,12 +74,15 @@ describe('herb descriptions', () => {
     matches.index = baseLine.indexOf('zolty jasny kwiat');
     matches.input = baseLine;
 
-    const fromRaw = callback(baseLine, baseLine, matches, '', undefined) as TriggerLine;
+    const triggerLineFromRaw = new TriggerLine(baseLine);
+    triggerLineFromRaw.setMatches({ matches, type: '' });
+    const fromRaw = callback(triggerLineFromRaw) as TriggerLine;
     expect(fromRaw).toBeInstanceOf(TriggerLine);
     expect(stripAnsiCodes(fromRaw.toAnsiString())).toBe('Widzisz zolty jasny kwiat (deliona)');
 
     const existingLine = new TriggerLine(baseLine);
-    const fromTriggerLine = callback(baseLine, baseLine, matches, '', existingLine) as TriggerLine;
+    existingLine.setMatches({ matches, type: '' });
+    const fromTriggerLine = callback(existingLine) as TriggerLine;
     expect(fromTriggerLine).toBe(existingLine);
     expect(stripAnsiCodes(fromTriggerLine.toAnsiString())).toBe('Widzisz zolty jasny kwiat (deliona)');
   });

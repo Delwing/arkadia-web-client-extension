@@ -9,44 +9,41 @@ const RESET = "\x1B[0m";
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
-export default class InlineCompassRose {
-    private client: Client;
-    private exits = new Set<string>();
-    private enabled = false;
-    private unsubscribeExits?: () => void;
-    private listener = () => {
+export default function initInlineCompassRose(client: Client) {
+    let exits = new Set<string>();
+    let enabled = false;
+    let unsubscribeExits: (() => void) | undefined;
+
+    const listener = () => {
         const data = gmcp?.room?.info;
-        this.exits = new Set(this.parseExits(data));
-        this.showCompassRose();
+        exits = new Set(parseExits(data));
+        showCompassRose();
     };
 
-    constructor(client: Client) {
-        this.client = client;
-        this.client.on("settings", (payload) => {
-            const detail = (payload ?? {}) as { inlineCompassRose?: boolean };
-            const enabled = !!detail.inlineCompassRose;
-            if (enabled) {
-                this.enable();
-            } else {
-                this.disable();
-            }
-        });
+    client.on("settings", (payload) => {
+        const detail = (payload ?? {}) as { inlineCompassRose?: boolean };
+        const shouldEnable = !!detail.inlineCompassRose;
+        if (shouldEnable) {
+            enable();
+        } else {
+            disable();
+        }
+    });
+
+    function enable() {
+        if (enabled) return;
+        enabled = true;
+        unsubscribeExits = client.on("gmcp_msg.room.exits", () => listener());
     }
 
-    enable() {
-        if (this.enabled) return;
-        this.enabled = true;
-        this.unsubscribeExits = this.client.on("gmcp_msg.room.exits", () => this.listener());
+    function disable() {
+        if (!enabled) return;
+        enabled = false;
+        unsubscribeExits?.();
+        unsubscribeExits = undefined;
     }
 
-    disable() {
-        if (!this.enabled) return;
-        this.enabled = false;
-        this.unsubscribeExits?.();
-        this.unsubscribeExits = undefined;
-    }
-
-    private parseExits(detail: any): string[] {
+    function parseExits(detail: any): string[] {
         let list: string[] = [];
         if (!detail) return list;
         if (Array.isArray(detail)) {
@@ -64,23 +61,23 @@ export default class InlineCompassRose {
             .filter((dir) => VALID_SHORT_DIRS.has(dir));
     }
 
-    private hasExit(short: string): boolean {
-        return this.exits.has(short);
+    function hasExit(short: string): boolean {
+        return exits.has(short);
     }
 
-    private printExit(short: string): string {
-        if (!this.hasExit(short)) return " ".repeat(short.length);
+    function printExit(short: string): string {
+        if (!hasExit(short)) return " ".repeat(short.length);
         return color(SPRING_GREEN) + short.toUpperCase() + RESET;
     }
 
-    private showCompassRose() {
-        this.client.println(
+    function showCompassRose() {
+        client.println(
             [
-                `       ${this.printExit("nw")}  ${this.printExit("n")}  ${this.printExit("ne")}    ${this.printExit("u")}`,
-                `         ${this.hasExit("nw") ? "\\" : " "} ${this.hasExit("n") ? "|" : " "} ${this.hasExit("ne") ? "/" : " "}      ${this.hasExit("u") ? "|" : ""}`,
-                `       ${this.printExit("w")}${this.hasExit("w") ? "---" : "   "}${color(DIM_GRAY)}X${RESET}${this.hasExit("e") ? "---" : "   "}${this.printExit("e")}    ${this.hasExit("d") || this.hasExit("u") ? "o" : ""}`,
-                `         ${this.hasExit("sw") ? "/" : " "} ${this.hasExit("s") ? "|" : " "} ${this.hasExit("se") ? "\\" : " "}      ${this.hasExit("d") ? "|" : ""}`,
-                `       ${this.printExit("sw")}  ${this.printExit("s")}  ${this.printExit("se")}    ${this.printExit("d")}`,
+                `       ${printExit("nw")}  ${printExit("n")}  ${printExit("ne")}    ${printExit("u")}`,
+                `         ${hasExit("nw") ? "\\" : " "} ${hasExit("n") ? "|" : " "} ${hasExit("ne") ? "/" : " "}      ${hasExit("u") ? "|" : ""}`,
+                `       ${printExit("w")}${hasExit("w") ? "---" : "   "}${color(DIM_GRAY)}X${RESET}${hasExit("e") ? "---" : "   "}${printExit("e")}    ${hasExit("d") || hasExit("u") ? "o" : ""}`,
+                `         ${hasExit("sw") ? "/" : " "} ${hasExit("s") ? "|" : " "} ${hasExit("se") ? "\\" : " "}      ${hasExit("d") ? "|" : ""}`,
+                `       ${printExit("sw")}  ${printExit("s")}  ${printExit("se")}    ${printExit("d")}`,
             ].filter(item => item.trim().length != 0).join("\n")
         );
     }

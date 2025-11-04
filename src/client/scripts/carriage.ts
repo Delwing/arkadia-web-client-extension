@@ -1,19 +1,19 @@
 import Client from "../Client";
 
 export default function initCarriage(client: Client) {
-    const enable = () => {
+    const enable = (triggerLine) => {
         client.carriageMode = true;
         if (client.moveModeButton) {
             client.moveModeButton.disabled = true;
         }
-        return undefined;
+        return triggerLine;
     };
-    const disable = () => {
+    const disable = (triggerLine) => {
         client.carriageMode = false;
         if (client.moveModeButton) {
             client.moveModeButton.disabled = false;
         }
-        return undefined;
+        return triggerLine;
     };
     client.Triggers.registerTrigger(/^Siadasz w (.*) bryczce\.$/, enable, "carriageMode");
     client.Triggers.registerTrigger(/^Zsiadasz z (.*) bryczki\.$/, disable, "carriageMode");

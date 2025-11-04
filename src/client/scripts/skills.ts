@@ -109,10 +109,12 @@ export default function initSkills(
         disable();
         client.Triggers.registerMultilineTrigger(
             /[^:]+:\s+\S+/,
-            (raw) => {
+            (triggerLine) => {
+                const raw = triggerLine.toAnsiString();
                 const out = process(raw);
+                triggerLine.setOverrideAnsi(out);
                 disable();
-                return out;
+                return triggerLine;
             },
             tag
         );

@@ -34,24 +34,26 @@ export default function initUserTriggers(client: Client) {
                 console.error('Invalid trigger pattern', item.pattern, e);
                 return;
             }
-            const trigger = client.Triggers.registerTrigger(regexp, (raw, _, matches) => {
-                if (!matches) return raw;
+            const trigger = client.Triggers.registerTrigger(regexp, (triggerLine) => {
+                const matches = triggerLine.matches.matches;
+                if (!matches) return triggerLine;
+                const raw = triggerLine.toAnsiString();
                 const r = new RegExp(regexp.source, regexp.flags.includes('g') ? regexp.flags : regexp.flags + 'g');
-                return raw.replace(r, (match) => {
-                    let result = match;
+                const result = raw.replace(r, (match) => {
+                    let replaced = match;
                     item.macros?.forEach(m => {
                         switch (m.type) {
                             case 'uppercase':
-                                result = toUpperSafe(result);
+                                replaced = toUpperSafe(replaced);
                                 break;
                             case 'color':
                                 if (m.color) {
                                     const code = findClosestColor(m.color);
-                                    result = colorString(result, code);
+                                    replaced = colorString(replaced, code);
                                 }
                                 break;
                             case 'replace':
-                                result = m.to || '';
+                                replaced = m.to || '';
                                 break;
                             case 'beep':
                                 client.sendEvent("sound:play", { key: m.soundKey || "beep" });
@@ -63,8 +65,10 @@ export default function initUserTriggers(client: Client) {
                                 break;
                         }
                     });
-                    return result;
+                    return replaced;
                 });
+                triggerLine.setOverrideAnsi(result);
+                return triggerLine;
             }, STORAGE_KEY);
             registered.push(trigger);
         });

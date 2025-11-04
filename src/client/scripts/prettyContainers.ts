@@ -441,8 +441,12 @@ export default function initContainers(client: Client) {
     const register = () => {
         client.Triggers.removeByTag(tag);
         defaultContainerPatterns.forEach(pattern => {
-            client.Triggers.registerTrigger(pattern, (_, __, matches): undefined => {
-                client.print(prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width));
+            client.Triggers.registerTrigger(pattern, (triggerLine): null => {
+                const matches = triggerLine.matches.matches;
+                if (matches) {
+                    client.print(prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width));
+                }
+                return null;
             }, tag);
         });
     };

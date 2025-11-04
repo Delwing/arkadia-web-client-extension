@@ -1,29 +1,21 @@
 import Triggers from "./Triggers";
-import PackageHelper from "./PackageHelper";
 import MapHelper from "@shared/map/MapHelper";
-import InlineCompassRose from "./scripts/inlineCompassRose";
 import Pausers from "./Pausers";
-import {mudletColorLine, setXtermPalette} from "@modules/core/Colors";
-import {
-    FunctionalBind,
-    LINE_START_EVENT,
-    formatLabel,
-} from "./scripts/functionalBind";
+import {color, Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
+import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/functionalBind";
 import OutputHandler from "./OutputHandler";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
-import { setCurrentCharacter, getItemSync, setItemSync } from "@modules/core/storage";
-import {color, Colors} from "@modules/core/Colors";
-import {SKIP_LINE} from "./ControlConstants";
+import {getItemSync, setCurrentCharacter, setItemSync} from "@modules/core/storage";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
-import type { ClientEvents } from "@shared/events";
-import { openMapContextMenu } from "@modules/core/contextMenus";
-import type { HerbManagerApi } from "./types/herbs";
-import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
-import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "./utils/attackCommand";
-import { DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand } from "./utils/drawWeaponCommand";
+import type {ClientEvents} from "@shared/events";
+import {openMapContextMenu} from "@modules/core/contextMenus";
+import type {HerbManagerApi} from "./types/herbs";
+import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
+import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
+import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import TriggerLine from "./triggers/TriggerLine";
 import {parseAnsiPatterns} from "@web/ansiParser";
 import SoundManager from "./SoundManager";
@@ -82,7 +74,6 @@ export default class Client {
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     Triggers = new Triggers(this);
-    packageHelper = new PackageHelper(this);
     Map = new MapHelper({
         on: this.on.bind(this),
         sendCommand: this.sendCommand.bind(this),
@@ -97,7 +88,6 @@ export default class Client {
     OutputHandler = new OutputHandler(this);
     TeamManager = new TeamManager(this);
     ObjectManager = new ObjectManager(this);
-    inlineCompassRose = new InlineCompassRose(this);
     panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
@@ -481,15 +471,12 @@ export default class Client {
                 ? this.Triggers.isTriggerEngineActive()
                 : true
         const multilineInput = new TriggerLine(line, { type }, triggerEngineActive)
-        const multilineResultRaw = this.Triggers.parseMultiline(multilineInput, type) as unknown
-        if (typeof multilineResultRaw === 'string' && multilineResultRaw === SKIP_LINE) {
+        const multilineResult = this.Triggers.parseMultiline(multilineInput, type)
+        if (multilineResult === null) {
             this.inLineProcess = false
             return ""
         }
-        const multilineText = multilineResultRaw instanceof TriggerLine
-            ? multilineResultRaw.toAnsiString()
-            : String(multilineResultRaw ?? '')
-        const split = multilineText.split('\n')
+        const split = multilineResult.split('\n')
         let lastPrintableIndex = split.length - 1
         while (lastPrintableIndex >= 0 && !hasPrintableContent(split[lastPrintableIndex])) {
             lastPrintableIndex--
@@ -498,14 +485,12 @@ export default class Client {
         for (let i = 0; i <= lastPrintableIndex; i++) {
             const partial = split[i]
             const lineInput = new TriggerLine(partial, { type }, triggerEngineActive)
-            const processedRaw = this.Triggers.parseLine(lineInput, type) as unknown
-            if (processedRaw instanceof TriggerLine) {
-                processedParts.push(processedRaw.toAnsiString())
-            } else {
-                processedParts.push(processedRaw as string)
+            const processed = this.Triggers.parseLine(lineInput, type)
+            if (processed !== null) {
+                processedParts.push(processed)
             }
         }
-        const serializedParts = processedParts.filter((part): part is string => part !== SKIP_LINE)
+        const serializedParts = processedParts
         const defaultColorCode = color(this.defaultColor) || ANSI_RESET
         let result = serializedParts.join('\n')
         if (!result.startsWith("\x1b")) {

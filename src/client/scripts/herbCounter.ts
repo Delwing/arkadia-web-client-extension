@@ -359,17 +359,20 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
     }
 
-    client.Triggers.registerTrigger(countRegex, (_r, _l, m) => {
-        if (!awaiting) return undefined;
+    client.Triggers.registerTrigger(countRegex, (triggerLine) => {
+        if (!awaiting) return triggerLine;
+        const m = triggerLine.matches.matches;
+        if (!m) return triggerLine;
         left = parseNumber(m.groups?.num || m[1]);
         for (let i = 1; i <= left; i++) {
             client.sendCommand(`zajrzyj do ${i}. swojego woreczka`);
         }
-        return undefined;
+        return triggerLine;
     });
 
-    function extracHerbs(m: RegExpMatchArray) {
-        if (!awaiting) return undefined;
+    function extracHerbs(m: RegExpMatchArray | undefined, triggerLine: any) {
+        if (!awaiting) return triggerLine;
+        if (!m) return triggerLine;
         currentBag += 1;
         const items = parseItems(m.groups?.content || '');
         const bag: Record<string, number> = {};
@@ -382,36 +385,37 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         bagTotals[currentBag] = { herbs: bag };
         left -= 1;
         if (left <= 0) finish();
-        return undefined;
+        return triggerLine;
     }
 
-    client.Triggers.registerTrigger(contentRegex1, (_r, _l, m) => {
-        return extracHerbs(m);
+    client.Triggers.registerTrigger(contentRegex1, (triggerLine) => {
+        return extracHerbs(triggerLine.matches.matches, triggerLine);
     });
 
-    client.Triggers.registerTrigger(contentRegex2, (_r, _l, m) => {
-        return extracHerbs(m);
+    client.Triggers.registerTrigger(contentRegex2, (triggerLine) => {
+        return extracHerbs(triggerLine.matches.matches, triggerLine);
     });
 
-    client.Triggers.registerTrigger(emptyRegex, () => {
-        if (!awaiting) return undefined;
+    client.Triggers.registerTrigger(emptyRegex, (triggerLine) => {
+        if (!awaiting) return triggerLine;
         currentBag += 1;
         bagTotals[currentBag] = { herbs: {} };
         left -= 1;
         if (left <= 0) finish();
-        return undefined;
+        return triggerLine;
     });
 
-    client.Triggers.registerTrigger(bagConditionRegex, (_raw, _line, m) => {
-        const desc = m.groups?.desc;
-        if (!desc) return undefined;
+    client.Triggers.registerTrigger(bagConditionRegex, (triggerLine) => {
+        const m = triggerLine.matches.matches;
+        const desc = m?.groups?.desc;
+        if (!desc) return triggerLine;
         const bagNumber = currentBagForEvaluation++
-        if (!Number.isFinite(bagNumber) || bagNumber <= 0) return undefined;
+        if (!Number.isFinite(bagNumber) || bagNumber <= 0) return triggerLine;
         const wearValue = resolveWearValue(desc);
-        if (wearValue == null) return undefined;
+        if (wearValue == null) return triggerLine;
         pendingConditions[bagNumber] = wearValue;
         scheduleConditionFlush();
-        return undefined;
+        return triggerLine;
     });
 
     async function start() {

@@ -6,15 +6,15 @@ interface Localizer {
 }
 
 function createHandler(client: Client, roomId: number) {
-    return () => {
+    return (triggerLine) => {
         client.Map.setMapRoomById(roomId);
         client.sendEvent('notify', { text: `Map Sync: ship ${roomId}` });
-        return undefined;
+        return triggerLine;
     };
 }
 
 export default function initShipLocalizers(client: Client) {
-    const parent = client.Triggers.registerTrigger('krzyczy:', () => undefined, 'ship-localizers');
+    const parent = client.Triggers.registerTrigger('krzyczy:', (triggerLine) => triggerLine, 'ship-localizers');
 
     const entries: Localizer[] = [
         { pattern: /(?:Mlody smutny mezczyzna|Strag) krzyczy: Doplynelismy do przystani promu w Oxenfurcie! Mozna wysiadac!$/, roomId: 2464 },

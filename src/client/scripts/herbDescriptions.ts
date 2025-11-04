@@ -2,7 +2,6 @@ import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {color, RESET, findClosestColor} from "@modules/core/Colors";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
-import TriggerLine from "../triggers/TriggerLine";
 
 export const HERB_NAME_COLOR = findClosestColor("#ffffff");
 
@@ -36,19 +35,21 @@ export default async function initHerbDescriptions(client: Client) {
         };
         Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {
             Object.values(forms).forEach(desc => {
-                client.Triggers.registerTokenTrigger(desc, (raw, line, m, _type, triggerLine) => {
+                client.Triggers.registerTokenTrigger(desc, (triggerLine) => {
+                    const m = triggerLine.matches.matches;
+                    if (!m) return triggerLine;
+                    const line = triggerLine.text;
                     const index = m.index ?? 0;
                     const token = m[0];
                     const suffix = line.substring(index + token.length);
                     const after = suffix.trimStart();
                     if (after.startsWith("(")) {
-                        return triggerLine ?? raw;
+                        return triggerLine;
                     }
                     const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev));
                     const insertion = ` (${color(HERB_NAME_COLOR)}${clickable}${RESET})`;
-                    const lineObj = triggerLine ?? new TriggerLine(raw);
-                    lineObj.insert(index + token.length, insertion);
-                    return lineObj;
+                    triggerLine.insert(index + token.length, insertion);
+                    return triggerLine;
                 }, tag, {caseInsensitive: true});
             });
         });

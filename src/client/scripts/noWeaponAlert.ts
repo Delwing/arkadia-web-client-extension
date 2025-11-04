@@ -11,16 +11,16 @@ export default function initNoWeaponAlert(client: Client) {
 
     let timer: number | null = null;
 
-    function alert(_r: string, _l: string): undefined {
+    function alert(triggerLine: any) {
         if (timer !== null) {
-            return;
+            return triggerLine;
         }
         timer = window.setTimeout(() => {
             timer = null;
         }, 5000);
         const msg = colorString(` >> Walczysz bez broni!`, RED);
         client.println(msg);
-        return;
+        return triggerLine;
     }
 
     patterns.forEach(p => client.Triggers.registerTrigger(p, alert, tag));

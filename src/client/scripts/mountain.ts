@@ -6,31 +6,46 @@ export default function initMountain(client: Client) {
     const tag = "mountain";
     const YELLOW = findClosestColor("#ffff00");
 
-    client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (_r, line) => {
+    client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (triggerLine) => {
         mountainMovingDir = "down";
-        return colorString(line, YELLOW);
+        const line = triggerLine.text;
+        const result = colorString(line, YELLOW);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, tag);
 
-    client.Triggers.registerTrigger(/Zaczynasz wspinac sie/, (_r, line) => {
+    client.Triggers.registerTrigger(/Zaczynasz wspinac sie/, (triggerLine) => {
         mountainMovingDir = "up";
-        return colorString(line, YELLOW);
+        const line = triggerLine.text;
+        const result = colorString(line, YELLOW);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, tag);
 
-    client.Triggers.registerTrigger("Docierasz na gore.", (_r, line) => {
+    client.Triggers.registerTrigger("Docierasz na gore.", (triggerLine) => {
         mountainMovingDir = undefined;
-        return colorString(line, YELLOW);
+        const line = triggerLine.text;
+        const result = colorString(line, YELLOW);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, tag);
 
-    client.Triggers.registerTrigger("Bezpiecznie schodzisz na dol.", (_r, line) => {
+    client.Triggers.registerTrigger("Bezpiecznie schodzisz na dol.", (triggerLine) => {
         mountainMovingDir = undefined;
-        return colorString(line, YELLOW);
+        const line = triggerLine.text;
+        const result = colorString(line, YELLOW);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, tag);
 
-    client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (_r, line) => {
+    client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (triggerLine) => {
         if (mountainMovingDir === "up") {
             client.Map.moveBack();
         }
-        return colorString(line, YELLOW);
+        const line = triggerLine.text;
+        const result = colorString(line, YELLOW);
+        triggerLine.setOverrideAnsi(result);
+        return triggerLine;
     }, tag);
 }
 
