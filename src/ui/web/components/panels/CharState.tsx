@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useClientEvent } from "../../hooks";
+import {useClientEvent, useLocalStorage} from "../../hooks";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "@web/colors";
+import {UiSettings} from "@web/uiSettings.ts";
 
 export interface CharStateData {
   hp: number;
@@ -87,8 +88,13 @@ const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
 export const CharState: React.FC = () => {
   const [state, setState] = useState<Partial<CharStateData>>({});
   const [options, setOptions] = useState<CharOptions>({});
-  const [mode, setMode] = useState(0);
-  const [useEmoji, setUseEmoji] = useState(false);
+  const [uiSettings] = useLocalStorage<Partial<UiSettings>>("uiSettings", {});
+  const [mode, setMode] = useState(() => {
+    return uiSettings.footerMode || 0;
+  });
+  const [useEmoji, setUseEmoji] = useState(() => {
+    return uiSettings.emojiLabels || false;
+  });
   const [config, setConfig] = useState<Record<keyof CharStateData, CharStateConfig>>(
       { ...DEFAULT_CONFIG }
   );
@@ -119,15 +125,6 @@ export const CharState: React.FC = () => {
 
   useClientEvent<CharOptions>("gmcp.char.options", (newOptions) => {
     setOptions((prev) => ({ ...prev, ...newOptions }));
-  });
-
-  useClientEvent<any>("settings", (ev) => {
-    if (typeof ev?.detail?.emojiLabels === "boolean") {
-      setUseEmoji(ev.detail.emojiLabels);
-    }
-    if (typeof ev?.detail?.footerMode === "number") {
-      setMode(ev.detail.footerMode);
-    }
   });
 
   useClientEvent<any>("uiSettings", (detail) => {

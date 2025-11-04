@@ -9,7 +9,7 @@ type Params<T> = [T] extends [void]
         : [T];
 type Handler<T> = (...args: Params<T>) => void;
 type ListenerEntry<T> = {
-    handler: Handler<T>;
+    handler: Handler<T> | false;
     once: boolean;
     cleanup?: () => void;
 };
@@ -76,10 +76,7 @@ class EventBus<Events extends Record<PropertyKey, any>> {
             const entry = bucket[i];
             if (entry.handler === listener) {
                 entry.cleanup?.();
-                bucket.splice(i, 1);
-                if (bucket.length === 0) {
-                    this.listeners.delete(key);
-                }
+                entry.handler = false;
                 break;
             }
         }
@@ -98,18 +95,34 @@ class EventBus<Events extends Record<PropertyKey, any>> {
 
         let invoked = 0;
 
-        // Copy to prevent issues if listeners mutate during dispatch.
-        for (const entry of [...bucket]) {
+        // Iterate without copying; mark once/deleted entries with false.
+        for (const entry of bucket) {
+            if (entry.handler === false) {
+                continue;
+            }
+            const handler = entry.handler as Handler<Events[K]>;
+            if (entry.once) {
+                entry.cleanup?.();
+                entry.handler = false;
+            }
             try {
-                (entry.handler as Handler<Events[K]>)(...args);
+                handler(...args);
             } catch (_err) {
                 // Swallow by default; if you want, you could re-emit an 'error' event here.
                 // this.emit('error' as unknown as K, err as any);
             }
             invoked++;
-            if (entry.once) {
-                this.off(event, entry.handler as Handler<Events[K]>);
+        }
+
+        // Clean up marked entries after emission.
+        for (let i = bucket.length - 1; i >= 0; i--) {
+            if (bucket[i].handler === false) {
+                bucket.splice(i, 1);
             }
+        }
+
+        if (bucket.length === 0) {
+            this.listeners.delete(key);
         }
 
         return invoked;
@@ -134,7 +147,9 @@ class EventBus<Events extends Record<PropertyKey, any>> {
     }
 
     listenerCount(event: keyof Events): number {
-        return this.listeners.get(event as unknown as PropertyKey)?.length ?? 0;
+        const bucket = this.listeners.get(event as unknown as PropertyKey);
+        if (!bucket) return 0;
+        return bucket.filter(e => e.handler !== false).length;
     }
 }
 

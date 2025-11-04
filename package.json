@@ -17,6 +17,7 @@
     "ansi-to-html": "^0.7.2",
     "bootstrap": "^5.3.7",
     "bootswatch": "^5.3.7",
+    "evebus": "^1.0.2",
     "howler": "^2.2.4",
     "lua-in-js": "^2.2.5",
     "marked": "^16.0.0",
