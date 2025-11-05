@@ -180,7 +180,7 @@ export default function registerLuaGagTriggers(client: Client) {
                     global.line.append("\n").appendBuffer(colorString(clickable, ERROR_COLOR));
                 }
 
-                return global.line;
+                return global.line.applyMudletColors();
             }
             return line;
         }
@@ -199,14 +199,6 @@ export default function registerLuaGagTriggers(client: Client) {
             children.forEach(ch => registerNode(trigger, ch));
         })
 
-    }
-
-
-    function getColorCode(stringColor: string | number) {
-        if (typeof stringColor == "number") {
-            return stringColor;
-        }
-        return findClosestColor(mudletColors[stringColor]);
     }
 
     function createLuaEnv() {

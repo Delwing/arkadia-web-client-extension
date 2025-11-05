@@ -1,5 +1,6 @@
 import {stripAnsiCodes} from "../stripAnsiCodes";
 import {colorCodes} from "@modules/core/Colors.ts";
+import mudletColorsJson from "@client/colors.json";
 
 const ESC = "\u001b";
 
@@ -862,6 +863,118 @@ export class AnsiAwareBuffer {
         }
 
         return undefined;
+    }
+
+    /**
+     * Applies Mudlet color tags (e.g., <red>, <salmon>, <reset>) to the buffer.
+     * Tags are removed from the text and colors are applied from the tag position onwards.
+     * <reset> reverts to the formatting that existed at that position (line default).
+     *
+     * @returns this buffer for chaining
+     */
+    applyMudletColors(): this {
+        const originalText = this.text;
+        const tagPattern = /<([a-z_:]+)>/gi;
+
+        // Build Mudlet color map
+        const MUDLET_COLORS: Record<string, FormatColor> = {};
+        for (const [name, rgb] of Object.entries(mudletColorsJson)) {
+            // Handle transparent color with alpha channel (ignore alpha)
+            if (Array.isArray(rgb) && rgb.length >= 3) {
+                MUDLET_COLORS[name.toLowerCase()] = {
+                    space: 'rgb',
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2]
+                } as RgbColor;
+            }
+        }
+
+        interface TagInfo {
+            index: number;
+            tagLength: number;
+            tagName: string;
+        }
+
+        interface ParsedTag {
+            type: 'fg' | 'bg' | 'reset';
+            color?: FormatColor;
+        }
+
+        const parseMudletTag = (tagName: string): ParsedTag | null => {
+            if (tagName === 'reset') {
+                return { type: 'reset' };
+            }
+
+            // Handle background: <bg:red>
+            if (tagName.startsWith('bg:')) {
+                const colorName = tagName.substring(3);
+                const color = MUDLET_COLORS[colorName.toLowerCase()];
+                return color ? { type: 'bg', color } : null;
+            }
+
+            // Handle foreground: <red>, <tomato>, etc.
+            const color = MUDLET_COLORS[tagName.toLowerCase()];
+            return color ? { type: 'fg', color } : null;
+        };
+
+        // Find all tags and their positions
+        const tags: TagInfo[] = [];
+        let match: RegExpExecArray | null;
+
+        tagPattern.lastIndex = 0;
+        while ((match = tagPattern.exec(originalText)) !== null) {
+            tags.push({
+                index: match.index,
+                tagLength: match[0].length,
+                tagName: match[1].toLowerCase()
+            });
+        }
+
+        if (tags.length === 0) return this;
+
+        // Remove tags from right to left to maintain indices
+        for (let i = tags.length - 1; i >= 0; i--) {
+            const tag = tags[i];
+            this.remove([tag.index, tag.index + tag.tagLength]);
+        }
+
+        // Now apply colors from left to right using adjusted positions
+        let offset = 0;
+        for (let i = 0; i < tags.length; i++) {
+            const tag = tags[i];
+            const adjustedIndex = tag.index - offset;
+            offset += tag.tagLength;
+
+            // Get the state at this position (this is the "line default")
+            const stateAtPosition = adjustedIndex < this.length
+                ? this.getStateAt(adjustedIndex)
+                : undefined;
+
+            if (tag.tagName === 'reset') {
+                // For reset, apply the state that exists at this position to the range until next tag
+                const nextIndex = i < tags.length - 1 ? tags[i + 1].index - offset : this.length;
+                if (nextIndex > adjustedIndex && adjustedIndex < this.length) {
+                    this.color([adjustedIndex, nextIndex], stateAtPosition || {});
+                }
+            } else {
+                // For color tags, parse and apply the color
+                const parsed = parseMudletTag(tag.tagName);
+                if (parsed && parsed.type !== 'reset' && adjustedIndex < this.length) {
+                    const nextIndex = i < tags.length - 1 ? tags[i + 1].index - offset : this.length;
+                    if (nextIndex > adjustedIndex) {
+                        const newState: FormatStateSnapshot = {
+                            ...(stateAtPosition || {}),
+                            ...(parsed.type === 'fg' ? { foreground: parsed.color } : {}),
+                            ...(parsed.type === 'bg' ? { background: parsed.color } : {})
+                        };
+                        this.color([adjustedIndex, nextIndex], newState);
+                    }
+                }
+            }
+        }
+
+        return this;
     }
 
     private assertIndex(index: number, allowEnd: boolean): void {
