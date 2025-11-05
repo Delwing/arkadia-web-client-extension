@@ -72,6 +72,9 @@ function colorsEqual(a?: FormatColor, b?: FormatColor): boolean {
     if (a.space === "rgb" && b.space === "rgb") {
         return a.r === b.r && a.g === b.g && a.b === b.b;
     }
+    if (a.space === "hex" && b.space === "hex") {
+        return a.color === b.color;
+    }
     return false;
 }
 
@@ -397,11 +400,51 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    replaceBuffer(range: [number, number], buffer: AnsiAwareBuffer): this {
+        const [start, end] = range;
+        this.assertRange(start, end);
+        this.remove(range);
+        if (buffer.length === 0) return this;
+        this.insertBuffer(start, buffer);
+        return this;
+    }
+
     insert(index: number, text: string, state?: FormatStateSnapshot): this {
         if (text.length === 0) return this;
         this.assertIndex(index, true);
         const inferredState = state ? undefined : this.inferState(index);
         this.insertInternal(index, text, state, inferredState);
+        return this;
+    }
+
+    insertBuffer(index: number, buffer: AnsiAwareBuffer): this {
+        if (buffer.length === 0) return this;
+        this.assertIndex(index, true);
+
+        const sourceSegments = buffer.getSegments();
+        if (sourceSegments.length === 0) return this;
+
+        if (this.segments.length === 0) {
+            this.segments = sourceSegments;
+            return this;
+        }
+
+        if (index === this.length) {
+            for (const segment of sourceSegments) {
+                this.appendSegmentAtEnd(segment);
+            }
+            this.normalizeSegments();
+            return this;
+        }
+
+        const position = this.resolveIndex(index, true);
+        if (position.segmentIndex < this.segments.length) {
+            this.splitSegment(position.segmentIndex, position.offset);
+        }
+
+        const insertionPoint = this.resolveBoundaryIndex(index);
+        this.segments.splice(insertionPoint, 0, ...sourceSegments);
+        this.normalizeSegments();
         return this;
     }
 
@@ -455,8 +498,18 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    appendBuffer(buffer: AnsiAwareBuffer): this {
+        this.insertBuffer(this.length, buffer);
+        return this;
+    }
+
     prepend(text: string, state?: FormatStateSnapshot): this {
         this.insert(0, text, state);
+        return this;
+    }
+
+    prependBuffer(buffer: AnsiAwareBuffer): this {
+        this.insertBuffer(0, buffer);
         return this;
     }
 
@@ -789,15 +842,32 @@ export class AnsiAwareBuffer {
         }
     }
 
+    /**
+     * Returns the format state at the given character index.
+     * This includes color information (foreground, background) and other formatting attributes.
+     * Returns undefined if the character at that index has no formatting.
+     */
+    getStateAt(index: number): FormatStateSnapshot | undefined {
+        this.assertIndex(index, false);
+
+        if (this.segments.length === 0) return undefined;
+
+        let currentPos = 0;
+        for (const segment of this.segments) {
+            const segmentEnd = currentPos + segment.text.length;
+            if (index >= currentPos && index < segmentEnd) {
+                return cloneState(segment.state);
+            }
+            currentPos = segmentEnd;
+        }
+
+        return undefined;
+    }
+
     private assertIndex(index: number, allowEnd: boolean): void {
         if (index < 0 || index > this.length || (!allowEnd && index >= this.length)) {
             throw new RangeError(`Index ${index} is out of bounds for buffer of length ${this.length}`);
         }
-    }
-
-    //TODO temporary until replaced in triggers
-    toAniString() {
-        return this.text
     }
 }
 

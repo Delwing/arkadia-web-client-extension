@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 import { getShortDir } from "@shared/map";
-import TriggerLine from "../triggers/TriggerLine";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const ORANGE = findClosestColor('#ffa500');
 
@@ -54,14 +54,13 @@ export default function initShortExits(client: Client) {
         enabled = !!detail.shortenExits;
     });
 
-    const callback = (triggerLine: TriggerLine) => {
-        if (!enabled) return triggerLine;
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
-        const dirs: string[] = parseExitString(m[1]).map(getShortDir);
-        if (dirs.length === 0) return triggerLine;
+    const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+        if (!enabled) return line;
+        if (!matches) return line;
+        const dirs: string[] = parseExitString(matches[1]).map(getShortDir);
+        if (dirs.length === 0) return line;
         const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
-        return new TriggerLine(colorString(str, ORANGE));
+        return colorString(str, ORANGE);
     };
 
     client.Triggers.registerTrigger(EXIT_PATTERNS, callback, 'shortExits');

@@ -3,6 +3,7 @@ import {colorStringInLine, findClosestColor, RESET} from "@modules/core/Colors";
 import Client from "./Client";
 import { Trigger } from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -70,9 +71,7 @@ export default function initPackageHelper(client: Client) {
 
     function init() {
         enabled = true;
-        client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (triggerLine) => {
-            const matches = triggerLine.matches.matches;
-            if (!matches) return triggerLine;
+        client.Triggers.registerTrigger(/^Wypisano na niej duzymi literami: ([a-zA-Z ']+).*$/, (line, matches) => {
             const name = toTitleCase(matches[1])
             leadToPackage(name)
             if (!currentPackage || currentPackage.name !== name) {
@@ -83,7 +82,7 @@ export default function initPackageHelper(client: Client) {
                 registerDeliveryTrigger()
             }
             const colorCode = npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
-            return colorStringInLine(triggerLine, matches[1], colorCode)
+            return colorStringInLine(line, matches[1], colorCode)
         }, tag)
         client.Triggers.registerMultilineTrigger(packageTableRegex, packageTableCallback(), tag)
     }
@@ -126,19 +125,17 @@ export default function initPackageHelper(client: Client) {
     }
 
     function packageLineCallback() {
-        return (triggerLine: any) => {
-            const matches = triggerLine.matches.matches;
-            if (!matches) return triggerLine;
+        return (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
             const info = parsePackageLine(matches)
-            const line = extendStandardDataLine(triggerLine.toAnsiString(), info)
+            const line = extendStandardDataLine(line.toAnsiString(), info)
             const colorCode = npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
             const command = `${pickCommand} ${info.index}`
             const coloredLine = colorStringInLine(line, info.name, colorCode).toAnsiString()
             const clickable = client.OutputHandler.makeClickable(coloredLine, info.name, () => {
                 client.sendCommand(command)
             }, command)
-            triggerLine.setOverrideAnsi(clickable);
-            return triggerLine;
+            line.setOverrideAnsi(clickable);
+            return line;
         };
     }
 

@@ -21,23 +21,23 @@ export default function initSmith(client: Client, aliases?: { pattern: RegExp; c
         }, 1000);
     };
 
-    const startWork = (triggerLine) => {
+    const startWork = (line) => {
         working = true;
-        return triggerLine;
+        return line;
     };
 
-    const endWork = (triggerLine) => {
+    const endWork = (line) => {
         if (working) {
             working = false;
             client.FunctionalBind.set(REPAIR_CMD);
         }
-        return triggerLine;
+        return line;
     };
 
-    const nothingToRepair = (triggerLine) => {
+    const nothingToRepair = (line) => {
         working = false;
         scheduleDefault();
-        return triggerLine;
+        return line;
     };
 
     client.Triggers.registerTrigger('konczy prace.', endWork, tag);

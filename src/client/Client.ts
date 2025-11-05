@@ -16,7 +16,6 @@ import type {HerbManagerApi} from "./types/herbs";
 import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
-import TriggerLine from "./triggers/TriggerLine";
 import SoundManager from "./SoundManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
@@ -442,15 +441,14 @@ export default class Client {
         const buffer = new AnsiAwareBuffer(line)
         this.inLineProcess = true
         this.sendEvent(LINE_START_EVENT)
-        const multilineInput = new TriggerLine(buffer, { type })
-        const multilineResult = this.Triggers.parseMultiline(multilineInput, type)
+        const multilineResult = this.Triggers.parseMultiline(buffer, type)
         if (multilineResult === null) {
             this.inLineProcess = false
             return []
         }
 
         const split = buffer.splitLines()
-        const result = split.map(part => this.Triggers.parseLine(new TriggerLine(part, { type }), type))
+        const result = split.map(part => this.Triggers.parseLine(part, type))
         this.inLineProcess = false
         return result
     }

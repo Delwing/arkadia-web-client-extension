@@ -1,6 +1,5 @@
 import Client from "../Client";
 import {colorString, findClosestColor} from "@modules/core/Colors";
-import TriggerLine from "../triggers/TriggerLine";
 
 const COLOR = findClosestColor('#6a5acd');
 const PANIC_COLOR = findClosestColor('#ff8c00');
@@ -11,41 +10,29 @@ export default function initEscape(client: Client) {
     const tag = 'escape';
     const parent = client.Triggers.registerTrigger(
         /(.*) uciekl.* ci\.$/,
-        (triggerLine) => {
-            const line = triggerLine.text;
-            return new TriggerLine(colorString(line, COLOR));
+        (line) => {
+            return line.color([0, line.length], COLOR)
         },
         tag,
         {stayOpenLines: 20}
     );
 
-    parent.registerChild(/(.*) podaza(?:ja)? na ([a-z-]+)\.$/, (triggerLine) => {
-        const line = triggerLine.text;
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
-        const dir = m[2];
+    parent.registerChild(/(.*) podaza(?:ja)? na ([a-z-]+)\.$/, (line, matches) => {
+        const dir = matches[2];
         printArrow(dir, COLOR);
-        return new TriggerLine(colorString(line, COLOR));
+        return line.color([0, line.length], COLOR);
     });
 
-    parent.registerChild(/(.*) w panice .* na ([a-z-]+)\.$/, (triggerLine) => {
-        const line = triggerLine.text;
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
-        const dir = m[2];
+    parent.registerChild(/(.*) w panice .* na ([a-z-]+)\.$/, (line, matches) => {
+        const dir = matches[2];
         printArrow(dir, PANIC_COLOR);
-        return new TriggerLine(colorString(line, PANIC_COLOR));
+        return line.color([0, line.length], PANIC_COLOR);
     });
 
     client.Triggers.registerTrigger(
         /^Udalo ci sie gdzies uciec!$/,
-        (triggerLine) => {
-            const line = triggerLine.text;
-            const result = client.prefix(
-                colorString(line, SUCCESS_COLOR),
-                colorString('--- ', PREFIX_COLOR)
-            );
-            return new TriggerLine(result);
+        (line) => {
+            return line.color([0, line.length], SUCCESS_COLOR).prefix('--- ', PREFIX_COLOR);
         },
         tag
     );

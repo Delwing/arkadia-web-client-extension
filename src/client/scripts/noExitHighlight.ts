@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
 
 export default function initNoExitHighlight(client: Client) {
     const TAN = findClosestColor("#d2b48c");
@@ -8,10 +8,9 @@ export default function initNoExitHighlight(client: Client) {
         /^[ >]*Jestes tak zmeczon[ya], ze nie mozesz dalej podazac w tym kierunku\.$/
     ];
     patterns.forEach(p => {
-        client.Triggers.registerTrigger(p, (triggerLine) => {
-            const colored = colorString(triggerLine.toAnsiString(), TAN);
-            triggerLine.setOverrideAnsi(colored);
-            return triggerLine;
+        client.Triggers.registerTrigger(p, (line) => {
+            line.color([0, line.length], TAN);
+            return line;
         }, "no-exit-highlight");
     });
 }

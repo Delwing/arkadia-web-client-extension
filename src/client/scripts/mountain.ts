@@ -1,51 +1,36 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
 
 export default function initMountain(client: Client) {
     let mountainMovingDir: "up" | "down" | undefined;
     const tag = "mountain";
     const YELLOW = findClosestColor("#ffff00");
 
-    client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (triggerLine) => {
+    client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (line) => {
         mountainMovingDir = "down";
-        const line = triggerLine.text;
-        const result = colorString(line, YELLOW);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+        return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger(/Zaczynasz wspinac sie/, (triggerLine) => {
+    client.Triggers.registerTrigger(/Zaczynasz wspinac sie/, (line) => {
         mountainMovingDir = "up";
-        const line = triggerLine.text;
-        const result = colorString(line, YELLOW);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+        return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger("Docierasz na gore.", (triggerLine) => {
+    client.Triggers.registerTrigger("Docierasz na gore.", (line) => {
         mountainMovingDir = undefined;
-        const line = triggerLine.text;
-        const result = colorString(line, YELLOW);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+        return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger("Bezpiecznie schodzisz na dol.", (triggerLine) => {
+    client.Triggers.registerTrigger("Bezpiecznie schodzisz na dol.", (line) => {
         mountainMovingDir = undefined;
-        const line = triggerLine.text;
-        const result = colorString(line, YELLOW);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+        return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (triggerLine) => {
+    client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (line) => {
         if (mountainMovingDir === "up") {
             client.Map.moveBack();
         }
-        const line = triggerLine.text;
-        const result = colorString(line, YELLOW);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+        return line.color([0, line.length], YELLOW);
     }, tag);
 }
 

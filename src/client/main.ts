@@ -118,49 +118,46 @@ export function registerScripts(client: Client) {
     client.Triggers.registerTrigger([
         /^.*[pP]odazasz (|skradajac sie )za (.*)\.$/,
 
-    ], (triggerLine) => {
-        const matches = triggerLine.matches.matches
-        if (!matches) return triggerLine
+    ], (line, matches) => {
         const tokenized = matches[2].split(' ')
         for (let i = 1; i < tokenized.length - 1; i++) {
             const candidate = tokenized[tokenized.length - i]
             const result = client.Map.followMove(candidate)
             if (result) {
-                return triggerLine
+                return line
             }
         }
-        return triggerLine
+        return line
     }, 'follow')
 
-    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (triggerLine) => {
-        const matches = triggerLine.matches.matches
+    client.Triggers.registerTrigger(/^Wraz z .* (?:jedziesz|zjezdzasz|wjezdzasz) .* (?:wozem|bryczka|dylizansem) (?:na )?(?<direction>.*?)(?:,.*)?\.$/, (line, matches) => {
         if (matches?.groups?.direction) {
             client.Map.followMove((matches.groups as any).direction)
         }
-        return triggerLine
+        return line
     }, 'follow')
 
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
-    ], (triggerLine) => {
-        return triggerLine
+    ], (line) => {
+        return line
     }, 'follow', {stayOpenLines: 1})
     const movePattern = /^Ruszasz (?:niespiesznie|marszem|truchtem|biegiem|szybkim biegiem) na (?<direction>[A-Za-z\-]+)\.$/
-    idzTrigger.registerChild(/.*/, (triggerLine) => {
-        const line = triggerLine.text
-        const matches = line.match(movePattern)
+    idzTrigger.registerChild(/.*/, (line) => {
+        const rawLine = line.text
+        const matches = rawLine.match(movePattern)
         if (matches?.groups?.direction) {
             client.Map.followMove(matches.groups.direction)
-            return triggerLine
+            return line
         }
-        if (line.startsWith("Wykonuje komende 'idz ")) {
-            return triggerLine
+        if (rawLine.startsWith("Wykonuje komende 'idz ")) {
+            return line
         }
         if (client.Map.refresh()) {
-            return triggerLine
+            return line
         }
         client.Map.refreshPosition = true
-        return triggerLine
+        return line
     })
 
     client.Triggers.registerTrigger(/^Wykonywanie komendy 'idz.*' zostaje przerwane\./, (triggerLine) => {
@@ -205,14 +202,14 @@ export function registerScripts(client: Client) {
     initContainers(client)
     initBagManager(client, aliases)
     initDeposits(client, aliases)
-    initHerbShop(client)
-    initArmorShop(client)
+    //initHerbShop(client)
+    // initArmorShop(client)
     initSmith(client, aliases)
     initCommandPreserveCaseMode(client)
-    initHerbCounter(client, aliases)
+    //initHerbCounter(client, aliases)
     initHerbDescriptions(client)
     initLvlCalc(client, aliases)
-    initCompareAll(client, aliases)
+    // initCompareAll(client, aliases)
     initItemCondition(client)
     initDurability(client)
     initWearUsed(client)
@@ -221,19 +218,19 @@ export function registerScripts(client: Client) {
     initMagicKeys(client)
     initMagics(client)
     initKnowledge(client, aliases)
-    initOdlozMagie(client, aliases)
-    initPriceEvaluation(client)
-    initStoneValue(client, aliases)
-    initSelfEvaluation(client, aliases)
-    initSkills(client, aliases)
+    // initOdlozMagie(client, aliases)
+    // initPriceEvaluation(client)
+    // initStoneValue(client, aliases)
+    // initSelfEvaluation(client, aliases)
+    // initSkills(client, aliases)
     initCoinColors(client)
     initWeaponColors(client)
-    initLeaderAttackWarning(client)
-    initBreakItem(client)
-    initHpAlert(client)
-    initIdleFullHp(client)
-    initFullHpTimer(client)
-    initNoWeaponAlert(client)
+    // initLeaderAttackWarning(client)
+    // initBreakItem(client)
+    // initHpAlert(client)
+    // initIdleFullHp(client)
+    // initFullHpTimer(client)
+    // initNoWeaponAlert(client)
     initNewMail(client)
     initMagikZnika(client)
     initSeasonPrint(client)
@@ -246,19 +243,19 @@ export function registerScripts(client: Client) {
     initShortcuts(client, aliases)
     initLetter(client, aliases)
     initShortExits(client)
-    initExternalScripts(client)
+    // initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
     initSpecialLocations(client)
-
-    new People(client)
+    //
+    // new People(client)
     registerGagTriggers(client)
-    registerLuaGagTriggers(client)
-    initKillTracker(client)
-    initPackageHelper(client)
+    // registerLuaGagTriggers(client)
+    // initKillTracker(client)
+    // initPackageHelper(client)
     initInlineCompassRose(client)
 
 }

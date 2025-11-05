@@ -1,7 +1,7 @@
 import Triggers, {stripAnsiCodes, Trigger} from "../Triggers";
 import gagsData from "./gags_lua.json";
 import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
-import TriggerLine from "../triggers/TriggerLine";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 import * as luainjs from 'lua-in-js'
 import {gmcp} from "../gmcp";
@@ -50,17 +50,19 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
 }
 
 function isCombatMsg(
-    triggerLine: TriggerLine
+    _line: AnsiAwareBuffer,
+    _matches: RegExpMatchArray,
+    type: string
 ): RegExpMatchArray | undefined {
-    const type = triggerLine.matches.type || "";
     return combatTypes.indexOf(type) > -1 ? new EmptyMatches() : undefined;
 }
 
 function gagsIsType(
     checkedType: string,
-    triggerLine: TriggerLine
+    _line: AnsiAwareBuffer,
+    _matches: RegExpMatchArray,
+    type: string
 ): RegExpMatchArray | undefined {
-    const type = triggerLine.matches.type || "";
     return checkedType.match(type);
 }
 
@@ -76,8 +78,8 @@ type GagNode = {
 };
 
 
-type TriggerMatchFunction = (triggerLine: TriggerLine) => RegExpMatchArray | undefined;
-type LuaGagCallback = (triggerLine: TriggerLine) => TriggerLine;
+type TriggerMatchFunction = (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) => RegExpMatchArray | undefined;
+type LuaGagCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) => AnsiAwareBuffer;
 
 function registerTrigger(
     container: Triggers | Trigger,
@@ -130,13 +132,13 @@ export default function registerLuaGagTriggers(client: Client) {
         if (p.type === 4) {
             const code = p.pattern.trim();
             if (code === "return is_combat_msg()") {
-                return (triggerLine: TriggerLine) =>
-                    isCombatMsg(triggerLine);
+                return (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) =>
+                    isCombatMsg(line, matches, type);
             }
             const m = code.match(/^return scripts\.gags:is_type\("(.+)"\)$/);
             if (m) {
-                return (triggerLine: TriggerLine) =>
-                    gagsIsType(m[1], triggerLine);
+                return (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) =>
+                    gagsIsType(m[1], line, matches, type);
             }
             return () => undefined;
         }
@@ -150,10 +152,9 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback: LuaGagCallback = (triggerLine) => {
+        const callback: LuaGagCallback = (line, matches, type) => {
             if (node.script != undefined) {
-                const rawLine = triggerLine.toAnsiString();
-                const matches = triggerLine.matches.matches as RegExpMatchArray | undefined;
+                const rawLine = line.text;
 
                 global.line = rawLine;
                 global.matches = matches;
@@ -173,21 +174,15 @@ export default function registerLuaGagTriggers(client: Client) {
                     const clickable = client.OutputHandler.makeClickable(
                         warn,
                         warn,
-                        () => navigator.clipboard.writeText(triggerLine.text),
+                        () => navigator.clipboard.writeText(line.text),
                         'Kopiuj linie'
                     );
-                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR);
+                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR).text;
                 }
 
-                const updatedLine = new TriggerLine(
-                    global.line,
-                    triggerLine.matches,
-                    triggerLine.isMutable(),
-                );
-                updatedLine.setOverrideAnsi(global.line);
-                return updatedLine;
+                return new AnsiAwareBuffer(global.line);
             }
-            return triggerLine;
+            return line;
         }
 
         const triggers: Trigger[] = []

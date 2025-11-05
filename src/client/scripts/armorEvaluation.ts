@@ -1,6 +1,7 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
 import { ARMOR_QUALITY, EFFECTIVENESS } from "./evaluationConstants";
+import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
 
@@ -87,12 +88,12 @@ export default function initArmorEvaluation(client: Client) {
 
   client.Triggers.registerTrigger(
     mainRegex,
-    (triggerLine) => {
+    (line, matches) => {
       if (client.suppressItemEvaluation) {
         return null;
       }
-      const m = triggerLine.matches.matches;
-      if (!m) return triggerLine;
+      const m = matches;
+      if (!m) return line;
       const equipmentType = m[2] ? m[2] : "tarcza";
       const desc = m[6].trim();
       const extracted = extractProtection(desc);
@@ -105,26 +106,43 @@ export default function initArmorEvaluation(client: Client) {
       const sum = k.value + c.value + o.value;
       const avg = Math.round((sum / 3) * 100) / 100;
       const pad = 15;
-      const lines: string[] = [
-        `${colorString("Typ zbroi", LABEL_COLOR)}: ${equipmentType.padEnd(pad, " ")}${colorString("Klute", LABEL_COLOR)}: ${k.label}`,
-        `${colorString("Ciete", LABEL_COLOR)}:     ${c.label.padEnd(pad, " ")}${colorString("Obuchowe", LABEL_COLOR)}: ${o.label}`,
-      ];
 
+      const output = new AnsiAwareBuffer();
+
+      // Line 1: Typ zbroi: ... Klute: ...
+      output.append("Typ zbroi", LABEL_COLOR);
+      output.append(`: ${equipmentType.padEnd(pad, " ")}`, {});
+      output.append("Klute", LABEL_COLOR);
+      output.append(`: ${k.label}\n`, {});
+
+      // Line 2: Ciete: ... Obuchowe: ...
+      output.append("Ciete", LABEL_COLOR);
+      output.append(`:     ${c.label.padEnd(pad, " ")}`, {});
+      output.append("Obuchowe", LABEL_COLOR);
+      output.append(`: ${o.label}\n`, {});
+
+      // Optional parry line
       if (parry) {
         const key = Object.keys(EFFECTIVENESS).find((k) =>
           parry.toLowerCase().startsWith(k),
         );
         if (key) {
           const p = EFFECTIVENESS[key];
-          lines.push(`${colorString("Parowanie", LABEL_COLOR)}: ${p.label}`);
+          output.append("Parowanie", LABEL_COLOR);
+          output.append(`: ${p.label}\n`, {});
         }
       }
 
-      lines.push(
-        "",
-        `${colorString("Suma", LABEL_COLOR)}: ${String(sum).padEnd(pad + 5)}${colorString("Srednia", LABEL_COLOR)}: ${avg}`,
-      );
-      client.print(lines.join("\n"));
+      // Empty line
+      output.append("\n", {});
+
+      // Suma and Srednia line
+      output.append("Suma", LABEL_COLOR);
+      output.append(`: ${String(sum).padEnd(pad + 5)}`, {});
+      output.append("Srednia", LABEL_COLOR);
+      output.append(`: ${avg}`, {});
+
+      client.print(output);
       return null;
     },
     tag,

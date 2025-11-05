@@ -1,11 +1,11 @@
 import Client from "../Client";
-import { color, colorString, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
+import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
 const GREEN = findClosestColor("#00ff00");
 const RED = findClosestColor("#ff0000");
 const YELLOW = findClosestColor("#ffff00");
 const TOMATO = findClosestColor("#ff6347");
-const RESET = "\x1B[0m";
 
 const statToNumber: Record<string, number> = {
     "slabiutki": 1,
@@ -160,25 +160,42 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
         return { value, step };
     }
 
-    function formatLine(raw: string, desc: string, next?: string) {
+    function formatLine(buffer: AnsiAwareBuffer, desc: string, next?: string) {
         const { value, step } = collectStat(desc, next);
-        let line = raw.replace(desc, `${desc} ${colorString(`[${value}/10]`, GREEN)}`);
-        if (next) {
-            line = line.replace(next, `${next} ${colorString(`[${step}/5]`, GREEN)}`);
+
+        // Insert annotation after the stat description (without changing original colors)
+        const descIndex = buffer.text.indexOf(desc);
+        if (descIndex !== -1) {
+            buffer.insert(descIndex + desc.length, ` [${value}/10]`, GREEN);
         }
+
+        // Insert annotation after the next level indicator if present (without changing original colors)
+        if (next) {
+            const nextIndex = buffer.text.indexOf(next);
+            if (nextIndex !== -1) {
+                buffer.insert(nextIndex + next.length, ` [${step}/5]`, GREEN);
+            }
+        }
+
+        // Build the prefix
         const index = currentStats.length - 1;
         const sum = calcStatSum(value, step);
-        let prefix = colorString(`[${sum}]`, GREEN);
+        const prefixBuffer = new AnsiAwareBuffer();
+        prefixBuffer.append(`[${sum}]`, GREEN);
+
         if (typeof prevStats[index] === "number") {
             const oldSum = calcStatSum(prevStats[index], prevSteps[index]);
             const diff = sum - oldSum;
             if (diff > 0) {
-                prefix += colorString(` (+${diff})`, YELLOW);
+                prefixBuffer.append(` (+${diff})`, YELLOW);
             } else if (diff < 0) {
-                prefix += colorString(` (-${-diff})`, RED);
+                prefixBuffer.append(` (-${-diff})`, RED);
             }
         }
-        return client.prefix(line, prefix + " ");
+
+        prefixBuffer.append(" ", {});
+        buffer.prependBuffer(prefixBuffer);
+        return buffer;
     }
 
     function calculateLvl() {
@@ -189,42 +206,29 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
             lvl = i + 1;
             if (full < statToRealLvl[i]) break;
         }
-        let msg: string;
+        const buffer = new AnsiAwareBuffer();
         if (full < 190) {
             const missing = statToRealLvl[lvl - 1] - full;
-            msg =
-                color(TOMATO) +
-                `Twoj aktualny poziom to ` +
-                colorString(realLvlString[lvl], GREEN) +
-                color(TOMATO) +
-                ` (` +
-                colorString(String(full), GREEN) +
-                color(TOMATO) +
-                `) i brakuje ci do nastepnego ` +
-                colorString(String(missing), GREEN) +
-                color(TOMATO) +
-                ` podcech (` +
-                colorString(realLvlString[lvl + 1], GREEN) +
-                color(TOMATO) +
-                `)` +
-                RESET;
+            buffer.append(`Twoj aktualny poziom to `, TOMATO);
+            buffer.append(realLvlString[lvl], GREEN);
+            buffer.append(` (`, TOMATO);
+            buffer.append(String(full), GREEN);
+            buffer.append(`) i brakuje ci do nastepnego `, TOMATO);
+            buffer.append(String(missing), GREEN);
+            buffer.append(` podcech (`, TOMATO);
+            buffer.append(realLvlString[lvl + 1], GREEN);
+            buffer.append(`)`, TOMATO);
         } else {
             const extra = full - statToRealLvl[lvl - 1];
-            msg =
-                color(TOMATO) +
-                `Twoj aktualny poziom to ` +
-                colorString(realLvlString[lvl + 1], GREEN) +
-                color(TOMATO) +
-                ` (` +
-                colorString(String(full), GREEN) +
-                color(TOMATO) +
-                `) i masz + ` +
-                colorString(String(extra), GREEN) +
-                color(TOMATO) +
-                ` podcech` +
-                RESET;
+            buffer.append(`Twoj aktualny poziom to `, TOMATO);
+            buffer.append(realLvlString[lvl + 1], GREEN);
+            buffer.append(` (`, TOMATO);
+            buffer.append(String(full), GREEN);
+            buffer.append(`) i masz + `, TOMATO);
+            buffer.append(String(extra), GREEN);
+            buffer.append(` podcech`, TOMATO);
         }
-        client.println(msg);
+        client.println(buffer);
         prevStats = currentStats;
         prevSteps = currentSteps;
     }
@@ -235,23 +239,17 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
         currentStats = [];
         currentSteps = [];
         client.Triggers.removeByTag(tag);
-        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.$/, (triggerLine) => {
-            const m = triggerLine.matches.matches as RegExpMatchArray;
-            const formatted = formatLine(triggerLine.text, m[1], m[2]);
-            triggerLine.setOverrideAnsi(formatted);
-            return triggerLine;
+        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.$/, (line, matches) => {
+            return formatLine(line, matches[1], matches[2]);
         }, tag);
-        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.$/, (triggerLine) => {
-            const m = triggerLine.matches.matches as RegExpMatchArray;
-            const formatted = formatLine(triggerLine.text, m[1]);
-            triggerLine.setOverrideAnsi(formatted);
-            return triggerLine;
+        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.$/, (line, matches) => {
+            return formatLine(line, matches[1]);
         }, tag);
-        client.Triggers.registerOneTimeTrigger(/^Obecnie do waznych cech zaliczasz/, (triggerLine) => {
+        client.Triggers.registerOneTimeTrigger(/^Obecnie do waznych cech zaliczasz/, (line) => {
             calculateLvl();
             client.Triggers.removeByTag(tag);
             isRunning = false;
-            return triggerLine;
+            return line;
         }, tag);
         client.send("cechy");
         setTimeout(() => {

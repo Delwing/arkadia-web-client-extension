@@ -1,7 +1,8 @@
 import Client from "../Client";
 import { stripAnsiCodes } from "../Triggers";
 import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
+import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 interface DepositInfo {
     name: string;
@@ -81,62 +82,90 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         persist();
     }
 
-    const matchContents = (triggerLine: any) => {
-        const line = triggerLine.text;
-        const match = stripAnsiCodes(line).match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
+    const matchContents = (line: any) => {
+        const text = line.text;
+        const match = stripAnsiCodes(text).match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
         if (match) {
             match.groups = Object.assign({ container: 'depozyt' }, match.groups);
         }
         return match;
     };
-    const matchEmpty = (triggerLine: any) => {
-        const line = triggerLine.text;
-        return stripAnsiCodes(line).match(/^Twoj depozyt jest pusty\./);
+    const matchEmpty = (line: any) => {
+        const text = line.text;
+        return stripAnsiCodes(text).match(/^Twoj depozyt jest pusty\./);
     };
-    const matchNone = (triggerLine: any) => {
-        const line = triggerLine.text;
-        return stripAnsiCodes(line).match(/^Nie posiadasz wykupionego depozytu\./);
+    const matchNone = (line: any) => {
+        const text = line.text;
+        return stripAnsiCodes(text).match(/^Nie posiadasz wykupionego depozytu\./);
     };
 
-    client.Triggers.registerTrigger(matchContents, (triggerLine) => {
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
-        const text = (m.groups?.content || m[1]).replace(/\.$/, "");
+    client.Triggers.registerTrigger(matchContents, (line, matches) => {
+        if (!matches) return line;
+        const text = (matches.groups?.content || matches[1]).replace(/\.$/, "");
         const items = parseItems(text);
         update(items);
-        client.print(prettyPrintContainer(m as RegExpMatchArray, columns, 'DEPOZYT', 5, width));
-        return triggerLine;
+        const output = prettyPrintContainer(matches as RegExpMatchArray, columns, 'DEPOZYT', 5, width);
+        client.print(output);
+        return line;
     });
-    client.Triggers.registerTrigger(matchEmpty, (triggerLine) => { update([] as ContainerItem[]); return triggerLine; });
-    client.Triggers.registerTrigger(matchNone, (triggerLine) => { update(null); return triggerLine; });
+    client.Triggers.registerTrigger(matchEmpty, (line) => { update([] as ContainerItem[]); return line; });
+    client.Triggers.registerTrigger(matchNone, (line) => { update(null); return line; });
 
     function printDeposits() {
-        const lines: string[] = [];
-        Object.values(deposits).forEach(({ name, items }) => {
-            const bankLabel = colorString('bank:', BANK_LABEL_COLOR);
-            const bankName = colorString(name, BANK_NAME_COLOR);
+        const output = new AnsiAwareBuffer();
+        const depositEntries = Object.values(deposits);
+
+        if (depositEntries.length === 0) {
+            client.println("Brak zapisanych depozytow.");
+            return;
+        }
+
+        depositEntries.forEach(({ name, items }, index) => {
+            if (index > 0) {
+                output.append('\n');
+            }
+
+            const line = new AnsiAwareBuffer();
+
+            // Add colored "bank:" label
+            const bankLabel = new AnsiAwareBuffer('bank:');
+            bankLabel.color([0, bankLabel.length], BANK_LABEL_COLOR);
+            line.appendBuffer(bankLabel);
+            line.append('    ');
+
+            // Add colored bank name
+            const bankName = new AnsiAwareBuffer(name);
+            bankName.color([0, bankName.length], BANK_NAME_COLOR);
+            line.appendBuffer(bankName);
 
             if (items === null) {
-                lines.push(`${bankLabel}    ${bankName} brak depozytu`);
+                line.append(' brak depozytu');
+                output.appendBuffer(line);
                 return;
             }
             if (items.length === 0) {
-                lines.push(`${bankLabel}    ${bankName} (pusty)`);
+                line.append(' (pusty)');
+                output.appendBuffer(line);
                 return;
             }
 
-            lines.push(`${bankLabel}    ${bankName}`);
+            output.appendBuffer(line);
+
             items.forEach(it => {
+                output.append('\n');
+                const itemLine = new AnsiAwareBuffer();
                 const count = String(it.count).padStart(3, ' ');
-                lines.push(`    ${count} | ${colorString(it.name, ITEM_NAME_COLOR)}`);
+                itemLine.append(`    ${count} | `);
+
+                const itemName = new AnsiAwareBuffer(it.name);
+                itemName.color([0, itemName.length], ITEM_NAME_COLOR);
+                itemLine.appendBuffer(itemName);
+
+                output.appendBuffer(itemLine);
             });
         });
 
-        if (lines.length === 0) {
-            client.println("Brak zapisanych depozytow.");
-        } else {
-            client.println(lines.join("\n"));
-        }
+        client.println(output);
     }
 
     if (aliases) {

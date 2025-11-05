@@ -1,8 +1,10 @@
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from './types/people';
 import Client from "./Client";
-import {color, RESET, findClosestColor} from '@modules/core/Colors';
-import TriggerLine from "./triggers/TriggerLine";
+import {findClosestColor} from '@modules/core/Colors';
+import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
+
+const RED = findClosestColor('#ff0000')
 
 export default class People {
 
@@ -81,20 +83,17 @@ export default class People {
                 return
             }
 
-            const descCallback = (triggerLine: TriggerLine) => {
-                const matches = triggerLine.matches.matches;
-                if (!matches) return triggerLine;
+            const descCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
                 const index = matches.index || 0
                 const token = matches[0]
-                const rawLine = triggerLine.toAnsiString()
-                const plainSuffix = triggerLine.text.substring(index + token.length)
+                const plainSuffix = line.text.substring(index + token.length)
                 const nextWord = plainSuffix
                     .toLowerCase()
                     .replace(/^\s+/, '')
                 if (nextWord.startsWith('chaosu')) {
-                    return triggerLine
+                    return line
                 }
-                return this.buildDescHighlight(triggerLine, rawLine, token, index, replacement, state, RED)
+                return this.buildDescHighlight(line, index, replacement, state)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -103,18 +102,16 @@ export default class People {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
-                    const nameCallback = (triggerLine: TriggerLine) => {
-                        const matches = triggerLine.matches.matches;
-                        if (!matches) return triggerLine;
+                    const nameCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
                         const token = matches[0]
-                        const indices = this.findTokenIndices(triggerLine.text, token)
+                        const indices = this.findTokenIndices(line.text, token)
                         if (indices.length === 0) {
-                            return triggerLine
+                            return line
                         }
                         for (let i = indices.length - 1; i >= 0; i -= 1) {
-                            this.buildNameHighlight(triggerLine, token, indices[i], chosenColor)
+                            this.buildNameHighlight(line, token, indices[i], chosenColor)
                         }
-                        return triggerLine
+                        return line
                     }
                     this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
                     addedNames.add(key)
@@ -165,31 +162,34 @@ export default class People {
         return indices
     }
 
-    private buildNameHighlight(line: TriggerLine, token: string, index: number, colorCode: number) {
+    private buildNameHighlight(line: AnsiAwareBuffer, token: string, index: number, colorCode: FormatStateSnapshot) {
         const end = index + token.length
         const original = line.text.substring(index, end)
-        return line.replace([index, end], color(colorCode) + original + RESET)
+        return line.replace([index, end], original, colorCode)
     }
 
     private buildDescHighlight(
-        triggerLine: TriggerLine | undefined,
-        rawLine: string,
-        token: string,
+        line: AnsiAwareBuffer,
         index: number,
         replacement: { name: string; guild: string },
-        state: { inGuild: boolean; isEnemy: boolean; guildColor?: number },
-        RED: number
-    ) {
-        const line = triggerLine ?? new TriggerLine(rawLine)
-        const end = index + token.length
-        let suffixText = ` \x1B[22;38;5;228m(${replacement.name} \x1B[22;38;5;210m${replacement.guild}\x1B[22;38;5;228m)`
-        if (state.isEnemy) {
-            line.replace([index, end], color(RED) + token + RESET)
-            suffixText = RESET + ' ' + color(RED) + `(${replacement.name} ${replacement.guild})` + RESET
-        } else if (state.inGuild && state.guildColor !== undefined) {
-            suffixText = ' ' + color(state.guildColor) + `(${replacement.name} ${replacement.guild})` + RESET
-        }
-        return line.insert(end, suffixText)
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }
+    ): AnsiAwareBuffer {
+        const parenthesisColor = state.isEnemy ? RED : findClosestColor('#ffff5f')
+        const guildColor = this.getGuildColor(state)
+
+        const suffix = new AnsiAwareBuffer("")
+            .append(`(${replacement.name}`, parenthesisColor)
+            .append(replacement.guild, guildColor)
+            .append(')', parenthesisColor)
+
+
+        return line.insertBuffer(index, suffix)
     }
 
+    private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
+        if (state.isEnemy) {
+            return RED
+        }
+        return state.inGuild && state.guildColor !== undefined ? state.guildColor : findClosestColor('#ff875f');
+    }
 }

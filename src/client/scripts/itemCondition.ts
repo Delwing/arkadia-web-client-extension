@@ -1,5 +1,6 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 export type ItemCondition = {
     patterns: string[];
@@ -7,7 +8,7 @@ export type ItemCondition = {
     color: string;
 };
 
-const COLORS: Record<string, number> = {
+const COLORS: Record<string, FormatStateSnapshot> = {
     green: findClosestColor("#00ff00"),
     yellow: findClosestColor("#ffff00"),
     red: findClosestColor("#ff0000"),
@@ -31,29 +32,29 @@ export const itemConditions: ItemCondition[] = [
     { patterns: ["moze peknac w kazdej chwili"], replacement: "[1/7]", color: "red" },
 ];
 
-export function processItemCondition(rawLine: string, phrase: string): string {
+export function processItemCondition(buffer: AnsiAwareBuffer, phrase: string): AnsiAwareBuffer {
     for (const condition of itemConditions) {
         const found = condition.patterns.every(p => new RegExp(`^${p}$`).test(phrase));
         if (found) {
             const colorCode = COLORS[condition.color] ?? COLORS.red;
-            const colored = colorString(phrase, colorCode);
-            const coloredValue = colorString(condition.replacement, colorCode);
-            const replaced = `${colored}. ${coloredValue}`;
-            return rawLine.replace(`${phrase}.`, replaced);
+            const text = buffer.text;
+            const searchText = `${phrase}.`;
+            const matchIndex = text.indexOf(searchText);
+            if (matchIndex === -1) return buffer;
+
+            buffer.color([matchIndex, matchIndex + phrase.length], colorCode);
+            buffer.insert(matchIndex + searchText.length, ` ${condition.replacement}`, colorCode);
+            return buffer;
         }
     }
-    return rawLine;
+    return buffer;
 }
 
 export default function initItemCondition(client: Client) {
     const pattern = /^(?:.* jest (?:juz )?|Wyglada na to, ze (?:sa |jest )?)(.+)\.$/;
-    client.Triggers.registerTrigger(pattern, (triggerLine) => {
-        const m = triggerLine.matches.matches;
-        if (!m || !m[1]) return triggerLine;
-        const phrase = m[1];
-        const raw = triggerLine.toAnsiString();
-        const result = processItemCondition(raw, phrase);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+    client.Triggers.registerTrigger(pattern, (line, matches) => {
+        if (!matches || !matches[1]) return line;
+        const phrase = matches[1];
+        return processItemCondition(line, phrase);
     }, "item-condition");
 }

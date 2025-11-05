@@ -1,9 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-
-function toUpperSafe(text: string) {
-    return text.split(/(\x1B\[[0-9;]*m)/g).map((seg, i) => i % 2 === 0 ? seg.toUpperCase() : seg).join('');
-}
+import {findClosestColor} from "@modules/core/Colors";
+import {TextRange} from "../ansi/FormatState";
 
 export interface UserMacro {
     type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command';
@@ -34,55 +31,49 @@ export default function initUserTriggers(client: Client) {
                 console.error('Invalid trigger pattern', item.pattern, e);
                 return;
             }
-            const trigger = client.Triggers.registerTrigger(regexp, (triggerLine) => {
-                const matches = triggerLine.matches.matches;
-                if (!matches) return triggerLine;
-                const raw = triggerLine.toAnsiString();
-                const r = new RegExp(regexp.source, regexp.flags.includes('g') ? regexp.flags : regexp.flags + 'g');
-                const result = raw.replace(r, (match) => {
-                    let replaced = match;
-                    item.macros?.forEach(m => {
-                        switch (m.type) {
-                            case 'uppercase':
-                                replaced = toUpperSafe(replaced);
-                                break;
-                            case 'color':
-                                if (m.color) {
-                                    const code = findClosestColor(m.color);
-                                    replaced = colorString(replaced, code);
-                                }
-                                break;
-                            case 'replace':
-                                replaced = m.to || '';
-                                break;
-                            case 'beep':
-                                client.sendEvent("sound:play", { key: m.soundKey || "beep" });
-                                break;
-                            case 'command':
-                                if (m.command) {
-                                    client.sendCommand(m.command);
-                                }
-                                break;
-                        }
-                    });
-                    return replaced;
+            const trigger = client.Triggers.registerTrigger(regexp, (line, matches) => {
+                let matchRange: TextRange = [line.text.indexOf(matches[0]), line.text.indexOf(matches[0]) + matches[0].length];
+                item.macros?.forEach(macro => {
+                    switch (macro.type) {
+                        case 'uppercase':
+                            line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]).toUpperCase());
+                            break;
+                        case 'color':
+                            if (macro.color) {
+                                const color = findClosestColor(macro.color);
+                                line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]), color);
+                            }
+                            break;
+                        case 'replace':
+                            const replacement = macro.to || '';
+                            line.replace(matchRange, replacement);
+                            matchRange = [line.text.indexOf(replacement), line.text.indexOf(replacement) + replacement.length];
+                            break;
+                        case 'beep':
+                            client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
+                            break;
+                        case 'command':
+                            if (macro.command) {
+                                client.sendCommand(macro.command);
+                            }
+                            break;
+                    }
                 });
-                triggerLine.setOverrideAnsi(result);
-                return triggerLine;
+                return line
             }, STORAGE_KEY);
             registered.push(trigger);
         });
     };
 
-    client.on('storage', ({ key, value }) => {
+    client.on('storage', ({key, value}) => {
         if (key === STORAGE_KEY) {
             apply(Array.isArray(value) ? value : []);
         }
     });
 
     client.on('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+        client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
     });
 
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
 }

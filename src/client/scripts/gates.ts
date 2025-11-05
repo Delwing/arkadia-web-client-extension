@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export default function initGates(client: Client) {
     const knock = () => {
@@ -6,9 +7,9 @@ export default function initGates(client: Client) {
     };
     client.FunctionalBind.set(null, knock);
 
-    const showMessage = (triggerLine) => {
+    const showMessage = (line: AnsiAwareBuffer) => {
         client.FunctionalBind.set("zastukaj we wrota", knock);
-        return triggerLine;
+        return line;
     };
 
     const patterns = [

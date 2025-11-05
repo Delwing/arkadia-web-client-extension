@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-import TriggerLine from "../triggers/TriggerLine";
+import { findClosestColor } from "@modules/core/Colors";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 export type DurabilityEntry = {
     patterns: string[];
@@ -8,7 +8,7 @@ export type DurabilityEntry = {
     color: string;
 };
 
-const COLORS: Record<string, number> = {
+const COLORS: Record<string, FormatStateSnapshot> = {
     green: findClosestColor("#00ff00"),
     yellow: findClosestColor("#ffff00"),
     orange: findClosestColor("#ffa500"),
@@ -26,18 +26,23 @@ export const durabilityEntries: DurabilityEntry[] = [
     { patterns: ["bardzo krotko"], short: "1h", color: "red" },
 ];
 
-export function processDurability(rawLine: string, phrase: string): string {
+export function processDurability(buffer: AnsiAwareBuffer, phrase: string): AnsiAwareBuffer {
     for (const entry of durabilityEntries) {
         const found = entry.patterns.every((p) => new RegExp(p).test(phrase));
         if (found) {
             const colorCode = COLORS[entry.color] ?? COLORS.red;
-            const colored = colorString(phrase, colorCode);
-            const coloredValue = colorString(`[${entry.short}]`, colorCode);
-            const replaced = `${colored} ${coloredValue}`;
-            return rawLine.replace(phrase, replaced);
+            const text = buffer.text;
+            const matchIndex = text.indexOf(phrase);
+            if (matchIndex === -1) {
+                return buffer;
+            }
+            const suffixText = ` [${entry.short}]`;
+            buffer.color([matchIndex, matchIndex + phrase.length], colorCode);
+            buffer.insert(matchIndex + phrase.length, suffixText, colorCode);
+            return buffer;
         }
     }
-    return rawLine;
+    return buffer;
 }
 
 export default function initDurability(client: Client) {
@@ -47,12 +52,10 @@ export default function initDurability(client: Client) {
     ];
     const tag = "durability";
     patterns.forEach((pattern) => {
-        client.Triggers.registerTrigger(pattern, (triggerLine) => {
-            const m = triggerLine.matches.matches;
-            if (!m) return triggerLine;
-            const raw = triggerLine.toAnsiString();
-            const phrase = m[1];
-            return new TriggerLine(processDurability(raw, phrase));
+        client.Triggers.registerTrigger(pattern, (line, matches) => {
+            if (!matches) return line;
+            const phrase = matches[1];
+            return processDurability(line, phrase);
         }, tag);
     });
 }

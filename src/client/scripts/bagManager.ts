@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {stripAnsiCodes} from "../Triggers";
 import {colorString, findClosestColor} from "@modules/core/Colors";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
 const STORAGE_KEY = "containers";
 
@@ -123,20 +124,24 @@ export function takeFromBag(
 function showConfig(client: Client) {
     const pairs = availableTypes.map((t) => [t, containerConfig[t]]);
 
-    const headerColor = HEADER_COLOR;
-    const typeColor = TYPE_COLOR;
-    const bagColor = BAG_COLOR;
-
     const headers = ["typ", "pojemnik"];
     const col1Width = Math.max(...pairs.map(([t]) => t.length), headers[0].length);
     const col2Width = Math.max(...pairs.map(([, b]) => b.length), headers[1].length);
 
-    const visible = (str: string) => stripAnsiCodes(str).length;
-    const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - visible(str)));
-    const center = (str: string, len: number) => {
-        const l = visible(str);
+    const pad = (buf: AnsiAwareBuffer, len: number) => {
+        const spaces = Math.max(0, len - buf.length);
+        buf.append(" ".repeat(spaces), {});
+        return buf;
+    };
+
+    const center = (text: string, len: number, color?: FormatStateSnapshot) => {
+        const buf = new AnsiAwareBuffer();
+        const l = text.length;
         const left = Math.floor((len - l) / 2);
-        return " ".repeat(left) + str + " ".repeat(len - l - left);
+        buf.append(" ".repeat(left), {});
+        buf.appendBuffer(colorString(text, color));
+        buf.append(" ".repeat(len - l - left), {});
+        return buf;
     };
 
     const padSize = 3;
@@ -144,34 +149,91 @@ function showConfig(client: Client) {
     const horiz1 = "-".repeat(col1Width + padSize * 2);
     const horiz2 = "-".repeat(col2Width + padSize * 2);
 
-    const lines: string[] = [];
-    lines.push(`/${"-".repeat(width - 2)}\\`);
-    lines.push(`|${center(colorString("POJEMNIKI", headerColor), width - 2)}|`);
-    lines.push(`+${horiz1}+${horiz2}+`);
-    lines.push(`|${" ".repeat(padSize)}${pad(headers[0], col1Width)}${" ".repeat(padSize)}|${" ".repeat(padSize)}${pad(headers[1], col2Width)}${" ".repeat(padSize)}|`);
-    lines.push(`+${horiz1}+${horiz2}+`);
+    const lines: AnsiAwareBuffer[] = [];
+
+    // Top border
+    lines.push(new AnsiAwareBuffer(`/${"-".repeat(width - 2)}\\`));
+
+    // Header with title
+    const headerLine = new AnsiAwareBuffer("|");
+    headerLine.appendBuffer(center("POJEMNIKI", width - 2, HEADER_COLOR));
+    headerLine.append("|", {});
+    lines.push(headerLine);
+
+    // Separator
+    lines.push(new AnsiAwareBuffer(`+${horiz1}+${horiz2}+`));
+
+    // Column headers
+    const headerRow = new AnsiAwareBuffer("|");
+    headerRow.append(" ".repeat(padSize), {});
+    headerRow.append(headers[0]);
+    headerRow.append(" ".repeat(col1Width - headers[0].length + padSize), {});
+    headerRow.append("|", {});
+    headerRow.append(" ".repeat(padSize), {});
+    headerRow.append(headers[1]);
+    headerRow.append(" ".repeat(col2Width - headers[1].length + padSize), {});
+    headerRow.append("|", {});
+    lines.push(headerRow);
+
+    // Separator
+    lines.push(new AnsiAwareBuffer(`+${horiz1}+${horiz2}+`));
+
+    // Data rows
     pairs.forEach(([t, b]) => {
-        const type = colorString(t, typeColor);
-        const bag = colorString(b, bagColor);
-        lines.push(`|${" ".repeat(padSize)}${pad(type, col1Width)}${" ".repeat(padSize)}|${" ".repeat(padSize)}${pad(bag, col2Width)}${" ".repeat(padSize)}|`);
+        const row = new AnsiAwareBuffer("|");
+        row.append(" ".repeat(padSize), {});
+        const typeBuf = colorString(t, TYPE_COLOR);
+        pad(typeBuf, col1Width);
+        row.appendBuffer(typeBuf);
+        row.append(" ".repeat(padSize), {});
+        row.append("|");
+        row.append(" ".repeat(padSize), {});
+        const bagBuf = colorString(b, BAG_COLOR);
+        pad(bagBuf, col2Width);
+        row.appendBuffer(bagBuf);
+        row.append(" ".repeat(padSize));
+        row.append("|");
+        lines.push(row);
     });
-    lines.push(`\\${"-".repeat(width - 2)}/`);
-    client.println(lines.join("\n"));
+
+    // Bottom border
+    lines.push(new AnsiAwareBuffer(`\\${"-".repeat(width - 2)}/`));
+
+    // Combine all lines
+    const output = new AnsiAwareBuffer();
+    lines.forEach((line, i) => {
+        if (i > 0) output.append("\n");
+        output.appendBuffer(line);
+    });
+
+    client.println(output);
 }
 
 function showInterface(client: Client, bags: string[]) {
-    const lines: string[] = [];
+    const lines: AnsiAwareBuffer[] = [];
     bags.forEach((bag) => {
-        let line = `Ustaw ${bag} jako:`;
+        const line = new AnsiAwareBuffer(`Ustaw ${bag} jako:`);
         availableTypes.forEach((type) => {
             const text = `${type}`;
-            line += " [ " + colorString(client.OutputHandler.makeClickable(text, text, () => setContainer(type, bag, client)), TYPE_COLOR) + " ]";
+            const clickable = client.OutputHandler.makeClickable(text, text, () => setContainer(type, bag, client));
+            line.append(" [ ");
+            line.appendBuffer(colorString(clickable, TYPE_COLOR));
+            line.append(" ]");
         });
         const allText = `wszystkie`;
-        line += " [ " + colorString(client.OutputHandler.makeClickable(allText, allText, () => setAll(bag, client)), TYPE_COLOR) + " ]";
+        const clickableAll = client.OutputHandler.makeClickable(allText, allText, () => setAll(bag, client));
+        line.append(" [ ");
+        line.appendBuffer(colorString(clickableAll, TYPE_COLOR));
+        line.append(" ]");
         lines.push(line);
     });
-    client.println(lines.join("\n"));
+
+    const output = new AnsiAwareBuffer();
+    lines.forEach((line, i) => {
+        if (i > 0) output.append("\n");
+        output.appendBuffer(line);
+    });
+    client.println(output);
 }
 
 function configure(client: Client) {

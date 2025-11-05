@@ -1,7 +1,7 @@
 import Client from "../Client";
-import { defaultSettings } from "@modules/core/defaultSettings";
-import type { LetterTemplate } from "../types/letter";
-import { LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate } from "../types/letter";
+import {defaultSettings} from "@modules/core/defaultSettings";
+import type {LetterTemplate} from "../types/letter";
+import {LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate} from "../types/letter";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
@@ -155,8 +155,11 @@ function formatContent(content: string, width: number) {
 
 interface LetterTemplateRenderer {
     createHeader(width: number): string[];
+
     createFooter(width: number): string[];
+
     formatLine(line: string, width: number): string;
+
     getBodyWidth(totalWidth: number): number;
 }
 
@@ -355,7 +358,7 @@ function renderLetter(content: string, template: LetterTemplate) {
     const baseLines = formatContent(content, bodyWidth);
     const lines = applyTemplate(baseLines, bodyWidth, renderer);
     const hasContent = baseLines.some(line => line.length > 0);
-    return { lines, hasContent };
+    return {lines, hasContent};
 }
 
 function printPreview(client: Client, lines: string[], template: LetterTemplate, hasContent: boolean) {
@@ -373,7 +376,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         aliases.push({
             pattern: /^\/list$/,
             callback: () => {
-                client.sendEvent("letterComposer", { open: true });
+                client.sendEvent("letterComposer", {open: true});
             }
         });
     }
@@ -384,37 +387,37 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.on("letterComposer.submit", (payload) => {
-        const { to, cc, subject, content, template: rawTemplate } = payload ?? {};
+        const {to, cc, subject, content, template: rawTemplate} = payload ?? {};
         const recipient = to.trim();
         const carbonCopy = cc.trim();
         const subjectLine = subject.trim();
         const template = normalizeTemplate(rawTemplate);
-        const { lines } = renderLetter(content, template);
+        const {lines} = renderLetter(content, template);
 
         client.Triggers.removeByTag(TRIGGER_TAG);
         client.Triggers.registerOneTimeTrigger(
             PROMPT_PATTERN,
-            () => {
+            (line) => {
                 lines.forEach(line => {
                     if (line.length > 0) {
-                        client.sendCommand(line, true, { preserveCase: true });
+                        client.sendCommand(line, true, {preserveCase: true});
                     }
                 });
                 client.sendCommand("**");
-                return undefined;
+                return line;
             },
             TRIGGER_TAG
         );
 
         client.sendCommand("napisz list");
-        client.sendCommand(recipient, true, { preserveCase: true });
-        client.sendCommand(subjectLine, true, { preserveCase: true });
-        client.sendCommand(carbonCopy, true, { preserveCase: true });
+        client.sendCommand(recipient, true, {preserveCase: true});
+        client.sendCommand(subjectLine, true, {preserveCase: true});
+        client.sendCommand(carbonCopy, true, {preserveCase: true});
     });
 
     client.on("letterComposer.preview", (payload) => {
         const template = normalizeTemplate(payload?.template);
-        const { lines, hasContent } = renderLetter(payload?.content ?? "", template);
+        const {lines, hasContent} = renderLetter(payload?.content ?? "", template);
         printPreview(client, lines, template, hasContent);
     });
 }

@@ -1,7 +1,8 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
-const COLORS: Record<string, number> = {
+const COLORS: Record<string, FormatStateSnapshot> = {
     green: findClosestColor("#00ff00"),
     yellow: findClosestColor("#ffff00"),
     red: findClosestColor("#ff0000"),
@@ -40,15 +41,18 @@ export function getWearValue(desc: string): number | undefined {
     return Math.max(1, Math.min(value, 5));
 }
 
-export function processWearUsed(rawLine: string, desc: string): string {
+export function processWearUsed(buffer: AnsiAwareBuffer, desc: string): AnsiAwareBuffer {
     const clampedValue = getWearValue(desc);
-    if (clampedValue == null) return rawLine;
-    const formattedValue = `[${clampedValue}/5]`;
+    if (clampedValue == null) return buffer;
+    const formattedValue = ` [${clampedValue}/5]`;
     const colorName = colorForWear(clampedValue);
     const colorCode = COLORS[colorName] ?? COLORS.red;
-    const coloredDesc = colorString(desc, colorCode);
-    const coloredValue = colorString(formattedValue, colorCode);
-    return rawLine.replace(desc, `${coloredDesc} ${coloredValue}`);
+    const text = buffer.text;
+    const matchIndex = text.indexOf(desc);
+    if (matchIndex === -1) return buffer;
+    buffer.color([matchIndex, matchIndex + desc.length], colorCode);
+    buffer.insert(matchIndex + desc.length, formattedValue, colorCode);
+    return buffer;
 }
 
 export default function initWearUsed(client: Client) {
@@ -56,13 +60,9 @@ export default function initWearUsed(client: Client) {
         /^Ubranie to.* wyglada na (.*)$/,
         /^Ten element ekwipunku wyglada na (.*)$/
     ];
-    client.Triggers.registerTrigger(patterns, (triggerLine) => {
-        const m = triggerLine.matches.matches;
-        if (!m || !m[1]) return triggerLine;
-        const desc = m[1];
-        const raw = triggerLine.toAnsiString();
-        const result = processWearUsed(raw, desc);
-        triggerLine.setOverrideAnsi(result);
-        return triggerLine;
+    client.Triggers.registerTrigger(patterns, (line, matches) => {
+        if (!matches || !matches[1]) return line;
+        const desc = matches[1];
+        return processWearUsed(line, desc);
     }, "wear-used");
 }

@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-import { gmcp } from "../gmcp";
+import {findClosestColor} from "@modules/core/Colors";
+import {gmcp} from "../gmcp";
 
 const SEASON_NAMES = ["wiosna", "lato", "jesien", "zima"];
 const SEASON_TEXT = SEASON_NAMES.map(n => `[ ${n.toUpperCase()} ]`);
@@ -18,11 +18,11 @@ export default function initSeasonPrint(client: Client) {
         /^Jest w przyblizeniu (\w+) (?:|w|po|przed|nad|poznym)\s*(dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem).*, ((?:dzien|noc) (\w+)|(.*) dzien miesiaca (\w+)) wedlug Kalendarza Imperialnego\.$/
     ];
 
-    patterns.forEach(p => {
-        client.Triggers.registerTrigger(p, raw => {
+    patterns.forEach(pattern => {
+        client.Triggers.registerTrigger(pattern, line => {
             const idx = typeof gmcp?.room?.time?.season === "number" ? gmcp.room.time.season : -1;
-            if (idx < 0 || idx >= SEASON_NAMES.length) return raw;
-            return raw + " " + colorString(SEASON_TEXT[idx], SEASON_COLORS[idx]);
+            if (idx < 0 || idx >= SEASON_NAMES.length) return line;
+            return line.append(SEASON_TEXT[idx], SEASON_COLORS[idx]);
         }, tag);
     });
 }

@@ -1,12 +1,13 @@
 import Client from "../Client";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export default function initCarriage(client: Client) {
-    const enable = (triggerLine) => {
+    const enable = (line: AnsiAwareBuffer) => {
         client.carriageMode = true;
         if (client.moveModeButton) {
             client.moveModeButton.disabled = true;
         }
-        return triggerLine;
+        return line;
     };
     const disable = (triggerLine) => {
         client.carriageMode = false;

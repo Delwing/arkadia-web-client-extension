@@ -1,11 +1,11 @@
 import Client from "../Client";
-import { color, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
 import { gmcp } from "../gmcp";
 import { getShortDir, longToShort } from "@shared/map";
+import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 const SPRING_GREEN = findClosestColor("#00ff7f");
 const DIM_GRAY = findClosestColor("#696969");
-const RESET = "\x1B[0m";
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
@@ -65,20 +65,55 @@ export default function initInlineCompassRose(client: Client) {
         return exits.has(short);
     }
 
-    function printExit(short: string): string {
-        if (!hasExit(short)) return " ".repeat(short.length);
-        return color(SPRING_GREEN) + short.toUpperCase() + RESET;
+    function printExit(short: string): AnsiAwareBuffer {
+        if (!hasExit(short)) {
+            return new AnsiAwareBuffer(" ".repeat(short.length));
+        }
+        const buffer = new AnsiAwareBuffer(short.toUpperCase());
+        buffer.color([0, buffer.length], SPRING_GREEN);
+        return buffer;
+    }
+
+    function buildLine(...parts: Array<string | AnsiAwareBuffer>): AnsiAwareBuffer {
+        const line = new AnsiAwareBuffer();
+        for (const part of parts) {
+            if (typeof part === "string") {
+                line.append(part);
+            } else {
+                line.appendBuffer(part);
+            }
+        }
+        return line;
     }
 
     function showCompassRose() {
-        client.println(
-            [
-                `       ${printExit("nw")}  ${printExit("n")}  ${printExit("ne")}    ${printExit("u")}`,
-                `         ${hasExit("nw") ? "\\" : " "} ${hasExit("n") ? "|" : " "} ${hasExit("ne") ? "/" : " "}      ${hasExit("u") ? "|" : ""}`,
-                `       ${printExit("w")}${hasExit("w") ? "---" : "   "}${color(DIM_GRAY)}X${RESET}${hasExit("e") ? "---" : "   "}${printExit("e")}    ${hasExit("d") || hasExit("u") ? "o" : ""}`,
-                `         ${hasExit("sw") ? "/" : " "} ${hasExit("s") ? "|" : " "} ${hasExit("se") ? "\\" : " "}      ${hasExit("d") ? "|" : ""}`,
-                `       ${printExit("sw")}  ${printExit("s")}  ${printExit("se")}    ${printExit("d")}`,
-            ].filter(item => item.trim().length != 0).join("\n")
-        );
+        const lines: AnsiAwareBuffer[] = [
+            buildLine("       ", printExit("nw"), "  ", printExit("n"), "  ", printExit("ne"), "    ", printExit("u")),
+            buildLine("         ", hasExit("nw") ? "\\" : " ", " ", hasExit("n") ? "|" : " ", " ", hasExit("ne") ? "/" : " ", "      ", hasExit("u") ? "|" : ""),
+            buildLine("       ", printExit("w"), hasExit("w") ? "---" : "   "),
+            buildLine(hasExit("e") ? "---" : "   ", printExit("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
+            buildLine("         ", hasExit("sw") ? "/" : " ", " ", hasExit("s") ? "|" : " ", " ", hasExit("se") ? "\\" : " ", "      ", hasExit("d") ? "|" : ""),
+            buildLine("       ", printExit("sw"), "  ", printExit("s"), "  ", printExit("se"), "    ", printExit("d")),
+        ];
+
+        // Add colored "X" in the center line
+        const centerX = new AnsiAwareBuffer("X");
+        centerX.color([0, 1], DIM_GRAY);
+        lines[2].appendBuffer(centerX);
+        lines[2].appendBuffer(lines[3]);
+
+        const output = new AnsiAwareBuffer();
+        for (let i = 0; i < lines.length; i++) {
+            if (i === 3) continue; // Skip line 3 as it was merged into line 2
+            const line = lines[i];
+            if (line.text.trim().length > 0) {
+                if (output.length > 0) {
+                    output.append("\n");
+                }
+                output.appendBuffer(line);
+            }
+        }
+
+        client.println(output);
     }
 }

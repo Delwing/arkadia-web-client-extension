@@ -1,7 +1,7 @@
 import Client from "../Client";
-import { colorString, findClosestColor, RESET } from "@modules/core/Colors";
-import { stripAnsiCodes } from "../Triggers";
-import { getCurrentCharacter, getItemSync } from "@modules/core/storage";
+import {colorString, findClosestColor} from "@modules/core/Colors";
+import {getCurrentCharacter, getItemSync} from "@modules/core/storage";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
 const HEADER_COLOR = findClosestColor("#90ee90");
 const SECTION_COLOR = findClosestColor("#ffa500");
@@ -68,32 +68,56 @@ function formatDuration(ms: number): string {
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function visibleLength(str: string): number {
-    return stripAnsiCodes(str).length;
-}
-
 function createPad(width: number, left: number, right: number) {
     const contentWidth = width - left - right;
-    return (content = "") => {
-        if (visibleLength(content) > contentWidth) {
-            const plain = stripAnsiCodes(content);
-            const prefix = content.match(/^\x1b\[[0-9;]*m/)?.[0] || "";
-            const suffix = prefix ? RESET : "";
-            content = prefix + plain.slice(0, contentWidth) + suffix;
+    return (content?: AnsiAwareBuffer): AnsiAwareBuffer => {
+        const line = new AnsiAwareBuffer("|");
+        line.append(" ".repeat(left), {});
+
+        if (content) {
+            if (content.length > contentWidth) {
+                // Truncate content if too long
+                const truncated = new AnsiAwareBuffer();
+                const segments = content.getSegments();
+                let remaining = contentWidth;
+                for (const segment of segments) {
+                    if (remaining <= 0) break;
+                    if (segment.text.length <= remaining) {
+                        truncated.append(segment.text, segment.state);
+                        remaining -= segment.text.length;
+                    } else {
+                        truncated.append(segment.text.slice(0, remaining), segment.state);
+                        remaining = 0;
+                    }
+                }
+                line.appendBuffer(truncated);
+            } else {
+                line.appendBuffer(content);
+                line.append(" ".repeat(contentWidth - content.length));
+            }
+        } else {
+            line.append(" ".repeat(contentWidth), {});
         }
-        return `|${" ".repeat(left)}${content}${" ".repeat(
-            Math.max(0, contentWidth - visibleLength(content))
-        )}${" ".repeat(right)}|`;
+
+        line.append(" ".repeat(right), {});
+        line.append("|");
+        return line;
     };
 }
 
-function createHeader(width: number, offset: number, color: number) {
-    return (title: string) => {
-        const colored = colorString(title, color);
-        const dashes = width - visibleLength(title) - offset;
+function createHeader(width: number, offset: number, color: FormatStateSnapshot) {
+    return (title: string): AnsiAwareBuffer => {
+        const line = new AnsiAwareBuffer("+");
+        const dashes = width - title.length - offset;
         const left = Math.floor(dashes / 2);
         const right = dashes - left;
-        return `+${"-".repeat(left)} ${colored} ${"-".repeat(right)}+`;
+        line.append("-".repeat(left));
+        line.append(" ");
+        line.appendBuffer(colorString(title, color));
+        line.append(" ");
+        line.append("-".repeat(right), {});
+        line.append("+");
+        return line;
     };
 }
 
@@ -114,7 +138,7 @@ export default class ImproveCounter {
     private lifetimeLoaded = false;
     private pendingLifetime: { count: number; time: number }[] = [];
     private lastTime: number = 0;
-    private lastKills = { my: 0, team: 0 };
+    private lastKills = {my: 0, team: 0};
     private level: number = -1;
     private lastObjNum?: number;
     private loaded = false;
@@ -127,7 +151,7 @@ export default class ImproveCounter {
         this.client = client;
         this.killCounter = killCounter;
 
-        this.client.on("storage", ({ key, value }) => {
+        this.client.on("storage", ({key, value}) => {
             if (key === ImproveCounter.STORAGE_KEY) {
                 this.load(value ?? {});
                 this.loaded = true;
@@ -174,7 +198,7 @@ export default class ImproveCounter {
         if (this.killCounter && typeof this.killCounter.getSessionTotals === "function") {
             return this.killCounter.getSessionTotals();
         }
-        return { my: 0, team: 0 };
+        return {my: 0, team: 0};
     }
 
     reset() {
@@ -194,8 +218,8 @@ export default class ImproveCounter {
             typeof objStored === "string"
                 ? parseInt(objStored, 10)
                 : typeof objStored === "number"
-                ? objStored
-                : undefined;
+                    ? objStored
+                    : undefined;
         const newObj =
             objNum !== undefined &&
             this.lastObjNum !== undefined &&
@@ -253,14 +277,14 @@ export default class ImproveCounter {
     private addToLifetime(count: number, time: number) {
         if (!this.lifetimeEnabled) return;
         if (!this.lifetimeLoaded) {
-            this.pendingLifetime.push({ count, time });
+            this.pendingLifetime.push({count, time});
             return;
         }
         const d = new Date(time);
         const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
         let day = this.lifetime[this.lifetime.length - 1];
         if (!day || day.date !== date) {
-            day = { date, count: 0 };
+            day = {date, count: 0};
             this.lifetime.push(day);
         }
         day.count += count;
@@ -315,7 +339,7 @@ export default class ImproveCounter {
                 const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
                 let day = result.find((x) => x.date === date);
                 if (!day) {
-                    day = { date, count: 0 };
+                    day = {date, count: 0};
                     result.push(day);
                 }
                 day.count += 1;
@@ -323,7 +347,7 @@ export default class ImproveCounter {
             return result;
         };
         const convertStates = (arr: any[]) =>
-            arr.map((e) => ({ date: e.date, count: Array.isArray(e.states) ? e.states.length : 0 }));
+            arr.map((e) => ({date: e.date, count: Array.isArray(e.states) ? e.states.length : 0}));
         if (Array.isArray(data)) {
             this.lifetime = convertLegacy(data);
             this.lifetimeEnabled = true;
@@ -353,12 +377,12 @@ export default class ImproveCounter {
             },
         });
     };
-    
+
     private persistLifetime = () => {
         this.client.port?.postMessage({
             type: "SET_STORAGE",
             key: ImproveCounter.LIFETIME_KEY,
-            value: { entries: this.lifetime, enabled: this.lifetimeEnabled },
+            value: {entries: this.lifetime, enabled: this.lifetimeEnabled},
         });
     };
 
@@ -374,7 +398,7 @@ export default class ImproveCounter {
             const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
             let day = this.lifetime[this.lifetime.length - 1];
             if (!day || day.date !== date) {
-                day = { date, count: 0 };
+                day = {date, count: 0};
                 this.lifetime.push(day);
             }
             day.count += toAdd;
@@ -426,7 +450,7 @@ export default class ImproveCounter {
         this.client.println(colorString(msg, SECTION_COLOR));
     }
 
-    private formatTable(): string {
+    private formatTable(): AnsiAwareBuffer {
         const WIDTH = 74;
         const INNER = WIDTH - 2;
         const pad = createPad(INNER, 1, 1);
@@ -436,101 +460,126 @@ export default class ImproveCounter {
         const avg = this.entries.length
             ? this.entries.reduce((s, e) => s + e.delta, 0) / this.entries.length
             : 0;
-        const lines: string[] = [];
+        const lines: AnsiAwareBuffer[] = [];
         lines.push(header("Postepy"));
         lines.push(pad());
-        const current = colorString(
-            `Aktualny czas   : ${formatDate(now)}`,
-            TIME_COLOR
-        );
-        lines.push(
-            pad(
-                `${current}    : sred ${formatDuration(avg)}       Dzisiaj: ${this.entries.length}`
-            )
-        );
+
+        const currentLine = new AnsiAwareBuffer();
+        currentLine.appendBuffer(colorString(`Aktualny czas   : ${formatDate(now)}`, TIME_COLOR));
+        currentLine.append(`    : sred ${formatDuration(avg)}       Dzisiaj: ${this.entries.length}`);
+        lines.push(pad(currentLine));
+
         lines.push(pad());
+
         this.entries.forEach((e, idx) => {
-            lines.push(
-                pad(
-                    `${(idx + 1)
-                        .toString()
-                        .padStart(2, " ")}. ${e.state.padEnd(15)} : ${formatDate(
-                        new Date(e.time)
-                    )} : czas ${formatDuration(e.delta)} : zabici ${e.killsMy}/${
-                        e.killsMy + e.killsTeam
-                    }`
-                )
-            );
+            const entryLine = new AnsiAwareBuffer();
+            entryLine.append(`${(idx + 1).toString().padStart(2, " ")}. ${e.state.padEnd(15)} : ${formatDate(new Date(e.time))} : czas ${formatDuration(e.delta)} : zabici ${e.killsMy}/${e.killsMy + e.killsTeam}`);
+            lines.push(pad(entryLine));
         });
+
         lines.push(pad());
         lines.push(pad(colorString("ZABITYCH", SECTION_COLOR)));
+
         const totals = this.getKills();
-        lines.push(
-            pad(
-                `${colorString("JA ... :", LABEL_COLOR)} ${colorString(String(totals.my), COUNT_COLOR)}`
-            )
-        );
-        lines.push(
-            pad(
-                `${colorString("WSZYSCY:", LABEL_COLOR)} ${colorString(String(totals.my + totals.team), COUNT_COLOR)}`
-            )
-        );
+        const jaLine = new AnsiAwareBuffer();
+        jaLine.appendBuffer(colorString("JA ... :", LABEL_COLOR));
+        jaLine.append(" ");
+        jaLine.appendBuffer(colorString(String(totals.my), COUNT_COLOR));
+        lines.push(pad(jaLine));
+
+        const wszyscyLine = new AnsiAwareBuffer();
+        wszyscyLine.appendBuffer(colorString("WSZYSCY:", LABEL_COLOR));
+        wszyscyLine.append(" ");
+        wszyscyLine.appendBuffer(colorString(String(totals.my + totals.team), COUNT_COLOR));
+        lines.push(pad(wszyscyLine));
+
         lines.push(pad());
+
         const since = Date.now() - this.lastTime;
         const myDelta = totals.my - this.lastKills.my;
         const teamDelta = totals.team - this.lastKills.team;
-        lines.push(
-            pad(
-                colorString(
-                    `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${
-                        myDelta + teamDelta
-                    }`,
-                    POSTEP_COLOR
-                )
-            )
+        const sinceLine = colorString(
+            `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${myDelta + teamDelta}`,
+            POSTEP_COLOR
         );
+        lines.push(pad(sinceLine));
+
         lines.push(pad());
-        lines.push(`+${"-".repeat(INNER)}+`);
-        return lines.join("\n");
+        lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
+
+        const output = new AnsiAwareBuffer();
+        lines.forEach((line, i) => {
+            if (i > 0) output.append("\n");
+            output.appendBuffer(line);
+        });
+
+        return output;
     }
 
     show() {
-        this.client.print("\n\n" + this.formatTable() + "\n\n");
+        const output = new AnsiAwareBuffer("\n\n");
+        output.appendBuffer(this.formatTable());
+        output.append("\n\n");
+        this.client.print(output);
     }
 
-    private formatLifetimeTable(): string {
+    private formatLifetimeTable(): AnsiAwareBuffer {
         const WIDTH = 57;
         const INNER = WIDTH - 2;
         const pad = createPad(INNER, 1, 1);
-        const lines: string[] = [];
-        lines.push(`+${"-".repeat(INNER)}+`);
+        const lines: AnsiAwareBuffer[] = [];
+        lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
         lines.push(pad());
+
         const name = titleCase(getCurrentCharacter() || "");
-        lines.push(pad(`POSTAC: ${colorString(name, NAME_COLOR)}`));
+        const nameLine = new AnsiAwareBuffer("POSTAC: ");
+        nameLine.appendBuffer(colorString(name, NAME_COLOR));
+        lines.push(pad(nameLine));
+
         lines.push(pad());
+
         this.lifetime.forEach((e, idx) => {
-            const date = colorString(e.date, DATE_COLOR);
-            const cnt = formatCount(e.count);
-            const line = `[${String(idx + 1).padStart(4, " ")}] ${date}    - ${cnt}`;
-            lines.push(pad(line));
+            const entryLine = new AnsiAwareBuffer();
+            entryLine.append(`[${String(idx + 1).padStart(4, " ")}] `);
+            entryLine.appendBuffer(colorString(e.date, DATE_COLOR));
+            entryLine.append(`    - ${formatCount(e.count)}`);
+            lines.push(pad(entryLine));
         });
+
         lines.push(pad());
-        lines.push(pad("      ------------------------------------"));
+        lines.push(pad(new AnsiAwareBuffer("      ------------------------------------")));
         lines.push(pad());
+
         const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
         const approx = (total / 15).toFixed(2);
-        const label = colorString("WSZYSTKICH DO TEJ PORY:", TOTAL_LABEL_COLOR);
-        const totalStr = colorString(`${total} postepow`, HEADER_COLOR);
-        const approxStr = colorString(`~${approx} niebotycznych`, HEADER_COLOR);
-        lines.push(pad(`${label} ${totalStr}`));
-        lines.push(pad(`                         ${approxStr}`));
+
+        const totalLine = new AnsiAwareBuffer();
+        totalLine.appendBuffer(colorString("WSZYSTKICH DO TEJ PORY:", TOTAL_LABEL_COLOR));
+        totalLine.append(" ");
+        totalLine.appendBuffer(colorString(`${total} postepow`, HEADER_COLOR));
+        lines.push(pad(totalLine));
+
+        const approxLine = new AnsiAwareBuffer("                         ");
+        approxLine.appendBuffer(colorString(`~${approx} niebotycznych`, HEADER_COLOR));
+        lines.push(pad(approxLine));
+
         lines.push(pad());
-        lines.push(`+${"-".repeat(INNER)}+`);
-        return lines.join("\n");
+        lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
+
+        const output = new AnsiAwareBuffer();
+        lines.forEach((line, i) => {
+            if (i > 0) output.append("\n");
+            output.appendBuffer(line);
+        });
+
+        return output;
     }
 
     showLifetime() {
-        this.client.print("\n" + this.formatLifetimeTable() + "\n");
+        const output = new AnsiAwareBuffer("\n");
+        output.appendBuffer(this.formatLifetimeTable());
+        output.append("\n");
+        this.client.print(output);
     }
 }
 
@@ -541,17 +590,29 @@ export function initImproveCounter(
 ): ImproveCounter {
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
-        aliases.push({ pattern: /\/postepy$/, callback: () => counter.show() });
-        aliases.push({ pattern: /\/postepy_reset$/, callback: () => counter.reset() });
-        aliases.push({ pattern: /\/postepy2$/, callback: () => counter.showLifetime() });
-        aliases.push({ pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime() });
-        aliases.push({ pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false) });
-        aliases.push({ pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true) });
-        aliases.push({ pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1) });
-        aliases.push({ pattern: /\/postepy2\+ ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2\+ ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[2], 10), parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2- ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10)) });
-        aliases.push({ pattern: /\/postepy2- ([0-9]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10), parseInt(m[2], 10)) });
+        aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
+        aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
+        aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
+        aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});
+        aliases.push({pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false)});
+        aliases.push({pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true)});
+        aliases.push({pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1)});
+        aliases.push({
+            pattern: /\/postepy2\+ ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2\+ ([0-9]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.addLifetime(parseInt(m[2], 10), parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2- ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10))
+        });
+        aliases.push({
+            pattern: /\/postepy2- ([0-9]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => counter.removeLifetime(parseInt(m[1], 10), parseInt(m[2], 10))
+        });
     }
     return counter;
 }

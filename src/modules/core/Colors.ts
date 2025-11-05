@@ -1,7 +1,6 @@
 import xtermArkadia from "@client/xtermArkadia";
 import xtermProper from "@client/xtermProper";
-import { getItemSync } from "./storage";
-import TriggerLine from "@client/triggers/TriggerLine";
+import {getItemSync} from "./storage";
 import {AnsiAwareBuffer, FormatStateSnapshot, HexColor} from "@client/ansi/FormatState.ts";
 
 export const colorCodes = {
@@ -22,7 +21,8 @@ const palette = (() => {
             const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             return parsed.xtermPalette === 'proper' ? 'proper' : 'arkadia';
         }
-    } catch {}
+    } catch {
+    }
     return 'arkadia';
 })();
 colorCodes.xterm = palette === 'proper' ? colorCodes.xtermProper : colorCodes.xtermArkadia;
@@ -33,49 +33,47 @@ export function setXtermPalette(p: 'arkadia' | 'proper') {
 
 export const RESET = '\x1B[0m'
 
-export function color(colorCode:number) {
+export function color(colorCode: number) {
     return `\x1B[22;38;5;${colorCode}m`
 }
 
-export function colorString(string: string, colorCode: number) {
+export function colorString(string: string, colorCode: number | FormatStateSnapshot): AnsiAwareBuffer {
     return new AnsiAwareBuffer(string).colorWords(string, colorCode);
 }
 
 export function colorStringInLine(
-    rawLine: TriggerLine | string,
+    buffer: AnsiAwareBuffer,
     string: string,
-    colorCode: number,
+    formatting: FormatStateSnapshot,
     startIndex = 0,
-): TriggerLine {
-    const triggerLine = rawLine instanceof TriggerLine ? rawLine : new TriggerLine(rawLine);
-    const text = triggerLine.text;
-    const matchIndex = text.indexOf(string, startIndex);
+): AnsiAwareBuffer {
+    const matchIndex = buffer.text.indexOf(string, startIndex);
     if (matchIndex === -1) {
-        return triggerLine;
+        return buffer;
     }
-    return triggerLine.color([matchIndex, matchIndex + string.length], colorCode);
+    return buffer.color([matchIndex, matchIndex + string.length], formatting);
 }
 
 export function colorTokenInLine(
-    triggerLine: TriggerLine,
+    buffer: AnsiAwareBuffer,
     string: string,
-    colorCode: number,
+    colorCode: FormatStateSnapshot,
     startIndex = 0,
-): TriggerLine {
-    const haystack = triggerLine.text.toLowerCase();
+): AnsiAwareBuffer {
+    const haystack = buffer.text.toLowerCase();
     const needle = string.toLowerCase();
     const matchIndex = haystack.indexOf(needle, startIndex);
     if (matchIndex === -1) {
-        return triggerLine;
+        return buffer;
     }
     const endIndex = matchIndex + string.length;
-    return triggerLine.color([matchIndex, endIndex], colorCode);
+    return buffer.color([matchIndex, endIndex], colorCode);
 }
 
 //TODO usage should be replaced by something, yet to be decided what
 export function findClosestColor(hex: string | number[]): FormatStateSnapshot {
     return {
-        foreground: { space: "hex", color: hex } as HexColor
+        foreground: {space: "hex", color: hex} as HexColor
     }
 }
 

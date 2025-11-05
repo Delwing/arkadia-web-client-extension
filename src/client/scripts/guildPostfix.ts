@@ -1,11 +1,11 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-import TriggerLine from "../triggers/TriggerLine";
+import {findClosestColor} from "@modules/core/Colors";
+import {FormatStateSnapshot} from "../ansi/FormatState";
 
 const SLATE_BLUE = findClosestColor("#6a5acd");
 const ENEMY_RED = findClosestColor("#ff0000");
 
-type GuildColorMap = Record<string, number | undefined>;
+type GuildColorMap = Record<string, FormatStateSnapshot | undefined>;
 
 export default function initGuildPostfix(client: Client) {
     const tag = "guildPostfix";
@@ -26,10 +26,10 @@ export default function initGuildPostfix(client: Client) {
     });
 
     function register(pattern: RegExp | string, guild: string) {
-        client.Triggers.registerTrigger(pattern, (triggerLine) => {
-            const raw = triggerLine.toAnsiString();
+        client.Triggers.registerTrigger(pattern, (line) => {
             const color = enemyGuilds.has(guild) ? ENEMY_RED : guildColors[guild] ?? SLATE_BLUE;
-            return new TriggerLine(client.postfix(raw, colorString(` [${guild}]`, color)));
+            line.append(` [${guild}]`, color);
+            return line;
         }, tag);
     }
 

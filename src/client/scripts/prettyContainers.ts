@@ -1,10 +1,11 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
 import {stripAnsiCodes} from "../Triggers";
 import loadMagicKeys from "./magicKeyLoader";
 import {KEYS_COLOR} from "./magicKeys";
 import loadMagics from "./magicsLoader";
 import {MAGICS_COLOR} from "./magics";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const GROUP_NAME_COLOR = findClosestColor('#557C99');
 const MITHRIL_COLOR = findClosestColor('#afeeee');
@@ -150,11 +151,16 @@ export function categorizeItems(items: ContainerItem[], groups: GroupDefinition[
     return result;
 }
 
-function pad(str: string, len: number) {
-    return str + ' '.repeat(Math.max(0, len - stripAnsiCodes(str).length));
+function padBuffer(buffer: AnsiAwareBuffer, len: number): AnsiAwareBuffer {
+    const plainLen = buffer.text.length;
+    const padding = Math.max(0, len - plainLen);
+    if (padding > 0) {
+        buffer.append(' '.repeat(padding), {}); // Explicitly use default/empty formatting for padding
+    }
+    return buffer;
 }
 
-function center(str: string, len: number) {
+function centerString(str: string, len: number): string {
     const total = Math.max(len, str.length);
     const left = Math.floor((total - str.length) / 2);
     const right = total - str.length - left;
@@ -163,7 +169,7 @@ function center(str: string, len: number) {
 
 export type TransformDefinition = {
     check: (item: string, count: string | number, group: string) => boolean;
-    transform: (value: string) => string;
+    transform: (value: string) => AnsiAwareBuffer;
 };
 
 export type FormatOptions = {
@@ -177,18 +183,16 @@ function applyTransforms(
     item: ContainerItem,
     group: string,
     transforms: TransformDefinition[],
-): string {
-    let result = item.name;
+): AnsiAwareBuffer {
     for (const tr of transforms) {
         if (tr.check(item.name, item.count, group)) {
-            result = tr.transform(result);
-            break;
+            return tr.transform(item.name);
         }
     }
-    return result;
+    return new AnsiAwareBuffer(item.name);
 }
 
-export function formatTable(title: string, groups: Record<string, ContainerItem[]>, opts: FormatOptions = {}): string {
+export function formatTable(title: string, groups: Record<string, ContainerItem[]>, opts: FormatOptions = {}): AnsiAwareBuffer {
     let columns = opts.columns ?? 1;
     let leftPadding = opts.padding ?? 1;
     let rightPadding = opts.padding ?? 1;
@@ -200,7 +204,7 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
     const allLines = entries.flatMap(([groupName, items]) => {
         const itemTexts = items.map(it => {
             const transformed = applyTransforms(it, groupName, activeTransforms);
-            return `${String(it.count).padStart(3, ' ')} | ${transformed}`;
+            return `${String(it.count).padStart(3, ' ')} | ${transformed.text}`;
         });
         return [groupName, ...itemTexts];
     });
@@ -234,69 +238,101 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
     const padLeft = ' '.repeat(leftPadding);
     const padRight = ' '.repeat(rightPadding);
 
-    const truncateColored = (text: string, len: number) => {
-        const plain = stripAnsiCodes(text);
-        if (plain.length <= len) return text;
-        const prefix = text.match(/^\x1b\[[0-9;]*m/)?.[0] || '';
-        const suffix = text.includes('\x1b[') ? '\x1b[0m' : '';
-        return prefix + plain.slice(0, Math.max(0, len - 1)) + '…' + suffix;
+    const truncateBuffer = (buffer: AnsiAwareBuffer, len: number): AnsiAwareBuffer => {
+        if (buffer.text.length <= len) return buffer;
+        const truncated = buffer.clone();
+        const cutLen = Math.max(0, len - 1);
+        truncated.remove([cutLen, truncated.length]);
+        truncated.append('…');
+        return truncated;
     };
 
-    const cell = (text: string) => {
+    const cell = (content: AnsiAwareBuffer | string): AnsiAwareBuffer => {
+        const buffer = typeof content === 'string' ? new AnsiAwareBuffer(content) : content;
         const maxLen = colWidth - leftPadding - rightPadding;
-        if (stripAnsiCodes(text).length > maxLen) {
-            const split = text.split(' | ');
+
+        if (buffer.text.length > maxLen) {
+            const split = buffer.text.split(' | ');
             if (split.length === 2) {
                 const prefix = split[0] + ' | ';
-                const available = maxLen - stripAnsiCodes(prefix).length;
-                text = prefix + truncateColored(split[1], available);
+                const available = maxLen - prefix.length;
+                const prefixBuffer = new AnsiAwareBuffer(prefix);
+                const matchIndex = buffer.text.indexOf(' | ') + 3;
+                const suffixBuffer = new AnsiAwareBuffer(buffer.getSegments());
+                suffixBuffer.remove([0, matchIndex]);
+                const truncatedSuffix = truncateBuffer(suffixBuffer, available);
+                prefixBuffer.appendBuffer(truncatedSuffix);
+                return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(prefixBuffer).append(padRight, {}), colWidth);
             } else {
-                text = truncateColored(text, maxLen);
+                const truncated = truncateBuffer(buffer, maxLen);
+                return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(truncated).append(padRight, {}), colWidth);
             }
         }
-        return pad(`${padLeft}${text}${padRight}`, colWidth);
+        return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(buffer).append(padRight, {}), colWidth);
     };
 
     const width = calcWidth(colWidth);
     const horiz = '-'.repeat(width - 2);
-    const lines: string[] = [];
-    lines.push(`/${horiz}\\`);
-    lines.push(`|${center(title, width - 2)}|`);
-    lines.push(`+${horiz}+`);
+    const output = new AnsiAwareBuffer();
+
+    output.append(`/${horiz}\\\n`);
+    output.append(`|${centerString(title, width - 2)}|\n`);
+    output.append(`+${horiz}+\n`);
 
     for (let row = 0; row < entries.length; row += columns) {
         const pair = entries.slice(row, row + columns);
 
         // group names
-        let gLine = '|';
+        const gLine = new AnsiAwareBuffer('|');
         for (let c = 0; c < columns; c++) {
             const grp = pair[c];
-            gLine += cell(colorString(grp ? grp[0] : '', GROUP_NAME_COLOR));
-            gLine += c === columns - 1 ? '' : ' | ';
+            const groupName = grp ? grp[0] : '';
+            const groupBuffer = new AnsiAwareBuffer(groupName);
+            if (groupName) {
+                groupBuffer.color([0, groupBuffer.length], GROUP_NAME_COLOR);
+            }
+            gLine.appendBuffer(cell(groupBuffer));
+            if (c !== columns - 1) {
+                gLine.append(' | ');
+            }
         }
-        gLine += '|';
-        lines.push(gLine);
-        lines.push(`+${horiz}+`);
+        gLine.append('|');
+        output.appendBuffer(gLine);
+        output.append('\n');
+        output.append(`+${horiz}+\n`);
 
         const maxItems = Math.max(...pair.map(([, _items]) => _items.length));
         for (let i = 0; i < maxItems; i++) {
-            let rowLine = '|';
+            const rowLine = new AnsiAwareBuffer('|');
             for (let c = 0; c < columns; c++) {
                 const grp = pair[c];
                 const item = grp && grp[1][i];
-                const name = item && grp ? applyTransforms(item, grp[0], activeTransforms) : '';
-                const text = item ? `${String(item.count).padStart(3, ' ')} | ${name}` : '';
-                rowLine += cell(text);
-                rowLine += c === columns - 1 ? '' : ' | ';
+                if (item && grp) {
+                    const nameBuffer = applyTransforms(item, grp[0], activeTransforms);
+                    const itemBuffer = new AnsiAwareBuffer(`${String(item.count).padStart(3, ' ')} | `);
+                    itemBuffer.appendBuffer(nameBuffer);
+                    rowLine.appendBuffer(cell(itemBuffer));
+                } else {
+                    rowLine.appendBuffer(cell(''));
+                }
+                if (c !== columns - 1) {
+                    rowLine.append(' | ');
+                }
             }
-            rowLine += '|';
-            lines.push(rowLine);
+            rowLine.append('|');
+            output.appendBuffer(rowLine);
+            output.append('\n');
         }
-        lines.push(`+${horiz}+`);
+        output.append(`+${horiz}+\n`);
     }
 
-    lines[lines.length - 1] = `\\${horiz}/`;
-    return lines.join('\n');
+    // Replace last border
+    const lastNewline = output.text.lastIndexOf('\n');
+    const lastLineStart = output.text.lastIndexOf('\n', lastNewline - 1) + 1;
+    output.remove([lastLineStart, output.length]);
+    output.append(`\\${horiz}/`);
+
+    return output;
 }
 
 export function prettyPrintContainer(
@@ -305,12 +341,12 @@ export function prettyPrintContainer(
     title = 'POJEMNIK',
     padding = 1,
     maxWidth?: number,
-) {
+): AnsiAwareBuffer {
     const parsed = parseContainer(matches);
-    if (!parsed) return '';
+    if (!parsed) return new AnsiAwareBuffer('');
     const categorized = categorizeItems(parsed.items, defs);
     const tableTitle = title || parsed.container;
-    filter = defaultFilter
+    filter = defaultFilter;
     const result = formatTable(tableTitle, categorized, {columns, padding, maxWidth});
     plugLinks = false;
     return result;
@@ -388,10 +424,26 @@ const defs = [
 ]
 
 const defaultTransforms: TransformDefinition[] = [
-    { check: (item: string) => item.match("mithryl\\w+ monet") != null, transform: (item) => colorString(item, MITHRIL_COLOR)},
-    { check: (item: string) => item.match("zlot\\w+ monet") != null, transform: (item) => colorString(item, GOLD_COLOR)},
-    { check: (item: string) => item.match("srebrn\\w+ monet") != null, transform: (item) => colorString(item, SILVER_COLOR)},
-    { check: (item: string) => item.match("miedzian\\w+ monet") != null, transform: (item) => colorString(item, COPPER_COLOR)}
+    { check: (item: string) => item.match("mithryl\\w+ monet") != null, transform: (item) => {
+        const buf = new AnsiAwareBuffer(item);
+        buf.color([0, buf.length], MITHRIL_COLOR);
+        return buf;
+    }},
+    { check: (item: string) => item.match("zlot\\w+ monet") != null, transform: (item) => {
+        const buf = new AnsiAwareBuffer(item);
+        buf.color([0, buf.length], GOLD_COLOR);
+        return buf;
+    }},
+    { check: (item: string) => item.match("srebrn\\w+ monet") != null, transform: (item) => {
+        const buf = new AnsiAwareBuffer(item);
+        buf.color([0, buf.length], SILVER_COLOR);
+        return buf;
+    }},
+    { check: (item: string) => item.match("miedzian\\w+ monet") != null, transform: (item) => {
+        const buf = new AnsiAwareBuffer(item);
+        buf.color([0, buf.length], COPPER_COLOR);
+        return buf;
+    }}
 ]
 
 let plugLinks = false;
@@ -404,20 +456,26 @@ async function loadMagicAndKeysFilter(client: Client) {
         defs.push({ name: "klucze", filter: keyRegexp });
         defaultTransforms.push({
             check: keyRegexp,
-            transform: (item) => colorString(
-                plugLinks ?
+            transform: (item) => {
+                const text = plugLinks ?
                     client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
-                    item,
-                KEYS_COLOR),
+                    item;
+                const buf = new AnsiAwareBuffer(text);
+                buf.color([0, buf.length], KEYS_COLOR);
+                return buf;
+            },
         });
         const magicRegexp = createRegexpFilter(magics);
         defaultTransforms.push({
             check: magicRegexp,
-            transform: (item) => colorString(
-                plugLinks ?
+            transform: (item) => {
+                const text = plugLinks ?
                     client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
-                    item,
-                MAGICS_COLOR),
+                    item;
+                const buf = new AnsiAwareBuffer(text);
+                buf.color([0, buf.length], MAGICS_COLOR);
+                return buf;
+            },
         });
         magicAndKeysFilter = (item: ContainerItem) =>
             keyRegexp(item.name) || magicRegexp(item.name);
@@ -441,10 +499,10 @@ export default function initContainers(client: Client) {
     const register = () => {
         client.Triggers.removeByTag(tag);
         defaultContainerPatterns.forEach(pattern => {
-            client.Triggers.registerTrigger(pattern, (triggerLine): null => {
-                const matches = triggerLine.matches.matches;
+            client.Triggers.registerTrigger(pattern, (_line, matches): null => {
                 if (matches) {
-                    client.print(prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width));
+                    const output = prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width);
+                    client.print(output);
                 }
                 return null;
             }, tag);

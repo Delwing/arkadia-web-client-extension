@@ -1,22 +1,32 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from '../types/people';
-import TriggerLine from "../triggers/TriggerLine";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const RED = findClosestColor("#ff0000");
 
-function highlightAttack(line: string, upper?: string): string {
-    if (upper && line.includes(upper)) {
-        line = line.replace(upper, upper.toUpperCase());
+function highlightAttack(buffer: AnsiAwareBuffer, upper?: string): AnsiAwareBuffer {
+    const text = buffer.text;
+    if (upper) {
+        const matchIndex = text.indexOf(upper);
+        if (matchIndex !== -1) {
+            buffer.replace([matchIndex, matchIndex + upper.length], upper.toUpperCase());
+        }
     }
-    return colorString(line, RED);
+    buffer.color([0, buffer.length], RED);
+    return buffer;
 }
 
-function highlightPhrase(line: string): string {
+function highlightPhrase(buffer: AnsiAwareBuffer): AnsiAwareBuffer {
     const phrase = "atakuje cie";
-    const colored = colorString(line, RED);
-    return colored.replace(phrase, phrase.toUpperCase());
+    const text = buffer.text;
+    const matchIndex = text.indexOf(phrase);
+    if (matchIndex !== -1) {
+        buffer.replace([matchIndex, matchIndex + phrase.length], phrase.toUpperCase());
+    }
+    buffer.color([0, buffer.length], RED);
+    return buffer;
 }
 
 export default function initAttackBeep(client: Client) {
@@ -53,22 +63,15 @@ export default function initAttackBeep(client: Client) {
         return !!guild && enemyGuilds.includes(guild);
     }
 
-    const beep = (triggerLine: TriggerLine): TriggerLine => {
-        const matches = triggerLine.matches.matches;
-        if (!matches) return triggerLine;
+    const beep = (line: AnsiAwareBuffer, matches: RegExpMatchArray): AnsiAwareBuffer => {
+        const attackerName = matches?.groups?.name
 
-        const raw = triggerLine.toAnsiString();
-        const attackerName = (matches.groups && (matches.groups as any).name) as string | undefined;
-
-        if (attackerName && !shouldBeep(attackerName)) {
-            // Don't beep, but still highlight the attack
-            const upper = (matches.groups && (matches.groups as any).upper) as string | undefined;
-            return new TriggerLine(highlightAttack(raw, upper));
+        if (attackerName && shouldBeep(attackerName)) {
+            client.sendEvent("sound:play", { key: "beep" });
         }
 
-        client.sendEvent("sound:play", { key: "beep" });
-        const upper = (matches.groups && (matches.groups as any).upper) as string | undefined;
-        return new TriggerLine(highlightAttack(raw, upper));
+        const upper = matches?.groups?.upper
+        return highlightAttack(line, upper);
     };
 
     // Listen for settings changes
@@ -90,8 +93,7 @@ export default function initAttackBeep(client: Client) {
         /^\w+(?: \w+){0,4} z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/
     ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
 
-    client.Triggers.registerTrigger('atakuje cie!', (triggerLine) => {
-        const line = triggerLine.text;
-        return new TriggerLine(highlightPhrase(line));
+    client.Triggers.registerTrigger('atakuje cie!', (line) => {
+        return highlightPhrase(line);
     }, tag);
 }

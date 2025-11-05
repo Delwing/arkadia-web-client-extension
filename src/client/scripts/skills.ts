@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 import { stripAnsiCodes } from "../Triggers";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const COLORS = [
     findClosestColor("#ff0000"),
@@ -42,7 +43,7 @@ function colorLevel(level: string, maxLevel: number) {
     const color = COLORS[num - 1];
     const word = pad(level, maxLevel);
     const bracket = `[${num}/10]`.padStart(bracketWidth);
-    return colorString(`${word} ${bracket}`, color);
+    return colorString(`${word} ${bracket}`, color).text;
 }
 
 export default function initSkills(
@@ -109,12 +110,11 @@ export default function initSkills(
         disable();
         client.Triggers.registerMultilineTrigger(
             /[^:]+:\s+\S+/,
-            (triggerLine) => {
-                const raw = triggerLine.toAnsiString();
+            (line) => {
+                const raw = line.text;
                 const out = process(raw);
-                triggerLine.setOverrideAnsi(out);
                 disable();
-                return triggerLine;
+                return new AnsiAwareBuffer(out);
             },
             tag
         );

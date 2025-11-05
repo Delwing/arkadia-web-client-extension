@@ -8,9 +8,9 @@ export function initSpecialLocations(client: Client) {
 
     ]
 
-    client.Triggers.registerTrigger(locateOnNext, (triggerLine) => {
+    client.Triggers.registerTrigger(locateOnNext, (line) => {
         client.sendEvent('refreshPositionWhenAble')
-        return triggerLine
+        return line
     })
 
 }

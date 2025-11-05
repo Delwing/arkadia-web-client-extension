@@ -1,6 +1,7 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { findClosestColor } from "@modules/core/Colors";
 import { EFFECTIVENESS, BALANCE } from "./evaluationConstants";
+import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
 
@@ -15,13 +16,11 @@ export default function initWeaponEvaluation(client: Client) {
 
   client.Triggers.registerTrigger(
     gripRegex,
-    (triggerLine) => {
+    (_line, matches) => {
       if (client.suppressItemEvaluation) {
         return null;
       }
-      const m = triggerLine.matches.matches;
-      if (!m) return triggerLine;
-      const grip = m[2];
+      const grip = matches[2];
       let wound = "";
       let weaponType = "";
       let balanceRaw = "";
@@ -29,8 +28,8 @@ export default function initWeaponEvaluation(client: Client) {
 
       client.Triggers.registerOneTimeTrigger(
         dmgRegex,
-        (triggerLine) => {
-          const m2 = triggerLine.matches.matches;
+        (_line, matches) => {
+          const m2 = matches
           if (m2) {
             wound = m2[2];
           }
@@ -41,9 +40,8 @@ export default function initWeaponEvaluation(client: Client) {
 
       client.Triggers.registerOneTimeTrigger(
         statsRegex,
-        (triggerLine) => {
-          const m3 = triggerLine.matches.matches;
-          if (!m3) return triggerLine;
+        (_line, matches) => {
+          const m3 = matches
           weaponType = m3[1];
           balanceRaw = m3[4].trim();
           effectRaw = m3[6].trim();
@@ -60,14 +58,35 @@ export default function initWeaponEvaluation(client: Client) {
             const sum = balEntry.value + effEntry.value;
             const avg = sum / 2;
             const pad = 15;
-            const lines = [
-              `${colorString("Typ broni", LABEL_COLOR)}: ${weaponType.padEnd(pad, " ")} ${colorString("Chwyt", LABEL_COLOR)}: ${grip}`,
-              `${colorString("Obrazenia", LABEL_COLOR)}: ${wound}`,
-              `${colorString("Wywazenie", LABEL_COLOR)}: ${balEntry.label.padEnd(pad, " ")} ${colorString("Skutecznosc", LABEL_COLOR)}: ${effEntry.label}`,
-              "",
-              `${colorString("Suma", LABEL_COLOR)}: ${String(sum).padEnd(pad + 5)} ${colorString("Srednia", LABEL_COLOR)}: ${avg}`,
-            ];
-            client.print(lines.join("\n"));
+
+            const output = new AnsiAwareBuffer();
+
+            // Line 1: Typ broni: ... Chwyt: ...
+            output.append("Typ broni", LABEL_COLOR);
+            output.append(`: ${weaponType.padEnd(pad, " ")} `, {});
+            output.append("Chwyt", LABEL_COLOR);
+            output.append(`: ${grip}\n`, {});
+
+            // Line 2: Obrazenia: ...
+            output.append("Obrazenia", LABEL_COLOR);
+            output.append(`: ${wound}\n`, {});
+
+            // Line 3: Wywazenie: ... Skutecznosc: ...
+            output.append("Wywazenie", LABEL_COLOR);
+            output.append(`: ${balEntry.label.padEnd(pad, " ")} `, {});
+            output.append("Skutecznosc", LABEL_COLOR);
+            output.append(`: ${effEntry.label}\n`, {});
+
+            // Empty line
+            output.append("\n", {});
+
+            // Line 5: Suma: ... Srednia: ...
+            output.append("Suma", LABEL_COLOR);
+            output.append(`: ${String(sum).padEnd(pad + 5)} `, {});
+            output.append("Srednia", LABEL_COLOR);
+            output.append(`: ${avg}`, {});
+
+            client.print(output);
           }
           return null;
         },

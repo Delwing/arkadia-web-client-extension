@@ -19,9 +19,9 @@ function bindBus(client: Client, commands: string[], label: string, beep: boolea
 }
 
 export default function initBuses(client: Client) {
-    const boardDylizans = (triggerLine: any) => {
+    const boardDylizans = (line: any) => {
         bindBus(client, DILIZANS_CMDS, DILIZANS_LABEL, false);
-        return triggerLine;
+        return line;
     };
     const exitPowozPatterns: Array<RegExp | string> = [
         /.*owoz cicho skrzypiac zatrzymuje sie\.$/,
@@ -31,27 +31,27 @@ export default function initBuses(client: Client) {
         "Otwarty jadacy powoz powoli zatrzymuje sie.",
     ];
 
-    const boardPowoz = (triggerLine: any) => {
-        const line = triggerLine.text;
-        if (line.includes("powoli rusza w droge")) return triggerLine;
-        if (exitPowozPatterns.some(p => typeof p === "string" ? line === p : p.test(line))) {
-            return triggerLine;
+    const boardPowoz = (line: any) => {
+        const text = line.text;
+        if (text.includes("powoli rusza w droge")) return line;
+        if (exitPowozPatterns.some(p => typeof p === "string" ? text === p : p.test(text))) {
+            return line;
         }
         bindBus(client, POWOZ_CMDS, POWOZ_LABEL, false);
-        return triggerLine;
+        return line;
     };
 
-    const exitPowoz = (triggerLine: any) => {
+    const exitPowoz = (line: any) => {
         bindBus(client, ["wyjscie"], "wyjscie", true);
-        return triggerLine;
+        return line;
     };
-    const boardBryczka = (triggerLine: any) => {
+    const boardBryczka = (line: any) => {
         bindBus(client, BRYCZKA_CMDS, BRYCZKA_LABEL, false);
-        return triggerLine;
+        return line;
     };
-    const exitBryczka = (triggerLine: any) => {
+    const exitBryczka = (line: any) => {
         bindBus(client, ["wstan"], "wstan", false);
-        return triggerLine;
+        return line;
     };
 
     client.Triggers.registerTrigger(

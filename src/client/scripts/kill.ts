@@ -1,6 +1,7 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {findClosestColor} from "@modules/core/Colors";
 import {stripAnsiCodes} from "../Triggers";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 type KillEntry = {
     mySession: number;
@@ -89,18 +90,21 @@ function createPad(
 function createHeader(
     width: number,
     offset: number,
-    color: number
-): (title: string) => string {
+    color: ReturnType<typeof findClosestColor>
+): (title: string) => AnsiAwareBuffer {
     return (title: string) => {
-        const colored = colorString(title, color);
-        const dashes = width - visibleLength(title) - offset;
+        const dashes = width - title.length - offset;
         const left = Math.floor(dashes / 2);
         const right = dashes - left;
-        return `+${"-".repeat(left)} ${colored} ${"-".repeat(right)}+`;
+        const buffer = new AnsiAwareBuffer();
+        buffer.append(`+${"-".repeat(left)} `, {});
+        buffer.append(title, color);
+        buffer.append(` ${"-".repeat(right)}+`, {});
+        return buffer;
     };
 }
 
-function formatSessionTable(counts: KillCounts): string {
+function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
     const WIDTH = width - 2;
     const LEFT_PADDING = 2;
     const RIGHT_PADDING = 5;
@@ -130,37 +134,46 @@ function formatSessionTable(counts: KillCounts): string {
         return pad(text);
     };
 
-    const summaryLine = (label: string, value: number, color?: number) => {
-        const visibleLabel = label;
+    const summaryLine = (label: string, value: number, color?: ReturnType<typeof findClosestColor>) => {
+        const buffer = new AnsiAwareBuffer();
         if (color !== undefined) {
-            label = colorString(label, color);
+            buffer.append(label, color);
+        } else {
+            buffer.append(label, {});
         }
-        let text = `${label} `;
+        buffer.append(" ", {});
         const num = String(value);
-        const dots = CONTENT_WIDTH - visibleLength(visibleLabel + " ") - num.length;
-        text += ".".repeat(Math.max(0, dots));
-        text += num;
-        return pad(text);
+        const dots = CONTENT_WIDTH - label.length - 1 - num.length;
+        buffer.append(".".repeat(Math.max(0, dots)), {});
+        buffer.append(num, {});
+        const padded = pad(buffer.text);
+        return new AnsiAwareBuffer(padded);
     };
 
-    const lines: string[] = [];
-    lines.push(header("Licznik zabitych"));
-    lines.push(pad());
-    lines.push(pad(colorString("JA", MY_COLOR)));
+    const output = new AnsiAwareBuffer();
+    output.appendBuffer(header("Licznik zabitych"));
+    output.append("\n", {});
+    output.append(pad() + "\n", {});
+
+    const jaLine = new AnsiAwareBuffer();
+    jaLine.append("JA", MY_COLOR);
+    output.append(pad(jaLine.text) + "\n", {});
+
     entries.forEach(([name, {mySession}]) => {
-        lines.push(mobLine(name, mySession));
+        output.append(mobLine(name, mySession) + "\n", {});
     });
-    lines.push(pad());
-    lines.push(summaryLine("LACZNIE:", totalMy, TOTAL_COLOR));
-    lines.push(pad());
-    lines.push(pad());
-    lines.push(summaryLine("DRUZYNA LACZNIE:", totalCombined, TOTAL_COLOR));
-    lines.push(pad());
-    lines.push(`+${"-".repeat(WIDTH)}+`);
-    return lines.join("\n");
+    output.append(pad() + "\n", {});
+    output.appendBuffer(summaryLine("LACZNIE:", totalMy, TOTAL_COLOR));
+    output.append("\n", {});
+    output.append(pad() + "\n", {});
+    output.append(pad() + "\n", {});
+    output.appendBuffer(summaryLine("DRUZYNA LACZNIE:", totalCombined, TOTAL_COLOR));
+    output.append("\n", {});
+    output.append(`+${"-".repeat(WIDTH)}+`, {});
+    return output;
 }
 
-function formatLifetimeTable(counts: KillCounts): string {
+function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
     const WIDTH = width;
     const LEFT_PADDING = 2;
     const RIGHT_PADDING = 5;
@@ -192,31 +205,37 @@ function formatLifetimeTable(counts: KillCounts): string {
         const color = /^[A-Z]/.test(name)
             ? UPPER_COLOR
             : LOWER_COLOR;
-        const colored = colorString(name, color);
-        const start = `  ${colored} `;
-        const dots = CONTENT_WIDTH - visibleLength(start) - String(count).length;
-        const text = `${start}${".".repeat(Math.max(0, dots))}${count}`;
-        return pad(text);
+        const buffer = new AnsiAwareBuffer();
+        buffer.append("  ", {});
+        buffer.append(name, color);
+        buffer.append(" ", {});
+        const dots = CONTENT_WIDTH - 3 - name.length - String(count).length;
+        buffer.append(".".repeat(Math.max(0, dots)), {});
+        buffer.append(String(count), {});
+        return pad(buffer.text);
     };
 
-    const lines: string[] = [];
-    lines.push(header("Licznik zabitych"));
-    lines.push(pad());
+    const output = new AnsiAwareBuffer();
+    output.appendBuffer(header("Licznik zabitych"));
+    output.append("\n", {});
+    output.append(pad() + "\n", {});
     entries.forEach(([name, entry]) => {
-        lines.push(mobLine(name, entry.myTotal));
+        output.append(mobLine(name, entry.myTotal) + "\n", {});
     });
-    lines.push(pad());
-    lines.push(pad("    ----------------------------------- "));
-    lines.push(pad());
-    const summary =
-        "  " +
-        colorString("WSZYSTKICH DO TEJ PORY: ", PINK_COLOR) +
-        colorString(String(total), LOWER_COLOR) +
-        colorString(" zabitych", LOWER_COLOR);
-    lines.push(pad(summary));
-    lines.push(pad());
-    lines.push(`+${"-".repeat(INNER)}+`);
-    return lines.join("\n");
+    output.append(pad() + "\n", {});
+    output.append(pad("    ----------------------------------- ") + "\n", {});
+    output.append(pad() + "\n", {});
+
+    const summaryBuffer = new AnsiAwareBuffer();
+    summaryBuffer.append("  ", {});
+    summaryBuffer.append("WSZYSTKICH DO TEJ PORY: ", PINK_COLOR);
+    summaryBuffer.append(String(total), LOWER_COLOR);
+    summaryBuffer.append(" zabitych", LOWER_COLOR);
+
+    output.append(pad(summaryBuffer.text) + "\n", {});
+    output.append(pad() + "\n", {});
+    output.append(`+${"-".repeat(INNER)}+`, {});
+    return output;
 }
 
 export {parseName, formatSessionTable, formatLifetimeTable};
@@ -272,38 +291,31 @@ class KillCounter {
 
         this.client.Triggers.registerTrigger(
             myKillRegex,
-            (triggerLine) => {
-                const matches = triggerLine.matches.matches;
-                if (!matches) return triggerLine;
-                const rawLine = triggerLine.toAnsiString();
+            (line, matches) => {
+                if (!matches) return line;
+                const rawLine = line.text;
                 this.client.emit("kill", { killer: "ME" });
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
-                const formatted = this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
-                triggerLine.setOverrideAnsi(formatted);
-                return triggerLine;
+                return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
             }
         );
 
         this.client.Triggers.registerTrigger(
             teamKillRegex,
-            (triggerLine) => {
-                const matches = triggerLine.matches.matches;
-                if (!matches) return triggerLine;
-                const rawLine = triggerLine.toAnsiString();
+            (line, matches) => {
+                if (!matches) return line;
+                const rawLine = line.text;
                 const player = stripAnsiCodes(matches.groups?.player ?? "").trim();
                 const mob = parseName(matches.groups?.name ?? "");
-                let formatted: string;
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);
                     this.client.emit("kill", { killer: "TEAM" });
-                    formatted = this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
                 } else {
                     this.client.emit("kill", { killer: "OTHER" });
-                    formatted = this.formatPrefix(rawLine, null, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(rawLine, null, "[   ZABIL   ] ", false);
                 }
-                triggerLine.setOverrideAnsi(formatted);
-                return triggerLine;
             }
         );
 
@@ -402,26 +414,45 @@ class KillCounter {
         entry: KillEntry | null,
         label: string,
         highlight: boolean
-    ) {
+    ): AnsiAwareBuffer {
         const color = KILL_PREFIX_COLOR;
         const countsRaw = entry
             ? ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`
             : "";
-        const counts = highlight && entry ? colorString(countsRaw, color) : countsRaw;
-        const modified = line + counts;
-        return (
-            "  \n" +
-            this.client.prefix(modified, colorString(label, color)) +
-            "\n  "
-        );
+
+        const buffer = new AnsiAwareBuffer(line);
+        if (highlight && entry) {
+            buffer.append(countsRaw, color);
+        } else if (countsRaw) {
+            buffer.append(countsRaw, {});
+        }
+
+        const prefixBuffer = new AnsiAwareBuffer();
+        prefixBuffer.append(label, color);
+        prefixBuffer.append(" ", {});
+
+        const output = new AnsiAwareBuffer();
+        output.append("  \n", {});
+        output.appendBuffer(prefixBuffer);
+        output.appendBuffer(buffer);
+        output.append("\n  ", {});
+        return output;
     }
 
     showSession() {
-        this.client.print("\n" + formatSessionTable(this.kills) + "\n");
+        const output = new AnsiAwareBuffer();
+        output.append("\n", {});
+        output.appendBuffer(formatSessionTable(this.kills));
+        output.append("\n", {});
+        this.client.print(output);
     }
 
     showLifetime() {
-        this.client.print("\n" + formatLifetimeTable(this.kills) + "\n");
+        const output = new AnsiAwareBuffer();
+        output.append("\n", {});
+        output.appendBuffer(formatLifetimeTable(this.kills));
+        output.append("\n", {});
+        this.client.print(output);
     }
 }
 

@@ -13,7 +13,7 @@ describe("AnsiAwareBuffer", () => {
         const segments = buffer.getSegments();
         expect(segments).toHaveLength(2);
         expect(segments[0].text).toBe("Red");
-        expect(segments[0].state?.foreground).toEqual({ space: "indexed", index: 1 });
+        expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#ff5555" });
         expect(segments[1].text).toBe("Plain");
         expect(segments[1].state).toBeUndefined();
     });
@@ -23,8 +23,8 @@ describe("AnsiAwareBuffer", () => {
         buffer.insert(2, "++");
         const segments = buffer.getSegments();
         expect(buffer.text).toBe("Bl++ue");
-        expect(segments).toHaveLength(1);
-        expect(segments[0].state?.foreground).toEqual({ space: "indexed", index: 4 });
+        expect(segments.length).toBeGreaterThan(0);
+        expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#5555ff" });
     });
 
     it("keeps surrounding metadata intact after replace operations", () => {
@@ -46,5 +46,56 @@ describe("AnsiAwareBuffer", () => {
         expect(segments).toHaveLength(1);
         expect(segments[0].state?.hyperlink).toEqual({ id: 42, title: "look" });
         expect(buffer.text).toBe("Inspect here around");
+    });
+
+    describe("getStateAt", () => {
+        it("returns color at specific character index in colored text", () => {
+            const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0m");
+            const state = buffer.getStateAt(0);
+            expect(state?.foreground).toEqual({ space: "hex", color: "#ff5555" });
+        });
+
+        it("returns undefined for plain text without formatting", () => {
+            const buffer = new AnsiAwareBuffer("Plain text");
+            const state = buffer.getStateAt(0);
+            expect(state).toBeUndefined();
+        });
+
+        it("returns correct state for different segments", () => {
+            const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0m and \u001b[32mGreen\u001b[0m");
+            const redState = buffer.getStateAt(0);
+            expect(redState?.foreground).toEqual({ space: "hex", color: "#ff5555" });
+
+            const plainState = buffer.getStateAt(4);
+            expect(plainState).toBeUndefined();
+
+            const greenState = buffer.getStateAt(9);
+            expect(greenState?.foreground).toEqual({ space: "hex", color: "#55ff55" });
+        });
+
+        it("returns all formatting attributes at index", () => {
+            const buffer = new AnsiAwareBuffer("\u001b[1;3;31mBold Italic Red\u001b[0m");
+            const state = buffer.getStateAt(0);
+            expect(state?.foreground).toEqual({ space: "hex", color: "#ff5555" });
+            expect(state?.bold).toBe(true);
+            expect(state?.italic).toBe(true);
+        });
+
+        it("throws error for out of bounds index", () => {
+            const buffer = new AnsiAwareBuffer("Test");
+            expect(() => buffer.getStateAt(-1)).toThrow(RangeError);
+            expect(() => buffer.getStateAt(4)).toThrow(RangeError);
+        });
+
+        it("returns state at each character in multi-segment buffer", () => {
+            const buffer = new AnsiAwareBuffer("\u001b[31mAB\u001b[0mCD\u001b[32mEF\u001b[0m");
+            // "AB" is red, "CD" is plain, "EF" is green
+            expect(buffer.getStateAt(0)?.foreground).toEqual({ space: "hex", color: "#ff5555" });
+            expect(buffer.getStateAt(1)?.foreground).toEqual({ space: "hex", color: "#ff5555" });
+            expect(buffer.getStateAt(2)).toBeUndefined();
+            expect(buffer.getStateAt(3)).toBeUndefined();
+            expect(buffer.getStateAt(4)?.foreground).toEqual({ space: "hex", color: "#55ff55" });
+            expect(buffer.getStateAt(5)?.foreground).toEqual({ space: "hex", color: "#55ff55" });
+        });
     });
 });

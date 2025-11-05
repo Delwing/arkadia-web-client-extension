@@ -6,10 +6,10 @@ interface Localizer {
 }
 
 function createHandler(client: Client, roomId: number) {
-    return (triggerLine) => {
+    return (line) => {
         client.Map.setMapRoomById(roomId);
         client.sendEvent('notify', { text: `Map Sync: ship ${roomId}` });
-        return triggerLine;
+        return line;
     };
 }
 
