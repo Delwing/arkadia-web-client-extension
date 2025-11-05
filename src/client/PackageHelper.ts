@@ -148,9 +148,22 @@ export default function initPackageHelper(client: Client) {
             const nameIndex = line.text.indexOf(info.name)
             if (nameIndex !== -1) {
                 line.color([nameIndex, nameIndex + info.name.length], colorCode)
+
+                // Make the name clickable
+                line.createLink([nameIndex, nameIndex + info.name.length], {
+                    onClick: (ev) => {
+                        ev.preventDefault();
+                        client.sendCommand(`${pickCommand} ${info.index}`);
+                    },
+                    onContextMenu: (ev) => {
+                        ev.preventDefault();
+                        // Right click shows the command in chat
+                        client.println(`Komenda: ${pickCommand} ${info.index}`);
+                    },
+                    title: `Kliknij, aby wybrać paczkę #${info.index} dla ${info.name}`
+                });
             }
             return line
-            // TODO: Add clickable functionality later
         };
     }
 
@@ -191,9 +204,21 @@ export default function initPackageHelper(client: Client) {
                     const nameIndex = firstLine.text.indexOf(info.name);
                     if (nameIndex !== -1) {
                         firstLine.color([nameIndex, nameIndex + info.name.length], colorCode);
-                    }
 
-                    // TODO: Add clickable functionality later
+                        // Make the name clickable
+                        firstLine.createLink([nameIndex, nameIndex + info.name.length], {
+                            onClick: (ev) => {
+                                ev.preventDefault();
+                                client.sendCommand(`${pickCommand} ${info.index}`);
+                            },
+                            onContextMenu: (ev) => {
+                                ev.preventDefault();
+                                // Right click shows the command in chat
+                                client.println(`Komenda: ${pickCommand} ${info.index}`);
+                            },
+                            title: `Kliknij, aby wybrać paczkę #${info.index} dla ${info.name}`
+                        });
+                    }
                     const time = info.time ? info.time + ' godz.' : 'nieogr.';
                     const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : ' dystans: --';
                     const secondLine = new AnsiAwareBuffer(`   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`, baseState);

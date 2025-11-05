@@ -5,7 +5,8 @@ import mudletColorsJson from "@client/colors.json";
 const ESC = "\u001b";
 
 export interface FormatHyperlink {
-    id: number;
+    onClick?: (ev: MouseEvent) => void;
+    onContextMenu?: (ev: MouseEvent) => void;  // right click
     title?: string;
 }
 
@@ -58,9 +59,11 @@ function cloneColor(color?: FormatColor): FormatColor | undefined {
 }
 
 function hyperlinksEqual(a?: FormatHyperlink, b?: FormatHyperlink): boolean {
+    // Since hyperlinks now carry callbacks (functions), we can't meaningfully compare them by value.
+    // We consider hyperlinks equal only if both are undefined.
+    // This ensures each hyperlink segment remains separate.
     if (!a && !b) return true;
-    if (!a || !b) return false;
-    return a.id === b.id && a.title === b.title;
+    return false;
 }
 
 function colorsEqual(a?: FormatColor, b?: FormatColor): boolean {
@@ -288,19 +291,6 @@ function parseSgrCodes(sequence: string): number[] {
         .map(num => (Number.isNaN(num) ? 0 : num));
 }
 
-function parseHyperlinkPayload(payload: string): FormatHyperlink | undefined {
-    const colonIndex = payload.indexOf(":");
-    const idPart = colonIndex === -1 ? payload : payload.slice(0, colonIndex);
-    const titlePart = colonIndex === -1 ? undefined : payload.slice(colonIndex + 1);
-    const id = Number.parseInt(idPart, 10);
-    if (Number.isNaN(id)) return undefined;
-    const hyperlink: FormatHyperlink = {id};
-    if (titlePart && titlePart.length > 0) {
-        hyperlink.title = titlePart;
-    }
-    return hyperlink;
-}
-
 function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): BufferSegment[] {
     const segments: BufferSegment[] = [];
     const state = new FormatState(baseState);
@@ -324,25 +314,6 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
             const sequence = text.slice(i + 2, endIndex);
             state.applySgr(parseSgrCodes(sequence));
             i = endIndex + 1;
-            continue;
-        }
-        if (text.startsWith("{clickOpen:", i)) {
-            const endIndex = text.indexOf("}", i + 11);
-            if (endIndex === -1) {
-                buffer += text.slice(i);
-                break;
-            }
-            flush();
-            const payload = text.slice(i + 11, endIndex);
-            const hyperlink = parseHyperlinkPayload(payload);
-            state.setHyperlink(hyperlink);
-            i = endIndex + 1;
-            continue;
-        }
-        if (text.startsWith("{clickClose}", i)) {
-            flush();
-            state.setHyperlink(undefined);
-            i += "{clickClose}".length;
             continue;
         }
         buffer += char;
@@ -647,6 +618,8 @@ export class AnsiAwareBuffer {
 
     /**
      * Converts the buffer to HTML with styling based on format states.
+     * Note: Hyperlinks with callbacks cannot be properly rendered in HTML strings.
+     * Use toDom() instead if you need clickable links.
      */
     toHtml(): string {
         let html = "";
@@ -697,11 +670,104 @@ export class AnsiAwareBuffer {
                 styles.push(`text-decoration: ${decorations.join(" ")}`);
             }
 
+            // Handle hyperlinks
+            if (state.hyperlink) {
+                styles.push("cursor: pointer");
+                if (state.hyperlink.title) {
+                    const titleAttr = ` title="${this.escapeHtml(state.hyperlink.title)}"`;
+                    const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
+                    html += `<span${styleAttr}${titleAttr}>${escapedText}</span>`;
+                    continue;
+                }
+            }
+
             const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
             html += `<span${styleAttr}>${escapedText}</span>`;
         }
 
         return html;
+    }
+
+    /**
+     * Converts the buffer to a DOM DocumentFragment with actual event listeners attached.
+     * This should be used instead of toHtml() when you need clickable links.
+     */
+    toDom(): DocumentFragment {
+        const fragment = document.createDocumentFragment();
+
+        for (const segment of this.segments) {
+            const state = segment.state;
+
+            if (!state || isDefaultState(state)) {
+                fragment.appendChild(document.createTextNode(segment.text));
+                continue;
+            }
+
+            const element = document.createElement('span');
+            element.textContent = segment.text;
+
+            const styles: string[] = [];
+
+            // Handle inverse first (swaps foreground and background)
+            const fg = state.inverse ? state.background : state.foreground;
+            const bg = state.inverse ? state.foreground : state.background;
+
+            // Foreground color
+            if (fg) {
+                styles.push(`color: ${this.colorToHex(fg)}`);
+            }
+
+            // Background color
+            if (bg) {
+                styles.push(`background-color: ${this.colorToHex(bg)}`);
+            }
+
+            // Font styles
+            if (state.bold) {
+                styles.push("font-weight: bold");
+            }
+
+            if (state.italic) {
+                styles.push("font-style: italic");
+            }
+
+            // Text decorations
+            const decorations: string[] = [];
+            if (state.underline) {
+                decorations.push("underline");
+            }
+            if (state.strikethrough) {
+                decorations.push("line-through");
+            }
+            if (decorations.length > 0) {
+                styles.push(`text-decoration: ${decorations.join(" ")}`);
+            }
+
+            // Handle hyperlinks
+            if (state.hyperlink) {
+                styles.push("cursor: pointer");
+
+                if (state.hyperlink.title) {
+                    element.title = state.hyperlink.title;
+                }
+
+                if (state.hyperlink.onClick) {
+                    element.addEventListener('click', state.hyperlink.onClick);
+                }
+
+                if (state.hyperlink.onContextMenu) {
+                    element.addEventListener('contextmenu', state.hyperlink.onContextMenu);
+                }
+            }
+
+            if (styles.length > 0) {
+                element.style.cssText = styles.join("; ");
+            }
+
+            fragment.appendChild(element);
+        }
+
+        return fragment;
     }
 
     private escapeHtml(text: string): string {
@@ -763,7 +829,7 @@ export class AnsiAwareBuffer {
             if (cleanText.length === 0) return [];
             return [{text: cleanText, state: isDefaultState(explicitState) ? undefined : cloneState(explicitState)}];
         }
-        if (!text.includes(ESC) && !text.includes("{clickOpen:") && !text.includes("{clickClose}")) {
+        if (!text.includes(ESC)) {
             const state = baseState && !isDefaultState(baseState) ? cloneState(baseState) : undefined;
             return [{text, state}];
         }
@@ -972,6 +1038,85 @@ export class AnsiAwareBuffer {
                     }
                 }
             }
+        }
+
+        return this;
+    }
+
+    /**
+     * Creates a clickable link at the specified range by applying hyperlink state with callbacks.
+     *
+     * @param range - The text range to make clickable [start, end]
+     * @param options - Link options including onClick, onContextMenu (right-click), and title
+     * @returns this buffer for chaining
+     */
+    createLink(
+        range: TextRange,
+        options: {
+            onClick?: (ev: MouseEvent) => void;
+            onContextMenu?: (ev: MouseEvent) => void;
+            title?: string;
+        }
+    ): this {
+        const [start, end] = range;
+        if (start >= end) return this;
+
+        const text = this.text.slice(start, end);
+        const hyperlink: FormatHyperlink = {
+            onClick: options.onClick,
+            onContextMenu: options.onContextMenu,
+            title: options.title,
+        };
+
+        // Get the current state at this position to preserve existing formatting
+        const currentState = this.getStateAt(start) || {};
+        const newState: FormatStateSnapshot = {
+            ...currentState,
+            hyperlink,
+        };
+
+        this.replace([start, end], text, newState);
+        return this;
+    }
+
+    /**
+     * Makes a specific word or phrase clickable throughout the buffer.
+     *
+     * @param text - The text to make clickable
+     * @param options - Link options including onClick, onContextMenu (right-click), and title
+     * @param searchOptions - Optional search configuration (case insensitive)
+     * @returns this buffer for chaining
+     */
+    createLinksForText(
+        text: string,
+        options: {
+            onClick?: (ev: MouseEvent) => void;
+            onContextMenu?: (ev: MouseEvent) => void;
+            title?: string;
+        },
+        searchOptions: { caseInsensitive?: boolean } = {}
+    ): this {
+        if (!text) return this;
+
+        const caseInsensitive = searchOptions.caseInsensitive ?? false;
+        const ranges: TextRange[] = [];
+        const bufferText = this.text;
+        const haystack = caseInsensitive ? bufferText.toLowerCase() : bufferText;
+        const needle = caseInsensitive ? text.toLowerCase() : text;
+
+        let searchStart = 0;
+        while (searchStart <= bufferText.length - text.length) {
+            const index = haystack.indexOf(needle, searchStart);
+            if (index === -1) break;
+            ranges.push([index, index + text.length]);
+            searchStart = index + text.length;
+        }
+
+        if (ranges.length === 0) return this;
+
+        // Apply links in reverse order to maintain correct indices
+        for (let i = ranges.length - 1; i >= 0; i--) {
+            this.createLink(ranges[i], options);
         }
 
         return this;

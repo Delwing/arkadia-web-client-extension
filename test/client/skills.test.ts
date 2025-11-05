@@ -1,6 +1,7 @@
 import Triggers, { stripAnsiCodes } from '@client/Triggers';
 import { EventEmitter } from 'events';
 import initSkills from '@client/scripts/skills';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -27,10 +28,10 @@ describe('skills alias', () => {
 
       run();
       const raw = `${LINE1}\n${LINE2}\n${LINE3}`;
-      const processed = client.Triggers.parseMultiline(raw, '');
+      const processed = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
       expect(client.send).toHaveBeenCalledWith('um');
       expect(client.sendCommand).not.toHaveBeenCalled();
-      const printed = stripAnsiCodes(processed).split('\n');
+      const printed = stripAnsiCodes(processed?.text || '').split('\n');
       expect(printed.length).toBe(3);
       expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10]\s+alchemia:\s+troche\s+\[2\/10]/);
       expect(printed[1]).toMatch(/gornictwo:\s+ledwo\s+\[1\/10]\s+lowiectwo:\s+pobieznie\s+\[3\/10]/);
@@ -47,9 +48,9 @@ describe('skills alias', () => {
 
       run();
       const raw = `${LINE1}\n${LINE2}\n${LINE3}`;
-      const processed = client.Triggers.parseMultiline(raw, '');
+      const processed = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
 
-      const printed = stripAnsiCodes(processed).split('\n');
+      const printed = stripAnsiCodes(processed?.text || '').split('\n');
       expect(printed.length).toBe(5);
       printed.forEach((l) => expect(l.length).toBeLessThanOrEqual(40));
     });

@@ -34,16 +34,16 @@ function pad(str: string, len: number) {
     return str + " ".repeat(Math.max(0, len - plain.length));
 }
 
-function colorLevel(level: string, maxLevel: number) {
+function colorLevel(level: string, maxLevel: number): AnsiAwareBuffer {
     const num = skillsDesc[level.toLowerCase()];
     const bracketWidth = "[10/10]".length;
     if (!num) {
-        return pad(level, maxLevel + 1 + bracketWidth);
+        return new AnsiAwareBuffer(pad(level, maxLevel + 1 + bracketWidth));
     }
     const color = COLORS[num - 1];
     const word = pad(level, maxLevel);
     const bracket = `[${num}/10]`.padStart(bracketWidth);
-    return colorString(`${word} ${bracket}`, color).text;
+    return colorString(`${word} ${bracket}`, color);
 }
 
 export default function initSkills(
@@ -65,13 +65,16 @@ export default function initSkills(
         { name, level }: { name: string; level: string },
         maxName: number,
         maxLevel: number
-    ) {
+    ): AnsiAwareBuffer {
         const n = pad(`${name}:`, maxName + 1);
         const l = colorLevel(level, maxLevel);
-        return `${n} ${l}`;
+        const result = new AnsiAwareBuffer(n);
+        result.append(" ");
+        result.appendBuffer(l);
+        return result;
     }
 
-    function process(raw: string) {
+    function process(raw: string): AnsiAwareBuffer {
         const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(stripAnsiCodes(l)));
         const skills: { name: string; level: string }[] = [];
         lines.forEach((l) => {
@@ -81,29 +84,36 @@ export default function initSkills(
                 if (m) skills.push({ name: m[1].trim(), level: m[2].trim() });
             });
         });
-        if (!skills.length) return raw;
+        if (!skills.length) return new AnsiAwareBuffer(raw);
 
         const maxName = Math.max(...skills.map((s) => s.name.length));
         const maxLevel = Math.max(...skills.map((s) => s.level.length));
-        const result: string[] = [];
+        const result = new AnsiAwareBuffer();
         for (let i = 0; i < skills.length; i += 2) {
+            if (i > 0) {
+                result.append("\n");
+            }
             const col1 = formatSkill(skills[i], maxName, maxLevel);
             if (i + 1 < skills.length) {
                 const col2 = formatSkill(skills[i + 1], maxName, maxLevel);
-                const combined = `${col1}  ${col2}`;
+                const combined = col1.clone();
+                combined.append("  ");
+                combined.appendBuffer(col2);
                 if (
                     client.contentWidth &&
-                    stripAnsiCodes(combined).length > client.contentWidth
+                    combined.text.length > client.contentWidth
                 ) {
-                    result.push(col1, col2);
+                    result.appendBuffer(col1);
+                    result.append("\n");
+                    result.appendBuffer(col2);
                 } else {
-                    result.push(combined);
+                    result.appendBuffer(combined);
                 }
             } else {
-                result.push(col1);
+                result.appendBuffer(col1);
             }
         }
-        return result.join("\n");
+        return result;
     }
 
     function run() {
@@ -114,7 +124,7 @@ export default function initSkills(
                 const raw = line.text;
                 const out = process(raw);
                 disable();
-                return new AnsiAwareBuffer(out);
+                return out;
             },
             tag
         );
