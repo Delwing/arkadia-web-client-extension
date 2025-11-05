@@ -3,7 +3,6 @@ import {
     FormatHyperlink,
     FormatStateSnapshot,
 } from "../ansi/FormatState";
-import {colorCodes} from "../../modules/core/Colors";
 
 export type TextRange = [start: number, end: number];
 
@@ -43,21 +42,6 @@ export default class TriggerLine {
 
     private static prepareStyle(styleOrIndex: number | FormatStyle): FormatStyle {
         if (typeof styleOrIndex === "number") {
-            // Convert indexed color to RGB using the xterm palette
-            const hex = colorCodes.xterm[styleOrIndex];
-            if (hex) {
-                const value = parseInt(hex.slice(1), 16);
-                if (!Number.isNaN(value)) {
-                    return {
-                        foreground: {
-                            space: "rgb",
-                            r: (value >> 16) & 0xff,
-                            g: (value >> 8) & 0xff,
-                            b: value & 0xff,
-                        },
-                    };
-                }
-            }
             // Fallback to indexed if conversion fails
             return {
                 foreground: {
