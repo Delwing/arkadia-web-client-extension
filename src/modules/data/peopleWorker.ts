@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import type { PersonEntry } from './types/people';
 import { parsePeopleDatabase } from './peopleParser';
 import { downloadPeopleDatabase } from './peopleDownload';
+import {PersonEntry} from "@client/types/people.ts";
 
 interface LoadRequest {
     id: number;

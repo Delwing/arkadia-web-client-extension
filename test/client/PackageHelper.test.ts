@@ -3,9 +3,9 @@ jest.mock('../../src/web/dataStores/npcStore', () => ({
 }));
 
 import initPackageHelper from '@client/PackageHelper';
-import { colorStringInLine, findClosestColor } from '@modules/core/Colors';
+import { findClosestColor } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
-import TriggerLine from '@client/triggers/TriggerLine';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 describe('PackageHelper', () => {
   let helper: any;
@@ -97,21 +97,12 @@ describe('PackageHelper', () => {
     const rawLine = " |   1. Bob                     1/ 2/ 3        5           |";
     const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/;
     const match = rawLine.match(packageLineRegex)!;
-    const triggerLine = new TriggerLine(rawLine, { matches: match });
-    const result = cb(triggerLine);
+    const lineBuffer = new AnsiAwareBuffer(rawLine);
+    const result = cb(lineBuffer, match);
 
-    const stripped = result.toAnsiString().replace(/\x1B\[[0-9;]*m/g, '');
-    expect(stripped).toContain('dystans: --');
-    expect(stripped.trimEnd().endsWith('|')).toBe(true);
+    expect(result.text).toContain('dystans: --');
+    expect(result.text.trimEnd().endsWith('|')).toBe(true);
     expect(helper.packages()).toEqual([{ name: 'Bob', time: '5', distance: undefined }]);
-    expect(client.OutputHandler.makeClickable).toHaveBeenCalledTimes(1);
-    const call = client.OutputHandler.makeClickable.mock.calls[0];
-    const expectedColor = colorStringInLine(stripped, 'Bob', findClosestColor('#aaaaaa')).toAnsiString();
-    expect(call[0]).toBe(expectedColor);
-    expect(call[1]).toBe('Bob');
-    expect(call[3]).toBe('wybierz paczke 1');
-    call[2]();
-    expect(client.sendCommand).toHaveBeenCalledWith('wybierz paczke 1');
   });
 
   test('handleCommand ignores commands without pick', () => {
@@ -132,7 +123,7 @@ describe('PackageHelper', () => {
     expect(client.Triggers.registerOneTimeTrigger).toHaveBeenCalledTimes(2);
 
     const successCb = client.Triggers.registerOneTimeTrigger.mock.calls[0][1];
-    const successTriggerLine = new TriggerLine('');
+    const successTriggerLine = new AnsiAwareBuffer('');
     successCb(successTriggerLine);
 
     expect(helper.currentPackage()).toEqual({ name: 'Bob' });
@@ -150,7 +141,7 @@ describe('PackageHelper', () => {
     helper.handleCommand('wybierz paczke 1');
 
     const failCb = client.Triggers.registerOneTimeTrigger.mock.calls[1][1];
-    const failTriggerLine = new TriggerLine('');
+    const failTriggerLine = new AnsiAwareBuffer('');
     failCb(failTriggerLine);
 
     expect(client.Triggers.removeTrigger).toHaveBeenCalledWith('pickTrigger');

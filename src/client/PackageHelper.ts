@@ -1,7 +1,7 @@
-import { addLocalNpc } from "@web/dataStores/npcStore";
-import {colorStringInLine, findClosestColor, RESET} from "@modules/core/Colors";
+import {addLocalNpc} from "@web/dataStores/npcStore";
+import {findClosestColor} from "@modules/core/Colors";
 import Client from "./Client";
-import { Trigger } from "./Triggers";
+import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
@@ -9,7 +9,7 @@ const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
 const packageLineRegex = /^ \|\s*(?<heavy>\*)?\s*(?<number>\d+)\. (?<name>.*?)(?:, (?<city>[\w' ]+?))?\s+(?<gold>\d+)\/\s?(?<silver>\d+)\/\s?(?<copper>\d+)\s+(?:nieogr\.|(?<time>\d+))/
 const packageTableRegex = /Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:[\s\S]*?Symbolem \* oznaczono przesylki ciezkie\./
-const shortInfo = RESET + 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n'
+const shortInfo = 'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:\n'
 const STANDARD_DISTANCE_COLUMN_WIDTH = 16;
 
 type PackageLineInfo = {
@@ -82,7 +82,12 @@ export default function initPackageHelper(client: Client) {
                 registerDeliveryTrigger()
             }
             const colorCode = npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
-            return colorStringInLine(line, matches[1], colorCode)
+            const buffer = typeof line === 'string' ? new AnsiAwareBuffer(line) : line;
+            const nameIndex = buffer.text.indexOf(matches[1]);
+            if (nameIndex !== -1) {
+                buffer.color([nameIndex, nameIndex + matches[1].length], colorCode);
+            }
+            return buffer;
         }, tag)
         client.Triggers.registerMultilineTrigger(packageTableRegex, packageTableCallback(), tag)
     }
@@ -104,7 +109,7 @@ export default function initPackageHelper(client: Client) {
             return;
         }
         pick = parseInt(command.substring(pickCommand.length + 1).trim())
-        pickTrigger = client.Triggers.registerOneTimeTrigger(/^.* przekazuje ci jakas paczke\./, (triggerLine) => {
+        pickTrigger = client.Triggers.registerOneTimeTrigger(/^.* przekazuje ci jakas paczke\./, (line) => {
             if (failTrigger) {
                 client.Triggers.removeTrigger(failTrigger)
                 failTrigger = undefined
@@ -113,29 +118,39 @@ export default function initPackageHelper(client: Client) {
             leadToPackage(currentPackage.name)
             startTimer()
             registerDeliveryTrigger()
-            return triggerLine;
+            return line;
         })
-        failTrigger = client.Triggers.registerOneTimeTrigger(pickFailMessages, (triggerLine) => {
+        failTrigger = client.Triggers.registerOneTimeTrigger(pickFailMessages, (line) => {
             if (pickTrigger) {
                 client.Triggers.removeTrigger(pickTrigger)
                 pickTrigger = undefined
             }
-            return triggerLine;
+            return line;
         })
     }
 
     function packageLineCallback() {
         return (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
             const info = parsePackageLine(matches)
-            const line = extendStandardDataLine(line.toAnsiString(), info)
+
+            // Extend the line with distance info by inserting before the last |
+            const lastPipeIndex = line.text.lastIndexOf('|')
+            if (lastPipeIndex !== -1) {
+                const distanceValue = info.distance !== undefined ? `${info.distance}` : '--'
+                const distanceText = ` dystans: ${distanceValue}`
+                const normalized = distanceText.startsWith(' ') ? distanceText : ` ${distanceText}`
+                const padded = padRight(normalized, STANDARD_DISTANCE_COLUMN_WIDTH)
+                line.insert(lastPipeIndex, padded)
+            }
+
+            // Color the name in the buffer
             const colorCode = npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-            const command = `${pickCommand} ${info.index}`
-            const coloredLine = colorStringInLine(line, info.name, colorCode).toAnsiString()
-            const clickable = client.OutputHandler.makeClickable(coloredLine, info.name, () => {
-                client.sendCommand(command)
-            }, command)
-            line.setOverrideAnsi(clickable);
-            return line;
+            const nameIndex = line.text.indexOf(info.name)
+            if (nameIndex !== -1) {
+                line.color([nameIndex, nameIndex + info.name.length], colorCode)
+            }
+            return line
+            // TODO: Add clickable functionality later
         };
     }
 
@@ -147,76 +162,110 @@ export default function initPackageHelper(client: Client) {
     function packageTableCallback() {
         const lineCallback = packageLineCallback();
         const widthLimit = 78;
-        return (triggerLine: any) => {
+        return (line: AnsiAwareBuffer) => {
             onPackageList();
-            const lines = triggerLine.text.split('\n');
+            const lines = line.splitLines();
             const narrow = isMobileBrowser() ||
                 (client.contentWidth && client.contentWidth < widthLimit);
             if (narrow) {
-                const out = [shortInfo];
-                lines.forEach(line => {
-                    if (line.startsWith('Tablica zawiera liste')) {
+                const originalFormatting = lines.length > 0 ? lines[0].getStateAt(0) : undefined;
+                const output = new AnsiAwareBuffer(shortInfo, originalFormatting);
+                lines.forEach(lineBuffer => {
+                    const lineText = lineBuffer.text;
+                    if (lineText.startsWith('Tablica zawiera liste')) {
                         return;
                     }
-                    if (/^Symbolem \* oznaczono przesylki ciezkie\./.test(line)) {
+                    if (/^Symbolem \* oznaczono przesylki ciezkie\./.test(lineText)) {
                         return;
                     }
-                    const matches = line.match(packageLineRegex);
+                    const matches = lineText.match(packageLineRegex);
                     if (!matches) {
                         return;
                     }
                     const info = parsePackageLine(matches);
                     const city = info.city ? `, ${info.city}` : '';
                     const heavy = info.heavy ? '* ' : '  ';
-                    const first = RESET  + `${heavy}${info.index}. ${info.name}${city}`;
+                    const baseState = lineBuffer.getStateAt(0);
+                    const firstLine = new AnsiAwareBuffer(`${heavy}${info.index}. ${info.name}${city}`, baseState);
                     const colorCode = npc[info.name] ? KNOWN_NPC_COLOR : UNKNOWN_NPC_COLOR;
-                    const coloredFirst = colorStringInLine(first, info.name, colorCode).toAnsiString();
-                    const clickable = client.OutputHandler.makeClickable(
-                        coloredFirst,
-                        info.name,
-                        () => {
-                            client.sendCommand('wybierz paczke ' + info.index);
-                        },
-                        'wybierz paczke ' + info.index
-                    ) + RESET   ;
+                    const nameIndex = firstLine.text.indexOf(info.name);
+                    if (nameIndex !== -1) {
+                        firstLine.color([nameIndex, nameIndex + info.name.length], colorCode);
+                    }
+
+                    // TODO: Add clickable functionality later
                     const time = info.time ? info.time + ' godz.' : 'nieogr.';
                     const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : ' dystans: --';
-                    const second = `   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`;
-                    out.push(clickable, second);
+                    const secondLine = new AnsiAwareBuffer(`   ${info.gold}/${info.silver}/${info.copper} ${time}${distanceText}\n`, baseState);
+
+                    output.append('\n', originalFormatting);
+                    output.appendBuffer(firstLine);
+                    output.append('\n', originalFormatting);
+                    output.appendBuffer(secondLine);
+                    // Add a blank line between packages with gray formatting
+                    const blankLine = new AnsiAwareBuffer(' \n', originalFormatting);
+                    output.appendBuffer(blankLine);
                 });
-                triggerLine.setOverrideAnsi(out.join('\n'));
-                return triggerLine;
+                return output;
             }
-            const processedLines = lines
-                .map(line => {
-                    const matches = line.match(packageLineRegex);
-                    if (matches) {
-                        const lineTrigger = new (triggerLine.constructor as any)(line, { matches });
-                        const result = lineCallback(lineTrigger);
-                        return result ? result.toAnsiString() : line;
+            const output = new AnsiAwareBuffer();
+            const processedBuffers: AnsiAwareBuffer[] = [];
+            lines.forEach(lineBuffer => {
+                const lineText = lineBuffer.text;
+                const matches = lineText.match(packageLineRegex);
+                if (matches) {
+                    const result = lineCallback(lineBuffer, matches);
+                    if (result) {
+                        processedBuffers.push(result);
                     }
-                    if (isStandardTopOrBottomBorder(line)) {
-                        return extendBorderLine(line, '=');
-                    }
-                    if (isStandardSeparator(line)) {
-                        return extendBorderLine(line, '-');
-                    }
-                    if (isStandardHeaderLine(line)) {
-                        return appendDistanceColumn(line, ' Dystans');
-                    }
-                    if (isStandardSubHeaderLine(line)) {
-                        return appendDistanceColumn(line, ' w krokach');
-                    }
-                    if (isStandardFooterLine(line)) {
-                        return appendDistanceColumn(line, '');
-                    }
-                    if (line.startsWith(' |')) {
-                        return appendDistanceColumn(line, '');
-                    }
-                    return line;
-                });
-            triggerLine.setOverrideAnsi(processedLines.join('\n'));
-            return triggerLine;
+                } else if (isStandardTopOrBottomBorder(lineText)) {
+                    const extended = extendBorderLine(lineText, '=');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else if (isStandardSeparator(lineText)) {
+                    const extended = extendBorderLine(lineText, '-');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else if (isStandardHeaderLine(lineText)) {
+                    const extended = appendDistanceColumn(lineText, ' Dystans');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else if (isStandardSubHeaderLine(lineText)) {
+                    const extended = appendDistanceColumn(lineText, ' w krokach');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else if (isStandardFooterLine(lineText)) {
+                    const extended = appendDistanceColumn(lineText, '');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else if (lineText.startsWith(' |')) {
+                    const extended = appendDistanceColumn(lineText, '');
+                    const baseState = lineBuffer.getStateAt(0);
+                    const newBuffer = new AnsiAwareBuffer();
+                    newBuffer.append(extended, baseState);
+                    processedBuffers.push(newBuffer);
+                } else {
+                    processedBuffers.push(lineBuffer);
+                }
+            });
+
+            for (let i = 0; i < processedBuffers.length; i++) {
+                output.appendBuffer(processedBuffers[i]);
+                if (i < processedBuffers.length - 1) {
+                    output.append('\n');
+                }
+            }
+            return output
         };
     }
 
@@ -236,11 +285,6 @@ export default function initPackageHelper(client: Client) {
         }
         packages.push({ name, time: info.time, distance })
         return info
-    }
-
-    function extendStandardDataLine(rawLine: string, info: PackageLineInfo): string {
-        const distanceValue = info.distance !== undefined ? `${info.distance}` : '--'
-        return appendDistanceColumn(rawLine, ` dystans: ${distanceValue}`)
     }
 
     function appendDistanceColumn(line: string, content: string): string {
@@ -330,8 +374,7 @@ export default function initPackageHelper(client: Client) {
     }
 
     function registerDeliveryTrigger() {
-        deliveryTrigger = client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (triggerLine) => {
-            const matches = triggerLine.matches.matches;
+        deliveryTrigger = client.Triggers.registerOneTimeTrigger(/^(Oddajesz|Zwracasz) pocztowa paczke/, (triggerLine, matches) => {
             if (matches && matches[1] === 'Oddajesz') {
                 if (!npc[currentPackage!.name]) {
                     client.println(`Nowy adresat: ${currentPackage!.name} | ${client.Map.currentRoom.id}`)
@@ -408,21 +451,4 @@ export default function initPackageHelper(client: Client) {
     }
 
     init()
-
-    return {
-        npc,
-        enabled: () => enabled,
-        packages: () => packages,
-        setPackages: (p: any[]) => { packages = p },
-        currentPackage: () => currentPackage,
-        setCurrentPackage: (pkg: any) => { currentPackage = pkg },
-        deliveryTrigger: () => deliveryTrigger,
-        setDeliveryTrigger: (t: any) => { deliveryTrigger = t },
-        init,
-        disable,
-        packageLineCallback,
-        packageTableCallback,
-        handleCommand,
-        leadToPackage,
-    }
 }

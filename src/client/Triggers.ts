@@ -65,9 +65,9 @@ export class Trigger {
     ) {
         const child = this.registerChild(
             pattern,
-            (triggerLine, matches, type) => {
+            (line, matches, type) => {
                 this.manager.removeTrigger(child);
-                return callback(triggerLine, matches, type);
+                return callback(line, matches, type);
             },
             tag,
             options
@@ -171,9 +171,9 @@ export default class Triggers {
     registerOneTimeTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerTrigger(
             pattern,
-            (triggerLine, matches, type) => {
+            (line, matches, type) => {
                 this.removeTrigger(trigger);
-                return callback(triggerLine, matches, type);
+                return callback(line, matches, type);
             },
             tag,
             options

@@ -95,15 +95,13 @@ export default function initCompareAll(
 ) {
     const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jest(?<mod>es)? (?<desc>.*?)[aey] (?:jak|niz) (?<osoba>.*)\.$/;
 
-    client.Triggers.registerTrigger(triggerPattern, (triggerLine) => {
-        if (!queue.length) return triggerLine;
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
+    client.Triggers.registerTrigger(triggerPattern, (line, matches) => {
+        if (!queue.length) return line;
         const item = queue.shift()!;
-        const osoba = m.groups?.osoba?.trim() || item.target;
-        const desc = m.groups?.desc?.trim() || "";
+        const osoba = matches.groups?.osoba?.trim() || item.target;
+        const desc = matches.groups?.desc?.trim() || "";
         let val = level[desc] ?? 0;
-        if (m.groups?.mod) {
+        if (matches.groups?.mod) {
             val = -val;
         }
         if (!comparisonResults[osoba]) {

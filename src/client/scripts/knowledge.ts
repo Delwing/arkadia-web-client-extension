@@ -1116,10 +1116,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const header = colorString(library.name, HEADER_COLOR);
         const lines = categories.map((category) => {
             const status = libraryProgress[category] ?? 'not_started';
-            return ` - ${formatCategory(client, category, status)}`;
+            return formatCategory(client, category, status).prepend(' - ').suffix('\n');
         });
 
-        client.println([header, ...lines].join('\n'));
+        [header, ...lines].forEach((line) => {
+            client.print(line);
+        })
     }
 
     function handleKnowledgePrompt(categoriesText: string) {

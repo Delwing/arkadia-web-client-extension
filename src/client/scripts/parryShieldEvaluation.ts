@@ -1,32 +1,35 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-import { EFFECTIVENESS } from "./evaluationConstants";
+import {findClosestColor} from "@modules/core/Colors";
+import {EFFECTIVENESS} from "./evaluationConstants";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 const LABEL_COLOR = findClosestColor("#446fb1");
 
 export default function initParryShieldEvaluation(client: Client) {
-  const tag = "parry-shield-evaluation";
-  const regex = /^Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest ona? (.*) w parowaniu ciosow\.$/;
+    const tag = "parry-shield-evaluation";
+    const regex = /^Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest ona? (.*) w parowaniu ciosow\.$/;
 
-  client.Triggers.registerTrigger(
-    regex,
-    (triggerLine) => {
-      if (client.suppressItemEvaluation) {
-        return null;
-      }
-      const m = triggerLine.matches.matches;
-      if (!m) return triggerLine;
-      const parryText = m[1].trim();
-      const key = Object.keys(EFFECTIVENESS).find((k) =>
-        parryText.toLowerCase().startsWith(k),
-      );
-      if (!key) return null;
-      const parry = EFFECTIVENESS[key];
-      const pad = 15;
-      const line = `${colorString("Typ zbroi", LABEL_COLOR)}: ${"puklerz".padEnd(pad, " ")}${colorString("Parowanie", LABEL_COLOR)}: ${parry.label}`;
-      client.print(line);
-      return null;
-    },
-    tag,
-  );
+    client.Triggers.registerTrigger(
+        regex,
+        (_line, matches) => {
+            if (client.suppressItemEvaluation) {
+                return null;
+            }
+            const parryText = matches[1].trim();
+            const key = Object.keys(EFFECTIVENESS).find((k) =>
+                parryText.toLowerCase().startsWith(k),
+            );
+            if (!key) return null;
+            const parry = EFFECTIVENESS[key];
+            const pad = 15;
+            const output = new AnsiAwareBuffer();
+            output.append("Typ zbroi", LABEL_COLOR);
+            output.append(`: ${"puklerz".padEnd(pad, " ")}`, {});
+            output.append("Parowanie", LABEL_COLOR);
+            output.append(`: ${parry.label}\n`, {});
+            client.print(output);
+            return null;
+        },
+        tag,
+    );
 }

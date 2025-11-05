@@ -9,17 +9,17 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
 
     function run(container: string) {
         const found: string[] = [];
-        const trigger = client.Triggers.registerTrigger(/^.*$/, (triggerLine) => {
-            const line = triggerLine.text;
+        const trigger = client.Triggers.registerTrigger(/^.*$/, (line) => {
+            const rawLine = line.text;
             regexps.forEach((re, idx) => {
-                if (re.test(line)) {
+                if (re.test(rawLine)) {
                     const item = patterns[idx];
                     if (!found.includes(item)) {
                         found.push(item);
                     }
                 }
             });
-            if (finalPattern.test(line)) {
+            if (finalPattern.test(rawLine)) {
                 client.Triggers.removeTrigger(trigger);
                 if (found.length > 0) {
                     const cmd = found.map(it => `wloz ${it} do ${container}`).join(';');
@@ -27,9 +27,9 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
                 } else {
                     client.FunctionalBind.set(null);
                 }
-                return triggerLine;
+                return line;
             }
-            return triggerLine;
+            return line;
         }, tag);
         client.sendCommand('i');
     }

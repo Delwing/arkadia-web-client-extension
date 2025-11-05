@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { takeFromBag } from "./bagManager";
+import {takeFromBag} from "./bagManager";
 
 export default function initLamp(client: Client) {
     const tag = 'lamp'
@@ -23,7 +23,7 @@ export default function initLamp(client: Client) {
             client.println(` >> W lampie zostalo oleju na ${secondsToClock(seconds)}.`)
         }
         if (BEEP_TIMES.includes(seconds)) {
-            client.sendEvent("sound:play", { key: "beep" })
+            client.sendEvent("sound:play", {key: "beep"})
         }
         if (seconds <= 0) {
             stopTimer()
@@ -76,29 +76,29 @@ export default function initLamp(client: Client) {
     ]
     const noBottlePattern = /^Czym chcesz napelnic(?: [a-z ]+)? lampe/
 
-    client.Triggers.registerTrigger(startPattern, (triggerLine) => {
+    client.Triggers.registerTrigger(startPattern, (line) => {
         startTimer()
-        return triggerLine
+        return line
     }, tag)
 
-    offPatterns.forEach(p => client.Triggers.registerTrigger(p, (triggerLine) => {
+    offPatterns.forEach(pattern => client.Triggers.registerTrigger(pattern, (line) => {
         stopTimer()
-        return triggerLine
+        return line
     }, tag))
 
-    client.Triggers.registerTrigger(refillPattern, (triggerLine) => {
+    client.Triggers.registerTrigger(refillPattern, (line) => {
         resetTimer()
-        return triggerLine
+        return line
     }, tag)
 
-    emptyPatterns.forEach(p => client.Triggers.registerTrigger(p, (triggerLine) => {
+    emptyPatterns.forEach(pattern => client.Triggers.registerTrigger(pattern, (line) => {
         client.FunctionalBind.set(' >> Odloz olej, wez butelke do reki i napelnij lampe', emptyBottle)
-        return triggerLine
+        return line
     }, tag))
 
-    client.Triggers.registerTrigger(noBottlePattern, (triggerLine) => {
+    client.Triggers.registerTrigger(noBottlePattern, (line) => {
         client.FunctionalBind.set(' >> Wez butelke do reki.', takeBottle)
-        return triggerLine
+        return line
     }, tag)
 
     client.aliases.push({

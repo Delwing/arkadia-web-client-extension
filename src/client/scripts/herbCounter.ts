@@ -2,11 +2,12 @@ import Client from "../Client";
 import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
 import {stripAnsiCodes} from "../Triggers";
-import {color, colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
-import { openHerbContextMenu } from "@modules/core/contextMenus";
-import type { HerbMoveOptions, HerbBagsState, HerbBagState } from "../types/herbs";
-import { clampHerbBagCondition, normalizeHerbBagsState } from "../types/herbs";
-import { getWearValue } from "./wearUsed";
+import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
+import {openHerbContextMenu} from "@modules/core/contextMenus";
+import type {HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
+import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
+import {getWearValue} from "./wearUsed";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const headerColor = findClosestColor('#8470ff')
 const WHITE = findClosestColor('#ffffff');
@@ -117,7 +118,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const ensureBagState = (bagNumber: number): HerbBagState => {
         let bag = storedBags[bagNumber];
         if (!bag) {
-            bag = { herbs: {} };
+            bag = {herbs: {}};
             storedBags[bagNumber] = bag;
         } else if (!bag.herbs) {
             bag.herbs = {};
@@ -129,7 +130,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     const persistBags = () => {
         const snapshot = normalizeHerbBagsState(cloneBags());
-        client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot });
+        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot});
         client.sendEvent('herbCounts', structuredClone(snapshot));
         storedBags = snapshot;
     };
@@ -142,18 +143,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         if (Object.keys(storedBags).length > 0) {
             broadcastBags();
         } else {
-            client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+            client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
         }
     };
 
-    client.on('storage', async ({ key, value }) => {
+    client.on('storage', async ({key, value}) => {
         if (key === STORAGE_KEY) {
             storedBags = normalizeHerbBagsState(value);
             await ensureData();
             broadcastBags();
         }
     });
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
     client.on('requestHerbCounts', () => requestBagsIfNeeded());
 
     let preUseCommands: string[] = [];
@@ -180,7 +181,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                             });
                         });
                     }
-                }).finally(() => { loading = null; });
+                }).finally(() => {
+                    loading = null;
+                });
             }
             if (loading) {
                 await loading;
@@ -279,7 +282,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         bags: HerbBagsState,
         includeBags = true,
         useFormattedNames = true
-    ): string[] {
+    ): AnsiAwareBuffer {
         const totalsMap: Record<string, number> = {};
         Object.values(bags).forEach(bag => {
             const contents = bag?.herbs ?? {};
@@ -289,14 +292,36 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         });
         const entries = Object.entries(totalsMap);
         if (entries.length === 0) {
-            return ['Brak ziol.'];
+            const buffer = new AnsiAwareBuffer();
+            buffer.append('Brak ziol.', {});
+            buffer.color([0, buffer.length], WHITE);
+            return buffer;
         }
-        const lines: string[] = [];
+
+        const output = new AnsiAwareBuffer();
         const normal = width >= 63;
+
         if (normal) {
-            lines.push('------+--------------------+-------------------------------');
-            lines.push(`  ${colorString('ile', headerColor)} |        ${colorString('nazwa', headerColor)}       |            ${colorString('dzialanie', headerColor)}             `);
-            lines.push('------+--------------------+-------------------------------');
+            const separator = '------+--------------------+-------------------------------';
+            output.append(separator, {});
+            output.color([0, output.length], WHITE);
+            output.append('\n');
+
+            const headerLine = new AnsiAwareBuffer();
+            headerLine.append('  ');
+            headerLine.appendBuffer(colorString('ile', headerColor));
+            headerLine.append(' |        ');
+            headerLine.appendBuffer(colorString('nazwa', headerColor));
+            headerLine.append('       |            ');
+            headerLine.appendBuffer(colorString('dzialanie', headerColor));
+            headerLine.append('             ');
+            headerLine.color([0, headerLine.length], WHITE);
+            output.appendBuffer(headerLine);
+            output.append('\n');
+
+            output.append(separator, {});
+            output.color([output.length - separator.length, output.length], WHITE);
+            output.append('\n');
         }
 
         const prefixWidth = normal ? 28 : 0;
@@ -309,26 +334,66 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 const name = client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev));
                 const base = `${String(c).padStart(5, ' ')} | ${name.padEnd(43, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
+
+                const line = new AnsiAwareBuffer();
+                line.append(base, {});
+
                 if (available >= stripAnsiCodes(uses).length) {
-                    lines.push(base + uses);
+                    line.append(uses, {});
                 } else if (available > 0) {
-                    lines.push(base + uses.slice(0, available));
-                    lines.push(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available));
+                    line.append(uses.slice(0, available), {});
+                    line.color([0, line.length], WHITE);
+                    output.appendBuffer(line);
+                    output.append('\n');
+
+                    const continueLine = new AnsiAwareBuffer();
+                    continueLine.append(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available), {});
+                    continueLine.color([0, continueLine.length], WHITE);
+                    output.appendBuffer(continueLine);
+                    output.append('\n');
+                    return;
                 } else {
-                    lines.push(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`);
-                    lines.push(' '.repeat(prefixWidth) + uses);
+                    line.remove([0, line.length]);
+                    line.append(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`, {});
+                    line.color([0, line.length], WHITE);
+                    output.appendBuffer(line);
+                    output.append('\n');
+
+                    const useLine = new AnsiAwareBuffer();
+                    useLine.append(' '.repeat(prefixWidth) + uses, {});
+                    useLine.color([0, useLine.length], WHITE);
+                    output.appendBuffer(useLine);
+                    output.append('\n');
+                    return;
                 }
+
+                line.color([0, line.length], WHITE);
+                output.appendBuffer(line);
+                output.append('\n');
             } else {
-                const base = `${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`;
-                lines.push(base);
-                lines.push(' '.repeat(4) + uses);
+                const line = new AnsiAwareBuffer();
+                line.append(`${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`, {});
+                line.color([0, line.length], WHITE);
+                output.appendBuffer(line);
+                output.append('\n');
+
+                const useLine = new AnsiAwareBuffer();
+                useLine.append(' '.repeat(4) + uses, {});
+                useLine.color([0, useLine.length], WHITE);
+                output.appendBuffer(useLine);
+                output.append('\n');
             }
         });
+
         if (normal) {
-            lines.push('-----------------------------------------------------------');
+            const separator = '-----------------------------------------------------------';
+            output.append(separator, {});
+            output.color([output.length - separator.length, output.length], WHITE);
+            output.append('\n');
         }
+
         if (includeBags && Object.keys(bags).length > 0) {
-            lines.push('');
+            output.append('\n');
             Object.entries(bags).forEach(([num, bagState]) => {
                 const contents = bagState?.herbs ?? {};
                 const parts = Object.entries(contents)
@@ -340,17 +405,22 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     .join(', ');
                 const condition = bagState?.condition;
                 const conditionSuffix = typeof condition === 'number' ? ` [${condition}/5]` : '';
-                lines.push(`${num}. ${parts || '(pusty)'}${conditionSuffix}`);
+
+                const bagLine = new AnsiAwareBuffer();
+                bagLine.append(`${num}. ${parts || '(pusty)'}${conditionSuffix}`, {});
+                bagLine.color([0, bagLine.length], WHITE);
+                output.appendBuffer(bagLine);
+                output.append('\n');
             });
         }
 
-        return lines.map(line => color(WHITE) + line);
+        return output;
     }
 
     function finish() {
         storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
-        const lines = buildSummary(storedBags, true, false);
-        client.println(lines.join('\n'));
+        const output = buildSummary(storedBags, true, false);
+        client.print(output);
         persistBags();
         awaiting = false;
         left = 0;
@@ -359,22 +429,19 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
     }
 
-    client.Triggers.registerTrigger(countRegex, (triggerLine) => {
-        if (!awaiting) return triggerLine;
-        const m = triggerLine.matches.matches;
-        if (!m) return triggerLine;
-        left = parseNumber(m.groups?.num || m[1]);
+    client.Triggers.registerTrigger(countRegex, (line, matches) => {
+        if (!awaiting) return line;
+        left = parseNumber(matches.groups?.num || matches[1]);
         for (let i = 1; i <= left; i++) {
             client.sendCommand(`zajrzyj do ${i}. swojego woreczka`);
         }
-        return triggerLine;
+        return line;
     });
 
-    function extracHerbs(m: RegExpMatchArray | undefined, triggerLine: any) {
-        if (!awaiting) return triggerLine;
-        if (!m) return triggerLine;
+    function extractHerbs(matches: RegExpMatchArray) {
+        if (!awaiting) return
         currentBag += 1;
-        const items = parseItems(m.groups?.content || '');
+        const items = parseItems(matches.groups?.content || '');
         const bag: Record<string, number> = {};
         items.forEach(it => {
             const key = herbMap[it.name.toLowerCase()] || it.name.toLowerCase();
@@ -382,40 +449,40 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             totals[key] = (totals[key] || 0) + count;
             bag[key] = (bag[key] || 0) + count;
         });
-        bagTotals[currentBag] = { herbs: bag };
+        bagTotals[currentBag] = {herbs: bag};
         left -= 1;
         if (left <= 0) finish();
-        return triggerLine;
     }
 
-    client.Triggers.registerTrigger(contentRegex1, (triggerLine) => {
-        return extracHerbs(triggerLine.matches.matches, triggerLine);
+    client.Triggers.registerTrigger(contentRegex1, (line, matches) => {
+        extractHerbs(matches);
+        return line
     });
 
-    client.Triggers.registerTrigger(contentRegex2, (triggerLine) => {
-        return extracHerbs(triggerLine.matches.matches, triggerLine);
+    client.Triggers.registerTrigger(contentRegex2, (line, matches) => {
+        extractHerbs(matches);
+        return line
     });
 
     client.Triggers.registerTrigger(emptyRegex, (triggerLine) => {
         if (!awaiting) return triggerLine;
         currentBag += 1;
-        bagTotals[currentBag] = { herbs: {} };
+        bagTotals[currentBag] = {herbs: {}};
         left -= 1;
         if (left <= 0) finish();
         return triggerLine;
     });
 
-    client.Triggers.registerTrigger(bagConditionRegex, (triggerLine) => {
-        const m = triggerLine.matches.matches;
-        const desc = m?.groups?.desc;
-        if (!desc) return triggerLine;
+    client.Triggers.registerTrigger(bagConditionRegex, (line, matches) => {
+        const desc = matches?.groups?.desc;
+        if (!desc) return line;
         const bagNumber = currentBagForEvaluation++
-        if (!Number.isFinite(bagNumber) || bagNumber <= 0) return triggerLine;
+        if (!Number.isFinite(bagNumber) || bagNumber <= 0) return line;
         const wearValue = resolveWearValue(desc);
-        if (wearValue == null) return triggerLine;
+        if (wearValue == null) return line;
         pendingConditions[bagNumber] = wearValue;
         scheduleConditionFlush();
-        return triggerLine;
+        return line;
     });
 
     async function start() {
@@ -506,7 +573,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     async function move(options: HerbMoveOptions): Promise<void> {
-        const { herbId, amount, fromBag, toBag } = options;
+        const {herbId, amount, fromBag, toBag} = options;
         if (!herbId || fromBag === toBag) {
             return;
         }
@@ -530,20 +597,20 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             pattern: /\/ziola_pokaz$/, callback: () => {
                 let unsubscribe: (() => void) | undefined;
                 // eslint-disable-next-line prefer-const -- Forward reference: unsubscribe used in its own initializer
-                unsubscribe = client.on('storage', async ({ key, value }) => {
+                unsubscribe = client.on('storage', async ({key, value}) => {
                     if (key === STORAGE_KEY) {
                         const bags = normalizeHerbBagsState(value);
                         await ensureData();
-                        const lines = buildSummary(bags, false, false);
-                        if (lines.length > 0) {
-                            client.println(lines.join('\n'));
+                        const output = buildSummary(bags, false, false);
+                        if (output.length > 0) {
+                            client.print(output);
                         } else {
                             client.println('Brak podsumowania.');
                         }
                         unsubscribe?.();
                     }
                 });
-                client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+                client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
             }
         });
         aliases.push({
@@ -551,8 +618,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 client.sendEvent('herbManagerOpen');
             }
         });
-        aliases.push({ pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10)) });
-        aliases.push({ pattern: /^\/wezz ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1) });
+        aliases.push({
+            pattern: /^\/wezz ([a-z_]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), parseInt(m[2], 10))
+        });
+        aliases.push({
+            pattern: /^\/wezz ([a-zA-Z_]+)$/,
+            callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1)
+        });
         aliases.push({
             pattern: /^\/zi (\w+) (\w+)$/,
             callback: async (m: RegExpMatchArray) => {
@@ -585,5 +658,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     // load herb data in background so it's ready after refresh
-    ensureData().catch(() => {});
+    ensureData().catch(() => {
+    });
 }

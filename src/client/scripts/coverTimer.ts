@@ -48,10 +48,10 @@ export default function initCoverTimer(client: Client) {
         timer = window.setInterval(update, 100);
     }
 
-    [...successPatterns, ...failurePatterns].forEach(p => {
-        client.Triggers.registerTrigger(p, (triggerLine) => {
+    [...successPatterns, ...failurePatterns].forEach(pattern => {
+        client.Triggers.registerTrigger(pattern, (line) => {
             startTimer();
-            return triggerLine;
+            return line;
         }, tag);
     });
 }

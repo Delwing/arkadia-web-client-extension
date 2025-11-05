@@ -93,7 +93,7 @@ export default class People {
                 if (nextWord.startsWith('chaosu')) {
                     return line
                 }
-                return this.buildDescHighlight(line, index, replacement, state)
+                return this.buildDescHighlight(line, index + token.length, replacement, state)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -170,20 +170,20 @@ export default class People {
 
     private buildDescHighlight(
         line: AnsiAwareBuffer,
-        index: number,
+        position: number,
         replacement: { name: string; guild: string },
         state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }
     ): AnsiAwareBuffer {
-        const parenthesisColor = state.isEnemy ? RED : findClosestColor('#ffff5f')
+        const parenthesisColor = this.getNameColor(state)
         const guildColor = this.getGuildColor(state)
 
         const suffix = new AnsiAwareBuffer("")
-            .append(`(${replacement.name}`, parenthesisColor)
+            .append(` (${replacement.name} `, parenthesisColor)
             .append(replacement.guild, guildColor)
             .append(')', parenthesisColor)
 
 
-        return line.insertBuffer(index, suffix)
+        return line.insertBuffer(position, suffix)
     }
 
     private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
@@ -191,5 +191,12 @@ export default class People {
             return RED
         }
         return state.inGuild && state.guildColor !== undefined ? state.guildColor : findClosestColor('#ff875f');
+    }
+
+    private getNameColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
+        if (state.isEnemy) {
+            return RED
+        }
+        return state.inGuild && state.guildColor !== undefined ? state.guildColor : findClosestColor('#ffff5f');
     }
 }

@@ -447,7 +447,7 @@ export default class Client {
             return []
         }
 
-        const split = buffer.splitLines()
+        const split = multilineResult.splitLines()
         const result = split.map(part => this.Triggers.parseLine(part, type))
         this.inLineProcess = false
         return result

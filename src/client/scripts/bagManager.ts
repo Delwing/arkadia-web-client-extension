@@ -1,5 +1,4 @@
 import Client from "../Client";
-import {stripAnsiCodes} from "../Triggers";
 import {colorString, findClosestColor} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
@@ -239,19 +238,19 @@ function showInterface(client: Client, bags: string[]) {
 function configure(client: Client) {
     const found: string[] = [];
     const tag = "bag-config";
-    client.Triggers.registerTrigger(/.*/, (triggerLine) => {
-        const l = stripAnsiCodes(triggerLine.text).toLowerCase();
-        if (l.startsWith("masz przy sobie")) {
+    client.Triggers.registerTrigger(/.*/, (line) => {
+        const rawLine = line.text.toLowerCase();
+        if (rawLine.startsWith("masz przy sobie")) {
             client.Triggers.removeByTag(tag);
             showInterface(client, found);
         } else {
             Object.entries(bagInBiernik).forEach(([name, biernik]) => {
-                if (l.includes(biernik) && !found.includes(name)) {
+                if (rawLine.includes(biernik) && !found.includes(name)) {
                     found.push(name);
                 }
             });
         }
-        return triggerLine;
+        return line;
     }, tag);
     client.sendCommand("i");
 }

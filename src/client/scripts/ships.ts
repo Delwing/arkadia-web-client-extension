@@ -19,14 +19,14 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
 }
 
 export default function initShips(client: Client) {
-    const board = (beep: boolean) => (triggerLine: any) => {
+    const board = (beep: boolean) => (line: any) => {
         bindShip(client, BOARD_CMDS, BOARD_LABEL, beep);
-        return triggerLine;
+        return line;
     };
-    const disembark = (triggerLine: any) => {
+    const disembark = (line: any) => {
         bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
         client.sendEvent("refreshPositionWhenAble");
-        return triggerLine;
+        return line;
     };
 
     const boardPatterns = [

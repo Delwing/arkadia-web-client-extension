@@ -12,8 +12,8 @@ export default function initCoinColors(client: Client) {
         {regex: /(\w+\s+)?miedzian(a|e|ych)(?=.*\bmonet)/i, color: COPPER_COLOR}
     ];
     patterns.forEach(({regex, color}) => {
-        client.Triggers.registerTrigger(regex, (triggerLine, matches) => {
-            return colorStringInLine(triggerLine, matches[0], color);
+        client.Triggers.registerTrigger(regex, (line, matches) => {
+            return colorStringInLine(line, matches[0], color);
         }, tag);
     });
 }

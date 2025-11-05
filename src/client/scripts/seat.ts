@@ -18,8 +18,8 @@ export default function initSeat(client: Client) {
         return line;
     }, tag);
 
-    client.Triggers.registerTrigger(sitPrompt, (triggerLine) => {
+    client.Triggers.registerTrigger(sitPrompt, (line) => {
         client.FunctionalBind.set('usiadz', () => client.sendCommand('usiadz'));
-        return triggerLine;
+        return line;
     }, tag);
 }

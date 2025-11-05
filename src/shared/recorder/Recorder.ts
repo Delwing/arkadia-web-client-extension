@@ -179,6 +179,7 @@ export default class Recorder<CommandOptions = unknown> {
         this.hooks.emit('playback.start');
         this.hooks.emit("message", '== Playback start ==');
         this.recordedMessages.forEach(ev => {
+            setTimeout(() => {
             const timestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
             if (ev.direction === 'in') {
                 this.hooks.processIncomingData(ev.message, { timestamp });
@@ -187,6 +188,7 @@ export default class Recorder<CommandOptions = unknown> {
                 this.hooks.notifySendCommand?.(ev.message, false);
                 this.hooks.sendCommand(ev.message, false);
             }
+            }, 0)
         });
         this.hooks.emit("message", '== Playback end ==');
         this.stopPlayback();

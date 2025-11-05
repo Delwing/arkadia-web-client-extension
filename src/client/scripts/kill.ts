@@ -293,11 +293,10 @@ class KillCounter {
             myKillRegex,
             (line, matches) => {
                 if (!matches) return line;
-                const rawLine = line.text;
                 this.client.emit("kill", { killer: "ME" });
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
-                return this.formatPrefix(rawLine, entry, "[  ZABILES  ] ", true);
+                return this.formatPrefix(line, entry, "[  ZABILES  ] ", true);
             }
         );
 
@@ -305,16 +304,15 @@ class KillCounter {
             teamKillRegex,
             (line, matches) => {
                 if (!matches) return line;
-                const rawLine = line.text;
                 const player = stripAnsiCodes(matches.groups?.player ?? "").trim();
                 const mob = parseName(matches.groups?.name ?? "");
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);
                     this.client.emit("kill", { killer: "TEAM" });
-                    return this.formatPrefix(rawLine, entry, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(line, entry, "[   ZABIL   ] ", false);
                 } else {
                     this.client.emit("kill", { killer: "OTHER" });
-                    return this.formatPrefix(rawLine, null, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(line, null, "[   ZABIL   ] ", false);
                 }
             }
         );
@@ -410,7 +408,7 @@ class KillCounter {
     }
 
     private formatPrefix(
-        line: string,
+        line: AnsiAwareBuffer,
         entry: KillEntry | null,
         label: string,
         highlight: boolean
@@ -420,23 +418,21 @@ class KillCounter {
             ? ` (${entry.mySession} / ${entry.mySession + entry.teamSession})`
             : "";
 
-        const buffer = new AnsiAwareBuffer(line);
         if (highlight && entry) {
-            buffer.append(countsRaw, color);
+            line.append(countsRaw, color);
         } else if (countsRaw) {
-            buffer.append(countsRaw, {});
+            line.append(countsRaw, {});
         }
 
         const prefixBuffer = new AnsiAwareBuffer();
+        prefixBuffer.prepend("\n", {});
         prefixBuffer.append(label, color);
         prefixBuffer.append(" ", {});
+        prefixBuffer.append(" ", {});
 
-        const output = new AnsiAwareBuffer();
-        output.append("  \n", {});
-        output.appendBuffer(prefixBuffer);
-        output.appendBuffer(buffer);
-        output.append("\n  ", {});
-        return output;
+        return line
+            .prependBuffer(prefixBuffer)
+            .appendBuffer(new AnsiAwareBuffer("\n\n"))
     }
 
     showSession() {

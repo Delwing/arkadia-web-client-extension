@@ -53,7 +53,7 @@ export default function initGps(client: Client) {
                             if (lines.length === 1) {
                                 if (client.Map.currentRoom?.id !== room.id) {
                                     client.Map.setMapRoomById(room.id);
-                                    client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                    client.sendEvent('notify', {text: `Map Sync: gps ${gpsId}`});
                                 }
                             } else {
                                 current = 0;
@@ -61,26 +61,26 @@ export default function initGps(client: Client) {
                             return undefined;
                         },
                         "gps",
-                        { stayOpenLines: delta }
+                        {stayOpenLines: delta}
                     );
                     if (lines.length > 1) {
-                        parent.registerChild(/.*/, (triggerLine) => {
+                        parent.registerChild(/.*/, (line) => {
                             if (!checkContext()) {
-                                return triggerLine;
+                                return line;
                             }
-                            const line = triggerLine.text;
-                            if (line === lines[current]) {
+                            const rawLine = line.text;
+                            if (rawLine === lines[current]) {
                                 current++;
                                 if (current === lines.length) {
                                     if (client.Map.currentRoom?.id !== room.id) {
                                         client.Map.setMapRoomById(room.id);
-                                        client.sendEvent('notify', { text: `Map Sync: gps ${gpsId}` });
+                                        client.sendEvent('notify', {text: `Map Sync: gps ${gpsId}`});
                                     }
                                     current = 1;
                                 }
-                                return triggerLine;
+                                return line;
                             }
-                            return triggerLine;
+                            return line;
                         });
                     }
                 });

@@ -1,7 +1,7 @@
 import xtermArkadia from "@client/xtermArkadia";
 import xtermProper from "@client/xtermProper";
 import {getItemSync} from "./storage";
-import {AnsiAwareBuffer, FormatStateSnapshot, HexColor} from "@client/ansi/FormatState.ts";
+import {AnsiAwareBuffer, FormatStateSnapshot, HexColor, RgbColor} from "@client/ansi/FormatState.ts";
 
 export const colorCodes = {
     xtermArkadia,
@@ -72,9 +72,15 @@ export function colorTokenInLine(
 
 //TODO usage should be replaced by something, yet to be decided what
 export function findClosestColor(hex: string | number[]): FormatStateSnapshot {
-    return {
-        foreground: {space: "hex", color: hex} as HexColor
+    if (typeof hex === "string") {
+        return {
+            foreground: {space: "hex", color: hex} as HexColor
+        }
     }
+    return {
+        foreground: {space: "rgb", r: hex[0], g: hex[1] , b: hex[2]} as RgbColor
+    }
+
 }
 
 export function mudletColorLine(line: string) {

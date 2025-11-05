@@ -9,12 +9,12 @@ export default function initCarriage(client: Client) {
         }
         return line;
     };
-    const disable = (triggerLine) => {
+    const disable = (line) => {
         client.carriageMode = false;
         if (client.moveModeButton) {
             client.moveModeButton.disabled = false;
         }
-        return triggerLine;
+        return line;
     };
     client.Triggers.registerTrigger(/^Siadasz w (.*) bryczce\.$/, enable, "carriageMode");
     client.Triggers.registerTrigger(/^Zsiadasz z (.*) bryczki\.$/, disable, "carriageMode");

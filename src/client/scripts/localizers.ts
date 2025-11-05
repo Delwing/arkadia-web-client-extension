@@ -100,8 +100,8 @@ export default function initLocalizers(client: Client) {
         parent.registerChild(entry.pattern, handler, 'localizers');
     });
 
-    client.Triggers.registerTrigger("Otworzyly sie drzwi klatki.", (triggerLine) => {
+    client.Triggers.registerTrigger("Otworzyly sie drzwi klatki.", (line) => {
         client.Map.refreshPosition = true
-        return triggerLine
+        return line
     })
 }

@@ -1,15 +1,16 @@
-import Triggers, {stripAnsiCodes, Trigger} from "../Triggers";
+import Triggers, {Trigger} from "../Triggers";
 import gagsData from "./gags_lua.json";
 import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
-import {AnsiAwareBuffer} from "../ansi/FormatState";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 import * as luainjs from 'lua-in-js'
+import {Table} from 'lua-in-js'
 import {gmcp} from "../gmcp";
 
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
-import { getItemSync } from "@modules/core/storage";
+import {getItemSync} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
     LUA_GAG_LINE_TYPES,
@@ -17,7 +18,6 @@ import {
     LuaGagDeleteMode,
     normalizeLuaGagsDeleteLines,
 } from "../luaGagsSettings";
-import {Table} from "lua-in-js";
 
 const ERROR_COLOR = findClosestColor('#ff0000');
 
@@ -37,9 +37,9 @@ const gagColors = {
     "npc": "#fffaf0",
     "npc_spece": "#fffaf0"
 };
-const gagColorCodes: Record<string, number> = Object.fromEntries(
+const gagColorCodes: Record<string, FormatStateSnapshot> = Object.fromEntries(
     Object.entries(gagColors).map(([k, v]) => [k, findClosestColor(v)])
-) as Record<string, number>;
+)
 const combatTypes = ["combat.avatar", "combat.team", "combat.others"]
 
 class EmptyMatches extends Array<string> implements RegExpMatchArray {
@@ -152,11 +152,11 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback: LuaGagCallback = (line, matches, type) => {
+        const callback: LuaGagCallback = (line, matches, _type) => {
             if (node.script != undefined) {
                 const rawLine = line.text;
 
-                global.line = rawLine;
+                global.line = line;
                 global.matches = matches;
 
                 // Set Lua variables with proper escaping
@@ -177,10 +177,10 @@ export default function registerLuaGagTriggers(client: Client) {
                         () => navigator.clipboard.writeText(line.text),
                         'Kopiuj linie'
                     );
-                    global.line = global.line + "\n" + colorString(clickable, ERROR_COLOR).text;
+                    global.line.append("\n").appendBuffer(colorString(clickable, ERROR_COLOR));
                 }
 
-                return new AnsiAwareBuffer(global.line);
+                return global.line;
             }
             return line;
         }
@@ -210,7 +210,7 @@ export default function registerLuaGagTriggers(client: Client) {
     }
 
     function createLuaEnv() {
-        const global: { line?: string, matches?: RegExpMatchArray, color?: string | number } = {
+        const global: { line?: AnsiAwareBuffer, matches?: RegExpMatchArray, color?: FormatStateSnapshot } = {
             line: null,
             matches: null,
             color: null
@@ -226,13 +226,13 @@ export default function registerLuaGagTriggers(client: Client) {
             gag_prefix: (_, prefix: string, type: string) => {
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
-                    global.line = "";
-                    return;
+                    global.line = null;
+                    return null;
                 }
                 if (mode !== 2) {
-                    return;
+                    return global.line
                 }
-                global.line = colorString(`[${prefix}] `, gagColorCodes[type]) + global.line
+                global.line.prefix(`[${prefix}] `, gagColorCodes[type])
             },
             gag_own_spec: (_, power: string, maxPower: string) => {
                 let prefix = `${power}`
@@ -257,7 +257,7 @@ export default function registerLuaGagTriggers(client: Client) {
             delete_line: (_, type: string) => {
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
-                    global.line = "";
+                    global.line = null;
                     return true;
                 }
                 return false
@@ -268,7 +268,7 @@ export default function registerLuaGagTriggers(client: Client) {
             who_hits: () => {
                 let who;
                 if (gags.is_type(null,"combat.avatar")) {
-                    who = global.line.match(/ciebie|cie|ci/) ? "innych_ciosy_we_mnie" : "moje_ciosy"
+                    who = global.line.text.match(/ciebie|cie|ci/) ? "innych_ciosy_we_mnie" : "moje_ciosy"
                 } else {
                     who = "innych_ciosy"
                 }
@@ -361,16 +361,16 @@ export default function registerLuaGagTriggers(client: Client) {
                 console.log(line)
             },
             echo: (line: string) => {
-                global.line = global.line + line
+                global.line.append(line)
             },
             creplaceLine: (line: string) => {
                 global.line = mudletColorLine(line)
             },
             cecho: (line: string) => {
                 if (global.color)  {
-                    global.line += `<${global.color}>`
+                    global.line.prefix(`<${global.color}>`)
                 }
-                global.line += mudletColorLine(line)
+                global.line.append(line)
             },
             resetFormat: () => {
                 global.color = null
@@ -379,26 +379,28 @@ export default function registerLuaGagTriggers(client: Client) {
                 selection = [0, global.line.length]
             },
             selectString: (string: string, index: number) => {
-                const startIndex = global.line.indexOf(string, index - 1)
+                const startIndex = global.line.text.indexOf(string, index - 1)
                 selection = [startIndex, startIndex + string.length]
             },
             raiseEvent(event: string, ...args: any[]) {
                 client.sendEvent(event, args)
             },
             setFgColor(rgb: number[]) {
-                global.color = rgb.join(",")
-                mudlet.fg(findClosestColor(rgb))
+                const hexColor = '#' + rgb
+                        .map(v => v.toString(16).padStart(2, '0'))
+                        .join('');
+                global.color = findClosestColor(hexColor)
+                mudlet.fg(global.color)
             },
             prefix(prefix: string) {
-                if (global.color) {
-                    prefix = `<${global.color}>` + prefix
-                }
-                global.line = mudletColorLine(prefix + stripAnsiCodes(global.line))
+                global.line = global.line.prefix(prefix, global.color)
             },
-            fg(stringColor: string | number) {
-                global.color = stringColor
+            fg(stringColor: string | FormatStateSnapshot) {
+                if (typeof stringColor === "string") {
+                    global.color = findClosestColor(mudletColors[stringColor])
+                }
                 if (selection[0] > -1 && selection[0] !== selection[1]) {
-                    global.line = global.line.substring(0, selection[0]) + colorString(stripAnsiCodes(global.line.substring(selection[0], selection[1])), getColorCode(stringColor)) + global.line.substring(selection[1])
+                    global.line.color([selection[0], selection[1]], global.color)
                 }
             },
             tempTimer(time: number, callback: LuaType) {

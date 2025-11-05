@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import {colorString, findClosestColor} from "@modules/core/Colors";
 
 export default function initSelfEvaluation(
     client: Client,
@@ -75,7 +75,7 @@ export default function initSelfEvaluation(
             client.Triggers.removeByTag(tag);
             if (summary.length > 0) {
                 const max = Math.max(...summary.map(s => s.name.length));
-                const lines = summary.map(({ name, state }) => {
+                const lines = summary.map(({name, state}) => {
                     const dots = ".".repeat(Math.max(1, max - name.length + 3));
                     return `${name} ${dots} ${colorState(state)}`;
                 });
@@ -95,31 +95,28 @@ export default function initSelfEvaluation(
 
         const parent = client.Triggers.registerTrigger(
             /^Oceniasz [^,]+? ([^.]+)\.$/,
-            (triggerLine) => {
+            (_line, matches) => {
                 if (fallback) {
                     clearTimeout(fallback);
                     fallback = undefined;
                 }
-                const m = triggerLine.matches.matches;
-                if (!m) return triggerLine;
-                current = m[1].trim();
+                current = matches[1].trim();
                 startTimer();
                 return null;
             },
             tag,
-            { stayOpenLines: 50 }
+            {stayOpenLines: 50}
         );
 
         parent.registerChild(
             /^Wyglada na to, ze (?:sa |jest )?(.+)\.$/,
-            (triggerLine) => {
+            (_line, matches) => {
                 if (current) {
-                    const m = triggerLine.matches.matches;
-                    if (m) {
-                        const conditionPhrase = m[1];
+                    if (matches) {
+                        const conditionPhrase = matches[1];
                         const state = matchCondition(conditionPhrase);
                         if (state) {
-                            summary.push({ name: current, state });
+                            summary.push({name: current, state});
                             current = "";
                         }
                     }
@@ -151,7 +148,7 @@ export default function initSelfEvaluation(
     }
 
     if (aliases) {
-        aliases.push({ pattern: /^\/ocen$/, callback: run });
-        aliases.push({ pattern: /^\/sprzet$/, callback: run });
+        aliases.push({pattern: /^\/ocen$/, callback: run});
+        aliases.push({pattern: /^\/sprzet$/, callback: run});
     }
 }
