@@ -115,7 +115,7 @@ export class Trigger {
                 if (result === null) {
                     return null;
                 }
-                if (this.manager.isTriggerEngineActive() && result instanceof TriggerLine) {
+                if (result instanceof TriggerLine) {
                     line = result;
                 }
             }
@@ -139,18 +139,9 @@ export default class Triggers {
     private static readonly ZERO_LENGTH_BUCKET_KEY = Symbol("zero-length-token-trigger");
 
     private tokenTriggers: Map<string | symbol, { words: string[]; trigger: Trigger }[]> = new Map();
-    private triggerEngineActive = true;
 
     constructor(client: Client) {
         this.client = client;
-    }
-
-    isTriggerEngineActive(): boolean {
-        return this.triggerEngineActive;
-    }
-
-    setTriggerEngineActive(active: boolean) {
-        this.triggerEngineActive = active;
     }
 
     private removeByTagRecursive(tag: string, collection: Map<string, Trigger>) {
@@ -248,7 +239,7 @@ export default class Triggers {
         let triggerLine =
             rawLine instanceof TriggerLine
                 ? rawLine
-                : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
+                : new TriggerLine(rawLine, { type });
         const plain = triggerLine.text.replace(/\s$/g, "");
         let tokens: string[] | undefined;
         const getTokens = () => {
@@ -326,7 +317,7 @@ export default class Triggers {
         let triggerLine =
             rawLine instanceof TriggerLine
                 ? rawLine
-                : new TriggerLine(rawLine, { type }, this.triggerEngineActive);
+                : new TriggerLine(rawLine, { type });
         for (const trigger of this.multilineTriggers.values()) {
             const result = trigger.execute(triggerLine, type);
             if (result === null) {

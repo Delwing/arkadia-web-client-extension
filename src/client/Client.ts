@@ -466,11 +466,7 @@ export default class Client {
     onLine(line: string, type: string) {
         this.inLineProcess = true
         this.sendEvent(LINE_START_EVENT)
-        const triggerEngineActive =
-            typeof this.Triggers.isTriggerEngineActive === 'function'
-                ? this.Triggers.isTriggerEngineActive()
-                : true
-        const multilineInput = new TriggerLine(line, { type }, triggerEngineActive)
+        const multilineInput = new TriggerLine(line, { type })
         const multilineResult = this.Triggers.parseMultiline(multilineInput, type)
         if (multilineResult === null) {
             this.inLineProcess = false
@@ -484,7 +480,7 @@ export default class Client {
         const processedParts: string[] = []
         for (let i = 0; i <= lastPrintableIndex; i++) {
             const partial = split[i]
-            const lineInput = new TriggerLine(partial, { type }, triggerEngineActive)
+            const lineInput = new TriggerLine(partial, { type })
             const processed = this.Triggers.parseLine(lineInput, type)
             if (processed !== null) {
                 processedParts.push(processed)

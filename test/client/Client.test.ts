@@ -47,7 +47,6 @@ jest.mock('@client/Triggers', () => {
         if (typeof l === 'string') return l;
         return l instanceof TriggerLine ? l.toAnsiString() : l;
       }),
-      isTriggerEngineActive: jest.fn(() => true),
     })),
   };
 });
