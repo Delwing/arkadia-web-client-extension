@@ -1,13 +1,8 @@
 import xtermArkadia from "@client/xtermArkadia";
 import xtermProper from "@client/xtermProper";
-import mudletColors from "@client/colors.json";
 import { getItemSync } from "./storage";
 import TriggerLine from "@client/triggers/TriggerLine";
-
-function hexToRgb(hex: string): [number, number, number] {
-    const value = parseInt(hex.replace(/^#/, ''), 16);
-    return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
-}
+import {AnsiAwareBuffer, FormatStateSnapshot, HexColor} from "@client/ansi/FormatState.ts";
 
 export const colorCodes = {
     xtermArkadia,
@@ -43,7 +38,7 @@ export function color(colorCode:number) {
 }
 
 export function colorString(string: string, colorCode: number) {
-    return color(colorCode) + string + RESET;
+    return new AnsiAwareBuffer(string).colorWords(string, colorCode);
 }
 
 export function colorStringInLine(
@@ -62,12 +57,11 @@ export function colorStringInLine(
 }
 
 export function colorTokenInLine(
-    rawLine: TriggerLine | string,
+    triggerLine: TriggerLine,
     string: string,
     colorCode: number,
     startIndex = 0,
 ): TriggerLine {
-    const triggerLine = rawLine instanceof TriggerLine ? rawLine : new TriggerLine(rawLine);
     const haystack = triggerLine.text.toLowerCase();
     const needle = string.toLowerCase();
     const matchIndex = haystack.indexOf(needle, startIndex);
@@ -78,30 +72,16 @@ export function colorTokenInLine(
     return triggerLine.color([matchIndex, endIndex], colorCode);
 }
 
-export function findClosestColor(hex: string | number[]): number {
-    const targetRgb = Array.isArray(hex) ? hex : hexToRgb(hex)
-    let distance = 99999999999999
-    let currentPick: number = 0;
-    colorCodes.xterm.forEach((colorsKey, index) => {
-        const rgb = hexToRgb(colorsKey)
-        const compDistance = Math.pow(targetRgb[0] - rgb[0], 2) + Math.pow(targetRgb[1] - rgb[1], 2) + Math.pow(targetRgb[2] - rgb[2], 2)
-        if (compDistance < distance) {
-            currentPick = index
-            distance = compDistance
-        }
-    })
-    return currentPick + 1
+//TODO usage should be replaced by something, yet to be decided what
+export function findClosestColor(hex: string | number[]): FormatStateSnapshot {
+    return {
+        foreground: { space: "hex", color: hex } as HexColor
+    }
 }
 
 export function mudletColorLine(line: string) {
-    return line.replace(/<(.+?)>/g, (substring => {
-        const stringColor = substring.substring(1, substring.length - 1)
-        if (stringColor === "reset") {
-            return RESET
-        } else {
-            return color(findClosestColor(mudletColors[stringColor] ?? stringColor.split(",")))
-        }
-    }));
+    return new AnsiAwareBuffer(line);
+    //TODO build buffer from lines like <tomato>Tomato colored<reset>no color<sky_blue>blue colored
 }
 
 export const Colors = {

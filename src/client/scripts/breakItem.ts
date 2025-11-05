@@ -1,6 +1,6 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
-import TriggerLine from "../triggers/TriggerLine";
+import { findClosestColor } from "@modules/core/Colors";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export default function initBreakItem(client: Client) {
     const COLOR = findClosestColor("#ff6347");
@@ -18,21 +18,22 @@ export default function initBreakItem(client: Client) {
         { pattern: /^(?:[A-Z][a-z-]+ ?){1,3} ([A-Z][a-z]+ |(?:\w+ ){3,4})rozpada(?:ja)? sie!/, command: "odloz zniszczona zbroje" },
     ];
 
-    const format = (line: string) => `\n\n${client.prefix(line, colorString("[  SPRZET  ] ", COLOR))}\n\n`;
+    const format = (line: AnsiAwareBuffer) => line
+        .prefix(`\n\n[  SPRZET  ]`, COLOR)
+        .suffix("\n\n");
 
     entries.forEach(({ pattern, command }) => {
-        client.Triggers.registerTrigger(pattern, (triggerLine) => {
-            const line = triggerLine.text;
+        client.Triggers.registerTrigger(pattern, (line) => {
             client.sendEvent("sound:play", { key: "beep" });
-            client.sendEvent('breakItem', { text: line, command });
+            client.sendEvent('breakItem', { text: line.text, command });
             const label = command ? ` >> ${command}` : " >> Sprzet zniszczony";
             client.FunctionalBind.set(label, () => {
                 if (command) {
                     client.sendCommand(command);
                 }
             }, true);
-            const formatted = format(line);
-            return new TriggerLine(formatted);
+            console.log(line.text);
+            return format(line);
         }, tag);
     });
 }

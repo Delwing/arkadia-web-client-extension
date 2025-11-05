@@ -1,4 +1,5 @@
 import {stripAnsiCodes} from "../stripAnsiCodes";
+import {colorCodes} from "@modules/core/Colors.ts";
 
 const ESC = "\u001b";
 
@@ -19,7 +20,12 @@ export interface RgbColor {
     b: number;
 }
 
-export type FormatColor = IndexedColor | RgbColor;
+export interface HexColor {
+    space: "hex";
+    color: string;
+}
+
+export type FormatColor = IndexedColor | RgbColor | HexColor
 
 export interface FormatStateSnapshot {
     foreground?: FormatColor;
@@ -32,6 +38,8 @@ export interface FormatStateSnapshot {
     hyperlink?: FormatHyperlink;
 }
 
+export type TextRange = [start: number, end: number];
+
 interface BufferSegment {
     text: string;
     state?: FormatStateSnapshot;
@@ -41,6 +49,9 @@ function cloneColor(color?: FormatColor): FormatColor | undefined {
     if (!color) return undefined;
     if (color.space === "indexed") {
         return {space: "indexed", index: color.index};
+    }
+    if (color.space === "hex") {
+        return {space: "hex", color: color.color};
     }
     return {space: "rgb", r: color.r, g: color.g, b: color.b};
 }
@@ -111,6 +122,9 @@ function statesEqual(a?: FormatStateSnapshot, b?: FormatStateSnapshot): boolean 
 }
 
 class FormatState {
+
+    static DEFAULT = {}
+
     foreground?: FormatColor;
     background?: FormatColor;
     bold?: boolean;
@@ -212,7 +226,7 @@ class FormatState {
                     const isForeground = code === 38;
                     const mode = params[i + 1];
                     if (mode === 5 && typeof params[i + 2] === "number") {
-                        const color: IndexedColor = {space: "indexed", index: params[i + 2]};
+                        const color: HexColor = {space: "hex", color: colorCodes.xterm[params[i + 2] - 1]};
                         if (isForeground) {
                             this.foreground = color;
                         } else {
@@ -242,13 +256,13 @@ class FormatState {
                 }
                 default:
                     if (code >= 30 && code <= 37) {
-                        this.foreground = {space: "indexed", index: code - 30};
+                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 30]};
                     } else if (code >= 90 && code <= 97) {
-                        this.foreground = {space: "indexed", index: code - 82};
+                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 82]};
                     } else if (code >= 40 && code <= 47) {
-                        this.background = {space: "indexed", index: code - 40};
+                        this.background = {space: "hex", color: colorCodes.ansi.bright[code - 40]};
                     } else if (code >= 100 && code <= 107) {
-                        this.background = {space: "indexed", index: code - 92};
+                        this.background = {space: "hex", color: colorCodes.ansi.bright[code - 92]};
                     }
                     break;
             }
@@ -334,34 +348,6 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
     return segments;
 }
 
-function stateToAnsi(state?: FormatStateSnapshot): string {
-    if (!state) return "";
-    const codes: number[] = [];
-    if (state.bold) codes.push(1);
-    if (state.italic) codes.push(3);
-    if (state.underline) codes.push(4);
-    if (state.inverse) codes.push(7);
-    if (state.strikethrough) codes.push(9);
-    if (state.foreground) {
-        if (state.foreground.space === "indexed") {
-            const index = state.foreground.index;
-            codes.push(22, 38, 5, index);
-        } else {
-            codes.push(22, 38, 2, state.foreground.r, state.foreground.g, state.foreground.b);
-        }
-    }
-    if (state.background) {
-        if (state.background.space === "indexed") {
-            const index = state.background.index;
-            codes.push(48, 5, index);
-        } else {
-            codes.push(48, 2, state.background.r, state.background.g, state.background.b);
-        }
-    }
-    if (codes.length === 0) return "";
-    return `${ESC}[${codes.join(";")}m`;
-}
-
 /**
  * Buffer of text aware of ANSI formatting codes and hyperlink metadata.
  */
@@ -396,24 +382,37 @@ export class AnsiAwareBuffer {
         return this.segments.reduce((sum, segment) => sum + segment.text.length, 0);
     }
 
-    clear(): void {
+    clear(): this {
         this.segments = [];
+        return this;
     }
 
-    replace(range: [number, number], text: string, state?: FormatStateSnapshot): void {
+    replace(range: [number, number], text: string, state?: FormatStateSnapshot): this {
         const [start, end] = range;
         this.assertRange(start, end);
         const fallback = state ? undefined : this.inferState(start);
         this.remove(range);
-        if (text.length === 0) return;
+        if (text.length === 0) return this;
         this.insertInternal(start, text, state, fallback);
+        return this;
     }
 
-    insert(index: number, text: string, state?: FormatStateSnapshot): void {
-        if (text.length === 0) return;
+    insert(index: number, text: string, state?: FormatStateSnapshot): this {
+        if (text.length === 0) return this;
         this.assertIndex(index, true);
         const inferredState = state ? undefined : this.inferState(index);
         this.insertInternal(index, text, state, inferredState);
+        return this;
+    }
+
+    prefix(text: string, state?: FormatStateSnapshot): this {
+        this.insert(0, text, state ?? {});
+        return this;
+    }
+
+    suffix(text: string, state?: FormatStateSnapshot): this {
+        this.insert(this.length, text, state ?? {});
+        return this;
     }
 
     private insertInternal(
@@ -451,18 +450,20 @@ export class AnsiAwareBuffer {
         this.normalizeSegments();
     }
 
-    append(text: string, state?: FormatStateSnapshot): void {
+    append(text: string, state?: FormatStateSnapshot): this {
         this.insert(this.length, text, state);
+        return this;
     }
 
-    prepend(text: string, state?: FormatStateSnapshot): void {
+    prepend(text: string, state?: FormatStateSnapshot): this {
         this.insert(0, text, state);
+        return this;
     }
 
-    remove(range: [number, number]): void {
+    remove(range: [number, number]): this {
         const [start, end] = range;
         this.assertRange(start, end);
-        if (start === end) return;
+        if (start === end) return this;
         const startPos = this.resolveIndex(start, true);
         if (startPos.segmentIndex < this.segments.length) {
             this.splitSegment(startPos.segmentIndex, startPos.offset);
@@ -475,6 +476,7 @@ export class AnsiAwareBuffer {
         const endIndex = this.resolveBoundaryIndex(end);
         this.segments.splice(startIndex, endIndex - startIndex);
         this.normalizeSegments();
+        return this;
     }
 
     /** @internal */
@@ -483,24 +485,6 @@ export class AnsiAwareBuffer {
             text: segment.text,
             state: cloneState(segment.state),
         }));
-    }
-
-    /**
-     * Serialises the buffer back into ANSI encoded text.
-     */
-    toAnsiString(): string {
-        let serialized = "";
-        for (const segment of this.segments) {
-            const state = segment.state;
-            const ansiOpen = stateToAnsi(state);
-            const hyperlinkOpen = state?.hyperlink
-                ? `{clickOpen:${state.hyperlink.id}${state.hyperlink.title ? `:${state.hyperlink.title}` : ""}}`
-                : "";
-            const hyperlinkClose = state?.hyperlink ? "{clickClose}" : "";
-            const ansiClose = hasVisualFormatting(state) ? `${ESC}[0m` : "";
-            serialized += `${ansiOpen}${hyperlinkOpen}${segment.text}${hyperlinkClose}${ansiClose}`;
-        }
-        return serialized;
     }
 
     /**
@@ -518,6 +502,191 @@ export class AnsiAwareBuffer {
             }
         }
         return segments;
+    }
+
+    color(range: TextRange, color: number | FormatStateSnapshot): this {
+        const style = this.prepareStyle(color);
+        const [start, end] = range;
+        if (start >= end) return this;
+        const text = this.text.slice(start, end);
+        this.replace([start, end], text, style);
+        return this;
+    }
+
+    colorWords(
+        words: string | string[],
+        color: number | FormatStateSnapshot,
+        options: { caseInsensitive?: boolean } = {},
+    ): this {
+        const list = Array.isArray(words) ? words : [words];
+        if (list.length === 0) return this;
+        const caseInsensitive = options.caseInsensitive ?? false;
+        const ranges: TextRange[] = [];
+        const text = this.text;
+        const haystack = caseInsensitive ? text.toLowerCase() : text;
+        for (const word of list) {
+            if (!word) continue;
+            const needle = caseInsensitive ? word.toLowerCase() : word;
+            let searchStart = 0;
+            while (searchStart <= text.length - word.length) {
+                const index = haystack.indexOf(needle, searchStart);
+                if (index === -1) break;
+                ranges.push([index, index + word.length]);
+                searchStart = index + word.length;
+            }
+        }
+        if (ranges.length === 0) return this;
+        ranges.forEach(range => this.color(range, color));
+        return this
+    }
+
+    /**
+     * Splits the buffer by newline characters (\n) into an array of AnsiAwareBuffer instances.
+     * Each line preserves its formatting state from the original buffer.
+     */
+    splitLines(): AnsiAwareBuffer[] {
+        const lines: AnsiAwareBuffer[] = [];
+        let currentLineSegments: BufferSegment[] = [];
+
+        for (const segment of this.segments) {
+            const text = segment.text;
+            let lastIndex = 0;
+
+            for (let i = 0; i < text.length; i++) {
+                if (text[i] === "\n") {
+                    // Add text before the newline to current line
+                    if (i > lastIndex) {
+                        currentLineSegments.push({
+                            text: text.slice(lastIndex, i),
+                            state: cloneState(segment.state),
+                        });
+                    }
+
+                    // Create a new buffer for the current line
+                    lines.push(new AnsiAwareBuffer(currentLineSegments));
+                    currentLineSegments = [];
+                    lastIndex = i + 1;
+                }
+            }
+
+            // Add remaining text after last newline (or entire segment if no newlines)
+            if (lastIndex < text.length) {
+                currentLineSegments.push({
+                    text: text.slice(lastIndex),
+                    state: cloneState(segment.state),
+                });
+            }
+        }
+
+        // Add the last line if there are any segments
+        if (currentLineSegments.length > 0) {
+            lines.push(new AnsiAwareBuffer(currentLineSegments));
+        }
+
+        // If the buffer was empty, return an array with one empty buffer
+        if (lines.length === 0) {
+            lines.push(new AnsiAwareBuffer());
+        }
+
+        return lines;
+    }
+
+    /**
+     * Converts the buffer to HTML with styling based on format states.
+     */
+    toHtml(): string {
+        let html = "";
+
+        for (const segment of this.segments) {
+            const escapedText = this.escapeHtml(segment.text);
+
+            if (!segment.state || isDefaultState(segment.state)) {
+                html += escapedText;
+                continue;
+            }
+
+            const styles: string[] = [];
+            const state = segment.state;
+
+            // Handle inverse first (swaps foreground and background)
+            const fg = state.inverse ? state.background : state.foreground;
+            const bg = state.inverse ? state.foreground : state.background;
+
+            // Foreground color
+            if (fg) {
+                styles.push(`color: ${this.colorToHex(fg)}`);
+            }
+
+            // Background color
+            if (bg) {
+                styles.push(`background-color: ${this.colorToHex(bg)}`);
+            }
+
+            // Font styles
+            if (state.bold) {
+                styles.push("font-weight: bold");
+            }
+
+            if (state.italic) {
+                styles.push("font-style: italic");
+            }
+
+            // Text decorations
+            const decorations: string[] = [];
+            if (state.underline) {
+                decorations.push("underline");
+            }
+            if (state.strikethrough) {
+                decorations.push("line-through");
+            }
+            if (decorations.length > 0) {
+                styles.push(`text-decoration: ${decorations.join(" ")}`);
+            }
+
+            const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
+            html += `<span${styleAttr}>${escapedText}</span>`;
+        }
+
+        return html;
+    }
+
+    private escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    private colorToHex(color: FormatColor): string {
+        if (color.space === "hex") {
+            return color.color;
+        }
+        if (color.space === "rgb") {
+            const r = color.r.toString(16).padStart(2, "0");
+            const g = color.g.toString(16).padStart(2, "0");
+            const b = color.b.toString(16).padStart(2, "0");
+            return `#${r}${g}${b}`;
+        }
+        if (color.space === "indexed") {
+            return colorCodes.xterm[color.index - 1] || "#000000";
+        }
+        return "#000000";
+    }
+
+    private prepareStyle(styleOrIndex: number | FormatStateSnapshot): FormatStateSnapshot {
+        if (typeof styleOrIndex === "number") {
+            return {
+                foreground: {
+                    space: "indexed",
+                    index: styleOrIndex,
+                },
+            };
+        }
+        return {
+            ...styleOrIndex,
+        };
     }
 
     private appendSegmentAtEnd(segment: BufferSegment): void {
@@ -624,6 +793,11 @@ export class AnsiAwareBuffer {
         if (index < 0 || index > this.length || (!allowEnd && index >= this.length)) {
             throw new RangeError(`Index ${index} is out of bounds for buffer of length ${this.length}`);
         }
+    }
+
+    //TODO temporary until replaced in triggers
+    toAniString() {
+        return this.text
     }
 }
 

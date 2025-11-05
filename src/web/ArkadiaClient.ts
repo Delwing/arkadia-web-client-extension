@@ -1,12 +1,12 @@
 import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent, getRecording} from './recordingStorage';
 import Recorder from './Recorder';
-import {ClientAdapter} from "@client/Client";
+import Client, {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import type { ClientEvents } from "@shared/events";
+import type {ClientEvents} from "@shared/events";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
-import { getClientInstance } from "@shared/runtime";
+import {getClientInstance} from "@shared/runtime";
 import {
     createGmcpStream,
     createTelnetOptionParser,
@@ -41,15 +41,15 @@ class ArkadiaClient implements ClientAdapter {
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.gmcpStream = createGmcpStream({
-            onEnvelope: ({ path, value }) => {
+            onEnvelope: ({path, value}) => {
                 if (path === "char.info") {
                     this.receivedFirstGmcp = true;
                 }
                 this.emit(`gmcp.${path}`, value);
-                this.emit('gmcp', { path, value });
+                this.emit('gmcp', {path, value});
             },
             onMessage: (text, type) => {
-                this.messageBuffer.push({ text, type });
+                this.messageBuffer.push({text, type});
             },
             onFirstCharInfo: () => {
                 if (!this.receivedFirstGmcp) {
@@ -198,7 +198,7 @@ class ArkadiaClient implements ClientAdapter {
         this.emit('message', text, type, ts)
     }
 
-   //Should be done on all ouput
+    //Should be done on all ouput
     parseAnsiPatterns(text: string) {
         return parseAnsiPatterns(text)
     }
@@ -248,12 +248,14 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private sendLine(text: string, type: string) {
-        const client = getClientInstance();
+        const client = getClientInstance<Client>();
         if (client) {
-            text = client.onLine(text, type);
+            client.onLine(text, type).forEach(part => {
+                eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part.text), {once: true})
+                this.output(part.toHtml(), type);
+            })
+
         }
-        eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        this.output(parseAnsiPatterns(text), type);
     }
 
     // -- RECORDER -- //

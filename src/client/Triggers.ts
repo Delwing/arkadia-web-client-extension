@@ -1,13 +1,18 @@
 import Client from "./Client";
-import TriggerLine from "./triggers/TriggerLine";
-export { stripAnsiCodes } from "./stripAnsiCodes";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+
+export {stripAnsiCodes} from "./stripAnsiCodes";
 
 type TriggerCallback = (
-    triggerLine: TriggerLine,
-) => TriggerLine | null;
+    line: AnsiAwareBuffer,
+    matches: RegExpMatchArray,
+    type: string, //TODO I guess we can try to list values
+) => AnsiAwareBuffer | null;
 
 type TriggerMatchFunction = (
-    triggerLine: TriggerLine,
+    line: AnsiAwareBuffer,
+    matches: RegExpMatchArray,
+    type: string
 ) => RegExpMatchArray | undefined;
 
 type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
@@ -21,8 +26,8 @@ export interface TriggerOptions {
 export function isType(type: string): TriggerMatchFunction {
     const matches = [] as unknown as RegExpMatchArray;
     matches.index = 0
-    return (triggerLine) => {
-        return triggerLine.matches.type === type ? matches : undefined;
+    return (_line, _matches, lineType) => {
+        return lineType === type ? matches : undefined;
     };
 }
 
@@ -38,7 +43,8 @@ export class Trigger {
         public tag?: string,
         public parent?: Trigger,
         private options: TriggerOptions = {}
-    ) {}
+    ) {
+    }
 
     registerChild(
         pattern: TriggerPattern,
@@ -59,9 +65,9 @@ export class Trigger {
     ) {
         const child = this.registerChild(
             pattern,
-            (triggerLine) => {
+            (triggerLine, matches, type) => {
                 this.manager.removeTrigger(child);
-                return callback(triggerLine);
+                return callback(triggerLine, matches, type);
             },
             tag,
             options
@@ -69,7 +75,7 @@ export class Trigger {
         return child;
     }
 
-    execute(line: TriggerLine, type: string): TriggerLine | null {
+    execute(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
         const plainLine = line.text.replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
@@ -90,7 +96,7 @@ export class Trigger {
                     matches.input = plainLine;
                 }
             } else if (typeof pattern === "function") {
-                matches = pattern(line);
+                matches = pattern(line, null, type);
             }
             if (matches) {
                 break;
@@ -105,17 +111,13 @@ export class Trigger {
         } else if (this.openInstances.length > 0) {
             matched = true;
         }
-        if (!matches) {
-            line.clearMatches();
-        }
         if (matched) {
             if (matches && this.callback) {
-                line.setMatches({ matches, type, triggerId: this.id });
-                const result = this.callback(line);
+                const result = this.callback(line, matches, type);
                 if (result === null) {
                     return null;
                 }
-                if (result instanceof TriggerLine) {
+                if (result instanceof AnsiAwareBuffer) {
                     line = result;
                 }
             }
@@ -169,9 +171,9 @@ export default class Triggers {
     registerOneTimeTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerTrigger(
             pattern,
-            (triggerLine) => {
+            (triggerLine, matches, type) => {
                 this.removeTrigger(trigger);
-                return callback(triggerLine);
+                return callback(triggerLine, matches, type);
             },
             tag,
             options
@@ -187,7 +189,7 @@ export default class Triggers {
         const trigger = new Trigger(this, token, callback, tag, undefined, options);
         const bucketKey = words[0] ?? Triggers.ZERO_LENGTH_BUCKET_KEY;
         const bucket = this.tokenTriggers.get(bucketKey) ?? [];
-        bucket.push({ words, trigger });
+        bucket.push({words, trigger});
         this.tokenTriggers.set(bucketKey, bucket);
         return trigger;
     }
@@ -195,9 +197,9 @@ export default class Triggers {
     registerOneTimeMultilineTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerMultilineTrigger(
             pattern,
-            (triggerLine) => {
+            (line, matches, type) => {
                 this.removeTrigger(trigger);
-                return callback(triggerLine);
+                return callback(line, matches, type);
             },
             tag,
             options
@@ -235,12 +237,8 @@ export default class Triggers {
         }
     }
 
-    parseLine(rawLine: string | TriggerLine, type: string): string | null {
-        let triggerLine =
-            rawLine instanceof TriggerLine
-                ? rawLine
-                : new TriggerLine(rawLine, { type });
-        const plain = triggerLine.text.replace(/\s$/g, "");
+    parseLine(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
+        const plain = line.text.replace(/\s$/g, "");
         let tokens: string[] | undefined;
         const getTokens = () => {
             if (!tokens) {
@@ -253,25 +251,25 @@ export default class Triggers {
         };
 
         for (const trigger of this.triggers.values()) {
-            const result = trigger.execute(triggerLine, type);
+            const result = trigger.execute(line, type);
             if (result === null) {
-                return null;
+                return new AnsiAwareBuffer(); //This should actually be returned by triggers that deleteLine
             }
-            triggerLine = result;
+            line = result;
         }
 
         if (this.tokenTriggers.size > 0) {
             const seen = new Set<string>();
             const zeroBucket = this.tokenTriggers.get(Triggers.ZERO_LENGTH_BUCKET_KEY);
             if (zeroBucket) {
-                for (const { trigger } of zeroBucket) {
+                for (const {trigger} of zeroBucket) {
                     if (!seen.has(trigger.id)) {
                         seen.add(trigger.id);
-                        const result = trigger.execute(triggerLine, type);
+                        const result = trigger.execute(line, type);
                         if (result === null) {
                             return null;
                         }
-                        triggerLine = result;
+                        line = result;
                     }
                 }
             }
@@ -284,7 +282,7 @@ export default class Triggers {
                     if (!bucket) {
                         continue;
                     }
-                    for (const { words, trigger } of bucket) {
+                    for (const {words, trigger} of bucket) {
                         if (seen.has(trigger.id) || words.length === 0 || words[0] !== token) {
                             continue;
                         }
@@ -300,32 +298,28 @@ export default class Triggers {
                         }
                         if (matches) {
                             seen.add(trigger.id);
-                            const result = trigger.execute(triggerLine, type);
+                            const result = trigger.execute(line, type);
                             if (result === null) {
                                 return null;
                             }
-                            triggerLine = result;
+                            line = result;
                         }
                     }
                 }
             }
         }
-        return triggerLine.toAnsiString();
+        return line
     }
 
-    parseMultiline(rawLine: string | TriggerLine, type: string): string | null {
-        let triggerLine =
-            rawLine instanceof TriggerLine
-                ? rawLine
-                : new TriggerLine(rawLine, { type });
+    parseMultiline(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
         for (const trigger of this.multilineTriggers.values()) {
-            const result = trigger.execute(triggerLine, type);
+            const result = trigger.execute(line, type);
             if (result === null) {
                 return null;
             }
-            triggerLine = result;
+            line = result;
         }
-        return triggerLine.toAnsiString();
+        return line
     }
 
 }

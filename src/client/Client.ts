@@ -1,7 +1,7 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
 import Pausers from "./Pausers";
-import {color, Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
+import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
 import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/functionalBind";
 import OutputHandler from "./OutputHandler";
 import TeamManager from "./TeamManager";
@@ -17,33 +17,8 @@ import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import TriggerLine from "./triggers/TriggerLine";
-import {parseAnsiPatterns} from "@web/ansiParser";
 import SoundManager from "./SoundManager";
-
-const ANSI_SGR_REGEX = /\x1b\[[0-9;]*m/g;
-const ANSI_RESET = "\x1b[0m";
-
-const ESCAPE_CHAR_CODE = 0x1b;
-const TAB_CHAR_CODE = 0x09;
-const PRINTABLE_THRESHOLD = 0x20;
-
-function hasPrintableContent(segment: string): boolean {
-    for (let i = 0; i < segment.length; i++) {
-        const code = segment.charCodeAt(i);
-        if (code === ESCAPE_CHAR_CODE) {
-            const end = segment.indexOf('m', i);
-            if (end === -1) {
-                return false;
-            }
-            i = end;
-            continue;
-        }
-        if (code >= PRINTABLE_THRESHOLD || code === TAB_CHAR_CODE) {
-            return true;
-        }
-    }
-    return false;
-}
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -126,7 +101,7 @@ export default class Client {
     ];
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
-    buffer: { out: string, type?: string }[] = [];
+    buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
     suppressMapMoveEvent = false;
     suppressItemEvaluation = false;
     moveMode = 0;
@@ -311,7 +286,7 @@ export default class Client {
 
         this.on('output-sent', () => {
             if (this.buffer.length == 0) return
-            this.buffer.forEach(item => this.clientAdapter.output(item.out, item.type))
+            this.buffer.forEach(item => this.clientAdapter.output(item.out.toHtml(), item.type))
             this.sendEvent('buffer-sent', this.buffer.length)
             this.buffer = []
         });
@@ -463,67 +438,19 @@ export default class Client {
         return cmd
     }
 
-    onLine(line: string, type: string) {
+    onLine(line: string, type: string): AnsiAwareBuffer[] {
+        const buffer = new AnsiAwareBuffer(line)
         this.inLineProcess = true
         this.sendEvent(LINE_START_EVENT)
-        const multilineInput = new TriggerLine(line, { type })
+        const multilineInput = new TriggerLine(buffer, { type })
         const multilineResult = this.Triggers.parseMultiline(multilineInput, type)
         if (multilineResult === null) {
             this.inLineProcess = false
-            return ""
+            return []
         }
-        const split = multilineResult.split('\n')
-        let lastPrintableIndex = split.length - 1
-        while (lastPrintableIndex >= 0 && !hasPrintableContent(split[lastPrintableIndex])) {
-            lastPrintableIndex--
-        }
-        const processedParts: string[] = []
-        for (let i = 0; i <= lastPrintableIndex; i++) {
-            const partial = split[i]
-            const lineInput = new TriggerLine(partial, { type })
-            const processed = this.Triggers.parseLine(lineInput, type)
-            if (processed !== null) {
-                processedParts.push(processed)
-            }
-        }
-        const serializedParts = processedParts
-        const defaultColorCode = color(this.defaultColor) || ANSI_RESET
-        let result = serializedParts.join('\n')
-        if (!result.startsWith("\x1b")) {
-            result = defaultColorCode + result
-        }
-        const trimmedResult = result.trimEnd()
-        const firstResetIndex = result.indexOf(ANSI_RESET)
-        const trailingResetIndex =
-            firstResetIndex !== -1 &&
-            firstResetIndex === result.lastIndexOf(ANSI_RESET) &&
-            trimmedResult.endsWith(ANSI_RESET)
-                ? firstResetIndex
-                : -1
-        let rebuilt = ""
-        let lastIndex = 0
-        const stack: string[] = []
-        ANSI_SGR_REGEX.lastIndex = 0
-        let match: RegExpExecArray | null
-        while ((match = ANSI_SGR_REGEX.exec(result)) !== null) {
-            rebuilt += result.slice(lastIndex, match.index)
-            const seq = match[0]
-            if (seq === ANSI_RESET) {
-                if (match.index === trailingResetIndex) {
-                    rebuilt += ANSI_RESET
-                } else {
-                    stack.pop()
-                    const prev = stack[stack.length - 1]
-                    rebuilt += prev ?? defaultColorCode
-                }
-            } else {
-                stack.push(seq)
-                rebuilt += seq
-            }
-            lastIndex = ANSI_SGR_REGEX.lastIndex
-        }
-        rebuilt += result.slice(lastIndex)
-        result = rebuilt
+
+        const split = buffer.splitLines()
+        const result = split.map(part => this.Triggers.parseLine(new TriggerLine(part, { type }), type))
         this.inLineProcess = false
         return result
     }
@@ -546,18 +473,15 @@ export default class Client {
         }
     }
 
-    print(printable: string) {
-        if (typeof printable === 'object') {
-            printable = JSON.stringify(printable)
-        }
-        const text = parseAnsiPatterns(printable)
-        this.buffer.push({out: text})
+    print(printable: AnsiAwareBuffer | string) {
+        const out = typeof printable === 'string' ? new AnsiAwareBuffer(printable) : printable
+        this.buffer.push({out: out})
         if (!this.inLineProcess) {
             this.sendEvent('output-sent', 1)
         }
     }
 
-    println(printable: string) {
+    println(printable: AnsiAwareBuffer | string) {
         this.print('\n')
         this.print(printable)
         this.print('\n')
