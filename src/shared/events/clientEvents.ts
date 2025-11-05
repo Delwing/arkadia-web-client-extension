@@ -97,7 +97,6 @@ export interface KnownEvents {
     "close": CloseEvent;
     "error": unknown;
     "gmcp": { path: string; value: unknown };
-    "line-sent": void;
     "recording.start": string;
     "recording.stop": boolean | undefined;
     "recording.auto.start": string | null | undefined;

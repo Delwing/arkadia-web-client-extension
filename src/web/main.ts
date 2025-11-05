@@ -1029,10 +1029,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
-            // Password persistence removed
-            arkadiaClient.setStoredPassword(password || null);
-            arkadiaClient.setStoredCharacter(character || null);
-
             const sendCreds = () => {
                 if (character) client.send(character);
                 if (password) client.send(password, false, {preserveCase: true});

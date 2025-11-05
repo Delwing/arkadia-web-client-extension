@@ -198,21 +198,7 @@ class ArkadiaClient implements ClientAdapter {
         this.emit('message', text, type, ts)
     }
 
-    getRecorder(): Recorder {
-        return this.recorder;
-    }
-
-    setStoredPassword(_password: string | null): void {
-        void _password;
-        // Intentionally no-op; kept for API compatibility.
-    }
-
-    setStoredCharacter(_character: string | null): void {
-        void _character;
-        // Intentionally no-op; kept for API compatibility.
-    }
-
-    //Should be done on all ouput
+   //Should be done on all ouput
     parseAnsiPatterns(text: string) {
         return parseAnsiPatterns(text)
     }
@@ -267,8 +253,14 @@ class ArkadiaClient implements ClientAdapter {
             text = client.onLine(text, type);
         }
         eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, text), {once: true})
-        this.emit("message", parseAnsiPatterns(text), type);
-        this.emit('line-sent')
+        this.output(text, type);
+        this.output(parseAnsiPatterns(text), type);
+    }
+
+    // -- RECORDER -- //
+
+    getRecorder(): Recorder {
+        return this.recorder;
     }
 
     startRecording(name: string) {
