@@ -424,10 +424,14 @@ function formatCategory(
     status: KnowledgeCategoryStatus,
 ): AnsiAwareBuffer {
     const dativeCategory = getDativeCategoryName(category);
-    const clickable = client.OutputHandler.makeStringClickable(category, () => {
-        client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
+    const buffer = colorString(category, STATUS_COLORS[status]);
+    buffer.createLink([0, category.length], {
+        onClick: () => {
+            client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
+        },
+        title: `Kliknij aby zgłębić wiedzę o: ${dativeCategory}`
     });
-    return colorString(clickable, STATUS_COLORS[status]);
+    return buffer;
 }
 
 function getUniqueLibraryCategories(library: KnowledgeLibraryEntry): string[] {

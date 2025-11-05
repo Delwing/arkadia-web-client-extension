@@ -171,13 +171,12 @@ export default function registerLuaGagTriggers(client: Client) {
                     luaEnv.parse(node.script).exec();
                 } catch (e) {
                     const warn = `Zgłoś błąd w powyższej linii (kliknij w komunikat aby skopiować): ${e.message}`;
-                    const clickable = client.OutputHandler.makeClickable(
-                        warn,
-                        warn,
-                        () => navigator.clipboard.writeText(line.text),
-                        'Kopiuj linie'
-                    );
-                    global.line.append("\n").appendBuffer(colorString(clickable, ERROR_COLOR));
+                    const warnBuffer = colorString(warn, ERROR_COLOR);
+                    warnBuffer.createLink([0, warn.length], {
+                        onClick: () => navigator.clipboard.writeText(line.text),
+                        title: 'Kopiuj linię'
+                    });
+                    global.line.append("\n").appendBuffer(warnBuffer);
                 }
 
                 return global.line.applyMudletColors();

@@ -331,12 +331,21 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             const herbName = useFormattedNames ? formatHerbName(id, c) : id;
 
             if (normal) {
-                const name = client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev));
-                const base = `${String(c).padStart(5, ' ')} | ${name.padEnd(43, ' ')} | `;
+                const base = `${String(c).padStart(5, ' ')} | ${herbName.padEnd(43, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
 
                 const line = new AnsiAwareBuffer();
                 line.append(base, {});
+
+                // Create link for herb name
+                const nameStart = 8; // After count and " | "
+                line.createLink([nameStart, nameStart + herbName.length], {
+                    onContextMenu: (ev) => {
+                        ev.preventDefault();
+                        showHerbActions(id, ev);
+                    },
+                    title: `Prawy klik dla opcji: ${id}`
+                });
 
                 if (available >= stripAnsiCodes(uses).length) {
                     line.append(uses, {});
@@ -354,7 +363,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     return;
                 } else {
                     line.remove([0, line.length]);
-                    line.append(`${String(c).padStart(5, ' ')} | ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`, {});
+                    line.append(`${String(c).padStart(5, ' ')} | ${herbName}`, {});
+
+                    // Create link for herb name
+                    const nameStartElse = 8; // After count and " | "
+                    line.createLink([nameStartElse, nameStartElse + herbName.length], {
+                        onContextMenu: (ev) => {
+                            ev.preventDefault();
+                            showHerbActions(id, ev);
+                        },
+                        title: `Prawy klik dla opcji: ${id}`
+                    });
+
                     line.color([0, line.length], WHITE);
                     output.appendBuffer(line);
                     output.append('\n');
@@ -372,7 +392,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 output.append('\n');
             } else {
                 const line = new AnsiAwareBuffer();
-                line.append(`${String(c).padStart(3, ' ')} ${client.OutputHandler.makeStringRightClickable(herbName, (ev) => showHerbActions(id, ev))}`, {});
+                line.append(`${String(c).padStart(3, ' ')} ${herbName}`, {});
+
+                // Create link for herb name in narrow view
+                const nameStartNarrow = 4; // After count and space
+                line.createLink([nameStartNarrow, nameStartNarrow + herbName.length], {
+                    onContextMenu: (ev) => {
+                        ev.preventDefault();
+                        showHerbActions(id, ev);
+                    },
+                    title: `Prawy klik dla opcji: ${id}`
+                });
+
                 line.color([0, line.length], WHITE);
                 output.appendBuffer(line);
                 output.append('\n');
@@ -396,18 +427,38 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             output.append('\n');
             Object.entries(bags).forEach(([num, bagState]) => {
                 const contents = bagState?.herbs ?? {};
-                const parts = Object.entries(contents)
+                const herbEntries = Object.entries(contents)
                     .sort((a, b) => a[0].localeCompare(b[0]))
                     .map(([id, c]) => {
                         const name = useFormattedNames ? formatHerbName(id, c) : id;
-                        return `${c} ${client.OutputHandler.makeStringRightClickable(name, (ev) => showHerbActions(id, ev))}`;
-                    })
-                    .join(', ');
+                        return { id, count: c, name };
+                    });
+
+                const parts = herbEntries.map(e => `${e.count} ${e.name}`).join(', ');
                 const condition = bagState?.condition;
                 const conditionSuffix = typeof condition === 'number' ? ` [${condition}/5]` : '';
 
                 const bagLine = new AnsiAwareBuffer();
-                bagLine.append(`${num}. ${parts || '(pusty)'}${conditionSuffix}`, {});
+                const bagPrefix = `${num}. `;
+                bagLine.append(`${bagPrefix}${parts || '(pusty)'}${conditionSuffix}`, {});
+
+                // Create links for each herb name in the bag
+                if (herbEntries.length > 0) {
+                    let searchPos = bagPrefix.length;
+                    herbEntries.forEach((entry, idx) => {
+                        const herbText = `${entry.count} ${entry.name}`;
+                        const nameStart = searchPos + entry.count.toString().length + 1; // After count and space
+                        bagLine.createLink([nameStart, nameStart + entry.name.length], {
+                            onContextMenu: (ev) => {
+                                ev.preventDefault();
+                                showHerbActions(entry.id, ev);
+                            },
+                            title: `Prawy klik dla opcji: ${entry.id}`
+                        });
+                        searchPos += herbText.length + (idx < herbEntries.length - 1 ? 2 : 0); // +2 for ", "
+                    });
+                }
+
                 bagLine.color([0, bagLine.length], WHITE);
                 output.appendBuffer(bagLine);
                 output.append('\n');

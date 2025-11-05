@@ -214,15 +214,23 @@ function showInterface(client: Client, bags: string[]) {
         const line = new AnsiAwareBuffer(`Ustaw ${bag} jako:`);
         availableTypes.forEach((type) => {
             const text = `${type}`;
-            const clickable = client.OutputHandler.makeClickable(text, text, () => setContainer(type, bag, client));
+            const textBuffer = colorString(text, TYPE_COLOR);
+            textBuffer.createLink([0, text.length], {
+                onClick: () => setContainer(type, bag, client),
+                title: `Ustaw ${bag} jako ${type}`
+            });
             line.append(" [ ");
-            line.appendBuffer(colorString(clickable, TYPE_COLOR));
+            line.appendBuffer(textBuffer);
             line.append(" ]");
         });
         const allText = `wszystkie`;
-        const clickableAll = client.OutputHandler.makeClickable(allText, allText, () => setAll(bag, client));
+        const allBuffer = colorString(allText, TYPE_COLOR);
+        allBuffer.createLink([0, allText.length], {
+            onClick: () => setAll(bag, client),
+            title: `Ustaw wszystkie jako ${bag}`
+        });
         line.append(" [ ");
-        line.appendBuffer(colorString(clickableAll, TYPE_COLOR));
+        line.appendBuffer(allBuffer);
         line.append(" ]");
         lines.push(line);
     });

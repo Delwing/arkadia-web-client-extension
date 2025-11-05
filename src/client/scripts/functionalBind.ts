@@ -1,5 +1,6 @@
 import {color} from "@modules/core/Colors";
 import Client from "../Client";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 export const LINE_START_EVENT = 'line-start';
 
@@ -94,9 +95,15 @@ export class FunctionalBind {
         }
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
-                const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
-                const clickable = this.client.OutputHandler.makeClickable(line, printable, this.functionalBind);
-                this.client.println(clickable);
+                const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
+                const printableIndex = line.text.indexOf(printable);
+                if (printableIndex !== -1) {
+                    line.createLink([printableIndex, printableIndex + printable.length], {
+                        onClick: this.functionalBind,
+                        title: `Kliknij aby wykonać: ${printable}`
+                    });
+                }
+                this.client.println(line);
                 this.printedInMessage = true;
             }
             return;
@@ -105,9 +112,15 @@ export class FunctionalBind {
         this.printedInMessage = true;
         this.button?.remove();
         if (printable) {
-            const line = `\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`;
-            const clickable = this.client.OutputHandler.makeClickable(line, printable, this.functionalBind);
-            this.client.println(clickable);
+            const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
+            const printableIndex = line.text.indexOf(printable);
+            if (printableIndex !== -1) {
+                line.createLink([printableIndex, printableIndex + printable.length], {
+                    onClick: this.functionalBind,
+                    title: `Kliknij aby wykonać: ${printable}`
+                });
+            }
+            this.client.println(line);
             this.button = this.client.createButton(printable, this.functionalBind);
         }
     }

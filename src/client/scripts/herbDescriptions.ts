@@ -43,13 +43,22 @@ export default async function initHerbDescriptions(client: Client) {
                     if (after.startsWith("(")) {
                         return line;
                     }
-                    const clickable = client.OutputHandler.makeStringRightClickable(id, (ev) => showHerbActions(id, ev)); //TODO fix clickables
 
-                    return line
-                        .insert(index + desc.length, " (")
-                        .insert(index + desc.length + 2, ")")
-                        .insert(index + desc.length + 2, clickable, HERB_NAME_COLOR)
+                    line.insert(index + desc.length, " (")
+                        .insert(index + desc.length + 2, id, HERB_NAME_COLOR)
+                        .insert(index + desc.length + 2 + id.length, ")")
 
+                    // Create link for the herb ID
+                    const idStart = index + desc.length + 2;
+                    line.createLink([idStart, idStart + id.length], {
+                        onContextMenu: (ev) => {
+                            ev.preventDefault();
+                            showHerbActions(id, ev);
+                        },
+                        title: `Prawy klik dla opcji: ${id}`
+                    });
+
+                    return line;
                 }, tag, {caseInsensitive: true});
             });
         });

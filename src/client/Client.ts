@@ -3,7 +3,6 @@ import MapHelper from "@shared/map/MapHelper";
 import Pausers from "./Pausers";
 import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
 import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/functionalBind";
-import OutputHandler from "./OutputHandler";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
@@ -59,7 +58,6 @@ export default class Client {
         functionalBind: this.FunctionalBind,
     });
     Pausers = new Pausers(this);
-    OutputHandler = new OutputHandler(this);
     TeamManager = new TeamManager(this);
     ObjectManager = new ObjectManager(this);
     panel = document.getElementById("panel_buttons_bottom");

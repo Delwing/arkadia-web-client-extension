@@ -457,11 +457,14 @@ async function loadMagicAndKeysFilter(client: Client) {
         defaultTransforms.push({
             check: keyRegexp,
             transform: (item) => {
-                const text = plugLinks ?
-                    client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
-                    item;
-                const buf = new AnsiAwareBuffer(text);
-                buf.color([0, buf.length], KEYS_COLOR);
+                const buf = new AnsiAwareBuffer(item);
+                buf.color([0, item.length], KEYS_COLOR);
+                if (plugLinks) {
+                    buf.createLink([0, item.length], {
+                        onClick: () => client.sendCommand(`wybierz ${item}`),
+                        title: `Kliknij aby wybrać: ${item}`
+                    });
+                }
                 return buf;
             },
         });
@@ -469,11 +472,14 @@ async function loadMagicAndKeysFilter(client: Client) {
         defaultTransforms.push({
             check: magicRegexp,
             transform: (item) => {
-                const text = plugLinks ?
-                    client.OutputHandler.makeStringClickable(item, () => client.sendCommand(`wybierz ${item}`)) :
-                    item;
-                const buf = new AnsiAwareBuffer(text);
-                buf.color([0, buf.length], MAGICS_COLOR);
+                const buf = new AnsiAwareBuffer(item);
+                buf.color([0, item.length], MAGICS_COLOR);
+                if (plugLinks) {
+                    buf.createLink([0, item.length], {
+                        onClick: () => client.sendCommand(`wybierz ${item}`),
+                        title: `Kliknij aby wybrać: ${item}`
+                    });
+                }
                 return buf;
             },
         });

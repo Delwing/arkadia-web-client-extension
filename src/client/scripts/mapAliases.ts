@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { longToShort } from "@shared/map/directions";
 import {getShortcut} from "./shortcuts";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 type SearchableRoom = {
     id: number;
@@ -103,14 +104,29 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 const header = `Wyniki przeszukiwania '${termRaw}'`;
                 if (topMatches.length) {
                     const maxIdLength = Math.max(...topMatches.map(match => String(match.id).length));
-                    const lines = topMatches.map(match => {
+                    const output = new AnsiAwareBuffer(header + '\n');
+                    topMatches.forEach((match, idx) => {
                         const paddedId = String(match.id).padStart(maxIdLength, ' ');
-                        const clickable = client.OutputHandler.makeStringClickable(`${match.name} (${match.area})`, () => {
-                            client.sendEvent('leadTo', match.id);
+                        const roomText = `${match.name} (${match.area})`;
+                        const lineText = `${paddedId} ${roomText}`;
+
+                        const lineStart = output.length;
+                        output.append(lineText);
+
+                        // Create link for the room name and area
+                        const linkStart = lineStart + paddedId.length + 1;
+                        output.createLink([linkStart, linkStart + roomText.length], {
+                            onClick: () => {
+                                client.sendEvent('leadTo', match.id);
+                            },
+                            title: `Kliknij aby prowadzić do: ${match.name}`
                         });
-                        return `${paddedId} ${clickable}`;
+
+                        if (idx < topMatches.length - 1) {
+                            output.append('\n');
+                        }
                     });
-                    client.println(`${header}\n${lines.join('\n')}`);
+                    client.println(output);
                 } else {
                     client.println(`${header}\nNie znaleziono.`);
                 }

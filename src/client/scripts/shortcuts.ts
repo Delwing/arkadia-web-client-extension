@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 export interface ShortcutEntry {
     key: string;
@@ -46,14 +47,37 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
     client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
     function printShortcuts() {
-        const lines: string[] = [];
-        Object.values(shortcuts).forEach(sc => {
-            const lead = client.OutputHandler.makeClickable("prowadz", "prowadz " + sc.key, () => {
-                client.sendCommand("/prowadz " + sc.key);
+        const entries = Object.values(shortcuts);
+        if (!entries.length) {
+            client.println("Brak skrotow.");
+            return;
+        }
+
+        const output = new AnsiAwareBuffer();
+        entries.forEach((sc, idx) => {
+            if (idx > 0) {
+                output.append('\n');
+            }
+
+            // Build the line
+            output.appendBuffer(colorString(sc.key, HEADER_COLOR));
+            output.append(` → ${sc.id} `);
+            output.appendBuffer(colorString(sc.label, NAME_COLOR));
+            output.append(' [ ');
+
+            const leadStart = output.length;
+            output.append('prowadz');
+            output.createLink([leadStart, leadStart + 'prowadz'.length], {
+                onClick: () => {
+                    client.sendCommand("/prowadz " + sc.key);
+                },
+                title: `Kliknij aby prowadzić do: ${sc.key}`
             });
-            lines.push(`${colorString(sc.key, HEADER_COLOR)} → ${sc.id} ${colorString(sc.label, NAME_COLOR)} [ ${lead} ]`);
+
+            output.append(' ]');
         });
-        client.println(lines.length ? lines.join("\n") : "Brak skrotow.");
+
+        client.println(output);
     }
 
     function add(id: number, key: string, label: string = '') {
