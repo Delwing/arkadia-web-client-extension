@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
 import { stripAnsiCodes } from "../Triggers";
-import {AnsiAwareBuffer} from "../ansi/FormatState";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 const COLORS = [
     findClosestColor("#ff0000"),
@@ -64,17 +64,18 @@ export default function initSkills(
     function formatSkill(
         { name, level }: { name: string; level: string },
         maxName: number,
-        maxLevel: number
+        maxLevel: number,
+        originalFormatting?: FormatStateSnapshot
     ): AnsiAwareBuffer {
         const n = pad(`${name}:`, maxName + 1);
         const l = colorLevel(level, maxLevel);
-        const result = new AnsiAwareBuffer(n);
-        result.append(" ");
+        const result = new AnsiAwareBuffer(n, originalFormatting);
+        result.append(" ", originalFormatting);
         result.appendBuffer(l);
         return result;
     }
 
-    function process(raw: string): AnsiAwareBuffer {
+    function process(raw: string, originalFormatting?: FormatStateSnapshot): AnsiAwareBuffer {
         const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(stripAnsiCodes(l)));
         const skills: { name: string; level: string }[] = [];
         lines.forEach((l) => {
@@ -91,20 +92,20 @@ export default function initSkills(
         const result = new AnsiAwareBuffer();
         for (let i = 0; i < skills.length; i += 2) {
             if (i > 0) {
-                result.append("\n");
+                result.append("\n", originalFormatting);
             }
-            const col1 = formatSkill(skills[i], maxName, maxLevel);
+            const col1 = formatSkill(skills[i], maxName, maxLevel, originalFormatting);
             if (i + 1 < skills.length) {
-                const col2 = formatSkill(skills[i + 1], maxName, maxLevel);
+                const col2 = formatSkill(skills[i + 1], maxName, maxLevel, originalFormatting);
                 const combined = col1.clone();
-                combined.append("  ");
+                combined.append("  ", originalFormatting);
                 combined.appendBuffer(col2);
                 if (
                     client.contentWidth &&
                     combined.text.length > client.contentWidth
                 ) {
                     result.appendBuffer(col1);
-                    result.append("\n");
+                    result.append("\n", originalFormatting);
                     result.appendBuffer(col2);
                 } else {
                     result.appendBuffer(combined);
@@ -122,7 +123,8 @@ export default function initSkills(
             /[^:]+:\s+\S+/,
             (line) => {
                 const raw = line.text;
-                const out = process(raw);
+                const originalFormatting = line.getStateAt(0);
+                const out = process(raw, originalFormatting);
                 disable();
                 return out;
             },
