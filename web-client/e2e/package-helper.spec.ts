@@ -77,10 +77,10 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         }, {message: 'should send command selecting known NPC package'})
         .toBe('wybierz paczke 1');
 
+    await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
+
     await expect(locationLabel, 'should mark delivery destination on map label').toContainText('→ #4');
     await expect(locationLabel, 'should indicate distance to delivery destination').toContainText('(3)');
-
-    await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
 
     const status = page.locator('#package-status');
     await expect(status, 'should reveal package status after collection').toBeVisible();
