@@ -1,5 +1,5 @@
 import initUserAliases from '@client/scripts/userAliases';
-import { FakeClient, initHerbClient, defaultHerbData } from './helpers/herbClient';
+import { FakeClient, initHerbClient, defaultHerbData } from '../helpers/herbClient';
 
 class AliasClient extends FakeClient {
   executed: string[] = [];

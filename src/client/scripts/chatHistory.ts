@@ -1,10 +1,11 @@
 import Client from "../Client";
+import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 const HISTORY_LIMIT = 20;
 
 type ChatEntry = {
     timestamp: string;
-    text: string;
+    buffer: AnsiAwareBuffer;
 };
 
 export default function initChatHistory(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -18,10 +19,10 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         });
     }
 
-    function addEntry(text: string) {
+    function addEntry(buffer: AnsiAwareBuffer) {
         const entry: ChatEntry = {
             timestamp: formatTimestamp(new Date()),
-            text,
+            buffer: buffer.clone(),
         };
         history.push(entry);
         if (history.length > HISTORY_LIMIT) {
@@ -34,19 +35,20 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
             client.print("Brak zapisanych wiadomosci czatu.");
             return;
         }
-        const lines: string[] = [];
-        history.forEach((entry) => {
-            const messageLines = entry.text.split(/\r?\n/);
-            messageLines.forEach((line) => {
-                lines.push(`[${entry.timestamp}] ${line}`);
-            });
+        const output = new AnsiAwareBuffer();
+        history.forEach((entry, index) => {
+            if (index > 0) {
+                output.append("\n");
+            }
+            output.append(`[${entry.timestamp}] `);
+            output.appendBuffer(entry.buffer);
         });
-        client.print(lines.join("\n"));
+        client.print(output);
     }
 
-    client.on("gmcp_msg.comm", (text) => {
-        if (typeof text !== "string" || !text.trim()) return;
-        addEntry(text);
+    client.on("gmcp_msg.comm", (buffer) => {
+        if (!(buffer instanceof AnsiAwareBuffer) || !buffer.text.trim()) return;
+        addEntry(buffer);
     });
 
     client.on("client.disconnect", () => {

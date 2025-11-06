@@ -12,7 +12,7 @@ export default function initArmorShop(client: Client) {
         makeHeader: (width, pad) => {
             return `| ${pad('Nazwa towaru', width - 3)}|`
         },
-        makeItem: (width, pad, m) => formatItem(width, pad, m)
+        makeItem: (width, pad, m, originalFormatting) => formatItem(width, pad, m, undefined, undefined, originalFormatting)
     };
 
     initShop(client, options);

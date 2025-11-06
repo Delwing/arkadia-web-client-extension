@@ -14,11 +14,13 @@ export default function initHerbShop(client: Client) {
             const numbersLine = `| ${pad('mt/zl/sr/md Ilosc', width - 3)}|`;
             return nameLine + '\n' + numbersLine;
         },
-        makeItem: (width, pad, m) => formatItem(
+        makeItem: (width, pad, m, originalFormatting) => formatItem(
             width,
             pad,
             m,
-            6
+            6,
+            undefined,
+            originalFormatting
         )
     };
 

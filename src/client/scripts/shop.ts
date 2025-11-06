@@ -11,7 +11,7 @@ export interface ShopOptions {
     itemReg: RegExp;
     makeSplit: (width: number) => string;
     makeHeader: (width: number, pad: (s: string, len: number) => string) => string;
-    makeItem: (width: number, pad: (s: string, len: number) => string, match: RegExpMatchArray) => string;
+    makeItem: (width: number, pad: (s: string, len: number) => string, match: RegExpMatchArray, originalFormatting?: FormatStateSnapshot) => AnsiAwareBuffer;
 }
 
 export const MITHRIL_COLOR = findClosestColor('#afeeee');
@@ -30,28 +30,50 @@ export function formatItem(
     pad: (s: string, len: number) => string,
     match: RegExpMatchArray,
     amountIndex?: number,
-    colors: readonly FormatStateSnapshot[] = CURRENCY_COLORS
-): string {
+    colors: readonly FormatStateSnapshot[] = CURRENCY_COLORS,
+    originalFormatting?: FormatStateSnapshot
+): AnsiAwareBuffer {
     const name = match[1];
     const costs = match.slice(2, 6);
     const amount = typeof amountIndex === 'number' ? match[amountIndex] : undefined;
 
-    const coloredCosts = costs.map((c, i) => colorString(c === "" ? "0" : c, colors[i])).join('/');
+    // Build colored costs by appending AnsiAwareBuffer objects
+    const coloredCostsBuffer = new AnsiAwareBuffer();
+    costs.forEach((c, i) => {
+        if (i > 0) {
+            coloredCostsBuffer.append('/');
+        }
+        coloredCostsBuffer.appendBuffer(colorString(c === "" ? "0" : c, colors[i]));
+    });
 
     const amountPrefix = amount ? `${amount.padStart(3)}| ` : "";
     const namePart = `${amountPrefix}${name}`;
-    const numbersContent = coloredCosts;
+    const numbersContent = coloredCostsBuffer.text;
     const combined = `${namePart} ${numbersContent}`;
     const strippedLen = stripAnsiCodes(combined).length;
     const fitsSingleLine = strippedLen <= width - 4;
     if (fitsSingleLine) {
         const spaces = ".".repeat(Math.max(0, width - 3 - strippedLen - 2));
-        return `| ${namePart} ${spaces} ${numbersContent} |`;
+        const result = new AnsiAwareBuffer('', originalFormatting);
+        result.append('| ', originalFormatting);
+        result.append(namePart, originalFormatting);
+        result.append(' ', originalFormatting);
+        result.append(spaces, originalFormatting);
+        result.append(' ', originalFormatting);
+        result.appendBuffer(coloredCostsBuffer);
+        result.append(' |', originalFormatting);
+        return result;
     }
 
     const nameLine = `| ${pad(namePart, width - 3)}|`;
-    const numbersLine = `| ${pad(numbersContent, width - 3)}|`;
-    return nameLine + '\n' + numbersLine;
+    const result = new AnsiAwareBuffer(nameLine, originalFormatting);
+    result.append('\n', originalFormatting);
+    result.append('| ', originalFormatting);
+    result.appendBuffer(coloredCostsBuffer);
+    const paddingNeeded = width - 3 - coloredCostsBuffer.text.length;
+    result.append(' '.repeat(Math.max(0, paddingNeeded)), originalFormatting);
+    result.append('|', originalFormatting);
+    return result;
 }
 
 export default function initShop(client: Client, opts: ShopOptions) {
@@ -64,17 +86,20 @@ export default function initShop(client: Client, opts: ShopOptions) {
 
     client.Triggers.registerTrigger(opts.splitReg, (line) => {
         if (width >= opts.normalWidth) return line;
-        return new AnsiAwareBuffer(opts.makeSplit(width));
+        const originalFormatting = line.getStateAt(0);
+        return new AnsiAwareBuffer(opts.makeSplit(width), originalFormatting);
     }, opts.tag);
 
     client.Triggers.registerTrigger(opts.headerReg, (line) => {
         if (width >= opts.normalWidth) return line;
-        return new AnsiAwareBuffer(opts.makeHeader(width, pad));
+        const originalFormatting = line.getStateAt(0);
+        return new AnsiAwareBuffer(opts.makeHeader(width, pad), originalFormatting);
     }, opts.tag);
 
     client.Triggers.registerTrigger(opts.itemReg, (line, matches) => {
         if (width >= opts.normalWidth) return line;
         if (!matches) return line;
-        return new AnsiAwareBuffer(opts.makeItem(width, pad, matches));
+        const originalFormatting = line.getStateAt(0);
+        return opts.makeItem(width, pad, matches, originalFormatting);
     }, opts.tag);
 }

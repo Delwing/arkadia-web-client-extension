@@ -1,6 +1,7 @@
 import initHerbShop from '@client/scripts/herbShop';
 import Triggers, { stripAnsiCodes } from '@client/Triggers';
 import { EventEmitter } from 'events';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -26,7 +27,11 @@ describe('herb shop width adjustments', () => {
   beforeEach(() => {
     client = new FakeClient();
     initHerbShop((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => {
+      const buffer = new AnsiAwareBuffer(line);
+      const result = Triggers.prototype.parseLine.call(client.Triggers, buffer, '');
+      return result?.text || '';
+    };
   });
 
   const split = '+----------------------------------------------------------+----+----+----+----+-------+';
