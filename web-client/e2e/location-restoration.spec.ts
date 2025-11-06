@@ -1,11 +1,18 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForMapReady} from './support/mocks';
+import {
+    ensureGameSocket,
+    GMCP_PATHS,
+    pushGmcp,
+    waitForCommandInput,
+    waitForMapReady,
+} from './support/mocks';
 
 test.describe('Location restoration', () => {
     test('should restore location correctly after reload', async ({page}) => {
         await page.goto('/?locationId=2');
-        await waitForMapReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await waitForMapReady(page);
 
         const locationLabel = page.locator('#location-text');
 
@@ -30,8 +37,9 @@ test.describe('Location restoration', () => {
 
         await page.reload();
 
-        await waitForMapReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await waitForMapReady(page);
 
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 2,
@@ -52,8 +60,9 @@ test.describe('Location restoration', () => {
 
     test('should receive GMCP room.info event correctly after connection', async ({page}) => {
         await page.goto('/');
-        await waitForMapReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await waitForMapReady(page);
 
         const locationLabel = page.locator('#location-text');
 
@@ -92,8 +101,9 @@ test.describe('Location restoration', () => {
 
     test('should receive GMCP room.info events for different areas', async ({page}) => {
         await page.goto('/');
-        await waitForMapReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await waitForMapReady(page);
 
         const locationLabel = page.locator('#location-text');
 
