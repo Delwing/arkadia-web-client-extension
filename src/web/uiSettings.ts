@@ -484,7 +484,7 @@ export default async function initUiSettings() {
             customFontFamilyTouched = true;
         }
     }
-    let fontGuessTimeout: number | undefined;
+    let fontGuessTimeout: ReturnType<typeof setTimeout> | undefined;
     let fontGuessToken = 0;
 
     const applyAutomaticFontFamily = (family: string) => {
