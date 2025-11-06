@@ -1,5 +1,6 @@
 import initCompareAll, { formatComparisonTable } from '@client/scripts/compareAll';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   ObjectManager = {
@@ -14,14 +15,14 @@ class FakeClient {
 describe('compare all alias', () => {
   let client: FakeClient;
   let compareAll: (m: RegExpMatchArray) => void;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initCompareAll((client as unknown) as any, aliases);
     compareAll = aliases[0].callback as any;
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.useFakeTimers();
   });
 
@@ -49,7 +50,7 @@ describe('compare all alias', () => {
     parse('Wydaje ci sie, ze jestes zreczniejszy niz Goblin.');
     parse('Wydaje ci sie, ze jestes lepiej zbudowany niz Goblin.');
     jest.runAllTimers();
-    const printed = stripAnsiCodes(client.println.mock.calls[0][0]);
+    const printed = typeof client.println.mock.calls[0][0] === 'string' ? client.println.mock.calls[0][0] : client.println.mock.calls[0][0]?.text;
     expect(printed).toMatch(/Goblin/);
     expect(printed).toMatch(/-3/);
   });

@@ -39,12 +39,27 @@ describe("AnsiAwareBuffer", () => {
     });
 
     it("retains hyperlink metadata across edits", () => {
-        const buffer = new AnsiAwareBuffer("{clickOpen:42:look}Look here{clickClose}");
+        // Create buffer and add hyperlink using modern API
+        const buffer = new AnsiAwareBuffer("Look here");
+        const onClick = jest.fn();
+        buffer.createLink([0, 9], { onClick, title: "look" });
+
+        // Append text
         buffer.append(" around");
+
+        // Replace within the hyperlinked area
         buffer.replace([0, 4], "Inspect");
+
+        // Verify the hyperlink is retained
         const segments = buffer.getSegments();
-        expect(segments).toHaveLength(1);
-        expect(segments[0].state?.hyperlink).toEqual({ id: 42, title: "look" });
+        expect(segments.length).toBeGreaterThan(0);
+
+        // Find the segment with hyperlink
+        const hyperlinkSegment = segments.find(seg => seg.state?.hyperlink);
+        expect(hyperlinkSegment).toBeDefined();
+        expect(hyperlinkSegment?.state?.hyperlink?.title).toBe("look");
+        expect(hyperlinkSegment?.state?.hyperlink?.onClick).toBe(onClick);
+
         expect(buffer.text).toBe("Inspect here around");
     });
 

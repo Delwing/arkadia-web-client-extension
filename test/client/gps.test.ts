@@ -1,5 +1,6 @@
 import initGps from '@client/scripts/gps';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
@@ -9,7 +10,7 @@ class FakeClient {
 
 describe('gps triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
@@ -41,7 +42,7 @@ describe('gps triggers', () => {
     ];
     client.Map.onMapReady = (cb: any) => cb(mapData);
     initGps(client as unknown as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     client.Map.currentRoom.id = 1;
   });
 

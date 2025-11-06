@@ -1,8 +1,7 @@
 import initHerbDescriptions from '@client/scripts/herbDescriptions';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
-import { RESET } from '@modules/core/Colors';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
-import TriggerLine from '@client/triggers/TriggerLine';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -47,19 +46,18 @@ describe('herb descriptions', () => {
     const client = new FakeClient();
     await initHerbDescriptions((client as unknown) as any);
     const line = 'Widzisz zolty jasny kwiat';
-    const result = client.Triggers.parseLine(line, '');
-    expect(result.startsWith('Widzisz zolty jasny kwiat ')).toBe(true);
-    expect(result).toContain('{clickOpen:0}deliona{clickClose}');
-    expect(result).toContain(RESET + ')');
-    expect(stripAnsiCodes(result)).toBe('Widzisz zolty jasny kwiat (deliona)');
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer(line), '');
+    expect(result?.text.startsWith('Widzisz zolty jasny kwiat ')).toBe(true);
+    expect(result?.text).toContain('deliona');
+    expect(result?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
   });
 
   test('does not duplicate herb name', async () => {
     const client = new FakeClient();
     await initHerbDescriptions((client as unknown) as any);
     const line = 'Widzisz zolty jasny kwiat (deliona)';
-    const result = client.Triggers.parseLine(line, '');
-    expect(result).toBe(line);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer(line), '');
+    expect(result?.text).toBe(line);
   });
 
   test('inserts suffix on trigger line instances regardless of source', async () => {
@@ -74,16 +72,14 @@ describe('herb descriptions', () => {
     matches.index = baseLine.indexOf('zolty jasny kwiat');
     matches.input = baseLine;
 
-    const triggerLineFromRaw = new TriggerLine(baseLine);
-    triggerLineFromRaw.setMatches({ matches, type: '' });
-    const fromRaw = callback(triggerLineFromRaw) as TriggerLine;
-    expect(fromRaw).toBeInstanceOf(TriggerLine);
-    expect(stripAnsiCodes(fromRaw.toAnsiString())).toBe('Widzisz zolty jasny kwiat (deliona)');
+    const triggerLineFromRaw = new AnsiAwareBuffer(baseLine);
+    const fromRaw = callback(triggerLineFromRaw, matches, '') as AnsiAwareBuffer;
+    expect(fromRaw).toBeInstanceOf(AnsiAwareBuffer);
+    expect(fromRaw?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
 
-    const existingLine = new TriggerLine(baseLine);
-    existingLine.setMatches({ matches, type: '' });
-    const fromTriggerLine = callback(existingLine) as TriggerLine;
+    const existingLine = new AnsiAwareBuffer(baseLine);
+    const fromTriggerLine = callback(existingLine, matches, '') as AnsiAwareBuffer;
     expect(fromTriggerLine).toBe(existingLine);
-    expect(stripAnsiCodes(fromTriggerLine.toAnsiString())).toBe('Widzisz zolty jasny kwiat (deliona)');
+    expect(fromTriggerLine?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
   });
 });

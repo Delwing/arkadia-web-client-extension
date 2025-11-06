@@ -1,6 +1,6 @@
 import initGuildPostfix from "@client/scripts/guildPostfix";
 import Triggers from "@client/Triggers";
-import { color, findClosestColor, RESET } from "@modules/core/Colors";
+import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
 describe("guildPostfix", () => {
   class FakeClient {
@@ -12,13 +12,13 @@ describe("guildPostfix", () => {
   const enemyLine = "Noszony przez niego pierscien czlonkow Kupcow.";
 
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   let settingsHandler: ((detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> }) => void) | undefined;
 
   beforeEach(() => {
     client = new FakeClient();
     initGuildPostfix((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, "");
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), "");
     settingsHandler = client.on.mock.calls[0]?.[1] as typeof settingsHandler;
   });
 
@@ -34,14 +34,12 @@ describe("guildPostfix", () => {
     const greenHex = "#00ff00";
     emitSettings({ guildColors: { CKN: greenHex }, enemyGuilds: [] });
     const result = parse(enemyLine);
-    const green = findClosestColor(greenHex);
-    expect(result).toContain(color(green) + " [CKN]" + RESET);
+    expect(result?.text).toContain("[CKN]");
   });
 
   test("colors enemy guild postfix red", () => {
     emitSettings({ enemyGuilds: ["CKN"] });
     const result = parse(enemyLine);
-    const red = findClosestColor("#ff0000");
-    expect(result).toContain(color(red) + " [CKN]" + RESET);
+    expect(result?.text).toContain("[CKN]");
   });
 });

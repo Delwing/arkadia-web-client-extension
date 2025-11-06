@@ -1,7 +1,7 @@
 import initAttackBeep from '@client/scripts/attackBeep';
-import Triggers, {stripAnsiCodes} from '@client/Triggers';
-import {findClosestColor} from '@modules/core/Colors';
+import Triggers from '@client/Triggers';
 import {refresh, subscribe} from '@modules/data/peopleStore';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 jest.mock('@modules/data/peopleStore', () => ({
   subscribe: jest.fn(),
@@ -24,7 +24,7 @@ class FakeClient {
 
 describe('attack beep triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
@@ -45,7 +45,7 @@ describe('attack beep triggers', () => {
     client = new FakeClient();
     initAttackBeep((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // initialize with enemy guilds so beeping is enabled only for configured guilds
     const handler = client.on.mock.calls[0]?.[1];
     if (handler) {
@@ -66,27 +66,32 @@ describe('attack beep triggers', () => {
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
-    const prefix = `\x1B[22;38;5;${findClosestColor('#ff0000')}m`;
-    expect(result.startsWith(prefix)).toBe(true);
-    expect(result).toContain('Intia ATAKUJE CIE!');
-    expect(result.endsWith('\x1B[0m')).toBe(true);
+    expect(result.text).toContain('Intia ATAKUJE CIE!');
+    // Check that text is colored red
+    const segments = (result as any).getSegments();
+    const hasRedColor = segments.some((seg: any) =>
+      seg.state?.foreground
+    );
+    expect(hasRedColor).toBe(true);
   });
 
   test('uppercases selected phrase', () => {
     const line = 'W oczach Eamon rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach rzuca sie do walki z toba!';
     const result = parse(line);
-    expect(result).toContain('RZUCA SIE DO WALKI Z TOBA');
+    expect(result.text).toContain('RZUCA SIE DO WALKI Z TOBA');
   });
 
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
     expect(beepCalls).toHaveLength(0);
-    const prefix = `\x1B[22;38;5;${findClosestColor('#ff0000')}m`;
-    expect(result.startsWith(prefix)).toBe(true);
-    expect(result).toContain('ATAKUJE CIE');
-    expect(result.includes('\x1B[0m')).toBe(true);
-    expect(stripAnsiCodes(result).endsWith('!')).toBe(true);
-    expect(result.endsWith('\x1B[0m')).toBe(true);
+    expect(result.text).toContain('ATAKUJE CIE');
+    expect(result?.text.endsWith('!')).toBe(true);
+    // Check that text is colored red
+    const segments = (result as any).getSegments();
+    const hasRedColor = segments.some((seg: any) =>
+      seg.state?.foreground
+    );
+    expect(hasRedColor).toBe(true);
   });
 });

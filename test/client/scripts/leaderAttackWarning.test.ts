@@ -1,5 +1,4 @@
 import initLeaderAttackWarning from '@client/scripts/leaderAttackWarning';
-import { stripAnsiCodes } from '@client/Triggers';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -41,7 +40,7 @@ describe('leader attack warning', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('1');
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
-    const text = stripAnsiCodes(client.println.mock.calls[0][0]);
+    const text = client.println.mock.calls[0][0]?.text;
     expect(text).toContain('Zaatakuj cel ataku');
     expect(text).toContain('CTRL+1');
   });
@@ -50,7 +49,7 @@ describe('leader attack warning', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('2');
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
-    const text = stripAnsiCodes(client.println.mock.calls[0][0]);
+    const text = client.println.mock.calls[0][0]?.text;
     expect(text).toContain('wesprzyj');
     expect(text).toContain('CTRL+Q');
   });

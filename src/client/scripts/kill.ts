@@ -1,6 +1,5 @@
 import Client from "../Client";
 import {findClosestColor} from "@modules/core/Colors";
-import {stripAnsiCodes} from "../Triggers";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 type KillEntry = {
@@ -71,10 +70,6 @@ function parseName(full: string): string {
     return words[words.length - 1];
 }
 
-function visibleLength(str: string): number {
-    return stripAnsiCodes(str).length;
-}
-
 function createPad(
     width: number,
     left: number,
@@ -83,7 +78,7 @@ function createPad(
     const contentWidth = width - left - right;
     return (content = "") =>
         `|${" ".repeat(left)}${content}${" ".repeat(
-            Math.max(0, contentWidth - visibleLength(content))
+            Math.max(0, contentWidth - content.length)
         )}${" ".repeat(right)}|`;
 }
 
@@ -304,7 +299,7 @@ class KillCounter {
             teamKillRegex,
             (line, matches) => {
                 if (!matches) return line;
-                const player = stripAnsiCodes(matches.groups?.player ?? "").trim();
+                const player = (matches.groups?.player ?? "").trim();
                 const mob = parseName(matches.groups?.name ?? "");
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);

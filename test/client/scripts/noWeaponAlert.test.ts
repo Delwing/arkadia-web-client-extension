@@ -1,6 +1,7 @@
 import initNoWeaponAlert from '@client/scripts/noWeaponAlert';
 import Triggers from '@client/Triggers';
 import { colorString, findClosestColor } from '@modules/core/Colors';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -10,14 +11,14 @@ class FakeClient {
 
 describe('no weapon alert', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   const color = findClosestColor('#ff0000');
 
   beforeEach(() => {
     jest.useFakeTimers();
     client = new FakeClient();
     initNoWeaponAlert((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
   });
 

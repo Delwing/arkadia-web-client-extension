@@ -1,6 +1,7 @@
 import initMagics from '@client/scripts/magics';
 import { colorTokenInLine } from '@modules/core/Colors';
 import { MAGICS_COLOR } from '@client/constants/colors';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 describe('magics', () => {
     beforeEach(() => {
@@ -20,10 +21,17 @@ describe('magics', () => {
         const call = client.Triggers.registerTokenTrigger.mock.calls[0];
         const pattern = call[0];
         const callback = call[1];
+
         const sentence = 'to jest alpha w zdaniu';
-        expect(callback(sentence, sentence, {} as any).toAnsiString()).toBe(colorTokenInLine(sentence, pattern, MAGICS_COLOR).toAnsiString());
+        const sentenceBuffer = new AnsiAwareBuffer(sentence);
+        const result = callback(sentenceBuffer, [sentence] as RegExpMatchArray, '');
+        const expected = colorTokenInLine(sentenceBuffer, pattern, MAGICS_COLOR);
+        expect(result.text).toBe(expected.text);
 
         const titleCase = 'Alpha pojawila sie w zdaniu';
-        expect(callback(titleCase, titleCase, {} as any).toAnsiString()).toBe(colorTokenInLine(titleCase, pattern, MAGICS_COLOR).toAnsiString());
+        const titleBuffer = new AnsiAwareBuffer(titleCase);
+        const result2 = callback(titleBuffer, [titleCase] as RegExpMatchArray, '');
+        const expected2 = colorTokenInLine(titleBuffer, pattern, MAGICS_COLOR);
+        expect(result2.text).toBe(expected2.text);
     });
 });

@@ -1,5 +1,6 @@
 import initTransportStops from '@client/scripts/transportStops';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import type { TransportTimerPayload } from '@client/types/transport';
 import * as transportStats from '@client/utils/transportStats';
 import type { StoredTransportSegmentRecord } from '@client/utils/transportStats';
@@ -28,12 +29,12 @@ class FakeClient {
 
 describe('transport stop triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(async () => {
     await transportStats.clearTransportStats();
     client = new FakeClient();
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
   });
 

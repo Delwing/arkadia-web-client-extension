@@ -1,5 +1,6 @@
 import { initKillCounter, parseName, formatSessionTable, formatLifetimeTable } from '@client/scripts/kill';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 import { EventEmitter } from 'events';
 
@@ -37,44 +38,44 @@ describe('kill counter team kills', () => {
   });
 
   const parse = (line: string) => {
-    return Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    return Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   };
 
   test('ignores kills from outside the team', () => {
     client.TeamManager.isInTeam.mockReturnValue(false);
     const line = '> Eamon zabil smoka chaosu.';
     let result = parse(line);
-    expect(result).toContain('[   ZABIL   ]');
-    expect(result).not.toContain('(');
+    expect(result?.text).toContain('[   ZABIL   ]');
+    expect(result?.text).not.toContain('(');
 
     client.TeamManager.isInTeam.mockReturnValue(true);
     result = parse(line);
-    expect(stripAnsiCodes(result)).toContain('(0 / 1)');
+    expect(result!?.text).toContain('(0 / 1)');
   });
 
   test('counts kills from team members', () => {
     client.TeamManager.isInTeam.mockReturnValue(true);
     const line = '> Eamon zabil smoka chaosu.';
     const result = parse(line);
-    expect(result).toContain('[   ZABIL   ]');
-    expect(stripAnsiCodes(result)).toContain('(0 / 1)');
+    expect(result?.text).toContain('[   ZABIL   ]');
+    expect(result!?.text).toContain('(0 / 1)');
   });
 
   test('session count persists after storage update', () => {
     client.TeamManager.isInTeam.mockReturnValue(true);
     let result = parse('> Eamon zabil smoka chaosu.');
-    expect(stripAnsiCodes(result)).toContain('(0 / 1)');
+    expect(result!?.text).toContain('(0 / 1)');
 
     client.dispatch('storage', { key: 'kill_counter', value: { 'smoka chaosu': 1 } });
 
     result = parse('> Eamon zabil smoka chaosu.');
-    expect(stripAnsiCodes(result)).toContain('(0 / 2)');
+    expect(result!?.text).toContain('(0 / 2)');
   });
 });
 
 describe('kill counter scenario', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   let printSessionTable: () => void;
   let aliases: { pattern: RegExp; callback: () => void }[];
 
@@ -85,7 +86,7 @@ describe('kill counter scenario', () => {
     client.dispatch('storage', { key: 'kill_counter', value: {} });
     client.dispatch('storage', { key: 'kill_counter_session', value: {} });
     parse = (line: string) =>
-      Triggers.prototype.parseLine.call(client.Triggers, line, '');
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // alias[0] corresponds to the /zabici command which prints
     // the per-session kill table
     printSessionTable = aliases[0].callback;
@@ -99,7 +100,7 @@ describe('kill counter scenario', () => {
 
     printSessionTable();
 
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/smoka chaosu/);
     expect(printed).toMatch(/smoka chaosu .* 2/);
     expect(printed).toMatch(/LACZNIE:.*2/);
@@ -109,12 +110,12 @@ describe('kill counter scenario', () => {
   test('zabici_reset clears session counts', () => {
     parse('Zabiles smoka chaosu.');
     printSessionTable();
-    let printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    let printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).toMatch(/smoka chaosu/);
     // alias[2] corresponds to /zabici_reset
     aliases[2].callback();
     printSessionTable();
-    printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).not.toMatch(/smoka chaosu/);
   });
 
@@ -124,7 +125,7 @@ describe('kill counter scenario', () => {
     client.print.mockClear();
     client.dispatch('reset', undefined);
     printSessionTable();
-    const printed = stripAnsiCodes(client.print.mock.calls.pop()[0]);
+    const printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).not.toMatch(/smoka chaosu/);
   });
 });
@@ -141,10 +142,10 @@ describe('parseName and formatTable', () => {
       troll: { mySession: 1, myTotal: 1, teamSession: 0 },
       smok: { mySession: 0, myTotal: 0, teamSession: 2 },
     });
-    expect(table).toMatch(/Licznik zabitych/);
-    expect(table).toMatch(/troll/);
-    expect(table).toMatch(/troll .* 1/);
-    expect(table).toMatch(/DRUZYNA LACZNIE/);
+    expect(table.text).toMatch(/Licznik zabitych/);
+    expect(table.text).toMatch(/troll/);
+    expect(table.text).toMatch(/troll .* 1/);
+    expect(table.text).toMatch(/DRUZYNA LACZNIE/);
   });
 
   test('formatLifetimeTable prints header and sorts names', () => {
@@ -153,7 +154,7 @@ describe('parseName and formatTable', () => {
       Aaa: { mySession: 0, myTotal: 2, teamSession: 0 },
       goblin: { mySession: 0, myTotal: 1, teamSession: 0 },
     });
-    const stripped = stripAnsiCodes(summary);
+    const stripped = summary?.text;
     expect(stripped).toMatch(/Licznik zabitych/);
     const indexAaa = stripped.indexOf('Aaa');
     const indexGoblin = stripped.indexOf('goblin');

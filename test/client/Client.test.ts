@@ -35,17 +35,17 @@ jest.mock('howler', () => {
 });
 
 jest.mock('@client/Triggers', () => {
-  const TriggerLine = require('@client/triggers/TriggerLine').default;
+  const { AnsiAwareBuffer } = require('@client/ansi/FormatState');
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
-      parseLine: jest.fn((l: string | typeof TriggerLine) => {
-        if (typeof l === 'string') return l;
-        return l instanceof TriggerLine ? l.toAnsiString() : l;
+      parseLine: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+        if (typeof l === 'string') return new AnsiAwareBuffer(l);
+        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
       }),
-      parseMultiline: jest.fn((l: string | typeof TriggerLine) => {
-        if (typeof l === 'string') return l;
-        return l instanceof TriggerLine ? l.toAnsiString() : l;
+      parseMultiline: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+        if (typeof l === 'string') return new AnsiAwareBuffer(l);
+        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
       }),
     })),
   };
@@ -248,71 +248,6 @@ test('sendCommand prints echo commands locally', async () => {
   await client.sendCommand('echo <red> text');
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
   expect((global as any).clientAdapterMock.send).not.toHaveBeenCalled();
-});
-
-test('onLine replaces reset sequences with preceding ANSI code', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const line = '\x1b[22;38;5;1mRED\x1b[0m text \x1b[22;38;5;2mGREEN\x1b[0m';
-
-  const result = client.onLine(line, '');
-
-  const expected =
-    '\x1b[22;38;5;1mRED\x1b[22;38;5;255m text \x1b[22;38;5;2mGREEN\x1b[22;38;5;255m';
-  expect(result).toBe(expected);
-});
-
-test('onLine keeps trailing resets without preceding color', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const line = '\x1b[22;38;5;1mred\x1b[0m\x1b[0m';
-
-  const result = client.onLine(line, '');
-
-  const expected = '\x1b[22;38;5;1mred\x1b[22;38;5;255m\x1b[22;38;5;255m';
-  expect(result).toBe(expected);
-});
-
-test('onLine restores color after inserting enclosed color', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const gray = '\x1b[22;38;5;8m';
-  const yellow = '\x1b[22;38;5;11m';
-  const orange = '\x1b[22;38;5;215m';
-
-  const line =
-    gray +
-    'one two three four ' +
-    yellow +
-    'five ' +
-    orange +
-    'orange' +
-    '\x1b[0m' +
-    ' six' +
-    gray +
-    ' seven eight nine ten';
-
-  const result = client.onLine(line, '');
-
-  const expected =
-    gray +
-    'one two three four ' +
-    yellow +
-    'five ' +
-    orange +
-    'orange' +
-    yellow +
-    ' six' +
-    gray +
-    ' seven eight nine ten';
-  expect(result).toBe(expected);
-});
-
-test('onLine preserves final reset at line end', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const gray = '\x1b[22;38;5;8m';
-  const line = gray + 'gray text' + '\x1b[0m';
-
-  const result = client.onLine(line, '');
-
-  expect(result).toBe(line);
 });
 
 test('sound playback restarts when triggered twice', async () => {

@@ -1,5 +1,6 @@
 import initCarriage from '@client/scripts/carriage';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -9,12 +10,12 @@ class FakeClient {
 
 describe('carriage mode triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initCarriage((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('turns carriage mode on and off', () => {

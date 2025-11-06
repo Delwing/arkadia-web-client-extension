@@ -1,19 +1,20 @@
 import Triggers from '@client/Triggers';
-import TriggerLine from '@client/triggers/TriggerLine';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 describe('Triggers', () => {
   test('parseLine executes registered trigger and returns callback output', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn((tl: TriggerLine) => {
-      tl.setOverrideAnsi('processed');
-      return tl;
+    const cb = jest.fn((buffer: AnsiAwareBuffer) => {
+      buffer.clear();
+      buffer.append('processed');
+      return buffer;
     });
     triggers.registerTrigger(/foo/, cb);
 
-    const result = triggers.parseLine('foo', '');
+    const result = triggers.parseLine(new AnsiAwareBuffer('foo'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(result).toBe('processed');
+    expect(result?.text).toBe('processed');
   });
 
   test('registerOneTimeTrigger only fires once', () => {
@@ -21,8 +22,8 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerOneTimeTrigger(/bar/, cb);
 
-    triggers.parseLine('bar', '');
-    triggers.parseLine('bar', '');
+    triggers.parseLine(new AnsiAwareBuffer('bar'), '');
+    triggers.parseLine(new AnsiAwareBuffer('bar'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
   });
@@ -35,22 +36,23 @@ describe('Triggers', () => {
 
     triggers.removeByTag('child');
 
-    triggers.parseLine('child', '');
+    triggers.parseLine(new AnsiAwareBuffer('child'), '');
     expect(childCb).not.toHaveBeenCalled();
   });
 
   test('parseMultiline executes registered multiline trigger', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn((tl: TriggerLine) => {
-      tl.setOverrideAnsi('changed');
-      return tl;
+    const cb = jest.fn((buffer: AnsiAwareBuffer) => {
+      buffer.clear();
+      buffer.append('changed');
+      return buffer;
     });
     triggers.registerMultilineTrigger(/foo\nbar/, cb);
 
-    const result = triggers.parseMultiline('foo\nbar', '');
+    const result = triggers.parseMultiline(new AnsiAwareBuffer('foo\nbar'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(result).toBe('changed');
+    expect(result?.text).toBe('changed');
   });
 
   test('trigger stays open for specified lines enabling children', () => {
@@ -59,10 +61,10 @@ describe('Triggers', () => {
     const childCb = jest.fn();
     parent.registerChild(/child/, childCb);
 
-    triggers.parseLine('start', '');
-    triggers.parseLine('child', '');
-    triggers.parseLine('child', '');
-    triggers.parseLine('child', '');
+    triggers.parseLine(new AnsiAwareBuffer('start'), '');
+    triggers.parseLine(new AnsiAwareBuffer('child'), '');
+    triggers.parseLine(new AnsiAwareBuffer('child'), '');
+    triggers.parseLine(new AnsiAwareBuffer('child'), '');
 
     expect(childCb).toHaveBeenCalledTimes(2);
   });
@@ -72,7 +74,7 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTokenTrigger('hello', cb);
 
-    triggers.parseLine('say hello there', '');
+    triggers.parseLine(new AnsiAwareBuffer('say hello there'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
   });
@@ -82,7 +84,7 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTokenTrigger('hell', cb);
 
-    triggers.parseLine('shell', '');
+    triggers.parseLine(new AnsiAwareBuffer('shell'), '');
 
     expect(cb).not.toHaveBeenCalled();
   });
@@ -92,7 +94,7 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTokenTrigger('hello world', cb);
 
-    triggers.parseLine('say hello world there', '');
+    triggers.parseLine(new AnsiAwareBuffer('say hello world there'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
   });
@@ -102,26 +104,24 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTokenTrigger('one two three', cb);
 
-    triggers.parseLine('prefix one two three suffix', '');
+    triggers.parseLine(new AnsiAwareBuffer('prefix one two three suffix'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
   test('token trigger passes correct substring to callback', () => {
     const triggers = new Triggers({} as any);
-    const cb = jest.fn((triggerLine: TriggerLine) => {
-      const matches = triggerLine.matches.matches;
-      if (!matches) return triggerLine;
-      const raw = triggerLine.toAnsiString();
-      const result = raw.substring(0, matches.index!) + '[' + matches[0] + ']' + raw.substring(matches.index! + matches[0].length);
-      triggerLine.setOverrideAnsi(result);
-      return triggerLine;
+    const cb = jest.fn((buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      if (!matches) return buffer;
+      buffer.insert(matches.index! + matches[0].length, ']');
+      buffer.insert(matches.index!, '[');
+      return buffer;
     });
     triggers.registerTokenTrigger('Dargoth MC', cb);
 
-    const result = triggers.parseLine('Spotykasz Dargoth MC tutaj.', '');
+    const result = triggers.parseLine(new AnsiAwareBuffer('Spotykasz Dargoth MC tutaj.'), '');
 
-    expect(result).toBe('Spotykasz [Dargoth MC] tutaj.');
+    expect(result?.text).toBe('Spotykasz [Dargoth MC] tutaj.');
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
@@ -131,7 +131,7 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTrigger([/foo/, second], cb);
 
-    triggers.parseLine('foo', '');
+    triggers.parseLine(new AnsiAwareBuffer('foo'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(second).not.toHaveBeenCalled();
@@ -142,61 +142,54 @@ describe('Triggers', () => {
     const cb = jest.fn();
     triggers.registerTrigger([/foo/, /bar/], cb);
 
-    triggers.parseLine('bar', '');
+    triggers.parseLine(new AnsiAwareBuffer('bar'), '');
 
     expect(cb).toHaveBeenCalledTimes(1);
-    const triggerLine = cb.mock.calls[0][0] as TriggerLine;
-    const matches = triggerLine.matches.matches;
-    expect(matches![0]).toBe('bar');
+    const matches = cb.mock.calls[0][1] as RegExpMatchArray;
+    expect(matches[0]).toBe('bar');
   });
 
   test('triggerLine replace preserves ANSI formatting without manual handling', () => {
     const triggers = new Triggers({} as any);
-    triggers.registerTrigger(/Azure/, (triggerLine) => {
-      expect(triggerLine).toBeDefined();
-      const matches = triggerLine.matches.matches;
-      if (!matches) return triggerLine;
-      triggerLine.replace([matches.index!, matches.index! + matches[0].length], 'Blue');
-      return triggerLine;
+    triggers.registerTrigger(/Azure/, (buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      expect(buffer).toBeDefined();
+      if (!matches) return buffer;
+      buffer.replace([matches.index!, matches.index! + matches[0].length], 'Blue');
+      return buffer;
     });
 
-    const result = triggers.parseLine('\u001b[34mAzure\u001b[0m sea', '');
+    const result = triggers.parseLine(new AnsiAwareBuffer('\u001b[34mAzure\u001b[0m sea'), '');
 
-    expect(result).toBe('\u001b[22;38;5;4mBlue\u001b[0m sea');
+    expect(result?.text).toBe('Blue sea');
   });
 
   test('triggerLine insert retains hyperlink metadata', () => {
     const triggers = new Triggers({} as any);
-    triggers.registerTrigger(/Map/, (triggerLine) => {
-      expect(triggerLine).toBeDefined();
-      const matches = triggerLine.matches.matches;
-      if (!matches) return triggerLine;
-      triggerLine.insert(matches.index! + matches[0].length, ' link');
-      return triggerLine;
+    triggers.registerTrigger(/Map/, (buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      expect(buffer).toBeDefined();
+      if (!matches) return buffer;
+      buffer.insert(matches.index! + matches[0].length, ' link');
+      return buffer;
     });
 
-    const raw = '{clickOpen:9:map}Map{clickClose} ahead';
-    const result = triggers.parseLine(raw, '');
+    const result = triggers.parseLine(new AnsiAwareBuffer('Map ahead'), '');
 
-    expect(result).toBe('{clickOpen:9:map}Map link{clickClose} ahead');
+    expect(result?.text).toBe('Map link ahead');
   });
 
   test('multiline triggers keep plain-text indices aligned with metadata', () => {
     const triggers = new Triggers({} as any);
     let observedIndex: number | undefined;
-    triggers.registerMultilineTrigger(/Second/, (triggerLine) => {
-      expect(triggerLine).toBeDefined();
-      const metadata = triggerLine.matches.matches;
-      const matches = triggerLine.matches.matches;
-      if (!matches) return triggerLine;
-      expect(metadata?.index).toBe(matches.index);
-      expect(triggerLine.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Second');
+    triggers.registerMultilineTrigger(/Second/, (buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      expect(buffer).toBeDefined();
+      if (!matches) return buffer;
+      expect(buffer.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Second');
       observedIndex = matches.index;
-      return triggerLine;
+      return buffer;
     });
 
-    const raw = '\u001b[31mFirst\u001b[0m line\n{clickOpen:7}Second{clickClose} line';
-    triggers.parseMultiline(raw, '');
+    const raw = '\u001b[31mFirst\u001b[0m line\nSecond line';
+    triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
 
     expect(observedIndex).toBe('First line'.length + 1);
   });
@@ -204,19 +197,16 @@ describe('Triggers', () => {
   test('token triggers expose plain-text indices despite formatting', () => {
     const triggers = new Triggers({} as any);
     let observedIndex: number | undefined;
-    triggers.registerTokenTrigger('Eamon', (triggerLine) => {
-      expect(triggerLine).toBeDefined();
-      const metadata = triggerLine.matches.matches;
-      const matches = triggerLine.matches.matches;
-      if (!matches) return triggerLine;
-      expect(metadata?.index).toBe(matches.index);
-      expect(triggerLine.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Eamon');
+    triggers.registerTokenTrigger('Eamon', (buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      expect(buffer).toBeDefined();
+      if (!matches) return buffer;
+      expect(buffer.text.slice(matches.index!, matches.index! + matches[0].length)).toBe('Eamon');
       observedIndex = matches.index;
-      return triggerLine;
+      return buffer;
     });
 
     const raw = '\u001b[32mEamon\u001b[0m arrives in style';
-    triggers.parseLine(raw, '');
+    triggers.parseLine(new AnsiAwareBuffer(raw), '');
 
     expect(observedIndex).toBe(0);
   });

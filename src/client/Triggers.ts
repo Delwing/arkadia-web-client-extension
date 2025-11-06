@@ -1,8 +1,6 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
-export {stripAnsiCodes} from "./stripAnsiCodes";
-
 type TriggerCallback = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,

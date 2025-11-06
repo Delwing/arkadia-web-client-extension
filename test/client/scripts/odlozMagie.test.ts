@@ -1,6 +1,7 @@
 jest.mock('@client/scripts/magicsLoader', () => jest.fn().mockResolvedValue(['magiczny miecz']));
 
 import initOdlozMagie from '@client/scripts/odlozMagie';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
@@ -21,13 +22,9 @@ describe('/odloz_magie alias', () => {
     alias.callback(m);
     expect(client.sendCommand).toHaveBeenCalledWith('i');
     const cb = client.Triggers.registerTrigger.mock.calls[0][1];
-    const TriggerLine = require('@client/triggers/TriggerLine').default;
-    const triggerLine = new TriggerLine('Masz przy sobie magiczny miecz');
-    triggerLine.setMatches({
-        matches: ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray,
-        type: ''
-    });
-    cb(triggerLine);
+    const line = new AnsiAwareBuffer('Masz przy sobie magiczny miecz');
+    const matches = ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray;
+    cb(line, matches, '');
     expect(client.FunctionalBind.set).toHaveBeenCalledWith('wloz magiczny miecz do skrzyni');
     expect(client.Triggers.removeTrigger).toHaveBeenCalled();
   });
@@ -40,13 +37,9 @@ describe('/odloz_magie alias', () => {
     alias.callback(m);
     expect(client.sendCommand).toHaveBeenCalledWith('i');
     const cb = client.Triggers.registerTrigger.mock.calls[0][1];
-    const TriggerLine = require('@client/triggers/TriggerLine').default;
-    const triggerLine = new TriggerLine('Masz przy sobie magiczny miecz');
-    triggerLine.setMatches({
-        matches: ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray,
-        type: ''
-    });
-    cb(triggerLine);
+    const line = new AnsiAwareBuffer('Masz przy sobie magiczny miecz');
+    const matches = ['Masz przy sobie magiczny miecz', 'magiczny miecz'] as RegExpMatchArray;
+    cb(line, matches, '');
     expect(client.FunctionalBind.set).toHaveBeenCalledWith('wloz magiczny miecz do kufra');
     expect(client.Triggers.removeTrigger).toHaveBeenCalled();
   });

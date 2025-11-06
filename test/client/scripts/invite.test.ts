@@ -2,6 +2,7 @@ import Client from '@client/Client';
 import initInvite from '@client/scripts/invite';
 import { gmcp } from '@client/gmcp';
 import { refresh, subscribe } from '@modules/data/peopleStore';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 jest.mock('@modules/data/peopleStore', () => ({
     subscribe: jest.fn(),
@@ -107,16 +108,15 @@ describe('Invite functionality', () => {
         // Get the trigger handler
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        // Test invite from enemy guild member
-        const TriggerLine = require('@client/triggers/TriggerLine').default;
-        const triggerLine = new TriggerLine('[Mordimer] zaprasza cie do swojej druzyny.');
-        triggerLine.setMatches({
-            matches: ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer'] as RegExpMatchArray,
-            type: ''
-        });
-        const result = triggerHandler(triggerLine);
+        // Test invite from enemy guild member - line should pass through but no functional bind created
+        const line = new AnsiAwareBuffer('[Mordimer] zaprasza cie do swojej druzyny.');
+        const matches = ['[Mordimer] zaprasza cie do swojej druzyny.', 'Mordimer'] as RegExpMatchArray;
+        const result = triggerHandler(line, matches, '');
 
-        expect(result).toBe(null);
+        // Line should be displayed (not blocked)
+        expect(result).toBe(line);
+        // But no functional bind should be created for enemy guild member
+        expect(mockFunctionalBind.set).not.toHaveBeenCalled();
     });
 
     test('should allow invite from non-enemy guild member and execute two commands', async () => {
@@ -132,19 +132,15 @@ describe('Invite functionality', () => {
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
         // Test invite from non-enemy guild member
-        const TriggerLine = require('@client/triggers/TriggerLine').default;
-        const triggerLine = new TriggerLine('[Vesper] zaprasza cie do swojej druzyny.');
-        triggerLine.setMatches({
-            matches: ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray,
-            type: ''
-        });
-        const result = triggerHandler(triggerLine);
+        const line = new AnsiAwareBuffer('[Vesper] zaprasza cie do swojej druzyny.');
+        const matches = ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray;
+        const result = triggerHandler(line, matches, '');
 
         expect(mockFunctionalBind.set).toHaveBeenCalledWith(
             'Przyjmij zaproszenie od Vesper',
             expect.any(Function)
         );
-        expect(result).toBe(triggerLine);
+        expect(result).toBe(line);
 
         // Test that the functional bind executes both commands
         const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
@@ -165,13 +161,9 @@ describe('Invite functionality', () => {
 
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        const TriggerLine = require('@client/triggers/TriggerLine').default;
-        const triggerLine = new TriggerLine('[Vesper] zaprasza cie do swojej druzyny.');
-        triggerLine.setMatches({
-            matches: ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray,
-            type: ''
-        });
-        triggerHandler(triggerLine);
+        const line = new AnsiAwareBuffer('[Vesper] zaprasza cie do swojej druzyny.');
+        const matches = ['[Vesper] zaprasza cie do swojej druzyny.', 'Vesper'] as RegExpMatchArray;
+        triggerHandler(line, matches, '');
 
         const functionalBindCallback = mockFunctionalBind.set.mock.calls[0][1];
         functionalBindCallback();
@@ -192,16 +184,12 @@ describe('Invite functionality', () => {
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
         // Test invite from unknown person
-        const TriggerLine = require('@client/triggers/TriggerLine').default;
-        const triggerLine = new TriggerLine('[UnknownPlayer] zaprasza cie do swojej druzyny.');
-        triggerLine.setMatches({
-            matches: ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer'] as RegExpMatchArray,
-            type: ''
-        });
-        const result = triggerHandler(triggerLine);
+        const line = new AnsiAwareBuffer('[UnknownPlayer] zaprasza cie do swojej druzyny.');
+        const matches = ['[UnknownPlayer] zaprasza cie do swojej druzyny.', 'UnknownPlayer'] as RegExpMatchArray;
+        const result = triggerHandler(line, matches, '');
 
         expect(mockFunctionalBind.set).not.toHaveBeenCalled();
-        expect(result).toBe(triggerLine);
+        expect(result).toBe(line);
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 
@@ -216,14 +204,11 @@ describe('Invite functionality', () => {
 
         const triggerHandler = mockTriggers.registerTrigger.mock.calls[0][1];
 
-        const triggerLine = new (require('@client/triggers/TriggerLine').default)('[Friendly] zaprasza cie do swojej druzyny.');
-        triggerLine.setMatches({
-            matches: ['[Friendly] zaprasza cie do swojej druzyny.', 'Friendly'] as RegExpMatchArray,
-            type: ''
-        });
-        const result = triggerHandler(triggerLine);
+        const line = new AnsiAwareBuffer('[Friendly] zaprasza cie do swojej druzyny.');
+        const matches = ['[Friendly] zaprasza cie do swojej druzyny.', 'Friendly'] as RegExpMatchArray;
+        const result = triggerHandler(line, matches, '');
 
-        expect(result).toBe(triggerLine);
+        expect(result).toBe(line);
         expect(mockSendCommand).not.toHaveBeenCalled();
     });
 });

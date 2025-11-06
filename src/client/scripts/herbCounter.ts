@@ -1,7 +1,6 @@
 import Client from "../Client";
 import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
-import {stripAnsiCodes} from "../Triggers";
 import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import type {HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
@@ -344,7 +343,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
             if (normal) {
                 const base = `${String(c).padStart(5, ' ')} | ${herbName.padEnd(18, ' ')} | `;
-                const available = width - stripAnsiCodes(base).length;
+                const available = width - base.length;
 
                 const line = new AnsiAwareBuffer();
                 line.append(base, WHITE);
@@ -359,7 +358,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     title: `Prawy klik dla opcji: ${id}`
                 });
 
-                if (available >= stripAnsiCodes(uses).length) {
+                if (available >= uses.length) {
                     line.appendBuffer(usesBuffer);
                     output.appendBuffer(line);
                     output.append('\n');
@@ -371,7 +370,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     output.append('\n');
 
                     const continueLine = new AnsiAwareBuffer();
-                    continueLine.append(' '.repeat(stripAnsiCodes(base).length), WHITE);
+                    continueLine.append(' '.repeat(base.length), WHITE);
                     // For continuation, we need to rebuild from the remaining text
                     const remainingText = uses.slice(available);
                     continueLine.append(remainingText, WHITE);

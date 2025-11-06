@@ -1,5 +1,5 @@
 import initArmorShop from '@client/scripts/armorShop';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
 import { EventEmitter } from 'events';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
@@ -57,7 +57,7 @@ describe('armor shop width adjustments', () => {
     client.dispatch('contentWidth', 50);
     const result = parse(item);
     expect(result).not.toMatch(/\n/);
-    expect(stripAnsiCodes(result)).toMatch(/0\/2\/7\/6/);
+    expect(result).toMatch(/0\/2\/7\/6/);
   });
 
   test('leaves lines unchanged when wide enough', () => {

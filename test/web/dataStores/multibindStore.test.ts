@@ -5,7 +5,7 @@ import {
   replaceAll,
   subscribe,
   type StoredMultibindRecord,
-} from '../multibindStore';
+} from '@web/dataStores/multibindStore';
 
 describe('multibindStore', () => {
   beforeEach(async () => {

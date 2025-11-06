@@ -4,9 +4,10 @@ jest.mock('@client/scripts/prettyContainers', () => {
 });
 
 import initDeposits, { deposits } from '@client/scripts/deposits';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
 import { prettyPrintContainer } from '@client/scripts/prettyContainers';
 import { EventEmitter } from 'events';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -32,7 +33,7 @@ class FakeClient {
 
 describe('deposits', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   let refresh: () => void;
   let show: () => void;
   let reset: () => void;
@@ -43,7 +44,7 @@ describe('deposits', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initDeposits((client as unknown) as any, aliases);
     client.dispatch('storage', { key: 'deposits', value: {} });
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     refresh = aliases[0].callback;
     show = aliases[1].callback;
     reset = aliases[2].callback;
@@ -77,7 +78,7 @@ describe('deposits', () => {
   test('prints deposits', () => {
     parse('Twoj depozyt zawiera miecz.');
     show();
-    const printed = stripAnsiCodes(client.println.mock.calls[0][0]);
+    const printed = client.println.mock.calls[0][0]?.text;
     expect(printed).toContain('  1 | miecz');
   });
 
@@ -118,7 +119,7 @@ describe('deposits', () => {
   test('prints deposits with Polish number counts', () => {
     parse('Twoj depozyt zawiera piec mieczy, wiele monet.');
     show();
-    const printed = stripAnsiCodes(client.println.mock.calls[0][0]);
+    const printed = client.println.mock.calls[0][0]?.text;
     expect(printed).toContain('  5 | mieczy');
     expect(printed).toContain('wie | monet');
   });

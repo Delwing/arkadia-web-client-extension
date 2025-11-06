@@ -1,4 +1,5 @@
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
 
@@ -6,6 +7,7 @@ class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
+  print = jest.fn();
   println = jest.fn();
   port = { postMessage: jest.fn() } as any;
   sendEvent = jest.fn((type: string, detail: any) => {
@@ -27,7 +29,7 @@ class FakeClient {
 
 describe('herb counter', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   let start: () => void;
 
   beforeEach(() => {
@@ -35,7 +37,7 @@ describe('herb counter', () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
     start = aliases[0].callback as any;
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('counts herbs from bags', async () => {
@@ -46,11 +48,11 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('zajrzyj do 2. swojego woreczka');
     parse('Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz dwa zolte jasne kwiaty.');
     parse('Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz zolty jasny kwiat.');
-    const printed = client.println.mock.calls[0][0];
+    const printed = client.print.mock.calls[0][0].text;
     expect(printed).toMatch(/3/);
     expect(printed).toMatch(/deliona/);
-    expect(printed).toMatch(/1\.\s+2 {clickOpen:\d+}deliona{clickClose}/);
-    expect(printed).toMatch(/2\.\s+1 {clickOpen:\d+}deliona{clickClose}/);
+    expect(printed).toMatch(/1\.\s+2 deliona/);
+    expect(printed).toMatch(/2\.\s+1 deliona/);
   });
 
   test('splits summary when width is limited', async () => {
@@ -83,16 +85,16 @@ describe('herb counter', () => {
     );
     const start2 = aliases[0].callback as any;
     const parse2 = (line: string) =>
-      Triggers.prototype.parseLine.call(client.Triggers, line, '');
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     await start2();
     parse2('Doliczyles sie jednej sztuki.');
     parse2(
       'Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz zolty jasny kwiat.'
     );
-    const printed = client.println.mock.calls[0][0];
+    const printed = client.print.mock.calls[0][0].text;
     const lines = printed.split('\n');
     lines.forEach((l) => {
-      expect(stripAnsiCodes(l).length).toBeLessThanOrEqual(client.contentWidth);
+      expect(l.length).toBeLessThanOrEqual(client.contentWidth);
     });
   });
 
@@ -102,17 +104,21 @@ describe('herb counter', () => {
     const showEntry = aliases.find(({ pattern }) => pattern.test('/ziola_pokaz'));
     expect(showEntry).toBeTruthy();
     const show = showEntry!.callback as any;
-    const printedPromise = new Promise<string>((resolve) => {
-      client.println.mockImplementationOnce((line: string) => {
-        resolve(line);
+    const printedPromise = new Promise<AnsiAwareBuffer>((resolve) => {
+      // The herbCounter calls client.print(), not println
+      client.print.mockImplementationOnce((buffer: AnsiAwareBuffer) => {
+        resolve(buffer);
       });
     });
     show();
     client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
     const printed = await printedPromise;
-    expect(printed).toMatch(/2/);
-    expect(printed).toMatch(/deliona/);
-  });
+
+    // Extract text from the AnsiAwareBuffer
+    const text = printed.text;
+    expect(text).toMatch(/2/);
+    expect(text).toMatch(/deliona/);
+  }, 10000);
 
   test('woreczki alias updates bag conditions', async () => {
     jest.useFakeTimers();

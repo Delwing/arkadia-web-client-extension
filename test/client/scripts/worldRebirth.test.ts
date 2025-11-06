@@ -1,6 +1,7 @@
 import initWorldRebirth from '@client/scripts/worldRebirth';
 import Triggers from '@client/Triggers';
 import { getItemSync } from '@modules/core/storage';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -19,7 +20,7 @@ describe('world rebirth trigger', () => {
     client = new FakeClient();
     initWorldRebirth((client as unknown) as any);
     parse = (line: string) =>
-      Triggers.prototype.parseMultiline.call(client.Triggers, line, '');
+      Triggers.prototype.parseMultiline.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('stores parsed timestamp', () => {

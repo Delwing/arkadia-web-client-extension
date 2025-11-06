@@ -1,5 +1,4 @@
 import Client from "../Client";
-import { stripAnsiCodes } from "../Triggers";
 import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
 import { findClosestColor } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
@@ -84,7 +83,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
 
     const matchContents = (line: any) => {
         const text = line.text;
-        const match = stripAnsiCodes(text).match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
+        const match = text.match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
         if (match) {
             match.groups = Object.assign({ container: 'depozyt' }, match.groups);
         }
@@ -92,11 +91,11 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
     };
     const matchEmpty = (line: any) => {
         const text = line.text;
-        return stripAnsiCodes(text).match(/^Twoj depozyt jest pusty\./);
+        return text.match(/^Twoj depozyt jest pusty\./);
     };
     const matchNone = (line: any) => {
         const text = line.text;
-        return stripAnsiCodes(text).match(/^Nie posiadasz wykupionego depozytu\./);
+        return text.match(/^Nie posiadasz wykupionego depozytu\./);
     };
 
     client.Triggers.registerTrigger(matchContents, (line, matches) => {

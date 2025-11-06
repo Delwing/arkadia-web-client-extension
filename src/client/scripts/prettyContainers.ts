@@ -1,6 +1,5 @@
 import Client from "../Client";
 import {findClosestColor} from "@modules/core/Colors";
-import {stripAnsiCodes} from "../Triggers";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
@@ -212,8 +211,8 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
     });
 
     const computeColWidth = (lp: number, rp: number) => Math.max(
-        stripAnsiCodes(title).length + lp + rp,
-        ...allLines.map(l => stripAnsiCodes(l).length + lp + rp),
+        title.length + lp + rp,
+        ...allLines.map(l => l.length + lp + rp),
     );
 
     let colWidth = computeColWidth(leftPadding, rightPadding);

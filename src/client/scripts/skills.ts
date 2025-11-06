@@ -1,6 +1,5 @@
 import Client from "../Client";
 import { colorString, findClosestColor } from "@modules/core/Colors";
-import { stripAnsiCodes } from "../Triggers";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 const COLORS = [
@@ -30,8 +29,7 @@ const skillsDesc: Record<string, number> = {
 };
 
 function pad(str: string, len: number) {
-    const plain = stripAnsiCodes(str);
-    return str + " ".repeat(Math.max(0, len - plain.length));
+    return str + " ".repeat(Math.max(0, len - str.length));
 }
 
 function colorLevel(level: string, maxLevel: number): AnsiAwareBuffer {
@@ -76,7 +74,7 @@ export default function initSkills(
     }
 
     function process(raw: string, originalFormatting?: FormatStateSnapshot): AnsiAwareBuffer {
-        const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(stripAnsiCodes(l)));
+        const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(l));
         const skills: { name: string; level: string }[] = [];
         lines.forEach((l) => {
             const pairs = l.match(/[^:]+:\s+\S+/g);

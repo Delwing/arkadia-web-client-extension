@@ -2,12 +2,13 @@ import { emitFakeLine } from '@client/scripts/fakeLine';
 
 describe('emitFakeLine', () => {
   test('processes fake line through client pipeline', () => {
-    const processed = '{clickOpen:32}oset{clickClose}';
-    const parsed = 'parsed-result';
+    const parsedHtml = 'parsed-html-result';
+    const parsedLine = {
+      toHtml: jest.fn(() => parsedHtml)
+    };
     const client: any = {
-      onLine: jest.fn(() => processed),
+      onLine: jest.fn(() => [parsedLine]),
       clientAdapter: {
-        parseAnsiPatterns: jest.fn(() => parsed),
         output: jest.fn(),
         emit: jest.fn(),
       },
@@ -16,8 +17,8 @@ describe('emitFakeLine', () => {
     emitFakeLine(client, 'Kolczasta wysuszona roslina.');
 
     expect(client.onLine).toHaveBeenCalledWith('Kolczasta wysuszona roslina.', 'combat.avatar');
-    expect(client.clientAdapter.parseAnsiPatterns).toHaveBeenCalledWith(processed);
-    expect(client.clientAdapter.output).toHaveBeenCalledWith(parsed, 'combat.avatar');
+    expect(parsedLine.toHtml).toHaveBeenCalled();
+    expect(client.clientAdapter.output).toHaveBeenCalledWith(parsedHtml, 'combat.avatar');
     expect(client.clientAdapter.emit).toHaveBeenCalledWith('output-sent', 1);
   });
 });

@@ -1,9 +1,10 @@
 import { initImproveCounter } from '@client/scripts/improveCounter';
 import { initKillCounter } from '@client/scripts/kill';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
 import { colorString, findClosestColor } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 import { setItemSync } from '@modules/core/storage';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -31,7 +32,7 @@ class FakeClient {
 
 describe('improve counter', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
   let show: () => void;
   let showLifetime: () => void;
   let reset: () => void;
@@ -50,7 +51,7 @@ describe('improve counter', () => {
     client.dispatch('storage', { key: 'improve_counter', value: {} });
     client.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     parse = (line: string) =>
-      Triggers.prototype.parseLine.call(client.Triggers, line, '');
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     show = aliases[0].callback;
     reset = aliases[1].callback;
     showLifetime = aliases[2].callback;
@@ -67,7 +68,7 @@ describe('improve counter', () => {
     const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
     show();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/2\. male/);
     expect(printed).toMatch(/czas 0:30/);
     expect(printed).toMatch(/zabici 1\/1/);
@@ -83,7 +84,7 @@ describe('improve counter', () => {
   test('counts initial level above zero as multiple improvements', () => {
     client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
@@ -97,7 +98,7 @@ describe('improve counter', () => {
     client.print.mockClear();
     client.dispatch('reset', undefined);
     show();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/Dzisiaj: 0/);
     expect(printed).not.toMatch(/1\. male/);
   });
@@ -108,7 +109,7 @@ describe('improve counter', () => {
     jest.advanceTimersByTime(30000);
     client.dispatch('gmcp.char.state', { improve: 3 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/\[\s*1]/);
     expect(printed).toMatch(/- male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
@@ -116,7 +117,7 @@ describe('improve counter', () => {
     // reset should not clear lifetime
     reset();
     showLifetime();
-    const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed2 = client.print.mock.calls[0][0]?.text;
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
 
@@ -128,22 +129,22 @@ describe('improve counter', () => {
     expect(remove).toBeDefined();
     expect(removeCount).toBeDefined();
     add!.callback('/postepy2+ 2'.match(add!.pattern)!);
-    let info = stripAnsiCodes(client.println.mock.calls[0][0]);
+    let info = client.println.mock.calls[0][0]?.text;
     expect(info).toMatch(/Dodano 2 postepow/);
     expect(info).toMatch(/lacznie: 2/);
     client.println.mockClear();
     showLifetime();
-    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    let printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     removeCount!.callback('/postepy2- 1 1'.match(removeCount!.pattern)!);
-    info = stripAnsiCodes(client.println.mock.calls[0][0]);
+    info = client.println.mock.calls[0][0]?.text;
     expect(info).toMatch(/Usunieto 1 postepow/);
     expect(info).toMatch(/lacznie: 1/);
     client.println.mockClear();
     showLifetime();
-    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- nieznaczne/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
@@ -153,7 +154,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 2 });
     client.dispatch('gmcp.char.state', { improve: 3 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
   });
@@ -162,7 +163,7 @@ describe('improve counter', () => {
     client.dispatch('gmcp.char.state', { improve: 2 });
     client.dispatch('gmcp.char.state', { improve: 4 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- nieduze/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
   });
@@ -171,14 +172,14 @@ describe('improve counter', () => {
     client.dispatch('storage', { key: 'improve_counter', value: { level: 0 } });
     client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     client.print.mockClear();
     // duplicate state should not add again
     client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
-    const printed2 = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed2 = client.print.mock.calls[0][0]?.text;
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 
@@ -198,7 +199,7 @@ describe('improve counter', () => {
     c.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
-    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    const printed = c.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/- bardzo male/);
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
     expect(c.println).not.toHaveBeenCalled();
@@ -207,11 +208,11 @@ describe('improve counter', () => {
   test('counts improvement without object number', () => {
     client.dispatch('gmcp.char.state', { improve: 1 });
     show();
-    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    let printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/Dzisiaj: 1/);
     client.print.mockClear();
     showLifetime();
-    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 1 postepow/);
   });
 
@@ -226,13 +227,13 @@ describe('improve counter', () => {
     });
     client.dispatch('gmcp.char.state', { improve: 4 });
     showLifetime();
-    let printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    let printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
     client.print.mockClear();
     client.dispatch('gmcp.char.state', { improve: 5 });
     client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
-    printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 6 postepow/);
   });
 
@@ -248,7 +249,7 @@ describe('improve counter', () => {
     setItemSync('object_num', '2');
     client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
-    const printed = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
   });
 
@@ -275,7 +276,7 @@ describe('improve counter', () => {
     c.dispatch('gmcp.char.state', { improve: 2 });
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
-    const printed = stripAnsiCodes(c.print.mock.calls[0][0]);
+    const printed = c.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
 });

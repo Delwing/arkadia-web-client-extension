@@ -1,5 +1,6 @@
 import { performance } from 'perf_hooks';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -25,11 +26,11 @@ describe('Trigger performance', () => {
     }
 
     const startToken = performance.now();
-    dataset.forEach(l => tokenT.parseLine(l, ''));
+    dataset.forEach(l => tokenT.parseLine(new AnsiAwareBuffer(l), ''));
     const tokenTime = performance.now() - startToken;
 
     const startRegex = performance.now();
-    dataset.forEach(l => regexT.parseLine(l, ''));
+    dataset.forEach(l => regexT.parseLine(new AnsiAwareBuffer(l), ''));
     const regexTime = performance.now() - startRegex;
 
     expect(tokenTime).toBeLessThan(regexTime);

@@ -1,5 +1,6 @@
 import Triggers from '@client/Triggers';
 import initTeamBlockers from '@client/scripts/teamBlockers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean };
@@ -25,12 +26,12 @@ class FakeClient {
 
 describe('team blockers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initTeamBlockers((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   const blockerLine =

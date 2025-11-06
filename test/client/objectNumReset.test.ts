@@ -22,7 +22,6 @@ jest.mock('@client/Triggers', () => ({
 }));
 
 jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('@client/OutputHandler', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@client/scripts/functionalBind', () => ({
   FunctionalBind: jest.fn().mockImplementation(() => ({
     set: jest.fn(),

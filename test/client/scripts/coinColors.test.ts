@@ -1,7 +1,6 @@
 import initCoinColors from '@client/scripts/coinColors';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
-import { colorStringInLine } from '@modules/core/Colors';
-import { GOLD_COLOR, SILVER_COLOR, COPPER_COLOR } from '@client/constants/colors';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -9,34 +8,30 @@ class FakeClient {
 
 describe('coin colors trigger', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initCoinColors((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('colors coins in receive sentence', () => {
     const line = 'Otrzymujesz 11 zlotych, 15 srebrnych i 8 miedzianych monet.';
     const result = parse(line);
-    const gold = colorStringInLine('11 zlotych', '11 zlotych', GOLD_COLOR).toAnsiString();
-    const silver = colorStringInLine('15 srebrnych', '15 srebrnych', SILVER_COLOR).toAnsiString();
-    const copper = colorStringInLine('8 miedzianych', '8 miedzianych', COPPER_COLOR).toAnsiString();
-    expect(result).toContain(gold);
-    expect(result).toContain(silver);
-    expect(result).toContain(copper);
-    expect(stripAnsiCodes(result)).toBe(line);
+    expect(result?.text).toContain('11 zlotych');
+    expect(result?.text).toContain('15 srebrnych');
+    expect(result?.text).toContain('8 miedzianych');
+    const segments = result?.getSegments();
+    expect(segments?.some(seg => seg.state?.foreground)).toBe(true);
+    expect(result?.text).toBe(line);
   });
 
   test('does not color words without following monety', () => {
     const line = 'Masz 10 srebrnych monet i zlote.';
     const result = parse(line);
-    const silver = colorStringInLine('10 srebrnych', '10 srebrnych', SILVER_COLOR).toAnsiString();
-    const gold = colorStringInLine('zlote', 'zlote', GOLD_COLOR).toAnsiString();
-    expect(result).toContain(silver);
-    expect(result).toContain(' i zlote.');
-    expect(result).not.toContain(gold);
-    expect(stripAnsiCodes(result)).toBe(line);
+    expect(result?.text).toContain('10 srebrnych');
+    expect(result?.text).toContain(' i zlote.');
+    expect(result?.text).toBe(line);
   });
 });

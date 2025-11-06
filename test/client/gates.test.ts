@@ -1,5 +1,5 @@
 import Triggers from '@client/Triggers';
-
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import initGates from '@client/scripts/gates';
 
 class FakeClient {
@@ -11,14 +11,14 @@ class FakeClient {
 
 describe('gates triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     jest.clearAllMocks();
     initGates((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('binding is set and callback sends command', () => {

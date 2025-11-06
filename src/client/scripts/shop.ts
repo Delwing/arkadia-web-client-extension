@@ -1,6 +1,5 @@
 import Client from "../Client";
 import { colorString } from "@modules/core/Colors";
-import { stripAnsiCodes } from "../Triggers";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 import {
     MITHRIL_COLOR,
@@ -52,10 +51,10 @@ export function formatItem(
     const namePart = `${amountPrefix}${name}`;
     const numbersContent = coloredCostsBuffer.text;
     const combined = `${namePart} ${numbersContent}`;
-    const strippedLen = stripAnsiCodes(combined).length;
-    const fitsSingleLine = strippedLen <= width - 4;
+    const combinedLen = combined.length;
+    const fitsSingleLine = combinedLen <= width - 4;
     if (fitsSingleLine) {
-        const spaces = ".".repeat(Math.max(0, width - 3 - strippedLen - 2));
+        const spaces = ".".repeat(Math.max(0, width - 3 - combinedLen - 2));
         const result = new AnsiAwareBuffer('', originalFormatting);
         result.append('| ', originalFormatting);
         result.append(namePart, originalFormatting);
@@ -84,7 +83,7 @@ export default function initShop(client: Client, opts: ShopOptions) {
         width = value;
     });
 
-    const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - stripAnsiCodes(str).length));
+    const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - str.length));
 
     client.Triggers.registerTrigger(opts.splitReg, (line) => {
         if (width >= opts.normalWidth) return line;

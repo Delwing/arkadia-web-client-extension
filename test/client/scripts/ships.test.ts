@@ -1,5 +1,6 @@
 import initShips from '@client/scripts/ships';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -10,13 +11,13 @@ class FakeClient {
 
 describe('ships triggers', () => {
   let client: FakeClient;
-  let parse: (line: string, type?: string) => string;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initShips((client as unknown) as any);
-    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, line, type);
+    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
     jest.clearAllMocks();
   });
 

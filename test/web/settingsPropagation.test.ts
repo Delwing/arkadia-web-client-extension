@@ -1,10 +1,8 @@
 import storage from '@modules/core/storage';
 import initShortExits from '@client/scripts/shortExits';
 import Triggers from '@client/Triggers';
-import { colorString, findClosestColor } from '@modules/core/Colors';
 import { defaultSettings } from '@modules/core/defaultSettings';
-
-const ORANGE = findClosestColor('#ffa500');
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -27,9 +25,10 @@ describe('settings propagation to scripts', () => {
   test('shortenExits setting affects script', async () => {
     const client = new FakeClient();
     initShortExits(client as any);
-    const parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    const parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     const line = 'Sa tutaj dwa widoczne wyjscia: polnoc i wschod.';
-    expect(parse(line)).toBe(line);
+    const result1 = parse(line);
+    expect(result1?.text).toBe(line);
 
     storage.onChanged?.addListener(changes => {
       if (changes.settings) {
@@ -40,6 +39,11 @@ describe('settings propagation to scripts', () => {
     await storage.setItem('settings', { ...defaultSettings, shortenExits: true });
     await new Promise(res => setTimeout(res, 0));
 
-    expect(parse(line)).toBe(colorString('-----: N E', ORANGE));
+    const result2 = parse(line);
+    expect(result2?.text).toBe('-----: N E');
+
+    // Check that the result is colored
+    const segments = result2?.getSegments() ?? [];
+    expect(segments.some(seg => seg.state?.foreground)).toBe(true);
   });
 });

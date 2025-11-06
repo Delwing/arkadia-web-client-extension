@@ -22,7 +22,6 @@ describe('output performance measurements', () => {
       splitBottom,
       stickyArea,
       isSplitView: () => false,
-      processSticky: () => {},
       stickyLines: 15,
     });
 

@@ -1,6 +1,6 @@
 import initMountain from '@client/scripts/mountain';
 import Triggers from '@client/Triggers';
-import { findClosestColor } from '@modules/core/Colors';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -9,41 +9,43 @@ class FakeClient {
 
 describe('mountain triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
-  const yellow = findClosestColor('#ffff00');
-  const prefix = `\x1B[22;38;5;${yellow}m`;
-  const suffix = '\x1B[0m';
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initMountain((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('colors descending line yellow', () => {
     const result = parse('Zaczynasz schodzic na dol.');
-    expect(result).toBe(prefix + 'Zaczynasz schodzic na dol.' + suffix);
+    expect(result?.text).toBe('Zaczynasz schodzic na dol.');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
   });
 
   test('colors climbing line yellow', () => {
     const result = parse('Zaczynasz wspinac sie');
-    expect(result).toBe(prefix + 'Zaczynasz wspinac sie' + suffix);
+    expect(result?.text).toBe('Zaczynasz wspinac sie');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
   });
 
   test('colors reaching top line yellow', () => {
     const result = parse('Docierasz na gore.');
-    expect(result).toBe(prefix + 'Docierasz na gore.' + suffix);
+    expect(result?.text).toBe('Docierasz na gore.');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
   });
 
   test('colors safe descent line yellow', () => {
     const result = parse('Bezpiecznie schodzisz na dol.');
-    expect(result).toBe(prefix + 'Bezpiecznie schodzisz na dol.' + suffix);
+    expect(result?.text).toBe('Bezpiecznie schodzisz na dol.');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
   });
 
   test('colors falling line yellow and moves back when climbing up', () => {
     parse('Zaczynasz wspinac sie');
     const result = parse('Odpadasz od sciany i lecisz w dol');
-    expect(result).toBe(prefix + 'Odpadasz od sciany i lecisz w dol' + suffix);
+    expect(result?.text).toBe('Odpadasz od sciany i lecisz w dol');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
     expect(client.Map.moveBack).toHaveBeenCalled();
   });
 });

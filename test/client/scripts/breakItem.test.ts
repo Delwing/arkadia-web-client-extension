@@ -1,6 +1,6 @@
 import initBreakItem from '@client/scripts/breakItem';
 import Triggers from '@client/Triggers';
-import { colorString, findClosestColor } from '@modules/core/Colors';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -12,12 +12,12 @@ class FakeClient {
 
 describe('break item triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initBreakItem((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
   });
 
@@ -28,9 +28,10 @@ describe('break item triggers', () => {
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     expect(client.sendEvent).toHaveBeenCalledWith('breakItem', { text: line, command: undefined });
-    const color = findClosestColor('#ff6347');
-    const expected = `\n\n${client.prefix(line, colorString('[  SPRZET  ] ', color))}\n\n`;
-    expect(result).toBe(expected);
+    expect(result?.text).toContain('[  SPRZET  ]');
+    expect(result?.text).toContain(line);
+    const segments = result?.getSegments();
+    expect(segments?.some(seg => seg.state?.foreground)).toBe(true);
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
   });
 

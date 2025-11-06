@@ -32,7 +32,6 @@ export default function initBreakItem(client: Client) {
                     client.sendCommand(command);
                 }
             }, true);
-            console.log(line.text);
             return format(line);
         }, tag);
     });

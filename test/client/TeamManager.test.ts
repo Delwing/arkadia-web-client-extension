@@ -1,5 +1,6 @@
 import TeamManager from '@client/TeamManager';
 import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -39,7 +40,7 @@ describe('TeamManager', () => {
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Vesper', living: true, team: true },
     });
-    client.Triggers.parseLine('Vesper porzuca twoja druzyne.', '');
+    client.Triggers.parseLine(new AnsiAwareBuffer('Vesper porzuca twoja druzyne.'), '');
     expect(manager.isInTeam('Vesper')).toBe(false);
   });
 
@@ -47,12 +48,12 @@ describe('TeamManager', () => {
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Bob', living: true, team: true },
     });
-    client.Triggers.parseLine('Nie jestes w zadnej druzynie.', '');
+    client.Triggers.parseLine(new AnsiAwareBuffer('Nie jestes w zadnej druzynie.'), '');
     expect(manager.getTeamMembers()).toEqual([]);
   });
 
   test('full sync message sets leader and members', () => {
-    client.Triggers.parseLine('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.', '');
+    client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
     expect(manager.getLeader()).toBe('Vesper');
     const members = manager.getTeamMembers();
     expect(members).toEqual(expect.arrayContaining(['Vesper', 'Pablo', 'Opeteh']));

@@ -1,5 +1,5 @@
 import initHerbShop from '@client/scripts/herbShop';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
 import { EventEmitter } from 'events';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
@@ -59,7 +59,7 @@ describe('herb shop width adjustments', () => {
     client.dispatch('contentWidth', 70);
     const result = parse(item);
     expect(result).not.toMatch(/\n/);
-    const stripped = stripAnsiCodes(result);
+    const stripped = result;
     expect(stripped).toMatch(/^\|\s*100\|/);
     expect(stripped).toMatch(/0\/0\/6\/2\s*\|$/);
   });

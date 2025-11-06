@@ -200,9 +200,9 @@ describe('object aliases', () => {
 
   test('/puszczaj toggles release flag', () => {
     toggle();
-    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('OFF'));
+    expect(client.print).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining('OFF') }));
     toggle();
-    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('ON'));
+    expect(client.print).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining('ON') }));
   });
 
   test('/zas alias with release first guards then releases', () => {

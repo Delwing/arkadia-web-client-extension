@@ -1,5 +1,6 @@
 import initParryShieldEvaluation from '@client/scripts/parryShieldEvaluation';
-import Triggers, { stripAnsiCodes } from '@client/Triggers';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
@@ -8,19 +9,19 @@ class FakeClient {
 
 describe('parry shield evaluation trigger', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     client = new FakeClient();
     initParryShieldEvaluation(client as unknown as any);
     parse = (line: string) =>
-      Triggers.prototype.parseLine.call(client.Triggers, line, '');
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
   test('parses parry line', () => {
     parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest ona fantastycznie skuteczna w parowaniu ciosow.');
 
-    const output = stripAnsiCodes(client.print.mock.calls[0][0]);
+    const output = client.print.mock.calls[0][0]?.text;
     expect(output).toContain('Typ zbroi: puklerz');
     expect(output).toContain('Parowanie: [14/14]');
     expect(output).not.toContain('Suma');

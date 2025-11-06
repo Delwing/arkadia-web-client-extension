@@ -1,6 +1,7 @@
 import initLamp from '@client/scripts/lamp';
 import Triggers from '@client/Triggers';
 import { takeFromBag } from '@client/scripts/bagManager';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 jest.mock('@client/scripts/bagManager', () => ({
   takeFromBag: jest.fn(),
@@ -17,13 +18,13 @@ class FakeClient {
 
 describe('lamp triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => string;
+  let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initLamp((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, line, '');
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
   });
 

@@ -8,7 +8,7 @@ export const WEAPON_COLOR = findClosestColor("#ffff00");
 function isMagicColored(line: AnsiAwareBuffer, weapon: string, index: number = 0): boolean {
     const weaponIndex = line.text.indexOf(weapon, index)
     const color = line.getStateAt(weaponIndex)
-    return color.foreground.space === "hex" && color.foreground.color == (MAGICS_COLOR.foreground as HexColor).color
+    return color?.foreground?.space === "hex" && color.foreground.color == (MAGICS_COLOR.foreground as HexColor).color
 }
 
 export default function initWeaponColors(client: Client) {

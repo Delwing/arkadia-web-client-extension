@@ -1,4 +1,3 @@
-import {stripAnsiCodes} from "../stripAnsiCodes";
 import {colorCodes} from "@modules/core/Colors.ts";
 import mudletColorsJson from "@client/colors.json";
 
@@ -846,9 +845,8 @@ export class AnsiAwareBuffer {
     ): BufferSegment[] {
         if (!text) return [];
         if (explicitState) {
-            const cleanText = stripAnsiCodes(text);
-            if (cleanText.length === 0) return [];
-            return [{text: cleanText, state: isDefaultState(explicitState) ? undefined : cloneState(explicitState)}];
+            if (text.length === 0) return [];
+            return [{text, state: isDefaultState(explicitState) ? undefined : cloneState(explicitState)}];
         }
         if (!text.includes(ESC)) {
             const state = baseState && !isDefaultState(baseState) ? cloneState(baseState) : undefined;

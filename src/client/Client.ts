@@ -30,7 +30,7 @@ type ListenerOptions = boolean | { once?: boolean; signal?: AbortSignal };
 export interface ClientAdapter {
     send(text: string, echo?: boolean, options?: CommandOptions): void;
 
-    output(text?: string, type?: string): void
+    output(text?: string | AnsiAwareBuffer, type?: string): void
 
     sendGmcp(type: string, payload?: any): void
 
