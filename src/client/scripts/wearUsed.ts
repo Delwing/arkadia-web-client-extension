@@ -18,10 +18,10 @@ const WEAR_USED_DESC: Record<string, number> = {
     "troche zuzyty.": 3,
     "troche znoszone.": 3,
     "troche znoszona.": 3,
-    "w duzym stopniu zuzyty": 2,
+    "w duzym stopniu zuzyty.": 2,
     "prawie calkiem znoszone.": 2,
     "prawie calkiem znoszona.": 2,
-    "kompletnie zuzyty": 1,
+    "kompletnie zuzyty.": 1,
     "gotowe rozpasc sie w kazdej chwili.": 1,
     "gotowa rozpasc sie w kazdej chwili.": 1,
 };
