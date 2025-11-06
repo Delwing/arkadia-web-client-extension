@@ -53,20 +53,24 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
             return;
         }
 
+        // Find the maximum key length for alignment
+        const maxKeyLength = Math.max(...entries.map(sc => sc.key.length));
+
         const output = new AnsiAwareBuffer();
         entries.forEach((sc, idx) => {
             if (idx > 0) {
                 output.append('\n');
             }
 
-            // Build the line
+            // Build the line with padding for alignment
             output.appendBuffer(colorString(sc.key, HEADER_COLOR));
-            output.append(` → ${sc.id} `);
+            const padding = ' '.repeat(maxKeyLength - sc.key.length);
+            output.append(`${padding} → ${sc.id} `, {});
             output.appendBuffer(colorString(sc.label, NAME_COLOR));
-            output.append(' [ ');
+            output.append(' [ ', {});
 
             const leadStart = output.length;
-            output.append('prowadz');
+            output.append('prowadz', {});
             output.createLink([leadStart, leadStart + 'prowadz'.length], {
                 onClick: () => {
                     client.sendCommand("/prowadz " + sc.key);
@@ -74,7 +78,7 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
                 title: `Kliknij aby prowadzić do: ${sc.key}`
             });
 
-            output.append(' ]');
+            output.append(' ]', {});
         });
 
         client.println(output);

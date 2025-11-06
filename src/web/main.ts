@@ -399,6 +399,9 @@ setupOutputMessageHandler(arkadiaClient, {
     stickyArea,
     isSplitView: () => isSplitView,
     stickyLines: STICKY_LINES,
+    suppressSplitView: (durationMs: number) => {
+        suppressSplitViewUntil = Date.now() + durationMs;
+    },
 });
 
 // Track connection state

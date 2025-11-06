@@ -12,6 +12,7 @@ type OutputHandlerOptions = {
     isSplitView: () => boolean;
     stickyLines: number;
     maxElements?: number;
+    suppressSplitView?: (durationMs: number) => void;
 };
 
 const TIMESTAMP_CLASS = 'output-show-timestamps';
@@ -81,9 +82,19 @@ function createMessageWrapper(
 
     // Handle string or AnsiAwareBuffer
     if (typeof message === 'string') {
-        contentSpan.innerHTML = message;
+        if (message === '') {
+            // Empty string should render as an empty line (with line height)
+            contentSpan.innerHTML = '&nbsp;';
+        } else {
+            contentSpan.innerHTML = message;
+        }
     } else if (message instanceof AnsiAwareBuffer) {
-        contentSpan.appendChild(message.toDom());
+        if (message.length === 0) {
+            // Empty buffer should render as an empty line (with line height)
+            contentSpan.innerHTML = '&nbsp;';
+        } else {
+            contentSpan.appendChild(message.toDom());
+        }
     }
 
     contentSpan.style.whiteSpace = 'pre-wrap';
@@ -104,6 +115,7 @@ export function setupOutputMessageHandler(
         isSplitView,
         stickyLines,
         maxElements = 1000,
+        suppressSplitView,
     }: OutputHandlerOptions,
 ) {
     currentOutputWrapper = outputWrapper;
@@ -111,7 +123,8 @@ export function setupOutputMessageHandler(
     applyTimestampVisibility();
 
     const handleMessage = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
-        if (!message || (typeof message === 'string' && message === "")) {
+        // Allow empty strings to render as empty lines, but skip undefined/null
+        if (message === undefined || message === null) {
             return;
         }
 
@@ -149,6 +162,10 @@ export function setupOutputMessageHandler(
                 }
             }
         } else {
+            // Suppress split view checks to prevent blinking when text is being output
+            if (suppressSplitView) {
+                suppressSplitView(250);
+            }
             // Defer scroll to next frame to allow layout changes (e.g., multibinds) to settle first
             requestAnimationFrame(() => {
                 outputWrapper.scrollTop = outputWrapper.scrollHeight;
