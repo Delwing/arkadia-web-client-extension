@@ -195,4 +195,61 @@ describe('language speech handling', () => {
     expect(context.outputMock).toHaveBeenCalledWith("→ 'greetings travelers", 'command');
     expect(context.flushMock).toHaveBeenCalled();
   });
+
+  test('custom alias requires space before text', () => {
+    const context = createMockClient();
+
+    initLanguage(context.client as any, context.client.aliases);
+
+    context.dispatch('settings', {
+      language: 'potoczna',
+      languageAdjective: '',
+      languageAliases: [
+        {
+          alias: 'jp',
+          adjective: '',
+          language: 'khazalid',
+        },
+      ],
+    });
+
+    // 'jp hello' should match
+    const aliasWithSpace = context.client.aliases.find(({ pattern }) => pattern.test('jp hello'));
+    expect(aliasWithSpace).toBeDefined();
+
+    // 'jp' alone should match
+    const aliasAlone = context.client.aliases.find(({ pattern }) => pattern.test('jp'));
+    expect(aliasAlone).toBeDefined();
+
+    // 'jphello' should NOT match the jp alias
+    const aliasNoSpace = context.client.aliases.find(({ pattern }) => pattern.test('jphello'));
+    expect(aliasNoSpace).toBeUndefined();
+
+    // 'jppowiedz' should NOT match the jp alias
+    const jpCommand = context.client.aliases.find(({ pattern }) => pattern.test('jppowiedz'));
+    expect(jpCommand).toBeUndefined();
+  });
+
+  test('custom alias without text sends empty message', () => {
+    const context = createMockClient();
+
+    initLanguage(context.client as any, context.client.aliases);
+
+    context.dispatch('settings', {
+      language: 'potoczna',
+      languageAdjective: '',
+      languageAliases: [
+        {
+          alias: 'jp',
+          adjective: '',
+          language: 'khazalid',
+        },
+      ],
+    });
+
+    context.triggerAlias('jp');
+
+    expect(context.sendMock).toHaveBeenCalledWith("'", false);
+    expect(context.outputMock).toHaveBeenCalledWith("→ '", 'command');
+  });
 });

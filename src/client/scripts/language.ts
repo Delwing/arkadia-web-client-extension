@@ -64,11 +64,12 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
             if (idx !== -1) aliases.splice(idx, 1);
         });
         customAliases = arr.map(item => {
-            const pattern = new RegExp('^' + escapeRegExp(item.alias) + ' ?(.*)$');
+            // Require space after alias if there's text: 'jp hello' works, 'jphello' doesn't
+            const pattern = new RegExp('^' + escapeRegExp(item.alias) + '(?:\\s(.*))?$');
             return {
                 pattern,
                 callback: (matches: RegExpMatchArray) => {
-                    const msg = matches[1];
+                    const msg = matches[1] || '';
                     const lang = item.language;
                     const adj = item.adjective.trim();
                     say(lang, adj, msg);
