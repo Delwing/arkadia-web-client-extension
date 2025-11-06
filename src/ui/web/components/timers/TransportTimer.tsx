@@ -35,10 +35,7 @@ export const TransportTimer: React.FC = () => {
     typeof payload.remaining === "number" && typeof payload.total === "number";
 
   // Build display parts
-  const parts = ["Tr:"];
-  if (showTransportLabel) {
-    parts.push(payload.label);
-  }
+  const parts = ["Tr:", payload.label];
 
   let className = "";
   if (hasTimer) {
@@ -59,7 +56,7 @@ export const TransportTimer: React.FC = () => {
   }
 
   return (
-    <span className={className}>
+    <span className={className} style={{ display: "block" }}>
       {parts.join(" ")}
     </span>
   );

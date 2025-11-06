@@ -19,7 +19,7 @@ export default function initBreakItem(client: Client) {
     ];
 
     const format = (line: AnsiAwareBuffer) => line
-        .prefix(`\n\n[  SPRZET  ]`, COLOR)
+        .prefix(`\n\n[  SPRZET  ] `, COLOR)
         .suffix("\n\n");
 
     entries.forEach(({ pattern, command }) => {

@@ -74,12 +74,18 @@ function createPad(
     width: number,
     left: number,
     right: number
-): (content?: string) => string {
+): (content?: AnsiAwareBuffer) => AnsiAwareBuffer {
     const contentWidth = width - left - right;
-    return (content = "") =>
-        `|${" ".repeat(left)}${content}${" ".repeat(
-            Math.max(0, contentWidth - content.length)
-        )}${" ".repeat(right)}|`;
+    return (content = new AnsiAwareBuffer()) => {
+        const buffer = new AnsiAwareBuffer();
+        buffer.append("|", {});
+        buffer.append(" ".repeat(left), {});
+        buffer.appendBuffer(content);
+        buffer.append(" ".repeat(Math.max(0, contentWidth - content.length)), {});
+        buffer.append(" ".repeat(right), {});
+        buffer.append("|", {});
+        return buffer;
+    };
 }
 
 function createHeader(
@@ -121,12 +127,13 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
         Object.values(counts).reduce((s, v) => s + v.teamSession, 0);
 
     const mobLine = (name: string, my: number) => {
+        const buffer = new AnsiAwareBuffer();
         const numbers = `${my}`;
-        let text = `${name} `;
-        const dots = CONTENT_WIDTH - text.length - numbers.length - 1;
-        text += ".".repeat(Math.max(0, dots));
-        text += ` ${numbers}`;
-        return pad(text);
+        buffer.append(`${name} `, {});
+        const dots = CONTENT_WIDTH - name.length - 1 - numbers.length - 1;
+        buffer.append(".".repeat(Math.max(0, dots)), {});
+        buffer.append(` ${numbers}`, {});
+        return pad(buffer);
     };
 
     const summaryLine = (label: string, value: number, color?: ReturnType<typeof findClosestColor>) => {
@@ -141,27 +148,32 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
         const dots = CONTENT_WIDTH - label.length - 1 - num.length;
         buffer.append(".".repeat(Math.max(0, dots)), {});
         buffer.append(num, {});
-        const padded = pad(buffer.text);
-        return new AnsiAwareBuffer(padded);
+        return pad(buffer);
     };
 
     const output = new AnsiAwareBuffer();
     output.appendBuffer(header("Licznik zabitych"));
     output.append("\n", {});
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
 
     const jaLine = new AnsiAwareBuffer();
     jaLine.append("JA", MY_COLOR);
-    output.append(pad(jaLine.text) + "\n", {});
+    output.appendBuffer(pad(jaLine));
+    output.append("\n", {});
 
     entries.forEach(([name, {mySession}]) => {
-        output.append(mobLine(name, mySession) + "\n", {});
+        output.appendBuffer(mobLine(name, mySession));
+        output.append("\n", {});
     });
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
     output.appendBuffer(summaryLine("LACZNIE:", totalMy, TOTAL_COLOR));
     output.append("\n", {});
-    output.append(pad() + "\n", {});
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
     output.appendBuffer(summaryLine("DRUZYNA LACZNIE:", totalCombined, TOTAL_COLOR));
     output.append("\n", {});
     output.append(`+${"-".repeat(WIDTH)}+`, {});
@@ -207,19 +219,27 @@ function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
         const dots = CONTENT_WIDTH - 3 - name.length - String(count).length;
         buffer.append(".".repeat(Math.max(0, dots)), {});
         buffer.append(String(count), {});
-        return pad(buffer.text);
+        return pad(buffer);
     };
 
     const output = new AnsiAwareBuffer();
     output.appendBuffer(header("Licznik zabitych"));
     output.append("\n", {});
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
     entries.forEach(([name, entry]) => {
-        output.append(mobLine(name, entry.myTotal) + "\n", {});
+        output.appendBuffer(mobLine(name, entry.myTotal));
+        output.append("\n", {});
     });
-    output.append(pad() + "\n", {});
-    output.append(pad("    ----------------------------------- ") + "\n", {});
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const separatorBuffer = new AnsiAwareBuffer();
+    separatorBuffer.append("    ----------------------------------- ", {});
+    output.appendBuffer(pad(separatorBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
 
     const summaryBuffer = new AnsiAwareBuffer();
     summaryBuffer.append("  ", {});
@@ -227,8 +247,10 @@ function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
     summaryBuffer.append(String(total), LOWER_COLOR);
     summaryBuffer.append(" zabitych", LOWER_COLOR);
 
-    output.append(pad(summaryBuffer.text) + "\n", {});
-    output.append(pad() + "\n", {});
+    output.appendBuffer(pad(summaryBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
     output.append(`+${"-".repeat(INNER)}+`, {});
     return output;
 }
@@ -291,7 +313,7 @@ class KillCounter {
                 this.client.emit("kill", { killer: "ME" });
                 const mob = parseName(matches.groups?.name ?? "");
                 const entry = this.recordKill(mob, true);
-                return this.formatPrefix(line, entry, "[  ZABILES  ] ", true);
+                return this.formatPrefix(line, entry, "[  ZABILES  ]", true);
             }
         );
 
@@ -304,10 +326,10 @@ class KillCounter {
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);
                     this.client.emit("kill", { killer: "TEAM" });
-                    return this.formatPrefix(line, entry, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(line, entry, "[   ZABIL   ]", false);
                 } else {
                     this.client.emit("kill", { killer: "OTHER" });
-                    return this.formatPrefix(line, null, "[   ZABIL   ] ", false);
+                    return this.formatPrefix(line, null, "[   ZABIL   ]", false);
                 }
             }
         );

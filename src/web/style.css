@@ -1736,14 +1736,17 @@ h1 {
 }
 
 #transport-timer.green {
+  display: block;
   color: springgreen;
 }
 
 #transport-timer.yellow {
+  display: block;
   color: yellow;
 }
 
 #transport-timer.red {
+  display: block;
   color: tomato;
 }
 

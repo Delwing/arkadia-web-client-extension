@@ -49,10 +49,7 @@ export default class TransportTimer {
       return;
     }
     const hasTimer = typeof payload.remaining === "number" && typeof payload.total === "number";
-    const parts = ["Tr:"];
-    if (this.showTransportLabel) {
-      parts.push(payload.label);
-    }
+    const parts = ["Tr:", payload.label];
     if (hasTimer) {
       const remaining = Math.max(0, payload.remaining);
       const minutes = Math.floor(remaining / 60);
