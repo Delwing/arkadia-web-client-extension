@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {colorStringInLine, findClosestColor} from "@modules/core/Colors";
 import {AnsiAwareBuffer, HexColor} from "../ansi/FormatState";
-import {MAGICS_COLOR} from "./magics";
+import {MAGICS_COLOR} from "../constants/colors";
 
 export const WEAPON_COLOR = findClosestColor("#ffff00");
 

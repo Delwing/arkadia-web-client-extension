@@ -2,16 +2,18 @@ import Client from "../Client";
 import {findClosestColor} from "@modules/core/Colors";
 import {stripAnsiCodes} from "../Triggers";
 import loadMagicKeys from "./magicKeyLoader";
-import {KEYS_COLOR} from "./magicKeys";
 import loadMagics from "./magicsLoader";
-import {MAGICS_COLOR} from "./magics";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import {
+    MITHRIL_COLOR,
+    GOLD_COLOR,
+    SILVER_COLOR,
+    COPPER_COLOR,
+    MAGIC_KEYS_COLOR,
+    MAGICS_COLOR
+} from "../constants/colors";
 
 const GROUP_NAME_COLOR = findClosestColor('#557C99');
-const MITHRIL_COLOR = findClosestColor('#afeeee');
-const GOLD_COLOR = findClosestColor('#ffd700');
-const SILVER_COLOR = findClosestColor('#dadada');
-const COPPER_COLOR = findClosestColor('#875f00');
 
 export type GroupDefinition = {
     name: string;
@@ -458,7 +460,7 @@ async function loadMagicAndKeysFilter(client: Client) {
             check: keyRegexp,
             transform: (item) => {
                 const buf = new AnsiAwareBuffer(item);
-                buf.color([0, item.length], KEYS_COLOR);
+                buf.color([0, item.length], MAGIC_KEYS_COLOR);
                 if (plugLinks) {
                     buf.createLink([0, item.length], {
                         onClick: () => client.sendCommand(`wybierz ${item}`),

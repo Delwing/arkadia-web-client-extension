@@ -1,5 +1,6 @@
-import initMagics, { MAGICS_COLOR } from '@client/scripts/magics';
+import initMagics from '@client/scripts/magics';
 import { colorTokenInLine } from '@modules/core/Colors';
+import { MAGICS_COLOR } from '@client/constants/colors';
 
 describe('magics', () => {
     beforeEach(() => {

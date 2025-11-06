@@ -1,5 +1,6 @@
-import initMagicKeys, { KEYS_COLOR } from '@client/scripts/magicKeys';
+import initMagicKeys from '@client/scripts/magicKeys';
 import { colorTokenInLine } from '@modules/core/Colors';
+import { MAGIC_KEYS_COLOR as KEYS_COLOR } from '@client/constants/colors';
 
 describe('magic keys', () => {
     beforeEach(() => {

@@ -1,7 +1,13 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString } from "@modules/core/Colors";
 import { stripAnsiCodes } from "../Triggers";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
+import {
+    MITHRIL_COLOR,
+    GOLD_COLOR,
+    SILVER_COLOR,
+    COPPER_COLOR
+} from "../constants/colors";
 
 export interface ShopOptions {
     normalWidth: number;
@@ -14,11 +20,7 @@ export interface ShopOptions {
     makeItem: (width: number, pad: (s: string, len: number) => string, match: RegExpMatchArray, originalFormatting?: FormatStateSnapshot) => AnsiAwareBuffer;
 }
 
-export const MITHRIL_COLOR = findClosestColor('#afeeee');
-export const GOLD_COLOR = findClosestColor('#ffd700');
-export const SILVER_COLOR = findClosestColor('#dadada');
-export const COPPER_COLOR = findClosestColor('#875f00');
-export const CURRENCY_COLORS = [
+const CURRENCY_COLORS = [
     MITHRIL_COLOR,
     GOLD_COLOR,
     SILVER_COLOR,

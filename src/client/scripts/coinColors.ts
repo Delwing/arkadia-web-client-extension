@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorStringInLine} from "@modules/core/Colors";
-import {COPPER_COLOR, GOLD_COLOR, MITHRIL_COLOR, SILVER_COLOR} from "./shop";
+import {COPPER_COLOR, GOLD_COLOR, MITHRIL_COLOR, SILVER_COLOR} from "../constants/colors";
 import {FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 
 export default function initCoinColors(client: Client) {

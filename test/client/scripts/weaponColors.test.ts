@@ -1,7 +1,7 @@
 import initWeaponColors, { WEAPON_COLOR } from '@client/scripts/weaponColors';
 import Triggers, { stripAnsiCodes } from '@client/Triggers';
 import { colorStringInLine, color, RESET } from '@modules/core/Colors';
-import { MAGICS_COLOR } from '@client/scripts/magics';
+import { MAGICS_COLOR } from '@client/constants/colors';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);

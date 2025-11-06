@@ -1,7 +1,7 @@
 import initCoinColors from '@client/scripts/coinColors';
 import Triggers, { stripAnsiCodes } from '@client/Triggers';
 import { colorStringInLine } from '@modules/core/Colors';
-import { GOLD_COLOR, SILVER_COLOR, COPPER_COLOR } from '@client/scripts/shop';
+import { GOLD_COLOR, SILVER_COLOR, COPPER_COLOR } from '@client/constants/colors';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);

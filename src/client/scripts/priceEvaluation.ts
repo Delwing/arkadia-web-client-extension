@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString} from "@modules/core/Colors";
-import {MITHRIL_COLOR, GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "./shop";
+import {MITHRIL_COLOR, GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 export function convertCurrency(amount: number): AnsiAwareBuffer {

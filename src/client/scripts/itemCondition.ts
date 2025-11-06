@@ -51,10 +51,29 @@ export function processItemCondition(buffer: AnsiAwareBuffer, phrase: string): A
 }
 
 export default function initItemCondition(client: Client) {
+    const tag = "item-condition";
     const pattern = /^(?:.* jest (?:juz )?|Wyglada na to, ze (?:sa |jest )?)(.+)\.$/;
-    client.Triggers.registerTrigger(pattern, (line, matches) => {
+
+    // Parent trigger: item inspection actions
+    const inspectionPatterns = [
+        /^Wykonujesz kilka probnych wymachow.*/,
+        /^Fachowym okiem spogladasz.*/,
+        /^Dokladnie obracasz w dloniach.*/,
+        /^Przygladasz sie krytycznie .*, sprawdzajac palcem .* stan\.$/,
+        /^Przejezdzajac palcem po ostrzu .*, sprawdzasz .* stan\.$/,
+        /^Uderzasz kontrolnie .* o .*, oceniajac stan swojego oreza\.$/,
+    ];
+
+    const parentTrigger = client.Triggers.registerTrigger(
+        inspectionPatterns,
+        (line) => line,
+        tag,
+        { stayOpenLines: 1 }
+    );
+
+    parentTrigger.registerChild(pattern, (line, matches) => {
         if (!matches || !matches[1]) return line;
         const phrase = matches[1];
         return processItemCondition(line, phrase);
-    }, "item-condition");
+    }, tag);
 }

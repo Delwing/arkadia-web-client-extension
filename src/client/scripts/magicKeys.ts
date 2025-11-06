@@ -1,8 +1,8 @@
 import Client from "../Client";
-import {colorTokenInLine, findClosestColor} from "@modules/core/Colors";
+import {colorTokenInLine} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
+import {MAGIC_KEYS_COLOR as KEYS_COLOR} from "../constants/colors";
 
-export const KEYS_COLOR = findClosestColor("#00ff87");
 export default async function initMagicKeys(client: Client) {
     const tag = "magicKeys";
     try {
