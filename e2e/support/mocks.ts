@@ -9,7 +9,7 @@ export const GMCP_PATHS = {
 
 export async function installMockWebSocket(context: BrowserContext): Promise<void> {
     await context.addInitScript(() => {
-        const globalScope: any = globalThis;
+        const globalScope: any = window;
         const sockets: MockWebSocket[] = [];
         const commandLog: string[] = [];
 
@@ -115,25 +115,22 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
                 return;
             }
             const client = globalScope.clientExtension;
-            if (!client || typeof client.on !== 'function') {
+            if (!client || typeof client.addEventListener !== 'function') {
                 return;
             }
-            const handler = (value?: unknown) => {
-                if (typeof value !== 'string') {
-                    return;
-                }
-                const trimmed = value.trim();
-                if (trimmed) {
+            const handler = (event: CustomEvent<string>) => {
+                const value = typeof event.detail === 'string' ? event.detail.trim() : '';
+                if (value) {
                     const socket = getGameSocket();
-                    if (socket && socket.commands[socket.commands.length - 1] !== trimmed) {
-                        socket.commands.push(trimmed);
+                    if (socket && socket.commands[socket.commands.length - 1] !== value) {
+                        socket.commands.push(value);
                     }
-                    if (commandLog[commandLog.length - 1] !== trimmed) {
-                        commandLog.push(trimmed);
+                    if (commandLog[commandLog.length - 1] !== value) {
+                        commandLog.push(value);
                     }
                 }
             };
-            client.on('command', handler as any);
+            client.addEventListener('command', handler as unknown as EventListener);
             globalScope.__commandListenerInstalled = true;
         };
 
@@ -152,14 +149,6 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         globalScope.__registerCommandListener = registerCommandListener;
         globalScope.__resetCommandLog = resetCommandLog;
         globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
-
-        globalScope.__npcReady = false;
-        globalThis.addEventListener('npc', (event: Event) => {
-            const detail = (event as CustomEvent)?.detail;
-            if (Array.isArray(detail) && detail.length > 0) {
-                globalScope.__npcReady = true;
-            }
-        });
 
         globalScope.__pushGmcp = (path: string, payload: unknown) => {
             const socket = getGameSocket();
@@ -199,7 +188,7 @@ export async function primeCharInfo(
     await context.addInitScript(([payload]) => {
         const charInfo = payload;
         const attemptSend = () => {
-            const client = (globalThis as any).clientExtension;
+            const client = (window as any).clientExtension;
             if (client?.sendEvent) {
                 client.sendEvent('gmcp.char.info', charInfo);
                 return true;
@@ -332,7 +321,7 @@ const DEFAULT_MAP_DATA: MockMapData = [
             {
                 area: 1,
                 x: 2,
-                y: -1,
+                y: 1,
                 z: 0,
                 weight: 1,
                 name: 'Rezydencja Borgafa',
@@ -572,13 +561,13 @@ const DEFAULT_KNOWLEDGE_DATA = {
             mianownik: 'ceramiczna wypalona tabliczka',
             dopelniacz: 'ceramicznej wypalonej tabliczki',
             biernik: 'ceramiczna wypalona tabliczke',
-            categories: ['chaos i jego twory'],
+            categories: ['Chaos i jego twory'],
         },
     },
     libraries: {
         'library-chaos': {
             location_id: 'library-chaos',
-            categories: ['chaos i jego twory'],
+            categories: ['Chaos i jego twory'],
             name: 'Biblioteka Chaosu',
         },
     },
@@ -679,59 +668,46 @@ export async function mockMagicKeysDownload(
     });
 }
 
-export async function waitForClientReady(page: Page): Promise<void> {
-    await page.waitForFunction(() => Boolean((globalThis as any).clientExtension));
-    await page.waitForFunction(() => Array.isArray((globalThis as any).__mockSockets) && (globalThis as any).__mockSockets.length > 0);
-    await page.waitForFunction(() => typeof (globalThis as any).__pushGmcp === 'function');
-
+export async function waitForCommandInput(page: Page): Promise<void> {
     const overlay = page.locator('#auth-overlay');
-    if (await overlay.isVisible()) {
+    if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
         const closeButton = overlay.locator('#auth-close');
-        if (await closeButton.count()) {
-            await closeButton.click();
+        if ((await closeButton.count()) > 0 && (await closeButton.first().isVisible())) {
+            await closeButton.first().click();
         } else {
+            await page.keyboard.press('Escape');
+        }
+        try {
+            await overlay.waitFor({state: 'hidden', timeout: 2000});
+        } catch {
             await page.evaluate(() => {
                 const element = document.getElementById('auth-overlay');
                 if (element) {
                     element.style.display = 'none';
                 }
             });
+            await overlay.waitFor({state: 'hidden'});
         }
-        await overlay.waitFor({ state: 'hidden' });
     }
 
+    await page.locator('#message-input').waitFor({state: 'visible'});
     await page.waitForFunction(() => {
-        const client: any = (globalThis as any).clientExtension;
-        if (!client) {
-            return false;
-        }
-        if ((globalThis as any).__npcReady) {
-            return true;
-        }
-        const helper = client.packageHelper;
-        if (helper && helper.npc && Object.keys(helper.npc).length > 0) {
-            (globalThis as any).__npcReady = true;
-            return true;
-        }
-        return false;
+        const element = document.querySelector<HTMLInputElement>('#message-input');
+        return Boolean(element && !element.disabled);
     });
 }
 
 export async function waitForMapReady(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const client = (globalThis as any).clientExtension;
-        if (!client || !client.Map) {
-            return false;
-        }
-        const map = client.Map as {pathFinder?: unknown; findPath?: unknown};
-        return Boolean(map.pathFinder && typeof map.findPath === 'function');
+        const mapElement = document.querySelector('#map');
+        return mapElement && mapElement.querySelector('canvas') !== null;
     });
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
-    await page.waitForFunction(() => typeof (globalThis as any).__pushGmcp === 'function');
+    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
     await page.evaluate(([gmcpPath, data]) => {
-        (globalThis as any).__pushGmcp(gmcpPath, data);
+        (window as any).__pushGmcp(gmcpPath, data);
     }, [path, payload]);
 }
 
@@ -761,15 +737,15 @@ export async function ensureGameSocket(page: Page): Promise<void> {
         globalScope.__registerCommandListener?.();
     });
     await page.waitForFunction(() => {
-        const sockets: any[] = (globalThis as any).__mockSockets ?? [];
+        const sockets: any[] = (window as any).__mockSockets ?? [];
         return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
 
-    const alreadyPrimed = await page.evaluate(() => Boolean((globalThis as any).__outputPrimed));
+    const alreadyPrimed = await page.evaluate(() => Boolean((window as any).__outputPrimed));
     if (!alreadyPrimed) {
         await pushText(page, OUTPUT_PRIME_PADDING);
         await page.evaluate(() => {
-            (globalThis as any).__outputPrimed = true;
+            (window as any).__outputPrimed = true;
         });
     }
 }
@@ -784,7 +760,7 @@ export async function pushText(page: Page, text: string, options: { type?: strin
         globalScope.__pushText(payload, gmcpType);
     }, [text, type]);
     await page.evaluate(() => {
-        const adapter = (globalThis as any).clientExtension?.clientAdapter as any;
+        const adapter = (window as any).clientExtension?.clientAdapter as any;
         if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
             throw new Error('Arkadia client is not ready');
         }
@@ -802,7 +778,7 @@ export async function submitCommand(page: Page, command: string): Promise<void> 
 
 export async function getLastOutgoingCommand(page: Page): Promise<string | null> {
     return await page.evaluate(() => {
-        const sockets: any[] = (globalThis as any).__mockSockets ?? [];
+        const sockets: any[] = (window as any).__mockSockets ?? [];
         for (let i = sockets.length - 1; i >= 0; i--) {
             const commands: unknown = sockets[i]?.commands;
             if (Array.isArray(commands) && commands.length > 0) {
@@ -812,7 +788,7 @@ export async function getLastOutgoingCommand(page: Page): Promise<string | null>
                 }
             }
         }
-        const log: unknown = (globalThis as any).__mockCommandLog;
+        const log: unknown = (window as any).__mockCommandLog;
         if (Array.isArray(log) && log.length > 0) {
             const value = log[log.length - 1];
             if (typeof value === 'string' && value.trim()) {
@@ -840,7 +816,7 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
         const EMBEDDED_FLAG = '__arkadiaEmbeddedProxy__';
 
         const recordCall = (method: string, value?: unknown) => {
-            const store = (globalThis as any).__embeddedCalls;
+            const store = (window as any).__embeddedCalls;
             if (Array.isArray(store)) {
                 store.push({ method, value });
             }
@@ -909,9 +885,9 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
             return proxy;
         };
 
-        (globalThis as any).__embeddedCalls = [];
+        (window as any).__embeddedCalls = [];
 
-        const initialEmbeddedValue = (globalThis as any).embedded;
+        const initialEmbeddedValue = (window as any).embedded;
 
         const setEmbeddedValue = (value: any) => {
             embeddedValue = wrapEmbedded(value);
@@ -939,12 +915,12 @@ export async function installEmbeddedMock(context: BrowserContext): Promise<void
 
 export async function resetEmbeddedCalls(page: Page): Promise<void> {
     await page.evaluate(() => {
-        (globalThis as any).__embeddedCalls = [];
+        (window as any).__embeddedCalls = [];
     });
 }
 
 export async function getEmbeddedCalls(page: Page): Promise<EmbeddedCall[]> {
-    return await page.evaluate(() => (globalThis as any).__embeddedCalls ?? []);
+    return await page.evaluate(() => (window as any).__embeddedCalls ?? []);
 }
 
 export type MultibindWorkerResponse =
@@ -1031,19 +1007,19 @@ export async function installMultibindWorkerMock(context: BrowserContext): Promi
             value: MockWorker,
         });
 
-        (globalThis as any).__queueMultibindResponse = (response: any) => {
+        (window as any).__queueMultibindResponse = (response: any) => {
             queuedResponses.push(response);
         };
-        (globalThis as any).__getMultibindRequests = () => capturedRequests.slice();
+        (window as any).__getMultibindRequests = () => capturedRequests.slice();
     });
 }
 
 export async function queueMultibindResponse(page: Page, response: MultibindWorkerResponse): Promise<void> {
     await page.evaluate(([payload]) => {
-        (globalThis as any).__queueMultibindResponse(payload);
+        (window as any).__queueMultibindResponse(payload);
     }, [response]);
 }
 
 export async function getMultibindRequests(page: Page): Promise<any[]> {
-    return await page.evaluate(() => (globalThis as any).__getMultibindRequests?.() ?? []);
+    return await page.evaluate(() => (window as any).__getMultibindRequests?.() ?? []);
 }

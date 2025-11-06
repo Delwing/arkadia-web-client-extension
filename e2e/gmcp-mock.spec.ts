@@ -1,10 +1,10 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
 
 test.describe('GMCP-driven interactions', () => {
     test('renders team members and leader from GMCP updates', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const attemptedUrls = await page.evaluate(() => {
@@ -44,7 +44,7 @@ test.describe('GMCP-driven interactions', () => {
 
     test('removes enemies when they disappear from GMCP objects.nums', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Player', object_num: 200 });

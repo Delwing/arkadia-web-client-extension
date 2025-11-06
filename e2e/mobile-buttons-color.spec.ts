@@ -1,5 +1,5 @@
 import { expect, test } from './support/fixtures';
-import { ensureGameSocket, waitForClientReady } from './support/mocks';
+import { ensureGameSocket, waitForCommandInput } from './support/mocks';
 import {Page} from "@playwright/test";
 
 const MENU_BUTTON = '#menu-button';
@@ -23,7 +23,7 @@ test.describe('Mobile buttons color and command configuration', () => {
 
     test('should display mobile buttons modal and configure button colors', async ({ page }) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Open mobile buttons settings modal
@@ -128,7 +128,7 @@ test.describe('Mobile buttons color and command configuration', () => {
 
         // Reload the page to verify persistence
         await page.reload();
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Verify the actual mobile button still has the correct configuration after reload
@@ -186,7 +186,7 @@ test.describe('Mobile buttons color and command configuration', () => {
 
     test('should configure button with different macro types', async ({ page }) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Open mobile buttons settings modal
@@ -235,7 +235,7 @@ test.describe('Mobile buttons color and command configuration', () => {
 
     test('should switch between different button modes', async ({ page }) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Open mobile buttons settings modal

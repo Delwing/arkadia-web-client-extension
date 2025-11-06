@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushText, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
 
 async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
     await page.waitForFunction((expectedTag) => {
@@ -22,7 +22,7 @@ async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
 test.describe('Magic and key highlights', () => {
     test('colors magic items using configured palette', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
         await waitForTokenTrigger(page, 'magics');
 
@@ -40,7 +40,7 @@ test.describe('Magic and key highlights', () => {
 
     test('colors magic keys using configured palette', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
         await waitForTokenTrigger(page, 'magicKeys');
 

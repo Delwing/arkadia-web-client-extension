@@ -1,7 +1,7 @@
 import { stripPolishCharacters } from './stripPolishCharacters';
 
 export type KnowledgeCategoryBaseName =
-  | 'chaos i jego twory'
+  | 'Chaos i jego twory'
   | 'goblinoidy'
   | 'golemy'
   | 'istoty demoniczne'
@@ -24,7 +24,7 @@ export interface KnowledgeCategoryConfig {
 
 export const KNOWLEDGE_CATEGORY_CONFIG: KnowledgeCategoryConfig[] = [
   {
-    base: 'chaos i jego twory',
+    base: 'Chaos i jego twory',
     dative: 'chaosie i jego tworach',
     command: 'wiedza o chaosie i jego tworach',
   },

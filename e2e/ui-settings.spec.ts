@@ -5,7 +5,7 @@ import {
     getEmbeddedCalls,
     installEmbeddedMock,
     resetEmbeddedCalls,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -27,16 +27,11 @@ test.beforeEach(async ({context}) => {
 test.describe('UI settings', () => {
     test('apply changes across all controls', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
         await resetEmbeddedCalls(page);
 
         await page.evaluate(() => {
-            (globalThis as any).__lastUiSettingsEvent = null;
-            const extension = (globalThis as any).clientExtension;
-            extension?.on?.('uiSettings', (detail: unknown) => {
-                (globalThis as any).__lastUiSettingsEvent = detail;
-            });
             if (!document.querySelector('[data-test-mobile-button]')) {
                 const button = document.createElement('button');
                 button.className = 'mobile-button';
@@ -88,7 +83,23 @@ test.describe('UI settings', () => {
         await modal.locator('#ui-settings-save').click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
-        await page.waitForFunction(() => (globalThis as any).__lastUiSettingsEvent !== null);
+        await page.waitForFunction(() => {
+            const keys = Object.keys(localStorage);
+            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
+            if (!key) {
+                return false;
+            }
+            try {
+                const stored = localStorage.getItem(key);
+                if (!stored) {
+                    return false;
+                }
+                const parsed = JSON.parse(stored);
+                return parsed?.mapPosition === 'bottom' && parsed?.outputBackground === '#123456';
+            } catch {
+                return false;
+            }
+        });
 
         const styles = await page.evaluate(() => {
             const content = document.getElementById('main_text_output_msg_wrapper')!;
@@ -149,17 +160,39 @@ test.describe('UI settings', () => {
             ]),
         );
 
-        const uiSettingsEvent = await page.evaluate(() => (globalThis as any).__lastUiSettingsEvent);
-        expect(
-            uiSettingsEvent,
-            'should emit uiSettings event reflecting applied preferences'
-        ).toEqual(
+        const storedSettings = await page.evaluate(() => {
+            const keys = Object.keys(localStorage);
+            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
+            if (!key) {
+                return null;
+            }
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : null;
+            } catch {
+                return null;
+            }
+        });
+
+        expect(storedSettings, 'should persist uiSettings entry in storage').toBeTruthy();
+        expect(storedSettings).toEqual(
             expect.objectContaining({
-                mobileDirectionButtons: false,
+                mapScale: 0.5,
+                mapHeight: 40,
+                mapPosition: 'bottom',
+                explorationMode: true,
+                instantMove: false,
+                highlightCurrentRoom: false,
+                contentFontSize: 1.5,
+                objectsFontSize: 1.25,
+                buttonSize: 1.5,
+                outputBackground: '#123456',
+                footerMode: 2,
+                xtermPalette: 'proper',
+                fontFamily: 'cascadia-mono',
+                showButtons: false,
                 hapticFeedback: false,
                 emojiLabels: true,
-                xtermPalette: 'proper',
-                footerMode: 2,
                 fightTitleIcon: false,
                 clearInputOnSend: true,
                 showTransportLabel: false,
@@ -170,7 +203,7 @@ test.describe('UI settings', () => {
 
     test('persist settings after reload', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const modal = await openUiSettings(page);
@@ -187,7 +220,7 @@ test.describe('UI settings', () => {
 
         await page.reload();
 
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         await page.waitForFunction(() => document.body.dataset.mapPosition === 'bottom');

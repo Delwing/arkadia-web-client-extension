@@ -4,7 +4,7 @@ import {
     ensureGameSocket,
     getLastOutgoingCommand,
     submitCommand,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 async function openAliasesModal(page: Page) {
@@ -18,7 +18,7 @@ async function openAliasesModal(page: Page) {
 test.describe('User aliases', () => {
     test('creates, executes, and persists custom alias', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const aliasesModal = await openAliasesModal(page);
@@ -51,7 +51,7 @@ test.describe('User aliases', () => {
             .toBe(aliasCommand);
 
         await page.reload();
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const reloadedModal = await openAliasesModal(page);
