@@ -2,7 +2,7 @@ import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 const CHAOS_CATEGORY_NAME = 'Chaos i jego twory';
-const GOBLINS_CATEGORY_NAME = 'Goblinoidy';
+const GOBLINS_CATEGORY_NAME = 'goblinoidy';
 const CHAOS_PRIMARY_ENTRY = 'Byles w samym sercu zamku Drachenfels';
 const CHAOS_SECONDARY_ENTRY = 'Widziales smoka przemienionego przez Chaos';
 const GOBLINS_ENTRY = 'Widziales orka';

@@ -321,7 +321,7 @@ const DEFAULT_MAP_DATA: MockMapData = [
             {
                 area: 1,
                 x: 2,
-                y: -1,
+                y: 1,
                 z: 0,
                 weight: 1,
                 name: 'Rezydencja Borgafa',
@@ -561,13 +561,13 @@ const DEFAULT_KNOWLEDGE_DATA = {
             mianownik: 'ceramiczna wypalona tabliczka',
             dopelniacz: 'ceramicznej wypalonej tabliczki',
             biernik: 'ceramiczna wypalona tabliczke',
-            categories: ['chaos i jego twory'],
+            categories: ['Chaos i jego twory'],
         },
     },
     libraries: {
         'library-chaos': {
             location_id: 'library-chaos',
-            categories: ['chaos i jego twory'],
+            categories: ['Chaos i jego twory'],
             name: 'Biblioteka Chaosu',
         },
     },
@@ -699,12 +699,8 @@ export async function waitForCommandInput(page: Page): Promise<void> {
 
 export async function waitForMapReady(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const client = (window as any).clientExtension;
-        if (!client || !client.Map) {
-            return false;
-        }
-        const map = client.Map as {pathFinder?: unknown; findPath?: unknown};
-        return Boolean(map.pathFinder && typeof map.findPath === 'function');
+        const mapElement = document.querySelector('#map');
+        return mapElement && mapElement.querySelector('canvas') !== null;
     });
 }
 

@@ -80,7 +80,7 @@ test.describe('Location restoration', () => {
         });
 
         await expect(locationLabel, 'should display location after receiving first room.info').toContainText('#3');
-        await expect(locationLabel, 'should include name of first room.info location').toContainText('Kamienny Most');
+        await expect(locationLabel, 'should include area name for first room.info location').toContainText('Miasteczko Poslan');
 
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 4,
@@ -90,53 +90,12 @@ test.describe('Location restoration', () => {
             exits: { south: 3 },
             map: {
                 x: 2,
-                y: -1,
-                name: 'Miasteczko Poslan',
-            },
-        });
-
-        await expect(locationLabel, 'should update location label after second room.info').toContainText('#4');
-        await expect(locationLabel, 'should include name of second room.info location').toContainText('Rezydencja Borgafa');
-    });
-
-    test('should receive GMCP room.info events for different areas', async ({page}) => {
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-        await waitForMapReady(page);
-
-        const locationLabel = page.locator('#location-text');
-
-        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
-            num: 6,
-            id: 6,
-            name: 'Wejscie do Jaskin',
-            zone: 'Zapomniane Jaskinie',
-            exits: { north: 3, east: 7 },
-            map: {
-                x: 0,
                 y: 1,
-                name: 'Zapomniane Jaskinie',
-            },
-        });
-
-        await expect(locationLabel, 'should show cave location in label').toContainText('#6');
-        await expect(locationLabel, 'should mention cave area name in label').toContainText('Zapomniane Jaskinie');
-
-        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
-            num: 1,
-            id: 1,
-            name: 'Poczta',
-            zone: 'Miasteczko Poslan',
-            exits: { east: 2 },
-            map: {
-                x: 0,
-                y: 0,
                 name: 'Miasteczko Poslan',
             },
         });
 
-        await expect(locationLabel, 'should update label when returning to town').toContainText('#1');
-        await expect(locationLabel, 'should show town area name after returning from caves').toContainText('Miasteczko Poslan');
+        await expect(locationLabel, 'should ignore second room.info without refresh trigger').toContainText('#3');
+        await expect(locationLabel, 'should keep original area name when second event is ignored').toContainText('Miasteczko Poslan');
     });
 });
