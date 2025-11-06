@@ -1,0 +1,16 @@
+{
+  "name": "@arkadia/plugin-types",
+  "version": "1.0.0",
+  "description": "TypeScript type definitions for Arkadia Web Client plugins",
+  "main": "index.d.ts",
+  "types": "index.d.ts",
+  "keywords": [
+    "arkadia",
+    "mud",
+    "plugin",
+    "types",
+    "typescript"
+  ],
+  "author": "Dargoth",
+  "license": "MIT"
+}

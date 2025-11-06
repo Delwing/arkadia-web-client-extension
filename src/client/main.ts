@@ -92,6 +92,16 @@ import {initSpecialLocations} from "./scripts/specialLocations";
 import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
 
+// Global reference to PluginManager
+let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
+
+/**
+ * Get the PluginManager instance
+ */
+export function getPluginManager() {
+    return pluginManager;
+}
+
 export function registerScripts(client: Client) {
     const aliases = client.aliases
     aliases.push({
@@ -243,7 +253,7 @@ export function registerScripts(client: Client) {
     initShortcuts(client, aliases)
     initLetter(client, aliases)
     initShortExits(client)
-    initExternalScripts(client)
+    pluginManager = initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initWeaponEvaluation(client)

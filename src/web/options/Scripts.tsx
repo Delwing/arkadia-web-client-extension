@@ -1,11 +1,27 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
 import storage from "@modules/core/storage";
+import { getPluginManager } from "@client/main";
+import type { LoadedPlugin } from "@shared/types/Plugin";
 
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
+    const [pluginInfo, setPluginInfo] = useState<Map<string, LoadedPlugin>>(new Map());
     const [input, setInput] = useState("");
+
+    // Refresh plugin info from PluginManager
+    const refreshPluginInfo = () => {
+        const manager = getPluginManager();
+        if (manager) {
+            const loadedPlugins = manager.getLoadedPlugins();
+            const map = new Map<string, LoadedPlugin>();
+            loadedPlugins.forEach(plugin => {
+                map.set(plugin.url, plugin);
+            });
+            setPluginInfo(map);
+        }
+    };
 
     useEffect(() => {
         storage.getItem("scripts").then(res => {
@@ -13,6 +29,26 @@ function Scripts() {
                 setScripts(res.scripts);
             }
         });
+
+        // Initial plugin info refresh
+        refreshPluginInfo();
+
+        // Listen for plugin events
+        if (window.client) {
+            const handlePluginLoaded = () => refreshPluginInfo();
+            const handlePluginError = () => refreshPluginInfo();
+            const handlePluginDestroyed = () => refreshPluginInfo();
+
+            window.client.on('plugin:loaded', handlePluginLoaded);
+            window.client.on('plugin:error', handlePluginError);
+            window.client.on('plugin:destroyed', handlePluginDestroyed);
+
+            return () => {
+                window.client?.off('plugin:loaded', handlePluginLoaded);
+                window.client?.off('plugin:error', handlePluginError);
+                window.client?.off('plugin:destroyed', handlePluginDestroyed);
+            };
+        }
     }, []);
 
     function save(list: string[]) {
@@ -55,14 +91,56 @@ function Scripts() {
                 <Button size="sm" onClick={add}>Dodaj</Button>
             </Form.Group>
             <ul className="list-unstyled ms-3">
-                {scripts.map(url => (
-                    <li key={url} className="d-flex align-items-center gap-2">
-                        <span>{url}</span>
-                        <Button size="sm" variant="secondary" onClick={() => remove(url)}>
-                            <TiDelete />
-                        </Button>
-                    </li>
-                ))}
+                {scripts.map(url => {
+                    const plugin = pluginInfo.get(url);
+                    const hasPluginInfo = plugin?.info;
+                    const isLoading = plugin?.status === 'loading';
+                    const hasError = plugin?.status === 'error';
+                    const isLegacy = plugin?.status === 'legacy';
+
+                    return (
+                        <li key={url} className="d-flex flex-column gap-1 mb-3">
+                            <div className="d-flex align-items-center gap-2">
+                                {isLoading && <Spinner animation="border" size="sm" />}
+
+                                {hasPluginInfo ? (
+                                    <div className="d-flex flex-column">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <strong>{plugin.info!.name}</strong>
+                                            <Badge bg="primary" pill>v{plugin.info!.version}</Badge>
+                                            {plugin.info!.author && (
+                                                <small className="text-muted">by {plugin.info!.author}</small>
+                                            )}
+                                        </div>
+                                        {plugin.info!.description && (
+                                            <small className="text-muted">{plugin.info!.description}</small>
+                                        )}
+                                        <small className="text-muted font-monospace">{url}</small>
+                                    </div>
+                                ) : (
+                                    <div className="d-flex flex-column">
+                                        <span className="font-monospace">{url}</span>
+                                        {isLegacy && (
+                                            <Badge bg="secondary" className="align-self-start">Legacy Script</Badge>
+                                        )}
+                                        {hasError && (
+                                            <small className="text-danger">{plugin.error}</small>
+                                        )}
+                                    </div>
+                                )}
+
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => remove(url)}
+                                    className="ms-auto"
+                                >
+                                    <TiDelete />
+                                </Button>
+                            </div>
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );

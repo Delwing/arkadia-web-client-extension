@@ -8,10 +8,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:types": "node plugin-types/build.cjs",
+    "build:examples": "node examples/build.cjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest --runInBand",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "serve:examples": "node examples/server.cjs"
   },
   "dependencies": {
     "ansi-to-html": "^0.7.2",
@@ -37,9 +40,11 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^5.1.0",
+    "esbuild": "^0.25.8",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
+    "express": "^4.21.2",
     "fake-indexeddb": "^6.0.1",
     "globals": "^16.0.0",
     "jest": "^30.0.4",

@@ -1,20 +1,20 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
-type TriggerCallback = (
+export type TriggerCallback = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,
     type: string, //TODO I guess we can try to list values
 ) => AnsiAwareBuffer | null;
 
-type TriggerMatchFunction = (
+export type TriggerMatchFunction = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,
     type: string
 ) => RegExpMatchArray | undefined;
 
-type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
-type TriggerPattern = TriggerSubPattern | TriggerSubPattern[];
+export type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
+export type TriggerPattern = TriggerSubPattern | TriggerSubPattern[];
 
 export interface TriggerOptions {
     stayOpenLines?: number;

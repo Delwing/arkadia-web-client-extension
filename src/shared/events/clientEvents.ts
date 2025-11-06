@@ -3,6 +3,7 @@ import {LetterSubmitPayload} from "@client/types/letter.ts";
 import {TransportTimerPayload} from "@client/types/transport.ts";
 import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {PluginInfo} from "@shared/types/Plugin.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -38,6 +39,20 @@ export type PackageStatus = {
     recipient: string;
     seconds?: number
 }
+
+type PluginLoadedPayload = {
+    url: string;
+    info: PluginInfo;
+};
+
+type PluginErrorPayload = {
+    url: string;
+    error: string;
+};
+
+type PluginDestroyedPayload = {
+    url: string;
+};
 
 export interface KnownEvents {
     "command": string;
@@ -110,11 +125,17 @@ export interface KnownEvents {
     "playback.index": PlaybackIndexPayload;
     "message": MessageEventPayload;
     "attackQueueChange": string[];
+    "clearAttackQueue": void;
+    "addToAttackQueue": string;
+    "removeFromAttackQueue": string;
     "parsedObjects": void;
     "parsedNums": { nums: number[] };
     "kill": { killer: "ME" | "TEAM" | "OTHER" };
     "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
     "allEnemiesKilled": void;
+    "plugin:loaded": PluginLoadedPayload;
+    "plugin:error": PluginErrorPayload;
+    "plugin:destroyed": PluginDestroyedPayload;
 }
 
 export type ClientEvents = KnownEvents & {

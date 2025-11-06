@@ -39,7 +39,7 @@ export default class TeamManager {
     private leaderId?: string;
     private tag = 'teamManager';
     private accumulatedObjectsData: Record<string, AccumulatedObjectData> = {}
-    private playerNum?: string;
+    playerNum?: string;
     private leaderAttackTargetId?: string
     private avatarAttackTargetId?: string
     private attackTargetId?: string
@@ -68,6 +68,23 @@ export default class TeamManager {
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
         }
+        this.registerEventListeners();
+    }
+
+    private registerEventListeners() {
+        this.client.on('clearAttackQueue', () => {
+            this.clearEnemyQueue();
+        });
+        this.client.on('addToAttackQueue', (id: string) => {
+            if (id) {
+                this.addEnemyToQueue(id);
+            }
+        });
+        this.client.on('removeFromAttackQueue', (id: string) => {
+            if (id) {
+                this.removeEnemyFromQueue(id);
+            }
+        });
     }
 
     private handleObjectsData(data: Record<string, AccumulatedObjectData>) {
@@ -368,7 +385,7 @@ export default class TeamManager {
         return [...this.enemies];
     }
 
-    private clearEnemyQueue() {
+    clearEnemyQueue() {
         if (this.enemies.length === 0 && this.missingEnemyCounts.size === 0) {
             return;
         }
