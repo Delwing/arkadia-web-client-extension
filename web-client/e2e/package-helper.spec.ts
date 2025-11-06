@@ -2,7 +2,9 @@ import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
+    GMCP_PATHS,
     primeCharInfo,
+    pushGmcp,
     pushText,
     submitCommand,
     waitForClientReady,
@@ -20,21 +22,21 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await waitForMapReady(page);
     await waitForClientReady(page);
 
-    await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
-        client.contentWidth = 140;
-        client.Map.renderRoomByIdSilently?.(1);
-        (window as any).__leadToEvents = [];
-        window.addEventListener('leadTo', (event: any) => {
-            (window as any).__leadToEvents.push(event.detail);
-        });
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
     });
 
-    const path = await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
-        return client.Map.findPath(1, 4);
-    });
-    expect(path, 'should calculate path to selected delivery destination').toEqual([1, 2, 3, 4]);
+    const locationLabel = page.locator('#location-text');
+    await expect(locationLabel, 'should render current map location before selecting delivery').toContainText('#1');
 
     const boardText = [
         'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
@@ -76,20 +78,14 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         }, {message: 'should send command selecting known NPC package'})
         .toBe('wybierz paczke 1');
 
+    await expect(locationLabel, 'should mark delivery destination on map label').toContainText('→ #4');
+    await expect(locationLabel, 'should indicate distance to delivery destination').toContainText('(3)');
+
     await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
 
     const status = page.locator('#package-status');
     await expect(status, 'should reveal package status after collection').toBeVisible();
     await expect(status, 'should show selected NPC in package status').toHaveText('📦: Borgaf Kriegmann');
-
-    await expect
-        .poll(async () => {
-            return await page.evaluate(() => {
-                const events = (window as any).__leadToEvents ?? [];
-                return events.length ? events[events.length - 1] : null;
-            });
-        }, {message: 'should trigger lead to event for target location'})
-        .toBe(4);
 });
 
 test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {
@@ -99,14 +95,17 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await waitForMapReady(page);
     await waitForClientReady(page);
 
-    await page.evaluate(() => {
-        const client: any = (window as any).clientExtension;
-        client.contentWidth = 140;
-        client.Map.renderRoomByIdSilently?.(1);
-        (window as any).__leadToEvents = [];
-        window.addEventListener('leadTo', (event: any) => {
-            (window as any).__leadToEvents.push(event.detail);
-        });
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
     });
 
     const optionsModal = page.locator('#options-modal');
@@ -170,9 +169,6 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
         }, {message: 'should hide package status when helper disabled'})
         .toBe(false);
 
-    await expect
-        .poll(async () => {
-            return await page.evaluate(() => (window as any).__leadToEvents?.length ?? 0);
-        }, {message: 'should not emit lead to events when helper disabled'})
-        .toBe(0);
+    const locationLabel = page.locator('#location-text');
+    await expect(locationLabel, 'should not set navigation target when helper disabled').not.toContainText('→');
 });

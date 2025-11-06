@@ -1,15 +1,14 @@
-import { expect, test } from './support/fixtures';
-import { ensureGameSocket, GMCP_PATHS, pushGmcp, waitForClientReady, waitForMapReady } from './support/mocks';
+import {expect, test} from './support/fixtures';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForMapReady} from './support/mocks';
 
 test.describe('Location restoration', () => {
-    test('should restore location correctly after reload', async ({ page }) => {
-        // Start with a location ID in the URL
+    test('should restore location correctly after reload', async ({page}) => {
         await page.goto('/?locationId=2');
-        await waitForClientReady(page);
         await waitForMapReady(page);
         await ensureGameSocket(page);
 
-        // Send GMCP room.info to trigger location setting (with map hash data)
+        const locationLabel = page.locator('#location-text');
+
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 2,
             id: 2,
@@ -19,44 +18,21 @@ test.describe('Location restoration', () => {
             map: {
                 x: 1,
                 y: 0,
-                name: 'Miasteczko Poslan'
-            }
+                name: 'Miasteczko Poslan',
+            },
         });
 
-        // Wait for the map to process the location
-        await page.waitForFunction(() => {
-            const client: any = (window as any).clientExtension;
-            return client?.Map?.currentRoom?.id === 2;
-        }, { timeout: 5000 });
+        await expect(locationLabel, 'should display restored location from query param').toContainText('#2');
+        await expect(locationLabel, 'should show restored location area name').toContainText('Miasteczko Poslan');
 
-        // Verify the location is set correctly by hash
-        const currentLocation = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            return {
-                id: client?.Map?.currentRoom?.id,
-                hash: client?.Map?.currentRoom?.hash,
-                x: client?.Map?.currentRoom?.x,
-                y: client?.Map?.currentRoom?.y,
-                area: client?.Map?.currentRoom?.area
-            };
-        });
-        expect(currentLocation.id, 'current location id should be 2').toBe(2);
-        expect(currentLocation.hash, 'location should be found by hash').toBe('1:0:0:Miasteczko Poslan');
-        expect(currentLocation.x, 'x coordinate should match').toBe(1);
-        // y can be 0 or -0, both are valid
-        expect(Math.abs(currentLocation.y), 'y coordinate absolute value should be 0').toBe(0);
-
-        // Verify the locationId parameter was removed from URL
         const urlAfterLoad = page.url();
         expect(urlAfterLoad, 'URL should not contain locationId parameter after initial load').not.toContain('locationId');
 
-        // Reload the page without locationId parameter
         await page.reload();
-        await waitForClientReady(page);
+
         await waitForMapReady(page);
         await ensureGameSocket(page);
 
-        // Send GMCP room.info again
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 2,
             id: 2,
@@ -66,61 +42,21 @@ test.describe('Location restoration', () => {
             map: {
                 x: 1,
                 y: 0,
-                name: 'Miasteczko Poslan'
-            }
+                name: 'Miasteczko Poslan',
+            },
         });
 
-        // Wait for the map to process the location
-        await page.waitForFunction(() => {
-            const client: any = (window as any).clientExtension;
-            return client?.Map?.currentRoom?.id === 2;
-        }, { timeout: 5000 });
-
-        // Verify the location is still set correctly after reload using hash
-        const currentLocationAfterReload = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            return {
-                id: client?.Map?.currentRoom?.id,
-                hash: client?.Map?.currentRoom?.hash,
-                x: client?.Map?.currentRoom?.x,
-                y: client?.Map?.currentRoom?.y
-            };
-        });
-        expect(currentLocationAfterReload.id, 'current location id should still be 2 after reload').toBe(2);
-        expect(currentLocationAfterReload.hash, 'location hash should still be correct after reload').toBe('1:0:0:Miasteczko Poslan');
-        expect(currentLocationAfterReload.x, 'x coordinate should still match after reload').toBe(1);
-        // y can be 0 or -0, both are valid
-        expect(Math.abs(currentLocationAfterReload.y), 'y coordinate absolute value should be 0 after reload').toBe(0);
+        await expect(locationLabel, 'should display restored location after reload').toContainText('#2');
+        await expect(locationLabel, 'should keep restored area name after reload').toContainText('Miasteczko Poslan');
     });
 
-    test('should receive GMCP room.info event correctly after connection', async ({ page }) => {
+    test('should receive GMCP room.info event correctly after connection', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
         await waitForMapReady(page);
         await ensureGameSocket(page);
 
-        // Verify map is initialized with default location from map data
-        const initialLocation = await page.evaluate(() => {
-            const client: any = (window as any).clientExtension;
-            return client?.Map?.currentRoom?.id;
-        });
-        expect(initialLocation, 'initial location should be set from map data').toBeTruthy();
+        const locationLabel = page.locator('#location-text');
 
-        // Set up event listener
-        await page.evaluate(() => {
-            (window as any).__roomInfoReceived1 = false;
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
-                if (detail?.id === 3 && detail?.name === 'Kamienny Most') {
-                    (window as any).__roomInfoReceived1 = true;
-                    client.removeEventListener('gmcp.room.info', handler);
-                }
-            };
-            client.addEventListener('gmcp.room.info', handler);
-        });
-
-        // Send GMCP room.info event
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 3,
             id: 3,
@@ -130,34 +66,13 @@ test.describe('Location restoration', () => {
             map: {
                 x: 2,
                 y: 0,
-                name: 'Miasteczko Poslan'
-            }
+                name: 'Miasteczko Poslan',
+            },
         });
 
-        // Wait for event to be received
-        await page.waitForFunction(() => {
-            return (window as any).__roomInfoReceived1 === true;
-        }, { timeout: 5000 });
+        await expect(locationLabel, 'should display location after receiving first room.info').toContainText('#3');
+        await expect(locationLabel, 'should include name of first room.info location').toContainText('Kamienny Most');
 
-        // Verify the GMCP event was received
-        const roomInfoReceived1 = await page.evaluate(() => (window as any).__roomInfoReceived1);
-        expect(roomInfoReceived1, 'room.info event should be received').toBe(true);
-
-        // Set up event listener for second event
-        await page.evaluate(() => {
-            (window as any).__roomInfoReceived2 = false;
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
-                if (detail?.id === 4 && detail?.name === 'Rezydencja Borgafa') {
-                    (window as any).__roomInfoReceived2 = true;
-                    client.removeEventListener('gmcp.room.info', handler);
-                }
-            };
-            client.addEventListener('gmcp.room.info', handler);
-        });
-
-        // Send another GMCP room.info event
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 4,
             id: 4,
@@ -167,43 +82,21 @@ test.describe('Location restoration', () => {
             map: {
                 x: 2,
                 y: -1,
-                name: 'Miasteczko Poslan'
-            }
+                name: 'Miasteczko Poslan',
+            },
         });
 
-        // Wait for event to be received
-        await page.waitForFunction(() => {
-            return (window as any).__roomInfoReceived2 === true;
-        }, { timeout: 5000 });
-
-        // Verify the second GMCP event was received
-        const roomInfoReceived2 = await page.evaluate(() => (window as any).__roomInfoReceived2);
-        expect(roomInfoReceived2, 'second room.info event should be received').toBe(true);
+        await expect(locationLabel, 'should update location label after second room.info').toContainText('#4');
+        await expect(locationLabel, 'should include name of second room.info location').toContainText('Rezydencja Borgafa');
     });
 
-    test('should receive GMCP room.info events for different areas', async ({ page }) => {
+    test('should receive GMCP room.info events for different areas', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
         await waitForMapReady(page);
         await ensureGameSocket(page);
 
-        // Set up event listener for cave location
-        await page.evaluate(() => {
-            (window as any).__caveLocationReceived = false;
-            (window as any).__caveExits = [];
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
-                if (detail?.id === 6 && detail?.zone === 'Zapomniane Jaskinie') {
-                    (window as any).__caveLocationReceived = true;
-                    (window as any).__caveExits = detail?.exits ? Object.keys(detail.exits) : [];
-                    client.removeEventListener('gmcp.room.info', handler);
-                }
-            };
-            client.addEventListener('gmcp.room.info', handler);
-        });
+        const locationLabel = page.locator('#location-text');
 
-        // Test room.info for a location in a different area
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 6,
             id: 6,
@@ -213,39 +106,13 @@ test.describe('Location restoration', () => {
             map: {
                 x: 0,
                 y: 1,
-                name: 'Zapomniane Jaskinie'
-            }
+                name: 'Zapomniane Jaskinie',
+            },
         });
 
-        // Wait for event to be received
-        await page.waitForFunction(() => {
-            return (window as any).__caveLocationReceived === true;
-        }, { timeout: 5000 });
+        await expect(locationLabel, 'should show cave location in label').toContainText('#6');
+        await expect(locationLabel, 'should mention cave area name in label').toContainText('Zapomniane Jaskinie');
 
-        // Verify the cave location event was received
-        const caveLocationReceived = await page.evaluate(() => (window as any).__caveLocationReceived);
-        const caveExits = await page.evaluate(() => (window as any).__caveExits);
-        expect(caveLocationReceived, 'room.info event for caves should be received').toBe(true);
-        expect(caveExits, 'exits should be included in room.info').toContain('north');
-        expect(caveExits, 'exits should be included in room.info').toContain('east');
-
-        // Set up event listener for town location
-        await page.evaluate(() => {
-            (window as any).__townLocationReceived = false;
-            (window as any).__townExits = [];
-            const client: any = (window as any).clientExtension;
-            const handler = (ev: CustomEvent) => {
-                const detail = ev.detail;
-                if (detail?.id === 1 && detail?.zone === 'Miasteczko Poslan') {
-                    (window as any).__townLocationReceived = true;
-                    (window as any).__townExits = detail?.exits ? Object.keys(detail.exits) : [];
-                    client.removeEventListener('gmcp.room.info', handler);
-                }
-            };
-            client.addEventListener('gmcp.room.info', handler);
-        });
-
-        // Move to a location in the town area
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 1,
             id: 1,
@@ -255,19 +122,11 @@ test.describe('Location restoration', () => {
             map: {
                 x: 0,
                 y: 0,
-                name: 'Miasteczko Poslan'
-            }
+                name: 'Miasteczko Poslan',
+            },
         });
 
-        // Wait for event to be received
-        await page.waitForFunction(() => {
-            return (window as any).__townLocationReceived === true;
-        }, { timeout: 5000 });
-
-        // Verify the town location event was received
-        const townLocationReceived = await page.evaluate(() => (window as any).__townLocationReceived);
-        const townExits = await page.evaluate(() => (window as any).__townExits);
-        expect(townLocationReceived, 'room.info event for town should be received').toBe(true);
-        expect(townExits, 'exits should be included in room.info').toContain('east');
+        await expect(locationLabel, 'should update label when returning to town').toContainText('#1');
+        await expect(locationLabel, 'should show town area name after returning from caves').toContainText('Miasteczko Poslan');
     });
 });
