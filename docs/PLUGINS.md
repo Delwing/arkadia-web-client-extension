@@ -2,22 +2,15 @@
 
 Klient Arkadia Web wspiera zewnętrzne pluginy jako moduły ES. Pluginy mogą rozszerzyć klienta o własne funkcje takie jak triggery, aliasy i obsługę wydarzeń.
 
-## ⚠️ WAŻNE - Ograniczenia Zewnętrznych Pluginów
-
-**Zewnętrzne pluginy NIE MOGĄ używać importów z modułów klienta!**
-
-Pluginy ładowane dynamicznie nie mają dostępu do wewnętrznych aliasów ścieżek takich jak `@modules/core/Colors` czy `@client/constants/colors`. Te aliasy są rozwiązywane podczas budowania klienta i nie są dostępne w czasie wykonania dla zewnętrznych skryptów.
-
-**Rozwiązanie:** Wszystkie potrzebne funkcje pomocnicze musisz zdefiniować bezpośrednio w swoim pluginie (zobacz przykłady poniżej).
-
 ## Spis Treści
 
 - [Struktura Pluginu](#struktura-pluginu)
 - [Podstawowy Przykład](#podstawowy-przykład)
 - [Kolorowanie Tekstu Triggerami](#kolorowanie-tekstu-triggerami)
 - [Zaawansowane Przykłady](#zaawansowane-przykłady)
-- [Dokumentacja API Klienta](#dokumentacja-api-klienta)
+- [Dokumentacja API](#dokumentacja-api)
 - [Ładowanie Pluginów](#ładowanie-pluginów)
+- [Typy TypeScript](#typy-typescript)
 - [Kompatybilność Wsteczna](#kompatybilność-wsteczna)
 
 ## Struktura Pluginu
@@ -25,21 +18,14 @@ Pluginy ładowane dynamicznie nie mają dostępu do wewnętrznych aliasów ście
 Plugin to moduł ES, który eksportuje asynchroniczną funkcję `init` oraz opcjonalnie funkcję `destroy`:
 
 ```typescript
-// Typy dla TypeScript (pomoc w IDE)
-type Client = any;
-type PluginInfo = {
-  name: string;
-  version: string;
-  author?: string;
-  description?: string;
-};
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
 /**
  * Inicjalizacja pluginu
- * @param client - Instancja klienta Arkadia
+ * @param api - API pluginu udostępniające kontrolowany dostęp do funkcji klienta
  * @returns Metadane pluginu
  */
-export async function init(client: Client): Promise<PluginInfo> {
+export async function init(api: PluginApi): Promise<PluginInfo> {
   // Zarejestruj triggery, aliasy, obsługę wydarzeń, itp.
 
   return {
@@ -63,23 +49,17 @@ export async function destroy(): Promise<void> {
 Oto minimalny plugin, który rejestruje trigger:
 
 ```typescript
-type Client = any;
-type PluginInfo = {
-  name: string;
-  version: string;
-  description?: string;
-};
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
-export async function init(client: Client): Promise<PluginInfo> {
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "mojPlugin";
 
   // Zarejestruj prosty trigger
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /Zdobywasz (\d+) punktow doswiadczenia/,
-    (line: any, matches: RegExpMatchArray) => {
+    (line, matches) => {
       const xp = matches[1];
-      // WAŻNE: Użyj clientAdapter.output() a nie client.output()!
-      client.clientAdapter.output(`Zdobyłeś ${xp} PD!`, "system");
+      api.output.print(`Zdobyłeś ${xp} PD!`);
       return line;
     },
     tag
@@ -95,53 +75,30 @@ export async function init(client: Client): Promise<PluginInfo> {
 
 ## Kolorowanie Tekstu Triggerami
 
-### Funkcje Pomocnicze
-
-Ponieważ nie możesz importować z modułów klienta, użyj tych funkcji pomocniczych w swoim pluginie:
-
-```typescript
-// Funkcja do tworzenia koloru z hex
-const colorFromHex = (hex: string) => ({
-  foreground: { space: "hex", color: hex }
-});
-
-// Funkcja do kolorowania tekstu w linii
-const colorStringInLine = (line: any, text: string, color: any) => {
-  const matchIndex = line.text.indexOf(text);
-  if (matchIndex === -1) return line;
-  return line.color([matchIndex, matchIndex + text.length], color);
-};
-```
-
 ### Przykład 1: Proste Kolorowanie Tekstu
 
 Kolorowanie określonych słów gdy się pojawią:
 
 ```typescript
-type Client = any;
-type PluginInfo = { name: string; version: string; description?: string };
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
-export async function init(client: Client): Promise<PluginInfo> {
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "highlightPlugin";
 
-  // Funkcje pomocnicze
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  // Zdefiniuj swój kolor używając API
+  const HIGHLIGHT_COLOR = api.colors.fromHex('#ff0000'); // Czerwony
 
+  // Funkcja pomocnicza do kolorowania tekstu w linii
   const colorStringInLine = (line: any, text: string, color: any) => {
     const matchIndex = line.text.indexOf(text);
     if (matchIndex === -1) return line;
     return line.color([matchIndex, matchIndex + text.length], color);
   };
 
-  // Zdefiniuj swój kolor
-  const HIGHLIGHT_COLOR = colorFromHex('#ff0000'); // Czerwony
-
   // Zarejestruj trigger do kolorowania słowa "ważne"
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /ważne/i,
-    (line: any, matches: RegExpMatchArray) => {
+    (line, matches) => {
       return colorStringInLine(line, matches[0], HIGHLIGHT_COLOR);
     },
     tag
@@ -158,12 +115,15 @@ export async function init(client: Client): Promise<PluginInfo> {
 ### Przykład 2: Kolorowanie Wielu Wzorców
 
 ```typescript
-export async function init(client: any): Promise<any> {
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "treasureColors";
 
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  // Predefiniowane kolory używając API
+  const GOLD_COLOR = api.colors.fromHex('#ffd700');
+  const SILVER_COLOR = api.colors.fromHex('#c0c0c0');
+  const BRONZE_COLOR = api.colors.fromHex('#cd7f32');
 
   const colorStringInLine = (line: any, text: string, color: any) => {
     const matchIndex = line.text.indexOf(text);
@@ -171,23 +131,18 @@ export async function init(client: any): Promise<any> {
     return line.color([matchIndex, matchIndex + text.length], color);
   };
 
-  // Predefiniowane kolory
-  const GOLD_COLOR = colorFromHex('#ffd700');
-  const SILVER_COLOR = colorFromHex('#c0c0c0');
-  const BRONZE_COLOR = colorFromHex('#cd7f32');
-
   // Definicje wzorców
   const patterns = [
-    { regex: /zlot(?:y|a|e)\s+\w+/i, color: GOLD_COLOR },
-    { regex: /srebrn(?:y|a|e)\s+\w+/i, color: SILVER_COLOR },
-    { regex: /brazow(?:y|a|e)\s+\w+/i, color: BRONZE_COLOR }
+    { regex: /\bzlot[yae]\s+\w+/i, color: GOLD_COLOR },
+    { regex: /\bsrebrn[yae]\s+\w+/i, color: SILVER_COLOR },
+    { regex: /\bbrazow[yae]\s+\w+/i, color: BRONZE_COLOR }
   ];
 
   // Zarejestruj triggery dla każdego wzorca
   patterns.forEach(({ regex, color }) => {
-    client.Triggers.registerTrigger(
+    api.triggers.register(
       regex,
-      (line: any, matches: RegExpMatchArray) => {
+      (line, matches) => {
         return colorStringInLine(line, matches[0], color);
       },
       tag
@@ -207,25 +162,23 @@ export async function init(client: any): Promise<any> {
 ### Przykład 3: Dodawanie Prefiksu/Suffiksu
 
 ```typescript
-export async function init(client: any): Promise<any> {
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "combatAlert";
 
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  const COLOR = api.colors.fromHex("#ff6347");
 
-  const COLOR = colorFromHex("#ff6347");
-
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /Zostales zaatakowany!/i,
-    (line: any) => {
+    (line) => {
       // Odtwórz dźwięk
-      client.sendEvent("sound:play", { key: "beep" });
+      api.events.emit("sound:play", { key: "beep" });
 
       // Dodaj prefix i suffix z kolorem
       return line
-        .prefix(`\n\n[ ALARM WALKI ] `, COLOR)
-        .suffix("\n\n");
+        .prepend(`\n\n[ ALARM WALKI ] `, COLOR)
+        .append("\n\n");
     },
     tag
   );
@@ -241,25 +194,23 @@ export async function init(client: any): Promise<any> {
 ### Przykład 4: Trigger z Wykonaniem Komendy
 
 ```typescript
-export async function init(client: any): Promise<any> {
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "autoHealer";
 
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  const HEALTH_COLOR = api.colors.fromHex("#ff0000");
 
-  const HEALTH_COLOR = colorFromHex("#ff0000");
-
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /Twoje zdrowie jest krytycznie niskie!/i,
-    (line: any) => {
+    (line) => {
       // Wyślij komendę leczenia
-      client.sendCommand("wypij miksture leczaca");
+      api.events.emit("sendCommand", { command: "wypij miksture leczaca" });
 
       // Pokoloruj i sformatuj linię
       return line
-        .prefix(`\n[ AUTO-LECZENIE ] `, HEALTH_COLOR)
-        .suffix(" >> Picie mikstury leczącej\n");
+        .prepend(`\n[ AUTO-LECZENIE ] `, HEALTH_COLOR)
+        .append(" >> Picie mikstury leczącej\n");
     },
     tag
   );
@@ -275,12 +226,13 @@ export async function init(client: any): Promise<any> {
 ### Przykład 5: Wiele Triggerów ze Stanem
 
 ```typescript
-export async function init(client: any): Promise<any> {
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "questTracker";
 
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  const QUEST_COLOR = api.colors.fromHex("#00ff00");
+  let questCount = 0;
 
   const colorStringInLine = (line: any, text: string, color: any) => {
     const matchIndex = line.text.indexOf(text);
@@ -288,27 +240,24 @@ export async function init(client: any): Promise<any> {
     return line.color([matchIndex, matchIndex + text.length], color);
   };
 
-  const QUEST_COLOR = colorFromHex("#00ff00");
-  let questCount = 0;
-
   // Trigger dla rozpoczęcia questa
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /Przyjales quest: (.+)/i,
-    (line: any, matches: RegExpMatchArray) => {
+    (line, matches) => {
       questCount++;
       const questName = matches[1];
-      client.clientAdapter.output(`Quest rozpoczęty: ${questName} (Łącznie: ${questCount})`, "system");
+      api.output.print(`Quest rozpoczęty: ${questName} (Łącznie: ${questCount})`);
       return colorStringInLine(line, matches[0], QUEST_COLOR);
     },
     tag
   );
 
   // Trigger dla ukończenia questa
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /Ukonczyles quest: (.+)/i,
-    (line: any, matches: RegExpMatchArray) => {
+    (line, matches) => {
       const questName = matches[1];
-      client.clientAdapter.output(`Quest ukończony: ${questName}!`, "system");
+      api.output.print(`Quest ukończony: ${questName}!`);
       return colorStringInLine(line, matches[0], QUEST_COLOR);
     },
     tag
@@ -325,23 +274,19 @@ export async function init(client: any): Promise<any> {
 ### Przykład 6: Użycie Aliasów
 
 ```typescript
-export async function init(client: any): Promise<any> {
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
   // Dodaj aliasy do klienta
-  client.aliases.push({
-    pattern: /^\/dom$/,
-    callback: () => {
-      client.sendCommand("idz do domu");
-      return true; // Zatrzymaj dalsze przetwarzanie
-    }
+  api.aliases.register(/^\/dom$/, () => {
+    api.events.emit("sendCommand", { command: "idz do domu" });
+    return true; // Zatrzymaj dalsze przetwarzanie
   });
 
-  client.aliases.push({
-    pattern: /^\/tp (.+)$/,
-    callback: (matches: RegExpMatchArray) => {
-      const destination = matches[1];
-      client.sendCommand(`teleportuj ${destination}`);
-      return true;
-    }
+  api.aliases.register(/^\/tp (.+)$/, (matches) => {
+    const destination = matches![1];
+    api.events.emit("sendCommand", { command: `teleportuj ${destination}` });
+    return true;
   });
 
   return {
@@ -352,111 +297,278 @@ export async function init(client: any): Promise<any> {
 }
 ```
 
-## Dokumentacja API Klienta
+### Przykład 7: Nasłuchiwanie Wydarzeń
 
-### Triggery
+```typescript
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
+  // Nasłuchuj ruchu na mapie
+  api.events.on("mapMove", () => {
+    const room = api.map.getRoom();
+    if (room) {
+      api.output.print(`Przesunięto do: ${room.name}`);
+    }
+  });
+
+  // Nasłuchuj zabicia przeciwnika
+  api.events.on("enemyKilled", (payload) => {
+    api.output.print(`Zabito wroga: ${payload.objNum}`);
+  });
+
+  // Nasłuchuj danych GMCP
+  api.events.on("gmcp", (data) => {
+    console.log("GMCP:", data.path, data.value);
+  });
+
+  // Nasłuchuj konkretnej ścieżki GMCP
+  api.events.on("gmcp.char.vitals", (vitals) => {
+    console.log("HP/SP updated:", vitals);
+  });
+
+  return {
+    name: "Event Logger",
+    version: "1.0.0",
+    description: "Loguje różne wydarzenia w grze"
+  };
+}
+```
+
+### Przykład 8: Użycie AnsiAwareBuffer
+
+```typescript
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
+  const GREEN_COLOR = api.colors.fromHex('#00ff00');
+  const BLUE_COLOR = api.colors.fromHex('#0000ff');
+  const RED_COLOR = api.colors.fromHex('#ff0000');
+
+  api.aliases.register(/^\/kolorowy$/, () => {
+    // Stwórz nowy buffer z kolorowym tekstem
+    const buffer = new api.AnsiAwareBuffer("Witaj ", GREEN_COLOR);
+    buffer.append("kolorowy ", BLUE_COLOR);
+    buffer.append("świecie!", RED_COLOR);
+
+    api.output.print(buffer);
+    return true;
+  });
+
+  return {
+    name: "Kolorowa Komenda",
+    version: "1.0.0",
+    description: "Demonstracja użycia AnsiAwareBuffer"
+  };
+}
+```
+
+## Dokumentacja API
+
+### PluginApi
+
+API pluginu udostępnia następujące przestrzenie nazw:
+
+#### `api.triggers` - System Triggerów
 
 ```typescript
 // Zarejestruj trigger
-client.Triggers.registerTrigger(
-  pattern,      // RegExp - Wzorzec do dopasowania
-  callback,     // Function(line, matches) - Wywołane przy dopasowaniu
-  tag           // String - Tag do grupowania/czyszczenia
+api.triggers.register(
+  pattern,      // RegExp | string - Wzorzec do dopasowania
+  callback,     // Function(line, matches, type) - Wywołane przy dopasowaniu
+  tag,          // String - Tag do grupowania/czyszczenia
+  options       // Object - Opcje triggera
 );
 
-// Callback otrzymuje:
-// - line: AnsiAwareBuffer - Obiekt linii
-// - matches: RegExpMatchArray - Wyniki dopasowania regex
-// Zwraca: Zmodyfikowaną linię lub oryginalną linię
+// Zarejestruj trigger jednorazowy (usuwa się po pierwszym dopasowaniu)
+api.triggers.registerOneTime(pattern, callback, tag, options);
+
+// Zarejestruj trigger tokenowy (dopasowuje całe słowa)
+api.triggers.registerToken(token, callback, tag, options);
+
+// Usuń konkretny trigger
+api.triggers.remove(trigger);
+
+// Usuń wszystkie triggery z tagiem
+api.triggers.removeByTag(tag);
 ```
 
-### Manipulacja Liniami
+**Callback otrzymuje:**
+- `line: AnsiAwareBuffer` - Obiekt linii do modyfikacji
+- `matches: RegExpMatchArray` - Wyniki dopasowania regex
+- `type: string` - Typ linii (np. "prompt", "info")
+
+**Callback zwraca:**
+- Zmodyfikowaną linię lub `null` aby ukryć linię
+
+#### `api.output` - Wypisywanie Tekstu
 
 ```typescript
-// Pokoloruj fragment linii
-line.color([startIndex, endIndex], colorObject);
-
-// Dodaj prefix
-line.prefix(text, colorObject);
-
-// Dodaj suffix
-line.suffix(text);
-
-// Łańcuchowanie metod
-line.prefix("[ INFO ] ", COLOR).suffix("\n");
+// Wypisz tekst do okna gry
+api.output.print(text);  // text: string | AnsiAwareBuffer
 ```
 
-### Kolory
+#### `api.colors` - Kolory
 
 ```typescript
-// Stwórz kolor z hex (wbuduj tę funkcję w swój plugin)
-const colorFromHex = (hex: string) => ({
-  foreground: { space: "hex", color: hex }
-});
+// Stwórz kolor z hex
+const color = api.colors.fromHex('#ff0000');
 
-const myColor = colorFromHex('#ff0000');
+// Stwórz kolor z RGB
+const color = api.colors.fromRgb(255, 0, 0);
 ```
 
-### Popularne Kolory (kopiuj do swojego pluginu)
+#### `api.aliases` - Aliasy Komend
 
 ```typescript
-const GOLD_COLOR = colorFromHex('#ffd700');
-const SILVER_COLOR = colorFromHex('#dadada');
-const COPPER_COLOR = colorFromHex('#875f00');
-const RED_COLOR = colorFromHex('#ff0000');
-const GREEN_COLOR = colorFromHex('#00ff00');
-const BLUE_COLOR = colorFromHex('#0000ff');
-const YELLOW_COLOR = colorFromHex('#ffff00');
-const ORANGE_COLOR = colorFromHex('#ffa500');
-```
-
-### Komendy
-
-```typescript
-// Wyślij komendę do gry
-client.sendCommand(command, echo = true);
-
-// Wypisz do okna gry - WAŻNE: użyj clientAdapter!
-client.clientAdapter.output(text, type = "system");
-
-// Wyślij GMCP
-client.sendGmcp(type, payload);
-
-// Wyślij wydarzenie (np. dźwięk)
-client.sendEvent(eventName, payload);
-```
-
-### Wydarzenia
-
-```typescript
-// Nasłuchuj wydarzeń
-client.on(eventName, callback);
-
-// Usuń listener
-client.off(eventName, callback);
-
-// Wyślij własne wydarzenie
-client.sendEvent(eventName, payload);
-
-// Popularne wydarzenia:
-// - 'gmcp' - Wiadomości GMCP
-// - 'command' - Wysłane komendy
-// - 'storage' - Zmiany w storage
-// - 'sound:play' - Odtwórz dźwięk (payload: { key: "beep" })
-```
-
-### Aliasy
-
-```typescript
-// Dodaj alias komendy
-client.aliases.push({
-  pattern: /^\/mojakomenda (.*)$/,
-  callback: (matches: RegExpMatchArray) => {
+// Zarejestruj alias
+const id = api.aliases.register(
+  /^\/mojakomenda (.*)$/,
+  (matches) => {
     // matches[1] zawiera przechwyconą grupę
-    client.sendCommand(`prawdziwa komenda ${matches[1]}`);
     return true; // Zatrzymaj dalsze przetwarzanie
   }
-});
+);
+
+// Usuń alias
+api.aliases.remove(id);
+```
+
+#### `api.events` - Wydarzenia
+
+```typescript
+// Nasłuchuj wydarzenia
+api.events.on(eventName, callback);
+
+// Usuń listener
+api.events.off(eventName, callback);
+
+// Wyślij wydarzenie
+api.events.emit(eventName, payload);
+```
+
+**Popularne wydarzenia:**
+- `mapMove` - Przesunięcie na mapie
+- `enemyKilled` - Zabicie przeciwnika
+- `command` - Wysłana komenda
+- `gmcp` - Wiadomość GMCP
+- `gmcp.{path}` - Konkretna ścieżka GMCP (np. `gmcp.char.vitals`)
+- `sound:play` - Odtwórz dźwięk: `{ key: "beep" }`
+- `sendCommand` - Wyślij komendę: `{ command: "...", echo?: boolean }`
+- `notify` - Wyświetl powiadomienie: `{ text: "...", time?: number }`
+
+#### `api.map` - Mapa
+
+```typescript
+// Pobierz aktualny pokój
+const room = api.map.getRoom();
+// room zawiera: id, name, x, y, z, areaId, exits, itp.
+
+// Ustaw lokalizację
+api.map.setLocation(roomId);
+
+// Cofnij się do poprzedniego pokoju
+api.map.stepBack();
+```
+
+#### `api.team` - Drużyna
+
+```typescript
+// Pobierz listę członków drużyny
+const members = api.team.getMembers();
+
+// Pobierz lidera drużyny
+const leader = api.team.getLeader();
+
+// Pobierz ID lidera
+const leaderId = api.team.getLeaderId();
+
+// Pobierz numer gracza
+const playerNum = api.team.getPlayerNum();
+```
+
+#### `api.gmcp` - GMCP
+
+```typescript
+// Pobierz dane GMCP
+const gmcp = api.gmcp.get();
+const hp = gmcp?.char?.vitals?.hp;
+const roomName = gmcp?.room?.info?.name;
+```
+
+#### `api.attackQueue` - Kolejka Ataku
+
+```typescript
+// Dodaj przeciwnika do kolejki
+api.attackQueue.add(id);
+
+// Usuń przeciwnika z kolejki
+api.attackQueue.remove(id);
+
+// Wyczyść kolejkę
+api.attackQueue.clear();
+
+// Pobierz kolejkę
+const queue = api.attackQueue.get();
+```
+
+#### `api.objects` - Obiekty w Lokacji
+
+```typescript
+// Pobierz obiekty w aktualnej lokacji
+const objects = api.objects.getObjectsOnLocation();
+// Obiekty zawierają: num, desc, state, shortcut, __category
+```
+
+#### `api.bind` - Bindy Funkcyjne
+
+```typescript
+// Ustaw bind
+api.bind.set("attack goblin");
+api.bind.set(null, () => { /* callback */ });
+api.bind.set("use potion", undefined, true); // clearAfterUse
+
+// Wyczyść bind
+api.bind.clear();
+
+// Pobierz etykietę bindu
+const label = api.bind.getLabel();
+```
+
+#### `api.AnsiAwareBuffer` - Manipulacja Liniami
+
+```typescript
+// Stwórz nowy buffer
+const buffer = new api.AnsiAwareBuffer("Hello", colorState);
+
+// Dostępne właściwości
+buffer.text    // Tekst bez formatowania
+buffer.length  // Długość tekstu
+
+// Metody manipulacji
+buffer.prepend(text, state)           // Dodaj na początku
+buffer.append(text, state)            // Dodaj na końcu
+buffer.color(range, colorState)       // Pokoloruj fragment [start, end]
+buffer.colorWords(words, color)       // Pokoloruj słowa
+buffer.insert(index, text, state)     // Wstaw tekst
+buffer.replace(range, text, state)    // Zamień fragment
+buffer.remove(range)                  // Usuń fragment
+buffer.createLink(range, options)     // Stwórz klikalny link
+buffer.createLinksForText(text, opts) // Stwórz linki dla wszystkich wystąpień
+buffer.clone()                        // Sklonuj buffer
+buffer.clear()                        // Wyczyść buffer
+```
+
+### Popularne Kolory
+
+```typescript
+const GOLD_COLOR = api.colors.fromHex('#ffd700');
+const SILVER_COLOR = api.colors.fromHex('#dadada');
+const COPPER_COLOR = api.colors.fromHex('#875f00');
+const RED_COLOR = api.colors.fromHex('#ff0000');
+const GREEN_COLOR = api.colors.fromHex('#00ff00');
+const BLUE_COLOR = api.colors.fromHex('#0000ff');
+const YELLOW_COLOR = api.colors.fromHex('#ffff00');
+const ORANGE_COLOR = api.colors.fromHex('#ffa500');
 ```
 
 ## Ładowanie Pluginów
@@ -471,25 +583,22 @@ client.aliases.push({
 ### Przez Parametr URL
 
 ```
-https://arkadia.rpg.pl/?add-script=https://example.com/moj-plugin.ts
+https://arkadia.rpg.pl/?add-script=https://example.com/moj-plugin.js
 ```
 
 ### Hostowanie Pluginu
 
-Hostuj swój plugin jako publicznie dostępny plik TypeScript/JavaScript:
+Hostuj swój plugin jako publicznie dostępny plik JavaScript:
 
 ```typescript
-// https://example.com/moj-plugin.ts
+// https://example.com/moj-plugin.js
 
-type Client = any;
-type PluginInfo = { name: string; version: string; description?: string };
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
-export async function init(client: Client): Promise<PluginInfo> {
+export async function init(api: PluginApi): Promise<PluginInfo> {
   const tag = "mojPlugin";
 
-  const colorFromHex = (hex: string) => ({
-    foreground: { space: "hex", color: hex }
-  });
+  const RED_COLOR = api.colors.fromHex('#ff0000');
 
   const colorStringInLine = (line: any, text: string, color: any) => {
     const matchIndex = line.text.indexOf(text);
@@ -497,11 +606,9 @@ export async function init(client: Client): Promise<PluginInfo> {
     return line.color([matchIndex, matchIndex + text.length], color);
   };
 
-  const RED_COLOR = colorFromHex('#ff0000');
-
-  client.Triggers.registerTrigger(
+  api.triggers.register(
     /niebezpieczenstwo/i,
-    (line: any, matches: RegExpMatchArray) => {
+    (line, matches) => {
       return colorStringInLine(line, matches[0], RED_COLOR);
     },
     tag
@@ -515,6 +622,39 @@ export async function init(client: Client): Promise<PluginInfo> {
 }
 ```
 
+## Typy TypeScript
+
+Dla pełnego wsparcia TypeScript zainstaluj pakiet z typami:
+
+```bash
+npm install @arkadia/plugin-types
+```
+
+Następnie importuj typy w swoim pluginie:
+
+```typescript
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
+  // Pełne wsparcie TypeScript z autocomplete!
+  api.triggers.register(
+    /pattern/i,
+    (line, matches) => {
+      // TypeScript wie o wszystkich metodach na 'line'
+      return line.prepend(">> ");
+    },
+    "myPlugin"
+  );
+
+  return {
+    name: "My Plugin",
+    version: "1.0.0"
+  };
+}
+```
+
+Zobacz `plugin-types/README.md` i `plugin-types/index.d.ts` dla pełnej dokumentacji typów.
+
 ## Kompatybilność Wsteczna
 
 System pluginów zachowuje pełną kompatybilność wsteczną ze starymi skryptami. Zwykłe pliki JavaScript bez interfejsu pluginu będą załadowane jako "legacy scripts" i wykonają się normalnie.
@@ -524,16 +664,29 @@ System pluginów zachowuje pełną kompatybilność wsteczną ze starymi skrypta
 **Przed (Legacy):**
 ```javascript
 const client = window.client;
-client.Triggers.registerTrigger(/pattern/, () => {}, "tag");
+
+const colorFromHex = (hex) => ({ foreground: { space: "hex", color: hex } });
+const RED_COLOR = colorFromHex('#ff0000');
+
+client.Triggers.registerTrigger(/pattern/, (line, matches) => {
+  client.clientAdapter.output("Message", "system");
+  client.sendEvent("sound:play", { key: "beep" });
+  return line;
+}, "tag");
 ```
 
-**Po (Plugin):**
+**Po (Plugin z PluginApi):**
 ```typescript
-type Client = any;
-type PluginInfo = { name: string; version: string };
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
-export async function init(client: Client): Promise<PluginInfo> {
-  client.Triggers.registerTrigger(/pattern/, () => {}, "tag");
+export async function init(api: PluginApi): Promise<PluginInfo> {
+  const RED_COLOR = api.colors.fromHex('#ff0000');
+
+  api.triggers.register(/pattern/, (line, matches) => {
+    api.output.print("Message");
+    api.events.emit("sound:play", { key: "beep" });
+    return line;
+  }, "tag");
 
   return {
     name: "Mój Plugin",
@@ -546,18 +699,23 @@ export async function init(client: Client): Promise<PluginInfo> {
 
 1. **Używaj unikalnych tagów** - Unikaj konfliktów z innymi pluginami
 2. **Czyść w destroy()** - Usuwaj event listenery
-3. **NIE używaj importów** - Definiuj funkcje pomocnicze w pluginie
-4. **Użyj `client.clientAdapter.output()`** - NIE `client.output()`!
-5. **Testuj dokładnie** - Sprawdź plugin przed udostępnieniem
-6. **Wersjonuj semantycznie** - 1.0.0, 1.1.0, 2.0.0 itp.
-7. **Dokumentuj kod** - Dodawaj komentarze
-8. **Używaj TypeScript** - Lepsze wsparcie IDE
+3. **Używaj TypeScript** - Zainstaluj `@arkadia/plugin-types` dla pełnego wsparcia IDE
+4. **Testuj dokładnie** - Sprawdź plugin przed udostępnieniem
+5. **Wersjonuj semantycznie** - 1.0.0, 1.1.0, 2.0.0 itp.
+6. **Dokumentuj kod** - Dodawaj komentarze
 
 ## Rozwiązywanie Problemów
 
 - **Plugin się nie ładuje** - Sprawdź konsolę przeglądarki (F12)
-- **Błędy importu** - NIE używaj importów! Definiuj funkcje inline
-- **`client.output()` nie działa** - Użyj `client.clientAdapter.output()`
+- **Błędy importu** - Upewnij się, że używasz `import type` dla typów
 - **Triggery nie reagują** - Sprawdź wzorzec regex
-- **Kolory nie działają** - Użyj funkcji `colorFromHex()` z przykładów
+- **Kolory nie działają** - Użyj `api.colors.fromHex()` lub `api.colors.fromRgb()`
 - **Plugin jako "Legacy"** - Dodaj funkcję `init` zwracającą `PluginInfo`
+- **Brak autocomplete** - Zainstaluj `@arkadia/plugin-types` i użyj `import type`
+
+## Przykłady
+
+Zobacz katalog `examples/` w repozytorium dla kompletnych przykładów pluginów:
+- `simple-highlighter-plugin.ts` - Prosty plugin do podświetlania słów
+- `example-plugin.ts` - Kompleksowy przykład demonstrujący różne funkcje API
+- `combat-alert-plugin.ts` - Zaawansowany plugin śledzący statystyki walki
