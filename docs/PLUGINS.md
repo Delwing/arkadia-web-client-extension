@@ -204,8 +204,10 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   api.triggers.register(
     /Twoje zdrowie jest krytycznie niskie!/i,
     (line) => {
-      // Wyślij komendę leczenia
-      api.events.emit("sendCommand", { command: "wypij miksture leczaca" });
+      // Wyślij komendę leczenia (nowy sposób)
+      api.command.send("wypij miksture leczaca");
+
+      // Alternatywnie: api.events.emit("sendCommand", { command: "wypij miksture leczaca" });
 
       // Pokoloruj i sformatuj linię
       return line
@@ -279,13 +281,13 @@ import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 export async function init(api: PluginApi): Promise<PluginInfo> {
   // Dodaj aliasy do klienta
   api.aliases.register(/^\/dom$/, () => {
-    api.events.emit("sendCommand", { command: "idz do domu" });
+    api.command.send("idz do domu");
     return true; // Zatrzymaj dalsze przetwarzanie
   });
 
   api.aliases.register(/^\/tp (.+)$/, (matches) => {
     const destination = matches![1];
-    api.events.emit("sendCommand", { command: `teleportuj ${destination}` });
+    api.command.send(`teleportuj ${destination}`);
     return true;
   });
 
@@ -519,6 +521,23 @@ const objects = api.objects.getObjectsOnLocation();
 // Obiekty zawierają: num, desc, state, shortcut, __category
 ```
 
+#### `api.command` - Wysyłanie Komend
+
+```typescript
+// Wyślij komendę do serwera
+api.command.send("look");
+
+// Wyślij komendę bez wyświetlania echa
+api.command.send("attack goblin", false);
+
+// Wyślij wiele komend po kolei
+await api.command.send("get sword");
+await api.command.send("wield sword");
+await api.command.send("attack orc");
+```
+
+**Uwaga:** To jest nowszy i bardziej intuicyjny sposób wysyłania komend. Alternatywnie możesz użyć `api.events.emit("sendCommand", { command: "..." })`, ale `api.command.send()` jest zalecany.
+
 #### `api.bind` - Bindy Funkcyjne
 
 ```typescript
@@ -687,6 +706,10 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     api.events.emit("sound:play", { key: "beep" });
     return line;
   }, "tag");
+
+  // Wysyłanie komend
+  api.command.send("look");  // Nowy sposób
+  // lub: api.events.emit("sendCommand", { command: "look" });  // Stary sposób (nadal działa)
 
   return {
     name: "Mój Plugin",

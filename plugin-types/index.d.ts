@@ -1182,6 +1182,32 @@ export interface ObjectsApi {
   getObjectsOnLocation(): LocationObject[];
 }
 
+/**
+ * Command API - Send commands to the server
+ */
+export interface CommandApi {
+  /**
+   * Send a command to the server
+   * @param command - Command string to send
+   * @param echo - Whether to echo the command in the output (default: true)
+   * @param options - Additional command options
+   *
+   * @example
+   * ```typescript
+   * // Send a simple command
+   * api.command.send("look");
+   *
+   * // Send a command without echoing it
+   * api.command.send("attack goblin", false);
+   *
+   * // Send multiple commands in a sequence
+   * await api.command.send("get sword");
+   * await api.command.send("wield sword");
+   * ```
+   */
+  send(command: string, echo?: boolean, options?: any): Promise<void>;
+}
+
 // ============================================================================
 // Plugin API
 // ============================================================================
@@ -1263,6 +1289,9 @@ export interface PluginApi {
 
   /** Objects in location */
   objects: ObjectsApi;
+
+  /** Command sending */
+  command: CommandApi;
 
   /**
    * AnsiAwareBuffer class for creating formatted text buffers

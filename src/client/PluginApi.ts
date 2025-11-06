@@ -341,6 +341,19 @@ export interface ObjectsApi {
 }
 
 /**
+ * Command API
+ */
+export interface CommandApi {
+  /**
+   * Send a command to the server
+   * @param command - Command string to send
+   * @param echo - Whether to echo the command in the output (default: true)
+   * @param options - Additional command options
+   */
+  send(command: string, echo?: boolean, options?: any): Promise<void>;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -369,6 +382,8 @@ export interface PluginApi {
   attackQueue: AttackQueueApi;
   /** Objects in location */
   objects: ObjectsApi;
+  /** Command sending */
+  command: CommandApi;
   /** AnsiAwareBuffer class for creating formatted text buffers */
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
@@ -393,6 +408,7 @@ export class PluginApiImpl implements PluginApi {
   public gmcp: GmcpApi;
   public attackQueue: AttackQueueApi;
   public objects: ObjectsApi;
+  public command: CommandApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client) {
@@ -410,6 +426,7 @@ export class PluginApiImpl implements PluginApi {
     this.gmcp = this.createGmcpApi();
     this.attackQueue = this.createAttackQueueApi();
     this.objects = this.createObjectsApi();
+    this.command = this.createCommandApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -632,6 +649,18 @@ export class PluginApiImpl implements PluginApi {
     return {
       getObjectsOnLocation: () => {
         return this.client.ObjectManager.getObjectsOnLocation();
+      }
+    };
+  }
+
+  // ============================================================================
+  // Command API
+  // ============================================================================
+
+  private createCommandApi(): CommandApi {
+    return {
+      send: async (command, echo, options) => {
+        await this.client.sendCommand(command, echo, options);
       }
     };
   }
