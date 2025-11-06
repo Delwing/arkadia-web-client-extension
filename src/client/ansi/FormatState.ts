@@ -62,8 +62,8 @@ function hyperlinksEqual(a?: FormatHyperlink, b?: FormatHyperlink): boolean {
     // Since hyperlinks now carry callbacks (functions), we can't meaningfully compare them by value.
     // We consider hyperlinks equal only if both are undefined.
     // This ensures each hyperlink segment remains separate.
-    if (!a && !b) return true;
-    return false;
+    return !a && !b;
+
 }
 
 function colorsEqual(a?: FormatColor, b?: FormatColor): boolean {
@@ -673,12 +673,19 @@ export class AnsiAwareBuffer {
             // Handle hyperlinks
             if (state.hyperlink) {
                 styles.push("cursor: pointer");
+                styles.push("text-decoration: underline");
+                styles.push("text-decoration-style: dotted");
+                styles.push("text-decoration-skip-ink: auto");
+                const dataAttr = ' data-output-clickable="true"';
                 if (state.hyperlink.title) {
                     const titleAttr = ` title="${this.escapeHtml(state.hyperlink.title)}"`;
                     const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
-                    html += `<span${styleAttr}${titleAttr}>${escapedText}</span>`;
+                    html += `<span${styleAttr}${titleAttr}${dataAttr}>${escapedText}</span>`;
                     continue;
                 }
+                const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
+                html += `<span${styleAttr}${dataAttr}>${escapedText}</span>`;
+                continue;
             }
 
             const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
@@ -746,17 +753,31 @@ export class AnsiAwareBuffer {
             // Handle hyperlinks
             if (state.hyperlink) {
                 styles.push("cursor: pointer");
+                styles.push("text-decoration: underline");
+                styles.push("text-decoration-style: dotted");
+                styles.push("text-decoration-skip-ink: auto");
+
+                // Mark as clickable to prevent input focus
+                element.dataset.outputClickable = "true";
 
                 if (state.hyperlink.title) {
                     element.title = state.hyperlink.title;
                 }
 
                 if (state.hyperlink.onClick) {
-                    element.addEventListener('click', state.hyperlink.onClick);
+                    element.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        state.hyperlink!.onClick!(e);
+                    });
                 }
 
                 if (state.hyperlink.onContextMenu) {
-                    element.addEventListener('contextmenu', state.hyperlink.onContextMenu);
+                    element.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        state.hyperlink!.onContextMenu!(e);
+                    });
                 }
             }
 
@@ -1062,6 +1083,7 @@ export class AnsiAwareBuffer {
         if (start >= end) return this;
 
         const text = this.text.slice(start, end);
+
         const hyperlink: FormatHyperlink = {
             onClick: options.onClick,
             onContextMenu: options.onContextMenu,
@@ -1076,6 +1098,7 @@ export class AnsiAwareBuffer {
         };
 
         this.replace([start, end], text, newState);
+
         return this;
     }
 

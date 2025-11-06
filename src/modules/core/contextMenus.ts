@@ -1,8 +1,7 @@
 import type Client from "@client/Client";
-import { mudletColorLine } from "./Colors";
-import { stripAnsiCodes } from "@client/stripAnsiCodes";
-import type { HerbUse } from "@client/scripts/herbsLoader";
-import { showContextMenu } from "@shared/dom/contextMenu";
+import {mudletColorLine} from "./Colors";
+import type {HerbUse} from "@client/scripts/herbsLoader";
+import {showContextMenu} from "@shared/dom/contextMenu";
 
 export interface ContextMenuItem {
     label: string;
@@ -43,7 +42,7 @@ export function buildHerbContextMenuItems(
     return bindableActions.flatMap(action =>
         amounts.map(amount => {
             const rawEffect = typeof action.effect === "string" ? action.effect.trim() : "";
-            const parsedEffect = rawEffect ? stripAnsiCodes(mudletColorLine(rawEffect)) : "";
+            const parsedEffect = rawEffect ? mudletColorLine(rawEffect).text : "";
             const effectLabel = parsedEffect ? ` (${parsedEffect})` : "";
             return {
                 label: `${action.action} ${amount}${effectLabel}`,

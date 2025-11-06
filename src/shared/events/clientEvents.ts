@@ -2,6 +2,7 @@ import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
 import {TransportTimerPayload} from "@client/types/transport.ts";
 import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -23,7 +24,7 @@ type MultibindList = {
     list: { index: number; action: string; label: string }[];
 };
 
-type MessageEventPayload = [text: string, type?: string, timestamp?: number];
+type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, timestamp?: number];
 
 type RecordingAutoStopPayload = [name: string | null, save?: boolean];
 

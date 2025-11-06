@@ -13,6 +13,7 @@ import {
     encodeGmcp,
     stripTelnetSequences,
 } from "@shared/socket";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 type Params<T> = [T] extends [void]
     ? []
@@ -193,7 +194,7 @@ class ArkadiaClient implements ClientAdapter {
         }
     }
 
-    output(text?: string, type?: string, timestamp?: number) {
+    output(text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) {
         const ts = typeof timestamp === 'number' ? timestamp : Date.now();
         this.emit('message', text, type, ts)
     }
@@ -250,9 +251,10 @@ class ArkadiaClient implements ClientAdapter {
     private sendLine(text: string, type: string) {
         const client = getClientInstance<Client>();
         if (client) {
-            client.onLine(text, type).forEach(part => {
+            const parts = client.onLine(text, type);
+            parts.forEach((part) => {
                 eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part.text), {once: true})
-                this.output(part.toHtml(), type);
+                this.output(part, type);
             })
 
         }

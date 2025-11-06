@@ -283,7 +283,7 @@ export default class Client {
 
         this.on('output-sent', () => {
             if (this.buffer.length == 0) return
-            this.buffer.forEach(item => this.clientAdapter.output(item.out.toHtml(), item.type))
+            this.buffer.forEach(item => this.clientAdapter.output(item.out, item.type))
             this.sendEvent('buffer-sent', this.buffer.length)
             this.buffer = []
         });

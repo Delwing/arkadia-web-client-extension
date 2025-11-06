@@ -327,15 +327,27 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const prefixWidth = normal ? 28 : 0;
 
         entries.sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, c]) => {
-            const uses = herbs?.herb_id_to_use[id]?.map(u => `${u.action}: ${mudletColorLine(u.effect)}`).join(' | ') || '--';
+            // Build uses as AnsiAwareBuffer to preserve mudlet colors
+            const usesBuffer = new AnsiAwareBuffer();
+            const usesList = herbs?.herb_id_to_use[id];
+            if (usesList && usesList.length > 0) {
+                usesList.forEach((u, idx) => {
+                    if (idx > 0) usesBuffer.append(' | ');
+                    usesBuffer.append(`${u.action}: `);
+                    usesBuffer.appendBuffer(mudletColorLine(u.effect));
+                });
+            } else {
+                usesBuffer.append('--');
+            }
+            const uses = usesBuffer.text; // For length calculations
             const herbName = useFormattedNames ? formatHerbName(id, c) : id;
 
             if (normal) {
-                const base = `${String(c).padStart(5, ' ')} | ${herbName.padEnd(43, ' ')} | `;
+                const base = `${String(c).padStart(5, ' ')} | ${herbName.padEnd(18, ' ')} | `;
                 const available = width - stripAnsiCodes(base).length;
 
                 const line = new AnsiAwareBuffer();
-                line.append(base, {});
+                line.append(base, WHITE);
 
                 // Create link for herb name
                 const nameStart = 8; // After count and " | "
@@ -348,26 +360,31 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 });
 
                 if (available >= stripAnsiCodes(uses).length) {
-                    line.append(uses, {});
+                    line.appendBuffer(usesBuffer);
+                    output.appendBuffer(line);
+                    output.append('\n');
                 } else if (available > 0) {
-                    line.append(uses.slice(0, available), {});
-                    line.color([0, line.length], WHITE);
+                    // Split uses text but keep first part
+                    const usesText = uses.slice(0, available);
+                    line.append(usesText, WHITE);
                     output.appendBuffer(line);
                     output.append('\n');
 
                     const continueLine = new AnsiAwareBuffer();
-                    continueLine.append(' '.repeat(stripAnsiCodes(base).length) + uses.slice(available), {});
-                    continueLine.color([0, continueLine.length], WHITE);
+                    continueLine.append(' '.repeat(stripAnsiCodes(base).length), WHITE);
+                    // For continuation, we need to rebuild from the remaining text
+                    const remainingText = uses.slice(available);
+                    continueLine.append(remainingText, WHITE);
                     output.appendBuffer(continueLine);
                     output.append('\n');
-                    return;
                 } else {
-                    line.remove([0, line.length]);
-                    line.append(`${String(c).padStart(5, ' ')} | ${herbName}`, {});
+                    // Narrow: name on one line, uses on next
+                    const shortLine = new AnsiAwareBuffer();
+                    shortLine.append(`${String(c).padStart(5, ' ')} | ${herbName}`, WHITE);
 
                     // Create link for herb name
                     const nameStartElse = 8; // After count and " | "
-                    line.createLink([nameStartElse, nameStartElse + herbName.length], {
+                    shortLine.createLink([nameStartElse, nameStartElse + herbName.length], {
                         onContextMenu: (ev) => {
                             ev.preventDefault();
                             showHerbActions(id, ev);
@@ -375,24 +392,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                         title: `Prawy klik dla opcji: ${id}`
                     });
 
-                    line.color([0, line.length], WHITE);
-                    output.appendBuffer(line);
+                    output.appendBuffer(shortLine);
                     output.append('\n');
 
                     const useLine = new AnsiAwareBuffer();
-                    useLine.append(' '.repeat(prefixWidth) + uses, {});
-                    useLine.color([0, useLine.length], WHITE);
+                    useLine.append(' '.repeat(prefixWidth), WHITE);
+                    useLine.appendBuffer(usesBuffer);
                     output.appendBuffer(useLine);
                     output.append('\n');
-                    return;
                 }
-
-                line.color([0, line.length], WHITE);
-                output.appendBuffer(line);
-                output.append('\n');
             } else {
                 const line = new AnsiAwareBuffer();
-                line.append(`${String(c).padStart(3, ' ')} ${herbName}`, {});
+                line.append(`${String(c).padStart(3, ' ')} ${herbName}`, WHITE);
 
                 // Create link for herb name in narrow view
                 const nameStartNarrow = 4; // After count and space
@@ -404,13 +415,12 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     title: `Prawy klik dla opcji: ${id}`
                 });
 
-                line.color([0, line.length], WHITE);
                 output.appendBuffer(line);
                 output.append('\n');
 
                 const useLine = new AnsiAwareBuffer();
-                useLine.append(' '.repeat(4) + uses, {});
-                useLine.color([0, useLine.length], WHITE);
+                useLine.append(' '.repeat(4), WHITE);
+                useLine.appendBuffer(usesBuffer);
                 output.appendBuffer(useLine);
                 output.append('\n');
             }
@@ -440,7 +450,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
                 const bagLine = new AnsiAwareBuffer();
                 const bagPrefix = `${num}. `;
-                bagLine.append(`${bagPrefix}${parts || '(pusty)'}${conditionSuffix}`, {});
+                bagLine.append(`${bagPrefix}${parts || '(pusty)'}${conditionSuffix}`, WHITE);
 
                 // Create links for each herb name in the bag
                 if (herbEntries.length > 0) {
@@ -459,7 +469,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                     });
                 }
 
-                bagLine.color([0, bagLine.length], WHITE);
                 output.appendBuffer(bagLine);
                 output.append('\n');
             });

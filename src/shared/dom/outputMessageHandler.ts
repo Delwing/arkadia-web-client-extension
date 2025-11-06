@@ -1,6 +1,8 @@
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+
 type MessageHandlerClient = {
-    on(event: 'message', listener: (message?: string, type?: string, timestamp?: number) => void): void;
-    off(event: 'message', listener: (message?: string, type?: string, timestamp?: number) => void): void;
+    on(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
+    off(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
 };
 
 type OutputHandlerOptions = {
@@ -59,6 +61,41 @@ export function toggleOutputTimestampVisibility() {
     setOutputTimestampVisibility(!timestampsVisible);
 }
 
+function createMessageWrapper(
+    message: string | AnsiAwareBuffer,
+    type: string | undefined,
+    timestamp: number
+): HTMLDivElement {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('output_msg');
+    if (type) {
+        wrapper.classList.add(type);
+    }
+
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('output_msg_text');
+    wrapper.dataset.timestamp = `${timestamp}`;
+
+    const timestampEl = createTimestampElement(timestamp);
+    const contentSpan = document.createElement('span');
+    contentSpan.classList.add('output_msg_content');
+
+    // Handle string or AnsiAwareBuffer
+    if (typeof message === 'string') {
+        contentSpan.innerHTML = message;
+    } else if (message instanceof AnsiAwareBuffer) {
+        contentSpan.appendChild(message.toDom());
+    }
+
+    contentSpan.style.whiteSpace = 'pre-wrap';
+
+    messageDiv.appendChild(timestampEl);
+    messageDiv.appendChild(contentSpan);
+    wrapper.appendChild(messageDiv);
+
+    return wrapper;
+}
+
 export function setupOutputMessageHandler(
     client: MessageHandlerClient,
     {
@@ -75,33 +112,14 @@ export function setupOutputMessageHandler(
     currentStickyArea = stickyArea;
     applyTimestampVisibility();
 
-    const handleMessage = (message?: string, type?: string, timestamp?: number) => {
-        if (!message || message === "") {
+    const handleMessage = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
+        if (!message || (typeof message === 'string' && message === "")) {
             return;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('output_msg');
-
-        if (type) {
-            wrapper.classList.add(type);
-        }
-
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('output_msg_text');
-
         const timestampValue = typeof timestamp === 'number' ? timestamp : Date.now();
-        wrapper.dataset.timestamp = `${timestampValue}`;
-        const timestampEl = createTimestampElement(timestampValue);
-        const contentSpan = document.createElement('span');
-        contentSpan.classList.add('output_msg_content');
-        contentSpan.innerHTML = message;
-        contentSpan.style.whiteSpace = 'pre-wrap';
+        const wrapper = createMessageWrapper(message, type, timestampValue);
 
-        messageDiv.appendChild(timestampEl);
-        messageDiv.appendChild(contentSpan);
-
-        wrapper.appendChild(messageDiv);
         outputWrapper.insertBefore(wrapper, splitBottom);
 
         while (outputWrapper.childElementCount - 1 > maxElements) {
@@ -121,7 +139,9 @@ export function setupOutputMessageHandler(
         }
 
         if (isSplitView()) {
-            stickyArea.appendChild(wrapper.cloneNode(true));
+            // Create a fresh wrapper with new event listeners for sticky area
+            const stickyWrapper = createMessageWrapper(message, type, timestampValue);
+            stickyArea.appendChild(stickyWrapper);
             processSticky(1);
             while (stickyArea.childElementCount > stickyLines) {
                 const firstSticky = stickyArea.firstElementChild;

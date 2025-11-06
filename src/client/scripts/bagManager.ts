@@ -219,9 +219,9 @@ function showInterface(client: Client, bags: string[]) {
                 onClick: () => setContainer(type, bag, client),
                 title: `Ustaw ${bag} jako ${type}`
             });
-            line.append(" [ ");
+            line.append(" [ ", {});  // Explicitly use default (no color/link)
             line.appendBuffer(textBuffer);
-            line.append(" ]");
+            line.append(" ]", {});  // Explicitly use default (no color/link)
         });
         const allText = `wszystkie`;
         const allBuffer = colorString(allText, TYPE_COLOR);
@@ -229,9 +229,9 @@ function showInterface(client: Client, bags: string[]) {
             onClick: () => setAll(bag, client),
             title: `Ustaw wszystkie jako ${bag}`
         });
-        line.append(" [ ");
+        line.append(" [ ", {});  // Explicitly use default (no color/link)
         line.appendBuffer(allBuffer);
-        line.append(" ]");
+        line.append(" ]", {});  // Explicitly use default (no color/link)
         lines.push(line);
     });
 
