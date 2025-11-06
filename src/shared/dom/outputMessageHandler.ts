@@ -10,7 +10,6 @@ type OutputHandlerOptions = {
     splitBottom: HTMLElement;
     stickyArea: HTMLElement;
     isSplitView: () => boolean;
-    processSticky: (count: number) => void;
     stickyLines: number;
     maxElements?: number;
 };
@@ -103,7 +102,6 @@ export function setupOutputMessageHandler(
         splitBottom,
         stickyArea,
         isSplitView,
-        processSticky,
         stickyLines,
         maxElements = 1000,
     }: OutputHandlerOptions,
@@ -142,7 +140,6 @@ export function setupOutputMessageHandler(
             // Create a fresh wrapper with new event listeners for sticky area
             const stickyWrapper = createMessageWrapper(message, type, timestampValue);
             stickyArea.appendChild(stickyWrapper);
-            processSticky(1);
             while (stickyArea.childElementCount > stickyLines) {
                 const firstSticky = stickyArea.firstElementChild;
                 if (firstSticky) {
@@ -152,7 +149,10 @@ export function setupOutputMessageHandler(
                 }
             }
         } else {
-            outputWrapper.scrollTop = outputWrapper.scrollHeight;
+            // Defer scroll to next frame to allow layout changes (e.g., multibinds) to settle first
+            requestAnimationFrame(() => {
+                outputWrapper.scrollTop = outputWrapper.scrollHeight;
+            });
         }
     };
 

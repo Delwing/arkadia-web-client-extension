@@ -209,21 +209,28 @@ progressContainer.style.display = 'none';
 const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
+const multiBindsElement = document.getElementById('multi-binds');
 let isSplitView = false;
 const STICKY_LINES = 15;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
-
-function processSticky(count: number) {
-    const handler: any = client.OutputHandler;
-    if (handler && typeof handler.processOutput === 'function') {
-        const prev = handler.output;
-        handler.output = stickyArea;
-        handler.processOutput(new CustomEvent('output-sent', {detail: count}));
-        handler.output = prev;
-    }
-}
+let suppressSplitViewUntil = 0;
+let lastMultiBindsState = multiBindsElement?.classList.contains('active') ?? false;
 
 function checkSplitView() {
+    // Skip check if we're in a suppression period
+    if (Date.now() < suppressSplitViewUntil) {
+        return;
+    }
+
+    // Also check if multibinds state just changed
+    const currentMultiBindsState = multiBindsElement?.classList.contains('active') ?? false;
+    if (currentMultiBindsState !== lastMultiBindsState) {
+        lastMultiBindsState = currentMultiBindsState;
+        // Suppress for longer when state changes
+        suppressSplitViewUntil = Date.now() + 250;
+        return;
+    }
+
     const atBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
     if (atBottom) {
         if (isSplitView) {
@@ -240,11 +247,55 @@ function checkSplitView() {
         for (let i = start; i < nodes.length; i++) {
             stickyArea.appendChild(nodes[i].cloneNode(true));
         }
-        processSticky(nodes.length - start);
     }
 }
 
 outputWrapper.addEventListener('scroll', checkSplitView);
+
+// Observe multibinds appearance/disappearance to prevent split view activation
+if (multiBindsElement) {
+    // Watch for multibinds class changes and suppress immediately BEFORE layout changes
+    const mutationObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                // Class changed - suppress split view checks immediately for longer duration
+                suppressSplitViewUntil = Date.now() + 500;
+                lastMultiBindsState = multiBindsElement.classList.contains('active');
+
+                // Also force scroll to bottom after layout settles
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
+                        if (isAtBottom) {
+                            outputWrapper.scrollTop = outputWrapper.scrollHeight;
+                        }
+                    });
+                });
+            }
+        }
+    });
+    mutationObserver.observe(multiBindsElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    // Also use ResizeObserver as a backup for any other layout changes
+    let previousHeight = outputWrapper.clientHeight;
+    const resizeObserver = new ResizeObserver(() => {
+        const newHeight = outputWrapper.clientHeight;
+        if (newHeight !== previousHeight) {
+            const wasAtBottom = outputWrapper.scrollTop + previousHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
+            if (wasAtBottom) {
+                suppressSplitViewUntil = Date.now() + 500;
+                requestAnimationFrame(() => {
+                    outputWrapper.scrollTop = outputWrapper.scrollHeight;
+                });
+            }
+            previousHeight = newHeight;
+        }
+    });
+    resizeObserver.observe(outputWrapper);
+}
 
 outputWrapper.addEventListener('contextmenu', event => {
     if (event.defaultPrevented) {
@@ -347,7 +398,6 @@ setupOutputMessageHandler(arkadiaClient, {
     splitBottom,
     stickyArea,
     isSplitView: () => isSplitView,
-    processSticky,
     stickyLines: STICKY_LINES,
 });
 

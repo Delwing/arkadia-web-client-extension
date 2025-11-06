@@ -1,4 +1,5 @@
 import storage, { getItemSync } from "@modules/core/storage";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
@@ -60,7 +61,7 @@ async function save(db: IDBDatabase, text: string, type?: string, timestamp?: nu
 }
 
 interface SessionClient {
-  on(event: 'message', handler: (text?: string, type?: string, timestamp?: number) => void): void;
+  on(event: 'message', handler: (text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
 }
 
 export default async function initSessionLogger(client: SessionClient) {
@@ -72,13 +73,21 @@ export default async function initSessionLogger(client: SessionClient) {
     return;
   }
 
-  client.on('message', (text?: string, type?: string, timestamp?: number) => {
+  client.on('message', (text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
     if (!loggingEnabled) return;
     if (text) {
-      if (text === "\n") {
-        text = "";
+      // Convert AnsiAwareBuffer to HTML to preserve colors, or use string as-is
+      let htmlText: string;
+      if (text instanceof AnsiAwareBuffer) {
+        htmlText = text.toHtml();
+      } else {
+        htmlText = text;
       }
-      void save(db, text.replace(CLICK_TAG_REG, ''), type, timestamp);
+
+      if (htmlText === "\n") {
+        htmlText = "";
+      }
+      void save(db, htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
     }
   });
 }
