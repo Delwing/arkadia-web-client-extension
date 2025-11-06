@@ -22,7 +22,7 @@ export default function initSeasonPrint(client: Client) {
         client.Triggers.registerTrigger(pattern, line => {
             const idx = typeof gmcp?.room?.time?.season === "number" ? gmcp.room.time.season : -1;
             if (idx < 0 || idx >= SEASON_NAMES.length) return line;
-            return line.append(SEASON_TEXT[idx], SEASON_COLORS[idx]);
+            return line.append(" " + SEASON_TEXT[idx], SEASON_COLORS[idx]);
         }, tag);
     });
 }

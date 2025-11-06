@@ -109,6 +109,8 @@ export default function initArmorEvaluation(client: Client) {
 
       const output = new AnsiAwareBuffer();
 
+      output.append("\n", {});
+
       // Line 1: Typ zbroi: ... Klute: ...
       output.append("Typ zbroi", LABEL_COLOR);
       output.append(`: ${equipmentType.padEnd(pad, " ")}`, {});

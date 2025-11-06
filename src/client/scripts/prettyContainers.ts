@@ -9,9 +9,9 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 const GROUP_NAME_COLOR = findClosestColor('#557C99');
 const MITHRIL_COLOR = findClosestColor('#afeeee');
-const GOLD_COLOR = findClosestColor('#FFD700');
-const SILVER_COLOR = findClosestColor('#C0C0C0');
-const COPPER_COLOR = findClosestColor('#8B4513');
+const GOLD_COLOR = findClosestColor('#ffd700');
+const SILVER_COLOR = findClosestColor('#dadada');
+const COPPER_COLOR = findClosestColor('#875f00');
 
 export type GroupDefinition = {
     name: string;

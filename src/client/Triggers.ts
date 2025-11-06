@@ -253,7 +253,7 @@ export default class Triggers {
         for (const trigger of this.triggers.values()) {
             const result = trigger.execute(line, type);
             if (result === null) {
-                return new AnsiAwareBuffer(); //This should actually be returned by triggers that deleteLine
+                return null;
             }
             line = result;
         }
