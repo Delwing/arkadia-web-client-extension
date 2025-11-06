@@ -237,7 +237,7 @@ api.triggers.register(
 ```typescript
 api.aliases.register(/^\/mojakomenda (.+)$/, (matches) => {
   const arg = matches[1];
-  api.output.print(`Wykonano komendę z argumentem: ${arg}`, "system");
+  api.output.print(`Wykonano komendę z argumentem: ${arg}`);
   return true;
 });
 ```
@@ -250,7 +250,7 @@ api.events.on("mapMove", () => {
 });
 
 api.events.on("enemyKilled", (payload) => {
-  api.output.print(`Zabito wroga: ${payload.objNum}`, "system");
+  api.output.print(`Zabito wroga: ${payload.objNum}`);
 });
 ```
 

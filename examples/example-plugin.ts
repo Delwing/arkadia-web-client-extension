@@ -18,7 +18,7 @@
  */
 
 // Import typów bezpośrednio z kodu źródłowego
-import type { PluginApi, PluginInfo } from '../src/client/PluginApi';
+import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
 /**
  * Inicjalizacja pluginu
@@ -81,10 +81,10 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
   // Przykład 4: Koloruj różne typy przedmiotów
   const itemPatterns = [
-    { regex: /\bzlot(?:y|a|e)\s+\w+/i, color: GOLD_COLOR },
-    { regex: /\bmagiczn(?:y|a|e)\s+\w+/i, color: BLUE_COLOR },
+    { regex: /\bzlot[yae]\s+\w+/i, color: GOLD_COLOR },
+    { regex: /\bmagiczn[yae]\s+\w+/i, color: BLUE_COLOR },
     { regex: /\brzadk(?:i|a|ie)\s+\w+/i, color: GREEN_COLOR },
-    { regex: /\bprzeklet(?:y|a|e)\s+\w+/i, color: RED_COLOR }
+    { regex: /\bprzeklet[yae]\s+\w+/i, color: RED_COLOR }
   ];
 
   itemPatterns.forEach(({ regex, color }) => {
@@ -99,7 +99,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
   // Przykład 5: Dodaj własny alias komendy
   api.aliases.register(/^\/przyklad$/, () => {
-    api.output.print("Plugin przykładowy działa!", "system");
+    api.output.print("Plugin przykładowy działa!");
     return true; // Zatrzymaj dalsze przetwarzanie
   });
 
@@ -110,7 +110,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     buffer.append("kolorowy ", BLUE_COLOR);
     buffer.append("świecie!", RED_COLOR);
 
-    api.output.print(buffer, "system");
+    api.output.print(buffer);
     return true;
   });
 
@@ -120,7 +120,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     /Znalazles skarb/i,
     (line) => {
       treasureCount++;
-      api.output.print(`Znalezione skarby: ${treasureCount}`, "system");
+      api.output.print(`Znalezione skarby: ${treasureCount}`);
       return colorStringInLine(line, "skarb", GOLD_COLOR);
     },
     tag

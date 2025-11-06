@@ -124,7 +124,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 ║ Zabójstwa:  ${String(stats.kills).padEnd(12)}║
 ║ Celność:    ${String(accuracy + '%').padEnd(12)}║
 ╚═══════════════════════════╝
-    `, "system");
+    `);
 
     return true;
   });
@@ -132,7 +132,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   // Dodaj komendę do resetowania statystyk
   api.aliases.register(/^\/reset-walki$/, () => {
     stats = { hits: 0, misses: 0, criticals: 0, kills: 0 };
-    api.output.print("Statystyki walki zresetowane.", "system");
+    api.output.print("Statystyki walki zresetowane.");
     return true;
   });
 
