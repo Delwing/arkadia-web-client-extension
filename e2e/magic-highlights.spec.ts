@@ -34,7 +34,7 @@ test.describe('Magic and key highlights', () => {
         const magicSpan = output.locator('span', { hasText: 'magiczny miecz' }).last();
         await expect(magicSpan, 'should style magic item text using configured palette').toHaveCSS(
             'color',
-            'rgb(223, 95, 95)'
+            'rgb(215, 95, 95)'
         );
     });
 

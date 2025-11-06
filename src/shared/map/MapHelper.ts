@@ -313,7 +313,7 @@ export default class MapHelper {
     }
 
     setMapPosition(data: Position) {
-        if (data && data.x && data.y && data.name) {
+        if (data && data.x !== undefined && data.y !== undefined && data.name) {
             const hash = `${data.x}:${data.y}:0:${data.name}`;
             const room = this.hashes[hash];
             this.setMapRoom(room);

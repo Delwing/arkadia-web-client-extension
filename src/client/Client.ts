@@ -448,6 +448,19 @@ export default class Client {
         const split = multilineResult.splitLines()
         const result = split.map(part => this.Triggers.parseLine(part, type)).filter(part => part !== null)
         this.inLineProcess = false
+
+        // Merge multiple lines back into a single buffer to keep multiline outputs grouped
+        if (result.length > 1) {
+            const merged = new AnsiAwareBuffer();
+            for (let i = 0; i < result.length; i++) {
+                merged.appendBuffer(result[i]);
+                if (i < result.length - 1) {
+                    merged.append('\n');
+                }
+            }
+            return [merged];
+        }
+
         return result
     }
 

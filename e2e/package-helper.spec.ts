@@ -66,8 +66,8 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     const knownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
     const unknownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Georg Blaskovitz'});
 
-    await expect(knownNpc, 'should highlight known NPC name in green').toHaveCSS('color', 'rgb(95, 175, 95)');
-    await expect(unknownNpc, 'should gray out unknown NPC name').toHaveCSS('color', 'rgb(168, 168, 168)');
+    await expect(knownNpc, 'should highlight known NPC name in green').toHaveCSS('color', 'rgb(99, 186, 65)');
+    await expect(unknownNpc, 'should gray out unknown NPC name').toHaveCSS('color', 'rgb(170, 170, 170)');
 
     await knownNpc.click();
 
