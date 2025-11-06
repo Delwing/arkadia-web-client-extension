@@ -4,7 +4,7 @@ import {
     ensureGameSocket,
     primeCharInfo,
     pushText,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 const PERSON_NAME = 'Aldous';
@@ -13,7 +13,7 @@ const PERSON_SUFFIX = '(Aldous CKN)';
 
 async function prepareClient(page: Page): Promise<void> {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
     await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Tester');
 }

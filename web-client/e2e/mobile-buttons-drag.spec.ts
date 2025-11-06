@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, waitForCommandInput} from './support/mocks';
 
 type Orientation = 'portrait' | 'landscape';
 type StoredPosition = {x: number; y: number; origin: 'left' | 'right'};
@@ -124,7 +124,7 @@ async function dispatchTouchEvent(
 
 async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
 
     const container = page.locator('#mobile-direction-buttons');
@@ -239,7 +239,7 @@ async function dragAndAssertPersistence(page: Page, method: InputMethod) {
     expect(storedPosition.y, 'should persist vertical position from bounding rect').toBe(finalPosition.top);
 
     await page.reload();
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
 
     await page.waitForFunction(([expected]) => {

@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, waitForCommandInput} from './support/mocks';
 
 test.describe('Objects list drag persistence', () => {
     test.beforeEach(async ({page}) => {
@@ -14,7 +14,7 @@ test.describe('Objects list drag persistence', () => {
 
     test('dragging stores position and restores it after reload', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const container = page.locator('#objects-list');
@@ -94,7 +94,7 @@ test.describe('Objects list drag persistence', () => {
         expect(Math.round(storedTop)).toBe(Math.round(finalPosition.top));
 
         await page.reload();
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         await page.waitForFunction(([expectedLeft, expectedTop]) => {

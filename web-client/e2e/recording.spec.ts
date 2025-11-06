@@ -1,10 +1,10 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForClientReady} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
 
 test.describe('Recording and Playback', () => {
     test('should record messages and save recording', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Start recording using client API
@@ -45,7 +45,7 @@ test.describe('Recording and Playback', () => {
 
     test('should show playback controls during timed playback', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Start recording
@@ -106,7 +106,7 @@ test.describe('Recording and Playback', () => {
 
     test('should control playback with step functions', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Start recording
@@ -166,7 +166,7 @@ test.describe('Recording and Playback', () => {
 
     test('should start recording from UI and verify button visibility', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         // Open recordings modal

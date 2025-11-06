@@ -7,7 +7,7 @@ import {
     pushGmcp,
     pushText,
     submitCommand,
-    waitForClientReady,
+    waitForCommandInput,
     waitForMapReady,
 } from './support/mocks';
 
@@ -17,10 +17,9 @@ test.beforeEach(async ({context}) => {
 
 test('Package helper highlights NPCs and guides selected deliveries', async ({page}) => {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
     await waitForMapReady(page);
-    await waitForClientReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
         num: 1,
@@ -90,10 +89,9 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
 
 test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
     await waitForMapReady(page);
-    await waitForClientReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
         num: 1,

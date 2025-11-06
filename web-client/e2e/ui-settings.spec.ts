@@ -5,7 +5,7 @@ import {
     getEmbeddedCalls,
     installEmbeddedMock,
     resetEmbeddedCalls,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -27,7 +27,7 @@ test.beforeEach(async ({context}) => {
 test.describe('UI settings', () => {
     test('apply changes across all controls', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
         await resetEmbeddedCalls(page);
 
@@ -203,7 +203,7 @@ test.describe('UI settings', () => {
 
     test('persist settings after reload', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const modal = await openUiSettings(page);
@@ -220,7 +220,7 @@ test.describe('UI settings', () => {
 
         await page.reload();
 
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         await page.waitForFunction(() => document.body.dataset.mapPosition === 'bottom');

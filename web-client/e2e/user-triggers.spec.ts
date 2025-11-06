@@ -4,7 +4,7 @@ import {
     getLastOutgoingCommand,
     primeCharInfo,
     pushText,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 test.beforeEach(async ({context}) => {
@@ -13,7 +13,7 @@ test.beforeEach(async ({context}) => {
 
 test('User trigger creation executes command and persists after reload', async ({page}) => {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
 
     await page.click('#menu-button');
@@ -59,7 +59,7 @@ test('User trigger creation executes command and persists after reload', async (
         .toBe('say triggered');
 
     await page.reload();
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
 
     await page.evaluate(() => {

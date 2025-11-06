@@ -1,10 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {
-    ensureGameSocket,
-    pushText,
-    submitCommand,
-    waitForClientReady,
-} from './support/mocks';
+import {ensureGameSocket, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 const CHAOS_CATEGORY_NAME = 'Chaos i jego twory';
 const GOBLINS_CATEGORY_NAME = 'Goblinoidy';
@@ -15,7 +10,7 @@ const GOBLINS_ENTRY = 'Widziales orka';
 test.describe('Knowledge details', () => {
     test('builds report via /wiedza_buduj and displays popup', async ({page}) => {
         await page.goto('/');
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         await submitCommand(page, '/wiedza_buduj');

@@ -7,12 +7,12 @@ import {
     installMultibindWorkerMock,
     submitCommand,
     queueMultibindResponse,
-    waitForClientReady,
+    waitForCommandInput,
 } from './support/mocks';
 
 async function openBindsModal(page: Page) {
     await page.goto('/');
-    await waitForClientReady(page);
+    await waitForCommandInput(page);
     await ensureGameSocket(page);
     await page.click('#menu-button');
     await page.click('#binds-button');
@@ -170,7 +170,7 @@ test.describe('Multibind import', () => {
             .toBe(aliasCommand);
 
         await page.reload();
-        await waitForClientReady(page);
+        await waitForCommandInput(page);
         await ensureGameSocket(page);
         await submitCommand(page, '/ustaw 4');
 

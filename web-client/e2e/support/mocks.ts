@@ -150,14 +150,6 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         globalScope.__resetCommandLog = resetCommandLog;
         globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
-        globalScope.__npcReady = false;
-        window.addEventListener('npc', (event: Event) => {
-            const detail = (event as CustomEvent)?.detail;
-            if (Array.isArray(detail) && detail.length > 0) {
-                globalScope.__npcReady = true;
-            }
-        });
-
         globalScope.__pushGmcp = (path: string, payload: unknown) => {
             const socket = getGameSocket();
             if (!socket) {
@@ -676,41 +668,32 @@ export async function mockMagicKeysDownload(
     });
 }
 
-export async function waitForClientReady(page: Page): Promise<void> {
-    await page.waitForFunction(() => Boolean((window as any).clientExtension));
-    await page.waitForFunction(() => Array.isArray((window as any).__mockSockets) && (window as any).__mockSockets.length > 0);
-    await page.waitForFunction(() => typeof (window as any).__pushGmcp === 'function');
-
+export async function waitForCommandInput(page: Page): Promise<void> {
     const overlay = page.locator('#auth-overlay');
-    if (await overlay.isVisible()) {
+    if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
         const closeButton = overlay.locator('#auth-close');
-        if (await closeButton.count()) {
-            await closeButton.click();
+        if ((await closeButton.count()) > 0 && (await closeButton.first().isVisible())) {
+            await closeButton.first().click();
         } else {
+            await page.keyboard.press('Escape');
+        }
+        try {
+            await overlay.waitFor({state: 'hidden', timeout: 2000});
+        } catch {
             await page.evaluate(() => {
                 const element = document.getElementById('auth-overlay');
                 if (element) {
                     element.style.display = 'none';
                 }
             });
+            await overlay.waitFor({state: 'hidden'});
         }
-        await overlay.waitFor({ state: 'hidden' });
     }
 
+    await page.locator('#message-input').waitFor({state: 'visible'});
     await page.waitForFunction(() => {
-        const client: any = (window as any).clientExtension;
-        if (!client) {
-            return false;
-        }
-        if ((window as any).__npcReady) {
-            return true;
-        }
-        const helper = client.packageHelper;
-        if (helper && helper.npc && Object.keys(helper.npc).length > 0) {
-            (window as any).__npcReady = true;
-            return true;
-        }
-        return false;
+        const element = document.querySelector<HTMLInputElement>('#message-input');
+        return Boolean(element && !element.disabled);
     });
 }
 
