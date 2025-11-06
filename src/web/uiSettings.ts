@@ -71,6 +71,24 @@ const defaultSettings: UiSettings = {
     customFontFamily: '',
 };
 
+const MIN_MAP_SCALE = 0.01;
+
+function clampMapScale(value: number): number {
+    if (!Number.isFinite(value)) {
+        return MIN_MAP_SCALE;
+    }
+    const normalized = Math.abs(value);
+    return normalized >= MIN_MAP_SCALE ? normalized : MIN_MAP_SCALE;
+}
+
+function normalizeMapScale(value: unknown, fallback = defaultSettings.mapScale): number {
+    const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+        return Math.max(fallback, MIN_MAP_SCALE);
+    }
+    return clampMapScale(numericValue);
+}
+
 const genericFontFamilyNames = new Set([
     'serif',
     'sans-serif',
@@ -179,6 +197,7 @@ function apply(settings: UiSettings) {
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
     ensureFontLoaded(settings.fontFamily, normalizedHref);
     const resolvedFontFamily = resolveOutputFontFamily(settings.fontFamily, settings.customFontFamily ?? '');
+    const mapScale = normalizeMapScale(settings.mapScale);
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
         contentArea.style.setProperty('--map-size', settings.mapHeight + 'vh');
@@ -264,7 +283,7 @@ function apply(settings: UiSettings) {
     });
     const embedded = (globalThis as any).embedded;
     if (embedded?.renderer) {
-        embedded.setZoom?.(settings.mapScale);
+        embedded.setZoom?.(mapScale);
         embedded.setExplorationMode?.(settings.explorationMode);
         embedded.refresh();
     }
@@ -305,10 +324,7 @@ async function load(): Promise<UiSettings> {
             parsed = raw as any;
         }
         if (raw || Object.keys(parsed).length > 0) {
-            const mapScale = (() => {
-                const value = Math.abs(parseFloat(parsed.mapScale));
-                return value > 0 ? value : defaultSettings.mapScale;
-            })();
+            const mapScale = normalizeMapScale(parsed.mapScale);
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
                 : defaultSettings.mapPosition;
@@ -574,8 +590,9 @@ export default async function initUiSettings() {
     });
 
     const updateMapScale = (scale: number) => {
-        mapInput.value = String(scale);
-        current = { ...current, mapScale: scale };
+        const normalizedScale = normalizeMapScale(scale, current.mapScale ?? defaultSettings.mapScale);
+        mapInput.value = String(normalizedScale);
+        current = { ...current, mapScale: normalizedScale };
     };
 
     const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
@@ -587,9 +604,7 @@ export default async function initUiSettings() {
         const scaleValue = typeof newValue.mapScale === 'number'
             ? newValue.mapScale
             : parseFloat(newValue.mapScale);
-        const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0
-            ? scaleValue
-            : defaultSettings.mapScale;
+        const normalizedScale = normalizeMapScale(scaleValue, current.mapScale ?? defaultSettings.mapScale);
         updateMapScale(normalizedScale);
     };
 
@@ -606,8 +621,7 @@ export default async function initUiSettings() {
 
     function read(): UiSettings {
         const mapScale = (() => {
-            const value = Math.abs(parseFloat(mapInput.value));
-            const scale = value > 0 ? value : defaultSettings.mapScale;
+            const scale = normalizeMapScale(mapInput.value);
             mapInput.value = String(scale);
             return scale;
         })();

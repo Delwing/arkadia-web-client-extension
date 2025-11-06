@@ -10,6 +10,8 @@ import {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/stora
 import eventBus from "@modules/core/eventBus";
 import { getClientInstance } from "@shared/runtime";
 
+const MIN_ZOOM = 0.01;
+
 const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
 const VISITED_STORE_NAME = 'visitedRooms';
@@ -140,7 +142,7 @@ export class EmbeddedMap {
             }
         } catch {
         }
-        this.zoom = zoom;
+        this.zoom = this.clampZoom(zoom);
         if (transparentLabels) {
             labelRenderMode = 'data';
         }
@@ -194,8 +196,13 @@ export class EmbeddedMap {
     }
 
     private onZoom() {
-        const shouldSave = this.renderer.getZoom() !== this.zoom;
-        this.zoom = this.renderer.getZoom();
+        const rendererZoom = this.renderer.getZoom();
+        const clampedZoom = this.clampZoom(rendererZoom);
+        const shouldSave = clampedZoom !== this.zoom;
+        if (rendererZoom !== clampedZoom) {
+            this.renderer.setZoom(clampedZoom);
+        }
+        this.zoom = clampedZoom;
         if (shouldSave) {
             this.saveZoom();
         }
@@ -278,8 +285,16 @@ export class EmbeddedMap {
     }
 
     setZoom(zoom: number) {
-        this.zoom = zoom;
-        this.renderer.setZoom(zoom);
+        const clampedZoom = this.clampZoom(zoom);
+        this.zoom = clampedZoom;
+        this.renderer.setZoom(clampedZoom);
+    }
+
+    private clampZoom(zoom: number): number {
+        if (!Number.isFinite(zoom)) {
+            return MIN_ZOOM;
+        }
+        return zoom >= MIN_ZOOM ? zoom : MIN_ZOOM;
     }
 
     setInstantMove(on: boolean) {
