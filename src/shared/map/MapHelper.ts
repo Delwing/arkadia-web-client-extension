@@ -262,12 +262,34 @@ export default class MapHelper {
         return { direction: actualDirection, moved: false };
     }
 
-    followMove(direction: string) {
+    followMove(direction: string, fullFollow?: string) {
         const result = this.move(direction, true);
         if (result.moved) {
             return result.direction;
         }
 
+       if (this.currentRoom?.specialExits) {
+            const specials = Object.keys(this.currentRoom.specialExits);
+            for (const ex of specials) {
+                if (direction.includes(ex)) {
+                    const res = this.move(ex, true);
+                    if (res.moved) {
+                        return res.direction;
+                    }
+                }
+            }
+
+            console.log(direction, specials);
+            for (const ex of specials) {
+                const part = ex.substring(0, Math.round(ex.length * 0.7));
+                if (direction.includes(part)) {
+                    const res = this.move(ex, true);
+                    if (res.moved) {
+                        return res.direction;
+                    }
+                }
+            }
+        }
         if (this.currentRoom?.userData?.team_follow_link) {
             const entries = this.currentRoom.userData.team_follow_link.split("#");
             for (const entry of entries) {
@@ -278,22 +300,8 @@ export default class MapHelper {
                         return res.direction;
                     }
                 }
-            }
-        }
-        if (this.currentRoom?.specialExits) {
-            const specials = Object.keys(this.currentRoom.specialExits);
-            for (const ex of specials) {
-                if (direction.includes(ex)) {
-                    const res = this.move(ex, true);
-                    if (res.moved) {
-                        return res.direction;
-                    }
-                }
-            }
-            for (const ex of specials) {
-                const part = ex.substring(0, Math.round(ex.length * 0.7));
-                if (direction.includes(part)) {
-                    const res = this.move(ex, true);
+                if (fullFollow.includes(search)) {
+                    const res = this.move(exit, true);
                     if (res.moved) {
                         return res.direction;
                     }

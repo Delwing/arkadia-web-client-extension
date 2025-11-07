@@ -130,9 +130,9 @@ export function registerScripts(client: Client) {
 
     ], (line, matches) => {
         const tokenized = matches[2].split(' ')
-        for (let i = 1; i < tokenized.length - 1; i++) {
+        for (let i = 1; i < tokenized.length; i++) {
             const candidate = tokenized[tokenized.length - i]
-            const result = client.Map.followMove(candidate)
+            const result = client.Map.followMove(candidate, matches[2])
             if (result) {
                 return line
             }
