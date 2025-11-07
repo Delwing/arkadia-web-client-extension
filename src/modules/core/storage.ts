@@ -51,13 +51,18 @@ function notifyCharacterChange(prev: string | null) {
         const newKey = currentCharacter ? `${currentCharacter}:${key}` : key;
         const oldRaw = localStorage.getItem(prevKey);
         const newRaw = localStorage.getItem(newKey);
-        if (oldRaw === newRaw || newRaw === null) {
+        if (oldRaw === newRaw) {
+            return;
+        }
+        // For settings, always fire event even if newRaw is null (so UI refreshes with defaults)
+        // For other keys, skip if newRaw is null (avoid side effects like displaying messages)
+        if (newRaw === null && key !== 'settings') {
             return;
         }
         let oldValue: any = undefined;
         let newValue: any;
         if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
-        { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+        if (newRaw !== null) { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
         const changes: { [key: string]: { oldValue: any, newValue: any } } = {
             [key]: { oldValue, newValue }
         };

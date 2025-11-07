@@ -439,30 +439,35 @@ export default async function initUiSettings() {
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
-    contentInput.value = String(current.contentFontSize);
-    objectsInput.value = String(current.objectsFontSize);
-    buttonInput.value = String(current.buttonSize);
-    mapInput.value = String(current.mapScale);
-    mapHeightInput.value = String(current.mapHeight);
-    mapPositionInput.value = current.mapPosition;
-    explorationInput.checked = current.explorationMode;
-    showButtonsInput.checked = current.showButtons;
-    hapticFeedbackInput.checked = current.hapticFeedback;
-    emojiLabelsInput.checked = current.emojiLabels;
-    fightTitleIconInput.checked = current.fightTitleIcon;
-    xtermPaletteInput.value = current.xtermPalette;
-    footerModeInput.value = String(current.footerMode);
-    instantMoveInput.checked = current.instantMove;
-    highlightCurrentRoomInput.checked = current.highlightCurrentRoom;
-    labelRenderModeInput.value = current.labelRenderMode;
-    transparentLabelsInput.checked = current.transparentLabels;
-    outputBackgroundInput.value = current.outputBackground;
-    clearInputOnSendInput.checked = current.clearInputOnSend;
-    showTransportLabelInput.checked = current.showTransportLabel;
-    showCombatTimerInput.checked = current.showCombatTimer;
-    fontFamilyInput.value = current.fontFamily;
-    customFontUrlInput.value = current.customFontUrl;
-    customFontFamilyInput.value = current.customFontFamily;
+
+    const populateFormInputs = (settings: UiSettings) => {
+        contentInput.value = String(settings.contentFontSize);
+        objectsInput.value = String(settings.objectsFontSize);
+        buttonInput.value = String(settings.buttonSize);
+        mapInput.value = String(settings.mapScale);
+        mapHeightInput.value = String(settings.mapHeight);
+        mapPositionInput.value = settings.mapPosition;
+        explorationInput.checked = settings.explorationMode;
+        showButtonsInput.checked = settings.showButtons;
+        hapticFeedbackInput.checked = settings.hapticFeedback;
+        emojiLabelsInput.checked = settings.emojiLabels;
+        fightTitleIconInput.checked = settings.fightTitleIcon;
+        xtermPaletteInput.value = settings.xtermPalette;
+        footerModeInput.value = String(settings.footerMode);
+        instantMoveInput.checked = settings.instantMove;
+        highlightCurrentRoomInput.checked = settings.highlightCurrentRoom;
+        labelRenderModeInput.value = settings.labelRenderMode;
+        transparentLabelsInput.checked = settings.transparentLabels;
+        outputBackgroundInput.value = settings.outputBackground;
+        clearInputOnSendInput.checked = settings.clearInputOnSend;
+        showTransportLabelInput.checked = settings.showTransportLabel;
+        showCombatTimerInput.checked = settings.showCombatTimer;
+        fontFamilyInput.value = settings.fontFamily;
+        customFontUrlInput.value = settings.customFontUrl;
+        customFontFamilyInput.value = settings.customFontFamily;
+    };
+
+    populateFormInputs(current);
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -589,23 +594,15 @@ export default async function initUiSettings() {
         }
     });
 
-    const updateMapScale = (scale: number) => {
-        const normalizedScale = normalizeMapScale(scale, current.mapScale ?? defaultSettings.mapScale);
-        mapInput.value = String(normalizedScale);
-        current = { ...current, mapScale: normalizedScale };
-    };
-
-    const handleStorageChange = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+    const handleStorageChange = async (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
         const uiSettingsChange = changes.uiSettings;
         if (!uiSettingsChange || !uiSettingsChange.newValue) {
             return;
         }
-        const newValue = uiSettingsChange.newValue;
-        const scaleValue = typeof newValue.mapScale === 'number'
-            ? newValue.mapScale
-            : parseFloat(newValue.mapScale);
-        const normalizedScale = normalizeMapScale(scaleValue, current.mapScale ?? defaultSettings.mapScale);
-        updateMapScale(normalizedScale);
+        current = await load();
+        populateFormInputs(current);
+        updateLabelRenderModeState();
+        updateCustomFontState();
     };
 
     storage.onChanged?.addListener(handleStorageChange);
@@ -671,7 +668,11 @@ export default async function initUiSettings() {
         modal.hide();
     });
 
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
+        current = await load();
+        populateFormInputs(current);
+        updateLabelRenderModeState();
+        updateCustomFontState();
         refreshExplorationStats();
         modal.show();
     });
