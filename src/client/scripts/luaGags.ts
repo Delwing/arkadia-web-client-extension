@@ -400,7 +400,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 }
             },
             getCurrentLine: () => {
-                return global.line
+                return global.line.text
             },
             display: (object: any)=> {
                 console.log(object)
