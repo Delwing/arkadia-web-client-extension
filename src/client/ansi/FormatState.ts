@@ -262,13 +262,13 @@ class FormatState {
                 }
                 default:
                     if (code >= 30 && code <= 37) {
-                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 30]};
+                        this.foreground = {space: "hex", color: colorCodes.ansi.dark[code - 30]};
                     } else if (code >= 90 && code <= 97) {
-                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 82]};
+                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 90]};
                     } else if (code >= 40 && code <= 47) {
-                        this.background = {space: "hex", color: colorCodes.ansi.bright[code - 40]};
+                        this.background = {space: "hex", color: colorCodes.ansi.dark[code - 40]};
                     } else if (code >= 100 && code <= 107) {
-                        this.background = {space: "hex", color: colorCodes.ansi.bright[code - 92]};
+                        this.background = {space: "hex", color: colorCodes.ansi.bright[code - 100]};
                     }
                     break;
             }
