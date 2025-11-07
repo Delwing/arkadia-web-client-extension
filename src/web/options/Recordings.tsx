@@ -80,6 +80,10 @@ function Recordings() {
         window.client.replayRecordedMessagesTimed();
     }
 
+    async function handleLoad(name: string) {
+        await window.client.loadRecording(name);
+    }
+
     async function handleDelete(name: string) {
         await deleteRecording(name);
         load();
@@ -293,6 +297,9 @@ function Recordings() {
                             </Button>
                             <Button size="sm" className="recordings-action" onClick={() => handlePlayTimed(n)}>
                                 Odtwórz w czasie
+                            </Button>
+                            <Button size="sm" variant="outline-primary" className="recordings-action" onClick={() => handleLoad(n)}>
+                                Wczytaj
                             </Button>
                             <Button size="sm" className="recordings-action" onClick={() => downloadRecording(n)}>
                                 Pobierz
