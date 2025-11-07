@@ -414,6 +414,7 @@ setupOutputMessageHandler(arkadiaClient, {
 // Track connection state
 let isConnected = false;
 let isConnecting = false;
+let isDisconnecting = false;
 let playbackMode = false;
 let authClosed = false;
 
@@ -459,7 +460,13 @@ function updateConnectButtons() {
     }
 
     if (disconnectButton) {
-        disconnectButton.disabled = !isConnected;
+        if (isConnected) {
+            disconnectButton.textContent = 'Rozłącz';
+            disconnectButton.disabled = isDisconnecting;
+        } else {
+            disconnectButton.textContent = 'Połącz';
+            disconnectButton.disabled = isConnecting;
+        }
     }
 }
 
@@ -467,6 +474,7 @@ function updateConnectButtons() {
 arkadiaClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
+    isDisconnecting = false;
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
     console.log('Client connected to Arkadia server.');
@@ -476,6 +484,7 @@ arkadiaClient.on('client.connect', () => {
 arkadiaClient.on('client.disconnect', () => {
     isConnected = false;
     isConnecting = false;
+    isDisconnecting = false;
     authClosed = false;
     updateConnectButtons();
     client.println('Rozłączono z serwerem Arkadii.');
@@ -484,9 +493,17 @@ arkadiaClient.on('client.disconnect', () => {
 
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && arkadiaClient.isSocketOpen()) {
-        isConnected = true;
-        updateConnectButtons();
+    if (!document.hidden) {
+        const socketOpen = arkadiaClient.isSocketOpen();
+        if (socketOpen && !isConnected) {
+            isConnected = true;
+            updateConnectButtons();
+        } else if (!socketOpen && isConnected) {
+            isConnected = false;
+            isConnecting = false;
+            isDisconnecting = false;
+            updateConnectButtons();
+        }
     }
 });
 
@@ -765,12 +782,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (disconnectButton) {
         disconnectButton.addEventListener('click', () => {
-            if (!isConnected) {
-                return;
+            if (isConnected) {
+                // Disconnect
+                if (isDisconnecting) {
+                    return;
+                }
+                isDisconnecting = true;
+                updateConnectButtons();
+                arkadiaClient.disconnect();
+                // Fallback: ensure state updates after a delay if disconnect event doesn't fire
+                setTimeout(() => {
+                    if (isDisconnecting && !arkadiaClient.isSocketOpen()) {
+                        isConnected = false;
+                        isDisconnecting = false;
+                        updateConnectButtons();
+                    }
+                }, 1000);
+            } else {
+                // Connect
+                if (isConnecting) {
+                    return;
+                }
+                isConnecting = true;
+                updateConnectButtons();
+                void client.prepareSounds();
+                arkadiaClient.connect();
             }
-            isConnecting = false;
-            updateConnectButtons();
-            arkadiaClient.disconnect();
         });
     }
 
