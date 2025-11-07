@@ -6,6 +6,7 @@ import eventBus from "@modules/core/eventBus";
 import type { SendCommandEvent } from "@shared/events";
 import { registerScripts } from "@client/main";
 import { showContextMenu } from "@shared/dom/contextMenu";
+import { getContextMenuEntries as getPluginContextMenuEntries } from "@modules/core/pluginUiRegistry";
 import { setClientInstance } from "@shared/runtime";
 import {Modal, Dropdown} from 'bootstrap';
 import ObjectList from "./ObjectList";
@@ -327,6 +328,12 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
         },
     );
+    getPluginContextMenuEntries().forEach(entry => {
+        items.push({
+            label: entry.label,
+            action: entry.action,
+        });
+    });
     showContextMenu(items, event.clientX, event.clientY);
 });
 

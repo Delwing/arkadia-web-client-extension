@@ -19,6 +19,15 @@ import type {
   TriggerOptions
 } from "./Triggers";
 import { gmcp } from "./gmcp";
+import {
+  registerPopupMenuEntry,
+  setPopupMenuEntryDisabled,
+  unregisterPopupMenuEntry,
+  updatePopupMenuEntryLabel,
+  registerContextMenuEntry,
+  unregisterContextMenuEntry,
+  updateContextMenuEntry
+} from "@modules/core/pluginUiRegistry";
 
 // Event system types
 type EventKey = keyof ClientEvents;
@@ -186,6 +195,105 @@ export interface OutputApi {
    * @param text - Text or buffer to display
    */
   print(text: string | AnsiAwareBuffer): void;
+}
+
+/**
+ * Popup content that can be rendered inside plugin popups
+ */
+export type PopupContent = string | Node;
+
+/**
+ * Handle for controlling a popup window
+ */
+export interface PopupHandle {
+  /**
+   * Root element of the popup window
+   */
+  element: HTMLDivElement;
+
+  /**
+   * Update popup title
+   */
+  setTitle(title: string): void;
+
+  /**
+   * Update popup body content
+   */
+  setBody(content: PopupContent): void;
+
+  /**
+   * Close and remove the popup
+   */
+  close(): void;
+}
+
+/**
+ * Handle for a popup menu entry
+ */
+export interface PopupMenuEntryHandle {
+  /**
+   * Update the entry label
+   */
+  setLabel(label: string): void;
+
+  /**
+   * Enable or disable the entry
+   */
+  setDisabled(disabled: boolean): void;
+
+  /**
+   * Remove the entry from the menu
+   */
+  remove(): void;
+}
+
+/**
+ * Handle for a context menu entry
+ */
+export interface ContextMenuEntryHandle {
+  /**
+   * Update the entry label
+   */
+  setLabel(label: string): void;
+
+  /**
+   * Update the entry action
+   */
+  setAction(action: () => void): void;
+
+  /**
+   * Remove the entry from the context menu
+   */
+  remove(): void;
+}
+
+/**
+ * UI-related helpers for plugins
+ */
+export interface UiApi {
+  /**
+   * Create a draggable popup window
+   * @param title - Popup title text
+   * @param body - Popup body content (string or DOM node)
+   * @returns Popup handle for updates and cleanup
+   */
+  createPopup(title: string, body: PopupContent): PopupHandle;
+
+  /**
+   * Add an entry to the main popup menu
+   * @param label - Entry label
+   * @param onSelect - Callback when entry is selected
+   * @returns Handle to manage the entry
+   */
+  addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle;
+
+  /**
+   * Add an entry to the output context menu
+   * @param label - Entry label
+   * @param action - Callback when entry is selected
+   * @returns Handle to manage the entry
+   */
+  addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle;
 }
 
 /**
@@ -370,6 +478,8 @@ export interface PluginApi {
   map: MapApi;
   /** Output to game window */
   output: OutputApi;
+  /** UI helpers */
+  ui: UiApi;
   /** Color creation helpers */
   colors: ColorsApi;
   /** Function bind management */
@@ -396,12 +506,16 @@ export interface PluginApi {
 export class PluginApiImpl implements PluginApi {
   private client: Client;
   private aliasMap: Map<string, PluginAlias> = new Map();
+  private popupHandles: Set<PopupHandle> = new Set();
+  private popupMenuEntryIds: Set<string> = new Set();
+  private contextMenuEntryIds: Set<string> = new Set();
 
   public triggers: TriggersApi;
   public aliases: AliasesApi;
   public events: EventsApi;
   public map: MapApi;
   public output: OutputApi;
+  public ui: UiApi;
   public colors: ColorsApi;
   public bind: BindApi;
   public team: TeamApi;
@@ -420,6 +534,7 @@ export class PluginApiImpl implements PluginApi {
     this.events = this.createEventsApi();
     this.map = this.createMapApi();
     this.output = this.createOutputApi();
+    this.ui = this.createUiApi();
     this.colors = this.createColorsApi();
     this.bind = this.createBindApi();
     this.team = this.createTeamApi();
@@ -542,6 +657,18 @@ export class PluginApiImpl implements PluginApi {
       print: (text) => {
         this.client.print(text);
       }
+    };
+  }
+
+  // ============================================================================
+  // UI API
+  // ============================================================================
+
+  private createUiApi(): UiApi {
+    return {
+      createPopup: (title, body) => this.createPopup(title, body),
+      addPopupMenuEntry: (label, onSelect) => this.addPopupMenuEntry(label, onSelect),
+      addContextMenuEntry: (label, action) => this.addContextMenuEntry(label, action)
     };
   }
 
@@ -679,5 +806,221 @@ export class PluginApiImpl implements PluginApi {
       this.aliases.remove(id);
     }
     this.aliasMap.clear();
+
+    for (const popup of Array.from(this.popupHandles)) {
+      popup.close();
+    }
+    this.popupHandles.clear();
+
+    for (const id of Array.from(this.popupMenuEntryIds)) {
+      unregisterPopupMenuEntry(id);
+    }
+    this.popupMenuEntryIds.clear();
+
+    for (const id of Array.from(this.contextMenuEntryIds)) {
+      unregisterContextMenuEntry(id);
+    }
+    this.contextMenuEntryIds.clear();
+  }
+
+  private createPopup(title: string, body: PopupContent): PopupHandle {
+    const overlay = document.createElement("div");
+    overlay.className = "herb-overlay";
+
+    const windowEl = document.createElement("div");
+    windowEl.className = "herb-window herb-window--center";
+    windowEl.tabIndex = -1;
+
+    const header = document.createElement("div");
+    header.className = "herb-window-header";
+
+    const titleEl = document.createElement("h5");
+    titleEl.className = "herb-window-title";
+    titleEl.textContent = title;
+
+    const actions = document.createElement("div");
+    actions.className = "window-header-actions";
+    actions.addEventListener("pointerdown", event => event.stopPropagation());
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "btn-close";
+    actions.appendChild(closeButton);
+
+    header.appendChild(titleEl);
+    header.appendChild(actions);
+
+    const bodyContainer = document.createElement("div");
+    bodyContainer.className = "herb-window-body";
+
+    const clearBody = () => {
+      while (bodyContainer.firstChild) {
+        bodyContainer.removeChild(bodyContainer.firstChild);
+      }
+    };
+
+    const setBodyContent = (content: PopupContent) => {
+      clearBody();
+      if (typeof content === "string") {
+        bodyContainer.innerHTML = content;
+      } else if (content instanceof Node) {
+        bodyContainer.appendChild(content);
+      }
+    };
+
+    setBodyContent(body);
+
+    windowEl.appendChild(header);
+    windowEl.appendChild(bodyContainer);
+
+    let pointerId: number | null = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const margin = 16;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (pointerId === null || event.pointerId !== pointerId) {
+        return;
+      }
+      const rect = windowEl.getBoundingClientRect();
+      const maxLeft = window.innerWidth - rect.width - margin;
+      const maxTop = window.innerHeight - rect.height - margin;
+      const nextLeft = Math.min(Math.max(event.clientX - offsetX, margin), Math.max(margin, maxLeft));
+      const nextTop = Math.min(Math.max(event.clientY - offsetY, margin), Math.max(margin, maxTop));
+      windowEl.style.left = `${nextLeft}px`;
+      windowEl.style.top = `${nextTop}px`;
+    };
+
+    const endPointerDrag = (event: PointerEvent) => {
+      if (pointerId === null || event.pointerId !== pointerId) {
+        return;
+      }
+      pointerId = null;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", endPointerDrag);
+      window.removeEventListener("pointercancel", endPointerDrag);
+    };
+
+    const startPointerDrag = (event: PointerEvent) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const rect = windowEl.getBoundingClientRect();
+      pointerId = event.pointerId;
+      offsetX = event.clientX - rect.left;
+      offsetY = event.clientY - rect.top;
+      windowEl.classList.add("herb-window--floating");
+      windowEl.classList.remove("herb-window--center");
+      windowEl.style.left = `${rect.left}px`;
+      windowEl.style.top = `${rect.top}px`;
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", endPointerDrag);
+      window.addEventListener("pointercancel", endPointerDrag);
+      event.preventDefault();
+    };
+
+    header.addEventListener("pointerdown", startPointerDrag);
+
+    let closed = false;
+    let handle: PopupHandle;
+
+    const overlayListener = (event: MouseEvent) => {
+      if (event.target === overlay) {
+        closePopup();
+      }
+    };
+
+    const keyListener = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePopup();
+      }
+    };
+
+    const closeButtonListener = () => {
+      closePopup();
+    };
+
+    const closePopup = () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      header.removeEventListener("pointerdown", startPointerDrag);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", endPointerDrag);
+      window.removeEventListener("pointercancel", endPointerDrag);
+      window.removeEventListener("keydown", keyListener);
+      overlay.removeEventListener("click", overlayListener);
+      closeButton.removeEventListener("click", closeButtonListener);
+      overlay.remove();
+      windowEl.remove();
+      this.popupHandles.delete(handle);
+    };
+
+    handle = {
+      element: windowEl,
+      setTitle: (value) => {
+        titleEl.textContent = value;
+      },
+      setBody: (content) => {
+        setBodyContent(content);
+      },
+      close: closePopup
+    };
+
+    overlay.addEventListener("click", overlayListener);
+    closeButton.addEventListener("click", closeButtonListener);
+    window.addEventListener("keydown", keyListener);
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(windowEl);
+    windowEl.focus();
+
+    this.popupHandles.add(handle);
+
+    return handle;
+  }
+
+  private addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle {
+    const id = this.generateId("popup-menu");
+    registerPopupMenuEntry(id, label, onSelect);
+    this.popupMenuEntryIds.add(id);
+
+    return {
+      setLabel: (value) => {
+        updatePopupMenuEntryLabel(id, value);
+      },
+      setDisabled: (disabled) => {
+        setPopupMenuEntryDisabled(id, disabled);
+      },
+      remove: () => {
+        unregisterPopupMenuEntry(id);
+        this.popupMenuEntryIds.delete(id);
+      }
+    };
+  }
+
+  private addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle {
+    const id = this.generateId("context-menu");
+    registerContextMenuEntry(id, label, action);
+    this.contextMenuEntryIds.add(id);
+
+    return {
+      setLabel: (value) => {
+        updateContextMenuEntry(id, { label: value });
+      },
+      setAction: (callback) => {
+        updateContextMenuEntry(id, { action: callback });
+      },
+      remove: () => {
+        unregisterContextMenuEntry(id);
+        this.contextMenuEntryIds.delete(id);
+      }
+    };
+  }
+
+  private generateId(prefix: string): string {
+    return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
   }
 }
