@@ -157,7 +157,10 @@ export function registerScripts(client: Client) {
         const rawLine = line.text
         const matches = rawLine.match(movePattern)
         if (matches?.groups?.direction) {
-            client.Map.followMove(matches.groups.direction)
+            const result = client.Map.followMove(matches.groups.direction)
+            if (!result) {
+                client.Map.refresh()
+            }
             return line
         }
         if (rawLine.startsWith("Wykonuje komende 'idz ")) {

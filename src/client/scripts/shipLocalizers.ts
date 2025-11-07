@@ -85,6 +85,5 @@ export default function initShipLocalizers(client: Client) {
     entries.forEach(entry => {
         const handler = createHandler(client, entry.roomId);
         parent.registerChild(entry.pattern, handler, 'ship-localizers');
-        client.Triggers.registerTrigger(entry.pattern, handler, 'ship-localizers');
     });
 }

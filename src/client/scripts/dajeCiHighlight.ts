@@ -6,7 +6,7 @@ export default function initDajeCiHighlight(client: Client) {
     const pattern = /^[ >]*[A-Za-z !()]+ daje ci (.*)$/;
     client.Triggers.registerTrigger(pattern, (line, matches) => {
         const group = matches[1];
-        if (group !== "nowy zapal do walki.") {
+        if (group !== "nowy zapal do walki." && group.startsWith("sie ")) {
             return line.colorWords(group, TURQUOISE)
         }
         return line;

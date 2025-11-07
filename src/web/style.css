@@ -707,6 +707,11 @@ h1 {
   position: relative;
 }
 
+#char-state > span:empty,
+#char-state > div:empty {
+  display: none;
+}
+
 #char-state-bars {
   display: none;
   flex-grow: 0;
