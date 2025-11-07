@@ -437,6 +437,9 @@ export default class Client {
 
     onLine(line: string, type: string): AnsiAwareBuffer[] {
         const buffer = new AnsiAwareBuffer(line)
+        if (buffer.text.length === 0) {
+            return []
+        }
         this.inLineProcess = true
         this.sendEvent(LINE_START_EVENT)
         const multilineResult = this.Triggers.parseMultiline(buffer, type)
