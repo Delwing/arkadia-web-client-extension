@@ -936,6 +936,105 @@ export interface OutputApi {
 }
 
 /**
+ * Content that can be displayed inside plugin popups
+ */
+export type PopupContent = string | Node;
+
+/**
+ * Handle returned when creating a popup window
+ */
+export interface PopupHandle {
+  /**
+   * Root popup element (for further customization)
+   */
+  readonly element: HTMLDivElement;
+
+  /**
+   * Update popup title
+   */
+  setTitle(title: string): void;
+
+  /**
+   * Update popup body content
+   */
+  setBody(content: PopupContent): void;
+
+  /**
+   * Close and remove the popup
+   */
+  close(): void;
+}
+
+/**
+ * Handle for popup menu entries
+ */
+export interface PopupMenuEntryHandle {
+  /**
+   * Update the entry label
+   */
+  setLabel(label: string): void;
+
+  /**
+   * Enable or disable the entry
+   */
+  setDisabled(disabled: boolean): void;
+
+  /**
+   * Remove the entry from the menu
+   */
+  remove(): void;
+}
+
+/**
+ * Handle for context menu entries
+ */
+export interface ContextMenuEntryHandle {
+  /**
+   * Update the entry label
+   */
+  setLabel(label: string): void;
+
+  /**
+   * Update the entry action
+   */
+  setAction(action: () => void): void;
+
+  /**
+   * Remove the entry from the menu
+   */
+  remove(): void;
+}
+
+/**
+ * UI helpers for plugins
+ */
+export interface UiApi {
+  /**
+   * Create a draggable popup window
+   * @param title - Popup title text
+   * @param body - Popup body content (string or DOM node)
+   * @returns Handle for controlling the popup
+   */
+  createPopup(title: string, body: PopupContent): PopupHandle;
+
+  /**
+   * Add an entry to the popup (⋮) menu
+   * @param label - Entry label
+   * @param onSelect - Callback invoked when entry is selected
+   * @returns Handle for updating or removing the entry
+   */
+  addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle;
+
+  /**
+   * Add an entry to the output context menu
+   * @param label - Entry label
+   * @param action - Callback invoked when entry is selected
+   * @returns Handle for updating or removing the entry
+   */
+  addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle;
+}
+
+/**
  * Colors API - Create and manage colors
  */
 export interface ColorsApi {
@@ -1271,6 +1370,9 @@ export interface PluginApi {
 
   /** Output to game window */
   output: OutputApi;
+
+  /** UI helpers */
+  ui: UiApi;
 
   /** Color creation helpers */
   colors: ColorsApi;
