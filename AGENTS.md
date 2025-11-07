@@ -2,10 +2,10 @@
 
 ## Testing
 
-Use `yarn --cwd client test` to run tests.
-Use `yarn --cwd web-client test` to run tests.
+Use `yarn test` to run unit tests.
+Use `yarn test:e2e` to run end-to-end tests.
 
-Ensure that `yarn --cwd web-client build` doesn't end up with error.
+Ensure that `yarn build` doesn't end up with error.
 
 Always run tests!
 

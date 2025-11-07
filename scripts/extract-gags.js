@@ -71,7 +71,7 @@ function extractPatterns(obj) {
     return out;
 }
 
-function getCalls(script) {
+function _getCalls(script) {
     let funcName = script;
     if (funcName.endsWith('()')) funcName = funcName.slice(0, -2);
     if (funcCalls[funcName]) return funcCalls[funcName];

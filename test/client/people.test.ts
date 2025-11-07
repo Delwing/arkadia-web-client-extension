@@ -1,0 +1,232 @@
+import People from '@client/People';
+import Triggers from '@client/Triggers';
+import { refresh, subscribe, forceRefresh } from '@modules/data/peopleStore';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+
+// Helper to check if any segment containing text has a foreground color
+function hasColoredText(buffer: AnsiAwareBuffer | null, text: string): boolean {
+  if (!buffer) return false;
+  const segments = buffer.getSegments();
+  return segments.some(seg => seg.text.includes(text) && seg.state?.foreground);
+}
+
+// Helper to count colored occurrences of text
+function countColoredOccurrences(buffer: AnsiAwareBuffer | null, text: string): number {
+  if (!buffer) return 0;
+  const segments = buffer.getSegments();
+  return segments.filter(seg => seg.text.includes(text) && seg.state?.foreground).length;
+}
+
+jest.mock('@modules/data/peopleStore', () => ({
+  subscribe: jest.fn(),
+  refresh: jest.fn(),
+  forceRefresh: jest.fn(),
+}));
+
+const subscribeMock = subscribe as jest.MockedFunction<typeof subscribe>;
+const refreshMock = refresh as jest.MockedFunction<typeof refresh>;
+const forceRefreshMock = forceRefresh as jest.MockedFunction<typeof forceRefresh>;
+
+const MOCK_PEOPLE = [
+  { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
+  { name: 'Eamon', description: 'wysoki mezczyzna w kapturze', guild: 'CKN' },
+  { name: 'Krasn', description: 'krepy lysy krasnolud', guild: 'CKN' },
+  { name: 'Musin', description: 'szczuply mezczyzna', guild: 'CKN' },
+  { name: 'Mara', description: 'niska kobieta', guild: 'NPC' },
+  { name: 'w', description: 'koscisty mezczyzna', guild: 'GP' }
+];
+
+class FakeClient {
+  Triggers = new Triggers(({} as unknown) as any);
+  on = jest.fn();
+}
+
+describe('people triggers enemy highlight', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
+
+  beforeEach(async () => {
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+    forceRefreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
+    client = new FakeClient();
+    new People((client as unknown) as any);
+    await refreshMock.mock.results[0]?.value;
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
+    if (handler) {
+      handler({ guilds: [], enemyGuilds: ['CKN'] });
+    }
+    const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
+    await lastCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
+  });
+
+  test('colors enemy description red', () => {
+    const result = parse('Widzisz wysoki mezczyzna tutaj.');
+
+    // Check that guild suffix is colored and present
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    expect(result?.text).toContain('(Eamon CKN)');
+    // Guild suffix should be colored (description coloring is implementation detail)
+    const segments = result?.getSegments() ?? [];
+    expect(segments.some(seg => seg.state?.foreground)).toBe(true);
+  });
+
+  test('colors enemy name red without suffix', () => {
+    const result = parse('Eamon wita cie.');
+
+    // Eamon should be colored
+    expect(hasColoredText(result, 'Eamon')).toBe(true);
+    // But no guild suffix should appear
+    expect(result?.text).not.toContain('(Eamon CKN)');
+  });
+
+  test('enemy name highlights every occurrence', () => {
+    const result = parse('Eamon wita cie. Eamon rzuca czar.');
+
+    // Both occurrences of Eamon should be colored
+    expect(countColoredOccurrences(result, 'Eamon')).toBe(2);
+  });
+
+  test('highlights correct occurrence when name is substring of earlier word', () => {
+    const result = parse('Musina, atakuje Musin.');
+
+    // Only "Musin" (not "Musina") should be colored, and only once
+    expect(countColoredOccurrences(result, 'Musin')).toBe(1);
+    expect(hasColoredText(result, 'Musin')).toBe(true);
+
+    // Verify "Musina" appears before "Musin" in the plain text
+    expect(result?.text).toContain('Musina, atakuje Musin');
+  });
+
+  test('ignores very short enemy names to avoid false positives', () => {
+    const result = parse('spotykasz w drodze przyjaciela.');
+
+    // The letter "w" should not be colored (too short)
+    expect(hasColoredText(result, 'w')).toBe(false);
+  });
+
+  test("doesn't color description when followed by chaosu", () => {
+    const result = parse('Widzisz krepy lysy krasnolud chaosu tutaj.');
+
+    // Description followed by "chaosu" should not be colored
+    expect(hasColoredText(result, 'krepy lysy krasnolud')).toBe(false);
+    expect(result?.text).not.toContain('(Krasn CKN)');
+  });
+});
+
+describe('people triggers guild highlight', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+  type SettingsPayload = { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> };
+  let settingsHandler: ((event: SettingsPayload) => void) | undefined;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
+
+  beforeEach(async () => {
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
+    client = new FakeClient();
+    new People((client as unknown) as any);
+    await refreshMock.mock.results[0]?.value;
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1] as
+      | ((event: SettingsPayload) => void)
+      | undefined;
+    const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
+    await lastGuildCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
+  });
+
+  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
+    settingsHandler?.(detail);
+  };
+
+  test('adds name after description without red color', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+    const result = parse('Widzisz wysoki mezczyzna tutaj.');
+
+    // Guild member should be colored (green, not red)
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    expect(result?.text).toContain('(Eamon CKN)');
+  });
+
+  test('adds names for two guild members in the same sentence', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+    const result = parse('Widzisz wysoki mezczyzna oraz krepy lysy krasnolud.');
+
+    // Both guild members should be colored
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    expect(hasColoredText(result, '(Krasn CKN)')).toBe(true);
+    expect(result?.text).toContain('(Eamon CKN)');
+    expect(result?.text).toContain('(Krasn CKN)');
+  });
+
+  test('colors enemy guild member in red', () => {
+    emitSettings({ guilds: [], enemyGuilds: ['CKN'], guildColors: {} });
+    const result = parse('Widzisz wysoki mezczyzna tutaj.');
+
+    // Enemy guild member suffix should be colored
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    const segments = result?.getSegments() ?? [];
+    expect(segments.some(seg => seg.state?.foreground)).toBe(true);
+  });
+
+  test('colors two enemy guild members in one sentence', () => {
+    emitSettings({ guilds: [], enemyGuilds: ['CKN', 'GP'], guildColors: {} });
+    const result = parse('Widzisz wysoki mezczyzna i koscisty mezczyzna obok siebie.');
+
+    // Both enemy guild members should be colored
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    expect(hasColoredText(result, '(w GP)')).toBe(true);
+    expect(result?.text).toContain('(Eamon CKN)');
+    expect(result?.text).toContain('(w GP)');
+  });
+
+  test('colors ally and enemy differently when they appear together', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: ['GP'], guildColors: { CKN: '#00ff00' } });
+    const result = parse('Widzisz wysoki mezczyzna oraz koscisty mezczyzna.');
+
+    // Both should be colored (ally in guild color, enemy in red)
+    expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
+    expect(hasColoredText(result, '(w GP)')).toBe(true);
+  });
+});

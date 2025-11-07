@@ -1,0 +1,163 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import storage, { getCurrentCharacter } from "@modules/core/storage";
+import GeneralSettings from "./Settings";
+import GuildsSettings from "./GuildsSettings";
+import LuaGagsSettings from "./LuaGagsSettings";
+
+type Tab = "general" | "guild" | "luaGags";
+
+function CharacterSettings() {
+    const [tab, setTab] = useState<Tab>("general");
+    const scrollRefs = {
+        general: useRef<HTMLDivElement>(null),
+        guild: useRef<HTMLDivElement>(null),
+        luaGags: useRef<HTMLDivElement>(null),
+    } as const;
+    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0 });
+    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {}, luaGags: () => {} });
+    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [char, setChar] = useState<string | null>(getCurrentCharacter());
+
+    const changeTab = useCallback((next: Tab) => {
+        const current = scrollRefs[tab].current;
+        if (current) {
+            scrollPos.current[tab] = current.scrollTop;
+        }
+        setTab(next);
+    }, [tab]);
+
+    useEffect(() => {
+        const showGeneral = () => changeTab("general");
+        const showGuild = () => changeTab("guild");
+        window.addEventListener("show-general-settings", showGeneral);
+        window.addEventListener("show-guild-settings", showGuild);
+        return () => {
+            window.removeEventListener("show-general-settings", showGeneral);
+            window.removeEventListener("show-guild-settings", showGuild);
+        };
+    }, [changeTab]);
+
+    useEffect(() => {
+        const update = () => {
+            const current = getCurrentCharacter();
+            setLocked(!current);
+            setChar(current);
+        };
+        storage.onChanged?.addListener(update);
+        window.addEventListener("storage", update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener("storage", update);
+        };
+    }, []);
+
+    const registerGeneralSave = useCallback((fn: () => void) => {
+        saveRefs.current.general = fn;
+    }, []);
+
+    const registerGuildSave = useCallback((fn: () => void) => {
+        saveRefs.current.guild = fn;
+    }, []);
+
+    const registerLuaGagsSave = useCallback((fn: () => void) => {
+        saveRefs.current.luaGags = fn;
+    }, []);
+
+    useEffect(() => {
+        const handler = () => {
+            const saves = [
+                Promise.resolve(saveRefs.current.general()),
+                Promise.resolve(saveRefs.current.guild()),
+                Promise.resolve(saveRefs.current.luaGags()),
+            ];
+            Promise.all(saves).then(() => {
+                window.dispatchEvent(new Event("close-options"));
+            });
+        };
+        window.addEventListener("save-options", handler);
+        return () => window.removeEventListener("save-options", handler);
+    }, []);
+
+    useEffect(() => {
+        const current = scrollRefs[tab].current;
+        if (current) {
+            current.scrollTop = scrollPos.current[tab];
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollRefs and scrollPos are refs, don't need deps
+    }, [tab]);
+
+    return (
+        <div className="p-2 d-flex flex-column h-100" style={{ minHeight: 0 }}>
+            {locked ? (
+                <div className="alert alert-info" role="alert">
+                    Opcje zależne od postaci są zablokowane do momentu jej wybrania.
+                </div>
+            ) : (
+                char && (
+                    <div className="alert alert-info" role="alert">
+                        Ustawienia dotyczą postaci: <strong>{char}</strong>
+                    </div>
+                )
+            )}
+            <div className="mb-3">
+                <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                        window.dispatchEvent(new Event("close-options"));
+                        setTimeout(() => window.dispatchEvent(new Event("show-export-import")), 0);
+                    }}
+                >
+                    Eksportuj i importuj ustawienia…
+                </button>
+            </div>
+            <div className="mb-3 pb-2 flex-shrink-0">
+                <div className="d-flex gap-2">
+                    <button
+                        className={`btn btn-sm ${tab === "general" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("general")}
+                    >
+                        Ogólne
+                    </button>
+                    <button
+                        className={`btn btn-sm ${tab === "guild" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("guild")}
+                    >
+                        Gildie
+                    </button>
+                    <button
+                        className={`btn btn-sm ${tab === "luaGags" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("luaGags")}
+                    >
+                        Walka
+                    </button>
+                </div>
+            </div>
+            <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
+                <div
+                    ref={scrollRefs.general}
+                    className={`h-100 overflow-auto${tab === "general" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <GeneralSettings registerSave={registerGeneralSave} />
+                </div>
+                <div
+                    ref={scrollRefs.guild}
+                    className={`h-100 overflow-auto${tab === "guild" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <GuildsSettings registerSave={registerGuildSave} />
+                </div>
+                <div
+                    ref={scrollRefs.luaGags}
+                    className={`h-100 overflow-auto${tab === "luaGags" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <LuaGagsSettings registerSave={registerLuaGagsSave} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default CharacterSettings;

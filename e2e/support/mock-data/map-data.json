@@ -1,0 +1,436 @@
+[
+  {
+    "areaName": "Miasteczko Poslan",
+    "areaId": "1",
+    "rooms": [
+      {
+        "area": 1,
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Poczta",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 1,
+        "env": 1,
+        "exits": {
+          "east": 2
+        },
+        "specialExits": {},
+        "hash": "0:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Rynek",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 2,
+        "env": 1,
+        "exits": {
+          "west": 1,
+          "east": 3
+        },
+        "specialExits": {},
+        "hash": "1:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Kamienny Most",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 3,
+        "env": 1,
+        "exits": {
+          "west": 2,
+          "north": 4,
+          "south": 6
+        },
+        "specialExits": {},
+        "hash": "2:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 2,
+        "y": 1,
+        "z": 0,
+        "weight": 1,
+        "name": "Rezydencja Borgafa",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 4,
+        "env": 1,
+        "exits": {
+          "south": 3
+        },
+        "specialExits": {},
+        "hash": "2:1:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 4,
+        "y": 4,
+        "z": 0,
+        "weight": 1,
+        "name": "Opuszczona Altana",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 5,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "4:4:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 10,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Bank Poslan",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 100,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "10:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 11,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Bank Eltar",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 101,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "11:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 12,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Bank Czarnolas",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 102,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "12:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 20,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Bank A",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 200,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "20:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 21,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Bank B",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 201,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "21:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 30,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Changing Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 300,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "30:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 40,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Shared Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 400,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "40:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 50,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Poslan Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 500,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "50:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 51,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Eltar Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 501,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "51:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 52,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Czarnolas Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 502,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "52:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 60,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Test Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 600,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "60:0:0:Miasteczko Poslan"
+      },
+      {
+        "area": 1,
+        "x": 70,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Reset Bank",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {
+          "bind": "/depozyt"
+        },
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 700,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "70:0:0:Miasteczko Poslan"
+      }
+    ],
+    "labels": []
+  },
+  {
+    "areaName": "Zapomniane Jaskinie",
+    "areaId": "2",
+    "rooms": [
+      {
+        "area": 2,
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "weight": 1,
+        "name": "Wejscie do Jaskin",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 6,
+        "env": 2,
+        "exits": {
+          "north": 3,
+          "east": 7
+        },
+        "specialExits": {},
+        "hash": "0:1:0:Zapomniane Jaskinie"
+      },
+      {
+        "area": 2,
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "weight": 1,
+        "name": "Podziemna Sala",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 7,
+        "env": 2,
+        "exits": {
+          "west": 6
+        },
+        "specialExits": {},
+        "hash": "1:1:0:Zapomniane Jaskinie"
+      },
+      {
+        "area": 2,
+        "x": -2,
+        "y": -1,
+        "z": 0,
+        "weight": 1,
+        "name": "Zapomniana Komnata",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 8,
+        "env": 2,
+        "exits": {},
+        "specialExits": {},
+        "hash": "2:1:0:Zapomniane Jaskinie"
+      }
+    ],
+    "labels": []
+  }
+]

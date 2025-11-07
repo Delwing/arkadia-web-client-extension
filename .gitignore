@@ -2,12 +2,11 @@
 dist
 node_modules
 *.iml
-extension/options
 client.js
 arkadia-extension.zip
 vite.config.js
 .yarn
 .DS_Store
-web-client/playwright-report/
-web-client/test-results/
+playwright-report/
+test-results/
 .claude
