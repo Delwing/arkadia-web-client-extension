@@ -1,0 +1,7 @@
+{
+  "magics": {
+    "ancient-blade": {
+      "regexps": ["magiczny miecz"]
+    }
+  }
+}

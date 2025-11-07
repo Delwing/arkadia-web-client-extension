@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "books": {
+    "ceramiczna wypalona tabliczka": {
+      "mianownik": "ceramiczna wypalona tabliczka",
+      "dopelniacz": "ceramicznej wypalonej tabliczki",
+      "biernik": "ceramiczna wypalona tabliczke",
+      "categories": ["Chaos i jego twory"]
+    }
+  },
+  "libraries": {
+    "library-chaos": {
+      "location_id": "library-chaos",
+      "categories": ["Chaos i jego twory"],
+      "name": "Biblioteka Chaosu"
+    }
+  }
+}
