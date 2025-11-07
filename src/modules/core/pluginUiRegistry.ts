@@ -1,0 +1,129 @@
+import type { ContextMenuEntry } from "@shared/dom/contextMenu";
+
+type PopupMenuEntryRecord = {
+  id: string;
+  label: string;
+  element: HTMLLIElement;
+  button: HTMLButtonElement;
+  listener: (event: MouseEvent) => void;
+};
+
+type ContextMenuEntryRecord = ContextMenuEntry & { id: string };
+
+const popupMenuEntries = new Map<string, PopupMenuEntryRecord>();
+const contextMenuEntries = new Map<string, ContextMenuEntryRecord>();
+
+function getMenuListElement(): HTMLUListElement | null {
+  const dropdown = document.querySelector<HTMLDivElement>("#input-area .dropdown");
+  if (!dropdown) {
+    return null;
+  }
+  return dropdown.querySelector<HTMLUListElement>(".dropdown-menu");
+}
+
+export function registerPopupMenuEntry(
+  id: string,
+  label: string,
+  onSelect: () => void
+): PopupMenuEntryRecord {
+  const menu = getMenuListElement();
+  if (!menu) {
+    throw new Error("Popup menu element not found");
+  }
+
+  const existing = popupMenuEntries.get(id);
+  if (existing) {
+    existing.button.removeEventListener("click", existing.listener);
+    existing.element.remove();
+    popupMenuEntries.delete(id);
+  }
+
+  const listItem = document.createElement("li");
+  listItem.dataset.pluginMenuEntryId = id;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "w-100 p-1";
+  button.textContent = label;
+
+  const listener = (event: MouseEvent) => {
+    event.preventDefault();
+    onSelect();
+  };
+
+  button.addEventListener("click", listener);
+  listItem.appendChild(button);
+  menu.appendChild(listItem);
+
+  const record: PopupMenuEntryRecord = {
+    id,
+    label,
+    element: listItem,
+    button,
+    listener
+  };
+
+  popupMenuEntries.set(id, record);
+  return record;
+}
+
+export function updatePopupMenuEntryLabel(id: string, label: string): void {
+  const entry = popupMenuEntries.get(id);
+  if (!entry) {
+    return;
+  }
+  entry.label = label;
+  entry.button.textContent = label;
+}
+
+export function setPopupMenuEntryDisabled(id: string, disabled: boolean): void {
+  const entry = popupMenuEntries.get(id);
+  if (!entry) {
+    return;
+  }
+  entry.button.disabled = disabled;
+}
+
+export function unregisterPopupMenuEntry(id: string): void {
+  const entry = popupMenuEntries.get(id);
+  if (!entry) {
+    return;
+  }
+  entry.button.removeEventListener("click", entry.listener);
+  entry.element.remove();
+  popupMenuEntries.delete(id);
+}
+
+export function registerContextMenuEntry(
+  id: string,
+  label: string,
+  action: () => void
+): ContextMenuEntryRecord {
+  const record: ContextMenuEntryRecord = { id, label, action };
+  contextMenuEntries.set(id, record);
+  return record;
+}
+
+export function updateContextMenuEntry(
+  id: string,
+  updates: Partial<Pick<ContextMenuEntryRecord, "label" | "action">>
+): void {
+  const entry = contextMenuEntries.get(id);
+  if (!entry) {
+    return;
+  }
+  if (typeof updates.label === "string") {
+    entry.label = updates.label;
+  }
+  if (typeof updates.action === "function") {
+    entry.action = updates.action;
+  }
+}
+
+export function unregisterContextMenuEntry(id: string): void {
+  contextMenuEntries.delete(id);
+}
+
+export function getContextMenuEntries(): ContextMenuEntryRecord[] {
+  return Array.from(contextMenuEntries.values());
+}
