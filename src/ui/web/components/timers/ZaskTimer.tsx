@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClientEvent } from "../../hooks";
 
 interface ZaskTimerPayload {
@@ -10,35 +10,49 @@ interface ZaskTimerPayload {
  * ZaskTimer component - displays zask timer status
  * Shows "Zask: OK" (green) when ok, or "Zask: X" with color based on seconds
  * Color: yellow (>=20s), red (<20s)
+ *
+ * Note: This component manipulates the container element directly to match
+ * the behavior of the old class-based implementation.
  */
 export const ZaskTimer: React.FC = () => {
   const [payload, setPayload] = useState<ZaskTimerPayload | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
 
   useClientEvent<ZaskTimerPayload | null>("zaskTimer", (newPayload) => {
     setPayload(newPayload);
   });
 
-  // Hide if no payload
-  if (!payload) {
-    return null;
-  }
+  // Get reference to the container element
+  useEffect(() => {
+    containerRef.current = document.getElementById("zask-timer");
+  }, []);
 
-  // Determine display text and class
-  if (payload.ok) {
-    return (
-      <span className="green">
-        Zask: OK
-      </span>
-    );
-  }
+  // Update the container element's properties
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-  const className = payload.seconds >= 20 ? "yellow" : "red";
+    if (!payload) {
+      containerRef.current.textContent = "";
+      containerRef.current.className = "";
+      containerRef.current.style.display = "none";
+      return;
+    }
 
-  return (
-    <span className={className}>
-      Zask: {payload.seconds}
-    </span>
-  );
+    containerRef.current.style.display = "block";
+    if (payload.ok) {
+      containerRef.current.textContent = "Zask: OK";
+      containerRef.current.className = "green";
+    } else {
+      containerRef.current.textContent = `Zask: ${payload.seconds}`;
+      if (payload.seconds >= 20) {
+        containerRef.current.className = "yellow";
+      } else {
+        containerRef.current.className = "red";
+      }
+    }
+  }, [payload]);
+
+  return null;
 };
 
 export default ZaskTimer;
