@@ -654,7 +654,7 @@ export class AnsiAwareBuffer {
 
             // Font styles
             if (state.bold) {
-                styles.push("font-weight: bold");
+                //styles.push("font-weight: bold");
             }
 
             if (state.italic) {
@@ -734,7 +734,7 @@ export class AnsiAwareBuffer {
 
             // Font styles
             if (state.bold) {
-                styles.push("font-weight: bold");
+                //styles.push("font-weight: bold");
             }
 
             if (state.italic) {
