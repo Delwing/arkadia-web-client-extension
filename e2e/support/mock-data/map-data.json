@@ -432,5 +432,88 @@
       }
     ],
     "labels": []
+  },
+    {
+    "areaName": "Transport Docks",
+    "areaId": "3",
+    "rooms": [
+      {
+        "area": 3,
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Przystan na Blekitnej Wstedze",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 6429,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "0:0:0:Transport Docks"
+      },
+      {
+        "area": 3,
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Przystan w Krainie Zgromadzenia",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 6621,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "1:0:0:Transport Docks"
+      },
+      {
+        "area": 3,
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Wschodnie nabrzeze w Nuln",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 7233,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "2:0:0:Transport Docks"
+      },
+      {
+        "area": 3,
+        "x": 3,
+        "y": 0,
+        "z": 0,
+        "weight": 1,
+        "name": "Przystan w Kreutzhofen",
+        "rawSpecialExits": {},
+        "symbol": "",
+        "userData": {},
+        "customLines": {},
+        "stubs": [],
+        "doors": {},
+        "id": 5207,
+        "env": 1,
+        "exits": {},
+        "specialExits": {},
+        "hash": "3:0:0:Transport Docks"
+      }
+    ],
+    "labels": []
   }
 ]
