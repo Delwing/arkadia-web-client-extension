@@ -262,7 +262,11 @@ class FormatState {
                 }
                 default:
                     if (code >= 30 && code <= 37) {
-                        this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 30]};
+                        if (params[1] === 1) {
+                            this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 30]};
+                        } else {
+                            this.foreground = {space: "hex", color: colorCodes.ansi.dark[code - 30]};
+                        }
                     } else if (code >= 90 && code <= 97) {
                         this.foreground = {space: "hex", color: colorCodes.ansi.bright[code - 82]};
                     } else if (code >= 40 && code <= 47) {
