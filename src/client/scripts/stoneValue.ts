@@ -17,15 +17,16 @@ export default function initStoneValue(
             if (!matches || !matches[1]) return line;
             const amount = parseInt(matches[1], 10);
             sum += amount;
-            const raw = line.text;
-            const result = processItemValue(raw, amount);
-            return new AnsiAwareBuffer(result);
+            const raw = line;
+            return processItemValue(raw, amount);
         }, tag);
         client.sendCommand("ocen kamienie");
         setTimeout(() => {
             client.Triggers.removeByTag(tag);
             if (sum > 0) {
-                client.println(`Laczna wartosc kamieni: ${convertCurrency(sum)}`);
+                const message = new AnsiAwareBuffer('Laczna wartosc kamieni: ');
+                message.appendBuffer(convertCurrency(sum));
+                client.println(message);
             }
         }, 700);
     }
