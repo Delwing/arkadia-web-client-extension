@@ -1,10 +1,10 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 
 export default function initMountain(client: Client) {
     let mountainMovingDir: "up" | "down" | undefined;
     const tag = "mountain";
-    const YELLOW = findClosestColor("#ffff00");
+    const YELLOW = createColorFormat("#ffff00");
 
     client.Triggers.registerTrigger("Zaczynasz schodzic na dol.", (line) => {
         mountainMovingDir = "down";

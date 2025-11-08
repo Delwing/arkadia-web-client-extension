@@ -1,8 +1,8 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 
 export default function initHpAlert(client: Client) {
-    const ORANGE = findClosestColor("#ffa500");
+    const ORANGE = createColorFormat("#ffa500");
     const CONDITIONS = [
         '',
         'ledwo zywy',

@@ -1,17 +1,17 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 import {getCurrentCharacter, getItemSync} from "@modules/core/storage";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
-const HEADER_COLOR = findClosestColor("#90ee90");
-const SECTION_COLOR = findClosestColor("#ffa500");
+const HEADER_COLOR = createColorFormat("#90ee90");
+const SECTION_COLOR = createColorFormat("#ffa500");
 const LABEL_COLOR = HEADER_COLOR;
 const COUNT_COLOR = SECTION_COLOR;
-const POSTEP_COLOR = findClosestColor("#6a5acd");
-const TIME_COLOR = findClosestColor("#ffff00");
-const NAME_COLOR = findClosestColor("#ffff00");
-const DATE_COLOR = findClosestColor("#ffd700");
-const TOTAL_LABEL_COLOR = findClosestColor("#ffb6c1");
+const POSTEP_COLOR = createColorFormat("#6a5acd");
+const TIME_COLOR = createColorFormat("#ffff00");
+const NAME_COLOR = createColorFormat("#ffff00");
+const DATE_COLOR = createColorFormat("#ffd700");
+const TOTAL_LABEL_COLOR = createColorFormat("#ffb6c1");
 
 const STATES = [
     "minimalne",

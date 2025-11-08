@@ -1,8 +1,8 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 
 export default function initNoExitHighlight(client: Client) {
-    const TAN = findClosestColor("#d2b48c");
+    const TAN = createColorFormat("#d2b48c");
     const patterns = [
         /^[ >]*Nie widzisz zadnego wyjscia prowadzacego na .*\.$/,
         /^[ >]*Jestes tak zmeczon[ya], ze nie mozesz dalej podazac w tym kierunku\.$/

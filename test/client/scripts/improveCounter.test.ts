@@ -1,7 +1,7 @@
 import { initImproveCounter } from '@client/scripts/improveCounter';
 import { initKillCounter } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
-import { colorString, findClosestColor } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 import { setItemSync } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
@@ -64,7 +64,7 @@ describe('improve counter', () => {
     parse('Zabiles smoka chaosu.');
     jest.advanceTimersByTime(30000);
     client.dispatch('gmcp.char.state', { improve: 3 });
-    const orange = findClosestColor('#ffa500');
+    const orange = createColorFormat('#ffa500');
     const message = colorString('\tWlasnie wbiles postepy: male (czas: 0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
     show();

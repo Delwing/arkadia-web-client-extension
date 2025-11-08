@@ -1,9 +1,9 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 import { getShortDir } from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
-const ORANGE = findClosestColor('#ffa500');
+const ORANGE = createColorFormat('#ffa500');
 
 export { getShortDir as toShort };
 

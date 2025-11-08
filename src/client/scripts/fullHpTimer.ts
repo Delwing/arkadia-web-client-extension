@@ -1,9 +1,9 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
-    const SPRING_GREEN = findClosestColor("#00ff7f");
+    const SPRING_GREEN = createColorFormat("#00ff7f");
     let timer: number | null = null;
     let enabled = false;
     let playerNum: string | undefined;

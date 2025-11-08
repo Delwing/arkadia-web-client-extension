@@ -1,10 +1,10 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
-const RED = findClosestColor("#ff0000");
+const RED = createColorFormat("#ff0000");
 
 function highlightAttack(buffer: AnsiAwareBuffer, upper?: string): AnsiAwareBuffer {
     const text = buffer.text;

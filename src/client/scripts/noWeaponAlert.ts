@@ -1,9 +1,9 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 
 export default function initNoWeaponAlert(client: Client) {
     const tag = 'no-weapon-alert';
-    const RED = findClosestColor("#ff0000");
+    const RED = createColorFormat("#ff0000");
     const patterns = [
         /(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz) (?<target>.+?) (lew\w+|praw\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)/,
         /^Wykonujesz zamach ((lewym|prawym) butem) mierzac w (?<target>.+?), lecz t(a|en) paruje go .*\.$/

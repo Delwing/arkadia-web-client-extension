@@ -1,15 +1,15 @@
 import Client from "../Client";
 import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
-import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
+import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import type {HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
-const headerColor = findClosestColor('#8470ff')
-const WHITE = findClosestColor('#ffffff');
+const headerColor = createColorFormat('#8470ff')
+const WHITE = createColorFormat('#ffffff');
 const STORAGE_KEY = "herb_counts";
 
 const biernikDigits = new Set([2, 3, 4]);

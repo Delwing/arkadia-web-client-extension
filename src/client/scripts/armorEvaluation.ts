@@ -1,9 +1,9 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import { ARMOR_QUALITY, EFFECTIVENESS } from "./evaluationConstants";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
-const LABEL_COLOR = findClosestColor("#446fb1");
+const LABEL_COLOR = createColorFormat("#446fb1");
 
 const DAMAGE_MAP: Record<string, keyof Protection> = {
   klutymi: "klute",

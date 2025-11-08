@@ -1,4 +1,4 @@
-import {colorStringInLine, findClosestColor} from "@modules/core/Colors";
+import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import Client from "../Client";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
@@ -19,10 +19,10 @@ const gagColors = {
     "npc_spece": "#fffaf0"
 };
 const gagColorCodes: Record<string, number> = Object.fromEntries(
-    Object.entries(gagColors).map(([k, v]) => [k, findClosestColor(v)])
+    Object.entries(gagColors).map(([k, v]) => [k, createColorFormat(v)])
 ) as Record<string, number>;
-const OWN_HIT_COLOR = findClosestColor('#2db92d');
-const DAMAGE_COLOR = findClosestColor('#ff9933');
+const OWN_HIT_COLOR = createColorFormat('#2db92d');
+const DAMAGE_COLOR = createColorFormat('#ff9933');
 const combatTypes = ["combat.avatar", "combat.team", "combat.others"]
 
 class EmptyMatches extends Array<string> implements RegExpMatchArray {

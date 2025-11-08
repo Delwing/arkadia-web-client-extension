@@ -1,6 +1,6 @@
 import initNoWeaponAlert from '@client/scripts/noWeaponAlert';
 import Triggers from '@client/Triggers';
-import { colorString, findClosestColor } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
@@ -12,7 +12,7 @@ class FakeClient {
 describe('no weapon alert', () => {
   let client: FakeClient;
   let parse: (line: string) => AnsiAwareBuffer | null;
-  const color = findClosestColor('#ff0000');
+  const color = createColorFormat('#ff0000');
 
   beforeEach(() => {
     jest.useFakeTimers();

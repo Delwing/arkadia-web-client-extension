@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 export interface ShortcutEntry {
@@ -17,8 +17,8 @@ export function getShortcut(id: string): number | undefined {
 }
 
 export default function initShortcuts(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    const HEADER_COLOR = findClosestColor("#7cfc00");
-    const NAME_COLOR = findClosestColor("#ffa500");
+    const HEADER_COLOR = createColorFormat("#7cfc00");
+    const NAME_COLOR = createColorFormat("#ffa500");
 
     function apply(list: ShortcutEntry[] = []) {
         Object.keys(shortcuts).forEach(k => delete shortcuts[k]);

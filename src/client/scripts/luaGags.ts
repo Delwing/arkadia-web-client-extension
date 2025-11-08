@@ -1,6 +1,6 @@
 import Triggers, {Trigger} from "../Triggers";
 import gagsData from "./gags_lua.json";
-import {colorString, findClosestColor, mudletColorLine} from "@modules/core/Colors";
+import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 import * as luainjs from 'lua-in-js'
@@ -19,7 +19,7 @@ import {
     normalizeLuaGagsDeleteLines,
 } from "../luaGagsSettings";
 
-const ERROR_COLOR = findClosestColor('#ff0000');
+const ERROR_COLOR = createColorFormat('#ff0000');
 
 const gagColors = {
     "moje_ciosy": "#f0f8ff",
@@ -38,7 +38,7 @@ const gagColors = {
     "npc_spece": "#fffaf0"
 };
 const gagColorCodes: Record<string, FormatStateSnapshot> = Object.fromEntries(
-    Object.entries(gagColors).map(([k, v]) => [k, findClosestColor(v)])
+    Object.entries(gagColors).map(([k, v]) => [k, createColorFormat(v)])
 )
 const combatTypes = ["combat.avatar", "combat.team", "combat.others"]
 
@@ -380,7 +380,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 const hexColor = '#' + rgb
                         .map(v => v.toString(16).padStart(2, '0'))
                         .join('');
-                global.color = findClosestColor(hexColor)
+                global.color = createColorFormat(hexColor)
                 mudlet.fg(global.color)
             },
             prefix(prefix: string) {
@@ -388,7 +388,7 @@ export default function registerLuaGagTriggers(client: Client) {
             },
             fg(stringColor: string | FormatStateSnapshot) {
                 if (typeof stringColor === "string") {
-                    global.color = findClosestColor(mudletColors[stringColor])
+                    global.color = createColorFormat(mudletColors[stringColor])
                 }
                 if (selection[0] > -1 && selection[0] !== selection[1]) {
                     global.line.color([selection[0], selection[1]], global.color)

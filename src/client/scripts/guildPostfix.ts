@@ -1,9 +1,9 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {FormatStateSnapshot} from "../ansi/FormatState";
 
-const SLATE_BLUE = findClosestColor("#6a5acd");
-const ENEMY_RED = findClosestColor("#ff0000");
+const SLATE_BLUE = createColorFormat("#6a5acd");
+const ENEMY_RED = createColorFormat("#ff0000");
 
 type GuildColorMap = Record<string, FormatStateSnapshot | undefined>;
 
@@ -20,7 +20,7 @@ export default function initGuildPostfix(client: Client) {
         enemyGuilds = new Set(enemies);
         Object.entries(colors).forEach(([g, hex]) => {
             if (hex) {
-                guildColors[g] = findClosestColor(hex);
+                guildColors[g] = createColorFormat(hex);
             }
         });
     });

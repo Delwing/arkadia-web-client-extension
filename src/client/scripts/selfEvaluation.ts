@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 
 export default function initSelfEvaluation(
     client: Client,
@@ -11,9 +11,9 @@ export default function initSelfEvaluation(
     let timer: ReturnType<typeof setTimeout> | undefined;
     let fallback: ReturnType<typeof setTimeout> | undefined;
 
-    const GREEN = findClosestColor("#00ff00");
-    const YELLOW = findClosestColor("#ffff00");
-    const RED = findClosestColor("#ff0000");
+    const GREEN = createColorFormat("#00ff00");
+    const YELLOW = createColorFormat("#ffff00");
+    const RED = createColorFormat("#ff0000");
 
     // Map condition phrases to state values (without brackets - colorState adds them)
     const conditionMap: Record<string, string> = {

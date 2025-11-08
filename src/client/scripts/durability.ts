@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 export type DurabilityEntry = {
@@ -9,10 +9,10 @@ export type DurabilityEntry = {
 };
 
 const COLORS: Record<string, FormatStateSnapshot> = {
-    green: findClosestColor("#00ff00"),
-    yellow: findClosestColor("#ffff00"),
-    orange: findClosestColor("#ffa500"),
-    red: findClosestColor("#ff0000"),
+    green: createColorFormat("#00ff00"),
+    yellow: createColorFormat("#ffff00"),
+    orange: createColorFormat("#ffa500"),
+    red: createColorFormat("#ff0000"),
 };
 
 export const durabilityEntries: DurabilityEntry[] = [

@@ -1,10 +1,10 @@
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from './types/people';
 import Client from "./Client";
-import {findClosestColor} from '@modules/core/Colors';
+import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 
-const RED = findClosestColor('#ff0000')
+const RED = createColorFormat('#ff0000')
 
 export default class People {
 
@@ -75,7 +75,7 @@ export default class People {
 
     private registerPeopleTriggers() {
         this.client.Triggers.removeByTag(this.tag)
-        const RED = findClosestColor('#ff0000')
+        const RED = createColorFormat('#ff0000')
         const addedNames = new Set<string>()
         this.people.forEach(replacement => {
             const state = this.shouldHighlight(replacement)
@@ -124,7 +124,7 @@ export default class People {
         const inGuild = this.guildFilter.includes(replacement.guild)
         const isEnemy = this.enemyGuilds.includes(replacement.guild)
         const guildColorHex = this.guildColors[replacement.guild]
-        const guildColor = guildColorHex ? findClosestColor(guildColorHex) : undefined
+        const guildColor = guildColorHex ? createColorFormat(guildColorHex) : undefined
         if (!inGuild && !isEnemy) {
             return undefined
         }
@@ -190,13 +190,13 @@ export default class People {
         if (state.isEnemy) {
             return RED
         }
-        return state.inGuild && state.guildColor !== undefined ? state.guildColor : findClosestColor('#ff875f');
+        return state.inGuild && state.guildColor !== undefined ? state.guildColor : createColorFormat('#ff875f');
     }
 
     private getNameColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
         if (state.isEnemy) {
             return RED
         }
-        return state.inGuild && state.guildColor !== undefined ? state.guildColor : findClosestColor('#ffff5f');
+        return state.inGuild && state.guildColor !== undefined ? state.guildColor : createColorFormat('#ffff5f');
     }
 }

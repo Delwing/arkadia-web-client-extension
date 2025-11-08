@@ -1,9 +1,9 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import { EFFECTIVENESS, BALANCE } from "./evaluationConstants";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
-const LABEL_COLOR = findClosestColor("#446fb1");
+const LABEL_COLOR = createColorFormat("#446fb1");
 
 export default function initWeaponEvaluation(client: Client) {
   const tag = "weapon-evaluation";

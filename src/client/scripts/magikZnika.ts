@@ -1,8 +1,8 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 
 export default function initMagikZnika(client: Client) {
-    const COLOR = findClosestColor("#ff6347");
+    const COLOR = createColorFormat("#ff6347");
     const tag = "magik-znika";
     const prefix = "\n\t[  MAGIK ZNIKA   ]";
 

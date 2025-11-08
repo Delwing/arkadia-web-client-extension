@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 type KillEntry = {
@@ -13,13 +13,13 @@ type KillCounts = Record<string, KillEntry>;
 const STORAGE_KEY = "kill_counter";
 const SESSION_STORAGE_KEY = "kill_counter_session";
 
-const KILL_HEADER_COLOR = findClosestColor("#7cfc00");
-const KILL_MY_COLOR = findClosestColor("#ffff00");
-const KILL_TOTAL_COLOR = findClosestColor("#778899");
-const KILL_UPPER_COLOR = findClosestColor("#ffa500");
-const KILL_LOWER_COLOR = findClosestColor("#7cfc00");
-const KILL_PINK_COLOR = findClosestColor("#ffc0cb");
-const KILL_PREFIX_COLOR = findClosestColor("#ff6347");
+const KILL_HEADER_COLOR = createColorFormat("#7cfc00");
+const KILL_MY_COLOR = createColorFormat("#ffff00");
+const KILL_TOTAL_COLOR = createColorFormat("#778899");
+const KILL_UPPER_COLOR = createColorFormat("#ffa500");
+const KILL_LOWER_COLOR = createColorFormat("#7cfc00");
+const KILL_PINK_COLOR = createColorFormat("#ffc0cb");
+const KILL_PREFIX_COLOR = createColorFormat("#ff6347");
 
 const twoWordNames = [
     "czarnego orka",
@@ -91,7 +91,7 @@ function createPad(
 function createHeader(
     width: number,
     offset: number,
-    color: ReturnType<typeof findClosestColor>
+    color: ReturnType<typeof createColorFormat>
 ): (title: string) => AnsiAwareBuffer {
     return (title: string) => {
         const dashes = width - title.length - offset;
@@ -136,7 +136,7 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
         return pad(buffer);
     };
 
-    const summaryLine = (label: string, value: number, color?: ReturnType<typeof findClosestColor>) => {
+    const summaryLine = (label: string, value: number, color?: ReturnType<typeof createColorFormat>) => {
         const buffer = new AnsiAwareBuffer();
         if (color !== undefined) {
             buffer.append(label, color);

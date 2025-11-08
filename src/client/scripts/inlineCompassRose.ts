@@ -1,11 +1,11 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import { gmcp } from "../gmcp";
 import { getShortDir, longToShort } from "@shared/map";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 
-const SPRING_GREEN = findClosestColor("#00ff7f");
-const DIM_GRAY = findClosestColor("#696969");
+const SPRING_GREEN = createColorFormat("#00ff7f");
+const DIM_GRAY = createColorFormat("#696969");
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 

@@ -1,10 +1,10 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 
-const COLOR = findClosestColor('#6a5acd');
-const PANIC_COLOR = findClosestColor('#ff8c00');
-const SUCCESS_COLOR = findClosestColor('#ff0000');
-const PREFIX_COLOR = findClosestColor('#ffa500');
+const COLOR = createColorFormat('#6a5acd');
+const PANIC_COLOR = createColorFormat('#ff8c00');
+const SUCCESS_COLOR = createColorFormat('#ff0000');
+const PREFIX_COLOR = createColorFormat('#ffa500');
 
 export default function initEscape(client: Client) {
     const tag = 'escape';

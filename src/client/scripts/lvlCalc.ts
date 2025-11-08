@@ -1,11 +1,11 @@
 import Client from "../Client";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
-const GREEN = findClosestColor("#00ff00");
-const RED = findClosestColor("#ff0000");
-const YELLOW = findClosestColor("#ffff00");
-const TOMATO = findClosestColor("#ff6347");
+const GREEN = createColorFormat("#00ff00");
+const RED = createColorFormat("#ff0000");
+const YELLOW = createColorFormat("#ffff00");
+const TOMATO = createColorFormat("#ff6347");
 
 const statToNumber: Record<string, number> = {
     "slabiutki": 1,

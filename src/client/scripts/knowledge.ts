@@ -1,5 +1,5 @@
 import Client from '../Client';
-import {colorString, findClosestColor} from '@modules/core/Colors';
+import {colorString, createColorFormat} from '@modules/core/Colors';
 import type {KnowledgeReportAction} from '@shared/events';
 import {
     DEFAULT_KNOWLEDGE_CHARACTER_KEY,
@@ -36,13 +36,13 @@ import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts"
 type AliasEntry = { pattern: RegExp; callback: Function };
 
 const STATUS_COLORS: Record<KnowledgeCategoryStatus, FormatStateSnapshot> = {
-    not_started: findClosestColor('#ffffff'),
-    in_progress: findClosestColor('#ffff00'),
-    completed: findClosestColor('#00ff00'),
+    not_started: createColorFormat('#ffffff'),
+    in_progress: createColorFormat('#ffff00'),
+    completed: createColorFormat('#00ff00'),
 };
 
-const HEADER_COLOR = findClosestColor('#7cfc00');
-const KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR = findClosestColor('#ffe066');
+const HEADER_COLOR = createColorFormat('#7cfc00');
+const KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR = createColorFormat('#ffe066');
 const KNOWLEDGE_ENTRY_TRIGGER_TAG = 'knowledge-entry-triggers';
 
 type KnowledgeEntryTriggerTarget = {

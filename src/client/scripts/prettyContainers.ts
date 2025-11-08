@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
@@ -12,7 +12,7 @@ import {
     MAGICS_COLOR
 } from "../constants/colors";
 
-const GROUP_NAME_COLOR = findClosestColor('#557C99');
+const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
 export type GroupDefinition = {
     name: string;

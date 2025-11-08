@@ -1,9 +1,9 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 import { formatLabel } from "./functionalBind";
 
 export default function initLeaderAttackWarning(client: Client) {
-    const RED = findClosestColor("#ff0000");
+    const RED = createColorFormat("#ff0000");
     const PADDING = 4; // two spaces on each side
     const warningInterval = 5000;
     let lastText: string | undefined;

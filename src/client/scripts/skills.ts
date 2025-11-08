@@ -1,18 +1,18 @@
 import Client from "../Client";
-import { colorString, findClosestColor } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 const COLORS = [
-    findClosestColor("#ff0000"),
-    findClosestColor("#ff0000"),
-    findClosestColor("#ff0000"),
-    findClosestColor("#ffa500"),
-    findClosestColor("#ffa500"),
-    findClosestColor("#ffff00"),
-    findClosestColor("#ffff00"),
-    findClosestColor("#00ff00"),
-    findClosestColor("#00ff00"),
-    findClosestColor("#87ceeb"),
+    createColorFormat("#ff0000"),
+    createColorFormat("#ff0000"),
+    createColorFormat("#ff0000"),
+    createColorFormat("#ffa500"),
+    createColorFormat("#ffa500"),
+    createColorFormat("#ffff00"),
+    createColorFormat("#ffff00"),
+    createColorFormat("#00ff00"),
+    createColorFormat("#00ff00"),
+    createColorFormat("#87ceeb"),
 ];
 
 const skillsDesc: Record<string, number> = {

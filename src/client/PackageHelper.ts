@@ -1,5 +1,5 @@
 import {addLocalNpc} from "@web/dataStores/npcStore";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import Client from "./Client";
 import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
@@ -32,8 +32,8 @@ const pickFailMessages = [
     'Niestety, nie widzisz tu nikogo, od kogo mozna by wziac zlecenie',
 ]
 
-const KNOWN_NPC_COLOR = findClosestColor('#63ba41');
-const UNKNOWN_NPC_COLOR = findClosestColor('#aaaaaa');
+const KNOWN_NPC_COLOR = createColorFormat('#63ba41');
+const UNKNOWN_NPC_COLOR = createColorFormat('#aaaaaa');
 
 export default function initPackageHelper(client: Client) {
     const npc: Record<string, number> = {};
@@ -81,7 +81,7 @@ export default function initPackageHelper(client: Client) {
             if (!deliveryTrigger) {
                 registerDeliveryTrigger()
             }
-            const colorCode = npc[name] ? KNOWN_NPC_COLOR : findClosestColor('#ffff00')
+            const colorCode = npc[name] ? KNOWN_NPC_COLOR : createColorFormat('#ffff00')
             const buffer = typeof line === 'string' ? new AnsiAwareBuffer(line) : line;
             const nameIndex = buffer.text.indexOf(matches[1]);
             if (nameIndex !== -1) {

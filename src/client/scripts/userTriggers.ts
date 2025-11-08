@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {TextRange} from "../ansi/FormatState";
 
 export interface UserMacro {
@@ -40,7 +40,7 @@ export default function initUserTriggers(client: Client) {
                             break;
                         case 'color':
                             if (macro.color) {
-                                const color = findClosestColor(macro.color);
+                                const color = createColorFormat(macro.color);
                                 line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]), color);
                             }
                             break;

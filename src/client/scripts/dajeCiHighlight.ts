@@ -1,8 +1,8 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 
 export default function initDajeCiHighlight(client: Client) {
-    const TURQUOISE = findClosestColor("#40e0d0");
+    const TURQUOISE = createColorFormat("#40e0d0");
     const pattern = /^[ >]*[A-Za-z !()]+ daje ci (.*)$/;
     client.Triggers.registerTrigger(pattern, (line, matches) => {
         const group = matches[1];

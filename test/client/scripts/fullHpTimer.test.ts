@@ -1,6 +1,6 @@
 import initFullHpTimer from '@client/scripts/fullHpTimer';
 import { EventEmitter } from 'events';
-import { colorString, findClosestColor } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@modules/core/Colors';
 
 describe('full hp timer', () => {
   class FakeClient {
@@ -35,7 +35,7 @@ describe('full hp timer', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     client.sendEvent('gmcp.char.state', { hp: 6 });
     jest.advanceTimersByTime(180000);
-    const color = findClosestColor('#00ff7f');
+    const color = createColorFormat('#00ff7f');
     const msg = colorString('Jestes w pelni zdrowia.', color);
     expect(client.println).toHaveBeenCalledWith(`\n${msg}\n`);
     expect(client.notify).toHaveBeenCalledWith('Jestes w pelni zdrowia.');

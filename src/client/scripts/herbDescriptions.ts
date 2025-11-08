@@ -1,9 +1,9 @@
 import Client from "../Client";
 import loadHerbs from "./herbsLoader";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 
-export const HERB_NAME_COLOR = findClosestColor("#ffffff");
+export const HERB_NAME_COLOR = createColorFormat("#ffffff");
 
 export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";

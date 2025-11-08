@@ -1,12 +1,12 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
 const STORAGE_KEY = "containers";
 
-const HEADER_COLOR = findClosestColor("#7cfc00");
-const TYPE_COLOR = findClosestColor("#cfb530");
-const BAG_COLOR = findClosestColor("#87ceeb");
+const HEADER_COLOR = createColorFormat("#7cfc00");
+const TYPE_COLOR = createColorFormat("#cfb530");
+const BAG_COLOR = createColorFormat("#87ceeb");
 
 const availableTypes = ["money", "gems", "food", "other"] as const;
 

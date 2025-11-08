@@ -1,14 +1,14 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {gmcp} from "../gmcp";
 
 const SEASON_NAMES = ["wiosna", "lato", "jesien", "zima"];
 const SEASON_TEXT = SEASON_NAMES.map(n => `[ ${n.toUpperCase()} ]`);
 const SEASON_COLORS = [
-    findClosestColor("#00ff7f"),
-    findClosestColor("#ffff00"),
-    findClosestColor("#ff8c00"),
-    findClosestColor("#00bfff"),
+    createColorFormat("#00ff7f"),
+    createColorFormat("#ffff00"),
+    createColorFormat("#ff8c00"),
+    createColorFormat("#00bfff"),
 ];
 
 export default function initSeasonPrint(client: Client) {

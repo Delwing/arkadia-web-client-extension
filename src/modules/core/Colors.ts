@@ -71,8 +71,7 @@ export function colorTokenInLine(
     return buffer.color([matchIndex, endIndex], colorCode);
 }
 
-//TODO usage should be replaced by something, yet to be decided what
-export function findClosestColor(hex: string | number[]): FormatStateSnapshot {
+export function createColorFormat(hex: string | number[]): FormatStateSnapshot {
     if (typeof hex === "string") {
         return {
             foreground: {space: "hex", color: hex} as HexColor
@@ -164,6 +163,6 @@ export const Colors = {
     color,
     colorString,
     colorStringInLine,
-    findClosestColor,
+    createColorFormat,
     mudletColorLine,
 }

@@ -1,9 +1,9 @@
 import Client from "../Client";
-import {findClosestColor} from "@modules/core/Colors";
+import {createColorFormat} from "@modules/core/Colors";
 import {EFFECTIVENESS} from "./evaluationConstants";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
-const LABEL_COLOR = findClosestColor("#446fb1");
+const LABEL_COLOR = createColorFormat("#446fb1");
 
 export default function initParryShieldEvaluation(client: Client) {
     const tag = "parry-shield-evaluation";

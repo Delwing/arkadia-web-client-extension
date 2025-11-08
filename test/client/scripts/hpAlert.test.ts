@@ -1,5 +1,5 @@
 import initHpAlert from '@client/scripts/hpAlert';
-import { colorString, findClosestColor } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -16,7 +16,7 @@ class FakeClient {
 
 describe('hp alert', () => {
   let client: FakeClient;
-  const color = findClosestColor('#ffa500');
+  const color = createColorFormat('#ffa500');
 
   beforeEach(() => {
     client = new FakeClient();

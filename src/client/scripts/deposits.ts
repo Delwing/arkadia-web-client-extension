@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
-import { findClosestColor } from "@modules/core/Colors";
+import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 interface DepositInfo {
@@ -29,9 +29,9 @@ function cloneDeposits(source: Record<number, DepositInfo> | undefined | null): 
     return result;
 }
 
-const BANK_LABEL_COLOR = findClosestColor('#6a5acd');
-const BANK_NAME_COLOR = findClosestColor('#ff6347');
-const ITEM_NAME_COLOR = findClosestColor('#00ff7f');
+const BANK_LABEL_COLOR = createColorFormat('#6a5acd');
+const BANK_NAME_COLOR = createColorFormat('#ff6347');
+const ITEM_NAME_COLOR = createColorFormat('#00ff7f');
 
 function isBankRoom(room: any): boolean {
     return !!room?.userData?.bind && room.userData.bind.includes("depozyt");

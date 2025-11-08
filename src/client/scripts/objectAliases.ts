@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString, findClosestColor} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 import {gmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
 
@@ -87,8 +87,8 @@ export default function initObjectAliases(
     }
 
     let releaseGuard = true;
-    const ON_COLOR = findClosestColor("#7cfc00");
-    const OFF_COLOR = findClosestColor("#ff6347");
+    const ON_COLOR = createColorFormat("#7cfc00");
+    const OFF_COLOR = createColorFormat("#ff6347");
     client.sendEvent('releaseGuard', releaseGuard);
     client.on('releaseGuard', (value) => {
         releaseGuard = value;

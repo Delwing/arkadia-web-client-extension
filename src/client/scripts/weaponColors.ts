@@ -1,9 +1,9 @@
 import Client from "../Client";
-import {colorStringInLine, findClosestColor} from "@modules/core/Colors";
+import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, HexColor} from "../ansi/FormatState";
 import {MAGICS_COLOR} from "../constants/colors";
 
-export const WEAPON_COLOR = findClosestColor("#ffff00");
+export const WEAPON_COLOR = createColorFormat("#ffff00");
 
 function isMagicColored(line: AnsiAwareBuffer, weapon: string, index: number = 0): boolean {
     const weaponIndex = line.text.indexOf(weapon, index)
