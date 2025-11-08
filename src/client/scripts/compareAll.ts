@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export interface ComparisonStats {
     sil?: number;
@@ -27,7 +28,7 @@ const level: Record<string, number> = {
     "duzo zreczniejsz": 5,
 };
 
-let comparisonResults: Record<string, ComparisonStats> = {};
+let comparisonResults: Map<string, { stats: ComparisonStats; buffer: AnsiAwareBuffer }> = new Map();
 let queue: { target: string; stat: keyof ComparisonStats }[] = [];
 let pending = 0;
 
@@ -39,9 +40,9 @@ function getTargets(client: Client): string[] {
         .map(o => String(o.num));
 }
 
-export function formatComparisonTable(results: Record<string, ComparisonStats>): string {
+export function formatComparisonTable(results: Map<string, { stats: ComparisonStats; buffer: AnsiAwareBuffer }>): AnsiAwareBuffer {
     // Calculate the width needed for the longest name, with a minimum of 5 (for "OSOBA")
-    const names = Object.keys(results);
+    const names = Array.from(results.keys());
     const NAME_WIDTH = Math.max(5, ...names.map(n => n.length));
 
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - str.length));
@@ -61,32 +62,48 @@ export function formatComparisonTable(results: Record<string, ComparisonStats>):
         "----",
         "-----"
     ].join(" ");
-    const lines: string[] = [header, line];
+
+    const result = new AnsiAwareBuffer();
+    result.insert(0, header + "\n", {});
+    result.insert(result.length, line + "\n", {});
+
     let i = 1;
     const formatVal = (n: number | undefined) => {
         if (n === undefined) return "0";
         return n > 0 ? `+${n}` : String(n);
     };
-    Object.entries(results).forEach(([name, stats]) => {
+
+    results.forEach(({stats, buffer}, name) => {
         const total = (stats.sil || 0) + (stats.zre || 0) + (stats.wyt || 0);
-        lines.push(
-            [
-                pad(String(i), 3),
-                pad(name, NAME_WIDTH),
-                pad(formatVal(stats.sil), 4),
-                pad(formatVal(stats.zre), 4),
-                pad(formatVal(stats.wyt), 4),
-                pad(formatVal(total), 5)
-            ].join(" ")
-        );
+        const numCol = pad(String(i), 3);
+        const silCol = pad(formatVal(stats.sil), 4);
+        const zreCol = pad(formatVal(stats.zre), 4);
+        const wytCol = pad(formatVal(stats.wyt), 4);
+        const sumaCol = pad(formatVal(total), 5);
+
+        // Calculate padding needed after colored name
+        const paddingNeeded = NAME_WIDTH - name.length;
+        const padding = " ".repeat(Math.max(0, paddingNeeded));
+
+        // Insert row number with default color
+        result.insert(result.length, `${numCol} `, {});
+        // Insert colored NPC name from original buffer
+        result.insertBuffer(result.length, buffer);
+        // Insert stats with default color (explicitly set empty state to prevent color bleeding)
+        result.insert(result.length, `${padding} ${silCol} ${zreCol} ${wytCol} ${sumaCol}\n`, {});
         i++;
     });
-    return lines.join("\n");
+
+    return result;
 }
 
 export function displayComparisonResults(client: Client) {
     if (pending > 0) {
         client.print("Not all comparison data has been received. Please wait or try again.");
+        return;
+    }
+    if (comparisonResults.size === 0) {
+        client.print("No comparison data available.");
         return;
     }
     client.println(formatComparisonTable(comparisonResults));
@@ -105,6 +122,31 @@ export default function initCompareAll(
 
         const descriptions = matches[1];
         const osoba = matches[2].trim();
+
+        // Extract the colored buffer for the NPC name from the original line
+        // Find the position where " niz " appears in the text
+        const nizIndex = line.text.indexOf(" niz ");
+        if (nizIndex === -1) return null;
+
+        // The NPC name starts right after " niz " and ends before the "."
+        const nameStartIndex = nizIndex + 5; // " niz ".length
+        const nameEndIndex = line.text.lastIndexOf(".");
+
+        // Extract the colored buffer for just the NPC name
+        const osobaBuffer = new AnsiAwareBuffer();
+        let currentPos = 0;
+        for (const segment of line.getSegments()) {
+            const segmentEnd = currentPos + segment.text.length;
+            if (segmentEnd > nameStartIndex && currentPos < nameEndIndex) {
+                const startOffset = Math.max(0, nameStartIndex - currentPos);
+                const endOffset = Math.min(segment.text.length, nameEndIndex - currentPos);
+                if (endOffset > startOffset) {
+                    const extractedText = segment.text.substring(startOffset, endOffset);
+                    osobaBuffer.insert(osobaBuffer.length, extractedText, segment.state);
+                }
+            }
+            currentPos = segmentEnd;
+        }
 
         // Parse the comma/conjunction-separated descriptions
         // Split by " i " first to handle the last conjunction, then by ","
@@ -168,11 +210,11 @@ export default function initCompareAll(
                 pending--;
             }
 
-            // Store the results
-            if (!comparisonResults[osoba]) {
-                comparisonResults[osoba] = {};
-            }
-            Object.assign(comparisonResults[osoba], parsedStats);
+            // Store the results with the colored buffer
+            comparisonResults.set(osoba, {
+                stats: parsedStats as ComparisonStats,
+                buffer: osobaBuffer
+            });
         }
 
         return null;
@@ -188,7 +230,7 @@ export default function initCompareAll(
     }
 
     function run(short?: string) {
-        comparisonResults = {};
+        comparisonResults = new Map();
         queue = [];
         const id = short ? findByShortcut(short) : undefined;
         const targets = short ? (id ? [id] : []) : getTargets(client);

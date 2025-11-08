@@ -62,8 +62,13 @@ describe('compare all alias', () => {
 
   test('formats header wide enough for long descriptions', () => {
     const longName = 'przygarbiony wyszczerzony ork';
-    const table = formatComparisonTable({ [longName]: { sil: -1, zre: -1, wyt: -2 } });
-    const [header, underline, row] = table.split('\n');
+    const results = new Map();
+    results.set(longName, {
+      stats: { sil: -1, zre: -1, wyt: -2 },
+      buffer: new AnsiAwareBuffer(longName)
+    });
+    const table = formatComparisonTable(results);
+    const [header, underline, row] = table.text.split('\n');
     expect(row).toContain(longName);
     expect(underline.length).toBe(header.length);
     expect(row.length).toBe(header.length);
