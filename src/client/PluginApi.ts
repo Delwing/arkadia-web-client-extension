@@ -842,6 +842,26 @@ export class PluginApiImpl implements PluginApi {
     actions.className = "window-header-actions";
     actions.addEventListener("pointerdown", event => event.stopPropagation());
 
+    let isPinned = false;
+
+    const pinButton = document.createElement("button");
+    pinButton.type = "button";
+    pinButton.className = "window-pin-button";
+
+    const updatePinnedState = () => {
+      pinButton.classList.toggle("window-pin-button--active", isPinned);
+      overlay.classList.toggle("herb-overlay--pinned", isPinned);
+      pinButton.title = isPinned ? "Odepnij okno" : "Przypnij okno";
+    };
+
+    const togglePinned = () => {
+      isPinned = !isPinned;
+      updatePinnedState();
+    };
+
+    pinButton.addEventListener("click", togglePinned);
+    actions.appendChild(pinButton);
+
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.className = "btn-close";
@@ -926,7 +946,7 @@ export class PluginApiImpl implements PluginApi {
     let handle: PopupHandle;
 
     const overlayListener = (event: MouseEvent) => {
-      if (event.target === overlay) {
+      if (!isPinned && event.target === overlay) {
         closePopup();
       }
     };
@@ -953,6 +973,7 @@ export class PluginApiImpl implements PluginApi {
       window.removeEventListener("keydown", keyListener);
       overlay.removeEventListener("click", overlayListener);
       closeButton.removeEventListener("click", closeButtonListener);
+      pinButton.removeEventListener("click", togglePinned);
       overlay.remove();
       windowEl.remove();
       this.popupHandles.delete(handle);
@@ -976,6 +997,8 @@ export class PluginApiImpl implements PluginApi {
     document.body.appendChild(overlay);
     document.body.appendChild(windowEl);
     windowEl.focus();
+
+    updatePinnedState();
 
     this.popupHandles.add(handle);
 
