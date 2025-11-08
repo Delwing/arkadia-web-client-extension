@@ -4,9 +4,11 @@ import { TiDelete } from "react-icons/ti";
 import storage from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
+import { BUILTIN_PLUGIN_DEFINITIONS } from "@shared/constants/builtinPlugins";
 
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
+    const [builtinScripts, setBuiltinScripts] = useState<string[]>([]);
     const [pluginInfo, setPluginInfo] = useState<Map<string, LoadedPlugin>>(new Map());
     const [input, setInput] = useState("");
 
@@ -27,6 +29,15 @@ function Scripts() {
         storage.getItem("scripts").then(res => {
             if (res && Array.isArray(res.scripts)) {
                 setScripts(res.scripts);
+            }
+        });
+
+        storage.getItem("builtinScripts").then(res => {
+            if (res && Array.isArray(res.builtinScripts)) {
+                const valid = res.builtinScripts.filter((id: unknown): id is string => (
+                    typeof id === "string" && BUILTIN_PLUGIN_DEFINITIONS.some(def => def.id === id)
+                ));
+                setBuiltinScripts(valid);
             }
         });
 
@@ -56,6 +67,11 @@ function Scripts() {
         storage.setItem("scripts", list);
     }
 
+    function saveBuiltin(list: string[]) {
+        setBuiltinScripts(list);
+        storage.setItem("builtinScripts", list);
+    }
+
     function add() {
         const url = input.trim();
         if (!url) return;
@@ -71,8 +87,71 @@ function Scripts() {
         save(updated);
     }
 
+    function toggleBuiltin(id: string, enabled: boolean) {
+        if (enabled) {
+            if (!builtinScripts.includes(id)) {
+                const updated = [...builtinScripts, id];
+                saveBuiltin(updated);
+            }
+        } else {
+            if (builtinScripts.includes(id)) {
+                const updated = builtinScripts.filter(item => item !== id);
+                saveBuiltin(updated);
+            }
+        }
+    }
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
+            <section>
+                <h6 className="text-uppercase text-muted small mb-2">Wbudowane pluginy</h6>
+                <ul className="list-unstyled ms-3">
+                    {BUILTIN_PLUGIN_DEFINITIONS.map(def => {
+                        const plugin = pluginInfo.get(def.id);
+                        const enabled = builtinScripts.includes(def.id);
+                        const isLoading = plugin?.status === 'loading';
+                        const hasError = plugin?.status === 'error';
+                        const info = plugin?.info;
+
+                        return (
+                            <li key={def.id} className="d-flex flex-column gap-1 mb-3">
+                                <div className="d-flex align-items-start gap-2">
+                                    <Form.Check
+                                        type="switch"
+                                        id={`builtin-${def.id}`}
+                                        checked={enabled}
+                                        onChange={event => toggleBuiltin(def.id, event.target.checked)}
+                                        label={(
+                                            <div className="d-flex flex-column">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <strong>{info?.name ?? def.name}</strong>
+                                                {(info?.version) && (
+                                                    <Badge bg="primary" pill>v{info.version}</Badge>
+                                                )}
+                                                {info?.author && (
+                                                    <small className="text-muted">by {info.author}</small>
+                                                )}
+                                            </div>
+                                                {(info?.description ?? def.description) && (
+                                                    <small className="text-muted">
+                                                        {info?.description ?? def.description}
+                                                    </small>
+                                                )}
+                                            </div>
+                                        )}
+                                    />
+                                    {isLoading && <Spinner animation="border" size="sm" />}
+                                </div>
+                                {hasError && (
+                                    <small className="text-danger">
+                                        {plugin?.error}
+                                    </small>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+            </section>
             <Form.Group className="d-flex align-items-center gap-2">
                 <Form.Control
                     type="text"

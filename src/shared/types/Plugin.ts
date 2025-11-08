@@ -56,4 +56,6 @@ export interface LoadedPlugin {
   scriptElement?: HTMLScriptElement
   /** Timestamp when plugin was loaded */
   loadedAt: number
+  /** Indicates if plugin originates from external URL or is bundled */
+  origin?: 'external' | 'builtin'
 }

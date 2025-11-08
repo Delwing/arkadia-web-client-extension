@@ -2,6 +2,9 @@ import type Client from '@client/Client'
 import type { Plugin, LoadedPlugin } from '@shared/types/Plugin'
 import { PluginApiImpl } from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
+const builtinPluginLoaders: Record<string, () => Promise<any>> = {
+  'builtin:debugging': async () => import('./plugins/debuggingPlugin'),
+}
 
 /**
  * Manages external plugins and scripts
@@ -19,6 +22,24 @@ export class PluginManager {
    * Attempts to load as ES module first, falls back to legacy script injection
    */
   async loadPlugin(url: string): Promise<LoadedPlugin> {
+    if (url.startsWith('builtin:') && !builtinPluginLoaders[url]) {
+      const errorMessage = 'Unknown builtin plugin'
+      const plugin: LoadedPlugin = {
+        url,
+        status: 'error',
+        error: errorMessage,
+        loadedAt: Date.now(),
+        origin: 'builtin',
+      }
+      this.plugins.set(url, plugin)
+      eventBus.emit('plugin:error', { url, error: errorMessage })
+      return plugin
+    }
+
+    if (builtinPluginLoaders[url]) {
+      return this.loadBuiltinPlugin(url, builtinPluginLoaders[url])
+    }
+
     // Check if already loaded
     if (this.plugins.has(url)) {
       const existing = this.plugins.get(url)!
@@ -31,6 +52,7 @@ export class PluginManager {
       url,
       status: 'loading',
       loadedAt: Date.now(),
+      origin: 'external',
     }
     this.plugins.set(url, plugin)
 
@@ -83,6 +105,51 @@ export class PluginManager {
     }
 
     this.plugins.set(url, plugin)
+    return plugin
+  }
+
+  private async loadBuiltinPlugin(url: string, loader: () => Promise<any>): Promise<LoadedPlugin> {
+    if (this.plugins.has(url)) {
+      return this.plugins.get(url)!
+    }
+
+    const plugin: LoadedPlugin = {
+      url,
+      status: 'loading',
+      loadedAt: Date.now(),
+      origin: 'builtin',
+    }
+
+    this.plugins.set(url, plugin)
+
+    try {
+      const module = await loader()
+      const pluginModule = module?.default ?? module
+
+      if (!this.isPlugin(pluginModule)) {
+        throw new Error('Module does not implement Plugin interface')
+      }
+
+      const apiInstance = new PluginApiImpl(this.client)
+      plugin.apiInstance = apiInstance
+
+      const info = await pluginModule.init(apiInstance)
+      plugin.info = info
+      plugin.status = 'loaded'
+      plugin.instance = pluginModule
+
+      console.log(`[PluginManager] Builtin plugin loaded: ${info.name} v${info.version}`)
+      eventBus.emit('plugin:loaded', { url, info })
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      plugin.status = 'error'
+      plugin.error = `Init failed: ${errorMsg}`
+      console.error(`[PluginManager] Builtin plugin init failed for ${url}:`, error)
+      eventBus.emit('plugin:error', { url, error: errorMsg })
+    }
+
+    this.plugins.set(url, plugin)
+
     return plugin
   }
 
