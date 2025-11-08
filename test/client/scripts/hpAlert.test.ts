@@ -36,8 +36,8 @@ describe('hp alert', () => {
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     const plain = 'Jestes ciezko ranny';
-    const msg = colorString(plain, color);
-    expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
+    const msg = colorString(plain, color).prepend("\n").append('\n');
+    expect(client.println).toHaveBeenCalledWith(msg);
     expect(client.notify).toHaveBeenCalledWith(plain);
   });
 
@@ -50,10 +50,10 @@ describe('hp alert', () => {
     beepCalls.forEach(call => {
       expect(call[1]).toEqual({ key: 'beep' });
     });
-    const first = colorString('Jestes ciezko ranny', color);
-    const second = colorString('Jestes ledwo zywy', color);
-    expect(client.println).toHaveBeenNthCalledWith(1, `\n\n${first}\n\n`);
-    expect(client.println).toHaveBeenNthCalledWith(2, `\n\n${second}\n\n`);
+    const first = colorString('Jestes ciezko ranny', color).prepend("\n").append('\n');
+    const second = colorString('Jestes ledwo zywy', color).prepend("\n").append('\n');
+    expect(client.println).toHaveBeenNthCalledWith(1, first);
+    expect(client.println).toHaveBeenNthCalledWith(2, second);
     expect(client.notify).toHaveBeenNthCalledWith(1, 'Jestes ciezko ranny');
     expect(client.notify).toHaveBeenNthCalledWith(2, 'Jestes ledwo zywy');
   });
@@ -86,8 +86,8 @@ describe('hp alert', () => {
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
     const plain = 'Jestes w zlej kondycji';
-    const msg = colorString(plain, color);
-    expect(client.println).toHaveBeenCalledWith(`\n\n${msg}\n\n`);
+    const msg = colorString(plain, color).prepend("\n").append('\n');
+    expect(client.println).toHaveBeenCalledWith(msg);
     expect(client.notify).toHaveBeenCalledWith(plain);
   });
 });
