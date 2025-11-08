@@ -417,8 +417,12 @@ export async function waitForCommandInput(page: Page): Promise<void> {
 export async function waitForMapReady(page: Page): Promise<void> {
     await page.waitForFunction(() => {
         const mapElement = document.querySelector('#map');
-        return mapElement && mapElement.querySelector('canvas') !== null;
-    });
+        const client = (window as any).clientExtension;
+        const mapHelper = client?.Map;
+        // Wait for canvas AND for map data to be loaded (tryGetMapReader returns non-null when ready)
+        return mapElement && mapElement.querySelector('canvas') !== null &&
+               mapHelper && typeof mapHelper.tryGetMapReader === 'function' && mapHelper.tryGetMapReader() !== null;
+    }, {timeout: 10000});
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {

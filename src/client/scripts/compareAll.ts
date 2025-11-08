@@ -40,7 +40,10 @@ function getTargets(client: Client): string[] {
 }
 
 export function formatComparisonTable(results: Record<string, ComparisonStats>): string {
-    const NAME_WIDTH = 30;
+    // Calculate the width needed for the longest name, with a minimum of 5 (for "OSOBA")
+    const names = Object.keys(results);
+    const NAME_WIDTH = Math.max(5, ...names.map(n => n.length));
+
     const pad = (str: string, len: number) => str + " ".repeat(Math.max(0, len - str.length));
     const header = [
         pad("#", 3),
@@ -93,29 +96,87 @@ export default function initCompareAll(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
-    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jest(?<mod>es)? (?<desc>.*?)[aey] (?:jak|niz) (?<osoba>.*)\.$/;
+    // Single line format with comma-separated comparisons
+    // Example: "Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling."
+    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jestes (.+?) niz (.+)\.$/;
 
     client.Triggers.registerTrigger(triggerPattern, (line, matches) => {
         if (!queue.length) return line;
-        const item = queue.shift()!;
-        const osoba = matches.groups?.osoba?.trim() || item.target;
-        const desc = matches.groups?.desc?.trim() || "";
-        let val = level[desc] ?? 0;
-        if (matches.groups?.mod) {
-            val = -val;
+
+        const descriptions = matches[1];
+        const osoba = matches[2].trim();
+
+        // Parse the comma/conjunction-separated descriptions
+        // Split by " i " first to handle the last conjunction, then by ","
+        const parts = descriptions.split(/ i |, /).map(s => s.trim()).filter(Boolean);
+
+        // Sort level entries by description length (longest first) to match most specific first
+        const sortedLevelEntries = Object.entries(level).sort((a, b) => b[0].length - a[0].length);
+
+        const parsedStats: Partial<ComparisonStats> = {};
+
+        // Process each description part
+        for (const desc of parts) {
+            // Find which stat this description matches and get its value
+            let matchedStat: keyof ComparisonStats | null = null;
+            let val = 0;
+
+            // Check for strength-related descriptions
+            if (desc.includes("siln")) {
+                matchedStat = "sil";
+                // Find the matching level description
+                for (const [levelDesc, levelVal] of sortedLevelEntries) {
+                    if (levelDesc.includes("siln") && desc.includes(levelDesc)) {
+                        val = -levelVal; // Negative because "jestes X" means you are stronger
+                        break;
+                    }
+                }
+            }
+            // Check for dexterity-related descriptions
+            else if (desc.includes("zreczn")) {
+                matchedStat = "zre";
+                for (const [levelDesc, levelVal] of sortedLevelEntries) {
+                    if (levelDesc.includes("zreczn") && desc.includes(levelDesc)) {
+                        val = -levelVal;
+                        break;
+                    }
+                }
+            }
+            // Check for constitution-related descriptions (zbudowany)
+            else if (desc.includes("zbudowan")) {
+                matchedStat = "wyt";
+                for (const [levelDesc, levelVal] of sortedLevelEntries) {
+                    if (levelDesc.includes("zbudowan") && desc.includes(levelDesc)) {
+                        val = -levelVal;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedStat) {
+                parsedStats[matchedStat] = val;
+            }
         }
-        if (!comparisonResults[osoba]) {
-            comparisonResults[osoba] = {};
+
+        // Now consume queue entries and populate results
+        // The queue should have entries for this NPC's stats
+        const statsFound = Object.keys(parsedStats).length;
+        if (statsFound > 0) {
+            // Remove the corresponding number of entries from the queue
+            for (let i = 0; i < statsFound && queue.length > 0; i++) {
+                queue.shift();
+                pending--;
+            }
+
+            // Store the results
+            if (!comparisonResults[osoba]) {
+                comparisonResults[osoba] = {};
+            }
+            Object.assign(comparisonResults[osoba], parsedStats);
         }
-        comparisonResults[osoba][item.stat] = val;
-        pending--;
+
         return null;
     }, "compare-all");
-
-    function send(statWord: string, stat: keyof ComparisonStats, id: string) {
-        queue.push({ target: id, stat });
-        client.sendCommand(`porownaj ${statWord} z ob_${id}`, false);
-    }
 
     function findByShortcut(short: string): string | undefined {
         const lower = short.toLowerCase();
@@ -131,15 +192,17 @@ export default function initCompareAll(
         queue = [];
         const id = short ? findByShortcut(short) : undefined;
         const targets = short ? (id ? [id] : []) : getTargets(client);
-        pending = targets.length * 3;
+        pending = targets.length * 3; // Still expecting 3 stats per target
         if (pending === 0) {
             client.print("No one else is here to compare with.");
             return;
         }
+        // Send single "ocen" command per target (returns all 3 stats in one line)
         targets.forEach(id => {
-            send("sile", "sil", id);
-            send("zrecznosc", "zre", id);
-            send("wytrzymalosc", "wyt", id);
+            queue.push({ target: id, stat: "sil" });
+            queue.push({ target: id, stat: "zre" });
+            queue.push({ target: id, stat: "wyt" });
+            client.sendCommand(`ocen ob_${id}`, false);
         });
         setTimeout(() => displayComparisonResults(client), 500);
     }
