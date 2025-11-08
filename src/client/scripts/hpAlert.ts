@@ -42,7 +42,7 @@ export default function initHpAlert(client: Client) {
         }
         if (hp < prev && hp <= alertLevel) {
             const plain = `Jestes ${CONDITIONS[hp] ?? ''}`;
-            const msg = colorString(plain, ORANGE).prepend("\n\n").append('\n\n');
+            const msg = colorString(plain, ORANGE).prepend("\n").append('\n');
             client.sendEvent("sound:play", { key: "beep" });
             client.println(msg);
             client.notify(plain);
