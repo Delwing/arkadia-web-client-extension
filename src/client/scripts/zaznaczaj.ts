@@ -28,7 +28,7 @@ export default function initZaznaczaj(
 
     aliases.push({
         pattern: /^\/zaznaczaj$/,
-        callback: () => {
+        callback: (_matches: RegExpMatchArray) => {
             active = true;
             highlights.clear();
             const currentId = client.Map.currentRoom?.id;
@@ -42,7 +42,7 @@ export default function initZaznaczaj(
 
     aliases.push({
         pattern: /^\/zaznaczaj-$/,
-        callback: () => {
+        callback: (_matches: RegExpMatchArray) => {
             active = false;
             highlights.clear();
             sendHighlights();

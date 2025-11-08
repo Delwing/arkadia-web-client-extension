@@ -170,8 +170,8 @@ export class EmbeddedMap {
             this.clearLeadTo();
         })
 
-        eventBus.on('highlights', (ev: any) => {
-            this.highlights = ev.detail;
+        eventBus.on('highlights', (highlights: any) => {
+            this.highlights = highlights
             this.refresh();
         })
 
@@ -253,7 +253,7 @@ export class EmbeddedMap {
         }
 
         this.renderer.clearHighlights()
-        this.highlights.forEach((highlight) => {
+        this.highlights?.forEach((highlight) => {
             this.renderer.renderHighlight(highlight, 'green');
         });
     }
