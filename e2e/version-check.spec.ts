@@ -26,7 +26,7 @@ const test = base.extend({
 });
 
 test.describe('Version check', () => {
-    test('shows warning when new version is available', async ({page, context}) => {
+    test('shows warning when new version is available', async ({page}) => {
         // Set a route that returns a different SHA (simulating new version)
         // The SHA will be truncated to 7 chars by main.ts, so we need a different first 7 chars
         const newVersionSha = 'zzzzzzz1234567890123456789012345678901';
