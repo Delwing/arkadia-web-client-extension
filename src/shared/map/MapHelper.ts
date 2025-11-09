@@ -62,7 +62,7 @@ export default class MapHelper {
     public refreshPosition = true;
     private hashes: Record<string, number> = {};
     private gmcpPosition!: Position;
-    private paused = false;
+    public paused = false;
     private savedRoomId: number | null = null;
     private areas: Record<string, string> = {};
     private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];

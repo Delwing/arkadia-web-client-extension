@@ -78,6 +78,7 @@ import initMultibinds from './scripts/multibinds'
 import initCompareAll from './scripts/compareAll'
 import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
+import initDrowning from './scripts/drowning'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
@@ -210,6 +211,7 @@ export function registerScripts(client: Client) {
     initFollowSpecialExits(client)
     initTropBind(client)
     initMountain(client)
+    initDrowning(client)
     initMultibinds(client, aliases)
     initItemCollector(client, aliases);
     initContainers(client)
