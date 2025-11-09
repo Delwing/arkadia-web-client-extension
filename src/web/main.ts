@@ -615,6 +615,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
         commitInfo.textContent = `${__COMMIT_SHA__} ${__COMMIT_DATE__}`;
+
+        // Check for latest version from GitHub
+        fetch('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch latest commit');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const latestSha = data.sha?.substring(0, 7);
+                if (latestSha && latestSha !== __COMMIT_SHA__) {
+                    const warningDiv = document.createElement('div');
+                    warningDiv.style.color = 'red';
+                    warningDiv.style.marginTop = '0.5rem';
+                    warningDiv.textContent = 'Nowa wersja dostępna - odśwież stronę';
+                    commitInfo.appendChild(warningDiv);
+                }
+            })
+            .catch(err => {
+                console.warn('Could not check for updates:', err);
+            });
     }
 
     const messageInput = document.getElementById('message-input') as HTMLInputElement;
