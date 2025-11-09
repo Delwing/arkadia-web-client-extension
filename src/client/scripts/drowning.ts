@@ -16,8 +16,7 @@ export default function initDrowning(client: Client) {
             client.Map.moveBack();
         }
 
-        // Always send "d" (down) command
-        client.sendCommand("d");
+        client.Map.move("d", true);
 
         return line.color([0, line.length], CYAN);
     }, tag);
