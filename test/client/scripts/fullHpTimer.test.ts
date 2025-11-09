@@ -37,7 +37,7 @@ describe('full hp timer', () => {
     jest.advanceTimersByTime(180000);
     const color = createColorFormat('#00ff7f');
     const msg = colorString('Jestes w pelni zdrowia.', color);
-    expect(client.println).toHaveBeenCalledWith(`\n${msg}\n`);
+    expect(client.println).toHaveBeenCalledWith(msg);
     expect(client.notify).toHaveBeenCalledWith('Jestes w pelni zdrowia.');
   });
 
