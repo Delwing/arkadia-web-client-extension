@@ -78,6 +78,8 @@ import initMapAliases from './scripts/mapAliases'
 import initShortcuts from './scripts/shortcuts'
 import initMultibinds from './scripts/multibinds'
 import initCompareAll from './scripts/compareAll'
+import initCompareInline from './scripts/compareInline'
+import initPersonDescription from './scripts/personDescription'
 import initFollowSpecialExits from './scripts/followSpecialExits'
 import initMountain from './scripts/mountain'
 import initDrowning from './scripts/drowning'
@@ -229,6 +231,8 @@ export function registerScripts(client: Client) {
     initHerbDescriptions(client)
     initLvlCalc(client, aliases)
     initCompareAll(client, aliases)
+    initCompareInline(client)
+    initPersonDescription(client)
     initItemCondition(client)
     initDurability(client)
     initWearUsed(client)

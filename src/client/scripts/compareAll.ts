@@ -1,32 +1,13 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {createColorFormat} from "@modules/core/Colors";
+import {parseComparisonStats, type ComparisonStats} from "./comparisonUtils";
 
-export interface ComparisonStats {
-    sil?: number;
-    zre?: number;
-    wyt?: number;
-}
+export type {ComparisonStats};
 
-const level: Record<string, number> = {
-    "rownie dobrze zbudowan": 0,
-    "niewiele lepiej zbudowan": 1,
-    "troche lepiej zbudowan": 2,
-    "lepiej zbudowan": 3,
-    "znacznie lepiej zbudowan": 4,
-    "duzo lepiej zbudowan": 5,
-    "rownie siln": 0,
-    "niewiele silniejsz": 1,
-    "troche silniejsz": 2,
-    "silniejsz": 3,
-    "znacznie silniejsz": 4,
-    "duzo silniejsz": 5,
-    "rownie zreczn": 0,
-    "niewiele zreczniejsz": 1,
-    "troche zreczniejsz": 2,
-    "zreczniejsz": 3,
-    "znacznie zreczniejsz": 4,
-    "duzo zreczniejsz": 5,
-};
+const positiveColor = createColorFormat("#ff0000"); // Red for positive values (you're weaker)
+const negativeColor = createColorFormat("#00ff00"); // Green for negative values (you're stronger)
+const neutralColor = createColorFormat("#ffff00"); // Yellow for 0 values (equal)
 
 let comparisonResults: Map<string, { stats: ComparisonStats; buffer: AnsiAwareBuffer }> = new Map();
 let queue: { target: string; stat: keyof ComparisonStats }[] = [];
@@ -73,13 +54,20 @@ export function formatComparisonTable(results: Map<string, { stats: ComparisonSt
         return n > 0 ? `+${n}` : String(n);
     };
 
+    const padLeft = (str: string, len: number) => " ".repeat(Math.max(0, len - str.length)) + str;
+
+    const getColor = (n: number | undefined) => {
+        if (n === undefined || n === 0) return neutralColor;
+        return n < 0 ? negativeColor : positiveColor;
+    };
+
     results.forEach(({stats, buffer}, name) => {
         const total = (stats.sil || 0) + (stats.zre || 0) + (stats.wyt || 0);
         const numCol = pad(String(i), 3);
-        const silCol = pad(formatVal(stats.sil), 4);
-        const zreCol = pad(formatVal(stats.zre), 4);
-        const wytCol = pad(formatVal(stats.wyt), 4);
-        const sumaCol = pad(formatVal(total), 5);
+        const silCol = padLeft(formatVal(stats.sil), 4);
+        const zreCol = padLeft(formatVal(stats.zre), 4);
+        const wytCol = padLeft(formatVal(stats.wyt), 4);
+        const sumaCol = padLeft(formatVal(total), 5);
 
         // Calculate padding needed after colored name
         const paddingNeeded = NAME_WIDTH - name.length;
@@ -89,8 +77,16 @@ export function formatComparisonTable(results: Map<string, { stats: ComparisonSt
         result.insert(result.length, `${numCol} `, {});
         // Insert colored NPC name from original buffer
         result.insertBuffer(result.length, buffer);
-        // Insert stats with default color (explicitly set empty state to prevent color bleeding)
-        result.insert(result.length, `${padding} ${silCol} ${zreCol} ${wytCol} ${sumaCol}\n`, {});
+        // Insert stats with colors
+        result.insert(result.length, `${padding} `, {});
+        result.insert(result.length, silCol, getColor(stats.sil));
+        result.insert(result.length, " ", {});
+        result.insert(result.length, zreCol, getColor(stats.zre));
+        result.insert(result.length, " ", {});
+        result.insert(result.length, wytCol, getColor(stats.wyt));
+        result.insert(result.length, " ", {});
+        result.insert(result.length, sumaCol, getColor(total));
+        result.insert(result.length, "\n", {});
         i++;
     });
 
@@ -115,7 +111,8 @@ export default function initCompareAll(
 ) {
     // Single line format with comma-separated comparisons
     // Example: "Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling."
-    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jestes (.+?) niz (.+)\.$/m;
+    // Or: "Wydaje ci sie, ze jestes rownie silny, rownie dobrze zbudowany i rownie zreczny jak surowy przysadzisty oficer."
+    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jestes (.+?) (?:niz|jak) (.+)\.$/m;
 
     client.Triggers.registerMultilineTrigger(triggerPattern, (line, matches) => {
         if (!queue.length) return line;
@@ -124,22 +121,21 @@ export default function initCompareAll(
         const osoba = matches[2].trim();
 
         // Extract the colored buffer for the NPC name from the original line
-        // Find the position where " niz " appears in the text
-        const nizIndex = line.text.indexOf(" niz ");
-        if (nizIndex === -1) return null;
+        // The regex already captured the name in matches[2], we just need to find it in the line
+        // and extract it with its colors
+        const osobaStartInText = line.text.indexOf(osoba);
+        if (osobaStartInText === -1) return null;
 
-        // The NPC name starts right after " niz " and ends before the "."
-        const nameStartIndex = nizIndex + 5; // " niz ".length
-        const nameEndIndex = line.text.indexOf(".", nameStartIndex);
+        const osobaEndInText = osobaStartInText + osoba.length;
 
         // Extract the colored buffer for just the NPC name
         const osobaBuffer = new AnsiAwareBuffer();
         let currentPos = 0;
         for (const segment of line.getSegments()) {
             const segmentEnd = currentPos + segment.text.length;
-            if (segmentEnd > nameStartIndex && currentPos < nameEndIndex) {
-                const startOffset = Math.max(0, nameStartIndex - currentPos);
-                const endOffset = Math.min(segment.text.length, nameEndIndex - currentPos);
+            if (segmentEnd > osobaStartInText && currentPos < osobaEndInText) {
+                const startOffset = Math.max(0, osobaStartInText - currentPos);
+                const endOffset = Math.min(segment.text.length, osobaEndInText - currentPos);
                 if (endOffset > startOffset) {
                     const extractedText = segment.text.substring(startOffset, endOffset);
                     osobaBuffer.insert(osobaBuffer.length, extractedText, segment.state);
@@ -148,57 +144,8 @@ export default function initCompareAll(
             currentPos = segmentEnd;
         }
 
-        // Parse the comma/conjunction-separated descriptions
-        // Split by " i " first to handle the last conjunction, then by ","
-        const parts = descriptions.split(/ i |, /).map(s => s.trim()).filter(Boolean);
-
-        // Sort level entries by description length (longest first) to match most specific first
-        const sortedLevelEntries = Object.entries(level).sort((a, b) => b[0].length - a[0].length);
-
-        const parsedStats: Partial<ComparisonStats> = {};
-
-        // Process each description part
-        for (const desc of parts) {
-            // Find which stat this description matches and get its value
-            let matchedStat: keyof ComparisonStats | null = null;
-            let val = 0;
-
-            // Check for strength-related descriptions
-            if (desc.includes("siln")) {
-                matchedStat = "sil";
-                // Find the matching level description
-                for (const [levelDesc, levelVal] of sortedLevelEntries) {
-                    if (levelDesc.includes("siln") && desc.includes(levelDesc)) {
-                        val = -levelVal; // Negative because "jestes X" means you are stronger
-                        break;
-                    }
-                }
-            }
-            // Check for dexterity-related descriptions
-            else if (desc.includes("zreczn")) {
-                matchedStat = "zre";
-                for (const [levelDesc, levelVal] of sortedLevelEntries) {
-                    if (levelDesc.includes("zreczn") && desc.includes(levelDesc)) {
-                        val = -levelVal;
-                        break;
-                    }
-                }
-            }
-            // Check for constitution-related descriptions (zbudowany)
-            else if (desc.includes("zbudowan")) {
-                matchedStat = "wyt";
-                for (const [levelDesc, levelVal] of sortedLevelEntries) {
-                    if (levelDesc.includes("zbudowan") && desc.includes(levelDesc)) {
-                        val = -levelVal;
-                        break;
-                    }
-                }
-            }
-
-            if (matchedStat) {
-                parsedStats[matchedStat] = val;
-            }
-        }
+        // Parse the comparison descriptions using shared utility
+        const parsedStats = parseComparisonStats(descriptions);
 
         // Now consume queue entries and populate results
         // The queue should have entries for this NPC's stats
