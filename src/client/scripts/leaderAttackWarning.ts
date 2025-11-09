@@ -27,7 +27,7 @@ export default function initLeaderAttackWarning(client: Client) {
         client.println(message);
     }
 
-    function printWarning(targetId?: string, force = false) {
+    function printWarning(targetId?: string) {
         const attackTargetId = client.TeamManager.getAttackTargetId?.();
         const avatarTargetId = client.TeamManager.getAvatarAttackTargetId?.();
         if (!attackTargetId) {
@@ -43,7 +43,7 @@ export default function initLeaderAttackWarning(client: Client) {
         const text = attackTargetId && targetId === attackTargetId ?
             `Zaatakuj cel ataku (${attackBind})` : `wesprzyj (${supportBind})`;
         const now = Date.now();
-        if (!force && text === lastText && now - lastPrintedAt < warningInterval) {
+        if (text === lastText && now - lastPrintedAt < warningInterval) {
             return;
         }
         lastText = text;
@@ -53,7 +53,7 @@ export default function initLeaderAttackWarning(client: Client) {
 
     client.on('teamLeaderTargetNoAvatar', (id) => {
         activeTargetId = id;
-        printWarning(activeTargetId, true);
+        printWarning(activeTargetId);
     });
     client.on('gmcp.objects.data', () => {
         if (!activeTargetId) {

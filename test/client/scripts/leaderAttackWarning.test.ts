@@ -40,6 +40,7 @@ describe('leader attack warning', () => {
     client.TeamManager.getAttackTargetId.mockReturnValue('1');
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
     client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).toHaveBeenCalledTimes(1);
     const text = client.println.mock.calls[0][0]?.text;
     expect(text).toContain('Zaatakuj cel ataku');
     expect(text).toContain('CTRL+1');
@@ -86,5 +87,24 @@ describe('leader attack warning', () => {
     jest.advanceTimersByTime(5000);
     client.sendEvent('gmcp.objects.data');
     expect(client.println).not.toHaveBeenCalled();
+  });
+
+  test('respects lastPrinted interval on repeated teamLeaderTargetNoAvatar events', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue('1');
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(undefined);
+
+    // First event should trigger warning
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).toHaveBeenCalledTimes(1);
+    client.println.mockClear();
+
+    // Second event immediately after should NOT trigger warning (within interval)
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).not.toHaveBeenCalled();
+
+    // After interval passes, should trigger again
+    jest.advanceTimersByTime(5000);
+    client.sendEvent('teamLeaderTargetNoAvatar', '1');
+    expect(client.println).toHaveBeenCalledTimes(1);
   });
 });
