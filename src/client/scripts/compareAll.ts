@@ -99,11 +99,11 @@ export function formatComparisonTable(results: Map<string, { stats: ComparisonSt
 
 export function displayComparisonResults(client: Client) {
     if (pending > 0) {
-        client.print("Not all comparison data has been received. Please wait or try again.");
+        client.print("Nie wszystkie dane porownania zostaly odebrane. Poczekaj lub sprobuj ponownie.");
         return;
     }
     if (comparisonResults.size === 0) {
-        client.print("No comparison data available.");
+        client.print("Brak danych porownania.");
         return;
     }
     client.println(formatComparisonTable(comparisonResults));
@@ -236,7 +236,7 @@ export default function initCompareAll(
         const targets = short ? (id ? [id] : []) : getTargets(client);
         pending = targets.length * 3; // Still expecting 3 stats per target
         if (pending === 0) {
-            client.print("No one else is here to compare with.");
+            client.print("Nie ma nikogo do porownania.");
             return;
         }
         // Send single "ocen" command per target (returns all 3 stats in one line)

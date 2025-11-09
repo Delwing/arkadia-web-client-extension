@@ -1,63 +1,101 @@
 import initCompareAll, { formatComparisonTable } from '@client/scripts/compareAll';
-import Triggers from '@client/Triggers';
+import Client from '@client/Client';
+import type { ClientAdapter } from '@client/Client';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
-class FakeClient {
-  ObjectManager = {
-    getObjectsOnLocation: jest.fn(() => []),
-  };
-  Triggers = new Triggers(({} as unknown) as any);
-  sendCommand = jest.fn();
-  print = jest.fn();
-  println = jest.fn();
-}
-
 describe('compare all alias', () => {
-  let client: FakeClient;
-  let compareAll: (m: RegExpMatchArray) => void;
-  let parse: (line: string) => AnsiAwareBuffer | null;
+  let client: Client;
+  let mockAdapter: jest.Mocked<ClientAdapter>;
+  let mockPort: any;
+  let sendCommandSpy: jest.SpyInstance;
+  let printlnSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    client = new FakeClient();
-    const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
-    initCompareAll((client as unknown) as any, aliases);
-    compareAll = aliases[0].callback as any;
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    // Mock only the external boundary
+    mockAdapter = {
+      send: jest.fn(),
+      output: jest.fn(),
+      sendGmcp: jest.fn(),
+      parseAnsiPatterns: jest.fn((text: string) => text),
+      flushMessageBuffer: jest.fn(),
+      emit: jest.fn(),
+    };
+
+    // Mock port (minimal)
+    mockPort = {
+      postMessage: jest.fn(),
+      onMessage: {
+        addListener: jest.fn(),
+      },
+    };
+
+    // Create REAL Client instance
+    client = new Client(mockAdapter, mockPort);
+
+    // Spy on methods we need to verify
+    sendCommandSpy = jest.spyOn(client, 'sendCommand');
+    printlnSpy = jest.spyOn(client, 'println').mockImplementation(() => {});
+
+    // Mock ObjectManager
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([]);
+
+    // Initialize the script with aliases
+    initCompareAll(client, client.aliases);
+
     jest.useFakeTimers();
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.useRealTimers();
   });
 
   test('sends ocen commands for each target', () => {
-    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
-      { num: 1, shortcut: '1' },
-      { num: 2, shortcut: '2' },
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+      { num: 1, shortcut: '1' } as any,
+      { num: 2, shortcut: '2' } as any,
     ]);
-    compareAll([''] as unknown as RegExpMatchArray);
-    expect(client.sendCommand).toHaveBeenCalledWith('ocen ob_1', false);
-    expect(client.sendCommand).toHaveBeenCalledWith('ocen ob_2', false);
+
+    // User types /por command
+    client.sendCommand('/por');
+
+    expect(sendCommandSpy).toHaveBeenCalledWith('ocen ob_1', false);
+    expect(sendCommandSpy).toHaveBeenCalledWith('ocen ob_2', false);
     jest.runAllTimers();
   });
 
   test('prints formatted table with results', () => {
-    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 3, shortcut: '1' }]);
-    compareAll([''] as unknown as RegExpMatchArray);
-    parse('Wydaje ci sie, ze jestes silniejszy, zreczniejszy i lepiej zbudowany niz Goblin.');
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+      { num: 3, shortcut: '1' } as any
+    ]);
+
+    // User types /por command
+    client.sendCommand('/por');
+
+    // MUD sends comparison result
+    client.onLine('Wydaje ci sie, ze jestes silniejszy, zreczniejszy i lepiej zbudowany niz Goblin.', '');
+
+    // Wait for timeout to display results
     jest.runAllTimers();
-    const printed = typeof client.println.mock.calls[0][0] === 'string' ? client.println.mock.calls[0][0] : client.println.mock.calls[0][0]?.text;
+
+    expect(printlnSpy).toHaveBeenCalled();
+    const printed = typeof printlnSpy.mock.calls[0][0] === 'string'
+      ? printlnSpy.mock.calls[0][0]
+      : printlnSpy.mock.calls[0][0]?.text;
     expect(printed).toMatch(/Goblin/);
     expect(printed).toMatch(/-3/);
   });
 
   test('sends ocen command for shortcut', () => {
-    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
-      { num: 5, shortcut: '1' },
-      { num: 6, shortcut: '2' },
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+      { num: 5, shortcut: '1' } as any,
+      { num: 6, shortcut: '2' } as any,
     ]);
-    compareAll(['', '2'] as unknown as RegExpMatchArray);
-    expect(client.sendCommand).toHaveBeenCalledWith('ocen ob_6', false);
+
+    // User types /por 2 command (targeting shortcut '2')
+    client.sendCommand('/por 2');
+
+    expect(sendCommandSpy).toHaveBeenCalledWith('ocen ob_6', false);
   });
 
   test('formats header wide enough for long descriptions', () => {
@@ -75,23 +113,45 @@ describe('compare all alias', () => {
   });
 
   test('handles new single-line format with all stats', () => {
-    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 1, shortcut: '1' }]);
-    compareAll([''] as unknown as RegExpMatchArray);
-    parse('Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling.');
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+      { num: 1, shortcut: '1' } as any
+    ]);
+
+    // User types /por command
+    client.sendCommand('/por');
+
+    // MUD sends comparison result with all stats
+    client.onLine('Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling.', '');
+
+    // Wait for timeout to display results
     jest.runAllTimers();
-    expect(client.println).toHaveBeenCalled();
-    const printed = typeof client.println.mock.calls[0][0] === 'string' ? client.println.mock.calls[0][0] : client.println.mock.calls[0][0]?.text;
+
+    expect(printlnSpy).toHaveBeenCalled();
+    const printed = typeof printlnSpy.mock.calls[0][0] === 'string'
+      ? printlnSpy.mock.calls[0][0]
+      : printlnSpy.mock.calls[0][0]?.text;
     expect(printed).toContain('korpulentny rumiany halfling');
     // Note: -5 for "duzo silniejszy", "duzo lepiej zbudowany", "zreczniejszy" (without modifier is -3)
     // So total should be -5 + -5 + -3 = -13
   });
 
   test('handles new single-line format with mixed levels', () => {
-    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 2, shortcut: '1' }]);
-    compareAll([''] as unknown as RegExpMatchArray);
-    parse('Wydaje ci sie, ze jestes znacznie silniejszy, troche lepiej zbudowany i zreczniejszy niz wysoki elf.');
+    jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+      { num: 2, shortcut: '1' } as any
+    ]);
+
+    // User types /por command
+    client.sendCommand('/por');
+
+    // MUD sends comparison result with mixed levels
+    client.onLine('Wydaje ci sie, ze jestes znacznie silniejszy, troche lepiej zbudowany i zreczniejszy niz wysoki elf.', '');
+
+    // Wait for timeout to display results
     jest.runAllTimers();
-    const printed = typeof client.println.mock.calls[0][0] === 'string' ? client.println.mock.calls[0][0] : client.println.mock.calls[0][0]?.text;
+
+    const printed = typeof printlnSpy.mock.calls[0][0] === 'string'
+      ? printlnSpy.mock.calls[0][0]
+      : printlnSpy.mock.calls[0][0]?.text;
     expect(printed).toMatch(/wysoki elf/);
     expect(printed).toMatch(/-4/); // znacznie silniejszy = -4
     expect(printed).toMatch(/-2/); // troche lepiej zbudowany = -2
