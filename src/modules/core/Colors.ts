@@ -32,8 +32,6 @@ export function setXtermPalette(p: 'arkadia' | 'proper') {
     colorCodes.xterm = p === 'proper' ? colorCodes.xtermProper : colorCodes.xtermArkadia;
 }
 
-export const RESET = '\x1B[0m'
-
 export function color(colorCode: number) {
     return `\x1B[22;38;5;${colorCode}m`
 }

@@ -9183,7 +9183,7 @@
                 "name": "walczysz_bez_broni",
                 "patterns": [
                   {
-                    "pattern": "^(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz) (?<target>.+?) (lew\\w+|praw\\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)",
+                    "pattern": "^(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz|Ranisz|Powaznie ranisz|Bardzo ciezko ranisz|Masakrujesz) (?<target>.+?) (lew\\w+|praw\\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)",
                     "type": 1
                   },
                   {

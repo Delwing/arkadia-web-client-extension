@@ -73,8 +73,9 @@ export class Trigger {
         return child;
     }
 
-    execute(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
-        const plainLine = line.text.replace(/\s$/g, "");
+    execute(line: AnsiAwareBuffer, type: string, originalText?: string): AnsiAwareBuffer | null {
+        // Use originalText for matching if provided, otherwise use current line text
+        const plainLine = (originalText ?? line.text).replace(/\s$/g, "");
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
@@ -120,7 +121,7 @@ export class Trigger {
                 }
             }
             for (const child of this.children.values()) {
-                const childResult = child.execute(line, type);
+                const childResult = child.execute(line, type, originalText);
                 if (childResult === null) {
                     return null;
                 }
@@ -236,7 +237,9 @@ export default class Triggers {
     }
 
     parseLine(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
-        const plain = line.text.replace(/\s$/g, "");
+        // Preserve original text for pattern matching
+        const originalText = line.text;
+        const plain = originalText.replace(/\s$/g, "");
         let tokens: string[] | undefined;
         const getTokens = () => {
             if (!tokens) {
@@ -249,11 +252,15 @@ export default class Triggers {
         };
 
         for (const trigger of this.triggers.values()) {
-            const result = trigger.execute(line, type);
+            const result = trigger.execute(line, type, originalText);
             if (result === null) {
                 return null;
             }
             line = result;
+            // If line was marked as deleted, return null to omit from output
+            if (line.deleted) {
+                return null;
+            }
         }
 
         if (this.tokenTriggers.size > 0) {
@@ -263,11 +270,15 @@ export default class Triggers {
                 for (const {trigger} of zeroBucket) {
                     if (!seen.has(trigger.id)) {
                         seen.add(trigger.id);
-                        const result = trigger.execute(line, type);
+                        const result = trigger.execute(line, type, originalText);
                         if (result === null) {
                             return null;
                         }
                         line = result;
+                        // If line was marked as deleted, return null to omit from output
+                        if (line.deleted) {
+                            return null;
+                        }
                     }
                 }
             }
@@ -296,11 +307,15 @@ export default class Triggers {
                         }
                         if (matches) {
                             seen.add(trigger.id);
-                            const result = trigger.execute(line, type);
+                            const result = trigger.execute(line, type, originalText);
                             if (result === null) {
                                 return null;
                             }
                             line = result;
+                            // If line was marked as deleted, return null to omit from output
+                            if (line.deleted) {
+                                return null;
+                            }
                         }
                     }
                 }
@@ -310,12 +325,18 @@ export default class Triggers {
     }
 
     parseMultiline(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
+        // Preserve original text for pattern matching
+        const originalText = line.text;
         for (const trigger of this.multilineTriggers.values()) {
-            const result = trigger.execute(line, type);
+            const result = trigger.execute(line, type, originalText);
             if (result === null) {
                 return null;
             }
             line = result;
+            // If line was marked as deleted, return null to omit from output
+            if (line.deleted) {
+                return null;
+            }
         }
         return line
     }

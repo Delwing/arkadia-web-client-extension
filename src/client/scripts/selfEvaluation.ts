@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
 export default function initSelfEvaluation(
     client: Client,
@@ -77,9 +78,15 @@ export default function initSelfEvaluation(
                 const max = Math.max(...summary.map(s => s.name.length));
                 const lines = summary.map(({name, state}) => {
                     const dots = ".".repeat(Math.max(1, max - name.length + 3));
-                    return `${name} ${dots} ${colorState(state)}`;
+                    const buffer = new AnsiAwareBuffer(`${name} ${dots} `);
+                    buffer.appendBuffer(colorState(state));
+                    return buffer;
                 });
-                client.println(lines.join("\n"));
+                client.print("\n")
+                lines.forEach((line) => {
+                    client.print(line);
+                })
+                client.print("\n")
             }
             summary = [];
             current = "";
@@ -110,7 +117,7 @@ export default function initSelfEvaluation(
 
         parent.registerChild(
             /^Wyglada na to, ze (?:sa |jest )?(.+)\.$/,
-            (_line, matches) => {
+            (line, matches) => {
                 if (current) {
                     if (matches) {
                         const conditionPhrase = matches[1];
@@ -122,7 +129,7 @@ export default function initSelfEvaluation(
                     }
                 }
                 startTimer();
-                return null;
+                return line.markAsDeleted()
             },
             tag
         );

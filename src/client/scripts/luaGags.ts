@@ -217,8 +217,7 @@ export default function registerLuaGagTriggers(client: Client) {
             gag_prefix: (_, prefix: string, type: string) => {
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
-                    global.line = null;
-                    return new AnsiAwareBuffer();
+                    return global.line.markAsDeleted();
                 }
                 if (mode !== 2) {
                     return global.line
@@ -248,7 +247,7 @@ export default function registerLuaGagTriggers(client: Client) {
             delete_line: (_, type: string) => {
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
-                    global.line = null;
+                    global.line.markAsDeleted();
                     return true;
                 }
                 return false
@@ -370,8 +369,18 @@ export default function registerLuaGagTriggers(client: Client) {
                 selection = [0, global.line.length]
             },
             selectString: (string: string, index: number) => {
-                const startIndex = global.line.text.indexOf(string, index - 1)
-                selection = [startIndex, startIndex + string.length]
+                // index is the occurrence number (1-based): 1 = first occurrence, 2 = second, etc.
+                let startIndex = -1;
+                let searchFrom = 0;
+                for (let i = 0; i < index; i++) {
+                    startIndex = global.line.text.indexOf(string, searchFrom);
+                    if (startIndex === -1) {
+                        selection = [-1, -1];
+                        return;
+                    }
+                    searchFrom = startIndex + 1;
+                }
+                selection = [startIndex, startIndex + string.length];
             },
             raiseEvent(event: string, ...args: any[]) {
                 client.sendEvent(event, args)

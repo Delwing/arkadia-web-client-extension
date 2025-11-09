@@ -331,6 +331,7 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
  */
 export class AnsiAwareBuffer {
     private segments: BufferSegment[] = [];
+    private _deleted = false;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
@@ -346,6 +347,15 @@ export class AnsiAwareBuffer {
             // No initial text, but explicit state should be preserved for future insertions.
             this.segments = [];
         }
+    }
+
+    get deleted(): boolean {
+        return this._deleted;
+    }
+
+    markAsDeleted(): this {
+        this._deleted = true;
+        return this;
     }
 
     clone(): AnsiAwareBuffer {
