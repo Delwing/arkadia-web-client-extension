@@ -110,8 +110,13 @@ class ArkadiaClient implements ClientAdapter {
                 try {
                     if (event.data.length === 0) return;
                     const decodedData = atob(event.data);
-                    this.processIncomingData(decodedData);
                     this.recordIncoming(decodedData);
+                    try {
+                        this.processIncomingData(decodedData);
+                    } catch (processingError) {
+                        console.error('Error during trigger processing:', processingError);
+                        console.error('Line was recorded but not processed:', decodedData.substring(0, 100));
+                    }
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
@@ -366,11 +371,23 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private recordIncoming(data: string) {
-        this.activeRecorders.forEach(recorder => recorder.handleIncoming(data));
+        this.activeRecorders.forEach(recorder => {
+            try {
+                recorder.handleIncoming(data);
+            } catch (error) {
+                console.error('Error recording incoming data:', error);
+            }
+        });
     }
 
     private recordOutgoing(message: string) {
-        this.activeRecorders.forEach(recorder => recorder.handleOutgoing(message));
+        this.activeRecorders.forEach(recorder => {
+            try {
+                recorder.handleOutgoing(message);
+            } catch (error) {
+                console.error('Error recording outgoing data:', error);
+            }
+        });
     }
 
     private createRecorder(auto: boolean) {
