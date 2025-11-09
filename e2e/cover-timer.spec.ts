@@ -11,14 +11,20 @@ test.describe('Cover timer', () => {
 
         // Initially, the timer should show OK (ready state)
         await expect(coverTimer, 'should display ready state initially').toHaveText('Zas: OK');
-        await expect(coverTimer, 'should have green class initially').toHaveClass('green');
+
+        // Check that the value "OK" is green (springgreen)
+        const okSpan = coverTimer.locator('span').nth(1);
+        await expect(okSpan, 'should have green color initially').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
 
         // Trigger cover timer with a successful cover message
         await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
 
         // Timer should start counting down
         await expect(coverTimer, 'should display countdown after cover').toContainText('Zas: ');
-        await expect(coverTimer, 'should have yellow class during countdown').toHaveClass('yellow');
+
+        // Check that the countdown value is yellow
+        const valueSpan = coverTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
 
         // Verify countdown is showing a number
         const timerText = await coverTimer.textContent();
@@ -37,7 +43,10 @@ test.describe('Cover timer', () => {
 
         // Timer should start counting down even on failure
         await expect(coverTimer, 'should display countdown after failed cover').toContainText('Zas: ');
-        await expect(coverTimer, 'should have yellow class during countdown').toHaveClass('yellow');
+
+        // Check that the countdown value is yellow
+        const valueSpan = coverTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
     });
 
     test('returns to ready state after timer expires', async ({page}) => {
@@ -52,14 +61,20 @@ test.describe('Cover timer', () => {
 
         // Wait for countdown
         await expect(coverTimer, 'should display countdown').toContainText('Zas: ');
-        await expect(coverTimer, 'should have yellow class during countdown').toHaveClass('yellow');
+
+        // Check that the countdown value is yellow
+        const valueSpanCountdown = coverTimer.locator('span').nth(1);
+        await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
 
         // Wait for timer to expire (5 seconds + buffer)
         await page.waitForTimeout(5500);
 
         // Timer should return to ready state
         await expect(coverTimer, 'should return to ready state after timer expires').toHaveText('Zas: OK');
-        await expect(coverTimer, 'should have green class after timer expires').toHaveClass('green');
+
+        // Check that the value "OK" is green after timer expires
+        const okSpan = coverTimer.locator('span').nth(1);
+        await expect(okSpan, 'should have green color after timer expires').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
     });
 
     test('starts countdown for guard position with weapon', async ({page}) => {
@@ -74,6 +89,9 @@ test.describe('Cover timer', () => {
 
         // Timer should start counting down
         await expect(coverTimer, 'should display countdown for weapon cover').toContainText('Zas: ');
-        await expect(coverTimer, 'should have yellow class during countdown').toHaveClass('yellow');
+
+        // Check that the countdown value is yellow
+        const valueSpan = coverTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
     });
 });

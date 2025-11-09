@@ -38,10 +38,13 @@ test.describe('Zask timer', () => {
         // Change room to trigger the timer
         await triggerRoomChange(page);
 
-        // Timer should start at 0 seconds with red class
+        // Timer should start at 0 seconds with red color
         await expect(zaskTimer, 'should be visible after entering sneak mode').toBeVisible();
         await expect(zaskTimer, 'should display 0 seconds initially').toHaveText('Zask: 0');
-        await expect(zaskTimer, 'should have red class at 0 seconds').toHaveClass('red');
+
+        // Check that the value "0" is red (tomato)
+        const valueSpan = zaskTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have red color at 0 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
     });
 
     test('shows red color for first 20 seconds', async ({page}) => {
@@ -59,7 +62,10 @@ test.describe('Zask timer', () => {
 
         // Should still be red
         await expect(zaskTimer, 'should display countdown in red').toContainText('Zask: ');
-        await expect(zaskTimer, 'should have red class before 20 seconds').toHaveClass('red');
+
+        // Check that the value is red (tomato)
+        const valueSpan = zaskTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have red color before 20 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
 
         const timerText = await zaskTimer.textContent();
         const seconds = parseInt(timerText?.replace('Zask: ', '') || '0');
@@ -90,7 +96,10 @@ test.describe('Zask timer', () => {
         });
 
         await expect(zaskTimer, 'should display countdown at 20+ seconds').toContainText('Zask: ');
-        await expect(zaskTimer, 'should have yellow class at 20+ seconds').toHaveClass('yellow');
+
+        // Check that the value is yellow
+        const valueSpan = zaskTimer.locator('span').nth(1);
+        await expect(valueSpan, 'should have yellow color at 20+ seconds').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
 
         const timerText = await zaskTimer.textContent();
         const seconds = parseInt(timerText?.replace('Zask: ', '') || '0');
@@ -120,7 +129,10 @@ test.describe('Zask timer', () => {
         });
 
         await expect(zaskTimer, 'should display OK after 30 seconds').toHaveText('Zask: OK');
-        await expect(zaskTimer, 'should have green class after 30 seconds').toHaveClass('green');
+
+        // Check that the value "OK" is green (springgreen)
+        const okSpan = zaskTimer.locator('span').nth(1);
+        await expect(okSpan, 'should have green color after 30 seconds').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
     });
 
     test('stops and hides when exiting sneak mode', async ({page}) => {

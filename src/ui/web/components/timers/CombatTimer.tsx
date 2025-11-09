@@ -38,23 +38,21 @@ export const CombatTimer: React.FC = () => {
 
     // Hide if disabled or no active timer
     if (!enabled || seconds == null || seconds <= 0) {
-      containerRef.current.textContent = "";
-      containerRef.current.className = "";
+      containerRef.current.innerHTML = "";
       containerRef.current.style.display = "none";
       return;
     }
 
-    containerRef.current.style.display = "block";
-    containerRef.current.textContent = `Walka: ${seconds}`;
-
-    // Determine color class based on remaining time
+    // Determine color based on remaining time
+    let color = "springgreen";
     if (seconds > 20) {
-      containerRef.current.className = "red";
+      color = "tomato";
     } else if (seconds > 10) {
-      containerRef.current.className = "yellow";
-    } else {
-      containerRef.current.className = "green";
+      color = "yellow";
     }
+
+    containerRef.current.style.display = "block";
+    containerRef.current.innerHTML = `<span style="color: white;">Walka: </span><span style="color: ${color};">${seconds}</span>`;
   }, [enabled, seconds]);
 
   return null;

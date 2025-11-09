@@ -26,11 +26,13 @@ export const CoverTimer: React.FC = () => {
     if (!containerRef.current) return;
 
     const isActive = seconds != null && seconds > 0;
-    const text = isActive ? `Zas: ${seconds.toFixed(2)}` : "Zas: OK";
-    const className = isActive ? "yellow" : "green";
 
-    containerRef.current.textContent = text;
-    containerRef.current.className = className;
+    if (isActive) {
+      containerRef.current.innerHTML = `<span style="color: white;">Zas: </span><span style="color: yellow;">${seconds.toFixed(2)}</span>`;
+    } else {
+      containerRef.current.innerHTML = `<span style="color: white;">Zas: </span><span style="color: springgreen;">OK</span>`;
+    }
+
     containerRef.current.style.display = "block";
   }, [seconds]);
 

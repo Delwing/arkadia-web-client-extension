@@ -32,23 +32,17 @@ export const ZaskTimer: React.FC = () => {
     if (!containerRef.current) return;
 
     if (!payload) {
-      containerRef.current.textContent = "";
-      containerRef.current.className = "";
+      containerRef.current.innerHTML = "";
       containerRef.current.style.display = "none";
       return;
     }
 
     containerRef.current.style.display = "block";
     if (payload.ok) {
-      containerRef.current.textContent = "Zask: OK";
-      containerRef.current.className = "green";
+      containerRef.current.innerHTML = `<span style="color: white;">Zask: </span><span style="color: springgreen;">OK</span>`;
     } else {
-      containerRef.current.textContent = `Zask: ${payload.seconds}`;
-      if (payload.seconds >= 20) {
-        containerRef.current.className = "yellow";
-      } else {
-        containerRef.current.className = "red";
-      }
+      const color = payload.seconds >= 20 ? "yellow" : "tomato";
+      containerRef.current.innerHTML = `<span style="color: white;">Zask: </span><span style="color: ${color};">${payload.seconds}</span>`;
     }
   }, [payload]);
 

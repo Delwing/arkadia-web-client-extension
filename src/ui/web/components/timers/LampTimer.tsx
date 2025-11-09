@@ -12,37 +12,35 @@ export const LampTimer: React.FC = () => {
     setSeconds(newSeconds);
   });
 
-  // Update the container's className based on timer state
+  // Update the container's display and content
   useEffect(() => {
     const container = document.getElementById("lamp-timer");
     if (!container) return;
 
     if (seconds == null || seconds <= 0) {
-      container.className = "";
+      container.style.display = "none";
+      container.innerHTML = "";
       return;
     }
 
-    // Determine color class based on remaining time
+    // Format time as M:SS
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const timeValue = `${minutes}:${secs.toString().padStart(2, "0")}`;
+
+    // Determine color based on remaining time
+    let color = "springgreen";
     if (seconds < 30) {
-      container.className = "red";
+      color = "tomato";
     } else if (seconds < 60) {
-      container.className = "yellow";
-    } else {
-      container.className = "green";
+      color = "yellow";
     }
+
+    container.style.display = "block";
+    container.innerHTML = `<span style="color: white;">lamp </span><span style="color: ${color};">${timeValue}</span>`;
   }, [seconds]);
 
-  // Hide if null or <= 0
-  if (seconds == null || seconds <= 0) {
-    return null;
-  }
-
-  // Format time as M:SS
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const timeText = `lamp ${minutes}:${secs.toString().padStart(2, "0")}`;
-
-  return <>{timeText}</>;
+  return null;
 };
 
 export default LampTimer;
