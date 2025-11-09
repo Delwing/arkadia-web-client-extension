@@ -1,6 +1,7 @@
 import {expect, test as base} from '@playwright/test';
 import {
     installMockWebSocket,
+    mockGithubCommits,
     mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
@@ -17,6 +18,7 @@ const test = base.extend({
         await mockNpcDownload(context);
         await mockPeopleDownload(context);
         await mockKnowledgeDownload(context);
+        await mockGithubCommits(context);
         await installMockWebSocket(context);
         // eslint-disable-next-line react-hooks/rules-of-hooks
         await use(context);

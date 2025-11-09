@@ -616,15 +616,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (commitInfo) {
         commitInfo.textContent = `${__COMMIT_SHA__} ${__COMMIT_DATE__}`;
 
-        // Check for latest version from GitHub
+        // Check for latest version from GitHub using public API
         fetch('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to fetch latest commit');
+                    if (response.status === 403 || response.status === 429) {
+                        console.warn('GitHub API rate limit exceeded, skipping version check');
+                        return null;
+                    }
+                    throw new Error(`Failed to fetch latest commit: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                if (!data) return;
                 const latestSha = data.sha?.substring(0, 7);
                 if (latestSha && latestSha !== __COMMIT_SHA__) {
                     const warningDiv = document.createElement('div');

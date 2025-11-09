@@ -2,6 +2,7 @@ import type {BrowserContext, Page} from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import {fileURLToPath} from 'url';
+import {execSync} from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -252,6 +253,18 @@ const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
 const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
 const MAGICS_DATA_ROUTE = '**/magics_data.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
+const GITHUB_COMMITS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master';
+
+// Get the current commit SHA dynamically
+function getCurrentCommitSha(): string {
+    try {
+        const sha = execSync('git rev-parse --short HEAD').toString().trim();
+        // Pad to 40 chars to match GitHub API format
+        return sha + '1234567890123456789012345678901234'.substring(0, 40 - sha.length);
+    } catch {
+        return 'unknown1234567890123456789012345678901';
+    }
+}
 
 const DEFAULT_MAP_DATA: MockMapData = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'mock-data', 'map-data.json'), 'utf-8')
@@ -381,6 +394,37 @@ export async function mockMagicKeysDownload(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(data),
+        });
+    });
+}
+
+// Export for use in tests
+export {getCurrentCommitSha};
+
+export async function mockGithubCommits(
+    context: BrowserContext,
+    options: {sha?: string; returnCurrent?: boolean; simulateRateLimit?: boolean} = {},
+): Promise<void> {
+    await context.route(GITHUB_COMMITS_ROUTE, async (route) => {
+        if (options.simulateRateLimit) {
+            // Simulate rate limiting
+            await route.fulfill({
+                status: 403,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    message: 'API rate limit exceeded',
+                }),
+            });
+            return;
+        }
+
+        // Return the specified SHA or the current commit SHA so tests don't show false warnings
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                sha: options.sha || getCurrentCommitSha(),
+            }),
         });
     });
 }
