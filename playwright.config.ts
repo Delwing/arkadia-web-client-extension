@@ -22,7 +22,7 @@ export default defineConfig({
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'], screenshot: "on" },
+            use: { ...devices['Desktop Chrome'], screenshot: "only-on-failure" },
         },
     ],
 });

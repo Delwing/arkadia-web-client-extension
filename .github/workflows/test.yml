@@ -10,6 +10,39 @@ permissions:
   id-token: write
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock') }}
+          restore-keys: |
+            key: ${{ runner.os }}-dependencies-
+      - name: Build project
+        run: yarn build
+      - name: Build plugin types
+        if: github.ref == 'refs/heads/master'
+        run: yarn build:types
+      - name: Copy types tarball to dist
+        if: github.ref == 'refs/heads/master'
+        run: cp plugin-types/dist/*.tgz dist/
+      - name: Upload dist artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
   test:
     runs-on: ubuntu-latest
     env:
@@ -20,8 +53,6 @@ jobs:
         include:
           - name: Run unit tests
             command: yarn test
-          - name: Build project
-            command: yarn build
           - name: Run e2e tests
             command: yarn test:e2e --reporter=line
             install_browsers: true
@@ -55,35 +86,20 @@ jobs:
         env:
           CI: '1'
         run: ${{ matrix.command }}
-      - name: Upload dist artifact
-        if: matrix.name == 'Build project' && github.ref == 'refs/heads/master'
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: test
+    needs: [build, test]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
-          cache: yarn
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Build project
-        run: yarn build
-      - name: Build plugin types
-        run: yarn build:types
-      - name: Copy types tarball to dist
-        run: cp plugin-types/dist/*.tgz dist/
+          name: dist
+          path: dist
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
