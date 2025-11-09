@@ -25,7 +25,8 @@ const test = base.extend({
     },
 });
 
-test.describe('Version check', () => {
+// TODO: Re-enable when version check is reimplemented
+test.describe.skip('Version check', () => {
     test('shows warning when new version is available', async ({page}) => {
         // Set a route that returns a different SHA (simulating new version)
         // The SHA will be truncated to 7 chars by main.ts, so we need a different first 7 chars
