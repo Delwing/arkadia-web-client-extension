@@ -65,17 +65,24 @@ export const TransportTimer: React.FC = () => {
     typeof payload.remaining === "number" && typeof payload.total === "number";
 
   // Build display parts
-  const parts = ["Tr:", payload.label];
+  const labelPart = payload.label;
+  let timerPart = "";
 
   if (hasTimer) {
     const remaining = Math.max(0, payload.remaining!);
     const minutes = Math.floor(remaining / 60);
     const seconds = Math.floor(remaining % 60);
     const secondsText = seconds.toString().padStart(2, "0");
-    parts.push(`${minutes}:${secondsText}`);
+    timerPart = ` ${minutes}:${secondsText}`;
   }
 
-  return <>{parts.join(" ")}</>;
+  return (
+    <>
+      <span style={{ color: "white" }}>Tr: </span>
+      {labelPart}
+      {timerPart}
+    </>
+  );
 };
 
 export default TransportTimer;

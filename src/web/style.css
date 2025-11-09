@@ -1756,14 +1756,17 @@ h1 {
 }
 
 #lamp-timer.green {
+  display: block;
   color: springgreen;
 }
 
 #lamp-timer.yellow {
+  display: block;
   color: yellow;
 }
 
 #lamp-timer.red {
+  display: block;
   color: tomato;
 }
 
@@ -1772,10 +1775,12 @@ h1 {
 }
 
 #cover-timer.green {
+  display: block;
   color: springgreen;
 }
 
 #cover-timer.yellow {
+  display: block;
   color: yellow;
 }
 
@@ -1784,14 +1789,17 @@ h1 {
 }
 
 #zask-timer.green {
+  display: block;
   color: springgreen;
 }
 
 #zask-timer.yellow {
+  display: block;
   color: yellow;
 }
 
 #zask-timer.red {
+  display: block;
   color: tomato;
 }
 
@@ -1800,14 +1808,17 @@ h1 {
 }
 
 #combat-timer.green {
+  display: block;
   color: springgreen;
 }
 
 #combat-timer.yellow {
+  display: block;
   color: yellow;
 }
 
 #combat-timer.red {
+  display: block;
   color: tomato;
 }
 

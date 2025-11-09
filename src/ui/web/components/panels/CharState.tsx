@@ -203,7 +203,7 @@ export const CharState: React.FC = () => {
 
             return (
                 <div key={key} className="char-state-bar" title={key}>
-                  <span style={{ color: highlight ? "tomato" : undefined }}>{label}:</span>
+                  <span style={{ color: highlight ? "tomato" : "white" }}>{label}:</span>
                   <div className="progress position-relative">
                     <div
                         className={`progress-bar ${colorClass}`}
@@ -234,12 +234,12 @@ export const CharState: React.FC = () => {
             const content =
                 mode === 1 || mode === 2 ? (
                     <>
-                      {label}:{" "}
+                      <span style={{ color: "white" }}>{label}: </span>
                       <span style={{ color }}>[{getBarString(ratio, maxValue, mode)}]</span>
                     </>
                 ) : (
                     <>
-                      {label}:{" "}
+                      <span style={{ color: "white" }}>{label}: </span>
                       <span style={{ color }}>
                   [{value}/{maxValue}]
                 </span>
