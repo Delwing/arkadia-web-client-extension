@@ -218,7 +218,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
                     global.line = null;
-                    return null;
+                    return new AnsiAwareBuffer();
                 }
                 if (mode !== 2) {
                     return global.line
