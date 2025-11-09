@@ -15,21 +15,21 @@ const COLORS: Record<string, FormatStateSnapshot> = {
 };
 
 export const itemConditions: ItemCondition[] = [
-    { patterns: ["w znakomitym stanie"], replacement: "[max]", color: "green" },
-    { patterns: ["lekko podniszcz\\w+"], replacement: "[4/5]", color: "yellow" },
-    { patterns: ["w kiepskim stanie"], replacement: "[3/5]", color: "red" },
-    { patterns: ["w oplakanym stanie"], replacement: "[2/5]", color: "red" },
-    { patterns: ["gotow.{1,2} sie rozpasc"], replacement: "[1/5]", color: "red" },
-    { patterns: ["w dobrym stanie"], replacement: "[6/7]", color: "green" },
+    {patterns: ["w znakomitym stanie"], replacement: "[max]", color: "green"},
+    {patterns: ["lekko podniszcz\\w+"], replacement: "[4/5]", color: "yellow"},
+    {patterns: ["w kiepskim stanie"], replacement: "[3/5]", color: "red"},
+    {patterns: ["w oplakanym stanie"], replacement: "[2/5]", color: "red"},
+    {patterns: ["gotow.{1,2} sie rozpasc"], replacement: "[1/5]", color: "red"},
+    {patterns: ["w dobrym stanie"], replacement: "[6/7]", color: "green"},
     {
         patterns: ["liczne walki wyryly.*swoje pietno"],
         replacement: "[5/7]",
         color: "yellow",
     },
-    { patterns: ["w zlym stanie"], replacement: "[4/7]", color: "red" },
-    { patterns: ["w bardzo zlym stanie"], replacement: "[3/7]", color: "red" },
-    { patterns: ["wymaga.{0,2} natychmiastowej konserwacji"], replacement: "[2/7]", color: "red" },
-    { patterns: ["moze peknac w kazdej chwili"], replacement: "[1/7]", color: "red" },
+    {patterns: ["w zlym stanie"], replacement: "[4/7]", color: "red"},
+    {patterns: ["w bardzo zlym stanie"], replacement: "[3/7]", color: "red"},
+    {patterns: ["wymaga.{0,2} natychmiastowej konserwacji"], replacement: "[2/7]", color: "red"},
+    {patterns: ["moze peknac w kazdej chwili"], replacement: "[1/7]", color: "red"},
 ];
 
 export function processItemCondition(buffer: AnsiAwareBuffer, phrase: string): AnsiAwareBuffer {
@@ -68,12 +68,19 @@ export default function initItemCondition(client: Client) {
         inspectionPatterns,
         (line) => line,
         tag,
-        { stayOpenLines: 1 }
+        {stayOpenLines: 1}
     );
 
-    parentTrigger.registerChild(pattern, (line, matches) => {
+    const oceniaszTrigger = client.Triggers.registerTrigger(
+        /^Oceniasz/,
+        line => line,
+        tag,
+        {stayOpenLines: 2}
+    );
+
+    [parentTrigger, oceniaszTrigger].forEach(parent => parent.registerChild(pattern, (line, matches) => {
         if (!matches || !matches[1]) return line;
         const phrase = matches[1];
         return processItemCondition(line, phrase);
-    }, tag);
+    }, tag));
 }
