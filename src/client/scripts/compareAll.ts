@@ -115,9 +115,9 @@ export default function initCompareAll(
 ) {
     // Single line format with comma-separated comparisons
     // Example: "Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling."
-    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jestes (.+?) niz (.+)\.$/;
+    const triggerPattern = /^(?:Wydaje ci sie|Masz wrazenie), ze jestes (.+?) niz (.+)\.$/m;
 
-    client.Triggers.registerTrigger(triggerPattern, (line, matches) => {
+    client.Triggers.registerMultilineTrigger(triggerPattern, (line, matches) => {
         if (!queue.length) return line;
 
         const descriptions = matches[1];
@@ -130,7 +130,7 @@ export default function initCompareAll(
 
         // The NPC name starts right after " niz " and ends before the "."
         const nameStartIndex = nizIndex + 5; // " niz ".length
-        const nameEndIndex = line.text.lastIndexOf(".");
+        const nameEndIndex = line.text.indexOf(".", nameStartIndex);
 
         // Extract the colored buffer for just the NPC name
         const osobaBuffer = new AnsiAwareBuffer();
@@ -217,7 +217,7 @@ export default function initCompareAll(
             });
         }
 
-        return line;
+        return line.markAsDeleted();
     }, "compare-all");
 
     function findByShortcut(short: string): string | undefined {

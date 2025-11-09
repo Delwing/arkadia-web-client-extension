@@ -1,6 +1,5 @@
-import {color} from "@modules/core/Colors";
 import Client from "../Client";
-import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
 export const LINE_START_EVENT = 'line-start';
 
@@ -31,6 +30,29 @@ export function formatLabel(options: FunctionalBindOptions) {
     if (options.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');
+}
+
+function createBindMessage(label: string, printable: string, callback: () => void): AnsiAwareBuffer {
+    // Using xterm proper palette colors: 49 = #00ffaf, 222 = #ffd787
+    const bindColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#00ffaf' } };
+    const labelColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#ffd787' } };
+
+    const buffer = new AnsiAwareBuffer();
+    buffer.append('\t', undefined);
+    buffer.append('bind ', bindColor);
+    buffer.append(label, labelColor);
+    buffer.append(': ', bindColor);
+    buffer.append(printable, undefined);
+
+    const printableIndex = buffer.text.indexOf(printable);
+    if (printableIndex !== -1) {
+        buffer.createLink([printableIndex, printableIndex + printable.length], {
+            onClick: callback,
+            title: `Kliknij aby wykonać: ${printable}`
+        });
+    }
+
+    return buffer;
 }
 
 export class FunctionalBind {
@@ -91,14 +113,7 @@ export class FunctionalBind {
 
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
-                const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
-                const printableIndex = line.text.indexOf(printable);
-                if (printableIndex !== -1) {
-                    line.createLink([printableIndex, printableIndex + printable.length], {
-                        onClick: this.functionalBind,
-                        title: `Kliknij aby wykonać: ${printable}`
-                    });
-                }
+                const line = createBindMessage(this.label, printable, this.functionalBind);
                 this.client.println(line);
                 this.printedInMessage = true;
             }
@@ -107,14 +122,7 @@ export class FunctionalBind {
         this.currentPrintable = printable;
         this.printedInMessage = true;
         if (printable) {
-            const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
-            const printableIndex = line.text.indexOf(printable);
-            if (printableIndex !== -1) {
-                line.createLink([printableIndex, printableIndex + printable.length], {
-                    onClick: this.functionalBind,
-                    title: `Kliknij aby wykonać: ${printable}`
-                });
-            }
+            const line = createBindMessage(this.label, printable, this.functionalBind);
             this.client.println(line);
         }
     }
