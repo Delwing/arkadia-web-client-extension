@@ -38,6 +38,7 @@ class ArkadiaClient implements ClientAdapter {
     private autoRecorder: Recorder | null = null;
     private readonly activeRecorders = new Set<Recorder>();
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
+    private autoLowercaseCommands: boolean = false;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -66,6 +67,13 @@ class ArkadiaClient implements ClientAdapter {
                 event.preventDefault();
             }
         })
+
+        // Listen for UI settings changes
+        this.on('uiSettings', (settings) => {
+            if (typeof settings?.autoLowercaseCommands === 'boolean') {
+                this.autoLowercaseCommands = settings.autoLowercaseCommands;
+            }
+        });
     }
 
 
@@ -165,7 +173,12 @@ class ArkadiaClient implements ClientAdapter {
         }
 
         if (this.receivedFirstGmcp) {
-            message = normalizeCommand(message, options)
+            // Pass autoLowercaseCommands setting to normalizeCommand
+            const normalizeOptions = {
+                ...options,
+                autoLowercaseCommands: this.autoLowercaseCommands
+            };
+            message = normalizeCommand(message, normalizeOptions)
             this.recordOutgoing(message);
         }
 

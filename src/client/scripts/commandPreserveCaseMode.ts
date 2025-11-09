@@ -31,11 +31,17 @@ const skipLowercasePrefixes = [
 
 export interface CommandOptions {
     preserveCase?: boolean;
+    autoLowercaseCommands?: boolean;
 }
 
 export function normalizeCommand(command: string, options?: CommandOptions): string {
     const trimmedCommand = command.trimStart();
     if (!trimmedCommand || options?.preserveCase || preserverCaseMode) {
+        return command;
+    }
+
+    // If autoLowercaseCommands is explicitly set to false, don't lowercase
+    if (options?.autoLowercaseCommands === false) {
         return command;
     }
 

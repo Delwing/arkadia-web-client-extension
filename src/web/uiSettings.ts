@@ -42,6 +42,7 @@ export interface UiSettings {
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
+    autoLowercaseCommands: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -69,6 +70,7 @@ const defaultSettings: UiSettings = {
     fontFamily: 'default',
     customFontUrl: '',
     customFontFamily: '',
+    autoLowercaseCommands: false,
 };
 
 const MIN_MAP_SCALE = 0.01;
@@ -306,6 +308,7 @@ function apply(settings: UiSettings) {
         clearInputOnSend: settings.clearInputOnSend,
         showTransportLabel: settings.showTransportLabel,
         showCombatTimer: settings.showCombatTimer,
+        autoLowercaseCommands: settings.autoLowercaseCommands,
     };
     eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
@@ -369,6 +372,9 @@ async function load(): Promise<UiSettings> {
             const showCombatTimer = typeof parsed.showCombatTimer === 'boolean'
                 ? parsed.showCombatTimer
                 : defaultSettings.showCombatTimer;
+            const autoLowercaseCommands = typeof parsed.autoLowercaseCommands === 'boolean'
+                ? parsed.autoLowercaseCommands
+                : defaultSettings.autoLowercaseCommands;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -391,6 +397,7 @@ async function load(): Promise<UiSettings> {
                 fontFamily,
                 customFontUrl: normalizedCustomFontUrl,
                 customFontFamily,
+                autoLowercaseCommands,
             };
         }
     } catch {
@@ -436,6 +443,7 @@ export default async function initUiSettings() {
     const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
     const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
     const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
+    const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -465,6 +473,7 @@ export default async function initUiSettings() {
         fontFamilyInput.value = settings.fontFamily;
         customFontUrlInput.value = settings.customFontUrl;
         customFontFamilyInput.value = settings.customFontFamily;
+        autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
     };
 
     populateFormInputs(current);
@@ -655,6 +664,7 @@ export default async function initUiSettings() {
                 return /^https?:\/\//i.test(value) ? value : '';
             })(),
             customFontFamily: customFontFamilyInput.value.trim(),
+            autoLowercaseCommands: autoLowercaseCommandsInput.checked,
         };
     }
 

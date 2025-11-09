@@ -10,5 +10,6 @@ export type UiSettingsEventPayload = {
     clearInputOnSend?: boolean;
     showTransportLabel?: boolean;
     showCombatTimer?: boolean;
+    autoLowercaseCommands?: boolean;
 } & Record<string, unknown>;
 
