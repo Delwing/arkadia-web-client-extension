@@ -2,6 +2,7 @@ import People from "./People";
 import registerLuaGagTriggers from "./scripts/./luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
+import initPausers from './scripts/pausers'
 
 import blockers from './blockers.json'
 import initShips from './scripts/ships'
@@ -200,6 +201,7 @@ export function registerScripts(client: Client) {
     initChatHistory(client, aliases)
     initMoveMode(client)
     initCarriage(client)
+    initPausers(client)
     initIdz(client, aliases)
     const killCounter = initKillCounter(client, aliases)
     ;(client as any).killCounter = killCounter

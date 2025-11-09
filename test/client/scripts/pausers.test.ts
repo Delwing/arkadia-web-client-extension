@@ -1,4 +1,4 @@
-import Pausers from '@client/Pausers';
+import initPausers from '@client/scripts/pausers';
 import { EventEmitter } from 'events';
 
 class FakeMap {
@@ -25,7 +25,7 @@ describe('Pausers', () => {
 
   beforeEach(() => {
     client = new FakeClient();
-    new Pausers((client as unknown) as any);
+    initPausers((client as unknown) as any);
     client.sendEvent('gmcp.char.info', { object_num: '1' });
   });
 
