@@ -179,7 +179,7 @@ export default function registerLuaGagTriggers(client: Client) {
                     global.line.append("\n").appendBuffer(warnBuffer);
                 }
 
-                return global.line.applyMudletColors();
+                return global.line?.applyMudletColors();
             }
             return line;
         }
