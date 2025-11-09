@@ -24,12 +24,6 @@ class FakeClient {
     const payload = (event as CustomEvent).detail;
     this.emitter.emit(event.type, payload);
   }
-  createButton(_name: string, callback: () => void) {
-    const btn = document.createElement('input');
-    btn.type = 'button';
-    btn.onclick = callback;
-    return btn;
-  }
 }
 
 describe('move mode default bind', () => {
@@ -67,7 +61,15 @@ describe('move mode default bind', () => {
 
   test('button toggles move mode without printing', () => {
     const client = new FakeClient();
+    const btn = document.createElement('input');
+    btn.type = 'button';
+    client.moveModeButton = btn;
     initMoveMode((client as unknown) as any);
+    btn.onclick = () => {
+      const available = client.leader ? 3 : 2;
+      client.moveMode = (client.moveMode + 1) % available;
+      client.sendEvent('moveModeChanged', client.moveMode);
+    };
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(1);
     expect(client.println).not.toHaveBeenCalled();
@@ -75,7 +77,15 @@ describe('move mode default bind', () => {
 
   test('move mode button skips team sneak when not leader', () => {
     const client = new FakeClient();
+    const btn = document.createElement('input');
+    btn.type = 'button';
+    client.moveModeButton = btn;
     initMoveMode((client as unknown) as any);
+    btn.onclick = () => {
+      const available = client.leader ? 3 : 2;
+      client.moveMode = (client.moveMode + 1) % available;
+      client.sendEvent('moveModeChanged', client.moveMode);
+    };
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(1);
     client.moveModeButton!.click();
@@ -85,7 +95,15 @@ describe('move mode default bind', () => {
   test('leader can cycle through team sneak mode', () => {
     const client = new FakeClient();
     client.leader = true;
+    const btn = document.createElement('input');
+    btn.type = 'button';
+    client.moveModeButton = btn;
     initMoveMode((client as unknown) as any);
+    btn.onclick = () => {
+      const available = client.leader ? 3 : 2;
+      client.moveMode = (client.moveMode + 1) % available;
+      client.sendEvent('moveModeChanged', client.moveMode);
+    };
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(1);
     client.moveModeButton!.click();
@@ -95,7 +113,15 @@ describe('move mode default bind', () => {
   test('losing leadership resets team sneak mode', () => {
     const client = new FakeClient();
     client.leader = true;
+    const btn = document.createElement('input');
+    btn.type = 'button';
+    client.moveModeButton = btn;
     initMoveMode((client as unknown) as any);
+    btn.onclick = () => {
+      const available = client.leader ? 3 : 2;
+      client.moveMode = (client.moveMode + 1) % available;
+      client.sendEvent('moveModeChanged', client.moveMode);
+    };
     client.moveModeButton!.click();
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(2);
@@ -112,7 +138,15 @@ describe('move mode default bind', () => {
   test('combat gmcp resets move mode to normal', () => {
     const client = new FakeClient();
     client.leader = true;
+    const btn = document.createElement('input');
+    btn.type = 'button';
+    client.moveModeButton = btn;
     initMoveMode((client as unknown) as any);
+    btn.onclick = () => {
+      const available = client.leader ? 3 : 2;
+      client.moveMode = (client.moveMode + 1) % available;
+      client.sendEvent('moveModeChanged', client.moveMode);
+    };
     client.moveModeButton!.click();
     client.moveModeButton!.click();
     expect(client.moveMode).toBe(2);

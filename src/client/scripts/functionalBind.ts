@@ -38,7 +38,6 @@ export class FunctionalBind {
     private client: Client;
     private functionalBind = () => {
     };
-    private button?: HTMLInputElement;
     private currentPrintable: string | null = null;
     private printedInMessage = false;
     private key: string;
@@ -90,9 +89,6 @@ export class FunctionalBind {
             };
         }
 
-        if (this.button) {
-            this.button.onclick = this.functionalBind;
-        }
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
                 const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
@@ -110,7 +106,6 @@ export class FunctionalBind {
         }
         this.currentPrintable = printable;
         this.printedInMessage = true;
-        this.button?.remove();
         if (printable) {
             const line = new AnsiAwareBuffer(`\t${color(49)}bind ${color(222)}${this.label}${color(49)}: ${printable}`);
             const printableIndex = line.text.indexOf(printable);
@@ -121,7 +116,6 @@ export class FunctionalBind {
                 });
             }
             this.client.println(line);
-            this.button = this.client.createButton(printable, this.functionalBind);
         }
     }
 
@@ -130,7 +124,6 @@ export class FunctionalBind {
         };
         this.currentPrintable = null;
         this.printedInMessage = false;
-        this?.button?.remove();
     }
 
     updateOptions(options: FunctionalBindOptions = {}) {

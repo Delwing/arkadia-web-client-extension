@@ -72,7 +72,7 @@ jest.mock('@shared/map/MapHelper', () => {
 });
 
 beforeEach(() => {
-  document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
+  document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
   (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
   (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
@@ -158,17 +158,6 @@ test('println uses print with newline', () => {
   expect(spy).toHaveBeenNthCalledWith(1, '\n');
   expect(spy).toHaveBeenNthCalledWith(2, 'hi');
   expect(spy).toHaveBeenNthCalledWith(3, '\n');
-});
-
-test('createButton creates button attached to panel', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const cb = jest.fn();
-  const button = client.createButton('name', cb);
-  expect(button.value).toBe('name');
-  expect(button.type).toBe('button');
-  expect(button.onclick).toBe(cb);
-  const panel = document.getElementById('panel_buttons_bottom');
-  expect(panel?.contains(button)).toBe(true);
 });
 
 test('sendCommand dispatches event and splits commands', async () => {

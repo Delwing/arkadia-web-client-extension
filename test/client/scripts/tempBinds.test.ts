@@ -14,7 +14,7 @@ import initTempBinds from '@client/scripts/tempBinds';
 
 describe('temp binds', () => {
   function createClient() {
-    document.body.innerHTML = '<div id="panel_buttons_bottom"></div>';
+    document.body.innerHTML = '';
     const adapter = {
       send: jest.fn(),
       output: jest.fn(),

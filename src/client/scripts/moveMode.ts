@@ -26,9 +26,6 @@ function clampMoveMode(client: Client) {
 }
 
 export default function initMoveMode(client: Client) {
-    const button = client.createButton(`Ruch: ${LABELS[0]}`, () => toggle(false));
-    button.title = `Ruch: ${TITLES[0]}`;
-    client.moveModeButton = button;
     let playerNum: string | undefined;
 
     function update() {
@@ -37,11 +34,8 @@ export default function initMoveMode(client: Client) {
         const valueLabel = `Ruch: ${LABELS[mode]}`;
         const valueTitle = `Ruch: ${TITLES[mode]}`;
 
-        button.value = valueLabel;
-        button.title = valueTitle;
-
         const assignedButton = client.moveModeButton;
-        if (assignedButton && assignedButton !== button) {
+        if (assignedButton) {
             if (assignedButton instanceof HTMLInputElement) {
                 assignedButton.value = valueLabel;
                 assignedButton.title = valueTitle;

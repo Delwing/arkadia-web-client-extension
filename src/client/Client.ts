@@ -60,7 +60,6 @@ export default class Client {
     Pausers = new Pausers(this);
     TeamManager = new TeamManager(this);
     ObjectManager = new ObjectManager(this);
-    panel = document.getElementById("panel_buttons_bottom");
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     private soundManager = new SoundManager(this);
@@ -497,16 +496,6 @@ export default class Client {
         this.print('\n')
         this.print(printable)
         this.print('\n')
-    }
-
-    createButton(name: string, callback: () => void) {
-        const button = document.createElement('input')
-        button.value = name
-        button.type = 'button'
-        button.className = 'panel_button button k-button'
-        button.onclick = callback
-        this.panel?.appendChild(button)
-        return button
     }
 
     prepareSounds(): Promise<void> {

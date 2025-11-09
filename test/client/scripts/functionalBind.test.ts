@@ -5,7 +5,6 @@ describe('FunctionalBind clickable text', () => {
     const client = {
       on: jest.fn(),
       println: jest.fn(),
-      createButton: jest.fn(() => ({ remove: jest.fn() })),
     } as any;
 
     const fb = new FunctionalBind(client);
@@ -24,12 +23,10 @@ describe('FunctionalBind clickable text', () => {
     expect(printedBuffer.text).toContain('cmd');
   });
 
-  test('set updates button callback when called again with same text', () => {
-    const button: any = { remove: jest.fn(), onclick: () => {} };
+  test('set updates callback when called again with same text', () => {
     const client = {
       on: jest.fn(),
       println: jest.fn(),
-      createButton: jest.fn(() => button),
     } as any;
 
     const fb = new FunctionalBind(client);
@@ -39,8 +36,7 @@ describe('FunctionalBind clickable text', () => {
     const cb2 = jest.fn();
     fb.set('cmd', cb2);
 
-    // clicking the button should invoke the latest callback
-    button.onclick();
-    expect(cb2).toHaveBeenCalled();
+    // Only one println call should be made since the printable text is the same
+    expect(client.println).toHaveBeenCalledTimes(1);
   });
 });

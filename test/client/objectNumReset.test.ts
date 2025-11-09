@@ -55,7 +55,7 @@ describe('object_num persistence and reset event', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    document.body.innerHTML = '<div id="panel_buttons_bottom"></div><iframe id="cm-frame"></iframe>';
+    document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
     (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
     (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
     (globalThis as any).dispatchEvent = jest.fn();
