@@ -217,7 +217,7 @@ export default function initCompareAll(
             });
         }
 
-        return null;
+        return line;
     }, "compare-all");
 
     function findByShortcut(short: string): string | undefined {
