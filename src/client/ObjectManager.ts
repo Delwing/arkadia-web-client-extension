@@ -144,6 +144,18 @@ export default class ObjectManager {
         const combatRest = rest.filter(o => o.attack_num !== false && o.attack_num !== undefined)
         const nonCombatRest = rest.filter(o => o.attack_num === false || o.attack_num === undefined)
 
+        // Assign shortcuts to team members first
+        team.forEach(o => {
+            o.shortcut = this.getTeamShortcut(o.num);
+        });
+
+        // Sort team members by their shortcuts
+        team.sort((a, b) => {
+            const aShortcut = a.shortcut || '';
+            const bShortcut = b.shortcut || '';
+            return aShortcut.localeCompare(bShortcut);
+        });
+
         const ordered: Obj[] = [];
         if (playerObj) {
             playerObj.__category = 'player';
@@ -168,7 +180,7 @@ export default class ObjectManager {
             if (o.__category === 'player') {
                 o.shortcut = '@';
             } else if (o.__category === 'team') {
-                o.shortcut = this.getTeamShortcut(o.num);
+                // Shortcut already assigned and sorted above
             } else if (o.__category === 'rest-noncombat') {
                 o.shortcut = String(nonCombatIndex++);
             } else {

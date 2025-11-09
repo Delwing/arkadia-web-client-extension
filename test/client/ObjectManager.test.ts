@@ -216,4 +216,34 @@ describe('ObjectManager', () => {
       },
     ]);
   });
+
+  test('sorts team members by shortcut regardless of order', () => {
+    client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+    client.sendEvent('gmcp.char.state', { hp: 30 });
+    client.sendEvent('gmcp.objects.data', {
+      '2': { desc: 'Ally1', hp: 40, team: true },
+      '3': { desc: 'Ally2', hp: 50, team: true },
+      '4': { desc: 'Ally3', hp: 60, team: true },
+    });
+    // First update: team members appear in order 2, 3, 4
+    client.sendEvent('gmcp.objects.nums', ['2', '3', '4']);
+    let objects = manager.getObjectsOnLocation();
+    expect(objects).toMatchObject([
+      { num: 100, shortcut: '@', __category: 'player' },
+      { num: 2, desc: 'Ally1', shortcut: 'A', __category: 'team' },
+      { num: 3, desc: 'Ally2', shortcut: 'B', __category: 'team' },
+      { num: 4, desc: 'Ally3', shortcut: 'C', __category: 'team' },
+    ]);
+
+    // Second update: team members appear in reverse order 4, 3, 2
+    // They should still be sorted by shortcut A, B, C
+    client.sendEvent('gmcp.objects.nums', ['4', '3', '2']);
+    objects = manager.getObjectsOnLocation();
+    expect(objects).toMatchObject([
+      { num: 100, shortcut: '@', __category: 'player' },
+      { num: 2, desc: 'Ally1', shortcut: 'A', __category: 'team' },
+      { num: 3, desc: 'Ally2', shortcut: 'B', __category: 'team' },
+      { num: 4, desc: 'Ally3', shortcut: 'C', __category: 'team' },
+    ]);
+  });
 });
