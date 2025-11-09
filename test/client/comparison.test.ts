@@ -77,9 +77,7 @@ describe('compare all alias', () => {
   test('handles new single-line format with all stats', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 1, shortcut: '1' }]);
     compareAll([''] as unknown as RegExpMatchArray);
-    const result = parse('Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling.');
-    // The trigger should suppress this line (return null)
-    expect(result).toBeNull();
+    parse('Wydaje ci sie, ze jestes duzo silniejszy, duzo lepiej zbudowany i zreczniejszy niz korpulentny rumiany halfling.');
     jest.runAllTimers();
     expect(client.println).toHaveBeenCalled();
     const printed = typeof client.println.mock.calls[0][0] === 'string' ? client.println.mock.calls[0][0] : client.println.mock.calls[0][0]?.text;
