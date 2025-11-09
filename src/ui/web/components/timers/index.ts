@@ -1,5 +1,6 @@
 export { LampTimer } from "./LampTimer";
 export { CoverTimer } from "./CoverTimer";
 export { ZaskTimer } from "./ZaskTimer";
+export { OrderTimer } from "./OrderTimer";
 export { CombatTimer } from "./CombatTimer";
 export { TransportTimer } from "./TransportTimer";
