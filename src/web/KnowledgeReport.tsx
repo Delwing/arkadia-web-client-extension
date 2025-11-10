@@ -8,6 +8,7 @@ import React, {
 import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledgeStore';
 import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
+import { useDraggablePopup } from './hooks/useDraggablePopup';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -44,12 +45,6 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
-type PointerDragState = {
-  pointerId: number;
-  offsetX: number;
-  offsetY: number;
-};
-
 const LIBRARY_STATUS_CONFIG: {
   key: KnowledgeCategoryStatus;
   label: string;
@@ -76,27 +71,14 @@ function groupLibraryCategories(
   );
 }
 
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) {
-    return min;
-  }
-  if (value > max) {
-    return max;
-  }
-  return value;
-}
-
 const KnowledgeReport: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
   const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
   const [isPinned, setIsPinned] = useState(false);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
-  const panelRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<PointerDragState | null>(null);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -106,92 +88,11 @@ const KnowledgeReport: React.FC = () => {
     setIsPinned((prev) => !prev);
   }, []);
 
-  const ensureVisiblePosition = useCallback((prev: { left: number; top: number } | null) => {
-    if (!prev || !panelRef.current) {
-      return prev;
-    }
-    const margin = 16;
-    const width = panelRef.current.offsetWidth;
-    const height = panelRef.current.offsetHeight;
-    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-    const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const nextLeft = clamp(prev.left, margin, maxLeft);
-    const nextTop = clamp(prev.top, margin, maxTop);
-    if (nextLeft === prev.left && nextTop === prev.top) {
-      return prev;
-    }
-    return { left: nextLeft, top: nextTop };
-  }, []);
-
-  const handlePointerMove = useCallback((event: PointerEvent) => {
-    const drag = dragState.current;
-    if (!drag || event.pointerId !== drag.pointerId || !panelRef.current) {
-      return;
-    }
-    const margin = 16;
-    const width = panelRef.current.offsetWidth;
-    const height = panelRef.current.offsetHeight;
-    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-    const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const nextLeft = clamp(event.clientX - drag.offsetX, margin, maxLeft);
-    const nextTop = clamp(event.clientY - drag.offsetY, margin, maxTop);
-    setPosition({ left: nextLeft, top: nextTop });
-  }, []);
-
-  const endPointerDrag = useCallback(
-    (event: PointerEvent) => {
-      const drag = dragState.current;
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-      dragState.current = null;
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', endPointerDrag);
-      window.removeEventListener('pointercancel', endPointerDrag);
-    },
-    [handlePointerMove],
-  );
-
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0) {
-        return;
-      }
-      if (!panelRef.current) {
-        return;
-      }
-      const rect = panelRef.current.getBoundingClientRect();
-      dragState.current = {
-        pointerId: event.pointerId,
-        offsetX: event.clientX - rect.left,
-        offsetY: event.clientY - rect.top,
-      };
-      setPosition((prev) => prev ?? { left: rect.left, top: rect.top });
-      window.addEventListener('pointermove', handlePointerMove);
-      window.addEventListener('pointerup', endPointerDrag);
-      window.addEventListener('pointercancel', endPointerDrag);
-      event.preventDefault();
-    },
-    [endPointerDrag, handlePointerMove],
-  );
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', endPointerDrag);
-      window.removeEventListener('pointercancel', endPointerDrag);
-    };
-  }, [endPointerDrag, handlePointerMove]);
-
-  useEffect(() => {
-    if (isOpen) {
-      return;
-    }
-    dragState.current = null;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', endPointerDrag);
-    window.removeEventListener('pointercancel', endPointerDrag);
-  }, [endPointerDrag, handlePointerMove, isOpen]);
+  const { panelRef, position, handlePointerDown } = useDraggablePopup({
+    isOpen,
+    isPinned,
+    onClose: close,
+  });
 
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
@@ -202,7 +103,6 @@ const KnowledgeReport: React.FC = () => {
 
     setData(detail);
     setIsOpen(true);
-    setPosition(null);
     setExpandedStatuses({});
     if (detail.libraries.length > 0) {
       setActiveTab('libraries');
@@ -220,53 +120,6 @@ const KnowledgeReport: React.FC = () => {
     };
   }, [handleReport]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        close();
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [close, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || isPinned) {
-      return;
-    }
-    const handlePointerDownOutside = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (target && panelRef.current?.contains(target)) {
-        return;
-      }
-      close();
-    };
-    window.addEventListener('pointerdown', handlePointerDownOutside);
-    return () => window.removeEventListener('pointerdown', handlePointerDownOutside);
-  }, [close, isOpen, isPinned]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const handleResize = () => {
-      setPosition((prev) => ensureVisiblePosition(prev));
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [ensureVisiblePosition, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    setPosition((prev) => ensureVisiblePosition(prev));
-    panelRef.current?.focus();
-  }, [ensureVisiblePosition, isOpen]);
 
   const handleStartCategory = useCallback((dative: string) => {
     eventBus.emit('sendCommand', {

@@ -1,0 +1,187 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+type PointerDragState = {
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+};
+
+type Position = {
+    left: number;
+    top: number;
+};
+
+type UseDraggablePopupOptions = {
+    isOpen: boolean;
+    isPinned: boolean;
+    onClose: () => void;
+};
+
+type UseDraggablePopupReturn = {
+    panelRef: React.RefObject<HTMLDivElement>;
+    position: Position | null;
+    handlePointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+};
+
+function clamp(value: number, min: number, max: number): number {
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}
+
+/**
+ * Hook for creating draggable popup windows with consistent behavior.
+ *
+ * Features:
+ * - Drag window by header
+ * - Close on Escape key (unless pinned)
+ * - Close on outside click (unless pinned)
+ * - Keep window within viewport bounds
+ * - Auto-adjust position on window resize
+ */
+export function useDraggablePopup({ isOpen, isPinned, onClose }: UseDraggablePopupOptions): UseDraggablePopupReturn {
+    const [position, setPosition] = useState<Position | null>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const dragState = useRef<PointerDragState | null>(null);
+
+    const ensureVisiblePosition = useCallback((prev: Position | null): Position | null => {
+        if (!prev || !panelRef.current) {
+            return prev;
+        }
+        const margin = 16;
+        const width = panelRef.current.offsetWidth;
+        const height = panelRef.current.offsetHeight;
+        const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+        const maxTop = Math.max(margin, window.innerHeight - height - margin);
+        const nextLeft = clamp(prev.left, margin, maxLeft);
+        const nextTop = clamp(prev.top, margin, maxTop);
+        if (nextLeft === prev.left && nextTop === prev.top) {
+            return prev;
+        }
+        return { left: nextLeft, top: nextTop };
+    }, []);
+
+    const handlePointerMove = useCallback((event: PointerEvent) => {
+        const drag = dragState.current;
+        if (!drag || event.pointerId !== drag.pointerId || !panelRef.current) {
+            return;
+        }
+        const margin = 16;
+        const width = panelRef.current.offsetWidth;
+        const height = panelRef.current.offsetHeight;
+        const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+        const maxTop = Math.max(margin, window.innerHeight - height - margin);
+        const nextLeft = clamp(event.clientX - drag.offsetX, margin, maxLeft);
+        const nextTop = clamp(event.clientY - drag.offsetY, margin, maxTop);
+        setPosition({ left: nextLeft, top: nextTop });
+    }, []);
+
+    const endPointerDrag = useCallback(
+        (event: PointerEvent) => {
+            const drag = dragState.current;
+            if (!drag || event.pointerId !== drag.pointerId) {
+                return;
+            }
+            dragState.current = null;
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', endPointerDrag);
+            window.removeEventListener('pointercancel', endPointerDrag);
+        },
+        [handlePointerMove],
+    );
+
+    const handlePointerDown = useCallback(
+        (event: React.PointerEvent<HTMLDivElement>) => {
+            if (event.button !== 0) {
+                return;
+            }
+            if (!panelRef.current) {
+                return;
+            }
+            const rect = panelRef.current.getBoundingClientRect();
+            dragState.current = {
+                pointerId: event.pointerId,
+                offsetX: event.clientX - rect.left,
+                offsetY: event.clientY - rect.top,
+            };
+            setPosition((prev) => prev ?? { left: rect.left, top: rect.top });
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', endPointerDrag);
+            window.addEventListener('pointercancel', endPointerDrag);
+            event.preventDefault();
+        },
+        [endPointerDrag, handlePointerMove],
+    );
+
+    // Cleanup drag listeners on unmount
+    useEffect(() => {
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', endPointerDrag);
+            window.removeEventListener('pointercancel', endPointerDrag);
+        };
+    }, [endPointerDrag, handlePointerMove]);
+
+    // Cleanup drag listeners when closed
+    useEffect(() => {
+        if (isOpen) {
+            return;
+        }
+        dragState.current = null;
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', endPointerDrag);
+        window.removeEventListener('pointercancel', endPointerDrag);
+    }, [endPointerDrag, handlePointerMove, isOpen]);
+
+    // Handle window resize - keep popup visible
+    useEffect(() => {
+        const handleResize = () => {
+            setPosition((prev) => ensureVisiblePosition(prev));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [ensureVisiblePosition]);
+
+    // Handle Escape key to close (unless pinned)
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        const handleKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape" && !isPinned) {
+                event.preventDefault();
+                onClose();
+            }
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [isOpen, isPinned, onClose]);
+
+    // Handle outside click to close (unless pinned)
+    useEffect(() => {
+        if (!isOpen || isPinned) {
+            return;
+        }
+        const handlePointerDownOutside = (event: PointerEvent) => {
+            const target = event.target as Node | null;
+            if (target && panelRef.current?.contains(target)) {
+                return;
+            }
+            onClose();
+        };
+        window.addEventListener("pointerdown", handlePointerDownOutside);
+        return () => window.removeEventListener("pointerdown", handlePointerDownOutside);
+    }, [isOpen, isPinned, onClose]);
+
+    return {
+        panelRef,
+        position,
+        handlePointerDown,
+    };
+}

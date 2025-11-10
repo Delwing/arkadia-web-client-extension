@@ -595,6 +595,10 @@ export class ArkadiaTime {
             observedMinutes
         });
 
+        // If observed time is not exactly on the hour, round up to next full hour
+        // e.g., 4:59 should become 5:00
+        const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
+
         // Compare with month table expectations for mismatch detection
         if (this.currentMonth) {
             const expectedSunrise = MONTHS[this.currentMonth].sunrise;
@@ -602,8 +606,7 @@ export class ArkadiaTime {
                                (typeof expectedSunrise === "string" ? parseInt(expectedSunrise, 10) : null);
 
             if (expectedHour !== null && !isNaN(expectedHour)) {
-                const observedHourRounded = Math.floor(observedHour + observedMinutes / 60);
-                if (observedHourRounded !== expectedHour) {
+                if (finalHour !== expectedHour) {
                     console.log(`[${this.domain}] Sunrise mismatch on day ${currentDay}: expected ${expectedHour}:00, observed ${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`);
                     eventBus.emit("clock.mismatch", {
                         domain: this.domain,
@@ -617,8 +620,8 @@ export class ArkadiaTime {
             }
         }
 
-        // Set clock to observed time with precision 0
-        this.init(observedHour, Math.floor(observedMinutes), 0, currentDay);
+        // Set clock to the rounded hour with precision 0
+        this.init(finalHour, 0, 0, currentDay);
     }
 
     private markObservedSunset(): void {
@@ -634,6 +637,10 @@ export class ArkadiaTime {
             observedMinutes
         });
 
+        // If observed time is not exactly on the hour, round up to next full hour
+        // e.g., 20:59 should become 21:00
+        const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
+
         // Compare with month table expectations for mismatch detection
         if (this.currentMonth) {
             const expectedSunset = MONTHS[this.currentMonth].sunset;
@@ -641,8 +648,7 @@ export class ArkadiaTime {
                                (typeof expectedSunset === "string" ? parseInt(expectedSunset, 10) : null);
 
             if (expectedHour !== null && !isNaN(expectedHour)) {
-                const observedHourRounded = Math.floor(observedHour + observedMinutes / 60);
-                if (observedHourRounded !== expectedHour) {
+                if (finalHour !== expectedHour) {
                     console.log(`[${this.domain}] Sunset mismatch on day ${currentDay}: expected ${expectedHour}:00, observed ${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`);
                     eventBus.emit("clock.mismatch", {
                         domain: this.domain,
@@ -656,8 +662,8 @@ export class ArkadiaTime {
             }
         }
 
-        // Set clock to observed time with precision 0
-        this.init(observedHour, Math.floor(observedMinutes), 0, currentDay);
+        // Set clock to the rounded hour with precision 0
+        this.init(finalHour, 0, 0, currentDay);
     }
 
     private getEpoch(): number {

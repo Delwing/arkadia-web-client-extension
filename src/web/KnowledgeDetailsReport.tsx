@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import eventBus from '@modules/core/eventBus';
+import { useDraggablePopup } from './hooks/useDraggablePopup';
 
 const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
   { key: 'fight', label: 'Z walki', showDetails: false },
@@ -35,22 +36,6 @@ type KnowledgeDetailsReportCategory = {
 type KnowledgeDetailsReportPayload = {
   categories: KnowledgeDetailsReportCategory[];
 };
-
-type PointerDragState = {
-  pointerId: number;
-  offsetX: number;
-  offsetY: number;
-};
-
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) {
-    return min;
-  }
-  if (value > max) {
-    return max;
-  }
-  return value;
-}
 
 function formatTimestamp(value: number | null): string | null {
   if (value == null) {
@@ -84,10 +69,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<PointerDragState | null>(null);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -97,89 +79,11 @@ const KnowledgeDetailsReport: React.FC = () => {
     setIsPinned((prev) => !prev);
   }, []);
 
-  const ensureVisiblePosition = useCallback((prev: { left: number; top: number } | null) => {
-    if (!prev || !panelRef.current) {
-      return prev;
-    }
-    const margin = 16;
-    const width = panelRef.current.offsetWidth;
-    const height = panelRef.current.offsetHeight;
-    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-    const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const nextLeft = clamp(prev.left, margin, maxLeft);
-    const nextTop = clamp(prev.top, margin, maxTop);
-    if (nextLeft === prev.left && nextTop === prev.top) {
-      return prev;
-    }
-    return { left: nextLeft, top: nextTop };
-  }, []);
-
-  const handlePointerMove = useCallback((event: PointerEvent) => {
-    const drag = dragState.current;
-    if (!drag || event.pointerId !== drag.pointerId || !panelRef.current) {
-      return;
-    }
-    const margin = 16;
-    const width = panelRef.current.offsetWidth;
-    const height = panelRef.current.offsetHeight;
-    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-    const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const nextLeft = clamp(event.clientX - drag.offsetX, margin, maxLeft);
-    const nextTop = clamp(event.clientY - drag.offsetY, margin, maxTop);
-    setPosition({ left: nextLeft, top: nextTop });
-  }, []);
-
-  const endPointerDrag = useCallback(
-    (event: PointerEvent) => {
-      const drag = dragState.current;
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-      dragState.current = null;
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', endPointerDrag);
-      window.removeEventListener('pointercancel', endPointerDrag);
-    },
-    [handlePointerMove],
-  );
-
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0 || !panelRef.current) {
-        return;
-      }
-      const rect = panelRef.current.getBoundingClientRect();
-      dragState.current = {
-        pointerId: event.pointerId,
-        offsetX: event.clientX - rect.left,
-        offsetY: event.clientY - rect.top,
-      };
-      setPosition((prev) => prev ?? { left: rect.left, top: rect.top });
-      window.addEventListener('pointermove', handlePointerMove);
-      window.addEventListener('pointerup', endPointerDrag);
-      window.addEventListener('pointercancel', endPointerDrag);
-      event.preventDefault();
-    },
-    [endPointerDrag, handlePointerMove],
-  );
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', endPointerDrag);
-      window.removeEventListener('pointercancel', endPointerDrag);
-    };
-  }, [endPointerDrag, handlePointerMove]);
-
-  useEffect(() => {
-    if (isOpen) {
-      return;
-    }
-    dragState.current = null;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', endPointerDrag);
-    window.removeEventListener('pointercancel', endPointerDrag);
-  }, [endPointerDrag, handlePointerMove, isOpen]);
+  const { panelRef, position, handlePointerDown } = useDraggablePopup({
+    isOpen,
+    isPinned,
+    onClose: close,
+  });
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
     if (!detail || !detail.categories?.length) {
@@ -190,7 +94,6 @@ const KnowledgeDetailsReport: React.FC = () => {
     setData(detail);
     setIsOpen(true);
     setHideCompleted(false);
-    setPosition(null);
   }, []);
 
   useEffect(() => {
@@ -202,53 +105,6 @@ const KnowledgeDetailsReport: React.FC = () => {
     };
   }, [handleReport]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        close();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [close, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || isPinned) {
-      return;
-    }
-    const handlePointerDownOutside = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (target && panelRef.current?.contains(target)) {
-        return;
-      }
-      close();
-    };
-    window.addEventListener('pointerdown', handlePointerDownOutside);
-    return () => window.removeEventListener('pointerdown', handlePointerDownOutside);
-  }, [close, isOpen, isPinned]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const handleResize = () => {
-      setPosition((prev) => ensureVisiblePosition(prev));
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [ensureVisiblePosition, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    setPosition((prev) => ensureVisiblePosition(prev));
-    panelRef.current?.focus();
-  }, [ensureVisiblePosition, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {

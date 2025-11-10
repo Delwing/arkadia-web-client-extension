@@ -8,6 +8,7 @@ import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import eventBus from "@modules/core/eventBus";
 import { hideContextMenu } from "@shared/dom/contextMenu";
 import { getClientInstance } from "@shared/runtime";
+import { useDraggablePopup } from "../hooks/useDraggablePopup";
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -223,9 +224,6 @@ const HerbManager = () => {
     const [error, setError] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
-    const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
-    const panelRef = useRef<HTMLDivElement | null>(null);
-    const dragState = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
     const initialSettings = getItemSync("settings")?.settings as Record<string, unknown> | undefined;
@@ -262,6 +260,12 @@ const HerbManager = () => {
         setIsPinned(prev => !prev);
     }, []);
 
+    const { panelRef, position, handlePointerDown } = useDraggablePopup({
+        isOpen,
+        isPinned,
+        onClose: handleClose,
+    });
+
     useEffect(() => {
         const handleSettings = (settings: unknown) => {
             const detail = settings as Record<string, unknown> | null | undefined;
@@ -292,7 +296,6 @@ const HerbManager = () => {
             return;
         }
         eventBus.emit('requestHerbCounts');
-        panelRef.current?.focus();
     }, [isOpen]);
 
     useEffect(() => {
@@ -312,115 +315,8 @@ const HerbManager = () => {
     useEffect(() => {
         if (!isOpen) {
             setActiveBag(null);
-            return;
         }
-        const handleKey = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                event.preventDefault();
-                handleClose();
-            }
-        };
-        window.addEventListener("keydown", handleKey);
-        return () => window.removeEventListener("keydown", handleKey);
-    }, [handleClose, isOpen]);
-
-    useEffect(() => {
-        if (!isOpen || isPinned) {
-            return;
-        }
-        const handlePointerDownOutside = (event: PointerEvent) => {
-            const target = event.target as Node | null;
-            const contextMenu = document.getElementById("context-menu");
-            if (target && (panelRef.current?.contains(target) || contextMenu?.contains(target))) {
-                return;
-            }
-            handleClose();
-        };
-        window.addEventListener("pointerdown", handlePointerDownOutside);
-        return () => window.removeEventListener("pointerdown", handlePointerDownOutside);
-    }, [handleClose, isOpen, isPinned]);
-
-    const handleResize = useCallback(() => {
-        setPosition(prev => {
-            if (!prev || !panelRef.current) {
-                return prev;
-            }
-            const rect = panelRef.current.getBoundingClientRect();
-            const margin = 16;
-            const maxLeft = window.innerWidth - rect.width - margin;
-            const maxTop = window.innerHeight - rect.height - margin;
-            const nextLeft = clamp(prev.left, margin, maxLeft);
-            const nextTop = clamp(prev.top, margin, maxTop);
-            if (nextLeft === prev.left && nextTop === prev.top) {
-                return prev;
-            }
-            return { left: nextLeft, top: nextTop };
-        });
-    }, []);
-
-    useEffect(() => {
-        if (!isOpen) {
-            return;
-        }
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [handleResize, isOpen]);
-
-    const handlePointerMove = useCallback((event: PointerEvent) => {
-        const drag = dragState.current;
-        if (!drag || event.pointerId !== drag.pointerId || !panelRef.current) {
-            return;
-        }
-        const rect = panelRef.current.getBoundingClientRect();
-        const margin = 16;
-        const nextLeft = event.clientX - drag.offsetX;
-        const nextTop = event.clientY - drag.offsetY;
-        const maxLeft = window.innerWidth - rect.width - margin;
-        const maxTop = window.innerHeight - rect.height - margin;
-        setPosition({
-            left: clamp(nextLeft, margin, maxLeft),
-            top: clamp(nextTop, margin, maxTop),
-        });
-    }, []);
-
-    const endPointerDrag = useCallback((event: PointerEvent) => {
-        const drag = dragState.current;
-        if (!drag || event.pointerId !== drag.pointerId) {
-            return;
-        }
-        dragState.current = null;
-        window.removeEventListener("pointermove", handlePointerMove);
-        window.removeEventListener("pointerup", endPointerDrag);
-        window.removeEventListener("pointercancel", endPointerDrag);
-    }, [handlePointerMove]);
-
-    useEffect(() => {
-        return () => {
-            window.removeEventListener("pointermove", handlePointerMove);
-            window.removeEventListener("pointerup", endPointerDrag);
-            window.removeEventListener("pointercancel", endPointerDrag);
-        };
-    }, [endPointerDrag, handlePointerMove]);
-
-    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (event.button !== 0) {
-            return;
-        }
-        if (!panelRef.current) {
-            return;
-        }
-        const rect = panelRef.current.getBoundingClientRect();
-        dragState.current = {
-            pointerId: event.pointerId,
-            offsetX: event.clientX - rect.left,
-            offsetY: event.clientY - rect.top,
-        };
-        setPosition(prev => prev ?? { left: rect.left, top: rect.top });
-        window.addEventListener("pointermove", handlePointerMove);
-        window.addEventListener("pointerup", endPointerDrag);
-        window.addEventListener("pointercancel", endPointerDrag);
-        event.preventDefault();
-    };
+    }, [isOpen]);
 
     const handleSplit = (bagNumber: number, stack: HerbStack) => (event: React.MouseEvent) => {
         if (!event.shiftKey) {
