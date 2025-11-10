@@ -24,6 +24,7 @@ export interface ButtonSetting {
     fontColor?: string;
     command?: string;
     direction?: string;
+    syncWithDirections?: boolean;
 }
 
 export interface RadialCommandSetting {
@@ -388,21 +389,37 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
         const insertBefore = z || zas || w || prze || idz || null;
         set.order.forEach(id => {
             const cfg = set.buttons[id] || defaultSettings[id] || empty;
+
+            // Handle color syncing for special exit buttons
+            let effectiveColor = cfg.color;
+            let effectiveActiveColor = cfg.activeColor;
+            if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
+                // Find a direction button to sync colors from
+                const directionButton = Object.values(set.buttons).find(b => b.macro === 'kierunek');
+                if (directionButton) {
+                    effectiveColor = directionButton.color;
+                    effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
+                }
+            }
+
             const btn = document.createElement('button');
             btn.id = id;
             btn.className = 'mobile-button';
             if (cfg.macro === 'kierunek') {
                 btn.classList.add('direction-button');
+            } else if (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections)) {
+                btn.classList.add('direction-button');
+                btn.classList.add('mobile-button-text');
             } else {
                 btn.classList.add('mobile-button-text');
             }
             const isEmpty = cfg.macro === 'empty' || !cfg.label;
             if (!isEmpty) {
                 btn.textContent = cfg.label;
-                if (cfg.macro === 'kierunek') {
-                    btn.style.setProperty('--color', cfg.color);
-                    btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
-                    btn.style.backgroundColor = cfg.color;
+                if (cfg.macro === 'kierunek' || (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
+                    btn.style.setProperty('--color', effectiveColor);
+                    btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
+                    btn.style.backgroundColor = effectiveColor;
                 } else {
                     btn.style.backgroundColor = cfg.color;
                     btn.style.removeProperty('--color');

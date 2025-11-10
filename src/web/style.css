@@ -1851,14 +1851,17 @@ h1 {
 }
 
 #attack-mode.A {
+  display: inline;
   color: springgreen;
 }
 
 #attack-mode.AW {
+  display: inline;
   color: gold;
 }
 
 #attack-mode.AWR {
+  display: inline;
   color: deepskyblue;
 }
 
@@ -2763,11 +2766,13 @@ body.mobile-command-radial-active {
 }
 
 .direction-button {
-  background-color: var(--color, #6CA6CD); /* Match 'zerknij' button color */
+  --color: #6CA6CD;
+  --active-color: #2fa7c5;
+  background-color: var(--color);
 }
 
 .direction-button.exit-available {
-  background-color: var(--active-color, #2fa7c5) !important;
+  background-color: var(--active-color) !important;
 }
 
 .mobile-button-text {

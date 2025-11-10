@@ -11,12 +11,15 @@ const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
 export default function initInlineCompassRose(client: Client) {
     let exits = new Set<string>();
+    let specialExits: string[] = [];
     let enabled = false;
     let unsubscribeExits: (() => void) | undefined;
 
     const listener = () => {
         const data = gmcp?.room?.info;
-        exits = new Set(parseExits(data));
+        const parsed = parseExits(data);
+        exits = new Set(parsed.standard);
+        specialExits = parsed.special;
         showCompassRose();
     };
 
@@ -43,9 +46,9 @@ export default function initInlineCompassRose(client: Client) {
         unsubscribeExits = undefined;
     }
 
-    function parseExits(detail: any): string[] {
+    function parseExits(detail: any): { standard: string[]; special: string[] } {
         let list: string[] = [];
-        if (!detail) return list;
+        if (!detail) return { standard: [], special: [] };
         if (Array.isArray(detail)) {
             list = detail;
         } else if (Array.isArray(detail.exits)) {
@@ -56,9 +59,21 @@ export default function initInlineCompassRose(client: Client) {
             const e = detail.room.exits;
             list = Array.isArray(e) ? e : Object.keys(e);
         }
-        return list
-            .map((e) => getShortDir(e))
-            .filter((dir) => VALID_SHORT_DIRS.has(dir));
+
+        const standard: string[] = [];
+        const special: string[] = [];
+
+        list.forEach((exit) => {
+            const shortDir = getShortDir(exit);
+            if (VALID_SHORT_DIRS.has(shortDir)) {
+                standard.push(shortDir);
+            } else {
+                // Keep original exit name for special exits
+                special.push(exit);
+            }
+        });
+
+        return { standard, special };
     }
 
     function hasExit(short: string): boolean {
@@ -101,6 +116,27 @@ export default function initInlineCompassRose(client: Client) {
         centerX.color([0, 1], DIM_GRAY);
         lines[2].appendBuffer(centerX);
         lines[2].appendBuffer(lines[3]);
+
+        // Add special exits column on the right
+        // Only show on lines 0, 2, 4 (same lines as NE, E, SE)
+        if (specialExits.length > 0) {
+            const exitLines = [0, 2, 4]; // Lines where exits should appear
+            let exitIndex = 0;
+
+            // Process exits in columns of 3
+            while (exitIndex < specialExits.length) {
+                for (let lineIdx of exitLines) {
+                    if (exitIndex < specialExits.length) {
+                        const specialExit = specialExits[exitIndex].toUpperCase();
+                        const exitBuffer = new AnsiAwareBuffer(specialExit);
+                        exitBuffer.color([0, exitBuffer.length], SPRING_GREEN);
+                        lines[lineIdx].append("    ");
+                        lines[lineIdx].appendBuffer(exitBuffer);
+                        exitIndex++;
+                    }
+                }
+            }
+        }
 
         const output = new AnsiAwareBuffer();
         for (let i = 0; i < lines.length; i++) {

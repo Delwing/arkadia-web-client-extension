@@ -601,6 +601,31 @@ function MobileButtons() {
                             />
                         </Form.Group>
                     )}
+                    {activeCfg.macro === "specialExit" && (
+                        <>
+                            <Form.Group className="form-label mb-2">
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Synchronizuj z kierunkami"
+                                    checked={activeCfg.syncWithDirections || false}
+                                    onChange={e => update(active!.set, active!.id, "syncWithDirections", e.target.checked)}
+                                />
+                            </Form.Group>
+                            {!activeCfg.syncWithDirections && (
+                                <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
+                                    <Form.Label>Kolor aktywny</Form.Label>
+                                    <Form.Control
+                                        size="sm"
+                                        type="color"
+                                        className="mobile-button-color flex-grow-1"
+                                        value={activeCfg.activeColor || '#2fa7c5'}
+                                        onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
+                                    />
+                                    <Button size="sm" variant="secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
+                                </Form.Group>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
             <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mt-2">

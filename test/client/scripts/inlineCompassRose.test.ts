@@ -15,9 +15,9 @@ class FakeClient {
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
-function parseExits(detail: any): string[] {
+function parseExits(detail: any): { standard: string[]; special: string[] } {
   let list: string[] = [];
-  if (!detail) return list;
+  if (!detail) return { standard: [], special: [] };
   if (Array.isArray(detail)) {
     list = detail;
   } else if (Array.isArray(detail.exits)) {
@@ -28,9 +28,20 @@ function parseExits(detail: any): string[] {
     const e = detail.room.exits;
     list = Array.isArray(e) ? e : Object.keys(e);
   }
-  return list
-    .map((e) => getShortDir(e))
-    .filter((dir) => VALID_SHORT_DIRS.has(dir));
+
+  const standard: string[] = [];
+  const special: string[] = [];
+
+  list.forEach((exit) => {
+    const shortDir = getShortDir(exit);
+    if (VALID_SHORT_DIRS.has(shortDir)) {
+      standard.push(shortDir);
+    } else {
+      special.push(exit);
+    }
+  });
+
+  return { standard, special };
 }
 
 describe('InlineCompassRose parsing', () => {
@@ -38,13 +49,27 @@ describe('InlineCompassRose parsing', () => {
   initInlineCompassRose((client as unknown) as any);
 
   test('parseExits accepts various formats', () => {
-    expect(parseExits(['north', 'south'])).toEqual(['n', 's']);
-    expect(parseExits({ exits: ['east', 'west'] })).toEqual(['e', 'w']);
-    expect(parseExits({ exits: { north: 1, south: 2 } })).toEqual(['n', 's']);
-    expect(parseExits({ room: { exits: { up: 3 } } })).toEqual(['u']);
+    expect(parseExits(['north', 'south'])).toEqual({ standard: ['n', 's'], special: [] });
+    expect(parseExits({ exits: ['east', 'west'] })).toEqual({ standard: ['e', 'w'], special: [] });
+    expect(parseExits({ exits: { north: 1, south: 2 } })).toEqual({ standard: ['n', 's'], special: [] });
+    expect(parseExits({ room: { exits: { up: 3 } } })).toEqual({ standard: ['u'], special: [] });
   });
 
   test('parseExits converts directions', () => {
-    expect(parseExits(['polnoc', 'south', 'north', 'unknown'])).toEqual(['n', 's', 'n']);
+    expect(parseExits(['polnoc', 'south', 'north', 'unknown'])).toEqual({ standard: ['n', 's', 'n'], special: ['unknown'] });
+  });
+
+  test('parseExits separates standard and special exits', () => {
+    expect(parseExits(['north', 'secret passage', 'east', 'wejscie'])).toEqual({
+      standard: ['n', 'e'],
+      special: ['secret passage', 'wejscie']
+    });
+  });
+
+  test('parseExits handles multiple special exits', () => {
+    expect(parseExits(['north', 'exit1', 'exit2', 'exit3', 'exit4', 'south'])).toEqual({
+      standard: ['n', 's'],
+      special: ['exit1', 'exit2', 'exit3', 'exit4']
+    });
   });
 });

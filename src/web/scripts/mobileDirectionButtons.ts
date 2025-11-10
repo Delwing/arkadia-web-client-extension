@@ -1,5 +1,5 @@
 import Client from "@client/Client";
-import { formatLabel } from "@client/scripts/functionalBind";
+import {formatLabel} from "@client/scripts/functionalBind";
 import {
     loadSettings as loadMobileButtonSettings,
     ButtonSetting,
@@ -7,8 +7,8 @@ import {
     defaultFontColor,
     defaultBackground,
 } from "../mobileButtonSettings";
-import { getItemSync, setItemSync } from "@modules/core/storage";
-import { getShortDir } from "@shared/map/directions";
+import {getItemSync, setItemSync} from "@modules/core/storage";
+import {getShortDir} from "@shared/map/directions";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];
@@ -60,11 +60,11 @@ export default class MobileDirectionButtons {
     private collapsed = false;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
     private allSettings: Settings = {
-        solo: { buttons: {}, order: [], cols: 0, background: defaultBackground },
-        team: { buttons: {}, order: [], cols: 0, background: defaultBackground },
-        leader: { buttons: {}, order: [], cols: 0, background: defaultBackground },
+        solo: {buttons: {}, order: [], cols: 0, background: defaultBackground},
+        team: {buttons: {}, order: [], cols: 0, background: defaultBackground},
+        leader: {buttons: {}, order: [], cols: 0, background: defaultBackground},
         locked: false,
-        radial: { enabled: true, commands: [] },
+        radial: {enabled: true, commands: []},
     };
     private buttonSettings: Record<string, ButtonSetting> = {};
     private teamMode = false;
@@ -413,8 +413,8 @@ export default class MobileDirectionButtons {
         this.applySavedPosition();
         requestAnimationFrame(() => this.clampToView(true));
         // Add touch event listeners for long press and drag
-        this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
-        this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+        this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), {passive: false});
+        this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), {passive: false});
         this.container.addEventListener('touchend', this.handleTouchEnd.bind(this));
         this.container.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
 
@@ -469,7 +469,7 @@ export default class MobileDirectionButtons {
         const y = Number(candidate?.y);
         if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
         const origin = candidate?.origin === 'right' ? 'right' : DEFAULT_ORIGIN;
-        return { x, y, origin };
+        return {x, y, origin};
     }
 
     private normalizeSavedPositions(raw: unknown): Partial<Record<Orientation, StoredPosition>> {
@@ -490,7 +490,7 @@ export default class MobileDirectionButtons {
         const fallback = this.sanitizePosition(source);
         if (fallback) {
             ORIENTATIONS.forEach(orientation => {
-                positions[orientation] = { ...fallback };
+                positions[orientation] = {...fallback};
             });
         }
         return positions;
@@ -724,6 +724,7 @@ export default class MobileDirectionButtons {
 
     private highlightExits(exits: string[]) {
         const available = new Set(exits.map((e) => getShortDir(e)));
+
         const buttons = this.container.querySelectorAll<HTMLButtonElement>(
             'button[data-direction]'
         );
@@ -776,11 +777,11 @@ export default class MobileDirectionButtons {
         if (!this.idzList) return;
         this.idzList.innerHTML = '';
         const cmds = [
-            { label: 'idz niespiesznie', cmd: 'idz niespiesznie' },
-            { label: 'idz marszem', cmd: 'idz marszem' },
-            { label: 'idz truchtem', cmd: 'idz truchtem' },
-            { label: 'idz biegiem', cmd: 'idz biegiem' },
-            { label: 'idz s. biegiem', cmd: 'idz szybkim biegiem' },
+            {label: 'idz niespiesznie', cmd: 'idz niespiesznie'},
+            {label: 'idz marszem', cmd: 'idz marszem'},
+            {label: 'idz truchtem', cmd: 'idz truchtem'},
+            {label: 'idz biegiem', cmd: 'idz biegiem'},
+            {label: 'idz s. biegiem', cmd: 'idz szybkim biegiem'},
         ];
         cmds.forEach(c => {
             const b = document.createElement('button');
@@ -817,6 +818,19 @@ export default class MobileDirectionButtons {
     private applyConfigToButton(id: string, btn: HTMLButtonElement) {
         const cfg = this.buttonSettings[id];
         if (!cfg) return;
+
+        // Handle color syncing for special exit buttons
+        let effectiveColor = cfg.color;
+        let effectiveActiveColor = cfg.activeColor;
+        if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
+            // Find a direction button to sync colors from
+            const directionButton = Object.values(this.buttonSettings).find(b => b.macro === 'kierunek');
+            if (directionButton) {
+                effectiveColor = directionButton.color;
+                effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
+            }
+        }
+
         const isEmpty = cfg.macro === 'empty' || !cfg.label;
         btn.textContent = isEmpty ? '' : cfg.label;
         if (isEmpty) {
@@ -828,12 +842,12 @@ export default class MobileDirectionButtons {
             btn.style.removeProperty('--active-color');
         } else {
             btn.classList.remove('empty');
-            btn.style.backgroundColor = cfg.color;
+            btn.style.backgroundColor = effectiveColor;
             btn.style.border = '';
             btn.style.color = cfg.fontColor || defaultFontColor;
-            if (cfg.macro === 'kierunek') {
-                btn.style.setProperty('--color', cfg.color);
-                btn.style.setProperty('--active-color', cfg.activeColor || '#2fa7c5');
+            if (cfg.macro === 'kierunek' || (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
+                btn.style.setProperty('--color', effectiveColor);
+                btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
             } else {
                 btn.style.removeProperty('--color');
                 btn.style.removeProperty('--active-color');
@@ -973,7 +987,7 @@ export default class MobileDirectionButtons {
                     const firstExit = Object.keys(specialExits)[0];
                     if (firstExit) {
                         this.client.sendCommand(firstExit);
-                        }
+                    }
                     break;
             }
         };
@@ -985,15 +999,27 @@ export default class MobileDirectionButtons {
             this.updateMoveModeButton(newBtn);
             newBtn.disabled = this.client.carriageMode;
         } else if (cfg.macro === 'specialExit') {
+            // Add direction-button class if activeColor is supported
+                newBtn.classList.add('direction-button');
+                newBtn.classList.add('mobile-button-text');
+
             const updateLabel = () => {
                 const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
                 const firstExit = Object.keys(specialExits)[0];
                 if (firstExit) {
                     newBtn.textContent = firstExit.length > 5 ? firstExit.slice(0, 4) + '…' : firstExit;
                     newBtn.title = firstExit;
+                    newBtn.dataset.direction = firstExit;
+                    // Add exit-available class when special exit exists
+                    if (effectiveActiveColor || cfg.syncWithDirections) {
+                        newBtn.classList.add('exit-available');
+                    }
                 } else {
                     newBtn.textContent = cfg.label;
                     newBtn.title = '';
+                    newBtn.dataset.direction = cfg.label;
+                    // Remove exit-available class when no special exit
+                    newBtn.classList.remove('exit-available');
                 }
             };
             this.client.on('enterLocation', () => updateLabel());
