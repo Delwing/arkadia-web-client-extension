@@ -40,6 +40,7 @@ const characterScopedKeys = new Set([
     'mapperRoomId',
     'lastLang',
     'object_num',
+    'clock_active_domain',
     LUA_GAGS_STORAGE_KEY,
 ]);
 

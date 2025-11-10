@@ -1,6 +1,7 @@
 import {Trigger} from "@client/Triggers.ts";
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
+import {getItemSync, setItemSync} from "@modules/core/storage.ts";
 
 type Domain = "Empire" | "Ishtar";
 
@@ -220,10 +221,23 @@ class ClockDisplay {
     public setActiveDomain(domain: Domain): void {
         this.activeDomain = domain;
         eventBus.emit("clock.domain.active", { domain });
+        this.saveActiveDomain(domain);
     }
 
     public getActiveDomain(): Domain | undefined {
         return this.activeDomain;
+    }
+
+    public restoreActiveDomain(): void {
+        const saved = getItemSync("clock_active_domain")?.clock_active_domain;
+        if (saved === "Empire" || saved === "Ishtar") {
+            this.activeDomain = saved;
+            eventBus.emit("clock.domain.active", { domain: saved });
+        }
+    }
+
+    private saveActiveDomain(domain: Domain): void {
+        setItemSync("clock_active_domain", domain);
     }
 }
 
@@ -665,6 +679,8 @@ export class ClockManager {
     }
 
     public start(): void {
+        // Restore last active domain before starting clocks
+        this.display.restoreActiveDomain();
         this.empireClock.start();
         this.ishtarClock.start();
     }
@@ -675,6 +691,10 @@ export class ClockManager {
 
     public getActiveDomain(): Domain | undefined {
         return this.display.getActiveDomain();
+    }
+
+    public restoreActiveDomain(): void {
+        this.display.restoreActiveDomain();
     }
 }
 
@@ -688,6 +708,14 @@ export function initClock(client: Client): ClockManager {
             eventBus.emit("clock.popup.open", { domain: activeDomain })
         }
     })
+
+    // Restore active domain when character info arrives (after login)
+    client.on('gmcp.char.info', (info) => {
+        const detail = info as any;
+        if (detail?.name) {
+            manager.restoreActiveDomain();
+        }
+    });
 
     manager.start();
     return manager;

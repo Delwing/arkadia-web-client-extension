@@ -11,6 +11,15 @@ import type Client from "../Client";
  * - Listens to "clock.sunrise" and "clock.sunset" events
  * - Sends HTTP POST requests with observed time data
  * - Logs console messages for debugging
+ * - State machine: only logs after at least one successful time check
+ *
+ * States:
+ * - "waiting": Initial state, waiting for first time check
+ * - "active": At least one time check done, logging enabled
+ *
+ * State transitions:
+ * - "waiting" -> "active": When clock.update event fires (time check)
+ * - "active" -> "waiting": When reset event fires
  *
  * Setup:
  * 1. Update API_ENDPOINT with your actual server URL
@@ -33,7 +42,34 @@ import type Client from "../Client";
 export default function initSunCalendarLogger(_client: Client) {
     const API_ENDPOINT = "https://arkadia-calendar.delwing.workers.dev/events";
 
+    // State machine: only log after at least one time check
+    const state: { empire: "waiting" | "active"; ishtar: "waiting" | "active" } = {
+        empire: "waiting",
+        ishtar: "waiting"
+    };
+
+    // Listen for clock updates (time checks) to enable logging
+    eventBus.on("clock.update", (data) => {
+        if (data.domain === "Empire") {
+            state.empire = "active";
+        } else if (data.domain === "Ishtar") {
+            state.ishtar = "active";
+        }
+    });
+
+    // Listen for reset events to disable logging
+    eventBus.on("reset", () => {
+        state.empire = "waiting";
+        state.ishtar = "waiting";
+    });
+
     eventBus.on("clock.sunrise", async (data) => {
+        // Only log if we've had at least one time check for this domain
+        const domainState = data.domain === "Empire" ? state.empire : state.ishtar;
+        if (domainState !== "active") {
+            return;
+        }
+
         try {
             await sendObservation("sunrise", data);
         } catch (error) {
@@ -42,6 +78,12 @@ export default function initSunCalendarLogger(_client: Client) {
     });
 
     eventBus.on("clock.sunset", async (data) => {
+        // Only log if we've had at least one time check for this domain
+        const domainState = data.domain === "Empire" ? state.empire : state.ishtar;
+        if (domainState !== "active") {
+            return;
+        }
+
         try {
             await sendObservation("sunset", data);
         } catch (error) {
