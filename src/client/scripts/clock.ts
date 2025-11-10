@@ -421,8 +421,7 @@ export class ArkadiaTime {
     }
 
     private calculateHour(hour: string, expression: string): number {
-        const intHour = DESCRIPTIVE_TIME[hour] ?? 0;
-        let value = intHour;
+        let value = DESCRIPTIVE_TIME[hour] ?? 0;
         const pmFn = PM[expression];
         if (pmFn && pmFn(value)) {
             value += 12;
@@ -587,17 +586,17 @@ export class ArkadiaTime {
         const [observedHour, observedMinutes] = this.getCurrentTime();
         const currentDay = this.getCurrentDayOfYear();
 
-        // Emit sunrise event for calendar building
-        eventBus.emit("clock.sunrise", {
-            domain: this.domain,
-            dayOfYear: currentDay,
-            observedHour,
-            observedMinutes
-        });
-
         // If observed time is not exactly on the hour, round up to next full hour
         // e.g., 4:59 should become 5:00
         const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
+
+        // Emit sunrise event for calendar building with the ROUNDED hour
+        eventBus.emit("clock.sunrise", {
+            domain: this.domain,
+            dayOfYear: currentDay,
+            observedHour: finalHour,
+            observedMinutes: 0
+        });
 
         // Compare with month table expectations for mismatch detection
         if (this.currentMonth) {
@@ -629,17 +628,17 @@ export class ArkadiaTime {
         const [observedHour, observedMinutes] = this.getCurrentTime();
         const currentDay = this.getCurrentDayOfYear();
 
-        // Emit sunset event for calendar building
-        eventBus.emit("clock.sunset", {
-            domain: this.domain,
-            dayOfYear: currentDay,
-            observedHour,
-            observedMinutes
-        });
-
         // If observed time is not exactly on the hour, round up to next full hour
         // e.g., 20:59 should become 21:00
         const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
+
+        // Emit sunset event for calendar building with the ROUNDED hour
+        eventBus.emit("clock.sunset", {
+            domain: this.domain,
+            dayOfYear: currentDay,
+            observedHour: finalHour,
+            observedMinutes: 0
+        });
 
         // Compare with month table expectations for mismatch detection
         if (this.currentMonth) {
