@@ -1,9 +1,8 @@
 import Client from "../Client";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 export default function initNoWeaponAlert(client: Client) {
     const tag = 'no-weapon-alert';
-    const RED = createColorFormat("#ff0000");
     const patterns = [
         /(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz|Ranisz|Powaznie ranisz|Bardzo ciezko ranisz|Masakrujesz) (?<target>.+?) (lew\w+|praw\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)/,
         /^Wykonujesz zamach ((lewym|prawym) butem) mierzac w (?<target>.+?), lecz t(a|en) paruje go .*\.$/
@@ -18,7 +17,11 @@ export default function initNoWeaponAlert(client: Client) {
         timer = window.setTimeout(() => {
             timer = null;
         }, 5000);
-        const msg = colorString(` >> Walczysz bez broni!`, RED);
+        const msg = new AnsiAwareBuffer();
+        msg.insert(0, ` >> Walczysz bez broni!`, {
+            foreground: { space: "hex", color: "#ff0000" },
+            slowBlink: true
+        });
         client.println(msg);
         return line;
     }

@@ -1,6 +1,5 @@
 import initNoWeaponAlert from '@client/scripts/noWeaponAlert';
 import Triggers from '@client/Triggers';
-import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
@@ -12,7 +11,6 @@ class FakeClient {
 describe('no weapon alert', () => {
   let client: FakeClient;
   let parse: (line: string) => AnsiAwareBuffer | null;
-  const color = createColorFormat('#ff0000');
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -29,8 +27,16 @@ describe('no weapon alert', () => {
   test('prints colored message on match', () => {
     parse('Probujesz trafic Orka lewym piescia');
     expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
-    const expected = colorString(' >> Walczysz bez broni!', color);
-    expect(client.println).toHaveBeenCalledWith(expected);
+
+    expect(client.println).toHaveBeenCalledTimes(1);
+    const call = client.println.mock.calls[0][0];
+    expect(call).toBeInstanceOf(AnsiAwareBuffer);
+    expect(call.text).toBe(' >> Walczysz bez broni!');
+
+    const segments = call.getSegments();
+    expect(segments).toHaveLength(1);
+    expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#ff0000" });
+    expect(segments[0].state?.slowBlink).toBe(true);
   });
 
   test('throttles alerts', () => {

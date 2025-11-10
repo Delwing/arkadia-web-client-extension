@@ -36,6 +36,8 @@ export interface FormatStateSnapshot {
     underline?: boolean;
     inverse?: boolean;
     strikethrough?: boolean;
+    slowBlink?: boolean;
+    rapidBlink?: boolean;
     hyperlink?: FormatHyperlink;
 }
 
@@ -90,7 +92,9 @@ function hasVisualFormatting(state?: FormatStateSnapshot): boolean {
         state.italic ||
         state.underline ||
         state.inverse ||
-        state.strikethrough
+        state.strikethrough ||
+        state.slowBlink ||
+        state.rapidBlink
     );
 }
 
@@ -108,6 +112,8 @@ function cloneState(state?: FormatStateSnapshot): FormatStateSnapshot | undefine
         underline: state.underline,
         inverse: state.inverse,
         strikethrough: state.strikethrough,
+        slowBlink: state.slowBlink,
+        rapidBlink: state.rapidBlink,
         hyperlink: state.hyperlink ? {...state.hyperlink} : undefined,
     };
 }
@@ -123,6 +129,8 @@ function statesEqual(a?: FormatStateSnapshot, b?: FormatStateSnapshot): boolean 
         !!a.underline === !!b.underline &&
         !!a.inverse === !!b.inverse &&
         !!a.strikethrough === !!b.strikethrough &&
+        !!a.slowBlink === !!b.slowBlink &&
+        !!a.rapidBlink === !!b.rapidBlink &&
         hyperlinksEqual(a.hyperlink, b.hyperlink)
     );
 }
@@ -138,6 +146,8 @@ class FormatState {
     underline?: boolean;
     inverse?: boolean;
     strikethrough?: boolean;
+    slowBlink?: boolean;
+    rapidBlink?: boolean;
     hyperlink?: FormatHyperlink;
 
     constructor(initial?: FormatStateSnapshot) {
@@ -154,6 +164,8 @@ class FormatState {
         this.underline = snapshot.underline ? true : undefined;
         this.inverse = snapshot.inverse ? true : undefined;
         this.strikethrough = snapshot.strikethrough ? true : undefined;
+        this.slowBlink = snapshot.slowBlink ? true : undefined;
+        this.rapidBlink = snapshot.rapidBlink ? true : undefined;
         this.hyperlink = snapshot.hyperlink ? {...snapshot.hyperlink} : undefined;
     }
 
@@ -165,6 +177,8 @@ class FormatState {
         this.underline = undefined;
         this.inverse = undefined;
         this.strikethrough = undefined;
+        this.slowBlink = undefined;
+        this.rapidBlink = undefined;
     }
 
     toSnapshot(): FormatStateSnapshot {
@@ -176,6 +190,8 @@ class FormatState {
             underline: this.underline ? true : undefined,
             inverse: this.inverse ? true : undefined,
             strikethrough: this.strikethrough ? true : undefined,
+            slowBlink: this.slowBlink ? true : undefined,
+            rapidBlink: this.rapidBlink ? true : undefined,
             hyperlink: this.hyperlink ? {...this.hyperlink} : undefined,
         };
     }
@@ -200,6 +216,12 @@ class FormatState {
                 case 4:
                     this.underline = true;
                     break;
+                case 5:
+                    this.slowBlink = true;
+                    break;
+                case 6:
+                    this.rapidBlink = true;
+                    break;
                 case 7:
                     this.inverse = true;
                     break;
@@ -214,6 +236,10 @@ class FormatState {
                     break;
                 case 24:
                     this.underline = undefined;
+                    break;
+                case 25:
+                    this.slowBlink = undefined;
+                    this.rapidBlink = undefined;
                     break;
                 case 27:
                     this.inverse = undefined;
@@ -796,6 +822,18 @@ export class AnsiAwareBuffer {
 
             if (styles.length > 0) {
                 element.style.cssText = styles.join("; ");
+            }
+
+            // Apply blink CSS classes
+            const classes: string[] = [];
+            if (state.slowBlink) {
+                classes.push('ansi-slow-blink');
+            }
+            if (state.rapidBlink) {
+                classes.push('ansi-rapid-blink');
+            }
+            if (classes.length > 0) {
+                element.className = classes.join(' ');
             }
 
             fragment.appendChild(element);

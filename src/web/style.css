@@ -3286,3 +3286,35 @@ body.mobile-command-radial-active {
     border-radius: 0.65rem;
   }
 }
+
+/* ANSI blink animations */
+/* Slow blink: < 150 per minute (1 blink per second) */
+@keyframes ansi-slow-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Rapid blink: 150+ per minute (2 blinks per second) */
+@keyframes ansi-rapid-blink {
+  0%, 24% {
+    opacity: 1;
+  }
+  25%, 74% {
+    opacity: 0;
+  }
+  75%, 100% {
+    opacity: 1;
+  }
+}
+
+.ansi-slow-blink {
+  animation: ansi-slow-blink 1s infinite;
+}
+
+.ansi-rapid-blink {
+  animation: ansi-rapid-blink 1s infinite;
+}

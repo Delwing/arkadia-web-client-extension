@@ -101,6 +101,8 @@ export interface FormatStateSnapshot {
   underline?: boolean;
   inverse?: boolean;
   strikethrough?: boolean;
+  slowBlink?: boolean;
+  rapidBlink?: boolean;
   hyperlink?: FormatHyperlink;
 }
 
