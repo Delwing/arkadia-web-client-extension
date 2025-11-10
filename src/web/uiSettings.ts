@@ -39,6 +39,7 @@ export interface UiSettings {
     clearInputOnSend: boolean;
     showTransportLabel: boolean;
     showCombatTimer: boolean;
+    showClockDisplay: boolean;
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
@@ -67,6 +68,7 @@ const defaultSettings: UiSettings = {
     clearInputOnSend: false,
     showTransportLabel: true,
     showCombatTimer: true,
+    showClockDisplay: true,
     fontFamily: 'default',
     customFontUrl: '',
     customFontFamily: '',
@@ -232,6 +234,13 @@ function apply(settings: UiSettings) {
             combatTimer.className = '';
         }
     }
+    const clockDisplay = document.getElementById('clock-display');
+    if (clockDisplay) {
+        clockDisplay.dataset.enabled = settings.showClockDisplay ? '1' : '0';
+        if (!settings.showClockDisplay) {
+            clockDisplay.style.display = 'none';
+        }
+    }
     const objects = document.getElementById('objects-list');
     if (objects) {
         if (resolvedFontFamily) {
@@ -308,6 +317,7 @@ function apply(settings: UiSettings) {
         clearInputOnSend: settings.clearInputOnSend,
         showTransportLabel: settings.showTransportLabel,
         showCombatTimer: settings.showCombatTimer,
+        showClockDisplay: settings.showClockDisplay,
         autoLowercaseCommands: settings.autoLowercaseCommands,
     };
     eventBus.emit('uiSettings', payload);
@@ -372,6 +382,9 @@ async function load(): Promise<UiSettings> {
             const showCombatTimer = typeof parsed.showCombatTimer === 'boolean'
                 ? parsed.showCombatTimer
                 : defaultSettings.showCombatTimer;
+            const showClockDisplay = typeof parsed.showClockDisplay === 'boolean'
+                ? parsed.showClockDisplay
+                : defaultSettings.showClockDisplay;
             const autoLowercaseCommands = typeof parsed.autoLowercaseCommands === 'boolean'
                 ? parsed.autoLowercaseCommands
                 : defaultSettings.autoLowercaseCommands;
@@ -394,6 +407,7 @@ async function load(): Promise<UiSettings> {
                 clearInputOnSend,
                 showTransportLabel,
                 showCombatTimer,
+                showClockDisplay,
                 fontFamily,
                 customFontUrl: normalizedCustomFontUrl,
                 customFontFamily,
@@ -439,6 +453,7 @@ export default async function initUiSettings() {
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
     const showCombatTimerInput = modalEl.querySelector('#ui-show-combat-timer') as HTMLInputElement;
+    const showClockDisplayInput = modalEl.querySelector('#ui-show-clock-display') as HTMLInputElement;
     const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
     const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
     const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
@@ -470,6 +485,7 @@ export default async function initUiSettings() {
         clearInputOnSendInput.checked = settings.clearInputOnSend;
         showTransportLabelInput.checked = settings.showTransportLabel;
         showCombatTimerInput.checked = settings.showCombatTimer;
+        showClockDisplayInput.checked = settings.showClockDisplay;
         fontFamilyInput.value = settings.fontFamily;
         customFontUrlInput.value = settings.customFontUrl;
         customFontFamilyInput.value = settings.customFontFamily;
@@ -658,6 +674,7 @@ export default async function initUiSettings() {
             clearInputOnSend: clearInputOnSendInput.checked,
             showTransportLabel: showTransportLabelInput.checked,
             showCombatTimer: showCombatTimerInput.checked,
+            showClockDisplay: showClockDisplayInput.checked,
             fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultSettings.fontFamily,
             customFontUrl: (() => {
                 const value = customFontUrlInput.value.trim();

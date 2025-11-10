@@ -12,7 +12,8 @@ import {
   MultiBinds,
   CharState,
   AttackMode,
-  PackageStatus
+  PackageStatus,
+  ClockDisplay
 } from "./components";
 
 type MountResult = {
@@ -29,6 +30,7 @@ export const mountMigratedComponents = (): MountResult => {
   const componentConfigs = [
     { id: "package-status", Component: PackageStatus },
     { id: "attack-mode", Component: AttackMode },
+    { id: "clock-display", Component: ClockDisplay },
     { id: "lamp-timer", Component: LampTimer },
     { id: "cover-timer", Component: CoverTimer },
     { id: "zask-timer", Component: ZaskTimer },

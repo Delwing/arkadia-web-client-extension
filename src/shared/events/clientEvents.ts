@@ -40,6 +40,40 @@ export type PackageStatus = {
     seconds?: number
 }
 
+type ClockUpdatePayload = {
+    domain: "Empire" | "Ishtar";
+    hours: number;
+    minutes: number;
+    precision: number;
+    sunrise: number | string | "?";
+    sunset: number | string | "?";
+    dayLabel: string;
+    dayOfMonth: number;
+    dayOfYear: number;
+    daylight?: boolean;
+    season?: number;
+}
+
+type ClockDomainActivePayload = {
+    domain: "Empire" | "Ishtar";
+}
+
+type ClockMismatchPayload = {
+    domain: "Empire" | "Ishtar";
+    type: "sunrise" | "sunset";
+    dayOfYear: number;
+    expectedHour: number;
+    observedHour: number;
+    observedMinutes: number;
+}
+
+type ClockSunEventPayload = {
+    domain: "Empire" | "Ishtar";
+    dayOfYear: number;
+    observedHour: number;
+    observedMinutes: number;
+}
+
 type PluginLoadedPayload = {
     url: string;
     info: PluginInfo;
@@ -136,6 +170,12 @@ export interface KnownEvents {
     "plugin:loaded": PluginLoadedPayload;
     "plugin:error": PluginErrorPayload;
     "plugin:destroyed": PluginDestroyedPayload;
+    "clock.update": ClockUpdatePayload;
+    "clock.domain.active": ClockDomainActivePayload;
+    "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+    "clock.mismatch": ClockMismatchPayload;
+    "clock.sunrise": ClockSunEventPayload;
+    "clock.sunset": ClockSunEventPayload;
 }
 
 export type ClientEvents = KnownEvents & {

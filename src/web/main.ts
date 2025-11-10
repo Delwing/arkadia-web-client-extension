@@ -17,6 +17,7 @@ import initSessionLogger from "./sessionLogger";
 import LetterComposer from "./LetterComposer";
 import KnowledgeReport from "./KnowledgeReport";
 import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
+import ClockPopup from "./ClockPopup";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
@@ -1684,6 +1685,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const knowledgeDetailsRoot = document.getElementById('knowledge-details-root');
     if (knowledgeDetailsRoot) {
         createRoot(knowledgeDetailsRoot).render(createElement(KnowledgeDetailsReport));
+    }
+
+    const clockRoot = document.getElementById('clock-root');
+    if (clockRoot) {
+        createRoot(clockRoot).render(createElement(ClockPopup));
     }
 });
 

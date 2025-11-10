@@ -96,6 +96,8 @@ import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
 import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
+import {initClock} from "@client/scripts/clock.ts";
+import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -280,5 +282,7 @@ export function registerScripts(client: Client) {
     initKillTracker(client)
     initPackageHelper(client)
     initInlineCompassRose(client)
+    initClock(client)
+    initSunCalendarLogger(client)
 
 }
