@@ -271,7 +271,7 @@ class ArkadiaClient implements ClientAdapter {
         if (client) {
             const parts = client.onLine(text, type);
             parts.forEach((part) => {
-                eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part.text), {once: true})
+                eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part), {once: true})
                 this.output(part, type);
             })
 

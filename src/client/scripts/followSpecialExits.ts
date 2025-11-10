@@ -20,6 +20,10 @@ export default function initFollowSpecialExits(client: Client) {
             command: "otworz sarkofag;wejdz do sarkofagu"
         },
         {
+            pattern: /wchodzi do starego sarkofagu\./,
+            command: "wejdz do sarkofagu"
+        },
+        {
             pattern: /napina sie i probuje podwazyc jeden z glazow, ktory po chwili ustepuje ujawniajac spora/,
             command: "podwaz czarny glaz"
         },

@@ -140,5 +140,5 @@ export interface KnownEvents {
 
 export type ClientEvents = KnownEvents & {
     [key: `gmcp.${string}`]: unknown;
-    [key: `gmcp_msg.${string}`]: string;
+    [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
 };

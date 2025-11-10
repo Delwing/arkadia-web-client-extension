@@ -34,6 +34,7 @@ interface AccumulatedObjectData {
 export default class TeamManager {
     private client: Client;
     private members: Set<string> = new Set();
+    private teamMemberDescriptions: Map<string, string> = new Map();
     private joined = false;
     private leader?: string;
     private leaderId?: string;
@@ -187,6 +188,12 @@ export default class TeamManager {
             return;
         }
 
+        const previousName = this.teamMemberDescriptions.get(id);
+        if (previousName && previousName !== name) {
+            this.members.delete(previousName);
+        }
+
+        this.teamMemberDescriptions.set(id, name);
         this.addMember(name);
         this.checkTeamLeader(obj, id);
     }
@@ -273,6 +280,14 @@ export default class TeamManager {
 
     private removeMember(name: string) {
         const hadMember = this.members.delete(name);
+
+        for (const [id, desc] of this.teamMemberDescriptions.entries()) {
+            if (desc === name) {
+                this.teamMemberDescriptions.delete(id);
+                break;
+            }
+        }
+
         if (this.leader === name) {
             this.leader = undefined;
         }
@@ -311,6 +326,7 @@ export default class TeamManager {
     clearTeam() {
         const hadMembers = this.members.size > 0 || this.leader !== undefined;
         this.members.clear();
+        this.teamMemberDescriptions.clear();
         this.leader = undefined;
         this.joined = false;
         if (hadMembers) {

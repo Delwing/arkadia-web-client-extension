@@ -963,7 +963,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     }
 
     function updateCurrentLibrary(room: any) {
-        const internalId: string | undefined = room?.userData?.internal_id;
+        const internalId: string | undefined = room?.userData?.internal_id?.trim();
         if (!internalId || !currentSnapshot?.data.libraries[internalId]) {
             currentLibraryId = null;
             return;

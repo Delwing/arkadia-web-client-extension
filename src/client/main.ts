@@ -1,5 +1,5 @@
 import People from "./People";
-import registerLuaGagTriggers from "./scripts/./luaGags";
+import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
 import initPausers from './scripts/pausers'

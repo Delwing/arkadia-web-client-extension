@@ -84,8 +84,16 @@ export default class People {
             }
 
             const descCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
-                const index = matches.index || 0
                 const token = matches[0]
+
+                // Find the description in the current line text (which may have been modified by previous triggers)
+                const indices = this.findTokenIndices(line.text, token)
+                if (indices.length === 0) {
+                    return line
+                }
+
+                // Use the first match
+                const index = indices[0]
                 const plainSuffix = line.text.substring(index + token.length)
                 const nextWord = plainSuffix
                     .toLowerCase()

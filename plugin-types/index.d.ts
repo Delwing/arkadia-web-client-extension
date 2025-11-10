@@ -717,7 +717,7 @@ export interface ClientEvents {
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
   [key: `gmcp.${string}`]: unknown;
   /** GMCP message events */
-  [key: `gmcp_msg.${string}`]: string;
+  [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
 }
 
 // ============================================================================
