@@ -418,22 +418,6 @@ function normalizeCategory(category: string, library: KnowledgeLibraryEntry): st
     return null;
 }
 
-function formatCategory(
-    client: Client,
-    category: string,
-    status: KnowledgeCategoryStatus,
-): AnsiAwareBuffer {
-    const dativeCategory = getDativeCategoryName(category);
-    const buffer = colorString(category, STATUS_COLORS[status]);
-    buffer.createLink([0, category.length], {
-        onClick: () => {
-            client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
-        },
-        title: `Kliknij aby zgłębić wiedzę o: ${dativeCategory}`
-    });
-    return buffer;
-}
-
 function getUniqueLibraryCategories(library: KnowledgeLibraryEntry): string[] {
     const seen = new Set<string>();
     const unique: string[] = [];
@@ -1120,7 +1104,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const header = colorString(library.name, HEADER_COLOR);
         const lines = categories.map((category) => {
             const status = libraryProgress[category] ?? 'not_started';
-            return formatCategory(client, category, status).prepend(' - ').suffix('\n');
+            const dativeCategory = getDativeCategoryName(category);
+            const buffer = new AnsiAwareBuffer(' - ');
+            const startPos = buffer.text.length;
+            buffer.insert(startPos, category, STATUS_COLORS[status]);
+            buffer.createLink([startPos, startPos + category.length], {
+                onClick: () => {
+                    client.sendCommand(`zglebiaj wiedze o ${dativeCategory}`);
+                },
+                title: `Kliknij aby zgłębić wiedzę o: ${dativeCategory}`
+            });
+            buffer.suffix('\n');
+            return buffer;
         });
 
         [header, ...lines].forEach((line) => {
