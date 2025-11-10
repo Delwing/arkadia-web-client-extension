@@ -1375,7 +1375,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     function openKnowledgeDetailsReport() {
         if (!knowledgeDetailsSnapshot) {
-            client.println('Dane wiedzy nie sa jeszcze dostepne. Uzyj /wiedza_buduj, aby je zbudowac.');
+            const msg = new AnsiAwareBuffer('Dane wiedzy nie sa jeszcze dostepne. Uzyj /wiedza_buduj, aby je zbudowac.');
+            const cmdStart = msg.text.indexOf('/wiedza_buduj');
+            if (cmdStart >= 0) {
+                msg.createLink([cmdStart, cmdStart + 13], {
+                    onClick: () => client.sendCommand('/wiedza_buduj'),
+                    title: 'Kliknij aby zbudować dane wiedzy'
+                });
+            }
+            client.println(msg);
             client.sendEvent('knowledgeDetailsReport', null);
             return;
         }
@@ -1388,9 +1396,17 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         );
 
         if (!payload) {
-            client.println(
+            const msg = new AnsiAwareBuffer(
                 'Brak zapisanych danych raportu wiedzy dla tej postaci. Uzyj /wiedza_buduj, aby je zaktualizowac.',
             );
+            const cmdStart = msg.text.indexOf('/wiedza_buduj');
+            if (cmdStart >= 0) {
+                msg.createLink([cmdStart, cmdStart + 13], {
+                    onClick: () => client.sendCommand('/wiedza_buduj'),
+                    title: 'Kliknij aby zbudować dane wiedzy'
+                });
+            }
+            client.println(msg);
             client.sendEvent('knowledgeDetailsReport', null);
             return;
         }
@@ -1559,7 +1575,16 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 'Zaktualizowano dane raportu wiedzy. Uzyj /wiedza, aby wyswietlic raport w oknie.',
             );
 
-            client.println(messages.join('\n'));
+            const msgText = messages.join('\n');
+            const msg = new AnsiAwareBuffer(msgText);
+            const cmdStart = msg.text.indexOf('/wiedza');
+            if (cmdStart >= 0) {
+                msg.createLink([cmdStart, cmdStart + 7], {
+                    onClick: () => client.sendCommand('/wiedza'),
+                    title: 'Kliknij aby otworzyć raport wiedzy'
+                });
+            }
+            client.println(msg);
         }
 
         suppressEntryHighlighting = true;
