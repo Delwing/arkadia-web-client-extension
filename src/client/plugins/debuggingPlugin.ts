@@ -78,7 +78,7 @@ export const debuggingPlugin: Plugin = {
       }
     }
 
-    const ensurePopupOpen = () => {
+    const openPopup = () => {
       if (popupHandle && popupHandle.element.isConnected) {
         popupHandle.element.focus()
         return
@@ -109,9 +109,7 @@ export const debuggingPlugin: Plugin = {
 
     api.events.on('gmcp', gmcpListener)
 
-    menuEntry = api.ui.addPopupMenuEntry('Debugging plugin', ensurePopupOpen)
-
-    ensurePopupOpen()
+    menuEntry = api.ui.addPopupMenuEntry('Debugging plugin', openPopup)
 
     teardown = () => {
       api.events.off('gmcp', gmcpListener)
