@@ -42,7 +42,11 @@
   --close-button-hover-shadow: var(--floating-close-hover-shadow);
   --pin-button-size: var(--floating-pin-size);
   --pin-button-icon-size: var(--floating-pin-icon-size);
+  --pin-button-icon: var(--floating-pin-icon);
   --pin-button-opacity: 1;
+  --pin-button-background: var(--floating-pin-background);
+  --pin-button-hover-background: var(--floating-pin-hover-background);
+  --pin-button-hover-shadow: var(--floating-pin-hover-shadow);
   --bs-body-bg: var(--surface-content);
   --bs-body-color: var(--text-primary);
   --bs-border-color: var(--surface-border);
