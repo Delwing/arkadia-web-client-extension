@@ -29,8 +29,10 @@ import type Client from "../Client";
  *      type: "sunrise" | "sunset",
  *      domain: "Empire" | "Ishtar",
  *      dayOfYear: number,
- *      hour: number,
- *      minutes: number,
+ *      hour: number,               // Corrected hour (what clock is set to)
+ *      minutes: number,            // Always 0 after correction
+ *      indicatedHour: string,      // Raw observed hour before correction (e.g., "4:59")
+ *      locationId: number | null,  // Current location/room ID
  *      timestamp: string (ISO 8601)
  *    }
  *
@@ -39,7 +41,7 @@ import type Client from "../Client";
  * - Update the MONTHS table in clock.ts with day-specific times
  * - Or create a new day-of-year lookup table
  */
-export default function initSunCalendarLogger(_client: Client) {
+export default function initSunCalendarLogger(client: Client) {
     const API_ENDPOINT = "https://arkadia-calendar.delwing.workers.dev/events";
 
     // State machine: only log after at least one time check
@@ -98,6 +100,7 @@ export default function initSunCalendarLogger(_client: Client) {
             dayOfYear: number;
             observedHour: number;
             observedMinutes: number;
+            indicatedHour?: string;
         }
     ): Promise<void> {
         const payload = {
@@ -106,10 +109,12 @@ export default function initSunCalendarLogger(_client: Client) {
             dayOfYear: data.dayOfYear,
             hour: data.observedHour,
             minutes: Math.floor(data.observedMinutes),
+            indicatedHour: data.indicatedHour,
+            locationId: client.Map.currentRoom.id,
             timestamp: new Date().toISOString()
         };
 
-        console.log(`[Sun Calendar Logger] ${type} on ${data.domain} day ${data.dayOfYear}: ${data.observedHour}:${Math.floor(data.observedMinutes).toString().padStart(2, '0')}`);
+        console.log(`[Sun Calendar Logger] ${type} on ${data.domain} day ${data.dayOfYear}: ${data.observedHour}:${Math.floor(data.observedMinutes).toString().padStart(2, '0')}${data.indicatedHour ? ` (indicated: ${data.indicatedHour})` : ''}`);
 
         try {
             const response = await fetch(API_ENDPOINT, {

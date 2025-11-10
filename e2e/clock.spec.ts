@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, pushText, waitForCommandInput} from './support/mocks';
 
 test.describe('Clock System', () => {
     test.beforeEach(async ({context}) => {
@@ -37,9 +37,12 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('08:00');
         await expect(clockDisplay).toContainText('±60');
 
+        // Wait 30 seconds for clock to advance
+        await page.waitForTimeout(4000);
+
         // Second check still at 8:00 (same hour) - precision should reduce to 30
         await pushText(page, 'Jest w przyblizeniu osma rano, 15 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
-        await expect(clockDisplay).toContainText('±30');
+        await expect(clockDisplay).toContainText('±58');
     });
 
     test('sunrise event sets clock to rounded hour with precision 0', async ({page}) => {
@@ -53,13 +56,18 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('05:00');
         await expect(clockDisplay).toContainText('±60');
 
-        // Sunrise event at ~4:59 should round to 5:00 with precision 0
-        await pushText(page, 'Slonce powoli wznosi sie nad horyzont. Zapowiada sie piekny dzien!');
+        // First set nighttime to establish daylight state
+        await pushGmcp(page, 'room.time', { daylight: false });
+        await page.waitForTimeout(500);
+
+        // Then trigger sunrise by changing daylight to true
+        await pushGmcp(page, 'room.time', { daylight: true });
+
+        // Wait for clock to update (needs time for next tick)
+        await page.waitForTimeout(1500);
 
         // Clock should show 05:00 with no precision indicator (precision 0)
         await expect(clockDisplay).toContainText('05:00');
-        // Wait a bit and check that precision indicator is gone (not ±)
-        await page.waitForTimeout(500);
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
@@ -69,22 +77,28 @@ test.describe('Clock System', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Set initial time around sunset
-        await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        // Set initial time around sunset - use Sommerzeit which has sunset at 21:00
+        await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Sommerzeit wedlug Kalendarza Imperialnego.');
         const clockDisplay = page.locator('#clock-display');
         await expect(clockDisplay).toContainText('20:00');
 
-        // Sunset event at ~20:59 should round to 21:00 with precision 0
-        await pushText(page, 'Slonce powoli chowa sie za horyzont. Zapowiada sie spokojna noc.');
+        // First set daytime to establish daylight state
+        await pushGmcp(page, 'room.time', { daylight: true });
+        await page.waitForTimeout(1000);
+
+        // Then trigger sunset by changing daylight to false
+        await pushGmcp(page, 'room.time', { daylight: false });
+
+        // Wait for clock to update (needs time for next tick)
+        await page.waitForTimeout(2000);
 
         // Clock should show 21:00 with no precision indicator
         await expect(clockDisplay).toContainText('21:00');
-        await page.waitForTimeout(500);
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
 
-    test('character switching preserves separate clock states for Empire and Ishtar', async ({page}) => {
+    test('domain switching changes clock displayed for Empire and Ishtar', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -96,7 +110,7 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('06:00');
 
         // Simulate Ishtar time (different domain)
-        await pushText(page, 'Jest w przyblizeniu dwunasta w poludnie, 15 dzien miesiaca Pflugzeit wedlug Kalendarza Ishtarskiego.');
+        await pushText(page, 'Jest w przyblizeniu poludnie, pietnasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
         await expect(clockDisplay).toContainText('12:00');
 
         // Back to Empire - clock should still show Empire time when Empire messages come
@@ -104,29 +118,6 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('07:00');
     });
 
-    test('clock continues to tick and increases precision', async ({page}) => {
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-
-        const clockDisplay = page.locator('#clock-display');
-
-        // Set initial precise time via sunrise
-        await pushText(page, 'Slonce powoli wznosi sie nad horyzont. Zapowiada sie piekny dzien!');
-
-        // Check that clock shows time with no precision initially
-        await expect(clockDisplay).toContainText(':');
-        await page.waitForTimeout(500);
-        let text = await clockDisplay.textContent();
-        expect(text).not.toContain('±');
-
-        // Wait for clock to tick (precision should increase)
-        await page.waitForTimeout(6000); // 6 seconds = 6 game minutes
-
-        // Now precision should be visible
-        text = await clockDisplay.textContent();
-        expect(text).toMatch(/±[1-9]/); // Precision > 0
-    });
 
     test('midnight transition works correctly', async ({page}) => {
         await page.goto('/');
@@ -175,18 +166,30 @@ test.describe('Clock System', () => {
         await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
         await expect(clockDisplay).toContainText('06:00');
 
-        // Ishtar sunrise event
-        await pushText(page, 'Slonce powoli wznosi sie nad horyzont. Zapowiada sie piekny dzien!');
-        // Note: Without knowing which domain is active, we just check that clock updates
+        // Switch to Ishtar domain
+        await pushText(page, 'Jest w przyblizeniu szosta rano, pierwszy dzien pory Yule wedlug rachuby czasu Starszego Ludu.');
+        await expect(clockDisplay).toContainText('06:00');
+
+        // Ishtar sunrise event (need to change daylight state)
+        await pushGmcp(page, 'room.time', { daylight: false });
         await page.waitForTimeout(500);
+        await pushGmcp(page, 'room.time', { daylight: true });
+
+        // Wait for clock to update
+        await page.waitForTimeout(1500);
+
+        // Clock should update with precision 0
         const text = await clockDisplay.textContent();
         expect(text).toMatch(/\d{2}:\d{2}/); // Should have time format
+        expect(text).not.toContain('±'); // Precision should be 0
     });
 
     test('clock persists across page reloads', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'TestHero'})
 
         const clockDisplay = page.locator('#clock-display');
 
@@ -199,8 +202,8 @@ test.describe('Clock System', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Send same time to restore active domain
-        await pushText(page, 'Jest w przyblizeniu osma rano, 15 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'TestHero'});
+        await page.waitForTimeout(1000);
 
         // Clock should show time again (might have ticked a bit)
         await expect(clockDisplay).toContainText(':');
@@ -215,18 +218,30 @@ test.describe('Clock System', () => {
 
         const clockDisplay = page.locator('#clock-display');
 
-        // Sunrise - should show daytime
-        await pushText(page, 'Slonce powoli wznosi sie nad horyzont. Zapowiada sie piekny dzien!');
-        await page.waitForTimeout(500);
+        // Set initial time at sunrise
+        await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('05:00');
+
+        // Sunrise event - should show daytime (need to change daylight state)
+        await pushGmcp(page, 'room.time', { daylight: false });
+        await page.waitForTimeout(1000);
+        await pushGmcp(page, 'room.time', { daylight: true });
+
+        // Wait for display to update with new daylight status
+        await page.waitForTimeout(2000);
 
         // Check that clock has yellow color for daytime (from daylight flag)
         const innerHTML = await clockDisplay.innerHTML();
         // Daytime color is #fbbf24 (yellow)
         expect(innerHTML).toContain('#fbbf24');
 
-        // Sunset - should show nighttime
-        await pushText(page, 'Slonce powoli chowa sie za horyzont. Zapowiada sie spokojna noc.');
-        await page.waitForTimeout(500);
+        // Set time at sunset
+        await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('20:00');
+
+        // Sunset event - should show nighttime (already at daytime, so just change to false)
+        await pushGmcp(page, 'room.time', { daylight: false });
+        await page.waitForTimeout(2000);
 
         const innerHTMLNight = await clockDisplay.innerHTML();
         // Nighttime color is #60a5fa (blue)

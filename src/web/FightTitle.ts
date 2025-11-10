@@ -3,7 +3,6 @@ import ArkadiaClient from "./ArkadiaClient.ts";
 export default class FightTitle {
   private baseTitle: string;
   private readonly originalTitle: string;
-  private client: typeof ArkadiaClient;
   private playerNum?: string;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
@@ -11,7 +10,6 @@ export default class FightTitle {
   private enabled = true;
 
   constructor(client: typeof ArkadiaClient) {
-    this.client = client;
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);

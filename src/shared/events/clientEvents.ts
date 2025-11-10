@@ -63,8 +63,9 @@ type ClockMismatchPayload = {
     type: "sunrise" | "sunset";
     dayOfYear: number;
     expectedHour: number;
-    observedHour: number;
-    observedMinutes: number;
+    observedHour: number; // Corrected hour (after rounding)
+    observedMinutes: number; // Always 0 after correction
+    indicatedHour?: string; // Raw observed hour before correction (e.g., "4:59")
 }
 
 type ClockSunEventPayload = {
@@ -72,6 +73,7 @@ type ClockSunEventPayload = {
     dayOfYear: number;
     observedHour: number;
     observedMinutes: number;
+    indicatedHour?: string; // Raw observed hour before correction (e.g., "4:59")
 }
 
 type PluginLoadedPayload = {

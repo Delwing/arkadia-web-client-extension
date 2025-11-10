@@ -254,6 +254,7 @@ export default class Client {
         });
 
         this.on('gmcp.char.info', (info) => {
+            console.log(info)
             const detail = info as any;
             if (detail?.name) {
                 setCurrentCharacter(detail.name);

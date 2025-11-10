@@ -143,12 +143,12 @@ const MONTHS_ORDER: Record<Domain, string[]> = {
 const PATTERNS: Record<Domain, RegExp[]> = {
     Empire: [
         new RegExp(
-            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*?, ((?:dzien|noc) (?<holiday>\\w+)|(?<day>.+?) dzien miesiaca (?<month>\\w+)) wedlug Kalendarza Imperialnego\\."
+            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*?, ((?:dzien|noc) (?<holiday>\\w+)|(?<day>[\\w ]+?) dzien miesiaca (?<month>\\w+)) wedlug Kalendarza Imperialnego\\."
         )
     ],
     Ishtar: [
         new RegExp(
-            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?<day>.+?) dzien pory (?<month>\\w+)"
+            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?<day>[\\w ]+?) dzien pory (?<month>\\w+) wedlug rachuby czasu Starszego Ludu\\."
         )
     ]
 };
@@ -274,8 +274,6 @@ export class ArkadiaTime {
 
     private display: ClockDisplay;
 
-    private ignoreNextGmcpUpdate = false;
-
     private isDaylight?: boolean;
 
     private startDay?: number;
@@ -330,22 +328,16 @@ export class ArkadiaTime {
 
             this.handleGmcp(Boolean(daylight))
         })
-
-        eventBus.on("client.connect", () => {
-            this.ignoreNextGmcpUpdate = true;
-        })
-
     }
 
     private handleGmcp(daylight: boolean): void {
-        if (!this.ignoreNextGmcpUpdate && this.isDaylight !== undefined && this.isDaylight !== daylight) {
+        if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (daylight) {
                 this.markObservedSunrise();
             } else {
                 this.markObservedSunset();
             }
         }
-        this.ignoreNextGmcpUpdate = false;
         this.isDaylight = daylight;
     }
 
@@ -449,14 +441,18 @@ export class ArkadiaTime {
         return Math.min(currentPrecision, Math.round(newPrecision));
     }
 
-    private getCurrentTime(): [number, number, number] {
+    private getCurrentTime(): [number, number] {
         if (this.startHour === null || this.startMinutes === null || this.startTime === null) {
-            return [0, 0, this.precision];
+            return [0, 0];
         }
         const [hoursPassed, minutesPassed] = this.getTime();
         const currentMinutes = (this.startMinutes + minutesPassed) % 60;
         const currentHour = (this.startHour + hoursPassed) % 24;
-        return [currentHour, currentMinutes, this.precision];
+        return [currentHour, currentMinutes];
+    }
+
+    private getCurrentPrecision(): number {
+        return this.precision;
     }
 
     private getTime(): [number, number] {
@@ -561,7 +557,9 @@ export class ArkadiaTime {
             this.currentMonthDay = dayOfMonth;
             this.lastMonthUpdateDay = dayOfYear;
         }
-        const [hours, minutes, precision] = this.getCurrentTime();
+        const [hours, minutes] = this.getCurrentTime();
+        // Calculate current precision based on time elapsed since it was set
+        const currentPrecision = this.getCurrentPrecision();
         const monthDef = this.currentMonth ? MONTHS[this.currentMonth] : undefined;
         const sunrise = monthDef?.sunrise ?? "?";
         const sunset = monthDef?.sunset ?? "?";
@@ -570,7 +568,7 @@ export class ArkadiaTime {
         this.display.update(this.domain, {
             hours,
             minutes,
-            precision,
+            precision: currentPrecision,
             sunrise,
             sunset,
             dayLabel: `${dayOfMonth} ${(this.mainCalendar[this.currentMonth ?? ""] ?? this.currentMonth) ?? ""}`.trim(),
@@ -590,12 +588,15 @@ export class ArkadiaTime {
         // e.g., 4:59 should become 5:00
         const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
 
-        // Emit sunrise event for calendar building with the ROUNDED hour
+        // Emit sunrise event for calendar building with BOTH:
+        // - observedHour/observedMinutes: the corrected hour (what clock is set to)
+        // - indicatedHour: the raw observed hour with precision before correction
         eventBus.emit("clock.sunrise", {
             domain: this.domain,
             dayOfYear: currentDay,
             observedHour: finalHour,
-            observedMinutes: 0
+            observedMinutes: 0,
+            indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
         });
 
         // Compare with month table expectations for mismatch detection
@@ -612,8 +613,9 @@ export class ArkadiaTime {
                         type: "sunrise",
                         dayOfYear: currentDay,
                         expectedHour,
-                        observedHour,
-                        observedMinutes
+                        observedHour: finalHour,
+                        observedMinutes: 0,
+                        indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
                     });
                 }
             }
@@ -632,12 +634,15 @@ export class ArkadiaTime {
         // e.g., 20:59 should become 21:00
         const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
 
-        // Emit sunset event for calendar building with the ROUNDED hour
+        // Emit sunset event for calendar building with BOTH:
+        // - observedHour/observedMinutes: the corrected hour (what clock is set to)
+        // - indicatedHour: the raw observed hour with precision before correction
         eventBus.emit("clock.sunset", {
             domain: this.domain,
             dayOfYear: currentDay,
             observedHour: finalHour,
-            observedMinutes: 0
+            observedMinutes: 0,
+            indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
         });
 
         // Compare with month table expectations for mismatch detection
@@ -654,8 +659,9 @@ export class ArkadiaTime {
                         type: "sunset",
                         dayOfYear: currentDay,
                         expectedHour,
-                        observedHour,
-                        observedMinutes
+                        observedHour: finalHour,
+                        observedMinutes: 0,
+                        indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
                     });
                 }
             }
