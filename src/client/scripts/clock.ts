@@ -2,6 +2,7 @@ import {Trigger} from "@client/Triggers.ts";
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
 import {getItemSync, setItemSync} from "@modules/core/storage.ts";
+import {gmcp} from "@client/gmcp.ts";
 
 type Domain = "Empire" | "Ishtar";
 
@@ -331,6 +332,7 @@ export class ArkadiaTime {
     }
 
     private handleGmcp(daylight: boolean): void {
+        console.log(this.isDaylight);
         if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (daylight) {
                 this.markObservedSunrise();
@@ -343,6 +345,10 @@ export class ArkadiaTime {
 
     private checkHour(stringHour: string, expression: string, stringDayOfMonth: string, month: string): void {
         this.display.setActiveDomain(this.domain);
+        const daylight = gmcp?.room?.time?.daylight
+        if (daylight !== undefined) {
+            this.isDaylight = Boolean(daylight)
+        }
         const intHour = this.calculateHour(stringHour, expression);
         const startDay = this.getDayOfYear(this.getDayFromString(stringDayOfMonth), month);
 
