@@ -303,6 +303,10 @@ outputWrapper.addEventListener('contextmenu', event => {
     if (event.defaultPrevented) {
         return;
     }
+    const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
+    if (isMobileLike) {
+        return;
+    }
     const target = event.target as HTMLElement | null;
     if (target && target.closest('a, [data-output-clickable]')) {
         return;
