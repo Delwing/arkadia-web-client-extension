@@ -3,7 +3,7 @@ import {createColorFormat} from "@modules/core/Colors";
 import {TextRange} from "../ansi/FormatState";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command';
+    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink';
     color?: string;
     to?: string;
     command?: string;
@@ -41,7 +41,7 @@ export default function initUserTriggers(client: Client) {
                         case 'color':
                             if (macro.color) {
                                 const color = createColorFormat(macro.color);
-                                line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]), color);
+                                line.applyFormat(matchRange, color)
                             }
                             break;
                         case 'replace':
@@ -56,6 +56,12 @@ export default function initUserTriggers(client: Client) {
                             if (macro.command) {
                                 client.sendCommand(macro.command);
                             }
+                            break;
+                        case 'slowBlink':
+                            line.applyFormat(matchRange, { slowBlink: true });
+                            break;
+                        case 'rapidBlink':
+                            line.applyFormat(matchRange, { rapidBlink: true });
                             break;
                     }
                 });

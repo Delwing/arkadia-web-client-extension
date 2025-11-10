@@ -577,6 +577,33 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    /**
+     * Applies formatting attributes to a range while preserving existing formatting.
+     * Merges the provided format state with the existing state at each position.
+     */
+    applyFormat(range: TextRange, format: FormatStateSnapshot): this {
+        const [start, end] = range;
+        if (start >= end) return this;
+
+        // Get segments that overlap with the range
+        const text = this.text.slice(start, end);
+
+        // Get the current state at the start position to merge with
+        const currentState = this.getStateAt(start);
+
+        // Merge the new format with existing formatting
+        const mergedState: FormatStateSnapshot = {
+            ...currentState,
+            ...format,
+            // Merge colors only if provided in format
+            foreground: format.foreground !== undefined ? format.foreground : currentState?.foreground,
+            background: format.background !== undefined ? format.background : currentState?.background,
+        };
+
+        this.replace([start, end], text, mergedState);
+        return this;
+    }
+
     colorWords(
         words: string | string[],
         color: number | FormatStateSnapshot,

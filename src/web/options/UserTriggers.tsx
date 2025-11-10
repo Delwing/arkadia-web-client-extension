@@ -5,7 +5,7 @@ import storage from "@modules/core/storage";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command';
+    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink';
     color?: string;
     to?: string;
     command?: string;
@@ -66,6 +66,8 @@ function MacroEditor({
                     <option value="replace">Zamień</option>
                     <option value="beep">Dźwięk</option>
                     <option value="command">Komenda</option>
+                    <option value="slowBlink">Wolne miganie</option>
+                    <option value="rapidBlink">Szybkie miganie</option>
                 </Form.Select>
                 {macro.type === 'beep' && (
                     <Form.Select
@@ -321,6 +323,10 @@ function UserTriggers() {
                     }
                     case 'command':
                         return m.command ? `command ${m.command}` : 'command';
+                    case 'slowBlink':
+                        return 'slow blink';
+                    case 'rapidBlink':
+                        return 'rapid blink';
                     default:
                         return m.type;
                 }

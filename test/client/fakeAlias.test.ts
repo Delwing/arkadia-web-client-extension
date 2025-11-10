@@ -2,9 +2,8 @@ import { emitFakeLine } from '@client/scripts/fakeLine';
 
 describe('emitFakeLine', () => {
   test('processes fake line through client pipeline', () => {
-    const parsedHtml = 'parsed-html-result';
     const parsedLine = {
-      toHtml: jest.fn(() => parsedHtml)
+      toHtml: jest.fn()
     };
     const client: any = {
       onLine: jest.fn(() => [parsedLine]),
@@ -17,8 +16,7 @@ describe('emitFakeLine', () => {
     emitFakeLine(client, 'Kolczasta wysuszona roslina.');
 
     expect(client.onLine).toHaveBeenCalledWith('Kolczasta wysuszona roslina.', 'combat.avatar');
-    expect(parsedLine.toHtml).toHaveBeenCalled();
-    expect(client.clientAdapter.output).toHaveBeenCalledWith(parsedHtml, 'combat.avatar');
+    expect(client.clientAdapter.output).toHaveBeenCalledWith(parsedLine, 'combat.avatar');
     expect(client.clientAdapter.emit).toHaveBeenCalledWith('output-sent', 1);
   });
 });

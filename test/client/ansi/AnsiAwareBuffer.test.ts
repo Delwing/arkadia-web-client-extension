@@ -113,4 +113,30 @@ describe("AnsiAwareBuffer", () => {
             expect(buffer.getStateAt(5)?.foreground).toEqual({ space: "hex", color: "#00bb00" });
         });
     });
+
+    it("applies slow blink to half of red colored text creating correct segments", () => {
+        // Start with plain text
+        const buffer = new AnsiAwareBuffer("Hello World");
+
+        // First color the entire text red
+        buffer.color([0, 11], { foreground: { space: "hex", color: "#bb0000" } });
+
+        // Then apply slow blink to first half (5 characters: "Hello")
+        buffer.applyFormat([0, 5], { slowBlink: true });
+
+        const segments = buffer.getSegments();
+
+        // Should have 2 segments
+        expect(segments).toHaveLength(2);
+
+        // First segment: "Hello" with red foreground AND slow blink
+        expect(segments[0].text).toBe("Hello");
+        expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
+        expect(segments[0].state?.slowBlink).toBe(true);
+
+        // Second segment: " World" with only red foreground (no slow blink)
+        expect(segments[1].text).toBe(" World");
+        expect(segments[1].state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
+        expect(segments[1].state?.slowBlink).toBeUndefined();
+    });
 });

@@ -20,7 +20,7 @@ export default function initNoWeaponAlert(client: Client) {
         const msg = new AnsiAwareBuffer();
         msg.insert(0, ` >> Walczysz bez broni!`, {
             foreground: { space: "hex", color: "#ff0000" },
-            slowBlink: true
+            rapidBlink: true
         });
         client.println(msg);
         return line;

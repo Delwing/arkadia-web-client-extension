@@ -36,7 +36,7 @@ describe('no weapon alert', () => {
     const segments = call.getSegments();
     expect(segments).toHaveLength(1);
     expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#ff0000" });
-    expect(segments[0].state?.slowBlink).toBe(true);
+    expect(segments[0].state?.rapidBlink).toBe(true);
   });
 
   test('throttles alerts', () => {

@@ -72,4 +72,53 @@ describe('userTriggers', () => {
     expect(result?.text).toBe('foo');
     expect(client.sendCommand).toHaveBeenCalledWith('bar');
   });
+
+  test('slowBlink applies slow blink to match', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'slowBlink' }] }];
+    apply({ key: 'triggers', value: list });
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(result?.text).toBe('bar foo baz');
+
+    const segments = result?.getSegments() ?? [];
+    const fooSegment = segments.find(seg => seg.text === 'foo');
+    expect(fooSegment).toBeDefined();
+    expect(fooSegment?.state?.slowBlink).toBe(true);
+  });
+
+  test('rapidBlink applies rapid blink to match', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'rapidBlink' }] }];
+    apply({ key: 'triggers', value: list });
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(result?.text).toBe('bar foo baz');
+
+    const segments = result?.getSegments() ?? [];
+    const fooSegment = segments.find(seg => seg.text === 'foo');
+    expect(fooSegment).toBeDefined();
+    expect(fooSegment?.state?.rapidBlink).toBe(true);
+  });
+
+  test('slowBlink preserves existing color', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'color', color: '#ff0000' }, { type: 'slowBlink' }] }];
+    apply({ key: 'triggers', value: list });
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(result?.text).toBe('bar foo baz');
+
+    const segments = result?.getSegments() ?? [];
+    const fooSegment = segments.find(seg => seg.text === 'foo');
+    expect(fooSegment).toBeDefined();
+    expect(fooSegment?.state?.foreground).toBeDefined();
+    expect(fooSegment?.state?.slowBlink).toBe(true);
+  });
 });
