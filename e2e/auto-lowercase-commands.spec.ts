@@ -96,7 +96,6 @@ test.describe('Auto lowercase commands', () => {
                 clientExists: !!client,
             };
         });
-        console.log('Debug info:', debugInfo);
         expect(debugInfo.autoLowercaseCommands, 'autoLowercaseCommands should be set in client').toBe(true);
 
         // Submit a command with uppercase letters
