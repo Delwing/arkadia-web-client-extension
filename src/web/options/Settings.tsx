@@ -444,7 +444,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                         <h5 className="character-settings-section-title">Język</h5>
                         <div className="d-flex flex-wrap gap-3 align-items-center">
                             <Form.Group className="d-flex align-items-center">
-                                <Form.Label className="me-1 mb-0">Przymiotnik:</Form.Label>
+                                <Form.Label className="me-1 mb-0">Przyslowek:</Form.Label>
                                 <Form.Control
                                     type="text"
                                     size="sm"
@@ -471,7 +471,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                             <thead>
                                 <tr>
                                     <th>Alias</th>
-                                    <th>Przymiotnik</th>
+                                    <th>Przyslowek</th>
                                     <th>Język</th>
                                     <th></th>
                                 </tr>

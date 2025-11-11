@@ -180,10 +180,6 @@ const ClockPopup: React.FC = () => {
                                         <span className="clock-detail-label">Dzien roku:</span>
                                         <span className="clock-detail-value">{currentData.dayOfYear}</span>
                                     </div>
-                                    <div className="clock-detail-row">
-                                        <span className="clock-detail-label">Dzien miesiaca:</span>
-                                        <span className="clock-detail-value">{currentData.dayOfMonth}</span>
-                                    </div>
                                     {currentData.season !== undefined && (
                                         <div className="clock-detail-row">
                                             <span className="clock-detail-label">Pora roku:</span>
