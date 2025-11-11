@@ -215,8 +215,14 @@ export function useDraggablePopup({
 
             const deltaX = event.clientX - resize.startX;
             const deltaY = event.clientY - resize.startY;
-            const newWidth = Math.max(minWidth, resize.startWidth + deltaX);
-            const newHeight = Math.max(minHeight, resize.startHeight + deltaY);
+
+            // Check viewport size and prefer it (with margin) if it's smaller than minimum
+            const margin = 32; // Small margin from viewport edges
+            const effectiveMinWidth = Math.min(minWidth, window.innerWidth - margin);
+            const effectiveMinHeight = Math.min(minHeight, window.innerHeight - margin);
+
+            const newWidth = Math.max(effectiveMinWidth, resize.startWidth + deltaX);
+            const newHeight = Math.max(effectiveMinHeight, resize.startHeight + deltaY);
 
             setSize({ width: newWidth, height: newHeight });
         },
