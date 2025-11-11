@@ -2,7 +2,7 @@
 
 **Status**: Planning Phase
 **Created**: 2025-11-04
-**Last Updated**: 2025-11-04
+**Last Updated**: 2025-11-11
 
 ---
 
@@ -13,9 +13,10 @@ This document outlines a comprehensive plan to reorganize the codebase architect
 ### Current Issues
 - 10+ duplicate components (class-based vs React)
 - Circular dependencies between `@client` ↔ `@web`
-- Oversized entry point (`main.ts` at 1577 lines)
+- Oversized entry point (`main.ts` at 1708 lines, growing)
 - DataStores split across multiple directories
 - Duplicate type definitions
+- ANSI parsing split between `@web/ansiParser` and `@client/ansi/FormatState`
 
 ### Goals
 - ✅ Zero circular dependencies
@@ -103,8 +104,92 @@ src/web/dataStores/ (3 stores)
 ```
 
 #### 5. Oversized Entry Point
-- `src/web/main.ts`: 1577 lines
+- `src/web/main.ts`: 1708 lines (grown by 131 lines since plan creation)
 - Mixes initialization, UI mounting, event handling, etc.
+
+---
+
+## Phase 0: Recent Architectural Changes (2025-11)
+
+**Priority**: Documentation
+**Status**: ✅ Completed
+**Impact on Plan**: Medium - Affects Phase 2.1
+
+### Changes Since Plan Creation
+
+#### AnsiAwareBuffer Introduction
+
+A significant architectural improvement has been implemented for line processing:
+
+**New Component**: `src/client/ansi/FormatState.ts`
+- Introduced `AnsiAwareBuffer` class for format-aware text buffering
+- Handles ANSI formatting state preservation (colors, bold, italic, underline, hyperlinks, etc.)
+- Replaces simple string buffers for line processing
+
+**Updated Interfaces**:
+```typescript
+// src/client/Client.ts:32
+export interface ClientAdapter {
+    output(text?: string | AnsiAwareBuffer, type?: string): void
+    // ... other methods
+}
+
+// src/client/Client.ts:96-98
+inLineProcess = false; //TODO figure out something else
+buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
+```
+
+**Key Features**:
+- Rich text formatting support (8 ANSI colors, 256 xterm colors, RGB colors)
+- Text decoration support (bold, italic, underline, strikethrough, blink)
+- Hyperlink support with event handlers
+- Efficient segment-based storage
+- State tracking and format preservation
+
+#### ANSI Handling Split
+
+The codebase now has two ANSI-related components with different purposes:
+
+1. **`src/web/ansiParser.ts`** (112 lines)
+   - Converts ANSI escape codes to HTML spans
+   - Web-specific rendering logic
+   - Used by `ArkadiaClient` for terminal output
+
+2. **`src/client/ansi/FormatState.ts`** (600+ lines)
+   - Platform-agnostic ANSI state tracking
+   - `AnsiAwareBuffer` for format-aware buffering
+   - Used throughout client for line processing
+
+**Current Issue**: Creates circular dependency
+- `src/web/ArkadiaClient.ts:1` imports from `@web/ansiParser`
+- Client layer references should not depend on web layer
+
+#### Line Processing Architecture
+
+The `inLineProcess` flag (Client.ts:96) has a TODO comment:
+```typescript
+inLineProcess = false; //TODO figure out something else
+```
+
+This suggests the line processing mechanism is still being refined. The flag is used to track whether the client is currently processing a line, affecting trigger execution and output buffering.
+
+### Impact on Original Plan
+
+**Phase 2.1 Needs Revision**:
+- Original plan: Move `ansiParser.ts` from `@web` to `@client/ansi/`
+- New consideration: Relationship between `ansiParser.ts` and `AnsiAwareBuffer`
+- Question: Should these be consolidated or kept separate?
+
+**Analysis**:
+- `ansiParser.ts` → HTML rendering (potentially web-specific)
+- `AnsiAwareBuffer` → Format state tracking (client-agnostic)
+- May serve different purposes in the pipeline
+
+**Recommendation**:
+- Move `ansiParser.ts` to `@client/ansi/` as originally planned
+- ANSI parsing is fundamentally client-level functionality
+- Web layer should only consume parsed/formatted output
+- This resolves the circular dependency
 
 ---
 
@@ -199,12 +284,21 @@ yarn build
 
 ### Tasks
 
-#### 2.1 Move ansiParser to Client
+#### 2.1 Consolidate ANSI Handling
 
-**Current**: `src/web/ansiParser.ts`
-**Target**: `src/client/ansi/ansiParser.ts`
+**Current State**:
+- `src/web/ansiParser.ts` (112 lines) - Converts ANSI codes to HTML spans
+- `src/client/ansi/FormatState.ts` (600+ lines) - AnsiAwareBuffer for state tracking
+- `src/web/ArkadiaClient.ts:1` imports from `@web/ansiParser` (circular dependency)
 
-**Rationale**: ANSI parsing is core client functionality, not web-specific.
+**Target**: Move ansiParser to `src/client/ansi/ansiParser.ts`
+
+**Rationale**:
+- ANSI parsing is core client functionality, not web-specific
+- Both components handle ANSI codes but serve different purposes:
+  - `ansiParser.ts` → HTML rendering (final output)
+  - `AnsiAwareBuffer` → Format state tracking (intermediate processing)
+- Moving resolves circular dependency
 
 **Steps**:
 1. Move file:
@@ -223,11 +317,16 @@ yarn build
 
 3. Update path alias if needed in `vite.config.ts` and `tsconfig.base.json`
 
-4. Run tests
+4. Verify AnsiAwareBuffer and ansiParser work together correctly
+
+5. Run tests
 
 **Files to update**:
-- `src/client/Client.ts`
+- `src/web/ArkadiaClient.ts` (main import)
+- `test/web/ansiParser.test.ts` (test file imports)
 - Any other files importing from `@web/ansiParser`
+
+**Note**: Keep both `ansiParser.ts` and `FormatState.ts` separate - they serve different stages in the ANSI processing pipeline.
 
 #### 2.2 Consolidate DataStores
 
@@ -974,16 +1073,18 @@ class Client {
 ## Risk Assessment
 
 ### Low Risk
+- Phase 0 (Documentation) - Completed, no code changes
 - Phase 1 (Component Migration) - React components already working
 - Phase 3 (Type Consolidation) - TypeScript will catch errors
 - Phase 6 (Documentation) - No code changes
 
 ### Medium Risk
-- Phase 2 (Break Circular Dependencies) - Requires careful import updates
+- Phase 2.1 (Move ansiParser) - Must verify interaction with AnsiAwareBuffer
+- Phase 2.2 (Consolidate DataStores) - Requires careful import updates
 - Phase 4 (Reorganize Web) - Many file moves, but tests will catch issues
 
 ### High Risk
-- Phase 5 (Refactor main.ts) - Critical entry point, needs thorough testing
+- Phase 5 (Refactor main.ts) - Critical entry point (1708 lines), needs thorough testing
 
 ### Mitigation Strategies
 1. **Run tests after every phase**
@@ -1072,11 +1173,14 @@ git reset --hard HEAD~1
 ### Phase 2 Import Updates
 
 ```typescript
-// ansiParser moves
+// ansiParser moves (Phase 2.1)
 OLD: import { parseAnsiPatterns } from "@web/ansiParser";
 NEW: import { parseAnsiPatterns } from "@client/ansi/ansiParser";
 
-// dataStores move
+// AnsiAwareBuffer imports (already in place)
+import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+
+// dataStores move (Phase 2.2)
 OLD: import { addLocalNpc } from "@web/dataStores/npcStore";
 NEW: import { addLocalNpc } from "@modules/data/dataStores/npcStore";
 
@@ -1120,6 +1224,26 @@ NEW: import { createSessionLogger } from "./integrations";
 OLD: import FightTitle from "./FightTitle";
 NEW: import { FightTitle } from "./ui-legacy";
 ```
+
+---
+
+## Appendix C: Change Log
+
+### 2025-11-11 Update
+- Added Phase 0 documenting recent architectural changes
+- Documented AnsiAwareBuffer introduction (line processing improvement)
+- Updated main.ts line count: 1577 → 1708 lines
+- Revised Phase 2.1 to address ANSI handling consolidation
+- Clarified relationship between ansiParser.ts and AnsiAwareBuffer
+- Updated risk assessment to include AnsiAwareBuffer verification
+- Added import patterns for AnsiAwareBuffer
+- Identified `inLineProcess` TODO flag as area needing attention
+
+### Key Changes Since Plan Creation
+1. **AnsiAwareBuffer** - Major improvement to line processing and format state tracking
+2. **Line Count Growth** - main.ts has grown, making Phase 5 more critical
+3. **ANSI Architecture** - Now clear that two components serve different pipeline stages
+4. **Client.inLineProcess** - Flagged for potential refactoring
 
 ---
 
