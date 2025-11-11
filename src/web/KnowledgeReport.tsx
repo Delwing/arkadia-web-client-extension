@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledgeStore';
@@ -88,10 +87,12 @@ const KnowledgeReport: React.FC = () => {
     setIsPinned((prev) => !prev);
   }, []);
 
-  const { panelRef, position, handlePointerDown } = useDraggablePopup({
+  const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
     isOpen,
     isPinned,
     onClose: close,
+    minWidth: 600,
+    minHeight: 400,
   });
 
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
@@ -350,49 +351,59 @@ const KnowledgeReport: React.FC = () => {
         className={`knowledge-window ${
           position ? 'knowledge-window--floating' : 'knowledge-window--center'
         }`}
-        style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
+        style={{
+          ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
+          ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
+        }}
         tabIndex={-1}
       >
-        <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
-          <h5 className="knowledge-window-title">Raport wiedzy</h5>
+        <div className="knowledge-window-inner">
+          <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
+            <h5 className="knowledge-window-title">Raport wiedzy</h5>
+            <div
+              className="window-header-actions"
+              onPointerDownCapture={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                onClick={togglePinned}
+                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+              />
+              <button type="button" className="btn-close" onClick={close} />
+            </div>
+          </div>
+          <div className="knowledge-window-body">
+            <div className="knowledge-tabs">
+              <button
+                type="button"
+                className={`knowledge-tab-button ${
+                  activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
+                }`}
+                onClick={() => setActiveTab('libraries')}
+                disabled={!hasLibraries}
+              >
+                Biblioteki
+              </button>
+              <button
+                type="button"
+                className={`knowledge-tab-button ${
+                  activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
+                }`}
+                onClick={() => setActiveTab('categories')}
+              >
+                Kategorie
+              </button>
+            </div>
+            <div className="knowledge-content">
+              {activeTab === 'libraries' ? libraryContent : categoriesContent}
+            </div>
+          </div>
           <div
-            className="window-header-actions"
-            onPointerDownCapture={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-              onClick={togglePinned}
-              title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-            />
-            <button type="button" className="btn-close" onClick={close} />
-          </div>
-        </div>
-        <div className="knowledge-window-body">
-          <div className="knowledge-tabs">
-            <button
-              type="button"
-              className={`knowledge-tab-button ${
-                activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
-              }`}
-              onClick={() => setActiveTab('libraries')}
-              disabled={!hasLibraries}
-            >
-              Biblioteki
-            </button>
-            <button
-              type="button"
-              className={`knowledge-tab-button ${
-                activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
-              }`}
-              onClick={() => setActiveTab('categories')}
-            >
-              Kategorie
-            </button>
-          </div>
-          <div className="knowledge-content">
-            {activeTab === 'libraries' ? libraryContent : categoriesContent}
-          </div>
+            className="herb-window-resize-handle"
+            onPointerDown={handleResizePointerDown}
+            title="Drag to resize"
+          />
         </div>
       </div>
     </div>

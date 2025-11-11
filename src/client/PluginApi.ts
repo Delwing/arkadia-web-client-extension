@@ -28,6 +28,9 @@ import {
   unregisterContextMenuEntry,
   updateContextMenuEntry
 } from "@modules/core/pluginUiRegistry";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { PluginPopup } from "../ui/web/components/PluginPopup";
 
 // Event system types
 type EventKey = keyof ClientEvents;
@@ -824,158 +827,58 @@ export class PluginApiImpl implements PluginApi {
   }
 
   private createPopup(title: string, body: PopupContent): PopupHandle {
-    const overlay = document.createElement("div");
-    overlay.className = "herb-overlay";
+    // Create container for React root
+    const container = document.createElement("div");
+    document.body.appendChild(container);
 
-    const windowEl = document.createElement("div");
-    windowEl.className = "herb-window herb-window--center";
-    windowEl.tabIndex = -1;
+    // Create React root
+    const root = createRoot(container);
 
-    const header = document.createElement("div");
-    header.className = "herb-window-header";
-
-    const titleEl = document.createElement("h5");
-    titleEl.className = "herb-window-title";
-    titleEl.textContent = title;
-
-    const actions = document.createElement("div");
-    actions.className = "window-header-actions";
-    actions.addEventListener("pointerdown", event => event.stopPropagation());
-
-    const closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.className = "btn-close";
-    actions.appendChild(closeButton);
-
-    header.appendChild(titleEl);
-    header.appendChild(actions);
-
-    const bodyContainer = document.createElement("div");
-    bodyContainer.className = "herb-window-body";
-
-    const clearBody = () => {
-      while (bodyContainer.firstChild) {
-        bodyContainer.removeChild(bodyContainer.firstChild);
-      }
-    };
-
-    const setBodyContent = (content: PopupContent) => {
-      clearBody();
-      if (typeof content === "string") {
-        bodyContainer.innerHTML = content;
-      } else if (content instanceof Node) {
-        bodyContainer.appendChild(content);
-      }
-    };
-
-    setBodyContent(body);
-
-    windowEl.appendChild(header);
-    windowEl.appendChild(bodyContainer);
-
-    let pointerId: number | null = null;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    const margin = 16;
-
-    const handlePointerMove = (event: PointerEvent) => {
-      if (pointerId === null || event.pointerId !== pointerId) {
-        return;
-      }
-      const rect = windowEl.getBoundingClientRect();
-      const maxLeft = window.innerWidth - rect.width - margin;
-      const maxTop = window.innerHeight - rect.height - margin;
-      const nextLeft = Math.min(Math.max(event.clientX - offsetX, margin), Math.max(margin, maxLeft));
-      const nextTop = Math.min(Math.max(event.clientY - offsetY, margin), Math.max(margin, maxTop));
-      windowEl.style.left = `${nextLeft}px`;
-      windowEl.style.top = `${nextTop}px`;
-    };
-
-    const endPointerDrag = (event: PointerEvent) => {
-      if (pointerId === null || event.pointerId !== pointerId) {
-        return;
-      }
-      pointerId = null;
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", endPointerDrag);
-      window.removeEventListener("pointercancel", endPointerDrag);
-    };
-
-    const startPointerDrag = (event: PointerEvent) => {
-      if (event.button !== 0) {
-        return;
-      }
-      const rect = windowEl.getBoundingClientRect();
-      pointerId = event.pointerId;
-      offsetX = event.clientX - rect.left;
-      offsetY = event.clientY - rect.top;
-      windowEl.classList.add("herb-window--floating");
-      windowEl.classList.remove("herb-window--center");
-      windowEl.style.left = `${rect.left}px`;
-      windowEl.style.top = `${rect.top}px`;
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", endPointerDrag);
-      window.addEventListener("pointercancel", endPointerDrag);
-      event.preventDefault();
-    };
-
-    header.addEventListener("pointerdown", startPointerDrag);
-
-    let closed = false;
-    let handle: PopupHandle;
-
-    const overlayListener = (event: MouseEvent) => {
-      if (event.target === overlay) {
-        closePopup();
-      }
-    };
-
-    const keyListener = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closePopup();
-      }
-    };
-
-    const closeButtonListener = () => {
-      closePopup();
-    };
+    let setTitleFn: ((title: string) => void) | null = null;
+    let setBodyFn: ((body: string | Node) => void) | null = null;
+    let panelRef: HTMLDivElement | null = null;
 
     const closePopup = () => {
-      if (closed) {
-        return;
-      }
-      closed = true;
-      header.removeEventListener("pointerdown", startPointerDrag);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", endPointerDrag);
-      window.removeEventListener("pointercancel", endPointerDrag);
-      window.removeEventListener("keydown", keyListener);
-      overlay.removeEventListener("click", overlayListener);
-      closeButton.removeEventListener("click", closeButtonListener);
-      overlay.remove();
-      windowEl.remove();
+      root.unmount();
+      container.remove();
       this.popupHandles.delete(handle);
     };
 
-    handle = {
-      element: windowEl,
+    const renderPopup = (isOpen: boolean) => {
+      root.render(
+        React.createElement(PluginPopup, {
+          title,
+          body,
+          isOpen,
+          isPinned: false,
+          onClose: closePopup,
+          onTitleChange: (callback) => { setTitleFn = callback; },
+          onBodyChange: (callback) => { setBodyFn = callback; }
+        })
+      );
+    };
+
+    // Initial render
+    renderPopup(true);
+
+    const handle: PopupHandle = {
+      get element(): HTMLDivElement {
+        if (!panelRef) {
+          // Try to find the panel element
+          panelRef = container.querySelector('.herb-window') as HTMLDivElement;
+        }
+        return panelRef!;
+      },
       setTitle: (value) => {
-        titleEl.textContent = value;
+        title = value;
+        setTitleFn?.(value);
       },
       setBody: (content) => {
-        setBodyContent(content);
+        body = content;
+        setBodyFn?.(content);
       },
       close: closePopup
     };
-
-    overlay.addEventListener("click", overlayListener);
-    closeButton.addEventListener("click", closeButtonListener);
-    window.addEventListener("keydown", keyListener);
-
-    document.body.appendChild(overlay);
-    document.body.appendChild(windowEl);
-    windowEl.focus();
 
     this.popupHandles.add(handle);
 

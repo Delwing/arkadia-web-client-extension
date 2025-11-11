@@ -57,10 +57,12 @@ const ClockPopup: React.FC = () => {
         setIsPinned((prev) => !prev);
     }, []);
 
-    const { panelRef, position, handlePointerDown } = useDraggablePopup({
+    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
         isOpen,
         isPinned,
         onClose: close,
+        minWidth: 300,
+        minHeight: 200,
     });
 
     useEffect(() => {
@@ -111,104 +113,114 @@ const ClockPopup: React.FC = () => {
                 className={`clock-window ${
                     position ? 'clock-window--floating' : 'clock-window--center'
                 }`}
-                style={position ? { left: `${position.left}px`, top: `${position.top}px` } : undefined}
+                style={{
+                    ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
+                    ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
+                }}
                 tabIndex={-1}
             >
-                <div className="clock-window-header" onPointerDown={handlePointerDown}>
-                    <h5 className="clock-window-title">Zegar</h5>
+                <div className="herb-window-inner">
+                    <div className="clock-window-header" onPointerDown={handlePointerDown}>
+                        <h5 className="clock-window-title">Zegar</h5>
+                        <div
+                            className="window-header-actions"
+                            onPointerDownCapture={(event) => event.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                                onClick={togglePinned}
+                                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+                            />
+                            <button type="button" className="btn-close" onClick={close} />
+                        </div>
+                    </div>
+                    <div className="clock-window-body">
+                        <div className="clock-tabs">
+                            <button
+                                type="button"
+                                className={`clock-tab-button ${
+                                    activeTab === 'Empire' ? 'clock-tab-button--active' : ''
+                                }`}
+                                onClick={() => setActiveTab('Empire')}
+                                disabled={!empireData}
+                            >
+                                Imperium
+                            </button>
+                            <button
+                                type="button"
+                                className={`clock-tab-button ${
+                                    activeTab === 'Ishtar' ? 'clock-tab-button--active' : ''
+                                }`}
+                                onClick={() => setActiveTab('Ishtar')}
+                                disabled={!ishtarData}
+                            >
+                                Ishtar
+                            </button>
+                        </div>
+                        <div className="clock-content">
+                            {!currentData ? (
+                                <div className="clock-empty">Brak danych zegara dla tej domeny.</div>
+                            ) : (
+                                <div className="clock-details">
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Aktualny czas:</span>
+                                        <span className={`clock-detail-value clock-time ${currentData.daylight ? 'clock-daylight' : 'clock-night'}`}>
+                                            {formatTime(currentData.hours, currentData.minutes)}
+                                            {currentData.precision > 0 && (
+                                                <span className="clock-precision"> ±{currentData.precision}min</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Data:</span>
+                                        <span className="clock-detail-value">{currentData.dayLabel}</span>
+                                    </div>
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Dzien roku:</span>
+                                        <span className="clock-detail-value">{currentData.dayOfYear}</span>
+                                    </div>
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Dzien miesiaca:</span>
+                                        <span className="clock-detail-value">{currentData.dayOfMonth}</span>
+                                    </div>
+                                    {currentData.season !== undefined && (
+                                        <div className="clock-detail-row">
+                                            <span className="clock-detail-label">Pora roku:</span>
+                                            <span
+                                                className="clock-detail-value"
+                                                style={{ color: SEASON_COLORS[currentData.season] }}
+                                            >
+                                                {SEASON_NAMES[currentData.season]}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="clock-detail-separator"></div>
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Wschod slonca:</span>
+                                        <span className="clock-detail-value">{formatSunTime(currentData.sunrise)}</span>
+                                    </div>
+                                    <div className="clock-detail-row">
+                                        <span className="clock-detail-label">Zachod slonca:</span>
+                                        <span className="clock-detail-value">{formatSunTime(currentData.sunset)}</span>
+                                    </div>
+                                    {currentData.daylight !== undefined && (
+                                        <div className="clock-detail-row">
+                                            <span className="clock-detail-label">Pora dnia:</span>
+                                            <span className={`clock-detail-value ${currentData.daylight ? 'clock-daylight' : 'clock-night'}`}>
+                                                {currentData.daylight ? 'Dzien' : 'Noc'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div
-                        className="window-header-actions"
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                            onClick={togglePinned}
-                            title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-                        />
-                        <button type="button" className="btn-close" onClick={close} />
-                    </div>
-                </div>
-                <div className="clock-window-body">
-                    <div className="clock-tabs">
-                        <button
-                            type="button"
-                            className={`clock-tab-button ${
-                                activeTab === 'Empire' ? 'clock-tab-button--active' : ''
-                            }`}
-                            onClick={() => setActiveTab('Empire')}
-                            disabled={!empireData}
-                        >
-                            Imperium
-                        </button>
-                        <button
-                            type="button"
-                            className={`clock-tab-button ${
-                                activeTab === 'Ishtar' ? 'clock-tab-button--active' : ''
-                            }`}
-                            onClick={() => setActiveTab('Ishtar')}
-                            disabled={!ishtarData}
-                        >
-                            Ishtar
-                        </button>
-                    </div>
-                    <div className="clock-content">
-                        {!currentData ? (
-                            <div className="clock-empty">Brak danych zegara dla tej domeny.</div>
-                        ) : (
-                            <div className="clock-details">
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Aktualny czas:</span>
-                                    <span className={`clock-detail-value clock-time ${currentData.daylight ? 'clock-daylight' : 'clock-night'}`}>
-                                        {formatTime(currentData.hours, currentData.minutes)}
-                                        {currentData.precision > 0 && (
-                                            <span className="clock-precision"> ±{currentData.precision}min</span>
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Data:</span>
-                                    <span className="clock-detail-value">{currentData.dayLabel}</span>
-                                </div>
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Dzien roku:</span>
-                                    <span className="clock-detail-value">{currentData.dayOfYear}</span>
-                                </div>
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Dzien miesiaca:</span>
-                                    <span className="clock-detail-value">{currentData.dayOfMonth}</span>
-                                </div>
-                                {currentData.season !== undefined && (
-                                    <div className="clock-detail-row">
-                                        <span className="clock-detail-label">Pora roku:</span>
-                                        <span
-                                            className="clock-detail-value"
-                                            style={{ color: SEASON_COLORS[currentData.season] }}
-                                        >
-                                            {SEASON_NAMES[currentData.season]}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="clock-detail-separator"></div>
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Wschod slonca:</span>
-                                    <span className="clock-detail-value">{formatSunTime(currentData.sunrise)}</span>
-                                </div>
-                                <div className="clock-detail-row">
-                                    <span className="clock-detail-label">Zachod slonca:</span>
-                                    <span className="clock-detail-value">{formatSunTime(currentData.sunset)}</span>
-                                </div>
-                                {currentData.daylight !== undefined && (
-                                    <div className="clock-detail-row">
-                                        <span className="clock-detail-label">Pora dnia:</span>
-                                        <span className={`clock-detail-value ${currentData.daylight ? 'clock-daylight' : 'clock-night'}`}>
-                                            {currentData.daylight ? 'Dzien' : 'Noc'}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                        className="herb-window-resize-handle"
+                        onPointerDown={handleResizePointerDown}
+                        title="Drag to resize"
+                    />
                 </div>
             </div>
         </div>
