@@ -6,6 +6,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 
 ## Ogólne
 - **/fake _tekst_** - wyświetla podany tekst jak zwykłą wiadomość klienta.
+- **/czas** - otwiera okno zegara z aktualnym czasem w grze.
 - **/zabici** - pokazuje tabelę z liczbą twoich zabitych istot w bieżącej sesji.
 - **/zabici2** - wyświetla podsumowanie liczby zabitych istot.
 - **/zabici_reset** - zeruje licznik zabitych istot.
@@ -100,6 +101,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/ziola** - otwiera okno zarządzania woreczkami zioł.
 - **/wezz _ziolo_ [_ilosc_]** - wyjmuje wskazaną liczbę zioła z woreczków (domyślnie jedną sztukę).
 - **/zi _akcja ziolo_** - wyjmuje zioło i od razu wykonuje wskazaną akcję.
+- **/zi _akcja ziolo ilosc_** - wyjmuje wskazaną liczbę zioła i wykonuje akcję.
 
 ## Walka
 - **/z _skrot_** - wykonuje polecenie `zabij` na obiekcie o podanym skrócie.
@@ -117,7 +119,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/za4 _skrot_** - zasłania obiekt z poziomem krycia 4.
 - **/w _skrot_** - wycofuje postać za wskazany obiekt.
 - **/pro _skrot_** - przekazuje prowadzenie obiektowi o podanym skrócie.
-- **/prze** - przełamuje obronę oznaczonego celu.
+- **/prze [_skrot_]** - przełamuje obronę oznaczonego celu lub wskazanego obiektu.
 - **/puszczaj** - przełącza automatyczne zwalnianie zasłony przy użyciu `/za` lub `/zas`.
 - **/zap** - wykonuje polecenie `zapal lampe`.
 - **/zap _numer_** - zaprasza do drużyny obiekt o podanym numerze.
