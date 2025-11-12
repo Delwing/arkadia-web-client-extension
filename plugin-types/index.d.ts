@@ -550,6 +550,54 @@ export interface PluginDestroyedPayload {
 }
 
 /**
+ * Clock update event payload
+ */
+export interface ClockUpdatePayload {
+  domain: "Empire" | "Ishtar";
+  hours: number;
+  minutes: number;
+  precision: number;
+  sunrise: number | string | "?";
+  sunset: number | string | "?";
+  dayLabel: string;
+  dayOfMonth: number;
+  dayOfYear: number;
+  daylight?: boolean;
+  season?: number;
+}
+
+/**
+ * Clock domain active event payload
+ */
+export interface ClockDomainActivePayload {
+  domain: "Empire" | "Ishtar";
+}
+
+/**
+ * Clock mismatch event payload
+ */
+export interface ClockMismatchPayload {
+  domain: "Empire" | "Ishtar";
+  type: "sunrise" | "sunset";
+  dayOfYear: number;
+  expectedHour: number;
+  observedHour: number;
+  observedMinutes: number;
+  indicatedHour?: string;
+}
+
+/**
+ * Clock sun event payload (sunrise/sunset)
+ */
+export interface ClockSunEventPayload {
+  domain: "Empire" | "Ishtar";
+  dayOfYear: number;
+  observedHour: number;
+  observedMinutes: number;
+  indicatedHour?: string;
+}
+
+/**
  * Known client events with their payloads
  * Subscribe to these events using api.events.on()
  */
@@ -716,6 +764,18 @@ export interface ClientEvents {
   "plugin:error": PluginErrorPayload;
   /** Plugin destroyed */
   "plugin:destroyed": PluginDestroyedPayload;
+  /** Clock update */
+  "clock.update": ClockUpdatePayload;
+  /** Clock domain active */
+  "clock.domain.active": ClockDomainActivePayload;
+  /** Clock popup opened */
+  "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+  /** Clock mismatch detected */
+  "clock.mismatch": ClockMismatchPayload;
+  /** Clock sunrise */
+  "clock.sunrise": ClockSunEventPayload;
+  /** Clock sunset */
+  "clock.sunset": ClockSunEventPayload;
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
   [key: `gmcp.${string}`]: unknown;
   /** GMCP message events */
