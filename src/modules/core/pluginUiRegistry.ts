@@ -2,7 +2,7 @@ import type { ContextMenuEntry } from "@shared/dom/contextMenu";
 
 type PopupMenuEntryRecord = {
   id: string;
-  label: string;
+  label: string | Node;
   element: HTMLLIElement;
   button: HTMLButtonElement;
   listener: (event: MouseEvent) => void;
@@ -23,7 +23,7 @@ function getMenuListElement(): HTMLUListElement | null {
 
 export function registerPopupMenuEntry(
   id: string,
-  label: string,
+  label: string | Node,
   onSelect: () => void
 ): PopupMenuEntryRecord {
   const menu = getMenuListElement();
@@ -44,7 +44,11 @@ export function registerPopupMenuEntry(
   const button = document.createElement("button");
   button.type = "button";
   button.className = "w-100 p-1";
-  button.textContent = label;
+  if (typeof label === 'string') {
+    button.textContent = label;
+  } else {
+    button.appendChild(label.cloneNode(true));
+  }
 
   const listener = (event: MouseEvent) => {
     event.preventDefault();
@@ -67,13 +71,18 @@ export function registerPopupMenuEntry(
   return record;
 }
 
-export function updatePopupMenuEntryLabel(id: string, label: string): void {
+export function updatePopupMenuEntryLabel(id: string, label: string | Node): void {
   const entry = popupMenuEntries.get(id);
   if (!entry) {
     return;
   }
   entry.label = label;
-  entry.button.textContent = label;
+  entry.button.innerHTML = '';
+  if (typeof label === 'string') {
+    entry.button.textContent = label;
+  } else {
+    entry.button.appendChild(label.cloneNode(true));
+  }
 }
 
 export function setPopupMenuEntryDisabled(id: string, disabled: boolean): void {
@@ -96,7 +105,7 @@ export function unregisterPopupMenuEntry(id: string): void {
 
 export function registerContextMenuEntry(
   id: string,
-  label: string,
+  label: string | Node,
   action: () => void
 ): ContextMenuEntryRecord {
   const record: ContextMenuEntryRecord = { id, label, action };
@@ -112,7 +121,7 @@ export function updateContextMenuEntry(
   if (!entry) {
     return;
   }
-  if (typeof updates.label === "string") {
+  if (updates.label !== undefined) {
     entry.label = updates.label;
   }
   if (typeof updates.action === "function") {

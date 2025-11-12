@@ -10,6 +10,7 @@ export interface PluginPopupProps {
     onTitleChange?: (callback: (title: string) => void) => void;
     onBodyChange?: (callback: (body: string | Node) => void) => void;
     onPanelRef?: (element: HTMLDivElement | null) => void;
+    onPinChange?: (callback: (pinned: boolean) => void) => void;
 }
 
 /**
@@ -20,14 +21,20 @@ export function PluginPopup({
     title: initialTitle,
     body: initialBody,
     isOpen,
-    isPinned = false,
+    isPinned: initialPinned = false,
     onClose,
     onTitleChange,
     onBodyChange,
-    onPanelRef
+    onPanelRef,
+    onPinChange
 }: PluginPopupProps) {
     const [title, setTitle] = useState(initialTitle);
     const [body, setBody] = useState<string | Node>(initialBody);
+    const [isPinned, setIsPinned] = useState(initialPinned);
+
+    const togglePinned = () => {
+        setIsPinned(prev => !prev);
+    };
 
     const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
         isOpen,
@@ -45,7 +52,10 @@ export function PluginPopup({
         if (onBodyChange) {
             onBodyChange(setBody);
         }
-    }, [onTitleChange, onBodyChange]);
+        if (onPinChange) {
+            onPinChange(setIsPinned);
+        }
+    }, [onTitleChange, onBodyChange, onPinChange]);
 
     // Expose panel ref to parent
     useEffect(() => {
@@ -82,6 +92,12 @@ export function PluginPopup({
                             className="window-header-actions"
                             onPointerDown={(e) => e.stopPropagation()}
                         >
+                            <button
+                                type="button"
+                                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                                onClick={togglePinned}
+                                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+                            />
                             <button type="button" className="btn-close" onClick={onClose} />
                         </div>
                     </div>

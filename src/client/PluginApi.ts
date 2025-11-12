@@ -281,6 +281,11 @@ export interface PopupHandle {
   readonly element: HTMLDivElement;
 
   /**
+   * Check if popup is pinned
+   */
+  readonly isPinned: boolean;
+
+  /**
    * Update popup title
    */
   setTitle(title: string): void;
@@ -289,6 +294,17 @@ export interface PopupHandle {
    * Update popup body content
    */
   setBody(content: PopupContent): void;
+
+  /**
+   * Set pinned state
+   */
+  setPinned(pinned: boolean): void;
+
+  /**
+   * Register a callback to be called when popup closes
+   * @param callback - Function to call when popup closes
+   */
+  onClose(callback: () => void): void;
 
   /**
    * Close and remove the popup
@@ -302,8 +318,9 @@ export interface PopupHandle {
 export interface PopupMenuEntryHandle {
   /**
    * Update the entry label
+   * @param label - String or DOM node for rich content
    */
-  setLabel(label: string): void;
+  setLabel(label: string | Node): void;
 
   /**
    * Enable or disable the entry
@@ -322,8 +339,9 @@ export interface PopupMenuEntryHandle {
 export interface ContextMenuEntryHandle {
   /**
    * Update the entry label
+   * @param label - String or DOM node for rich content
    */
-  setLabel(label: string): void;
+  setLabel(label: string | Node): void;
 
   /**
    * Update the entry action
@@ -350,19 +368,19 @@ export interface UiApi {
 
   /**
    * Add an entry to the popup (⋮) menu
-   * @param label - Entry label
+   * @param label - Entry label (string or DOM node for rich content like SVG icons)
    * @param onSelect - Callback invoked when entry is selected
    * @returns Handle for updating or removing the entry
    */
-  addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle;
+  addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle;
 
   /**
    * Add an entry to the output context menu
-   * @param label - Entry label
+   * @param label - Entry label (string or DOM node for rich content like SVG icons)
    * @param action - Callback invoked when entry is selected
    * @returns Handle for updating or removing the entry
    */
-  addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle;
+  addContextMenuEntry(label: string | Node, action: () => void): ContextMenuEntryHandle;
 }
 
 /**
@@ -678,6 +696,25 @@ export interface CommandApi {
  *   // Create a popup (Promise-based)
  *   const popup = await api.ui.createPopup("My Popup", "Hello World!");
  *   console.log("Popup element:", popup.element); // Element is guaranteed to exist
+ *
+ *   // Listen for close events
+ *   popup.onClose(() => {
+ *     console.log("Popup was closed!");
+ *   });
+ *
+ *   // Add context menu entry with SVG icon
+ *   const menuItem = document.createElement('span');
+ *   menuItem.innerHTML = '<svg width="16" height="16">...</svg> Action';
+ *   api.ui.addContextMenuEntry(menuItem, () => {
+ *     console.log("Context menu action!");
+ *   });
+ *
+ *   // Add popup menu entry with icon
+ *   const popupMenuItem = document.createElement('span');
+ *   popupMenuItem.innerHTML = '⚙️ Settings';
+ *   api.ui.addPopupMenuEntry(popupMenuItem, () => {
+ *     console.log("Settings!");
+ *   });
  *
  *   return {
  *     name: "My Plugin",
@@ -1063,9 +1100,21 @@ export class PluginApiImpl implements PluginApi {
 
       let setTitleFn: ((title: string) => void) | null = null;
       let setBodyFn: ((body: string | Node) => void) | null = null;
+      let setPinnedFn: ((pinned: boolean) => void) | null = null;
       let panelRef: HTMLDivElement | null = null;
+      let isPinned = false;
+      const closeCallbacks = new Set<() => void>();
 
       const closePopup = () => {
+        // Call all registered close callbacks
+        closeCallbacks.forEach(callback => {
+          try {
+            callback();
+          } catch (error) {
+            console.error('[PluginApi] Error in popup close callback:', error);
+          }
+        });
+
         root.unmount();
         container.remove();
         this.popupHandles.delete(handle);
@@ -1077,10 +1126,17 @@ export class PluginApiImpl implements PluginApi {
             title,
             body,
             isOpen,
-            isPinned: false,
+            isPinned,
             onClose: closePopup,
             onTitleChange: (callback) => { setTitleFn = callback; },
             onBodyChange: (callback) => { setBodyFn = callback; },
+            onPinChange: (callback) => {
+              // Wrap the callback to update our local isPinned state
+              setPinnedFn = (pinned: boolean) => {
+                isPinned = pinned;
+                callback(pinned);
+              };
+            },
             onPanelRef: (element) => {
               panelRef = element;
               // Resolve the promise once the panel is mounted
@@ -1100,6 +1156,9 @@ export class PluginApiImpl implements PluginApi {
           // panelRef will always be set when handle is resolved
           return panelRef!;
         },
+        get isPinned(): boolean {
+          return isPinned;
+        },
         setTitle: (value) => {
           title = value;
           setTitleFn?.(value);
@@ -1108,6 +1167,13 @@ export class PluginApiImpl implements PluginApi {
           body = content;
           setBodyFn?.(content);
         },
+        setPinned: (pinned: boolean) => {
+          isPinned = pinned;
+          setPinnedFn?.(pinned);
+        },
+        onClose: (callback: () => void) => {
+          closeCallbacks.add(callback);
+        },
         close: closePopup
       };
 
@@ -1115,7 +1181,7 @@ export class PluginApiImpl implements PluginApi {
     });
   }
 
-  private addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle {
+  private addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle {
     const id = this.generateId("popup-menu");
     registerPopupMenuEntry(id, label, onSelect);
     this.popupMenuEntryIds.add(id);
@@ -1134,7 +1200,7 @@ export class PluginApiImpl implements PluginApi {
     };
   }
 
-  private addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle {
+  private addContextMenuEntry(label: string | Node, action: () => void): ContextMenuEntryHandle {
     const id = this.generateId("context-menu");
     registerContextMenuEntry(id, label, action);
     this.contextMenuEntryIds.add(id);

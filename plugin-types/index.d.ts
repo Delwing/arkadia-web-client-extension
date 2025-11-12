@@ -1055,6 +1055,10 @@ export interface PopupHandle {
      */
     readonly element: HTMLDivElement;
     /**
+     * Check if popup is pinned
+     */
+    readonly isPinned: boolean;
+    /**
      * Update popup title
      */
     setTitle(title: string): void;
@@ -1062,6 +1066,15 @@ export interface PopupHandle {
      * Update popup body content
      */
     setBody(content: PopupContent): void;
+    /**
+     * Set pinned state
+     */
+    setPinned(pinned: boolean): void;
+    /**
+     * Register a callback to be called when popup closes
+     * @param callback - Function to call when popup closes
+     */
+    onClose(callback: () => void): void;
     /**
      * Close and remove the popup
      */
@@ -1077,8 +1090,9 @@ export /**
 export interface PopupMenuEntryHandle {
     /**
      * Update the entry label
+     * @param label - String or DOM node for rich content
      */
-    setLabel(label: string): void;
+    setLabel(label: string | Node): void;
     /**
      * Enable or disable the entry
      */
@@ -1098,8 +1112,9 @@ export /**
 export interface ContextMenuEntryHandle {
     /**
      * Update the entry label
+     * @param label - String or DOM node for rich content
      */
-    setLabel(label: string): void;
+    setLabel(label: string | Node): void;
     /**
      * Update the entry action
      */
@@ -1112,7 +1127,7 @@ export interface ContextMenuEntryHandle {
 
 /**
    * Add an entry to the output context menu
-   * @param label - Entry label
+   * @param label - Entry label (string or DOM node for rich content like SVG icons)
    * @param action - Callback invoked when entry is selected
    * @returns Handle for updating or removing the entry
    */
@@ -1124,23 +1139,23 @@ export interface UiApi {
      * Create a draggable popup window
      * @param title - Popup title text
      * @param body - Popup body content (string or DOM node)
-     * @returns Handle for controlling the popup
+     * @returns Promise that resolves with handle for controlling the popup once mounted
      */
-    createPopup(title: string, body: PopupContent): PopupHandle;
+    createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
     /**
      * Add an entry to the popup (⋮) menu
-     * @param label - Entry label
+     * @param label - Entry label (string or DOM node for rich content like SVG icons)
      * @param onSelect - Callback invoked when entry is selected
      * @returns Handle for updating or removing the entry
      */
-    addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle;
+    addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle;
     /**
      * Add an entry to the output context menu
-     * @param label - Entry label
+     * @param label - Entry label (string or DOM node for rich content like SVG icons)
      * @param action - Callback invoked when entry is selected
      * @returns Handle for updating or removing the entry
      */
-    addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle;
+    addContextMenuEntry(label: string | Node, action: () => void): ContextMenuEntryHandle;
 }
 
 /**
@@ -1543,6 +1558,29 @@ export /**
  *   // Create colors
  *   const redColor = api.colors.fromHex("#ff0000");
  *   const blueColor = api.colors.fromRgb(0, 128, 255);
+ *
+ *   // Create a popup (Promise-based)
+ *   const popup = await api.ui.createPopup("My Popup", "Hello World!");
+ *   console.log("Popup element:", popup.element); // Element is guaranteed to exist
+ *
+ *   // Listen for close events
+ *   popup.onClose(() => {
+ *     console.log("Popup was closed!");
+ *   });
+ *
+ *   // Add context menu entry with SVG icon
+ *   const menuItem = document.createElement('span');
+ *   menuItem.innerHTML = '<svg width="16" height="16">...</svg> Action';
+ *   api.ui.addContextMenuEntry(menuItem, () => {
+ *     console.log("Context menu action!");
+ *   });
+ *
+ *   // Add popup menu entry with icon
+ *   const popupMenuItem = document.createElement('span');
+ *   popupMenuItem.innerHTML = '⚙️ Settings';
+ *   api.ui.addPopupMenuEntry(popupMenuItem, () => {
+ *     console.log("Settings!");
+ *   });
  *
  *   return {
  *     name: "My Plugin",

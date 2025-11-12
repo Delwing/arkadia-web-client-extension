@@ -1,5 +1,5 @@
 export type ContextMenuEntry = {
-    label: string;
+    label: string | Node;
     action: () => void;
 };
 
@@ -58,7 +58,11 @@ export function showContextMenu(
 
     items.forEach((item) => {
         const btn = document.createElement('button');
-        btn.textContent = item.label;
+        if (typeof item.label === 'string') {
+            btn.textContent = item.label;
+        } else {
+            btn.appendChild(item.label.cloneNode(true));
+        }
         btn.onclick = () => {
             hideContextMenu();
             item.action();
