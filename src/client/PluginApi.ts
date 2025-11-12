@@ -51,7 +51,7 @@ export interface PluginAlias {
 }
 
 /**
- * Triggers API
+ * Triggers API - Manage pattern-based triggers
  */
 export interface TriggersApi {
   /**
@@ -93,6 +93,20 @@ export interface TriggersApi {
    * @param tag - Optional tag for grouping/removal
    * @param options - Trigger options
    * @returns The registered trigger instance
+   *
+   * @example
+   * ```typescript
+   * // Match single word
+   * api.triggers.registerToken("zloto", (line, matches) => {
+   *   return line.color([0, line.text.length], api.colors.fromHex('#ffd700'));
+   * }, "myPlugin");
+   *
+   * // Match phrase (multiple tokens)
+   * api.triggers.registerToken("magiczny miecz", (line, matches) => {
+   *   api.output.print("Found magic sword!", "system");
+   *   return line;
+   * }, "myPlugin");
+   * ```
    */
   registerToken(
     token: string,
@@ -115,7 +129,7 @@ export interface TriggersApi {
 }
 
 /**
- * Aliases API
+ * Aliases API - Manage command aliases
  */
 export interface AliasesApi {
   /**
@@ -137,14 +151,32 @@ export interface AliasesApi {
 }
 
 /**
- * Events API
+ * Events API - Subscribe to and emit events
  */
 export interface EventsApi {
   /**
    * Subscribe to an event
-   * @param event - Event name
+   * @param event - Event name (see ClientEvents for available events)
    * @param listener - Event listener function
    * @param options - Listener options (once, signal)
+   *
+   * @example
+   * ```typescript
+   * // Subscribe to map movement
+   * api.events.on("mapMove", () => {
+   *   console.log("Player moved!");
+   * });
+   *
+   * // Subscribe to GMCP with typed payload
+   * api.events.on("gmcp", (data) => {
+   *   console.log("GMCP:", data.path, data.value);
+   * });
+   *
+   * // Subscribe to specific GMCP path
+   * api.events.on("gmcp.room.info", (roomData) => {
+   *   console.log("Room info:", roomData);
+   * });
+   * ```
    */
   on<K extends EventKey>(
     event: K,
@@ -163,34 +195,57 @@ export interface EventsApi {
    * Emit an event
    * @param event - Event name
    * @param args - Event arguments
+   *
+   * @example
+   * ```typescript
+   * // Emit a notification
+   * api.events.emit("notify", { text: "Hello!", time: 5000 });
+   *
+   * // Send a command
+   * api.events.emit("sendCommand", { command: "look", echo: true });
+   * ```
    */
   emit<K extends EventKey>(event: K, ...args: EventParams<K>): void;
 }
 
 /**
- * Map API
+ * Map API - Access and modify map location
  */
 export interface MapApi {
   /**
    * Get current room information
    * @returns Current room with full details or undefined if not in a room
+   *
+   * @example
+   * const room = api.map.getRoom();
+   * if (room) {
+   *   console.log(`Current room: ${room.name} (${room.id})`);
+   *   console.log(`Coordinates: ${room.x}, ${room.y}, ${room.z}`);
+   *   console.log(`Area: ${room.areaId}`);
+   * }
    */
   getRoom(): MapData.Room | undefined;
 
   /**
    * Set map location programmatically
    * @param roomId - Room ID to navigate to
+   *
+   * @example
+   * api.map.setLocation(12345);
    */
   setLocation(roomId: number): void;
 
   /**
    * Step back to previous map location
+   *
+   * @example
+   * api.map.stepBack();
    */
   stepBack(): void;
 }
 
 /**
- * Output API
+ * Output API - Print to game window
  */
 export interface OutputApi {
   /**
@@ -206,13 +261,13 @@ export interface OutputApi {
 export type PopupContent = string | Node;
 
 /**
- * Handle for controlling a popup window
+ * Handle returned when creating a popup window
  */
 export interface PopupHandle {
   /**
-   * Root element of the popup window
+   * Root popup element (for further customization)
    */
-  element: HTMLDivElement;
+  readonly element: HTMLDivElement;
 
   /**
    * Update popup title
@@ -231,7 +286,7 @@ export interface PopupHandle {
 }
 
 /**
- * Handle for a popup menu entry
+ * Handle for popup menu entries
  */
 export interface PopupMenuEntryHandle {
   /**
@@ -251,7 +306,7 @@ export interface PopupMenuEntryHandle {
 }
 
 /**
- * Handle for a context menu entry
+ * Handle for context menu entries
  */
 export interface ContextMenuEntryHandle {
   /**
@@ -265,48 +320,48 @@ export interface ContextMenuEntryHandle {
   setAction(action: () => void): void;
 
   /**
-   * Remove the entry from the context menu
+   * Remove the entry from the menu
    */
   remove(): void;
 }
 
 /**
- * UI-related helpers for plugins
+ * UI helpers for plugins
  */
 export interface UiApi {
   /**
    * Create a draggable popup window
    * @param title - Popup title text
    * @param body - Popup body content (string or DOM node)
-   * @returns Popup handle for updates and cleanup
+   * @returns Handle for controlling the popup
    */
   createPopup(title: string, body: PopupContent): PopupHandle;
 
   /**
-   * Add an entry to the main popup menu
+   * Add an entry to the popup (⋮) menu
    * @param label - Entry label
-   * @param onSelect - Callback when entry is selected
-   * @returns Handle to manage the entry
+   * @param onSelect - Callback invoked when entry is selected
+   * @returns Handle for updating or removing the entry
    */
   addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle;
 
   /**
    * Add an entry to the output context menu
    * @param label - Entry label
-   * @param action - Callback when entry is selected
-   * @returns Handle to manage the entry
+   * @param action - Callback invoked when entry is selected
+   * @returns Handle for updating or removing the entry
    */
   addContextMenuEntry(label: string, action: () => void): ContextMenuEntryHandle;
 }
 
 /**
- * Colors API
+ * Colors API - Create and manage colors
  */
 export interface ColorsApi {
   /**
    * Create a color from hex string
    * @param hex - Hex color string (e.g., "#ff0000")
-   * @returns Color format object
+   * @returns Format state with the color applied
    */
   fromHex(hex: string): FormatStateSnapshot;
 
@@ -315,48 +370,92 @@ export interface ColorsApi {
    * @param r - Red (0-255)
    * @param g - Green (0-255)
    * @param b - Blue (0-255)
-   * @returns Color format object
+   * @returns Format state with the color applied
    */
   fromRgb(r: number, g: number, b: number): FormatStateSnapshot;
 }
 
 /**
- * Function Bind API
+ * Function Bind API - Manage keyboard bindings
  */
 export interface BindApi {
   /**
    * Set a function bind - binds a command or callback to a key
+   * When the configured key is pressed, either the command will be sent
+   * or the callback will be executed.
+   *
    * @param printable - Command string to execute (or null to just use callback)
    * @param callback - Optional callback function to execute instead of sending command
    * @param clearAfterUse - If true, clear the bind after it's used once
+   *
+   * @example
+   * ```typescript
+   * // Bind a command to the function key
+   * api.bind.set("attack goblin");
+   *
+   * // Bind a callback function
+   * api.bind.set(null, () => {
+   *   api.output.print("Custom action triggered!", "system");
+   * });
+   *
+   * // Bind with auto-clear after use
+   * api.bind.set("use potion", undefined, true);
+   * ```
    */
   set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void;
 
   /**
    * Clear the current function bind
+   *
+   * @example
+   * ```typescript
+   * api.bind.clear();
+   * ```
    */
   clear(): void;
 
   /**
    * Get the current bind label (key combination)
-   * @returns Label string like "CTRL+]" or "ALT+SHIFT+K"
+   * Returns the configured key combination like "CTRL+]" or "ALT+SHIFT+K"
+   *
+   * @returns Label string representing the key combination
+   *
+   * @example
+   * ```typescript
+   * const label = api.bind.getLabel();
+   * api.output.print(`Function bind key: ${label}`, "system");
+   * ```
    */
   getLabel(): string;
 }
 
 /**
- * Team API
+ * Team API - Access team information
  */
 export interface TeamApi {
   /**
    * Get list of team member names
    * @returns Array of team member names
+   *
+   * @example
+   * ```typescript
+   * const members = api.team.getMembers();
+   * api.output.print(`Team has ${members.length} members`, "system");
+   * ```
    */
   getMembers(): string[];
 
   /**
    * Get the team leader's name
    * @returns Leader name or undefined if not in a team
+   *
+   * @example
+   * ```typescript
+   * const leader = api.team.getLeader();
+   * if (leader) {
+   *   api.output.print(`Team leader: ${leader}`, "system");
+   * }
+   * ```
    */
   getLeader(): string | undefined;
 
@@ -374,25 +473,40 @@ export interface TeamApi {
 }
 
 /**
- * GMCP API
+ * GMCP API - Access GMCP data
  */
 export interface GmcpApi {
   /**
    * Get the current GMCP data object
    * Contains all GMCP data received from the server
    * @returns GMCP data object
+   *
+   * @example
+   * ```typescript
+   * const gmcp = api.gmcp.get();
+   * const hp = gmcp?.char?.vitals?.hp;
+   * const roomName = gmcp?.room?.info?.name;
+   * ```
    */
   get(): Record<string, any>;
 }
 
 /**
- * Attack Queue API
+ * Attack Queue API - Manage attack queue
  */
 export interface AttackQueueApi {
   /**
    * Add an enemy to the attack queue
    * @param id - Object ID of the enemy
    * @returns True if added successfully, false if already in queue
+   *
+   * @example
+   * ```typescript
+   * const added = api.attackQueue.add("12345");
+   * if (added) {
+   *   api.output.print("Enemy added to queue", "system");
+   * }
+   * ```
    */
   add(id: string): boolean;
 
@@ -400,17 +514,34 @@ export interface AttackQueueApi {
    * Remove an enemy from the attack queue
    * @param id - Object ID of the enemy
    * @returns True if removed successfully, false if not found
+   *
+   * @example
+   * ```typescript
+   * api.attackQueue.remove("12345");
+   * ```
    */
   remove(id: string): boolean;
 
   /**
    * Clear the entire attack queue
+   *
+   * @example
+   * ```typescript
+   * api.attackQueue.clear();
+   * api.output.print("Attack queue cleared", "system");
+   * ```
    */
   clear(): void;
 
   /**
    * Get the current attack queue
    * @returns Array of enemy object IDs in queue order
+   *
+   * @example
+   * ```typescript
+   * const queue = api.attackQueue.get();
+   * api.output.print(`Queue has ${queue.length} enemies`, "system");
+   * ```
    */
   get(): string[];
 }
@@ -440,19 +571,38 @@ export interface LocationObject {
 }
 
 /**
- * Objects API
+ * Objects API - Access objects in current location
  */
 export interface ObjectsApi {
   /**
    * Get all objects in current location
    * Returns objects organized by category (player, team, enemies, non-combat)
+   * with shortcuts assigned for easy targeting
+   *
    * @returns Array of location objects with shortcuts and categories
+   *
+   * @example
+   * ```typescript
+   * const objects = api.objects.getObjectsOnLocation();
+   *
+   * // Find player object
+   * const player = objects.find(o => o.__category === 'player');
+   *
+   * // Find all enemies
+   * const enemies = objects.filter(o => o.__category === 'rest');
+   *
+   * // Find object by shortcut
+   * const target = objects.find(o => o.shortcut === '1');
+   * if (target) {
+   *   api.output.print(`Target: ${target.desc} (${target.num})`, "system");
+   * }
+   * ```
    */
   getObjectsOnLocation(): LocationObject[];
 }
 
 /**
- * Command API
+ * Command API - Send commands to the server
  */
 export interface CommandApi {
   /**
@@ -460,6 +610,19 @@ export interface CommandApi {
    * @param command - Command string to send
    * @param echo - Whether to echo the command in the output (default: true)
    * @param options - Additional command options
+   *
+   * @example
+   * ```typescript
+   * // Send a simple command
+   * api.command.send("look");
+   *
+   * // Send a command without echoing it
+   * api.command.send("attack goblin", false);
+   *
+   * // Send multiple commands in a sequence
+   * await api.command.send("get sword");
+   * await api.command.send("wield sword");
+   * ```
    */
   send(command: string, echo?: boolean, options?: any): Promise<void>;
 }
@@ -469,6 +632,44 @@ export interface CommandApi {
  *
  * This is the main interface that plugins interact with.
  * Provides controlled access to client functionality organized by domain.
+ *
+ * @example
+ * ```typescript
+ * export async function init(api: PluginApi): Promise<PluginInfo> {
+ *   // Register a trigger
+ *   api.triggers.register(/pattern/i, (line, matches) => {
+ *     return line.prepend(">> ");
+ *   }, "myPlugin");
+ *
+ *   // Register an alias
+ *   api.aliases.register(/^\/cmd$/, () => {
+ *     api.output.print("Command executed!", "system");
+ *     return true;
+ *   });
+ *
+ *   // Subscribe to events (fully typed!)
+ *   api.events.on("mapMove", () => {
+ *     console.log("Player moved!");
+ *   });
+ *
+ *   api.events.on("gmcp", (data) => {
+ *     console.log("GMCP data:", data.path, data.value);
+ *   });
+ *
+ *   // Get current room
+ *   const room = api.map.getRoom();
+ *   if (room) console.log(`In ${room.name}`);
+ *
+ *   // Create colors
+ *   const redColor = api.colors.fromHex("#ff0000");
+ *   const blueColor = api.colors.fromRgb(0, 128, 255);
+ *
+ *   return {
+ *     name: "My Plugin",
+ *     version: "1.0.0"
+ *   };
+ * }
+ * ```
  */
 export interface PluginApi {
   /** Trigger management */
@@ -497,7 +698,17 @@ export interface PluginApi {
   objects: ObjectsApi;
   /** Command sending */
   command: CommandApi;
-  /** AnsiAwareBuffer class for creating formatted text buffers */
+  /**
+   * AnsiAwareBuffer class for creating formatted text buffers
+   *
+   * Use this to create custom formatted output for api.output.print()
+   *
+   * @example
+   * // Create a formatted buffer
+   * const buffer = new api.AnsiAwareBuffer("Hello ", api.colors.fromHex('#00ff00'));
+   * buffer.append("world!", api.colors.fromHex('#ff0000'));
+   * api.output.print(buffer);
+   */
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 

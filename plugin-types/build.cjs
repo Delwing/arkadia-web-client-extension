@@ -1,10 +1,9 @@
 /**
  * Build script for plugin-types tarball
  *
- * NOTE: The index.d.ts file is manually maintained but references types from src/client/PluginApi.ts
- * This avoids TypeScript compilation issues while maintaining a single source of truth.
- *
- * When updating PluginApi.ts, make sure index.d.ts stays in sync.
+ * This script:
+ * 1. Generates index.d.ts from src/client/PluginApi.ts (single source of truth)
+ * 2. Creates a tarball for distribution
  */
 
 const { execSync } = require('child_process');
@@ -17,6 +16,22 @@ const OUTPUT_FILE = path.join(OUTPUT_DIR, 'arkadia-plugin-types.tgz');
 
 console.log('📦 Building @arkadia/plugin-types tarball...');
 
+// Step 1: Generate type definitions
+console.log('');
+console.log('Step 1: Generating type definitions...');
+try {
+  execSync('node generate-types.cjs', {
+    cwd: TYPES_DIR,
+    stdio: 'inherit'
+  });
+} catch (error) {
+  console.error('✗ Error generating types:', error.message);
+  process.exit(1);
+}
+
+console.log('');
+console.log('Step 2: Creating tarball...');
+
 // Create dist directory if it doesn't exist
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -24,7 +39,6 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 
 try {
   // Create tarball using npm pack
-  console.log('Creating tarball...');
   execSync('npm pack', {
     cwd: TYPES_DIR,
     stdio: 'inherit'

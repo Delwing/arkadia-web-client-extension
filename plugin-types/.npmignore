@@ -1,0 +1,6 @@
+# Build scripts (not needed in published package)
+build.cjs
+generate-types.cjs
+
+# Distribution directory (nested tarball)
+dist/
