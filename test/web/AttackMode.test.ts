@@ -37,17 +37,15 @@ describe("AttackMode indicator", () => {
         act(() => {
             eventBus.emit("isTeamLeader", true);
         });
-        const span = container.querySelector("span");
-        expect(span).toBeTruthy();
-        expect(span!.textContent).toBe("Atk: A");
-        expect(span!.className).toBe("A");
+        expect(container.style.display).toBe("inline");
+        expect(container.textContent).toBe("Atk: A");
+        expect(container.className).toBe("A");
 
         act(() => {
             eventBus.emit("attackMode", "AW");
         });
-        const spanAfter = container.querySelector("span");
-        expect(spanAfter!.textContent).toBe("Atk: AW");
-        expect(spanAfter!.className).toBe("AW");
+        expect(container.textContent).toBe("Atk: AW");
+        expect(container.className).toBe("AW");
     });
 
     test("click cycles mode and emits event", () => {
@@ -57,29 +55,25 @@ describe("AttackMode indicator", () => {
         const emitSpy = jest.spyOn(eventBus, "emit");
         emitSpy.mockClear();
 
-        let span = container.querySelector("span");
-        expect(span).toBeTruthy();
+        expect(container.style.display).toBe("inline");
 
         act(() => {
-            span!.click();
+            container.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AW");
-        span = container.querySelector("span");
-        expect(span!.textContent).toBe("Atk: AW");
+        expect(container.textContent).toBe("Atk: AW");
 
         act(() => {
-            span!.click();
+            container.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "AWR");
-        span = container.querySelector("span");
-        expect(span!.textContent).toBe("Atk: AWR");
+        expect(container.textContent).toBe("Atk: AWR");
 
         act(() => {
-            span!.click();
+            container.click();
         });
         expect(emitSpy).toHaveBeenLastCalledWith("attackMode", "A");
-        span = container.querySelector("span");
-        expect(span!.textContent).toBe("Atk: A");
+        expect(container.textContent).toBe("Atk: A");
 
         emitSpy.mockRestore();
     });
@@ -88,14 +82,13 @@ describe("AttackMode indicator", () => {
         act(() => {
             eventBus.emit("isTeamLeader", false);
         });
-        let span = container.querySelector("span");
-        expect(span).toBeNull();
+        expect(container.style.display).toBe("none");
+        expect(container.textContent).toBe("");
 
         act(() => {
             eventBus.emit("isTeamLeader", true);
         });
-        span = container.querySelector("span");
-        expect(span).toBeTruthy();
-        expect(span!.textContent).toBe("Atk: A");
+        expect(container.style.display).toBe("inline");
+        expect(container.textContent).toBe("Atk: A");
     });
 });

@@ -1,4 +1,4 @@
-import {useCallback, useState} from "react";
+import {useCallback, useState, useEffect, useRef} from "react";
 import eventBus from "@modules/core/eventBus";
 import {useClientEvent, useLocalStorage} from "../../hooks";
 
@@ -8,6 +8,13 @@ type Mode = (typeof MODES)[number];
 const isMode = (value: unknown): value is Mode =>
     typeof value === "string" && (MODES as readonly string[]).includes(value);
 
+/**
+ * AttackMode component - displays attack mode indicator when player is team leader
+ * Shows "Atk: A/AW/AWR" and allows cycling through modes on click
+ *
+ * Note: This component manipulates the container element directly to match
+ * the behavior expected by the CSS (#attack-mode.A, #attack-mode.AW, #attack-mode.AWR)
+ */
 export const AttackMode = () => {
     const [attack_mode] = useLocalStorage<Partial<Mode>>("attack_mode", "A");
     const [mode, setMode] = useState<Mode>(() => {
@@ -16,6 +23,7 @@ export const AttackMode = () => {
     });
 
     const [isLeader, setIsLeader] = useState(false);
+    const containerRef = useRef<HTMLElement | null>(null);
 
     useClientEvent("isTeamLeader", (flag) => {
         setIsLeader(Boolean(flag));
@@ -27,6 +35,11 @@ export const AttackMode = () => {
         }
     })
 
+    // Get reference to the container element
+    useEffect(() => {
+        containerRef.current = document.getElementById("attack-mode");
+    }, []);
+
     const handleClick = useCallback(() => {
         if (!isLeader) return;
         setMode((current) => {
@@ -37,10 +50,33 @@ export const AttackMode = () => {
         });
     }, [isLeader]);
 
-    if (!isLeader) return null;
-    const className = isLeader ? mode : "";
+    // Set up click handler
+    useEffect(() => {
+        if (!containerRef.current) return;
 
-    return (
-        <span className={className} onClick={handleClick}>{`Atk: ${mode}`}</span>
-    );
+        containerRef.current.addEventListener("click", handleClick);
+
+        return () => {
+            containerRef.current?.removeEventListener("click", handleClick);
+        };
+    }, [handleClick]);
+
+    // Update the container element's properties
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        if (!isLeader) {
+            containerRef.current.style.display = "none";
+            containerRef.current.className = "";
+            containerRef.current.innerHTML = "";
+            return;
+        }
+
+        containerRef.current.style.display = "inline";
+        containerRef.current.className = mode;
+        containerRef.current.innerHTML = `Atk: ${mode}`;
+        containerRef.current.style.cursor = "pointer";
+    }, [isLeader, mode]);
+
+    return null;
 };
