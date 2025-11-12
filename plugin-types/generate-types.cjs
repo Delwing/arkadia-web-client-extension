@@ -98,7 +98,10 @@ function shouldExport(node) {
         name === 'TriggerPattern' ||
         name === 'TriggerSubPattern' ||
         name === 'Trigger' ||
-        name === 'LocationObject') {
+        name === 'LocationObject' ||
+        name === 'EventKey' ||
+        name === 'EventParams' ||
+        name === 'EventListener') {
       return true;
     }
   }
@@ -586,14 +589,11 @@ export interface Room {
 
 // Now we need to add the ClientEvents interface
 // Read the events file to get the event types
-const eventsFilePath = path.join(PROJECT_ROOT, 'src', 'shared', 'events.ts');
+const eventsFilePath = path.join(PROJECT_ROOT, 'src', 'shared', 'events', 'clientEvents.ts');
 if (fs.existsSync(eventsFilePath)) {
   const eventsContent = fs.readFileSync(eventsFilePath, 'utf-8');
 
-  // Extract ClientEvents interface
-  const eventInterfaceMatch = eventsContent.match(/export interface ClientEvents\s*\{[\s\S]*?\n\}/);
-  if (eventInterfaceMatch) {
-    output.push(`
+  output.push(`
 // ============================================================================
 // Event Types
 // ============================================================================
@@ -743,9 +743,187 @@ export interface ClockSunEventPayload {
  * Known client events with their payloads
  * Subscribe to these events using api.events.on()
  */
-${eventInterfaceMatch[0]}
+export interface ClientEvents {
+  /** Command sent to the MUD server */
+  "command": string;
+  /** Port connection established */
+  "port-connected": void;
+  /** Output line sent to display */
+  "output-sent": number;
+  /** Buffer sent */
+  "buffer-sent": number;
+  /** Map position changed */
+  "mapMove": void;
+  /** Step back in location history */
+  "stepBack": void;
+  /** Lead to specific room ID */
+  "leadTo": number;
+  /** Clear lead to destination */
+  "clearLeadTo": void;
+  /** Display notification */
+  "notify": NotificationPayload;
+  /** Lamp timer updated */
+  "lampTimer": number | null;
+  /** Cover timer updated */
+  "coverTimer": number | null;
+  /** Break item warning */
+  "breakItem": { text: string; command?: string } | null;
+  /** Package delivery status */
+  "packageStatus": PackageStatus | null;
+  /** Release guard status */
+  "releaseGuard": boolean;
+  /** Attack mode changed */
+  "attackMode": "A" | "AW" | "AWR";
+  /** Content width changed */
+  "contentWidth": number;
+  /** Entered a location */
+  "enterLocation": { id: number; room: unknown };
+  /** Highlights updated */
+  "highlights": number[];
+  /** Multibind list updated */
+  "multibinds": MultibindList;
+  /** Letter composer state */
+  "letterComposer": { open: boolean };
+  /** Letter composer submit */
+  "letterComposer.submit": unknown;
+  /** Letter composer preview */
+  "letterComposer.preview": unknown;
+  /** NPC information */
+  "npc": unknown;
+  /** Zask timer status */
+  "zaskTimer": { seconds: number; ok: boolean } | null;
+  /** Move mode changed */
+  "moveModeChanged": number;
+  /** Ping measurement */
+  "ping": number | null;
+  /** Transport timer status */
+  "transportTimer": unknown;
+  /** Combat timer */
+  "combatTimer": number | null;
+  /** Team leader target without avatar */
+  "teamLeaderTargetNoAvatar": string;
+  /** Team leader target with avatar */
+  "teamLeaderTargetAvatar": void;
+  /** Team composition changed */
+  "teamChange": void;
+  /** Is team leader status */
+  "isTeamLeader": boolean;
+  /** Reset client state */
+  "reset": void;
+  /** Refresh map position when able */
+  "refreshPositionWhenAble": void;
+  /** Knowledge report */
+  "knowledgeReport": unknown | null;
+  /** Knowledge details report */
+  "knowledgeDetailsReport": unknown | null;
+  /** Knowledge report action */
+  "knowledgeReportAction": KnowledgeReportAction;
+  /** Send command to server */
+  "sendCommand": SendCommandEvent;
+  /** Request herb counts */
+  "requestHerbCounts": void;
+  /** Herb manager closed */
+  "herbManagerClose": void;
+  /** Herb counts data */
+  "herbCounts": unknown;
+  /** Herb manager opened */
+  "herbManagerOpen": void;
+  /** Play sound effect */
+  "sound:play": { key: string };
+  /** Play beep sound */
+  "playBeep": void;
+  /** Line start marker */
+  "line-start": void;
+  /** Storage value changed */
+  "storage": StorageEventPayload;
+  /** Settings updated */
+  "settings": unknown;
+  /** Binds updated */
+  "binds": unknown;
+  /** UI settings updated */
+  "uiSettings": unknown;
+  /** Mobile buttons settings updated */
+  "mobileButtonsSettings": unknown;
+  /** Pauser started */
+  "pauserStart": void;
+  /** Pauser ended */
+  "pauserEnd": void;
+  /** Client connected to server */
+  "client.connect": void;
+  /** Client disconnected from server */
+  "client.disconnect": void;
+  /** WebSocket opened */
+  "open": Event;
+  /** WebSocket closed */
+  "close": CloseEvent;
+  /** Error occurred */
+  "error": unknown;
+  /** GMCP data received */
+  "gmcp": { path: string; value: unknown };
+  /** Recording started */
+  "recording.start": string;
+  /** Recording stopped */
+  "recording.stop": boolean | undefined;
+  /** Auto-recording started */
+  "recording.auto.start": string | null | undefined;
+  /** Auto-recording stopped */
+  "recording.auto.stop": RecordingAutoStopPayload;
+  /** Playback stopped */
+  "playback.stop": void;
+  /** Playback paused */
+  "playback.pause": void;
+  /** Playback resumed */
+  "playback.resume": void;
+  /** Playback started */
+  "playback.start": number | undefined;
+  /** Playback speed changed */
+  "playback.speed": number;
+  /** Playback index changed */
+  "playback.index": PlaybackIndexPayload;
+  /** Message output */
+  "message": MessageEventPayload;
+  /** Attack queue changed */
+  "attackQueueChange": string[];
+  /** Clear attack queue */
+  "clearAttackQueue": void;
+  /** Add to attack queue */
+  "addToAttackQueue": string;
+  /** Remove from attack queue */
+  "removeFromAttackQueue": string;
+  /** Objects parsed */
+  "parsedObjects": void;
+  /** Numbers parsed */
+  "parsedNums": { nums: number[] };
+  /** Kill event */
+  "kill": { killer: "ME" | "TEAM" | "OTHER" };
+  /** Enemy killed */
+  "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
+  /** All enemies killed */
+  "allEnemiesKilled": void;
+  /** Plugin loaded successfully */
+  "plugin:loaded": PluginLoadedPayload;
+  /** Plugin error occurred */
+  "plugin:error": PluginErrorPayload;
+  /** Plugin destroyed */
+  "plugin:destroyed": PluginDestroyedPayload;
+  /** Clock update */
+  "clock.update": ClockUpdatePayload;
+  /** Clock domain active */
+  "clock.domain.active": ClockDomainActivePayload;
+  /** Clock popup opened */
+  "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+  /** Clock mismatch detected */
+  "clock.mismatch": ClockMismatchPayload;
+  /** Clock sunrise */
+  "clock.sunrise": ClockSunEventPayload;
+  /** Clock sunset */
+  "clock.sunset": ClockSunEventPayload;
+  /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
+  [key: \`gmcp.\${string}\`]: unknown;
+  /** GMCP message events */
+  [key: \`gmcp_msg.\${string}\`]: AnsiAwareBuffer;
+}
 `);
-  }
 }
 
 output.push(`

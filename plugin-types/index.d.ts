@@ -455,9 +455,376 @@ export interface Room {
 
 
 // ============================================================================
+// Event Types
+// ============================================================================
+
+/**
+ * Send command event payload
+ */
+export interface SendCommandEvent {
+  command: string;
+  echo?: boolean;
+  options?: {
+    mode?: string;
+    [key: string]: any;
+  };
+}
+
+/**
+ * Notification event payload
+ */
+export interface NotificationPayload {
+  text: string;
+  time?: number;
+}
+
+/**
+ * Storage event payload
+ */
+export interface StorageEventPayload {
+  key: string;
+  value: unknown;
+}
+
+/**
+ * Multibind list event payload
+ */
+export interface MultibindList {
+  list: { index: number; action: string; label: string }[];
+}
+
+/**
+ * Message event payload (output text)
+ */
+export type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, timestamp?: number];
+
+/**
+ * Recording auto-stop event payload
+ */
+export type RecordingAutoStopPayload = [name: string | null, save?: boolean];
+
+/**
+ * Playback index event payload
+ */
+export type PlaybackIndexPayload = [current: number, total: number];
+
+/**
+ * Knowledge report action
+ */
+export type KnowledgeReportAction =
+  | { type: "completeLibrary"; libraryId: string }
+  | { type: "resetLibrary"; libraryId: string };
+
+/**
+ * Package status event payload
+ */
+export interface PackageStatus {
+  recipient: string;
+  seconds?: number;
+}
+
+/**
+ * Plugin loaded event payload
+ */
+export interface PluginLoadedPayload {
+  url: string;
+  info: {
+    name: string;
+    version: string;
+    author?: string;
+    description?: string;
+  };
+}
+
+/**
+ * Plugin error event payload
+ */
+export interface PluginErrorPayload {
+  url: string;
+  error: string;
+}
+
+/**
+ * Plugin destroyed event payload
+ */
+export interface PluginDestroyedPayload {
+  url: string;
+}
+
+/**
+ * Clock update event payload
+ */
+export interface ClockUpdatePayload {
+  domain: "Empire" | "Ishtar";
+  hours: number;
+  minutes: number;
+  precision: number;
+  sunrise: number | string | "?";
+  sunset: number | string | "?";
+  dayLabel: string;
+  dayOfMonth: number;
+  dayOfYear: number;
+  daylight?: boolean;
+  season?: number;
+}
+
+/**
+ * Clock domain active event payload
+ */
+export interface ClockDomainActivePayload {
+  domain: "Empire" | "Ishtar";
+}
+
+/**
+ * Clock mismatch event payload
+ */
+export interface ClockMismatchPayload {
+  domain: "Empire" | "Ishtar";
+  type: "sunrise" | "sunset";
+  dayOfYear: number;
+  expectedHour: number;
+  observedHour: number;
+  observedMinutes: number;
+  indicatedHour?: string;
+}
+
+/**
+ * Clock sun event payload (sunrise/sunset)
+ */
+export interface ClockSunEventPayload {
+  domain: "Empire" | "Ishtar";
+  dayOfYear: number;
+  observedHour: number;
+  observedMinutes: number;
+  indicatedHour?: string;
+}
+
+/**
+ * Known client events with their payloads
+ * Subscribe to these events using api.events.on()
+ */
+export interface ClientEvents {
+  /** Command sent to the MUD server */
+  "command": string;
+  /** Port connection established */
+  "port-connected": void;
+  /** Output line sent to display */
+  "output-sent": number;
+  /** Buffer sent */
+  "buffer-sent": number;
+  /** Map position changed */
+  "mapMove": void;
+  /** Step back in location history */
+  "stepBack": void;
+  /** Lead to specific room ID */
+  "leadTo": number;
+  /** Clear lead to destination */
+  "clearLeadTo": void;
+  /** Display notification */
+  "notify": NotificationPayload;
+  /** Lamp timer updated */
+  "lampTimer": number | null;
+  /** Cover timer updated */
+  "coverTimer": number | null;
+  /** Break item warning */
+  "breakItem": { text: string; command?: string } | null;
+  /** Package delivery status */
+  "packageStatus": PackageStatus | null;
+  /** Release guard status */
+  "releaseGuard": boolean;
+  /** Attack mode changed */
+  "attackMode": "A" | "AW" | "AWR";
+  /** Content width changed */
+  "contentWidth": number;
+  /** Entered a location */
+  "enterLocation": { id: number; room: unknown };
+  /** Highlights updated */
+  "highlights": number[];
+  /** Multibind list updated */
+  "multibinds": MultibindList;
+  /** Letter composer state */
+  "letterComposer": { open: boolean };
+  /** Letter composer submit */
+  "letterComposer.submit": unknown;
+  /** Letter composer preview */
+  "letterComposer.preview": unknown;
+  /** NPC information */
+  "npc": unknown;
+  /** Zask timer status */
+  "zaskTimer": { seconds: number; ok: boolean } | null;
+  /** Move mode changed */
+  "moveModeChanged": number;
+  /** Ping measurement */
+  "ping": number | null;
+  /** Transport timer status */
+  "transportTimer": unknown;
+  /** Combat timer */
+  "combatTimer": number | null;
+  /** Team leader target without avatar */
+  "teamLeaderTargetNoAvatar": string;
+  /** Team leader target with avatar */
+  "teamLeaderTargetAvatar": void;
+  /** Team composition changed */
+  "teamChange": void;
+  /** Is team leader status */
+  "isTeamLeader": boolean;
+  /** Reset client state */
+  "reset": void;
+  /** Refresh map position when able */
+  "refreshPositionWhenAble": void;
+  /** Knowledge report */
+  "knowledgeReport": unknown | null;
+  /** Knowledge details report */
+  "knowledgeDetailsReport": unknown | null;
+  /** Knowledge report action */
+  "knowledgeReportAction": KnowledgeReportAction;
+  /** Send command to server */
+  "sendCommand": SendCommandEvent;
+  /** Request herb counts */
+  "requestHerbCounts": void;
+  /** Herb manager closed */
+  "herbManagerClose": void;
+  /** Herb counts data */
+  "herbCounts": unknown;
+  /** Herb manager opened */
+  "herbManagerOpen": void;
+  /** Play sound effect */
+  "sound:play": { key: string };
+  /** Play beep sound */
+  "playBeep": void;
+  /** Line start marker */
+  "line-start": void;
+  /** Storage value changed */
+  "storage": StorageEventPayload;
+  /** Settings updated */
+  "settings": unknown;
+  /** Binds updated */
+  "binds": unknown;
+  /** UI settings updated */
+  "uiSettings": unknown;
+  /** Mobile buttons settings updated */
+  "mobileButtonsSettings": unknown;
+  /** Pauser started */
+  "pauserStart": void;
+  /** Pauser ended */
+  "pauserEnd": void;
+  /** Client connected to server */
+  "client.connect": void;
+  /** Client disconnected from server */
+  "client.disconnect": void;
+  /** WebSocket opened */
+  "open": Event;
+  /** WebSocket closed */
+  "close": CloseEvent;
+  /** Error occurred */
+  "error": unknown;
+  /** GMCP data received */
+  "gmcp": { path: string; value: unknown };
+  /** Recording started */
+  "recording.start": string;
+  /** Recording stopped */
+  "recording.stop": boolean | undefined;
+  /** Auto-recording started */
+  "recording.auto.start": string | null | undefined;
+  /** Auto-recording stopped */
+  "recording.auto.stop": RecordingAutoStopPayload;
+  /** Playback stopped */
+  "playback.stop": void;
+  /** Playback paused */
+  "playback.pause": void;
+  /** Playback resumed */
+  "playback.resume": void;
+  /** Playback started */
+  "playback.start": number | undefined;
+  /** Playback speed changed */
+  "playback.speed": number;
+  /** Playback index changed */
+  "playback.index": PlaybackIndexPayload;
+  /** Message output */
+  "message": MessageEventPayload;
+  /** Attack queue changed */
+  "attackQueueChange": string[];
+  /** Clear attack queue */
+  "clearAttackQueue": void;
+  /** Add to attack queue */
+  "addToAttackQueue": string;
+  /** Remove from attack queue */
+  "removeFromAttackQueue": string;
+  /** Objects parsed */
+  "parsedObjects": void;
+  /** Numbers parsed */
+  "parsedNums": { nums: number[] };
+  /** Kill event */
+  "kill": { killer: "ME" | "TEAM" | "OTHER" };
+  /** Enemy killed */
+  "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
+  /** All enemies killed */
+  "allEnemiesKilled": void;
+  /** Plugin loaded successfully */
+  "plugin:loaded": PluginLoadedPayload;
+  /** Plugin error occurred */
+  "plugin:error": PluginErrorPayload;
+  /** Plugin destroyed */
+  "plugin:destroyed": PluginDestroyedPayload;
+  /** Clock update */
+  "clock.update": ClockUpdatePayload;
+  /** Clock domain active */
+  "clock.domain.active": ClockDomainActivePayload;
+  /** Clock popup opened */
+  "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+  /** Clock mismatch detected */
+  "clock.mismatch": ClockMismatchPayload;
+  /** Clock sunrise */
+  "clock.sunrise": ClockSunEventPayload;
+  /** Clock sunset */
+  "clock.sunset": ClockSunEventPayload;
+  /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
+  [key: `gmcp.${string}`]: unknown;
+  /** GMCP message events */
+  [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
+}
+
+
+// ============================================================================
 // API Namespaces
 // ============================================================================
 
+
+/**
+ * Valid event names from ClientEvents
+ */
+export // Event system types
+/**
+ * Valid event names from ClientEvents
+ */
+export type EventKey = keyof ClientEvents;
+
+/**
+ * Event parameters for a given event key
+ */
+export /**
+ * Event parameters for a given event key
+ */
+export type EventParams<K extends EventKey> = [
+    ClientEvents[K]
+] extends [
+    void
+] ? [
+] : [
+    ClientEvents[K]
+] extends [
+    any[]
+] ? ClientEvents[K] : [
+    ClientEvents[K]
+];
+
+/**
+ * Event listener function type for a given event key
+ */
+export /**
+ * Event listener function type for a given event key
+ */
+export type EventListener<K extends EventKey> = (...args: EventParams<K>) => void;
 
 /**
    * Remove all triggers with a specific tag

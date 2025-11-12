@@ -33,13 +33,24 @@ import { createRoot } from "react-dom/client";
 import { PluginPopup } from "../ui/web/components/PluginPopup";
 
 // Event system types
-type EventKey = keyof ClientEvents;
-type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
+/**
+ * Valid event names from ClientEvents
+ */
+export type EventKey = keyof ClientEvents;
+
+/**
+ * Event parameters for a given event key
+ */
+export type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
   ? []
   : [ClientEvents[K]] extends [any[]]
     ? ClientEvents[K]
     : [ClientEvents[K]];
-type EventListener<K extends EventKey> = (...args: EventParams<K>) => void;
+
+/**
+ * Event listener function type for a given event key
+ */
+export type EventListener<K extends EventKey> = (...args: EventParams<K>) => void;
 
 /**
  * Alias definition for command aliases
