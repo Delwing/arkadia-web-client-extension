@@ -112,7 +112,7 @@ export default class People {
                     const chosenColor = state.isEnemy ? RED : state.guildColor!
                     const nameCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
                         const token = matches[0]
-                        const indices = this.findTokenIndices(line.text, token)
+                        const indices = this.findTokenIndices(line.text, token, true)
                         if (indices.length === 0) {
                             return line
                         }
@@ -121,7 +121,7 @@ export default class People {
                         }
                         return line
                     }
-                    this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: true})
+                    this.client.Triggers.registerTokenTrigger(replacement.name, nameCallback, this.tag, {caseInsensitive: false})
                     addedNames.add(key)
                 }
             }
@@ -151,13 +151,13 @@ export default class People {
         return char >= '0' && char <= '9'
     }
 
-    private findTokenIndices(text: string, token: string) {
+    private findTokenIndices(text: string, token: string, caseSensitive = false) {
         const indices: number[] = []
         if (!token) {
             return indices
         }
-        const haystack = text.toLowerCase()
-        const needle = token.toLowerCase()
+        const haystack = caseSensitive ? text : text.toLowerCase()
+        const needle = caseSensitive ? token : token.toLowerCase()
         let index = haystack.indexOf(needle)
         while (index !== -1) {
             const before = index === 0 ? undefined : text[index - 1]

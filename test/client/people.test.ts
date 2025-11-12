@@ -230,3 +230,111 @@ describe('people triggers guild highlight', () => {
     expect(hasColoredText(result, '(w GP)')).toBe(true);
   });
 });
+
+describe('people triggers case sensitivity', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
+
+  beforeEach(async () => {
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+    forceRefreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
+    client = new FakeClient();
+    new People((client as unknown) as any);
+    await refreshMock.mock.results[0]?.value;
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
+    if (handler) {
+      handler({ guilds: [], enemyGuilds: ['CKN'] });
+    }
+    const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
+    await lastCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
+  });
+
+  test('name trigger matches exact case', () => {
+    const result = parse('Eamon wita cie.');
+
+    // Exact case should match and be colored
+    expect(hasColoredText(result, 'Eamon')).toBe(true);
+  });
+
+  test('name trigger does not match lowercase', () => {
+    const result = parse('eamon wita cie.');
+
+    // Lowercase should not match
+    expect(hasColoredText(result, 'eamon')).toBe(false);
+    // Text should remain unchanged (no coloring)
+    expect(result?.text).toBe('eamon wita cie.');
+  });
+
+  test('name trigger does not match uppercase', () => {
+    const result = parse('EAMON wita cie.');
+
+    // Uppercase should not match
+    expect(hasColoredText(result, 'EAMON')).toBe(false);
+    expect(result?.text).toBe('EAMON wita cie.');
+  });
+
+  test('name trigger does not match mixed case', () => {
+    const result = parse('EaMoN wita cie.');
+
+    // Mixed case should not match
+    expect(hasColoredText(result, 'EaMoN')).toBe(false);
+    expect(result?.text).toBe('EaMoN wita cie.');
+  });
+
+  test('description trigger remains case insensitive', () => {
+    // Test uppercase description
+    const result1 = parse('Widzisz WYSOKI MEZCZYZNA tutaj.');
+    expect(result1?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result1, 'Eamon')).toBe(true);
+    expect(hasColoredText(result1, 'CKN')).toBe(true);
+
+    // Test lowercase description
+    const result2 = parse('Widzisz wysoki mezczyzna tutaj.');
+    expect(result2?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result2, 'Eamon')).toBe(true);
+    expect(hasColoredText(result2, 'CKN')).toBe(true);
+
+    // Test mixed case - different combinations
+    const result3 = parse('Widzisz WYSOKI mezczyzna tutaj.');
+    expect(result3?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result3, 'Eamon')).toBe(true);
+
+    const result4 = parse('Widzisz wysoki MEZCZYZNA tutaj.');
+    expect(result4?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result4, 'Eamon')).toBe(true);
+  });
+
+  test('multiple names with different cases only matches exact case', () => {
+    const result = parse('Eamon i eamon oraz EAMON rozmawiaja.');
+
+    // Only exact case "Eamon" should be colored (once)
+    expect(countColoredOccurrences(result, 'Eamon')).toBe(1);
+    // The other variants should not be colored
+    expect(result?.text).toContain('eamon');
+    expect(result?.text).toContain('EAMON');
+  });
+});
