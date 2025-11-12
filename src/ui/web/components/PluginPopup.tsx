@@ -9,6 +9,7 @@ export interface PluginPopupProps {
     onClose: () => void;
     onTitleChange?: (callback: (title: string) => void) => void;
     onBodyChange?: (callback: (body: string | Node) => void) => void;
+    onPanelRef?: (element: HTMLDivElement | null) => void;
 }
 
 /**
@@ -22,7 +23,8 @@ export function PluginPopup({
     isPinned = false,
     onClose,
     onTitleChange,
-    onBodyChange
+    onBodyChange,
+    onPanelRef
 }: PluginPopupProps) {
     const [title, setTitle] = useState(initialTitle);
     const [body, setBody] = useState<string | Node>(initialBody);
@@ -45,6 +47,13 @@ export function PluginPopup({
         }
     }, [onTitleChange, onBodyChange]);
 
+    // Expose panel ref to parent
+    useEffect(() => {
+        if (onPanelRef && panelRef.current) {
+            onPanelRef(panelRef.current);
+        }
+    }, [onPanelRef, panelRef]);
+
     if (!isOpen) {
         return null;
     }
@@ -59,16 +68,16 @@ export function PluginPopup({
     };
 
     const className = position
-        ? 'herb-window herb-window--floating'
-        : 'herb-window herb-window--center';
+        ? 'plugin-window plugin-window--floating'
+        : 'plugin-window plugin-window--center';
 
     return (
         <>
-            <div className="herb-overlay" onClick={!isPinned ? onClose : undefined} />
+            <div className="plugin-overlay" onClick={!isPinned ? onClose : undefined} />
             <div ref={panelRef} className={className} style={positionStyle} tabIndex={-1}>
-                <div className="herb-window-inner">
-                    <div className="herb-window-header" onPointerDown={handlePointerDown}>
-                        <h5 className="herb-window-title">{title}</h5>
+                <div className="plugin-window-inner">
+                    <div className="plugin-window-header" onPointerDown={handlePointerDown}>
+                        <h5 className="plugin-window-title">{title}</h5>
                         <div
                             className="window-header-actions"
                             onPointerDown={(e) => e.stopPropagation()}
@@ -76,7 +85,7 @@ export function PluginPopup({
                             <button type="button" className="btn-close" onClick={onClose} />
                         </div>
                     </div>
-                    <div className="herb-window-body">
+                    <div className="plugin-window-body">
                         {typeof body === 'string' ? (
                             <div dangerouslySetInnerHTML={{ __html: body }} />
                         ) : (
@@ -89,7 +98,7 @@ export function PluginPopup({
                         )}
                     </div>
                     <div
-                        className="herb-window-resize-handle"
+                        className="plugin-window-resize-handle"
                         onPointerDown={handleResizePointerDown}
                         title="Drag to resize"
                     />

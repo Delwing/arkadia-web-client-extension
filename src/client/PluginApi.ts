@@ -344,9 +344,9 @@ export interface UiApi {
    * Create a draggable popup window
    * @param title - Popup title text
    * @param body - Popup body content (string or DOM node)
-   * @returns Handle for controlling the popup
+   * @returns Promise that resolves with handle for controlling the popup once mounted
    */
-  createPopup(title: string, body: PopupContent): PopupHandle;
+  createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
 
   /**
    * Add an entry to the popup (⋮) menu
@@ -674,6 +674,10 @@ export interface CommandApi {
  *   // Create colors
  *   const redColor = api.colors.fromHex("#ff0000");
  *   const blueColor = api.colors.fromRgb(0, 128, 255);
+ *
+ *   // Create a popup (Promise-based)
+ *   const popup = await api.ui.createPopup("My Popup", "Hello World!");
+ *   console.log("Popup element:", popup.element); // Element is guaranteed to exist
  *
  *   return {
  *     name: "My Plugin",
@@ -1048,63 +1052,67 @@ export class PluginApiImpl implements PluginApi {
     this.contextMenuEntryIds.clear();
   }
 
-  private createPopup(title: string, body: PopupContent): PopupHandle {
-    // Create container for React root
-    const container = document.createElement("div");
-    document.body.appendChild(container);
+  private createPopup(title: string, body: PopupContent): Promise<PopupHandle> {
+    return new Promise((resolve) => {
+      // Create container for React root
+      const container = document.createElement("div");
+      document.body.appendChild(container);
 
-    // Create React root
-    const root = createRoot(container);
+      // Create React root
+      const root = createRoot(container);
 
-    let setTitleFn: ((title: string) => void) | null = null;
-    let setBodyFn: ((body: string | Node) => void) | null = null;
-    let panelRef: HTMLDivElement | null = null;
+      let setTitleFn: ((title: string) => void) | null = null;
+      let setBodyFn: ((body: string | Node) => void) | null = null;
+      let panelRef: HTMLDivElement | null = null;
 
-    const closePopup = () => {
-      root.unmount();
-      container.remove();
-      this.popupHandles.delete(handle);
-    };
+      const closePopup = () => {
+        root.unmount();
+        container.remove();
+        this.popupHandles.delete(handle);
+      };
 
-    const renderPopup = (isOpen: boolean) => {
-      root.render(
-        React.createElement(PluginPopup, {
-          title,
-          body,
-          isOpen,
-          isPinned: false,
-          onClose: closePopup,
-          onTitleChange: (callback) => { setTitleFn = callback; },
-          onBodyChange: (callback) => { setBodyFn = callback; }
-        })
-      );
-    };
+      const renderPopup = (isOpen: boolean) => {
+        root.render(
+          React.createElement(PluginPopup, {
+            title,
+            body,
+            isOpen,
+            isPinned: false,
+            onClose: closePopup,
+            onTitleChange: (callback) => { setTitleFn = callback; },
+            onBodyChange: (callback) => { setBodyFn = callback; },
+            onPanelRef: (element) => {
+              panelRef = element;
+              // Resolve the promise once the panel is mounted
+              if (element) {
+                resolve(handle);
+              }
+            }
+          })
+        );
+      };
 
-    // Initial render
-    renderPopup(true);
+      // Initial render
+      renderPopup(true);
 
-    const handle: PopupHandle = {
-      get element(): HTMLDivElement {
-        if (!panelRef) {
-          // Try to find the panel element
-          panelRef = container.querySelector('.herb-window') as HTMLDivElement;
-        }
-        return panelRef!;
-      },
-      setTitle: (value) => {
-        title = value;
-        setTitleFn?.(value);
-      },
-      setBody: (content) => {
-        body = content;
-        setBodyFn?.(content);
-      },
-      close: closePopup
-    };
+      const handle: PopupHandle = {
+        get element(): HTMLDivElement {
+          // panelRef will always be set when handle is resolved
+          return panelRef!;
+        },
+        setTitle: (value) => {
+          title = value;
+          setTitleFn?.(value);
+        },
+        setBody: (content) => {
+          body = content;
+          setBodyFn?.(content);
+        },
+        close: closePopup
+      };
 
-    this.popupHandles.add(handle);
-
-    return handle;
+      this.popupHandles.add(handle);
+    });
   }
 
   private addPopupMenuEntry(label: string, onSelect: () => void): PopupMenuEntryHandle {

@@ -115,7 +115,7 @@ body {
 
 .modal .btn-close,
 .letter-composer .btn-close,
-.herb-window .btn-close {
+.plugin-window .btn-close {
   width: var(--close-button-size, var(--floating-close-size));
   height: var(--close-button-size, var(--floating-close-size));
   border-radius: 999px;
@@ -140,8 +140,8 @@ body {
 .modal .btn-close:focus-visible,
 .letter-composer .btn-close:hover,
 .letter-composer .btn-close:focus-visible,
-.herb-window .btn-close:hover,
-.herb-window .btn-close:focus-visible {
+.plugin-window .btn-close:hover,
+.plugin-window .btn-close:focus-visible {
   opacity: var(--close-button-hover-opacity, var(--floating-close-hover-opacity));
   background-color: var(
     --close-button-hover-background,
@@ -752,17 +752,17 @@ h1 {
   position: relative;
 }
 
-.herb-overlay {
+.plugin-overlay {
   position: fixed;
   inset: 0;
   z-index: 1040;
 }
 
-.herb-overlay--pinned {
+.plugin-overlay--pinned {
   pointer-events: none;
 }
 
-.herb-window {
+.plugin-window {
   position: fixed;
   z-index: 1050;
   width: min(1140px, calc(100vw - 2rem));
@@ -780,24 +780,24 @@ h1 {
   box-shadow: 0 1.5rem 3rem #00000080;
 }
 
-.herb-window:focus,
-.herb-window:focus-visible {
+.plugin-window:focus,
+.plugin-window:focus-visible {
   outline: none;
   border-color: var(--surface-border);
   box-shadow: 0 1.5rem 3rem #00000080;
 }
 
-.herb-window--center {
+.plugin-window--center {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
-.herb-window--floating {
+.plugin-window--floating {
   transform: none;
 }
 
-.herb-window-inner {
+.plugin-window-inner {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -806,7 +806,7 @@ h1 {
   flex: 1 1 auto;
 }
 
-.herb-window-header {
+.plugin-window-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -818,7 +818,7 @@ h1 {
   background-color: rgba(255, 255, 255, 0.04);
 }
 
-.herb-window-title {
+.plugin-window-title {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
@@ -826,14 +826,14 @@ h1 {
   color: rgba(241, 245, 249, 0.94);
 }
 
-.herb-window-body {
+.plugin-window-body {
   flex: 1 1 auto;
   padding: 1rem 1.25rem 1.35rem;
   overflow: auto;
   background-color: var(--surface-elevated);
 }
 
-.herb-window-resize-handle {
+.plugin-window-resize-handle {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -844,7 +844,7 @@ h1 {
   border-bottom-right-radius: 0.5rem;
 }
 
-.herb-window-resize-handle::after {
+.plugin-window-resize-handle::after {
   content: '';
   position: absolute;
   bottom: 2px;
@@ -881,7 +881,7 @@ h1 {
   opacity: 0.5;
 }
 
-.herb-window-resize-handle:hover::after {
+.plugin-window-resize-handle:hover::after {
   opacity: 1;
 }
 
