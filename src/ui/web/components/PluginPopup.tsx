@@ -83,7 +83,6 @@ export function PluginPopup({
 
     return (
         <>
-            <div className="plugin-overlay" onClick={!isPinned ? onClose : undefined} />
             <div ref={panelRef} className={className} style={positionStyle} tabIndex={-1}>
                 <div className="plugin-window-inner">
                     <div className="plugin-window-header" onPointerDown={handlePointerDown}>

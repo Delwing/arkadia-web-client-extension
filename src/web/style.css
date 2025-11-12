@@ -115,7 +115,8 @@ body {
 
 .modal .btn-close,
 .letter-composer .btn-close,
-.plugin-window .btn-close {
+.plugin-window .btn-close,
+.herb-window .btn-close {
   width: var(--close-button-size, var(--floating-close-size));
   height: var(--close-button-size, var(--floating-close-size));
   border-radius: 999px;
@@ -141,7 +142,9 @@ body {
 .letter-composer .btn-close:hover,
 .letter-composer .btn-close:focus-visible,
 .plugin-window .btn-close:hover,
-.plugin-window .btn-close:focus-visible {
+.plugin-window .btn-close:focus-visible,
+.herb-window .btn-close:hover,
+.herb-window .btn-close:focus-visible {
   opacity: var(--close-button-hover-opacity, var(--floating-close-hover-opacity));
   background-color: var(
     --close-button-hover-background,
@@ -882,6 +885,140 @@ h1 {
 }
 
 .plugin-window-resize-handle:hover::after {
+  opacity: 1;
+}
+
+/* Herb Manager Window - uses same styles as plugin window */
+.herb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+}
+
+.herb-overlay--pinned {
+  pointer-events: none;
+}
+
+.herb-window {
+  position: fixed;
+  z-index: 1050;
+  width: min(1140px, calc(100vw - 2rem));
+  height: auto;
+  min-width: 300px;
+  min-height: 200px;
+  max-height: calc(100vh - 2rem);
+  border-radius: 0.5rem;
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--surface-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f8f9fa;
+  box-shadow: 0 1.5rem 3rem #00000080;
+}
+
+.herb-window:focus,
+.herb-window:focus-visible {
+  outline: none;
+  border-color: var(--surface-border);
+  box-shadow: 0 1.5rem 3rem #00000080;
+}
+
+.herb-window--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.herb-window--floating {
+  transform: none;
+}
+
+.herb-window-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+.herb-window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: move;
+  user-select: none;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.herb-window-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(241, 245, 249, 0.94);
+}
+
+.herb-window-body {
+  flex: 1 1 auto;
+  padding: 1rem 1.25rem 1.35rem;
+  overflow: auto;
+  background-color: var(--surface-elevated);
+}
+
+.herb-window-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  z-index: 10;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.herb-window-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background:
+    linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.2) 10%,
+      transparent 10%,
+      transparent 100%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(255, 255, 255, 0.2) 28%,
+      rgba(255, 255, 255, 0.2) 38%,
+      transparent 38%,
+      transparent 100%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 0%,
+      transparent 56%,
+      rgba(255, 255, 255, 0.2) 56%,
+      rgba(255, 255, 255, 0.2) 66%,
+      transparent 66%,
+      transparent 100%
+    );
+  border-radius: 0 0 2px 0;
+  opacity: 0.5;
+}
+
+.herb-window-resize-handle:hover::after {
   opacity: 1;
 }
 
