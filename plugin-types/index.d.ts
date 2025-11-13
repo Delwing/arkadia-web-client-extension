@@ -1553,6 +1553,40 @@ export interface TransformDefinition {
     }, group: string) => AnsiAwareBuffer;
 }
 
+/** Bag condition (1-5, where 5 is best) */
+export /**
+ * Herb bag state - contains herbs and optional condition
+ */
+export interface HerbBagState {
+    /** Map of herb ID to count */
+    herbs: Record<string, number>;
+    /** Bag condition (1-5, where 5 is best) */
+    condition?: number;
+}
+
+/**
+ * All herb bags state - map of bag number to bag state
+ */
+export /**
+ * All herb bags state - map of bag number to bag state
+ */
+export type HerbBagsState = Record<number, HerbBagState>;
+
+/** Destination bag number */
+export /**
+ * Options for moving herbs between bags
+ */
+export interface HerbMoveOptions {
+    /** Herb ID to move */
+    herbId: string;
+    /** Amount to move */
+    amount: number;
+    /** Source bag number */
+    fromBag: number;
+    /** Destination bag number */
+    toBag: number;
+}
+
 /**
    * Add a new transform definition for styling items
    * New transforms will be applied to all items in containers
@@ -1719,6 +1753,107 @@ export interface MagicKeysApi {
 }
 
 /**
+   * Move herbs between bags
+   * Convenience method that takes from one bag and puts into another
+   *
+   * @param options - Move options with herbId, amount, fromBag, toBag
+   * @returns Promise resolving when move is complete
+   *
+   * @example
+   * ```typescript
+   * // Move 3 herbs from bag 1 to bag 2
+   * await api.herbs.move({
+   *   herbId: "ziolo_many",
+   *   amount: 3,
+   *   fromBag: 1,
+   *   toBag: 2
+   * });
+   * ```
+   */
+export /**
+ * Herbs API - Access herb inventory in bags
+ */
+export interface HerbsApi {
+    /**
+     * Get current state of all herb bags
+     * Returns a copy of the herb bags state with herb counts and conditions
+     *
+     * @returns Object mapping bag number to bag state
+     *
+     * @example
+     * ```typescript
+     * const bags = api.herbs.getBags();
+     * console.log("Bag 1:", bags[1]?.herbs);
+     *
+     * // Count total herbs
+     * const totals: Record<string, number> = {};
+     * Object.values(bags).forEach(bag => {
+     *   Object.entries(bag.herbs).forEach(([herb, count]) => {
+     *     totals[herb] = (totals[herb] || 0) + count;
+     *   });
+     * });
+     * ```
+     */
+    getBags(): HerbBagsState;
+    /**
+     * Take herbs from bags
+     * Removes herbs from inventory and executes appropriate game commands
+     *
+     * @param herbId - Herb identifier (e.g., "ziolo_many", "czosnek")
+     * @param amount - Number of herbs to take
+     * @param fromBag - Optional specific bag number to take from
+     * @returns Promise resolving to number of herbs actually taken
+     *
+     * @example
+     * ```typescript
+     * // Take 3 herbs from any bag
+     * const taken = await api.herbs.take("ziolo_many", 3);
+     * console.log(`Took ${taken} ziolo_many`);
+     *
+     * // Take from specific bag
+     * const taken = await api.herbs.take("czosnek", 1, 2);
+     * ```
+     */
+    take(herbId: string, amount: number, fromBag?: number): Promise<number>;
+    /**
+     * Put herbs into a bag
+     * Adds herbs to inventory and executes appropriate game commands
+     *
+     * @param herbId - Herb identifier
+     * @param amount - Number of herbs to put
+     * @param bag - Bag number to put herbs into
+     * @returns Promise resolving to number of herbs actually put
+     *
+     * @example
+     * ```typescript
+     * // Put 5 herbs into bag 1
+     * const put = await api.herbs.put("ziolo_many", 5, 1);
+     * console.log(`Put ${put} ziolo_many into bag 1`);
+     * ```
+     */
+    put(herbId: string, amount: number, bag: number): Promise<number>;
+    /**
+     * Move herbs between bags
+     * Convenience method that takes from one bag and puts into another
+     *
+     * @param options - Move options with herbId, amount, fromBag, toBag
+     * @returns Promise resolving when move is complete
+     *
+     * @example
+     * ```typescript
+     * // Move 3 herbs from bag 1 to bag 2
+     * await api.herbs.move({
+     *   herbId: "ziolo_many",
+     *   amount: 3,
+     *   fromBag: 1,
+     *   toBag: 2
+     * });
+     * ```
+     */
+    move(options: HerbMoveOptions): Promise<void>;
+}
+
+/**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
    * Use this to create custom formatted output for api.output.print()
@@ -1829,6 +1964,8 @@ export interface PluginApi {
     magics: MagicsApi;
     /** Magic keys - magic key patterns */
     magicKeys: MagicKeysApi;
+    /** Herbs - herb inventory management in bags */
+    herbs: HerbsApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

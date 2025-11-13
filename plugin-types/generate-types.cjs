@@ -90,6 +90,7 @@ function shouldExport(node) {
         name?.endsWith('Payload') ||
         name?.endsWith('Options') ||
         name?.endsWith('Definition') ||
+        name?.endsWith('State') ||
         name === 'PluginApi' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
