@@ -89,6 +89,7 @@ function shouldExport(node) {
         name?.endsWith('Event') ||
         name?.endsWith('Payload') ||
         name?.endsWith('Options') ||
+        name?.endsWith('Definition') ||
         name === 'PluginApi' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
@@ -439,6 +440,13 @@ export declare class AnsiAwareBuffer {
    * @param range - [start, end] indices
    */
   remove(range: TextRange): this;
+  
+  /**
+     * Returns the format state at the given character index.
+     * This includes color information (foreground, background) and other formatting attributes.
+     * Returns undefined if the character at that index has no formatting.
+     */
+    getStateAt(index: number): FormatStateSnapshot | undefined;
 }
 
 // ============================================================================

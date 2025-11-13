@@ -306,6 +306,13 @@ export declare class AnsiAwareBuffer {
    * @param range - [start, end] indices
    */
   remove(range: TextRange): this;
+  
+  /**
+     * Returns the format state at the given character index.
+     * This includes color information (foreground, background) and other formatting attributes.
+     * Returns undefined if the character at that index has no formatting.
+     */
+    getStateAt(index: number): FormatStateSnapshot | undefined;
 }
 
 // ============================================================================
@@ -1511,6 +1518,206 @@ export interface CommandApi {
     send(command: string, echo?: boolean, options?: any): Promise<void>;
 }
 
+/** Filter function to check if item belongs to this group */
+export /**
+ * Group definition for categorizing container items
+ */
+export interface GroupDefinition {
+    /** Group name */
+    name: string;
+    /** Filter function to check if item belongs to this group */
+    filter: (item: string) => boolean;
+}
+
+/**
+   * Transform item buffer with optional formatting
+   * @param buffer - The AnsiAwareBuffer containing the item name
+   * @param item - The container item with name and count
+   * @param group - The group name this item belongs to
+   * @returns The buffer (modified or unmodified)
+   */
+export /**
+ * Transform definition for styling container items
+ */
+export interface TransformDefinition {
+    /**
+     * Transform item buffer with optional formatting
+     * @param buffer - The AnsiAwareBuffer containing the item name
+     * @param item - The container item with name and count
+     * @param group - The group name this item belongs to
+     * @returns The buffer (modified or unmodified)
+     */
+    transform: (buffer: AnsiAwareBuffer, item: {
+        name: string;
+        count: string | number;
+    }, group: string) => AnsiAwareBuffer;
+}
+
+/**
+   * Add a new transform definition for styling items
+   * New transforms will be applied to all items in containers
+   *
+   * @param definition - Transform definition with transform function
+   *
+   * @example
+   * ```typescript
+   * // Highlight potions in green
+   * api.prettyContainers.addTransform({
+   *   transform: (buffer, item, group) => {
+   *     if (/eliksir|mikstur/.test(item.name)) {
+   *       buffer.color([0, buffer.length], api.colors.fromHex('#00ff00'));
+   *     }
+   *     return buffer;
+   *   }
+   * });
+   * ```
+   */
+export /**
+ * Pretty Containers API - Access and extend container formatting
+ */
+export interface PrettyContainersApi {
+    /**
+     * Get current group definitions for categorizing items
+     * Groups determine how items are organized in container displays
+     *
+     * @returns Read-only array of group definitions
+     *
+     * @example
+     * ```typescript
+     * const groups = api.prettyContainers.getFilters();
+     * console.log("Available groups:", groups.map(g => g.name));
+     * ```
+     */
+    getFilters(): ReadonlyArray<Readonly<GroupDefinition>>;
+    /**
+     * Get current transform definitions for styling items
+     * Transforms apply colors, links, and formatting to matching items
+     *
+     * @returns Read-only array of transform definitions
+     *
+     * @example
+     * ```typescript
+     * const transforms = api.prettyContainers.getTransforms();
+     * console.log(`${transforms.length} transforms registered`);
+     * ```
+     */
+    getTransforms(): ReadonlyArray<Readonly<TransformDefinition>>;
+    /**
+     * Add a new group definition for categorizing items
+     * New groups will appear in container displays
+     *
+     * @param definition - Group definition with name and filter function
+     *
+     * @example
+     * ```typescript
+     * // Add a group for potions
+     * api.prettyContainers.addFilter({
+     *   name: "mikstury",
+     *   filter: (item) => /eliksir|mikstur/.test(item)
+     * });
+     * ```
+     */
+    addFilter(definition: GroupDefinition): void;
+    /**
+     * Add a new transform definition for styling items
+     * New transforms will be applied to all items in containers
+     *
+     * @param definition - Transform definition with transform function
+     *
+     * @example
+     * ```typescript
+     * // Highlight potions in green
+     * api.prettyContainers.addTransform({
+     *   transform: (buffer, item, group) => {
+     *     if (/eliksir|mikstur/.test(item.name)) {
+     *       buffer.color([0, buffer.length], api.colors.fromHex('#00ff00'));
+     *     }
+     *     return buffer;
+     *   }
+     * });
+     * ```
+     */
+    addTransform(definition: TransformDefinition): void;
+}
+
+/**
+   * Get current magic item patterns
+   * Returns patterns used to identify magic items in game output
+   *
+   * @returns Promise resolving to array of regex pattern strings
+   *
+   * @example
+   * ```typescript
+   * const patterns = await api.magics.getPatterns();
+   * console.log(`${patterns.length} magic patterns loaded`);
+   *
+   * // Check if an item matches magic patterns
+   * const item = "magiczny miecz";
+   * const ismagic = patterns.some(p => new RegExp(p, 'i').test(item));
+   * ```
+   */
+export /**
+ * Magics API - Access magic item patterns
+ */
+export interface MagicsApi {
+    /**
+     * Get current magic item patterns
+     * Returns patterns used to identify magic items in game output
+     *
+     * @returns Promise resolving to array of regex pattern strings
+     *
+     * @example
+     * ```typescript
+     * const patterns = await api.magics.getPatterns();
+     * console.log(`${patterns.length} magic patterns loaded`);
+     *
+     * // Check if an item matches magic patterns
+     * const item = "magiczny miecz";
+     * const ismagic = patterns.some(p => new RegExp(p, 'i').test(item));
+     * ```
+     */
+    getPatterns(): Promise<string[]>;
+}
+
+/**
+   * Get current magic key patterns
+   * Returns patterns used to identify magic keys in game output
+   *
+   * @returns Promise resolving to array of pattern strings
+   *
+   * @example
+   * ```typescript
+   * const patterns = await api.magicKeys.getPatterns();
+   * console.log(`${patterns.length} magic key patterns loaded`);
+   *
+   * // Check if an item is a magic key
+   * const item = "klucz ze srebra";
+   * const isMagicKey = patterns.some(p => new RegExp(p, 'i').test(item));
+   * ```
+   */
+export /**
+ * Magic Keys API - Access magic key patterns
+ */
+export interface MagicKeysApi {
+    /**
+     * Get current magic key patterns
+     * Returns patterns used to identify magic keys in game output
+     *
+     * @returns Promise resolving to array of pattern strings
+     *
+     * @example
+     * ```typescript
+     * const patterns = await api.magicKeys.getPatterns();
+     * console.log(`${patterns.length} magic key patterns loaded`);
+     *
+     * // Check if an item is a magic key
+     * const item = "klucz ze srebra";
+     * const isMagicKey = patterns.some(p => new RegExp(p, 'i').test(item));
+     * ```
+     */
+    getPatterns(): Promise<string[]>;
+}
+
 /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1616,6 +1823,12 @@ export interface PluginApi {
     objects: ObjectsApi;
     /** Command sending */
     command: CommandApi;
+    /** Pretty containers - container formatting and filtering */
+    prettyContainers: PrettyContainersApi;
+    /** Magics - magic item patterns */
+    magics: MagicsApi;
+    /** Magic keys - magic key patterns */
+    magicKeys: MagicKeysApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

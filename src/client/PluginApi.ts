@@ -31,6 +31,14 @@ import {
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { PluginPopup } from "../ui/web/components/PluginPopup";
+import {
+  getGroupDefinitions,
+  getTransformDefinitions,
+  addGroupDefinition,
+  addTransformDefinition
+} from "./scripts/prettyContainers";
+import loadMagics from "./scripts/magicsLoader";
+import loadMagicKeys from "./scripts/magicKeyLoader";
 
 // Event system types
 /**
@@ -657,6 +665,147 @@ export interface CommandApi {
 }
 
 /**
+ * Group definition for categorizing container items
+ */
+export interface GroupDefinition {
+  /** Group name */
+  name: string;
+  /** Filter function to check if item belongs to this group */
+  filter: (item: string) => boolean;
+}
+
+/**
+ * Transform definition for styling container items
+ */
+export interface TransformDefinition {
+  /**
+   * Transform item buffer with optional formatting
+   * @param buffer - The AnsiAwareBuffer containing the item name
+   * @param item - The container item with name and count
+   * @param group - The group name this item belongs to
+   * @returns The buffer (modified or unmodified)
+   */
+  transform: (buffer: AnsiAwareBuffer, item: { name: string; count: string | number }, group: string) => AnsiAwareBuffer;
+}
+
+/**
+ * Pretty Containers API - Access and extend container formatting
+ */
+export interface PrettyContainersApi {
+  /**
+   * Get current group definitions for categorizing items
+   * Groups determine how items are organized in container displays
+   *
+   * @returns Read-only array of group definitions
+   *
+   * @example
+   * ```typescript
+   * const groups = api.prettyContainers.getFilters();
+   * console.log("Available groups:", groups.map(g => g.name));
+   * ```
+   */
+  getFilters(): ReadonlyArray<Readonly<GroupDefinition>>;
+
+  /**
+   * Get current transform definitions for styling items
+   * Transforms apply colors, links, and formatting to matching items
+   *
+   * @returns Read-only array of transform definitions
+   *
+   * @example
+   * ```typescript
+   * const transforms = api.prettyContainers.getTransforms();
+   * console.log(`${transforms.length} transforms registered`);
+   * ```
+   */
+  getTransforms(): ReadonlyArray<Readonly<TransformDefinition>>;
+
+  /**
+   * Add a new group definition for categorizing items
+   * New groups will appear in container displays
+   *
+   * @param definition - Group definition with name and filter function
+   *
+   * @example
+   * ```typescript
+   * // Add a group for potions
+   * api.prettyContainers.addFilter({
+   *   name: "mikstury",
+   *   filter: (item) => /eliksir|mikstur/.test(item)
+   * });
+   * ```
+   */
+  addFilter(definition: GroupDefinition): void;
+
+  /**
+   * Add a new transform definition for styling items
+   * New transforms will be applied to all items in containers
+   *
+   * @param definition - Transform definition with transform function
+   *
+   * @example
+   * ```typescript
+   * // Highlight potions in green
+   * api.prettyContainers.addTransform({
+   *   transform: (buffer, item, group) => {
+   *     if (/eliksir|mikstur/.test(item.name)) {
+   *       buffer.color([0, buffer.length], api.colors.fromHex('#00ff00'));
+   *     }
+   *     return buffer;
+   *   }
+   * });
+   * ```
+   */
+  addTransform(definition: TransformDefinition): void;
+}
+
+/**
+ * Magics API - Access magic item patterns
+ */
+export interface MagicsApi {
+  /**
+   * Get current magic item patterns
+   * Returns patterns used to identify magic items in game output
+   *
+   * @returns Promise resolving to array of regex pattern strings
+   *
+   * @example
+   * ```typescript
+   * const patterns = await api.magics.getPatterns();
+   * console.log(`${patterns.length} magic patterns loaded`);
+   *
+   * // Check if an item matches magic patterns
+   * const item = "magiczny miecz";
+   * const ismagic = patterns.some(p => new RegExp(p, 'i').test(item));
+   * ```
+   */
+  getPatterns(): Promise<string[]>;
+}
+
+/**
+ * Magic Keys API - Access magic key patterns
+ */
+export interface MagicKeysApi {
+  /**
+   * Get current magic key patterns
+   * Returns patterns used to identify magic keys in game output
+   *
+   * @returns Promise resolving to array of pattern strings
+   *
+   * @example
+   * ```typescript
+   * const patterns = await api.magicKeys.getPatterns();
+   * console.log(`${patterns.length} magic key patterns loaded`);
+   *
+   * // Check if an item is a magic key
+   * const item = "klucz ze srebra";
+   * const isMagicKey = patterns.some(p => new RegExp(p, 'i').test(item));
+   * ```
+   */
+  getPatterns(): Promise<string[]>;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -750,6 +899,12 @@ export interface PluginApi {
   objects: ObjectsApi;
   /** Command sending */
   command: CommandApi;
+  /** Pretty containers - container formatting and filtering */
+  prettyContainers: PrettyContainersApi;
+  /** Magics - magic item patterns */
+  magics: MagicsApi;
+  /** Magic keys - magic key patterns */
+  magicKeys: MagicKeysApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -789,6 +944,9 @@ export class PluginApiImpl implements PluginApi {
   public attackQueue: AttackQueueApi;
   public objects: ObjectsApi;
   public command: CommandApi;
+  public prettyContainers: PrettyContainersApi;
+  public magics: MagicsApi;
+  public magicKeys: MagicKeysApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client) {
@@ -808,6 +966,9 @@ export class PluginApiImpl implements PluginApi {
     this.attackQueue = this.createAttackQueueApi();
     this.objects = this.createObjectsApi();
     this.command = this.createCommandApi();
+    this.prettyContainers = this.createPrettyContainersApi();
+    this.magics = this.createMagicsApi();
+    this.magicKeys = this.createMagicKeysApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -1054,6 +1215,51 @@ export class PluginApiImpl implements PluginApi {
     return {
       send: async (command, echo, options) => {
         await this.client.sendCommand(command, echo, options);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Pretty Containers API
+  // ============================================================================
+
+  private createPrettyContainersApi(): PrettyContainersApi {
+    return {
+      getFilters: () => {
+        return getGroupDefinitions();
+      },
+      getTransforms: () => {
+        return getTransformDefinitions();
+      },
+      addFilter: (definition: GroupDefinition) => {
+        addGroupDefinition(definition);
+      },
+      addTransform: (definition: TransformDefinition) => {
+        addTransformDefinition(definition);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Magics API
+  // ============================================================================
+
+  private createMagicsApi(): MagicsApi {
+    return {
+      getPatterns: async () => {
+        return await loadMagics();
+      }
+    };
+  }
+
+  // ============================================================================
+  // Magic Keys API
+  // ============================================================================
+
+  private createMagicKeysApi(): MagicKeysApi {
+    return {
+      getPatterns: async () => {
+        return await loadMagicKeys();
       }
     };
   }

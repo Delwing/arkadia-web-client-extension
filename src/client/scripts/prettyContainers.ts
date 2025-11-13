@@ -169,8 +169,7 @@ function centerString(str: string, len: number): string {
 }
 
 export type TransformDefinition = {
-    check: (item: string, count: string | number, group: string) => boolean;
-    transform: (value: string) => AnsiAwareBuffer;
+    transform: (buffer: AnsiAwareBuffer, item: ContainerItem, group: string) => AnsiAwareBuffer;
 };
 
 export type FormatOptions = {
@@ -185,12 +184,11 @@ function applyTransforms(
     group: string,
     transforms: TransformDefinition[],
 ): AnsiAwareBuffer {
+    let buffer = new AnsiAwareBuffer(item.name);
     for (const tr of transforms) {
-        if (tr.check(item.name, item.count, group)) {
-            return tr.transform(item.name);
-        }
+        buffer = tr.transform(buffer, item, group);
     }
-    return new AnsiAwareBuffer(item.name);
+    return buffer;
 }
 
 export function formatTable(title: string, groups: Record<string, ContainerItem[]>, opts: FormatOptions = {}): AnsiAwareBuffer {
@@ -202,17 +200,28 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
 
     const entries = Object.entries(groups).filter(([, it]) => it.length > 0);
 
-    const allLines = entries.flatMap(([groupName, items]) => {
-        const itemTexts = items.map(it => {
-            const transformed = applyTransforms(it, groupName, activeTransforms);
-            return `${String(it.count).padStart(3, ' ')} | ${transformed.text}`;
+    // First pass: apply transforms and create buffered items
+    type BufferedItem = { count: string | number; buffer: AnsiAwareBuffer };
+    const bufferedEntries: Array<[string, BufferedItem[]]> = entries.map(([groupName, items]) => {
+        const bufferedItems = items.map(it => {
+            const nameBuffer = applyTransforms(it, groupName, activeTransforms);
+            return { count: it.count, buffer: nameBuffer };
         });
-        return [groupName, ...itemTexts];
+        return [groupName, bufferedItems];
+    });
+
+    // Calculate all line lengths for width computation
+    const allLines = bufferedEntries.flatMap(([groupName, items]) => {
+        const itemLengths = items.map(it => {
+            const countStr = String(it.count).padStart(3, ' ');
+            return countStr.length + 3 + it.buffer.text.length; // count + " | " + buffer length
+        });
+        return [groupName.length, ...itemLengths];
     });
 
     const computeColWidth = (lp: number, rp: number) => Math.max(
         title.length + lp + rp,
-        ...allLines.map(l => l.length + lp + rp),
+        ...allLines.map(l => l + lp + rp),
     );
 
     let colWidth = computeColWidth(leftPadding, rightPadding);
@@ -280,8 +289,9 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
     output.append(`|${centerString(title, width - 2)}|\n`);
     output.append(`+${horiz}+\n`);
 
-    for (let row = 0; row < entries.length; row += columns) {
-        const pair = entries.slice(row, row + columns);
+    // Second pass: render output using buffered items
+    for (let row = 0; row < bufferedEntries.length; row += columns) {
+        const pair = bufferedEntries.slice(row, row + columns);
 
         // group names
         const gLine = new AnsiAwareBuffer('|');
@@ -307,11 +317,10 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
             const rowLine = new AnsiAwareBuffer('|');
             for (let c = 0; c < columns; c++) {
                 const grp = pair[c];
-                const item = grp && grp[1][i];
-                if (item && grp) {
-                    const nameBuffer = applyTransforms(item, grp[0], activeTransforms);
-                    const itemBuffer = new AnsiAwareBuffer(`${String(item.count).padStart(3, ' ')} | `);
-                    itemBuffer.appendBuffer(nameBuffer);
+                const bufferedItem = grp && grp[1][i];
+                if (bufferedItem) {
+                    const itemBuffer = new AnsiAwareBuffer(`${String(bufferedItem.count).padStart(3, ' ')} | `);
+                    itemBuffer.appendBuffer(bufferedItem.buffer);
                     rowLine.appendBuffer(cell(itemBuffer));
                 } else {
                     rowLine.appendBuffer(cell(''));
@@ -425,27 +434,48 @@ const defs = [
 ]
 
 const defaultTransforms: TransformDefinition[] = [
-    { check: (item: string) => item.match("mithryl\\w+ monet") != null, transform: (item) => {
-        const buf = new AnsiAwareBuffer(item);
-        buf.color([0, buf.length], MITHRIL_COLOR);
-        return buf;
+    { transform: (buffer, item) => {
+        if (item.name.match("mithryl\\w+ monet")) {
+            buffer.color([0, buffer.length], MITHRIL_COLOR);
+        }
+        return buffer;
     }},
-    { check: (item: string) => item.match("zlot\\w+ monet") != null, transform: (item) => {
-        const buf = new AnsiAwareBuffer(item);
-        buf.color([0, buf.length], GOLD_COLOR);
-        return buf;
+    { transform: (buffer, item) => {
+        if (item.name.match("zlot\\w+ monet")) {
+            buffer.color([0, buffer.length], GOLD_COLOR);
+        }
+        return buffer;
     }},
-    { check: (item: string) => item.match("srebrn\\w+ monet") != null, transform: (item) => {
-        const buf = new AnsiAwareBuffer(item);
-        buf.color([0, buf.length], SILVER_COLOR);
-        return buf;
+    { transform: (buffer, item) => {
+        if (item.name.match("srebrn\\w+ monet")) {
+            buffer.color([0, buffer.length], SILVER_COLOR);
+        }
+        return buffer;
     }},
-    { check: (item: string) => item.match("miedzian\\w+ monet") != null, transform: (item) => {
-        const buf = new AnsiAwareBuffer(item);
-        buf.color([0, buf.length], COPPER_COLOR);
-        return buf;
+    { transform: (buffer, item) => {
+        if (item.name.match("miedzian\\w+ monet")) {
+            buffer.color([0, buffer.length], COPPER_COLOR);
+        }
+        return buffer;
     }}
 ]
+
+// API functions for plugin access
+export function getGroupDefinitions(): ReadonlyArray<Readonly<GroupDefinition>> {
+    return defs;
+}
+
+export function getTransformDefinitions(): ReadonlyArray<Readonly<TransformDefinition>> {
+    return defaultTransforms;
+}
+
+export function addGroupDefinition(definition: GroupDefinition): void {
+    defs.push(definition);
+}
+
+export function addTransformDefinition(definition: TransformDefinition): void {
+    defaultTransforms.push(definition);
+}
 
 let plugLinks = false;
 
@@ -456,32 +486,32 @@ async function loadMagicAndKeysFilter(client: Client) {
         const keyRegexp = createRegexpFilter(keys);
         defs.push({ name: "klucze", filter: keyRegexp });
         defaultTransforms.push({
-            check: keyRegexp,
-            transform: (item) => {
-                const buf = new AnsiAwareBuffer(item);
-                buf.color([0, item.length], MAGIC_KEYS_COLOR);
-                if (plugLinks) {
-                    buf.createLink([0, item.length], {
-                        onClick: () => client.sendCommand(`wybierz ${item}`),
-                        title: `Kliknij aby wybrać: ${item}`
-                    });
+            transform: (buffer, item) => {
+                if (keyRegexp(item.name)) {
+                    buffer.color([0, item.name.length], MAGIC_KEYS_COLOR);
+                    if (plugLinks) {
+                        buffer.createLink([0, item.name.length], {
+                            onClick: () => client.sendCommand(`wybierz ${item.name}`),
+                            title: `Kliknij aby wybrać: ${item.name}`
+                        });
+                    }
                 }
-                return buf;
+                return buffer;
             },
         });
         const magicRegexp = createRegexpFilter(magics);
         defaultTransforms.push({
-            check: magicRegexp,
-            transform: (item) => {
-                const buf = new AnsiAwareBuffer(item);
-                buf.color([0, item.length], MAGICS_COLOR);
-                if (plugLinks) {
-                    buf.createLink([0, item.length], {
-                        onClick: () => client.sendCommand(`wybierz ${item}`),
-                        title: `Kliknij aby wybrać: ${item}`
-                    });
+            transform: (buffer, item) => {
+                if (magicRegexp(item.name)) {
+                    buffer.color([0, item.name.length], MAGICS_COLOR);
+                    if (plugLinks) {
+                        buffer.createLink([0, item.name.length], {
+                            onClick: () => client.sendCommand(`wybierz ${item.name}`),
+                            title: `Kliknij aby wybrać: ${item.name}`
+                        });
+                    }
                 }
-                return buf;
+                return buffer;
             },
         });
         magicAndKeysFilter = (item: ContainerItem) =>
