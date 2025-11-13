@@ -5,11 +5,12 @@ import storage from "@modules/core/storage";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink';
+    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
     color?: string;
     to?: string;
     command?: string;
     soundKey?: string;
+    label?: string;
 }
 
 export interface UserTrigger {
@@ -68,6 +69,7 @@ function MacroEditor({
                     <option value="command">Komenda</option>
                     <option value="slowBlink">Wolne miganie</option>
                     <option value="rapidBlink">Szybkie miganie</option>
+                    <option value="functionalBind">Funkcyjny bind</option>
                 </Form.Select>
                 {macro.type === 'beep' && (
                     <Form.Select
@@ -102,6 +104,26 @@ function MacroEditor({
                         value={macro.command || ''}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
                     />
+                )}
+                {macro.type === 'functionalBind' && (
+                    <>
+                        <Form.Control
+                            className="mt-1 font-monospace"
+                            type="text"
+                            size="sm"
+                            placeholder="Label (np. 'zabij cel')"
+                            value={macro.label || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, label: e.target.value })}
+                        />
+                        <Form.Control
+                            className="mt-1 font-monospace"
+                            type="text"
+                            size="sm"
+                            placeholder="Command (np. 'zabij cel')"
+                            value={macro.command || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
+                        />
+                    </>
                 )}
             </div>
             {macro.type === 'color' && (
@@ -327,6 +349,8 @@ function UserTriggers() {
                         return 'slow blink';
                     case 'rapidBlink':
                         return 'rapid blink';
+                    case 'functionalBind':
+                        return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
                     default:
                         return m.type;
                 }

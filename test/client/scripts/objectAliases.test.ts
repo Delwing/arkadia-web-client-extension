@@ -14,7 +14,7 @@ class FakeClient {
   TeamManager = {
     getAttackTargetId: jest.fn(() => undefined),
     getDefenseTargetId: jest.fn(() => undefined),
-    getAccumulatedObjectsData: jest.fn(() => ({})),
+    getAccumulatedObjectsData: jest.fn(() => new Map()),
     isLeader: jest.fn(() => true),
   };
   sendCommand = jest.fn();
@@ -161,33 +161,39 @@ describe('object aliases', () => {
 
   test('zaslon alias sends zaslon with object number when target is in team', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 7, shortcut: 'A' }]);
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 7: { team: true } });
+    const mockMap = new Map();
+    mockMap.set(7, { team: true });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shield(['', 'A'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_7');
   });
 
   test('zaslon alias uses "zaslon przed" when target is not in team', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 9, shortcut: 'B' }]);
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 9: { team: false } });
+    const mockMap = new Map();
+    mockMap.set(9, { team: false });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shield(['', 'B'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_9');
   });
 
   test('/z alias attacks attack target', () => {
-    client.TeamManager.getAttackTargetId.mockReturnValue('10');
+    client.TeamManager.getAttackTargetId.mockReturnValue(10);
     killTarget();
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_10');
   });
 
   test('/x alias attacks attack target with zaskocz', () => {
-    client.TeamManager.getAttackTargetId.mockReturnValue('11');
+    client.TeamManager.getAttackTargetId.mockReturnValue(11);
     surpriseTarget();
     expect(client.sendCommand).toHaveBeenCalledWith('zaskocz ob_11');
   });
 
   test('/zas alias covers defense target', () => {
-    client.TeamManager.getDefenseTargetId.mockReturnValue('15');
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 15: { team: true } });
+    client.TeamManager.getDefenseTargetId.mockReturnValue(15);
+    const mockMap = new Map();
+    mockMap.set(15, { team: true });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shieldTarget();
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_15');
   });
@@ -206,8 +212,10 @@ describe('object aliases', () => {
   });
 
   test('/zas alias with release first guards then releases', () => {
-    client.TeamManager.getDefenseTargetId.mockReturnValue('15');
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 15: { team: true } });
+    client.TeamManager.getDefenseTargetId.mockReturnValue(15);
+    const mockMap = new Map();
+    mockMap.set(15, { team: true });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shieldTarget();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zaslon ob_15');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przestan zaslaniac');
@@ -215,7 +223,9 @@ describe('object aliases', () => {
 
   test('/za2 alias sets group_cover during command', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 11, shortcut: 'C' }]);
-    client.TeamManager.getAccumulatedObjectsData.mockReturnValue({ 11: { team: true } });
+    const mockMap = new Map();
+    mockMap.set(11, { team: true });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shieldGroup(['', '2', 'C'] as unknown as RegExpMatchArray);
     expect(client.sendGMCP).toHaveBeenNthCalledWith(
       1,

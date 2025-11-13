@@ -500,13 +500,13 @@ export interface TeamApi {
    * Get the team leader's object ID
    * @returns Leader object ID or undefined if not in a team
    */
-  getLeaderId(): string | undefined;
+  getLeaderId(): number | undefined;
 
   /**
    * Get the player's object number
    * @returns Player object number or undefined
    */
-  getPlayerNum(): string | undefined;
+  getPlayerNum(): number | undefined;
 }
 
 /**

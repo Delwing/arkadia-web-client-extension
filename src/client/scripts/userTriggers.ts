@@ -3,11 +3,12 @@ import {createColorFormat} from "@modules/core/Colors";
 import {TextRange} from "../ansi/FormatState";
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink';
+    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
     color?: string;
     to?: string;
     command?: string;
     soundKey?: string;
+    label?: string;
 }
 
 export interface UserTrigger {
@@ -62,6 +63,13 @@ export default function initUserTriggers(client: Client) {
                             break;
                         case 'rapidBlink':
                             line.applyFormat(matchRange, { rapidBlink: true });
+                            break;
+                        case 'functionalBind':
+                            if (macro.command && macro.label) {
+                                client.FunctionalBind.set(macro.label, () => {
+                                    client.sendCommand(macro.command!);
+                                });
+                            }
                             break;
                     }
                 });

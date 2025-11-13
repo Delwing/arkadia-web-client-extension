@@ -26,7 +26,7 @@ describe('TeamManager', () => {
   beforeEach(() => {
     client = new FakeClient();
     manager = new TeamManager((client as unknown) as any);
-    client.sendEvent('gmcp.char.info', { object_num: '99' });
+    client.sendEvent('gmcp.char.info', { object_num: 99 });
   });
 
   test('adds member from gmcp objects', () => {
@@ -64,7 +64,7 @@ describe('TeamManager', () => {
     client.sendEvent('gmcp.objects.data', {
       '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
     });
-    expect(manager.getLeaderId()).toBe('5');
+    expect(manager.getLeaderId()).toBe(5);
   });
 
   test('emits event when leader attacks different target', () => {
@@ -76,9 +76,9 @@ describe('TeamManager', () => {
         living: true,
         team: true,
         team_leader: true,
-        attack_num: '3',
+        attack_num: 3,
       },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     expect(callback).toHaveBeenCalledTimes(1);
   });
@@ -92,7 +92,7 @@ describe('TeamManager', () => {
         living: true,
         team: true,
         team_leader: true,
-        attack_num: '3',
+        attack_num: 3,
       },
       '99': { desc: 'You', living: true, team: true, attack_num: false },
     });
@@ -110,9 +110,9 @@ describe('TeamManager', () => {
         living: true,
         team: true,
         team_leader: true,
-        attack_num: '2',
+        attack_num: 2,
       },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     expect(noAvatar).not.toHaveBeenCalled();
     expect(avatar).toHaveBeenCalledTimes(1);
@@ -128,7 +128,7 @@ describe('TeamManager', () => {
       team_leader: true,
       attack_num: '3',
     };
-    const player = { desc: 'You', living: true, team: true, attack_num: '2' };
+    const player = { desc: 'You', living: true, team: true, attack_num: 2 };
     client.sendEvent('gmcp.objects.data', { '1': data, '99': player });
     client.sendEvent('gmcp.objects.data', { '1': data, '99': player });
     expect(callback).toHaveBeenCalledTimes(2);
@@ -139,15 +139,15 @@ describe('TeamManager', () => {
     client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     client.sendEvent('gmcp.objects.data', {
-      '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '2' },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: 2 },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     expect(callback).toHaveBeenCalledTimes(2);
   });
@@ -157,11 +157,11 @@ describe('TeamManager', () => {
     client.on('teamLeaderTargetNoAvatar', callback);
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     client.sendEvent('gmcp.objects.data', {
       '2': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: '3' },
-      '99': { desc: 'You', living: true, team: true, attack_num: '2' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 2 },
     });
     expect(callback).toHaveBeenCalledTimes(2);
   });
@@ -171,15 +171,15 @@ describe('TeamManager', () => {
       '1': { desc: 'Bob', living: true, team: true, attack_target: true },
       '2': { desc: 'Alice', living: true, team: true, defense_target: true },
     });
-    expect(manager.getAttackTargetId()).toBe('1');
-    expect(manager.getDefenseTargetId()).toBe('2');
+    expect(manager.getAttackTargetId()).toBe(1);
+    expect(manager.getDefenseTargetId()).toBe(2);
   });
 
   test('returns avatar attack target id', () => {
     client.sendEvent('gmcp.objects.data', {
-      '99': { desc: 'You', living: true, team: true, attack_num: '4' },
+      '99': { desc: 'You', living: true, team: true, attack_num: 4 },
     });
-    expect(manager.getAvatarAttackTargetId()).toBe('4');
+    expect(manager.getAvatarAttackTargetId()).toBe(4);
   });
 
   test('manages attack queue entries', () => {

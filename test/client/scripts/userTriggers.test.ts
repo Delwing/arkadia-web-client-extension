@@ -9,6 +9,10 @@ class FakeClient {
   port = { postMessage: jest.fn() } as any;
   sendEvent = jest.fn();
   sendCommand = jest.fn();
+  FunctionalBind = {
+    set: jest.fn(),
+    clear: jest.fn(),
+  } as any;
 }
 
 describe('userTriggers', () => {
@@ -120,5 +124,40 @@ describe('userTriggers', () => {
     expect(fooSegment).toBeDefined();
     expect(fooSegment?.state?.foreground).toBeDefined();
     expect(fooSegment?.state?.slowBlink).toBe(true);
+  });
+
+  test('functionalBind sets functional bind with label and command', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{
+      pattern: 'foo',
+      macros: [{ type: 'functionalBind', label: 'Attack', command: 'zabij cel' }]
+    }];
+    apply({ key: 'triggers', value: list });
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    expect(result?.text).toBe('foo');
+    expect(client.FunctionalBind.set).toHaveBeenCalledWith('Attack', expect.any(Function));
+
+    // Test that the callback executes the correct command
+    const callback = client.FunctionalBind.set.mock.calls[0][1];
+    callback();
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij cel');
+  });
+
+  test('functionalBind does nothing if label or command is missing', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{
+      pattern: 'foo',
+      macros: [{ type: 'functionalBind', label: 'Attack' }]
+    }];
+    apply({ key: 'triggers', value: list });
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    expect(result?.text).toBe('foo');
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
 });

@@ -26,7 +26,7 @@ export default function initObjectAliases(
         const obj = findByShortcut(short);
         if (obj) {
             const data = client.TeamManager.getAccumulatedObjectsData?.();
-            const isTeam = data && data[obj.num]?.team;
+            const isTeam = data && data.get(obj.num)?.team;
             const cmd = isTeam ? `zaslon ob_${obj.num}` : `zaslon przed ob_${obj.num}`;
             client.sendCommand(cmd);
             if (releaseGuard) {
@@ -53,7 +53,7 @@ export default function initObjectAliases(
     }
 
     function breakDefenseTarget(short?: string) {
-        let id: string | undefined;
+        let id: number | string | undefined;
         if (short) {
             const obj = findByShortcut(short);
             id = obj?.num?.toString();
@@ -111,8 +111,8 @@ export default function initObjectAliases(
             pattern: /^\/z$/,
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
-                if (id) {
-                    attackById(id);
+                if (id !== undefined) {
+                    attackById(String(id));
                 }
             }
         });
@@ -120,8 +120,8 @@ export default function initObjectAliases(
             pattern: /^\/x$/,
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
-                if (id) {
-                    attackById(id, "zaskocz");
+                if (id !== undefined) {
+                    attackById(String(id), "zaskocz");
                 }
             }
         });
@@ -129,9 +129,9 @@ export default function initObjectAliases(
             pattern: /^\/zas$/,
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
-                if (id) {
+                if (id !== undefined) {
                     const data = client.TeamManager.getAccumulatedObjectsData?.();
-                    const isTeam = data && data[id]?.team;
+                    const isTeam = data && data.get(id)?.team;
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
                     if (releaseGuard) {
@@ -152,9 +152,9 @@ export default function initObjectAliases(
             pattern: /^\/za$/,
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
-                if (id) {
+                if (id !== undefined) {
                     const data = client.TeamManager.getAccumulatedObjectsData?.();
-                    const isTeam = data && data[id]?.team;
+                    const isTeam = data && data.get(id)?.team;
                     const cmd = isTeam ? `zaslon ob_${id}` : `zaslon przed ob_${id}`;
                     client.sendCommand(cmd);
                     if (releaseGuard) {
@@ -202,7 +202,7 @@ export default function initObjectAliases(
             pattern: /^\/ra$/,
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
-                if (id) {
+                if (id !== undefined) {
                     client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`);
                 }
             }
@@ -224,7 +224,7 @@ export default function initObjectAliases(
             pattern: /^\/rz$/,
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
-                if (id) {
+                if (id !== undefined) {
                     client.sendCommand(`rozkaz druzynie zaslonic ob_${id}`);
                 }
             }

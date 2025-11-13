@@ -8,7 +8,7 @@ export default function initLeaderAttackWarning(client: Client) {
     const warningInterval = 5000;
     let lastText: string | undefined;
     let lastPrintedAt = 0;
-    let activeTargetId: string | undefined;
+    let activeTargetId: number | undefined;
 
     function resetReminder() {
         lastText = undefined;
@@ -27,7 +27,7 @@ export default function initLeaderAttackWarning(client: Client) {
         client.println(message);
     }
 
-    function printWarning(targetId?: string) {
+    function printWarning(targetId?: number) {
         const attackTargetId = client.TeamManager.getAttackTargetId?.();
         const avatarTargetId = client.TeamManager.getAvatarAttackTargetId?.();
         if (!attackTargetId) {

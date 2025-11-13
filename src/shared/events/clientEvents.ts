@@ -108,7 +108,7 @@ export interface KnownEvents {
     "attackMode": "A" | "AW" | "AWR";
     "contentWidth": number;
     "enterLocation": { id: number; room: unknown };
-    "highlights": number[];
+    "highlights": [number[]];
     "multibinds": MultibindList;
     "letterComposer": { open: boolean };
     "letterComposer.submit": LetterSubmitPayload;
@@ -119,7 +119,7 @@ export interface KnownEvents {
     "ping": number | null;
     "transportTimer": TransportTimerPayload | null;
     "combatTimer": number | null;
-    "teamLeaderTargetNoAvatar": string;
+    "teamLeaderTargetNoAvatar": number;
     "teamLeaderTargetAvatar": void;
     "teamChange": void;
     "isTeamLeader": boolean;

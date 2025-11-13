@@ -37,14 +37,14 @@ export default class TeamManager {
     private teamMemberDescriptions: Map<string, string> = new Map();
     private joined = false;
     private leader?: string;
-    private leaderId?: string;
+    private leaderId?: number;
     private tag = 'teamManager';
-    private accumulatedObjectsData: Record<string, AccumulatedObjectData> = {}
-    playerNum?: string;
-    private leaderAttackTargetId?: string
-    private avatarAttackTargetId?: string
-    private attackTargetId?: string
-    private defenseTargetId?: string
+    private accumulatedObjectsData = new Map<number, AccumulatedObjectData>();
+    playerNum?: number;
+    private leaderAttackTargetId?: number;
+    private avatarAttackTargetId?: number;
+    private attackTargetId?: number;
+    private defenseTargetId?: number;
     private enemies: string[] = [];
     private missingEnemyCounts: Map<string, number> = new Map();
     private currentLocationSignature?: string;
@@ -58,9 +58,9 @@ export default class TeamManager {
             this.handleObjectsNums(detail);
         });
         this.client.on('gmcp.char.info', info => {
-            const detail = info as { object_num?: unknown };
+            const detail = info as { object_num?: number };
             if (detail?.object_num !== undefined) {
-                this.playerNum = String(detail.object_num);
+                this.playerNum = detail.object_num;
             }
         });
         this.client.on('gmcp.room.info', detail => {
@@ -88,9 +88,10 @@ export default class TeamManager {
         });
     }
 
-    private handleObjectsData(data: Record<string, AccumulatedObjectData>) {
-        Object.entries(data).forEach(([id, obj]) => {
-            this.accumulatedObjectsData[id] = { ...(this.accumulatedObjectsData[id] ?? {}), ...obj };
+    private handleObjectsData(data: Record<number, AccumulatedObjectData>) {
+        Object.entries(data).forEach(([idStr, obj]) => {
+            const id = Number(idStr);
+            this.accumulatedObjectsData.set(id, { ...(this.accumulatedObjectsData.get(id) ?? {}), ...obj });
 
             if (typeof obj.attack_target === 'boolean') {
                 if (obj.attack_target) {
@@ -111,13 +112,13 @@ export default class TeamManager {
             this.checkTeam(obj, id);
             this.checkTeamLeader(obj, id);
             if (id === this.leaderId && obj.attack_num !== undefined) {
-                this.leaderAttackTargetId = typeof obj.attack_num == "boolean" ? undefined : String(obj.attack_num)
+                this.leaderAttackTargetId = typeof obj.attack_num === "boolean" ? undefined : Number(obj.attack_num);
             }
             if (id === this.playerNum && obj.attack_num !== undefined) {
-                this.avatarAttackTargetId = typeof obj.attack_num == "boolean" ? undefined : String(obj.attack_num)
+                this.avatarAttackTargetId = typeof obj.attack_num === "boolean" ? undefined : Number(obj.attack_num);
             }
             if (obj?.living === false) {
-                this.removeEnemyFromQueue(id);
+                this.removeEnemyFromQueue(String(id));
             }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
@@ -179,26 +180,26 @@ export default class TeamManager {
         }
     }
 
-    private checkTeam(obj: AccumulatedObjectData, id: string) {
+    private checkTeam(obj: AccumulatedObjectData, id: number) {
         if (!obj || !obj.team) {
             return;
         }
-        const name = this.accumulatedObjectsData[id].desc;
+        const name = this.accumulatedObjectsData.get(id)?.desc;
         if (!name) {
             return;
         }
 
-        const previousName = this.teamMemberDescriptions.get(id);
+        const previousName = this.teamMemberDescriptions.get(String(id));
         if (previousName && previousName !== name) {
             this.members.delete(previousName);
         }
 
-        this.teamMemberDescriptions.set(id, name);
+        this.teamMemberDescriptions.set(String(id), name);
         this.addMember(name);
         this.checkTeamLeader(obj, id);
     }
 
-    private checkTeamLeader(obj: AccumulatedObjectData, id: string) {
+    private checkTeamLeader(obj: AccumulatedObjectData, id: number) {
         if (obj.team_leader) {
             const changed = this.leaderId !== id;
             this.leader = obj.desc;
@@ -315,7 +316,7 @@ export default class TeamManager {
         return this.leader;
     }
 
-    getLeaderId(): string | undefined {
+    getLeaderId(): number | undefined {
         return this.leaderId;
     }
 
@@ -377,7 +378,7 @@ export default class TeamManager {
         if (wasFirst) {
             const nextId = this.enemies[0];
             if (nextId) {
-                const description = this.accumulatedObjectsData[nextId]?.desc;
+                const description = this.accumulatedObjectsData.get(Number(nextId))?.desc;
                 const displayName = description ?? `ob_${nextId}`;
                 this.client.println(
                     `<span style="color:orange">/nn zeby zaatakowac nastepny cel: ${displayName}</span>`

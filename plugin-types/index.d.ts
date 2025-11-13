@@ -646,7 +646,7 @@ export interface ClientEvents {
   /** Entered a location */
   "enterLocation": { id: number; room: unknown };
   /** Highlights updated */
-  "highlights": number[];
+  "highlights": [number[]];
   /** Multibind list updated */
   "multibinds": MultibindList;
   /** Letter composer state */
@@ -1292,12 +1292,12 @@ export interface TeamApi {
      * Get the team leader's object ID
      * @returns Leader object ID or undefined if not in a team
      */
-    getLeaderId(): string | undefined;
+    getLeaderId(): number | undefined;
     /**
      * Get the player's object number
      * @returns Player object number or undefined
      */
-    getPlayerNum(): string | undefined;
+    getPlayerNum(): number | undefined;
 }
 
 /**

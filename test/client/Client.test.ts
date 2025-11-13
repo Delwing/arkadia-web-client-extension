@@ -268,7 +268,7 @@ test('updateContentWidth measures characters per line', () => {
 test('support sends commands to support leader', () => {
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
   jest.spyOn(client, 'sendCommand');
-  jest.spyOn(client.TeamManager, 'getLeaderId').mockReturnValue('5');
+  jest.spyOn(client.TeamManager, 'getLeaderId').mockReturnValue(5);
   client.support();
   expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'wesprzyj');
   expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wesprzyj ob_5');

@@ -788,7 +788,7 @@ export interface ClientEvents {
   /** Entered a location */
   "enterLocation": { id: number; room: unknown };
   /** Highlights updated */
-  "highlights": number[];
+  "highlights": [number[]];
   /** Multibind list updated */
   "multibinds": MultibindList;
   /** Letter composer state */

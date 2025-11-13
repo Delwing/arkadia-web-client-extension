@@ -37,16 +37,16 @@ export default function initInvite(client: Client) {
     }
 
     // Function to find object ID for a person by their name
-    function findObjectIdByName(name: string): string | null {
+    function findObjectIdByName(name: string): number | null {
         const accumulatedData = client.TeamManager.getAccumulatedObjectsData();
 
         const nums = Array.isArray(gmcp?.objects?.nums)
-            ? gmcp.objects.nums.map(String)
+            ? gmcp.objects.nums
             : [];
 
         for (let index = nums.length - 1; index >= 0; index--) {
             const objectId = nums[index];
-            const obj = accumulatedData[objectId];
+            const obj = accumulatedData.get(objectId);
             if (obj && typeof obj === 'object' && obj.desc === name) {
                 return objectId;
             }

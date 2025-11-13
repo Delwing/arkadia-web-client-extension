@@ -57,15 +57,15 @@ describe('Invite functionality', () => {
         mockSendCommand = jest.fn();
 
         mockTeamManager = {
-            getAccumulatedObjectsData: jest.fn().mockReturnValue({
-                "1": { desc: "Vesper", living: true, team: true },
-                "2": { desc: "Pablo", living: true, team: true },
-                "3": { desc: "Gandalf", living: true, team: true },
-                "15": { desc: "Vesper", living: true, team: true }
-            })
+            getAccumulatedObjectsData: jest.fn().mockReturnValue(new Map([
+                [1, { desc: "Vesper", living: true, team: true }],
+                [2, { desc: "Pablo", living: true, team: true }],
+                [3, { desc: "Gandalf", living: true, team: true }],
+                [15, { desc: "Vesper", living: true, team: true }]
+            ]))
         };
 
-        gmcp.objects = { nums: ['1', '2', '3', '15'] };
+        gmcp.objects = { nums: [1, 2, 3, 15] };
 
         client = {
             Triggers: mockTriggers,
