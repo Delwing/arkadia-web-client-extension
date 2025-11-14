@@ -93,7 +93,6 @@ export default class ObjectManager {
         if (this.playerNum && detail && typeof detail.hp !== 'undefined') {
             const data = this.getOrCreateData(this.playerNum);
             data.hp = detail.hp;
-            data.state = detail.hp;
         }
     }
 
@@ -101,7 +100,7 @@ export default class ObjectManager {
         type Obj = {
             num: number,
             desc: string | undefined,
-            state: any,
+            hp: number | undefined,
             attack_num: boolean | number | undefined,
             avatar_target: boolean | undefined,
             shortcut?: string,
@@ -113,7 +112,7 @@ export default class ObjectManager {
             return {
                 num: parseInt(numStr),
                 desc: obj.desc,
-                state: obj.state ?? obj.hp,
+                hp: obj.hp,
                 attack_num: obj.attack_num,
                 avatar_target: obj.avatar_target,
                 attack_target: obj.attack_target,

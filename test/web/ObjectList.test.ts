@@ -42,8 +42,8 @@ describe('ObjectList', () => {
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
     const objects = [
-      { shortcut: '1', desc: 'Goblin', state: 10 },
-      { shortcut: '2', desc: 'Orc', state: 10, attack_num: true },
+      { shortcut: '1', desc: 'Goblin', hp: 10 },
+      { shortcut: '2', desc: 'Orc', hp: 10, attack_num: true },
     ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();

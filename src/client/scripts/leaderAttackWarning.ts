@@ -31,11 +31,11 @@ export default function initLeaderAttackWarning(client: Client) {
         const attackTargetId = client.TeamManager.getAttackTargetId?.();
         const avatarTargetId = client.TeamManager.getAvatarAttackTargetId?.();
         if (!attackTargetId) {
-            resetReminder();
+            clearActiveTarget();
             return;
         }
         if (avatarTargetId === attackTargetId) {
-            resetReminder();
+            clearActiveTarget();
             return;
         }
         const attackBind = formatLabel(client.attackBind);

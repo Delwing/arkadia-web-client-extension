@@ -591,8 +591,8 @@ export interface LocationObject {
   num: number;
   /** Object description/name */
   desc?: string;
-  /** Object state (typically HP) */
-  state?: any;
+  /** HP */
+  hp?: number;
   /** Attack number or boolean indicating combat status */
   attack_num?: boolean | number;
   /** Whether avatar is targeting this object */

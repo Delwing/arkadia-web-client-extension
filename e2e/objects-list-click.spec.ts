@@ -197,10 +197,10 @@ test.describe('Objects list clicking', () => {
 
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Hero', object_num: 100});
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
-            '100': {desc: 'Hero', team: true, team_leader: true, state: 7},
-            '301': {desc: 'Healthy Goblin', attack_num: false, num: 301, state: 6},
-            '302': {desc: 'Wounded Troll', attack_num: false, num: 302, state: 3},
-            '303': {desc: 'Dying Orc', attack_num: false, num: 303, state: 1},
+            '100': {desc: 'Hero', team: true, team_leader: true, hp: 7},
+            '301': {desc: 'Healthy Goblin', attack_num: false, num: 301, hp: 6},
+            '302': {desc: 'Wounded Troll', attack_num: false, num: 302, hp: 3},
+            '303': {desc: 'Dying Orc', attack_num: false, num: 303, hp: 1},
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 301, 302, 303]);
 

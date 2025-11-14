@@ -18,9 +18,9 @@ test.describe('GMCP-driven interactions', () => {
 
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Player', object_num: 100 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
-            '100': { desc: 'Player', team: true, team_leader: true, state: 6 },
-            '101': { desc: 'Scout', team: true, state: 3 },
-            '102': { desc: 'Bandit', attack_num: 1, state: 1 },
+            '100': { desc: 'Player', team: true, team_leader: true, hp: 6 },
+            '101': { desc: 'Scout', team: true, hp: 3 },
+            '102': { desc: 'Bandit', attack_num: 1, hp: 1 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 101, 102]);
 

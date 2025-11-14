@@ -283,7 +283,7 @@ export default class ObjectList {
                     const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
                     coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
                 } else if (
-                    typeof obj.state === "number" &&
+                    typeof obj.hp === "number" &&
                     obj.attack_num !== false &&
                     obj.attack_num !== undefined
                 ) {
@@ -296,8 +296,8 @@ export default class ObjectList {
                 ? `${rawDesc}${padding}`
                 : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
             let bar = "";
-            if (typeof obj.state === "number") {
-                const hp = Math.max(0, Math.min(6, obj.state)) + 1;
+            if (typeof obj.hp === "number") {
+                const hp = Math.max(0, Math.min(6, obj.hp)) + 1;
                 const colorLevel = getColorLevel(hp, 7, false, true);
                 const color = COLOR_OBJECT[colorLevel];
                 const filled = "#".repeat(hp);

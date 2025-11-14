@@ -37,7 +37,7 @@ describe('ObjectManager', () => {
       {
         num: 1,
         desc: 'Goblin',
-        state: 5,
+        hp: 5,
         attack_num: true,
         avatar_target: true,
         shortcut: '1',
@@ -56,7 +56,7 @@ describe('ObjectManager', () => {
       {
         num: 2,
         desc: 'Orc',
-        state: 10,
+        hp: 10,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '1',
@@ -74,7 +74,7 @@ describe('ObjectManager', () => {
       {
         num: 99,
         desc: 'Hero',
-        state: 50,
+        hp: 50,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '@',
@@ -92,7 +92,7 @@ describe('ObjectManager', () => {
       {
         num: 1,
         desc: 'Hero Name',
-        state: 10,
+        hp: 10,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '@',
@@ -109,7 +109,7 @@ describe('ObjectManager', () => {
       {
         num: 1,
         desc: 'Ogre',
-        state: undefined,
+        hp: undefined,
         attack_num: undefined,
         avatar_target: true,
         shortcut: '1',
@@ -133,7 +133,7 @@ describe('ObjectManager', () => {
       {
         num: 100,
         desc: 'Player',
-        state: 30,
+        hp: 30,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '@',
@@ -142,7 +142,7 @@ describe('ObjectManager', () => {
       {
         num: 2,
         desc: 'Ally1',
-        state: 40,
+        hp: 40,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: 'A',
@@ -151,7 +151,7 @@ describe('ObjectManager', () => {
       {
         num: 3,
         desc: 'Ally2',
-        state: 50,
+        hp: 50,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: 'B',
@@ -160,7 +160,7 @@ describe('ObjectManager', () => {
       {
         num: 1,
         desc: 'Goblin',
-        state: 10,
+        hp: 10,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '1',
@@ -169,7 +169,7 @@ describe('ObjectManager', () => {
       {
         num: 4,
         desc: 'Ogre',
-        state: 20,
+        hp: 20,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '2',
@@ -190,7 +190,7 @@ describe('ObjectManager', () => {
       {
         num: 1,
         desc: 'Fighter',
-        state: undefined,
+        hp: undefined,
         attack_num: true,
         avatar_target: undefined,
         shortcut: '1',
@@ -199,7 +199,7 @@ describe('ObjectManager', () => {
       {
         num: 2,
         desc: 'Rock',
-        state: undefined,
+        hp: undefined,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '50',
@@ -208,7 +208,7 @@ describe('ObjectManager', () => {
       {
         num: 3,
         desc: 'Tree',
-        state: undefined,
+        hp: undefined,
         attack_num: undefined,
         avatar_target: undefined,
         shortcut: '51',

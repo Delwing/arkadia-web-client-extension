@@ -43,6 +43,7 @@ import initInvite from './scripts/invite'
 import initObjectAliases from './scripts/objectAliases'
 import initMagicKeys from './scripts/magicKeys'
 import initMagics from './scripts/magics'
+import initMagicSupport from './scripts/magic-support'
 import initKnowledge from './scripts/knowledge'
 import initOdlozMagie from './scripts/odlozMagie'
 import registerGagTriggers from './scripts/gags'
@@ -242,6 +243,7 @@ export function registerScripts(client: Client) {
     initObjectAliases(client, aliases)
     initMagicKeys(client)
     initMagics(client)
+    initMagicSupport(client)
     initKnowledge(client, aliases)
     initOdlozMagie(client, aliases)
     initPriceEvaluation(client)

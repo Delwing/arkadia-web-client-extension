@@ -332,7 +332,6 @@ export class ArkadiaTime {
     }
 
     private handleGmcp(daylight: boolean): void {
-        console.log(this.isDaylight);
         if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (daylight) {
                 this.markObservedSunrise();
