@@ -6,7 +6,7 @@ export default function initFullHpTimer(client: Client) {
     const SPRING_GREEN = createColorFormat("#00ff7f");
     let timer: number | null = null;
     let enabled = false;
-    let playerNum: string | undefined;
+    let playerNum: number | undefined;
     let previousHp: number | null = null;
 
     function clearTimer() {
@@ -55,13 +55,13 @@ export default function initFullHpTimer(client: Client) {
     client.on("gmcp.char.info", (info) => {
         const detail = info as { object_num?: number };
         if (detail && typeof detail.object_num !== "undefined") {
-            playerNum = String(detail.object_num);
+            playerNum = detail.object_num;
         }
     });
 
-    client.on("gmcp.objects.data", (data: Record<string, { attack_num?: boolean | number } | undefined>) => {
+    client.on("gmcp.objects.data", (data) => {
         if (!playerNum) return;
-        const obj = data?.[playerNum];
+        const obj = data[playerNum];
         if (!obj || obj.attack_num === undefined) return;
         if (obj.attack_num !== false) {
             clearTimer();

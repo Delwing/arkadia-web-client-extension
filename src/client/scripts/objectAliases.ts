@@ -68,21 +68,21 @@ export default function initObjectAliases(
 
     const attackController = createAttackController(client);
 
-    const attackById = (id: string, command?: string) => {
+    const attackById = (id: number, command?: string) => {
         attackController.attackById(id, command);
     };
 
     function attack(short: string) {
         const obj = findByShortcut(short);
         if (obj) {
-            attackById(obj.num.toString());
+            attackById(obj.num);
         }
     }
 
     function surprise(short: string) {
         const obj = findByShortcut(short);
         if (obj) {
-            attackById(obj.num.toString(), "zaskocz");
+            attackById(obj.num, "zaskocz");
         }
     }
 
@@ -112,7 +112,7 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
                 if (id !== undefined) {
-                    attackById(String(id));
+                    attackById(id);
                 }
             }
         });
@@ -121,7 +121,7 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
                 if (id !== undefined) {
-                    attackById(String(id), "zaskocz");
+                    attackById(id, "zaskocz");
                 }
             }
         });

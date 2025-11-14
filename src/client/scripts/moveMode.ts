@@ -26,7 +26,7 @@ function clampMoveMode(client: Client) {
 }
 
 export default function initMoveMode(client: Client) {
-    let playerNum: string | undefined;
+    let playerNum: number | undefined;
 
     function update() {
         clampMoveMode(client);
@@ -85,17 +85,15 @@ export default function initMoveMode(client: Client) {
     });
 
     client.on('gmcp.char.info', detail => {
-        const info = detail as { object_num?: unknown };
+        const info = detail as { object_num?: number };
         if (info && typeof info.object_num !== 'undefined') {
-            playerNum = String(info.object_num);
+            playerNum = info.object_num;
         }
     });
 
-    client.on('gmcp.objects.data', (payload) => {
+    client.on('gmcp.objects.data', (objects) => {
         if (!playerNum) return;
-        const detail = payload as Record<string, { attack_num?: boolean | number | string }>;
-        if (!detail || typeof detail !== 'object') return;
-        const obj = detail[playerNum];
+        const obj = objects[playerNum];
         if (!obj || obj.attack_num === undefined) return;
         if (obj.attack_num !== false) {
             resetToNormal();

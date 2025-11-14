@@ -45,8 +45,8 @@ export default class Client {
     port?: any;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
-    Triggers = new Triggers(this);
-    Map = new MapHelper({
+    public Triggers = new Triggers(this);
+    public Map = new MapHelper({
         on: this.on.bind(this),
         sendCommand: this.sendCommand.bind(this),
         sendEvent: this.sendEvent.bind(this),
@@ -56,8 +56,8 @@ export default class Client {
         },
         functionalBind: this.FunctionalBind,
     });
-    TeamManager = new TeamManager(this);
-    ObjectManager = new ObjectManager(this);
+    public TeamManager = new TeamManager(this);
+    public ObjectManager = new ObjectManager(this);
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     private soundManager = new SoundManager(this);

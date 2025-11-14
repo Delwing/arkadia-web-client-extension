@@ -241,7 +241,12 @@ export default class ObjectList {
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
         const tm = this.client.TeamManager;
         const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-        const nextQueuedIdString = typeof nextQueuedId === "undefined" ? undefined : String(nextQueuedId);
+
+        // Verify the queued enemy actually exists in the current object list
+        const queuedEnemyExists = nextQueuedId !== undefined &&
+            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
+        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
+
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
         });
@@ -257,9 +262,9 @@ export default class ObjectList {
             }
             const isNextQueued =
                 !isPlayer &&
-                nextQueuedIdString !== undefined &&
+                validNextQueuedId !== undefined &&
                 typeof obj.num !== "undefined" &&
-                nextQueuedIdString === String(obj.num);
+                validNextQueuedId === obj.num;
             const numClasses = ["object-num"];
             if (isNextQueued) {
                 numClasses.push("object-num-next-target");

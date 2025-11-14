@@ -15,19 +15,19 @@ export interface ObjectData {
 
 export default class ObjectManager {
     private client: Client;
-    private nums: string[] = [];
-    private data: Record<string, ObjectData> = {};
-    private playerNum?: string;
+    private nums: number[] = [];
+    private data: Map<number, ObjectData> = new Map();
+    private playerNum?: number;
     private teamShortcutHistory: Map<string, string> = new Map();
     private nextTeamShortcutCode = 'A'.charCodeAt(0);
 
     constructor(client: Client) {
         this.client = client;
-        this.client.on('gmcp.objects.nums', detail => {
-            this.handleNums(detail);
+        this.client.on('gmcp.objects.nums', (nums: number[]) => {
+            this.handleNums(nums);
         });
         this.client.on('gmcp.objects.data', detail => {
-            this.handleData(detail as Record<string, ObjectData>);
+            this.handleData(detail);
         });
         this.client.on('gmcp.char.info', detail => {
             this.handleCharInfo(detail);
@@ -37,42 +37,22 @@ export default class ObjectManager {
         });
     }
 
-    private handleNums(detail: unknown) {
-        let incoming: unknown[] | undefined;
-        if (Array.isArray(detail)) {
-            incoming = detail;
-        } else if (detail && typeof detail === 'object') {
-            const payload = detail as { nums?: unknown[]; objects?: unknown[] };
-            if (Array.isArray(payload.nums)) {
-                incoming = payload.nums;
-            } else if (Array.isArray(payload.objects)) {
-                incoming = payload.objects;
-            }
-        }
-
-        if (!incoming) {
-            return;
-        }
-
-        this.nums = incoming.map(item => String(item));
-        const numeric = incoming
-            .map(item => Number(item))
-            .filter(num => Number.isFinite(num));
-
-        this.client.emit('parsedNums', { nums: numeric });
+    private handleNums(nums: number[]) {
+        this.nums = nums;
+        this.client.emit('parsedNums', { nums: nums });
     }
 
-    private getOrCreateData(num: string): ObjectData {
+    private getOrCreateData(num: number): ObjectData {
         if (!this.data[num]) {
             this.data[num] = {};
         }
         return this.data[num];
     }
 
-    private handleData(detail: Record<string, ObjectData>) {
+    private handleData(detail: Map<number, ObjectData>) {
         if (detail && typeof detail === 'object') {
             Object.keys(detail).forEach(num => {
-                const data = this.getOrCreateData(num);
+                const data = this.getOrCreateData(parseInt(num));
                 Object.assign(data, detail[num]);
             });
         }
@@ -81,7 +61,7 @@ export default class ObjectManager {
 
     private handleCharInfo(detail: any) {
         if (detail && typeof detail.object_num !== 'undefined') {
-            this.playerNum = String(detail.object_num);
+            this.playerNum = detail.object_num;
             const data = this.getOrCreateData(this.playerNum);
             if (detail.name) {
                 data.desc = toTitleCase(detail.name);
@@ -107,10 +87,10 @@ export default class ObjectManager {
             __category?: 'player' | 'team' | 'rest' | 'rest-noncombat',
         };
 
-        const makeObj = (numStr: string): Obj => {
-            const obj = this.data[numStr] || {};
+        const makeObj = (num: number): Obj => {
+            const obj = this.data[num] || {};
             return {
-                num: parseInt(numStr),
+                num: num,
                 desc: obj.desc,
                 hp: obj.hp,
                 attack_num: obj.attack_num,

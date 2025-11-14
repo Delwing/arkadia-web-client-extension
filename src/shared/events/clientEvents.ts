@@ -160,10 +160,10 @@ export interface KnownEvents {
     "playback.speed": number;
     "playback.index": PlaybackIndexPayload;
     "message": MessageEventPayload;
-    "attackQueueChange": string[];
+    "attackQueueChange": number[];
     "clearAttackQueue": void;
-    "addToAttackQueue": string;
-    "removeFromAttackQueue": string;
+    "addToAttackQueue": number;
+    "removeFromAttackQueue": number;
     "parsedObjects": void;
     "parsedNums": { nums: number[] };
     "kill": { killer: "ME" | "TEAM" | "OTHER" };
@@ -180,7 +180,24 @@ export interface KnownEvents {
     "clock.sunset": ClockSunEventPayload;
 }
 
+export interface ObjectData {
+    avatar?: boolean
+    hp?: number
+    enemy?: boolean
+    attack_num?: number
+    team?: boolean
+    team_leader?: boolean
+    avatar_target?: boolean
+    attack_target?: boolean
+    defense_target?: boolean
+    hidden?: boolean
+    can_see_in_room?: boolean
+    paralyzed?: boolean
+    editing?: boolean
+}
+
 export type ClientEvents = KnownEvents & {
+    "gmcp.objects.data": Map<number, ObjectData>
     [key: `gmcp.${string}`]: unknown;
     [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
 };

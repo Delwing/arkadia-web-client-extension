@@ -31,7 +31,7 @@ describe('ObjectManager', () => {
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Goblin', hp: 5, attack_num: true, avatar_target: true },
     });
-    client.sendEvent('gmcp.objects.nums', ['1']);
+    client.sendEvent('gmcp.objects.nums', [1]);
     const objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       {
@@ -50,7 +50,7 @@ describe('ObjectManager', () => {
     client.sendEvent('gmcp.objects.data', {
       '2': { desc: 'Orc', hp: 10 },
     });
-    client.sendEvent('gmcp.objects.nums', { nums: [2] });
+    client.sendEvent('gmcp.objects.nums', [2]);
     const objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       {
@@ -103,7 +103,7 @@ describe('ObjectManager', () => {
 
   test('sets avatar target flag', () => {
     client.sendEvent('gmcp.objects.data', { '1': { desc: 'Ogre', avatar_target: true } });
-    client.sendEvent('gmcp.objects.nums', ['1']);
+    client.sendEvent('gmcp.objects.nums', [1]);
     const objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       {
@@ -127,7 +127,7 @@ describe('ObjectManager', () => {
       '3': { desc: 'Ally2', hp: 50, team: true },
       '4': { desc: 'Ogre', hp: 20 },
     });
-    client.sendEvent('gmcp.objects.nums', ['1', '2', '3', '4']);
+    client.sendEvent('gmcp.objects.nums', [1, 2, 3, 4]);
     const objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       {
@@ -184,7 +184,7 @@ describe('ObjectManager', () => {
       '2': { desc: 'Rock' },
       '3': { desc: 'Tree' },
     });
-    client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    client.sendEvent('gmcp.objects.nums', [1, 2, 3]);
     const objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       {
@@ -226,7 +226,7 @@ describe('ObjectManager', () => {
       '4': { desc: 'Ally3', hp: 60, team: true },
     });
     // First update: team members appear in order 2, 3, 4
-    client.sendEvent('gmcp.objects.nums', ['2', '3', '4']);
+    client.sendEvent('gmcp.objects.nums', [2, 3, 4]);
     let objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       { num: 100, shortcut: '@', __category: 'player' },
@@ -237,7 +237,7 @@ describe('ObjectManager', () => {
 
     // Second update: team members appear in reverse order 4, 3, 2
     // They should still be sorted by shortcut A, B, C
-    client.sendEvent('gmcp.objects.nums', ['4', '3', '2']);
+    client.sendEvent('gmcp.objects.nums', [4, 3, 2]);
     objects = manager.getObjectsOnLocation();
     expect(objects).toMatchObject([
       { num: 100, shortcut: '@', __category: 'player' },

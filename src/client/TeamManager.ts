@@ -13,46 +13,28 @@ interface ObjectData {
     avatar_target?: boolean
 }
 
-/**
- * Represents data accumulated from multiple gmcp objects.data events.
- * All fields are optional because each event may provide only a subset of
- * {@link ObjectData} properties.
- */
-interface AccumulatedObjectData {
-    attack_num?: boolean | number
-    attack_target?: boolean
-    defense_target?: boolean
-    desc?: string
-    hp?: number
-    hidden?: false
-    living?: boolean
-    team?: boolean
-    team_leader?: boolean
-    avatar_target?: boolean
-}
-
 export default class TeamManager {
     private client: Client;
     private members: Set<string> = new Set();
-    private teamMemberDescriptions: Map<string, string> = new Map();
+    private teamMemberDescriptions: Map<number, string> = new Map();
     private joined = false;
     private leader?: string;
     private leaderId?: number;
     private tag = 'teamManager';
-    private accumulatedObjectsData = new Map<number, AccumulatedObjectData>();
+    private accumulatedObjectsData = new Map<number, ObjectData>();
     playerNum?: number;
     private leaderAttackTargetId?: number;
     private avatarAttackTargetId?: number;
     private attackTargetId?: number;
     private defenseTargetId?: number;
-    private enemies: string[] = [];
-    private missingEnemyCounts: Map<string, number> = new Map();
+    private enemies: number[] = [];
+    private missingEnemyCounts: Map<number, number> = new Map();
     private currentLocationSignature?: string;
 
     constructor(client: Client) {
         this.client = client;
         this.client.on('gmcp.objects.data', detail => {
-            this.handleObjectsData(detail as Record<string, AccumulatedObjectData>);
+            this.handleObjectsData(detail as Map<number, ObjectData>);
         });
         this.client.on('gmcp.objects.nums', detail => {
             this.handleObjectsNums(detail);
@@ -76,19 +58,19 @@ export default class TeamManager {
         this.client.on('clearAttackQueue', () => {
             this.clearEnemyQueue();
         });
-        this.client.on('addToAttackQueue', (id: string) => {
+        this.client.on('addToAttackQueue', (id: number) => {
             if (id) {
                 this.addEnemyToQueue(id);
             }
         });
-        this.client.on('removeFromAttackQueue', (id: string) => {
+        this.client.on('removeFromAttackQueue', (id: number) => {
             if (id) {
                 this.removeEnemyFromQueue(id);
             }
         });
     }
 
-    private handleObjectsData(data: Record<number, AccumulatedObjectData>) {
+    private handleObjectsData(data: Map<number, ObjectData>) {
         Object.entries(data).forEach(([idStr, obj]) => {
             const id = Number(idStr);
             this.accumulatedObjectsData.set(id, { ...(this.accumulatedObjectsData.get(id) ?? {}), ...obj });
@@ -118,7 +100,7 @@ export default class TeamManager {
                 this.avatarAttackTargetId = typeof obj.attack_num === "boolean" ? undefined : Number(obj.attack_num);
             }
             if (obj?.living === false) {
-                this.removeEnemyFromQueue(String(id));
+                this.removeEnemyFromQueue(id);
             }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
@@ -133,19 +115,17 @@ export default class TeamManager {
             return;
         }
         const previousQueue = this.enemies.join(",");
-        let nums: string[] | null = null;
+        let nums: number[] | null = null;
         if (Array.isArray(detail)) {
-            nums = detail.map(String);
+            nums = detail
         } else if (detail && Array.isArray(detail.nums)) {
-            nums = detail.nums.map(String);
-        } else if (detail && Array.isArray(detail.objects)) {
-            nums = detail.objects.map(String);
+            nums = detail.nums;
         }
         if (!nums) {
             return;
         }
         const allowed = new Set(nums);
-        const remaining: string[] = [];
+        const remaining: number[] = [];
 
         this.enemies.forEach(id => {
             if (allowed.has(id)) {
@@ -180,7 +160,7 @@ export default class TeamManager {
         }
     }
 
-    private checkTeam(obj: AccumulatedObjectData, id: number) {
+    private checkTeam(obj: ObjectData, id: number) {
         if (!obj || !obj.team) {
             return;
         }
@@ -189,17 +169,17 @@ export default class TeamManager {
             return;
         }
 
-        const previousName = this.teamMemberDescriptions.get(String(id));
+        const previousName = this.teamMemberDescriptions.get(id);
         if (previousName && previousName !== name) {
             this.members.delete(previousName);
         }
 
-        this.teamMemberDescriptions.set(String(id), name);
+        this.teamMemberDescriptions.set(id, name);
         this.addMember(name);
         this.checkTeamLeader(obj, id);
     }
 
-    private checkTeamLeader(obj: AccumulatedObjectData, id: number) {
+    private checkTeamLeader(obj: ObjectData, id: number) {
         if (obj.team_leader) {
             const changed = this.leaderId !== id;
             this.leader = obj.desc;
@@ -352,29 +332,27 @@ export default class TeamManager {
         return this.avatarAttackTargetId;
     }
 
-    addEnemyToQueue(id: string): boolean {
-        const normalized = String(id);
-        if (!normalized) {
+    addEnemyToQueue(id: number): boolean {
+        if (!id) {
             return false;
         }
-        if (this.enemies.includes(normalized)) {
+        if (this.enemies.includes(id)) {
             return false;
         }
-        this.enemies.push(normalized);
-        this.missingEnemyCounts.delete(normalized);
+        this.enemies.push(id);
+        this.missingEnemyCounts.delete(id);
         this.notifyAttackQueueChange();
         return true;
     }
 
-    removeEnemyFromQueue(id: string): boolean {
-        const normalized = String(id);
-        const index = this.enemies.indexOf(normalized);
+    removeEnemyFromQueue(id: number): boolean {
+        const index = this.enemies.indexOf(id);
         if (index === -1) {
             return false;
         }
         const wasFirst = index === 0;
         this.enemies.splice(index, 1);
-        this.missingEnemyCounts.delete(normalized);
+        this.missingEnemyCounts.delete(id);
         if (wasFirst) {
             const nextId = this.enemies[0];
             if (nextId) {
@@ -389,7 +367,7 @@ export default class TeamManager {
         return true;
     }
 
-    shiftEnemyFromQueue(): string | undefined {
+    shiftEnemyFromQueue(): number | undefined {
         const next = this.enemies.shift();
         if (next) {
             this.missingEnemyCounts.delete(next);
@@ -398,7 +376,7 @@ export default class TeamManager {
         return next;
     }
 
-    getEnemyQueue(): string[] {
+    getEnemyQueue(): number[] {
         return [...this.enemies];
     }
 

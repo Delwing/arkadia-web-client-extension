@@ -1358,7 +1358,7 @@ export interface AttackQueueApi {
      * }
      * ```
      */
-    add(id: string): boolean;
+    add(id: number): boolean;
     /**
      * Remove an enemy from the attack queue
      * @param id - Object ID of the enemy
@@ -1369,7 +1369,7 @@ export interface AttackQueueApi {
      * api.attackQueue.remove("12345");
      * ```
      */
-    remove(id: string): boolean;
+    remove(id: number): boolean;
     /**
      * Clear the entire attack queue
      *
@@ -1390,7 +1390,7 @@ export interface AttackQueueApi {
      * api.output.print(`Queue has ${queue.length} enemies`, "system");
      * ```
      */
-    get(): string[];
+    get(): number[];
 }
 
 /** Category: player, team member, enemy, or non-combat entity */

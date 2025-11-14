@@ -89,10 +89,8 @@ export default function initCommandPreserveCaseMode(client: Client) {
         if (!playerNum) {
             return;
         }
-        if (!objects || typeof objects !== 'object') {
-            return;
-        }
-        const own = (objects as Record<string, { editing?: boolean }>)[playerNum];
+
+        const own = objects[playerNum];
         if (!own || typeof own.editing === 'undefined') {
             return;
         }

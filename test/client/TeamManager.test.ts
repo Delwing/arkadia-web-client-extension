@@ -183,45 +183,45 @@ describe('TeamManager', () => {
   });
 
   test('manages attack queue entries', () => {
-    expect(manager.addEnemyToQueue('5')).toBe(true);
-    expect(manager.addEnemyToQueue('5')).toBe(false);
-    expect(manager.getEnemyQueue()).toEqual(['5']);
-    expect(manager.shiftEnemyFromQueue()).toBe('5');
+    expect(manager.addEnemyToQueue(5)).toBe(true);
+    expect(manager.addEnemyToQueue(5)).toBe(false);
+    expect(manager.getEnemyQueue()).toEqual([5]);
+    expect(manager.shiftEnemyFromQueue()).toBe(5);
     expect(manager.shiftEnemyFromQueue()).toBeUndefined();
   });
 
   test('removes enemies missing from gmcp objects nums after repeated updates', () => {
-    manager.addEnemyToQueue('5');
-    manager.addEnemyToQueue('6');
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
-    expect(manager.getEnemyQueue()).toEqual(['5', '6']);
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
-    expect(manager.getEnemyQueue()).toEqual(['6']);
+    manager.addEnemyToQueue(5);
+    manager.addEnemyToQueue(6);
+    client.sendEvent('gmcp.objects.nums', [6]);
+    expect(manager.getEnemyQueue()).toEqual([5, 6]);
+    client.sendEvent('gmcp.objects.nums', [6]);
+    expect(manager.getEnemyQueue()).toEqual([6]);
   });
 
   test('restores pending removal when enemy reappears in gmcp objects nums', () => {
-    manager.addEnemyToQueue('5');
-    manager.addEnemyToQueue('6');
-    client.sendEvent('gmcp.objects.nums', { nums: ['6'] });
-    client.sendEvent('gmcp.objects.nums', { nums: ['5', '6'] });
-    expect(manager.getEnemyQueue()).toEqual(['5', '6']);
+    manager.addEnemyToQueue(5);
+    manager.addEnemyToQueue(6);
+    client.sendEvent('gmcp.objects.nums', [6]);
+    client.sendEvent('gmcp.objects.nums', [5, 6]);
+    expect(manager.getEnemyQueue()).toEqual([5, 6]);
   });
 
   test('clears attack queue on new location', () => {
-    manager.addEnemyToQueue('7');
+    manager.addEnemyToQueue(7);
     client.sendEvent('gmcp.room.info', { num: 123 });
     expect(manager.getEnemyQueue()).toEqual([]);
   });
 
   test('removes enemy from queue when marked as not living', () => {
-    manager.addEnemyToQueue('8');
+    manager.addEnemyToQueue(8);
     client.sendEvent('gmcp.objects.data', { '8': { living: false } });
     expect(manager.getEnemyQueue()).toEqual([]);
   });
 
   test('notifies about next enemy in queue when the current one dies', () => {
-    manager.addEnemyToQueue('8');
-    manager.addEnemyToQueue('9');
+    manager.addEnemyToQueue(8);
+    manager.addEnemyToQueue(9);
     client.sendEvent('gmcp.objects.data', {
       '9': { desc: 'Drugi przeciwnik', living: true },
     });
@@ -233,8 +233,8 @@ describe('TeamManager', () => {
   });
 
   test('falls back to object id when description is missing', () => {
-    manager.addEnemyToQueue('8');
-    manager.addEnemyToQueue('10');
+    manager.addEnemyToQueue(8);
+    manager.addEnemyToQueue(10);
     client.println.mockClear();
     client.sendEvent('gmcp.objects.data', { '8': { living: false } });
     expect(client.println).toHaveBeenCalledWith(

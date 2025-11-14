@@ -19,7 +19,7 @@ export function createAttackController(client: Client) {
     });
     client.sendEvent("attackMode", attackMode);
 
-    const attackById = (id: string, command: string = attackCommand) => {
+    const attackById = (id: number, command: string = attackCommand) => {
         client.sendCommand(`${command} ob_${id}`);
         if (attackMode !== "A" && client.TeamManager.isLeader?.()) {
             client.sendCommand(`wskaz ob_${id} jako cel ataku`, false);

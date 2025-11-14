@@ -1,9 +1,10 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import {ObjectData} from "@client/ObjectManager.ts";
 
 export default class FightTitle {
   private baseTitle: string;
   private readonly originalTitle: string;
-  private playerNum?: string;
+  private playerNum?: number;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
   private readonly idlePrefix = "ㅤ ";
@@ -14,7 +15,7 @@ export default class FightTitle {
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
     client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
-    client.on("gmcp.objects.data", (data: Record<string, any>) => this.handleObjectsData(data));
+    client.on("gmcp.objects.data", (data) => this.handleObjectsData(data));
     client.on("client.disconnect", () => this.reset());
     client.on("uiSettings", (payload) => {
       if (payload && typeof payload.fightTitleIcon === "boolean") {
@@ -26,11 +27,11 @@ export default class FightTitle {
 
   private handleCharInfo(info: any) {
     if (info && typeof info.object_num !== "undefined") {
-      this.playerNum = String(info.object_num);
+      this.playerNum = info.object_num;
     }
   }
 
-  private handleObjectsData(data: Record<string, any>) {
+  private handleObjectsData(data: Map<number, ObjectData>) {
     if (!this.playerNum) return;
     const obj = data[this.playerNum];
     if (!obj) return;

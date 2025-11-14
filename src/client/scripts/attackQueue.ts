@@ -1,19 +1,19 @@
 import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
+import ObjectManager from "@client/ObjectManager.ts";
 
 type ResolvedEnemy = {
-    id: string;
+    id: number;
     description?: string | null;
 };
 
 function getObjects(client: Client) {
-    const objectManager: Client["ObjectManager"] | undefined = (client as any).ObjectManager;
-    return objectManager?.getObjectsOnLocation?.();
+    return client.ObjectManager.getObjectsOnLocation();
 }
 
 function resolveFromObjectList(client: Client, shortcut: string): ResolvedEnemy | null {
-    const objectManager: Client["ObjectManager"] | undefined = (client as any).ObjectManager;
-    const objects = objectManager?.getObjectsOnLocation?.();
+    const objectManager: ObjectManager = client.ObjectManager
+    const objects = objectManager.getObjectsOnLocation();
     if (!objects) {
         return null;
     }
@@ -22,14 +22,14 @@ function resolveFromObjectList(client: Client, shortcut: string): ResolvedEnemy 
         return null;
     }
     return {
-        id: String(found.num),
+        id: found.num,
         description: typeof found.desc === "string" ? found.desc : null,
     };
 }
 
-function resolveById(client: Client, id: string): ResolvedEnemy {
+function resolveById(client: Client, id: number): ResolvedEnemy {
     const objects = getObjects(client);
-    const description = objects?.find(obj => String(obj?.num ?? "") === id)?.desc;
+    const description = objects?.find(obj => obj?.num === id)?.desc;
     return { id, description: typeof description === "string" ? description : null };
 }
 
@@ -44,7 +44,7 @@ function resolveEnemy(client: Client, input: string): ResolvedEnemy | null {
 
     const withPrefixMatch = trimmed.match(/^ob_(\d+)$/);
     if (withPrefixMatch) {
-        return resolveById(client, withPrefixMatch[1]);
+        return resolveById(client, parseInt(withPrefixMatch[1]));
     }
 
     if (/^\d+$/.test(trimmed)) {

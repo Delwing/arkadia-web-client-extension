@@ -4,7 +4,7 @@ const DISPLAY_DURATION_MS = 30_000;
 const INITIAL_SECONDS = Math.ceil(DISPLAY_DURATION_MS / 1000);
 
 export default function initCombatTimer(client: Client) {
-    let playerNum: string | undefined;
+    let playerNum: number | undefined;
     let lastCombatState: boolean | null = null;
     let timer: number | null = null;
     let timerStart = 0;
@@ -71,9 +71,9 @@ export default function initCombatTimer(client: Client) {
     }
 
     client.on('gmcp.char.info', info => {
-        const detail = (info ?? {}) as { object_num?: unknown };
+        const detail = (info ?? {}) as { object_num?: number };
         const newPlayerNum = typeof detail.object_num !== 'undefined'
-            ? String(detail.object_num)
+            ? detail.object_num
             : undefined;
         if (newPlayerNum !== playerNum) {
             playerNum = newPlayerNum;
@@ -86,14 +86,8 @@ export default function initCombatTimer(client: Client) {
         if (!playerNum) {
             return;
         }
-        if (!detail || typeof detail !== 'object') {
-            return;
-        }
-        const playerData = (detail as Record<string, any>)[playerNum];
-        if (!playerData || typeof playerData !== 'object') {
-            return;
-        }
-        if (!Object.prototype.hasOwnProperty.call(playerData, 'attack_num')) {
+        const playerData = detail[playerNum];
+        if (!playerData) {
             return;
         }
         const attackNum = playerData.attack_num;

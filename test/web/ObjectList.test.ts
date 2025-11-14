@@ -11,7 +11,7 @@ jest.mock('@modules/core/storage', () => ({
 class MockClient {
   private emitter = new EventEmitter();
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as string[] };
+  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as number[] };
   on(event: string, handler: (...args: any[]) => void) {
     this.emitter.on(event, handler);
     return () => this.off(event, handler);
@@ -177,7 +177,7 @@ describe('ObjectList', () => {
   test('highlights next queued enemy number in gold', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const client = new MockClient();
-    client.TeamManager.getEnemyQueue = () => ['123'];
+    client.TeamManager.getEnemyQueue = () => [123];
     const objectList = new ObjectList(client as any);
     const objects = [
       { shortcut: '1', desc: 'Ork', num: 123 },
@@ -205,6 +205,28 @@ describe('ObjectList', () => {
     const content = document.querySelector('#objects-list .objects-list-content') as HTMLElement;
     content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(client.sendCommand).not.toHaveBeenCalled();
+  });
+
+  test('does not highlight gold when queued enemy is not in object list', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    client.TeamManager.getEnemyQueue = () => [999]; // Enemy 999 is in queue
+    const objectList = new ObjectList(client as any);
+    const objects = [
+      { shortcut: '1', desc: 'Goblin', num: 456 }, // But only enemy 456 is present
+    ];
+    client.ObjectManager.getObjectsOnLocation = () => objects;
+    (objectList as any).render();
+
+    // Should not highlight 456 in gold since it's not the queued enemy
+    const goblin = document.querySelector('.object-num[data-object-id="456"]') as HTMLElement;
+    expect(goblin).toBeTruthy();
+    expect(goblin.outerHTML).not.toContain('color:#ffd700');
+    expect(goblin.classList.contains('object-num-next-target')).toBe(false);
+
+    // Should not have any gold highlighting
+    const goldHighlighted = document.querySelector('.object-num-next-target');
+    expect(goldHighlighted).toBeNull();
   });
 
   test('moves non-combat objects to the end with shortcuts starting at 50', () => {

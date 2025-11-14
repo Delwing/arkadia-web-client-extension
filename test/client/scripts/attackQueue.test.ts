@@ -57,7 +57,7 @@ describe('attack queue aliases', () => {
 
     execAlias(alias, '/q 1');
 
-    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('123');
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith(123);
     expect(client.println).toHaveBeenCalledWith(
       'Dodano grozny orczy wojownik do kolejki ataku.',
     );
@@ -72,7 +72,7 @@ describe('attack queue aliases', () => {
 
     execAlias(alias, '/q 2');
 
-    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('456');
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith(456);
     expect(client.println).toHaveBeenCalledWith('Dodano 456 do kolejki ataku.');
   });
 
@@ -85,7 +85,7 @@ describe('attack queue aliases', () => {
 
     execAlias(alias, '/q ob_789');
 
-    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('789');
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith(789);
     expect(client.println).toHaveBeenCalledWith(
       'Dodano tajemniczy szpieg do kolejki ataku.',
     );
@@ -97,7 +97,7 @@ describe('attack queue aliases', () => {
 
     execAlias(alias, '/q ob_321');
 
-    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith('321');
+    expect(client.TeamManager.addEnemyToQueue).toHaveBeenCalledWith(321);
     expect(client.println).toHaveBeenCalledWith('ob_321 jest juz w kolejce ataku.');
   });
 
