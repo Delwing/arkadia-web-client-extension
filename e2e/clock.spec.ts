@@ -66,8 +66,9 @@ test.describe('Clock System', () => {
         // Wait for clock to update (needs time for next tick)
         await page.waitForTimeout(500);
 
-        // Clock should show 05:00 with no precision indicator (precision 0)
-        await expect(clockDisplay).toContainText('06:00');
+        // Clock should show 06:xx with no precision indicator (precision 0)
+        // Note: Clock continues ticking so we check for hour 06, not exact 06:00
+        await expect(clockDisplay).toContainText('06:');
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
@@ -218,19 +219,17 @@ test.describe('Clock System', () => {
 
         const clockDisplay = page.locator('#clock-display');
 
-        // Set initial time at sunrise
-        await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
-        await expect(clockDisplay).toContainText('05:00');
+        // Set time during daytime hours (Pflugzeit sunrise is 06:00, sunset is 19:00)
+        await pushText(page, 'Jest w przyblizeniu dwunasta w poludnie, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('12:00');
 
-        // Sunrise event - should show daytime (need to change daylight state)
-        await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(1000);
+        // Set GMCP daylight to true for daytime
         await pushGmcp(page, 'room.time', { daylight: true });
 
-        // Wait for display to update with new daylight status
-        await page.waitForTimeout(2000);
+        // Wait for display to update
+        await page.waitForTimeout(1000);
 
-        // Check that clock has yellow color for daytime (from daylight flag)
+        // Check that clock has yellow color for daytime (calculated from hour vs sunrise/sunset)
         const innerHTML = await clockDisplay.innerHTML();
         // Daytime color is #fbbf24 (yellow)
         expect(innerHTML).toContain('#fbbf24');
