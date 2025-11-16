@@ -15,6 +15,12 @@ const collectModeOptions = [
     "nic",
 ];
 
+const collectTimingOptions = [
+    "na koniec (po zabiciu wszystkich)",
+    "po kazdym zabiciu",
+    "po kazdym zabiciu i na koniec",
+];
+
 const LEGACY_COIN_MODES = new Set([1, 3, 4, 6]);
 const LEGACY_GEM_MODES = new Set([2, 3, 5, 6]);
 
@@ -285,6 +291,19 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                                     className="w-auto"
                                 >
                                     {collectModeOptions.map((label, i) => (
+                                        <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group className="d-flex align-items-center">
+                                <Form.Label className="me-1 mb-0">Kiedy zbierac:</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    value={settings.collectTiming}
+                                    onChange={e => onChangeSetting(s => s.collectTiming = parseInt(e.target.value))}
+                                    className="w-auto"
+                                >
+                                    {collectTimingOptions.map((label, i) => (
                                         <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
                                     ))}
                                 </Form.Select>

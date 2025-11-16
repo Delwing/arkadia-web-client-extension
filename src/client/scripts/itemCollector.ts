@@ -10,6 +10,12 @@ enum CollectionMode {
     None = 4,
 }
 
+enum CollectionTiming {
+    AtEnd = 1,
+    AfterEachKill = 2,
+    Both = 3,
+}
+
 interface KillRecord {
     killer: KillerType;
     hasBody: boolean;
@@ -26,6 +32,7 @@ export default class ItemCollector {
     private client: Client;
 
     private collectionMode: CollectionMode = CollectionMode.All;
+    private collectionTiming: CollectionTiming = CollectionTiming.AtEnd;
     private collectCopper = true;
     private collectSilver = true;
     private collectGold = true;
@@ -43,6 +50,9 @@ export default class ItemCollector {
 
         this.client.on("enemyKilled", (event) => {
             this.recordKill(event.killer, this.resolveHasBody(event));
+            if (this.collectionTiming === CollectionTiming.AfterEachKill || this.collectionTiming === CollectionTiming.Both) {
+                this.handleAfterKillCollection();
+            }
         });
 
         this.client.on("enterLocation", () => {
@@ -50,7 +60,9 @@ export default class ItemCollector {
         });
 
         this.client.on("allEnemiesKilled", () => {
-            this.collectPendingBodies();
+            if (this.collectionTiming === CollectionTiming.AtEnd || this.collectionTiming === CollectionTiming.Both) {
+                this.handleAtEndCollection();
+            }
         });
     }
 
@@ -59,6 +71,10 @@ export default class ItemCollector {
 
         if (typeof settings.collectMode === "number") {
             this.setMode(settings.collectMode, isLegacy);
+        }
+
+        if (typeof settings.collectTiming === "number") {
+            this.setTiming(settings.collectTiming);
         }
 
         if (Array.isArray(settings.collectExtra)) {
@@ -95,6 +111,15 @@ export default class ItemCollector {
             this.collectionMode = normalized as CollectionMode;
         } else {
             this.collectionMode = CollectionMode.All;
+        }
+    }
+
+    private setTiming(timing: number) {
+        const normalized = Math.round(timing);
+        if (normalized >= CollectionTiming.AtEnd && normalized <= CollectionTiming.Both) {
+            this.collectionTiming = normalized as CollectionTiming;
+        } else {
+            this.collectionTiming = CollectionTiming.AtEnd;
         }
     }
 
@@ -268,31 +293,72 @@ export default class ItemCollector {
         return true;
     }
 
-    private collectPendingBodies() {
+    // AfterEachKill: Create bind for the most recent kill
+    private handleAfterKillCollection() {
         if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
             return;
         }
-        this.scheduleCollectBind();
-    }
 
-    private hasUncollectedBodies(): boolean {
-        if (this.collectionMode === CollectionMode.None) {
-            return false;
-        }
-        return this.kills.some((record) => this.shouldCollectForKill(record.killer));
-    }
-
-    private scheduleCollectBind() {
-        if (this.hasUncollectedBodies() && this.shouldCollectAnything()) {
-            this.client.FunctionalBind.set("wez z ciala", () => this.collectAllPendingBodies());
+        // Find the most recent uncollected body
+        const lastKill = this.kills[this.kills.length - 1];
+        if (lastKill && lastKill.hasBody && !lastKill.collected && this.shouldCollectForKill(lastKill.killer)) {
+            this.client.FunctionalBind.set("wez z ciala", () => this.collectLastBody());
             this.bindActive = true;
-        } else if (this.bindActive) {
+        }
+    }
+
+    private collectLastBody() {
+        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+            return;
+        }
+
+        // Find the most recent uncollected body
+        for (let i = this.kills.length - 1; i >= 0; i--) {
+            const record = this.kills[i];
+            if (!record.hasBody || record.collected) {
+                continue;
+            }
+            if (!this.shouldCollectForKill(record.killer)) {
+                record.collected = true;
+                continue;
+            }
+
+            // Collect from this body (always use "ciala" without index for the most recent)
+            const target = this.formatBodyTarget();
+            const result = this.collectBody(target);
+            this.depositCollected(result.money, result.gems, result.extras);
+            record.collected = true;
+
+            // Clear bind after collection
             this.client.FunctionalBind.clear();
             this.bindActive = false;
+            return;
         }
     }
 
-    private collectAllPendingBodies() {
+    // AtEnd: Create bind for all bodies
+    private handleAtEndCollection() {
+        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+            return;
+        }
+
+        // In "Both" mode, collect from all bodies regardless of collected status
+        // In "AtEnd" mode, only collect from uncollected bodies
+        const isBothMode = this.collectionTiming === CollectionTiming.Both;
+        const hasBodies = this.kills.some((record) => {
+            if (!record.hasBody || !this.shouldCollectForKill(record.killer)) {
+                return false;
+            }
+            return isBothMode || !record.collected;
+        });
+
+        if (hasBodies) {
+            this.client.FunctionalBind.set("wez z ciala", () => this.collectAllBodies());
+            this.bindActive = true;
+        }
+    }
+
+    private collectAllBodies() {
         if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
             return;
         }
@@ -300,17 +366,25 @@ export default class ItemCollector {
         let currentBodyIndex = 0;
         const aggregated: CollectionResult = { money: false, gems: false, extras: [] };
         let collectedAny = false;
+        const isBothMode = this.collectionTiming === CollectionTiming.Both;
 
+        // Iterate backwards through kills to match body numbering
         for (let i = this.kills.length - 1; i >= 0; i--) {
             const record = this.kills[i];
             if (!record.hasBody) {
-                record.collected = true;
                 continue;
             }
             currentBodyIndex++;
-            if (record.collected || !this.shouldCollectForKill(record.killer)) {
+
+            // In "Both" mode, collect from all bodies regardless of collected status
+            // In "AtEnd" mode, skip already collected bodies
+            if (!isBothMode && record.collected) {
                 continue;
             }
+            if (!this.shouldCollectForKill(record.killer)) {
+                continue;
+            }
+
             const target = this.formatBodyTarget(currentBodyIndex);
             const result = this.collectBody(target);
             aggregated.money = aggregated.money || result.money;
@@ -326,7 +400,9 @@ export default class ItemCollector {
             this.depositCollected(aggregated.money, aggregated.gems, aggregated.extras);
         }
 
-        this.scheduleCollectBind();
+        // Clear bind after collection
+        this.client.FunctionalBind.clear();
+        this.bindActive = false;
     }
 }
 

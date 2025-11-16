@@ -8,6 +8,7 @@ export interface Settings {
     prettyContainers: boolean;
     containerColumns: number;
     collectMode: number;
+    collectTiming: number;
     collectCopper: boolean;
     collectSilver: boolean;
     collectGold: boolean;
@@ -32,6 +33,7 @@ export const defaultSettings: Settings = {
     prettyContainers: true,
     containerColumns: 2,
     collectMode: 1,
+    collectTiming: 1,
     collectCopper: true,
     collectSilver: true,
     collectGold: true,

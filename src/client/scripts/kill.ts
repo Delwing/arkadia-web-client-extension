@@ -303,8 +303,8 @@ class KillCounter {
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
 
-        const myKillRegex = /^[ >]*(Zabil(?:es|as) (?<name>[A-Za-z ()!,]+))\.$/;
-        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabila? (?<name>[a-zA-Z (),!]+)\.$/;
+        const myKillRegex = /^[ >]*(Zabil(?<variant>es|as) (?<name>[A-Za-z ()!,]+))\.$/;
+        const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?<variant>a?) (?<name>[a-zA-Z (),!]+)\.$/;
 
         this.client.Triggers.registerTrigger(
             myKillRegex,
@@ -312,8 +312,10 @@ class KillCounter {
                 if (!matches) return line;
                 this.client.emit("kill", { killer: "ME" });
                 const mob = parseName(matches.groups?.name ?? "");
+                const variant = matches.groups?.variant ?? "es";
+                const prefix = variant === "as" ? "[  ZABILAS  ]" : "[  ZABILES  ]";
                 const entry = this.recordKill(mob, true);
-                return this.formatPrefix(line, entry, "[  ZABILES  ]", true);
+                return this.formatPrefix(line, entry, prefix, true);
             }
         );
 
@@ -323,13 +325,15 @@ class KillCounter {
                 if (!matches) return line;
                 const player = (matches.groups?.player ?? "").trim();
                 const mob = parseName(matches.groups?.name ?? "");
+                const variant = matches.groups?.variant ?? "";
+                const prefix = variant === "a" ? "[   ZABILA   ]" : "[   ZABIL   ]";
                 if (this.client.TeamManager.isInTeam(player)) {
                     const entry = this.recordKill(mob, false);
                     this.client.emit("kill", { killer: "TEAM" });
-                    return this.formatPrefix(line, entry, "[   ZABIL   ]", false);
+                    return this.formatPrefix(line, entry, prefix, false);
                 } else {
                     this.client.emit("kill", { killer: "OTHER" });
-                    return this.formatPrefix(line, null, "[   ZABIL   ]", false);
+                    return this.formatPrefix(line, null, prefix, false);
                 }
             }
         );

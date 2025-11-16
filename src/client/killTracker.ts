@@ -8,6 +8,7 @@ const bodyLessTypes = [
     'upior',
     'duszyca',
     'szkielet',
+    'kosciotrup',
     'zywiolak',
     'szkielet trolla',
     'szkielet smoka',
