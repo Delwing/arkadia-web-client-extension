@@ -3,7 +3,6 @@ import {Alert, Button, Form, Spinner} from "react-bootstrap";
 import storage from "@modules/core/storage";
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type {RecordedEvent} from "./recordingStorage";
-import {getRecording, getRecordingNames} from "./recordingStorage";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
@@ -117,7 +116,7 @@ interface ExportPayload {
     localStorage: ExportedLocalStorage;
     indexedDB: {
         multibinds: StoredMultibindRecord[];
-        recordings: ExportedRecording[];
+        recordings?: ExportedRecording[];
         visitedRooms: ExportedVisitedRoomsEntry[];
     };
 }
@@ -225,23 +224,6 @@ function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage 
     return {global, characters};
 }
 
-async function exportRecordings(): Promise<ExportedRecording[]> {
-    try {
-        const ids = await getRecordingNames();
-        const entries: ExportedRecording[] = [];
-        for (const id of ids) {
-            const events = await getRecording(id);
-            if (events) {
-                entries.push({id, events});
-            }
-        }
-        return entries;
-    } catch (err) {
-        console.error("Failed to export recordings", err);
-        return [];
-    }
-}
-
 async function openRecordingsDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open("ArkadiaRecordingsDB", 1);
@@ -340,12 +322,11 @@ async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise
 }
 
 async function buildExport(selectedCharacters: string[]): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms] = await Promise.all([
+    const [multibinds, visitedRooms] = await Promise.all([
         getMultibindsSnapshot().catch(err => {
             console.error("Failed to export multibinds", err);
             return [] as StoredMultibindRecord[];
         }),
-        exportRecordings(),
         exportVisitedRooms(selectedCharacters),
     ]);
 
@@ -356,7 +337,6 @@ async function buildExport(selectedCharacters: string[]): Promise<ExportPayload>
         localStorage: exportLocalStorage(selectedCharacters),
         indexedDB: {
             multibinds,
-            recordings,
             visitedRooms,
         },
     };
