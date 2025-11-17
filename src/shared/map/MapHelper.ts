@@ -103,19 +103,18 @@ export default class MapHelper {
         });
 
         this.client.on("gmcp.char.info", () => {
-            const unsubscribe = this.client.on("storage", ({ key, value }) => {
-                if (key === STORAGE_KEY) {
-                    const parsed = parseInt(String(value));
-                    if (!Number.isNaN(parsed)) {
-                        this.savedRoomId = parsed;
-                        this.setMapRoomById(this.savedRoomId);
-                    }
-                    if (typeof unsubscribe === "function") {
-                        unsubscribe();
-                    }
-                }
-            });
+            const value = getItemSync(STORAGE_KEY)
+            const parsed = parseInt(String(value.mapperRoomId));
+            if (!Number.isNaN(parsed)) {
+                this.savedRoomId = parsed;
+                this.setMapRoomById(this.savedRoomId);
+            }
         });
+
+        this.client.on("reset", () => {
+            this.gmcpPosition = undefined;
+            this.client.sendEvent("refreshPositionWhenAble");
+        })
 
         this.client.sendEvent("refreshPositionWhenAble");
     }
@@ -325,7 +324,6 @@ export default class MapHelper {
             const hash = `${data.x}:${data.y}:0:${data.name}`;
             const room = this.hashes[hash];
             this.setMapRoom(room);
-            this.refreshPosition = false;
             return true;
         }
         return false;
