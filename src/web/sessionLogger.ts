@@ -65,15 +65,47 @@ interface SessionClient {
 }
 
 export default async function initSessionLogger(client: SessionClient) {
-  let db: IDBDatabase;
-  try {
-    db = await openOrCreateStore(storeName);
-  } catch (err) {
-    console.error('Failed to open log database', err);
-    return;
+  let db: IDBDatabase | null = null;
+  let closeTimeout: number | null = null;
+
+  async function ensureDb(): Promise<IDBDatabase | null> {
+    // Clear any pending close timeout
+    if (closeTimeout !== null) {
+      clearTimeout(closeTimeout);
+      closeTimeout = null;
+    }
+
+    // If db is already open, return it
+    if (db) {
+      return db;
+    }
+
+    // Open the database
+    try {
+      db = await openOrCreateStore(storeName);
+      return db;
+    } catch (err) {
+      console.error('Failed to open log database', err);
+      return null;
+    }
   }
 
-  client.on('message', (text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
+  function scheduleClose() {
+    // Close the database after 1 second of inactivity to allow other tabs to read
+    if (closeTimeout !== null) {
+      clearTimeout(closeTimeout);
+    }
+    closeTimeout = window.setTimeout(() => {
+      if (db) {
+        db.close();
+        db = null;
+        console.log('[SessionLogger] Closed database connection due to inactivity');
+      }
+      closeTimeout = null;
+    }, 1000);
+  }
+
+  client.on('message', async (text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
     if (!loggingEnabled) return;
     if (text) {
       // Convert AnsiAwareBuffer to HTML to preserve colors, or use string as-is
@@ -87,7 +119,12 @@ export default async function initSessionLogger(client: SessionClient) {
       if (htmlText === "\n") {
         htmlText = "";
       }
-      void save(db, htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
+
+      const currentDb = await ensureDb();
+      if (currentDb) {
+        await save(currentDb, htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
+        scheduleClose();
+      }
     }
   });
 }

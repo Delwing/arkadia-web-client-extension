@@ -191,8 +191,11 @@ export default class People {
         const descEnd = position
         const originalDesc = line.text.substring(descStart, descEnd)
 
+        // Only color description when guild color is set or when it's an enemy
+        const descriptionColor = (state.guildColor !== undefined || state.isEnemy) ? parenthesisColor : line.getStateAt(descStart)
+
         const replacement_buffer = new AnsiAwareBuffer("")
-            .append(originalDesc, parenthesisColor)
+            .append(originalDesc, descriptionColor)
             .append(` (${replacement.name} `, parenthesisColor)
             .append(replacement.guild, guildColor)
             .append(')', parenthesisColor)

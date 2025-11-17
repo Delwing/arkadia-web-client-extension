@@ -10,7 +10,11 @@ interface LogEntry {
 let initialized = false;
 
 function initLogBrowser(): boolean {
-  if (initialized) return true;
+  if (initialized) {
+    console.log("[Logs] Already initialized, skipping");
+    return true;
+  }
+  console.log("[Logs] Initializing log browser...");
   const button = document.getElementById("logs-button") as HTMLButtonElement | null;
   const modalEl = document.getElementById("logs-modal") as HTMLElement | null;
   const select = document.getElementById("logs-session-select") as HTMLSelectElement | null;
@@ -23,7 +27,11 @@ function initLogBrowser(): boolean {
   const searchPrev = document.getElementById("logs-search-prev") as HTMLButtonElement | null;
   const searchNext = document.getElementById("logs-search-next") as HTMLButtonElement | null;
   const searchResults = document.getElementById("logs-search-results") as HTMLElement | null;
-  if (!button || !modalEl || !select || !preview || !download || !enabled || !searchInput || !searchButton || !searchResults || !searchControls || !searchPrev || !searchNext) return false;
+  if (!button || !modalEl || !select || !preview || !download || !enabled || !searchInput || !searchButton || !searchResults || !searchControls || !searchPrev || !searchNext) {
+    console.error("[Logs] Failed to find required elements:", { button: !!button, modalEl: !!modalEl, select: !!select, preview: !!preview, download: !!download, enabled: !!enabled, searchInput: !!searchInput, searchButton: !!searchButton, searchResults: !!searchResults, searchControls: !!searchControls, searchPrev: !!searchPrev, searchNext: !!searchNext });
+    return false;
+  }
+  console.log("[Logs] All required elements found, setting up event listeners...");
 
   storage.getItem("loggingEnabled").then(res => {
     enabled.checked = res?.loggingEnabled !== false;
@@ -105,6 +113,38 @@ function initLogBrowser(): boolean {
   let currentSessionName: string | null = null;
   let searchRequestId = 0;
   let activeResultRequestId = 0;
+  let loadingOverlay: HTMLElement | null = null;
+
+  function createLoadingOverlay(): HTMLElement {
+    const overlay = document.createElement("div");
+    overlay.classList.add("logs-loading-overlay");
+    const spinner = document.createElement("div");
+    spinner.classList.add("logs-loading-spinner");
+    overlay.appendChild(spinner);
+    return overlay;
+  }
+
+  function showLoading() {
+    try {
+      console.log("[Logs] showLoading() called, preview element:", preview);
+      if (!loadingOverlay) {
+        loadingOverlay = createLoadingOverlay();
+        console.log("[Logs] Created loading overlay");
+      }
+      if (!preview.contains(loadingOverlay)) {
+        preview.appendChild(loadingOverlay);
+        console.log("[Logs] Appended loading overlay to preview");
+      }
+    } catch (error) {
+      console.error("[Logs] Error in showLoading():", error);
+    }
+  }
+
+  function hideLoading() {
+    if (loadingOverlay && preview.contains(loadingOverlay)) {
+      preview.removeChild(loadingOverlay);
+    }
+  }
 
   function formatTime(ts: number): string {
     const d = new Date(ts);
@@ -163,22 +203,26 @@ function initLogBrowser(): boolean {
       db = await openDb();
     }
     if (!db) {
+      console.error(`Cannot get session data for ${storeName} - database not available`);
       return [];
     }
     return new Promise(resolve => {
       let tx: IDBTransaction;
       try {
         tx = db!.transaction(storeName, "readonly");
-      } catch {
+      } catch (error) {
+        console.error(`Failed to create transaction for ${storeName}:`, error);
         resolve([]);
         return;
       }
       const req = tx.objectStore(storeName).getAll();
       req.onsuccess = () => {
         const logs = req.result as LogEntry[];
+        console.log(`Loaded ${logs.length} entries from ${storeName}`);
         resolve(parseLogEntries(logs));
       };
       req.onerror = () => {
+        console.error(`Failed to read from ${storeName}:`, req.error);
         resolve([]);
       };
     });
@@ -305,7 +349,7 @@ function initLogBrowser(): boolean {
     updateNavigationButtons();
   }
 
-  function renderSearchMessage(message: string) {
+  function renderSearchMessage(message: string, isProgress = false) {
     searchResults.innerHTML = "";
     searchResults.hidden = false;
     searchControls.hidden = true;
@@ -316,7 +360,7 @@ function initLogBrowser(): boolean {
     activeResultIndex = -1;
     clearHighlight();
     const info = document.createElement("div");
-    info.classList.add("logs-search-empty");
+    info.classList.add(isProgress ? "logs-search-progress" : "logs-search-empty");
     info.textContent = message;
     searchResults.appendChild(info);
     searchResults.scrollTop = 0;
@@ -475,22 +519,19 @@ function initLogBrowser(): boolean {
       const button = document.createElement("button");
       button.type = "button";
       button.classList.add("logs-search-result");
-      const header = document.createElement("div");
-      header.classList.add("logs-search-result-header");
       const timeSpan = document.createElement("span");
       timeSpan.classList.add("logs-search-result-time");
       timeSpan.textContent = item.groupDateTime;
-      const countSpan = document.createElement("span");
-      countSpan.classList.add("logs-search-result-count");
-      countSpan.textContent = `(${item.matches.length})`;
-      header.appendChild(timeSpan);
-      header.appendChild(countSpan);
       const snippetSpan = document.createElement("span");
       snippetSpan.classList.add("logs-search-result-snippet");
       const firstMatch = item.matches[0];
       snippetSpan.appendChild(createResultSnippet(firstMatch.lineText, firstMatch.matchIndex, firstMatch.text));
-      button.appendChild(header);
+      const countSpan = document.createElement("span");
+      countSpan.classList.add("logs-search-result-count");
+      countSpan.textContent = `(${item.matches.length})`;
+      button.appendChild(timeSpan);
       button.appendChild(snippetSpan);
+      button.appendChild(countSpan);
       const resultIndex = searchResultsData.length;
       button.addEventListener("click", () => {
         void setActiveResult(resultIndex, { scrollPreview: true, ensureVisible: true });
@@ -534,11 +575,13 @@ function initLogBrowser(): boolean {
       return;
     }
     const requestId = ++searchRequestId;
-    renderSearchMessage("Wyszukiwanie…");
+    renderSearchMessage("Wyszukiwanie…", true);
     const baseFlags = normalizeFlags(regex.flags);
     const globalFlags = `${baseFlags}g`;
     const results: RenderableSearchResult[] = [];
-    for (const session of sessionInfos) {
+    for (let i = 0; i < sessionInfos.length; i++) {
+      const session = sessionInfos[i];
+      renderSearchMessage(`Wyszukiwanie… (${i + 1}/${sessionInfos.length})`, true);
       const groups = await getSessionData(session.name);
       if (requestId !== searchRequestId) {
         return;
@@ -586,62 +629,111 @@ function initLogBrowser(): boolean {
     syncResultElementsForSession(currentSessionName);
   }
 
-  function openDb(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open("ArkadiaMessagesDB");
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      request.onerror = () => reject(request.error);
+  function openDb(): Promise<IDBDatabase | null> {
+    return new Promise((resolve) => {
+      try {
+        console.log("[Logs] Creating IndexedDB open request...");
+        const request = indexedDB.open("ArkadiaMessagesDB");
+
+        // Add timeout to prevent infinite hanging
+        const timeout = setTimeout(() => {
+          console.error("[Logs] IndexedDB open timed out after 5 seconds - database may be locked by another tab");
+          resolve(null);
+        }, 5000);
+
+        request.onsuccess = () => {
+          clearTimeout(timeout);
+          console.log("[Logs] IndexedDB opened successfully");
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          clearTimeout(timeout);
+          console.error("[Logs] Failed to open IndexedDB:", request.error);
+          resolve(null);
+        };
+        request.onblocked = () => {
+          clearTimeout(timeout);
+          console.warn("[Logs] IndexedDB open request blocked - database is being used by another connection");
+          // Don't resolve null immediately - the request might still succeed
+          // But we'll let the timeout handle it if it takes too long
+        };
+        request.onupgradeneeded = () => {
+          console.log("[Logs] IndexedDB upgrade needed - but we're only reading, this shouldn't happen");
+        };
+      } catch (error) {
+        console.error("[Logs] Error opening IndexedDB:", error);
+        resolve(null);
+      }
     });
   }
 
 
   async function refreshSessions() {
-    db?.close();
-    db = await openDb();
-    select.innerHTML = "";
-    sessionInfos = [];
-    if (!db) {
-      preview.innerHTML = "";
-      logGroups = [];
-      currentSessionName = null;
-      clearHighlight();
-      renderSearchMessage("Brak logów do wyświetlenia.");
-      return;
-    }
-    const available: { name: string; label: string }[] = [];
-    for (let i = 0; i < db.objectStoreNames.length; i++) {
-      const name = db.objectStoreNames.item(i);
-      if (!name) continue;
-      const tx = db.transaction(name, "readonly");
-      const req = tx.objectStore(name).count();
-      const count = await new Promise<number>(resolve => {
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(0);
-      });
-      if (count > 0) {
-        available.push({ name, label: formatSessionLabel(name) });
+    console.log("[Logs] refreshSessions() called");
+    showLoading();
+    console.log("[Logs] Loading indicator shown");
+    try {
+      console.log("[Logs] Checking database connection, db is:", db ? "already open" : "null");
+      // Only reopen if not already open
+      if (!db) {
+        console.log("[Logs] Opening database...");
+        db = await openDb();
+        console.log("[Logs] Database open result:", db ? "success" : "failed");
       }
-    }
-    available.sort((a, b) => a.name.localeCompare(b.name));
-    for (const info of available) {
-      const option = document.createElement("option");
-      option.value = info.name;
-      option.textContent = info.label;
-      select.appendChild(option);
-    }
-    sessionInfos = available;
-    if (sessionInfos.length > 0) {
-      const latest = sessionInfos[sessionInfos.length - 1];
-      select.value = latest.name;
-      await loadPreview(latest.name);
-    } else {
-      preview.innerHTML = "";
-      logGroups = [];
-      currentSessionName = null;
-      clearHighlight();
-      renderSearchMessage("Brak logów do wyświetlenia.");
+      select.innerHTML = "";
+      sessionInfos = [];
+      if (!db) {
+        preview.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--bs-warning);"><h5>⏱️ Baza danych logów jest zajęta</h5><p>Inna karta prawdopodobnie zapisuje logi w tym momencie.</p><p style="font-size: 0.875rem;">Spróbuj ponownie za chwilę lub zamknij inne karty z aplikacją.</p></div>';
+        logGroups = [];
+        currentSessionName = null;
+        clearHighlight();
+        renderSearchMessage("Baza danych zajęta - spróbuj ponownie.");
+        console.error("[Logs] IndexedDB failed to open - likely locked by another tab or pending version upgrade");
+        return;
+      }
+      const available: { name: string; label: string }[] = [];
+      for (let i = 0; i < db.objectStoreNames.length; i++) {
+        const name = db.objectStoreNames.item(i);
+        if (!name) continue;
+        try {
+          const tx = db.transaction(name, "readonly");
+          const req = tx.objectStore(name).count();
+          const count = await new Promise<number>(resolve => {
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(0);
+          });
+          if (count > 0) {
+            available.push({ name, label: formatSessionLabel(name) });
+          }
+        } catch (error) {
+          console.error(`Error accessing session ${name}:`, error);
+        }
+      }
+      available.sort((a, b) => a.name.localeCompare(b.name));
+      for (const info of available) {
+        const option = document.createElement("option");
+        option.value = info.name;
+        option.textContent = info.label;
+        select.appendChild(option);
+      }
+      sessionInfos = available;
+      if (sessionInfos.length > 0) {
+        const latest = sessionInfos[sessionInfos.length - 1];
+        select.value = latest.name;
+        await loadPreview(latest.name);
+      } else {
+        preview.innerHTML = "";
+        logGroups = [];
+        currentSessionName = null;
+        clearHighlight();
+        renderSearchMessage("Brak logów do wyświetlenia.");
+      }
+    } catch (error) {
+      console.error("Error refreshing sessions:", error);
+      preview.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--bs-danger);"><h5>❌ Wystąpił błąd</h5><p>Nie udało się załadować sesji logów.</p><p style="font-size: 0.875rem; color: var(--bs-secondary-color);">Sprawdź konsolę przeglądarki aby zobaczyć szczegóły.</p></div>';
+      renderSearchMessage("Wystąpił błąd podczas ładowania.");
+    } finally {
+      hideLoading();
     }
   }
 
@@ -675,57 +767,65 @@ function initLogBrowser(): boolean {
   }
 
   async function loadPreview(storeName: string, options?: { triggerSearch?: boolean }) {
-    if (!db) {
-      db = await openDb();
-    }
-    if (!db) return;
-    preview.innerHTML = "";
-    clearHighlight();
-    logGroups = [];
-    const groups = await getSessionData(storeName);
-    for (const group of groups) {
-      const lineItems: LogLine[] = [];
-      for (const line of group.lines) {
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("output_msg");
-        if (group.type) {
-          wrapper.classList.add(group.type);
+    showLoading();
+    try {
+      if (!db) {
+        db = await openDb();
+      }
+      if (!db) {
+        hideLoading();
+        return;
+      }
+      preview.innerHTML = "";
+      clearHighlight();
+      logGroups = [];
+      const groups = await getSessionData(storeName);
+      for (const group of groups) {
+        const lineItems: LogLine[] = [];
+        for (const line of group.lines) {
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("output_msg");
+          if (group.type) {
+            wrapper.classList.add(group.type);
+          }
+          const msg = document.createElement("div");
+          msg.classList.add("output_msg_text");
+          msg.style.whiteSpace = "pre-wrap";
+          const timeSpan = document.createElement("span");
+          timeSpan.classList.add("log-time");
+          timeSpan.textContent = group.time;
+          const contentSpan = document.createElement("span");
+          contentSpan.innerHTML = line.html;
+          msg.appendChild(timeSpan);
+          msg.appendChild(contentSpan);
+          wrapper.appendChild(msg);
+          preview.appendChild(wrapper);
+          lineItems.push({
+            element: wrapper,
+            text: contentSpan.textContent ?? "",
+          });
         }
-        const msg = document.createElement("div");
-        msg.classList.add("output_msg_text");
-        msg.style.whiteSpace = "pre-wrap";
-        const timeSpan = document.createElement("span");
-        timeSpan.classList.add("log-time");
-        timeSpan.textContent = group.time;
-        const contentSpan = document.createElement("span");
-        contentSpan.innerHTML = line.html;
-        msg.appendChild(timeSpan);
-        msg.appendChild(contentSpan);
-        wrapper.appendChild(msg);
-        preview.appendChild(wrapper);
-        lineItems.push({
-          element: wrapper,
-          text: contentSpan.textContent ?? "",
+        logGroups.push({
+          timestamp: group.timestamp,
+          time: group.time,
+          dateTime: group.dateTime,
+          lines: lineItems,
         });
       }
-      logGroups.push({
-        timestamp: group.timestamp,
-        time: group.time,
-        dateTime: group.dateTime,
-        lines: lineItems,
-      });
-    }
-    currentSessionName = storeName;
-    preview.scrollTop = preview.scrollHeight;
-    syncResultElementsForSession(storeName);
-    if (options?.triggerSearch === false) {
-      updateNavigationButtons();
-      return;
-    }
-    if (searchInput.value.trim()) {
-      void runSearch();
-    } else {
-      clearSearchResults();
+      currentSessionName = storeName;
+      preview.scrollTop = preview.scrollHeight;
+      syncResultElementsForSession(storeName);
+      if (options?.triggerSearch === false) {
+        updateNavigationButtons();
+        return;
+      }
+      if (searchInput.value.trim()) {
+        void runSearch();
+      } else {
+        clearSearchResults();
+      }
+    } finally {
+      hideLoading();
     }
   }
 
@@ -785,8 +885,12 @@ function initLogBrowser(): boolean {
     });
 
   button.addEventListener("click", async () => {
-    await refreshSessions();
+    console.log("[Logs] Button clicked, opening modal...");
+    // Show modal immediately so user sees the loading indicator
     modal.show();
+    console.log("[Logs] Modal shown, refreshing sessions...");
+    await refreshSessions();
+    console.log("[Logs] Sessions refresh complete");
   });
 
   searchButton.addEventListener("click", () => {
@@ -834,6 +938,7 @@ function initLogBrowser(): boolean {
   clearSearchResults();
 
   initialized = true;
+  console.log("[Logs] Initialization complete");
   return true;
 }
 

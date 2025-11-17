@@ -185,7 +185,6 @@ export class PluginManager {
    * Type guard to check if module implements Plugin interface
    */
   private isPlugin(module: any): module is Plugin {
-    console.log(module)
     return (
       module &&
       typeof module === 'object' &&
