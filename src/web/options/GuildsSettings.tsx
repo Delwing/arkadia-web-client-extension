@@ -2,9 +2,9 @@ import { useEffect, useState, useMemo } from "react";
 import storage, { getCurrentCharacter } from "@modules/core/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
-import { defaultSettings } from "./defaultSettings";
+import { Settings } from "./defaultSettings";
 
-function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => void }) {
+function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
@@ -88,20 +88,12 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: () => void) => vo
     }
 
     useEffect(() => {
-        registerSave(() =>
-            storage.getItem("settings").then(res => {
-                const base = res && res.settings
-                    ? { ...defaultSettings, ...res.settings }
-                    : { ...defaultSettings };
-                const settings = {
-                    ...base,
-                    guilds: selected,
-                    enemyGuilds: enemySelected,
-                    guildColors: colors,
-                };
-                return storage.setItem("settings", settings);
-            })
-        );
+        registerSave((sharedSettings: Settings) => {
+            // Update the shared settings object with our values
+            sharedSettings.guilds = selected;
+            sharedSettings.enemyGuilds = enemySelected;
+            sharedSettings.guildColors = colors;
+        });
     }, [registerSave, selected, enemySelected, colors]);
 
     return (

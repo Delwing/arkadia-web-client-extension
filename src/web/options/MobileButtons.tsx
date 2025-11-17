@@ -31,6 +31,8 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
     { value: "moveMode", label: "Tryb ruchu" },
     { value: "toggleButtons", label: "Przełącz przyciski" },
+    { value: "attackEnemy", label: "Atakuj wroga" },
+    { value: "blockEnemy", label: "Zablokuj wroga" },
     { value: "empty", label: "Puste" },
 ];
 
@@ -625,6 +627,20 @@ function MobileButtons() {
                                 </Form.Group>
                             )}
                         </>
+                    )}
+                    {(activeCfg.macro === "attackEnemy" || activeCfg.macro === "blockEnemy") && (
+                        <Form.Group className="form-label mb-2">
+                            <Form.Label>Slot wroga</Form.Label>
+                            <Form.Select
+                                size="sm"
+                                value={activeCfg.enemySlot ?? 0}
+                                onChange={e => update(active!.set, active!.id, "enemySlot", parseInt(e.target.value))}
+                            >
+                                <option value={0}>Slot 1</option>
+                                <option value={1}>Slot 2</option>
+                                <option value={2}>Slot 3</option>
+                            </Form.Select>
+                        </Form.Group>
                     )}
                 </div>
             )}

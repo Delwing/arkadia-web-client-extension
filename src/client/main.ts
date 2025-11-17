@@ -19,6 +19,7 @@ import initCombatTimer from './scripts/combatTimer'
 import initZaskTimer from './scripts/zaskTimer'
 import initBinds from './scripts/binds'
 import initTempBinds from './scripts/tempBinds'
+import initEnemyBinds from './scripts/enemyBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
 import initIdz from './scripts/idz'
@@ -205,6 +206,7 @@ export function registerScripts(client: Client) {
     initZaskTimer(client)
     initBinds(client, aliases)
     initTempBinds(client, aliases)
+    initEnemyBinds(client, aliases)
     initChatHistory(client, aliases)
     initMoveMode(client)
     initCarriage(client)

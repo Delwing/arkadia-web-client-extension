@@ -53,8 +53,8 @@ test.describe('Character settings', () => {
         const shortenExitsCheckbox = modal.locator('#shortenExits');
         await shortenExitsCheckbox.check();
 
-        // Find collect mode select by text content (it's the select next to "Tryb zbierania")
-        const collectModeSelect = modal.locator('select').filter({hasText: 'zawsze'});
+        // Find collect mode select by ID
+        const collectModeSelect = modal.locator('#collectMode');
         await collectModeSelect.selectOption('3'); // leader mode
 
         const lowHpAlertSelect = modal.locator('#lowHpAlert');
@@ -149,7 +149,7 @@ test.describe('Character settings', () => {
         // Set settings for FirstChar
         let modal = await openOptions(page);
         await modal.locator('#shortenExits').check();
-        await modal.locator('select').filter({hasText: 'zawsze'}).selectOption('2'); // own loot
+        await modal.locator('#collectMode').selectOption('2'); // own loot
         await modal.locator('#lowHpAlert').selectOption('3');
         await saveOptions(page);
 
@@ -222,7 +222,7 @@ test.describe('Character settings', () => {
             'shortenExits checkbox should be unchecked for SecondChar'
         ).not.toBeChecked();
         await expect(
-            modal.locator('select').filter({hasText: 'zawsze'}),
+            modal.locator('#collectMode'),
             'collectMode select should show 4 for SecondChar'
         ).toHaveValue('4');
         await expect(
@@ -259,7 +259,7 @@ test.describe('Character settings', () => {
             'shortenExits should be checked for FirstChar'
         ).toBeChecked();
         await expect(
-            modal.locator('select').filter({hasText: 'zawsze'}),
+            modal.locator('#collectMode'),
             'collectMode should be 2 for FirstChar'
         ).toHaveValue('2');
         await expect(

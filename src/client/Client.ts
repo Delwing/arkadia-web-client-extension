@@ -347,6 +347,14 @@ export default class Client {
         }
     }
 
+    attackEnemySlot(_slotIndex: number) {
+        // Implementation provided by enemyBinds.ts
+    }
+
+    blockEnemySlot(_slotIndex: number) {
+        // Implementation provided by enemyBinds.ts
+    }
+
     releaseGuard() {
         this.sendCommand('przestan zaslaniac')
     }

@@ -14,6 +14,8 @@ export type MacroType =
     | 'wesprzyj'
     | 'moveMode'
     | 'toggleButtons'
+    | 'attackEnemy'
+    | 'blockEnemy'
     | 'empty';
 
 export interface ButtonSetting {
@@ -25,6 +27,7 @@ export interface ButtonSetting {
     command?: string;
     direction?: string;
     syncWithDirections?: boolean;
+    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
 }
 
 export interface RadialCommandSetting {

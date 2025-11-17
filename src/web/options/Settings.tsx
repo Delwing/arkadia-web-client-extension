@@ -123,7 +123,7 @@ const lowHpAlertOptions = [
 const LETTER_LINE_WIDTH_MIN = 40;
 const LETTER_LINE_WIDTH_MAX = 120;
 
-function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void }) {
+function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
 
     const [locked, setLocked] = useState(!getCurrentCharacter());
@@ -151,7 +151,10 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
         })
     }
     useEffect(() => {
-        registerSave(() => storage.setItem("settings", settings));
+        registerSave((sharedSettings: Settings) => {
+            // Update the shared settings object with our values
+            Object.assign(sharedSettings, settings);
+        });
     }, [registerSave, settings]);
 
     useEffect(() => {
@@ -285,6 +288,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: () => void) => void
                             <Form.Group className="d-flex align-items-center">
                                 <Form.Label className="me-1 mb-0">Tryb zbierania:</Form.Label>
                                 <Form.Select
+                                    id="collectMode"
                                     size="sm"
                                     value={settings.collectMode}
                                     onChange={e => onChangeSetting(s => s.collectMode = parseInt(e.target.value))}

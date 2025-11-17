@@ -3,8 +3,9 @@ import storage, { getCurrentCharacter } from "@modules/core/storage";
 import GeneralSettings from "./Settings";
 import GuildsSettings from "./GuildsSettings";
 import LuaGagsSettings from "./LuaGagsSettings";
+import EnemyBindsSettings from "./EnemyBindsSettings";
 
-type Tab = "general" | "guild" | "luaGags";
+type Tab = "general" | "guild" | "luaGags" | "enemyBinds";
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
@@ -12,9 +13,10 @@ function CharacterSettings() {
         general: useRef<HTMLDivElement>(null),
         guild: useRef<HTMLDivElement>(null),
         luaGags: useRef<HTMLDivElement>(null),
+        enemyBinds: useRef<HTMLDivElement>(null),
     } as const;
-    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0 });
-    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {}, luaGags: () => {} });
+    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0 });
+    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {} });
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
@@ -63,16 +65,26 @@ function CharacterSettings() {
         saveRefs.current.luaGags = fn;
     }, []);
 
+    const registerEnemyBindsSave = useCallback((fn: () => void) => {
+        saveRefs.current.enemyBinds = fn;
+    }, []);
+
     useEffect(() => {
-        const handler = () => {
-            const saves = [
-                Promise.resolve(saveRefs.current.general()),
-                Promise.resolve(saveRefs.current.guild()),
-                Promise.resolve(saveRefs.current.luaGags()),
-            ];
-            Promise.all(saves).then(() => {
-                window.dispatchEvent(new Event("close-options"));
-            });
+        const handler = async () => {
+            // Read settings once at the start
+            const res = await storage.getItem("settings");
+            const currentSettings = res?.settings || {};
+
+            // Each save handler updates the shared settings object
+            const updated = { ...currentSettings };
+            await saveRefs.current.general(updated);
+            await saveRefs.current.guild(updated);
+            await saveRefs.current.luaGags(updated);
+            await saveRefs.current.enemyBinds(updated);
+
+            // Write once at the end
+            await storage.setItem("settings", updated);
+            window.dispatchEvent(new Event("close-options"));
         };
         window.addEventListener("save-options", handler);
         return () => window.removeEventListener("save-options", handler);
@@ -131,6 +143,12 @@ function CharacterSettings() {
                     >
                         Walka
                     </button>
+                    <button
+                        className={`btn btn-sm ${tab === "enemyBinds" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("enemyBinds")}
+                    >
+                        Bindy wrogów
+                    </button>
                 </div>
             </div>
             <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
@@ -154,6 +172,13 @@ function CharacterSettings() {
                     style={{ minHeight: 0 }}
                 >
                     <LuaGagsSettings registerSave={registerLuaGagsSave} />
+                </div>
+                <div
+                    ref={scrollRefs.enemyBinds}
+                    className={`h-100 overflow-auto${tab === "enemyBinds" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <EnemyBindsSettings registerSave={registerEnemyBindsSave} />
                 </div>
             </div>
         </div>

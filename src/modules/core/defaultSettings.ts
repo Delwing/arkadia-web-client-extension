@@ -24,6 +24,12 @@ export interface Settings {
     fullHpMessage: boolean;
     lowHpAlert: number;
     letterLineWidth: number;
+    guilds?: string[];
+    enemyGuilds?: string[];
+    guildColors?: Record<string, string | undefined>;
+    enemyBindsKeepUnchanged: boolean;
+    enemyBindsShowMode: 'always' | 'whenBound' | 'never';
+    enemyBindsEnabledSlots: [boolean, boolean, boolean];
 }
 
 export const defaultSettings: Settings = {
@@ -49,4 +55,10 @@ export const defaultSettings: Settings = {
     fullHpMessage: false,
     lowHpAlert: 2,
     letterLineWidth: 72,
+    guilds: [],
+    enemyGuilds: [],
+    guildColors: {},
+    enemyBindsKeepUnchanged: false,
+    enemyBindsShowMode: 'always',
+    enemyBindsEnabledSlots: [true, true, true],
 };

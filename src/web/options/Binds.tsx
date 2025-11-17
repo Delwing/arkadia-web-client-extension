@@ -48,6 +48,8 @@ interface BindSettings {
     directions: DirectionBinds;
     custom: CustomBind[];
     temp: Bind[];
+    enemy: Bind[];
+    enemyBlock: Bind[];
 }
 
 const defaultBinds: BindSettings = {
@@ -59,6 +61,16 @@ const defaultBinds: BindSettings = {
     temp: [
         { key: 'F4' },
         { key: 'F5' },
+    ],
+    enemy: [
+        { key: 'F1' },
+        { key: 'F2' },
+        { key: 'F3' },
+    ],
+    enemyBlock: [
+        { key: 'F1', ctrl: true },
+        { key: 'F2', ctrl: true },
+        { key: 'F3', ctrl: true },
     ],
     directions: {
         n: { key: 'Numpad8' },
@@ -236,6 +248,16 @@ function Binds() {
                 temp: [
                     { ...defaultBinds.temp[0], ...(res?.binds?.temp?.[0] || {}) },
                     { ...defaultBinds.temp[1], ...(res?.binds?.temp?.[1] || {}) },
+                ],
+                enemy: [
+                    { ...defaultBinds.enemy[0], ...(res?.binds?.enemy?.[0] || {}) },
+                    { ...defaultBinds.enemy[1], ...(res?.binds?.enemy?.[1] || {}) },
+                    { ...defaultBinds.enemy[2], ...(res?.binds?.enemy?.[2] || {}) },
+                ],
+                enemyBlock: [
+                    { ...defaultBinds.enemyBlock[0], ...(res?.binds?.enemyBlock?.[0] || {}) },
+                    { ...defaultBinds.enemyBlock[1], ...(res?.binds?.enemyBlock?.[1] || {}) },
+                    { ...defaultBinds.enemyBlock[2], ...(res?.binds?.enemyBlock?.[2] || {}) },
                 ],
                 directions: {
                     ...defaultBinds.directions,
@@ -457,6 +479,24 @@ function Binds() {
         }));
     }
 
+    function handleCaptureEnemy(idx: number, ev: React.KeyboardEvent) {
+        ev.preventDefault();
+        const { code, ctrlKey, altKey, shiftKey } = ev;
+        setBinds(prev => ({
+            ...prev,
+            enemy: prev.enemy.map((b, i) => i === idx ? { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } : b),
+        }));
+    }
+
+    function handleCaptureEnemyBlock(idx: number, ev: React.KeyboardEvent) {
+        ev.preventDefault();
+        const { code, ctrlKey, altKey, shiftKey } = ev;
+        setBinds(prev => ({
+            ...prev,
+            enemyBlock: prev.enemyBlock.map((b, i) => i === idx ? { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } : b),
+        }));
+    }
+
     function handleCommandChange(idx: number, command: string) {
         setBinds(prev => ({
             ...prev,
@@ -671,6 +711,78 @@ function Binds() {
                                     size="sm"
                                     value={label(binds.temp[1])}
                                     onKeyDown={ev => handleCaptureTemp(1, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Atakuj wroga 1</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemy[0])}
+                                    onKeyDown={ev => handleCaptureEnemy(0, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Atakuj wroga 2</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemy[1])}
+                                    onKeyDown={ev => handleCaptureEnemy(1, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Atakuj wroga 3</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemy[2])}
+                                    onKeyDown={ev => handleCaptureEnemy(2, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Blokuj wroga 1</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemyBlock[0])}
+                                    onKeyDown={ev => handleCaptureEnemyBlock(0, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Blokuj wroga 2</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemyBlock[1])}
+                                    onKeyDown={ev => handleCaptureEnemyBlock(1, ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Blokuj wroga 3</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.enemyBlock[2])}
+                                    onKeyDown={ev => handleCaptureEnemyBlock(2, ev)}
                                 />
                             </td>
                         </tr>

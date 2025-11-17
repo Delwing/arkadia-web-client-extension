@@ -101,7 +101,7 @@ export default class People {
                 if (nextWord.startsWith('chaosu')) {
                     return line
                 }
-                return this.buildDescHighlight(line, index + token.length, replacement, state)
+                return this.buildDescHighlight(line, index + token.length, replacement, state, token)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -180,18 +180,24 @@ export default class People {
         line: AnsiAwareBuffer,
         position: number,
         replacement: { name: string; guild: string },
-        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
+        descriptionToken: string
     ): AnsiAwareBuffer {
         const parenthesisColor = this.getNameColor(state)
         const guildColor = this.getGuildColor(state)
 
-        const suffix = new AnsiAwareBuffer("")
+        // Build buffer with colored description and suffix
+        const descStart = position - descriptionToken.length
+        const descEnd = position
+        const originalDesc = line.text.substring(descStart, descEnd)
+
+        const replacement_buffer = new AnsiAwareBuffer("")
+            .append(originalDesc, parenthesisColor)
             .append(` (${replacement.name} `, parenthesisColor)
             .append(replacement.guild, guildColor)
             .append(')', parenthesisColor)
 
-
-        return line.insertBuffer(position, suffix)
+        return line.replaceBuffer([descStart, descEnd], replacement_buffer)
     }
 
     private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {

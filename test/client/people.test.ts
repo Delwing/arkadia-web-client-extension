@@ -86,10 +86,11 @@ describe('people triggers enemy highlight', () => {
   test('colors enemy description red', () => {
     const result = parse('Widzisz wysoki mezczyzna tutaj.');
 
+    // Check that description itself is colored
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
     // Check that guild suffix is colored and present
     expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
     expect(result?.text).toContain('(Eamon CKN)');
-    // Guild suffix should be colored (description coloring is implementation detail)
     const segments = result?.getSegments() ?? [];
     expect(segments.some(seg => seg.state?.foreground)).toBe(true);
   });
@@ -184,6 +185,8 @@ describe('people triggers guild highlight', () => {
     emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna tutaj.');
 
+    // Description itself should be colored
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
     // Guild member should be colored (green, not red)
     expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
     expect(result?.text).toContain('(Eamon CKN)');
@@ -193,6 +196,9 @@ describe('people triggers guild highlight', () => {
     emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
     const result = parse('Widzisz wysoki mezczyzna oraz krepy lysy krasnolud.');
 
+    // Both descriptions should be colored
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
+    expect(hasColoredText(result, 'krepy lysy krasnolud')).toBe(true);
     // Both guild members should be colored
     expect(hasColoredText(result, '(Eamon CKN)')).toBe(true);
     expect(hasColoredText(result, '(Krasn CKN)')).toBe(true);
@@ -309,22 +315,26 @@ describe('people triggers case sensitivity', () => {
     // Test uppercase description
     const result1 = parse('Widzisz WYSOKI MEZCZYZNA tutaj.');
     expect(result1?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result1, 'WYSOKI MEZCZYZNA')).toBe(true);
     expect(hasColoredText(result1, 'Eamon')).toBe(true);
     expect(hasColoredText(result1, 'CKN')).toBe(true);
 
     // Test lowercase description
     const result2 = parse('Widzisz wysoki mezczyzna tutaj.');
     expect(result2?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result2, 'wysoki mezczyzna')).toBe(true);
     expect(hasColoredText(result2, 'Eamon')).toBe(true);
     expect(hasColoredText(result2, 'CKN')).toBe(true);
 
     // Test mixed case - different combinations
     const result3 = parse('Widzisz WYSOKI mezczyzna tutaj.');
     expect(result3?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result3, 'WYSOKI mezczyzna')).toBe(true);
     expect(hasColoredText(result3, 'Eamon')).toBe(true);
 
     const result4 = parse('Widzisz wysoki MEZCZYZNA tutaj.');
     expect(result4?.text).toContain('(Eamon CKN)');
+    expect(hasColoredText(result4, 'wysoki MEZCZYZNA')).toBe(true);
     expect(hasColoredText(result4, 'Eamon')).toBe(true);
   });
 

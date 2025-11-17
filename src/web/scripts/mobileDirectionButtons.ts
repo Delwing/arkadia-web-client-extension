@@ -989,6 +989,16 @@ export default class MobileDirectionButtons {
                         this.client.sendCommand(firstExit);
                     }
                     break;
+                case 'attackEnemy':
+                    if (typeof cfg.enemySlot === 'number') {
+                        this.client.attackEnemySlot(cfg.enemySlot);
+                    }
+                    break;
+                case 'blockEnemy':
+                    if (typeof cfg.enemySlot === 'number') {
+                        this.client.blockEnemySlot(cfg.enemySlot);
+                    }
+                    break;
             }
         };
         newBtn.addEventListener('click', handler);
