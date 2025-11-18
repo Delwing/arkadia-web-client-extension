@@ -22,7 +22,13 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
             if (finalPattern.test(rawLine)) {
                 client.Triggers.removeTrigger(trigger);
                 if (found.length > 0) {
-                    const cmd = found.map(it => `wloz ${it} do ${container}`).join(';');
+                    const cmd = found.map(it => {
+                        const item = it
+                            .replace('zielonym luskowatym plaszczem', 'zielony luskowaty plaszcz')
+                            .replace('dluga czarna szata', 'dluga czarna szate')
+                            .replace('szmaragdowym misternym plaszczem', 'szmaragdowy misterny plaszcz');
+                        return `wloz ${item} do ${container}`;
+                    }).join(';');
                     client.FunctionalBind.set(cmd);
                 } else {
                     client.FunctionalBind.set(null);
