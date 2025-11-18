@@ -13,6 +13,11 @@ import {
 
 const test = base.extend({
     context: async ({context}, use) => {
+        // Disable Google Analytics in tests
+        await context.addInitScript(() => {
+            window.__DISABLE_GA__ = true;
+        });
+
         await mockMapDownloads(context);
         await mockMagicsDownload(context);
         await mockMagicKeysDownload(context);
