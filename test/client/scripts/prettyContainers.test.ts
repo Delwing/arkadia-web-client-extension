@@ -1,5 +1,16 @@
-jest.mock('@client/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue([]));
+jest.mock('@client/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue(['przedmiot', 'rzecz']));
 jest.mock('@client/scripts/magicsLoader', () => jest.fn().mockResolvedValue([]));
+jest.mock('@modules/data/dataStores/magicsStore', () => ({
+  getMagicsStore: jest.fn(() => ({
+    getSnapshot: jest.fn().mockResolvedValue({
+      data: {
+        magics: {}
+      }
+    }),
+    subscribe: jest.fn(() => () => {}),
+  })),
+  MagicsFile: {}
+}));
 
 import initContainers from '@client/scripts/prettyContainers';
 import Client from '@client/Client';

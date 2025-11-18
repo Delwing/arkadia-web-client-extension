@@ -2,6 +2,7 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
+import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {
     MITHRIL_COLOR,
@@ -460,6 +461,10 @@ const defaultTransforms: TransformDefinition[] = [
     }}
 ]
 
+let favoriteMagicTypes: string[] = [];
+let favoriteMagicKeys: string[] = [];
+let magicsData: MagicsFile | undefined = undefined;
+
 // API functions for plugin access
 export function getGroupDefinitions(): ReadonlyArray<Readonly<GroupDefinition>> {
     return defs;
@@ -480,8 +485,48 @@ export function addTransformDefinition(definition: TransformDefinition): void {
 let plugLinks = false;
 
 
+function isFavoriteMagic(itemName: string): boolean {
+    if ((favoriteMagicTypes.length === 0 && favoriteMagicKeys.length === 0) || !magicsData) return false;
+
+    // Check both favorite magic keys and favorite magic types
+    for (const [magicKey, magic] of Object.entries(magicsData.magics)) {
+        if (magic && Array.isArray(magic.regexps)) {
+            const matches = magic.regexps.some(pattern => {
+                const regex = new RegExp("(^|\\s)" + pattern, "i");
+                return regex.test(itemName);
+            });
+
+            if (matches) {
+                // Check if this magic key is in favorites
+                if (favoriteMagicKeys.includes(magicKey)) {
+                    return true;
+                }
+
+                // Check if any of this magic's types are in favorites
+                if (Array.isArray(magic.type) && favoriteMagicTypes.length > 0) {
+                    const hasFavoriteType = magic.type.some(type => favoriteMagicTypes.includes(type));
+                    if (hasFavoriteType) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 async function loadMagicAndKeysFilter(client: Client) {
     try {
+        // Load magics data for type checking
+        const store = getMagicsStore();
+        const snapshot = await store.getSnapshot();
+        magicsData = snapshot?.data;
+
+        // Subscribe to updates
+        store.subscribe((snapshot) => {
+            magicsData = snapshot?.data;
+        });
+
         const [keys, magics] = await Promise.all([loadMagicKeys(), loadMagics()]);
         const keyRegexp = createRegexpFilter(keys);
         defs.push({ name: "klucze", filter: keyRegexp });
@@ -510,6 +555,23 @@ async function loadMagicAndKeysFilter(client: Client) {
                             title: `Kliknij aby wybrać: ${item.name}`
                         });
                     }
+                }
+                return buffer;
+            },
+        });
+        // Add transform for favorite magic indicator
+        defaultTransforms.push({
+            transform: (buffer, item) => {
+                if (magicRegexp(item.name) && isFavoriteMagic(item.name)) {
+                    const greenStar = createColorFormat('#00ff00');
+                    const segments = buffer.getSegments();
+                    buffer.clear();
+                    buffer.append('* ', greenStar);
+                    // Re-add the original segments with their formatting
+                    for (const segment of segments) {
+                        buffer.append(segment.text, segment.state);
+                    }
+                    buffer.append(' *', greenStar);
                 }
                 return buffer;
             },
@@ -547,8 +609,15 @@ export default function initContainers(client: Client) {
     };
 
     client.on('settings', (settings) => {
-        const detail = (settings ?? {}) as { containerColumns?: number; prettyContainers?: boolean };
+        const detail = (settings ?? {}) as {
+            containerColumns?: number;
+            prettyContainers?: boolean;
+            favoriteMagicTypes?: string[];
+            favoriteMagicKeys?: string[];
+        };
         columns = detail.containerColumns ?? columns;
+        favoriteMagicTypes = detail.favoriteMagicTypes ?? [];
+        favoriteMagicKeys = detail.favoriteMagicKeys ?? [];
         const shouldEnable = !!detail.prettyContainers;
         if (shouldEnable && !enabled) {
             enabled = true;

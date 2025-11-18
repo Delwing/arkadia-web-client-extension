@@ -4,7 +4,7 @@ import { IndexedDbSingleRecordStrategy } from '@modules/data/dataStore/strategie
 import { RefreshMetadata } from '@modules/data/dataStore/types';
 
 export interface MagicsFile {
-  magics: Record<string, { regexps?: string[] }>;
+  magics: Record<string, { type: string[], regexps?: string[] }>;
 }
 
 export type MagicsSnapshot = JsonDatasetSnapshot<MagicsFile>;

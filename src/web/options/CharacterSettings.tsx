@@ -4,8 +4,9 @@ import GeneralSettings from "./Settings";
 import GuildsSettings from "./GuildsSettings";
 import LuaGagsSettings from "./LuaGagsSettings";
 import EnemyBindsSettings from "./EnemyBindsSettings";
+import MagikiSettings from "./MagikiSettings";
 
-type Tab = "general" | "guild" | "luaGags" | "enemyBinds";
+type Tab = "general" | "guild" | "luaGags" | "enemyBinds" | "magiki";
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
@@ -14,9 +15,10 @@ function CharacterSettings() {
         guild: useRef<HTMLDivElement>(null),
         luaGags: useRef<HTMLDivElement>(null),
         enemyBinds: useRef<HTMLDivElement>(null),
+        magiki: useRef<HTMLDivElement>(null),
     } as const;
-    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0 });
-    const saveRefs = useRef<Record<Tab, () => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {} });
+    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0, magiki: 0 });
+    const saveRefs = useRef<Record<Tab, (settings: any) => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {}, magiki: () => {} });
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [char, setChar] = useState<string | null>(getCurrentCharacter());
 
@@ -26,6 +28,7 @@ function CharacterSettings() {
             scrollPos.current[tab] = current.scrollTop;
         }
         setTab(next);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollRefs is a ref object, doesn't need to be in deps
     }, [tab]);
 
     useEffect(() => {
@@ -53,20 +56,24 @@ function CharacterSettings() {
         };
     }, []);
 
-    const registerGeneralSave = useCallback((fn: () => void) => {
+    const registerGeneralSave = useCallback((fn: (settings: any) => void) => {
         saveRefs.current.general = fn;
     }, []);
 
-    const registerGuildSave = useCallback((fn: () => void) => {
+    const registerGuildSave = useCallback((fn: (settings: any) => void) => {
         saveRefs.current.guild = fn;
     }, []);
 
-    const registerLuaGagsSave = useCallback((fn: () => void) => {
+    const registerLuaGagsSave = useCallback((fn: (settings: any) => void) => {
         saveRefs.current.luaGags = fn;
     }, []);
 
-    const registerEnemyBindsSave = useCallback((fn: () => void) => {
+    const registerEnemyBindsSave = useCallback((fn: (settings: any) => void) => {
         saveRefs.current.enemyBinds = fn;
+    }, []);
+
+    const registerMagikiSave = useCallback((fn: (settings: any) => void) => {
+        saveRefs.current.magiki = fn;
     }, []);
 
     useEffect(() => {
@@ -77,10 +84,11 @@ function CharacterSettings() {
 
             // Each save handler updates the shared settings object
             const updated = { ...currentSettings };
-            await saveRefs.current.general(updated);
-            await saveRefs.current.guild(updated);
-            await saveRefs.current.luaGags(updated);
-            await saveRefs.current.enemyBinds(updated);
+            saveRefs.current.general(updated);
+            saveRefs.current.guild(updated);
+            saveRefs.current.luaGags(updated);
+            saveRefs.current.enemyBinds(updated);
+            saveRefs.current.magiki(updated);
 
             // Write once at the end
             await storage.setItem("settings", updated);
@@ -149,6 +157,12 @@ function CharacterSettings() {
                     >
                         Bindy wrogów
                     </button>
+                    <button
+                        className={`btn btn-sm ${tab === "magiki" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("magiki")}
+                    >
+                        Magiki
+                    </button>
                 </div>
             </div>
             <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
@@ -179,6 +193,13 @@ function CharacterSettings() {
                     style={{ minHeight: 0 }}
                 >
                     <EnemyBindsSettings registerSave={registerEnemyBindsSave} />
+                </div>
+                <div
+                    ref={scrollRefs.magiki}
+                    className={`h-100 overflow-auto${tab === "magiki" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <MagikiSettings registerSave={registerMagikiSave} />
                 </div>
             </div>
         </div>

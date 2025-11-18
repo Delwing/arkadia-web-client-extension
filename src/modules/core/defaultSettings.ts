@@ -30,6 +30,8 @@ export interface Settings {
     enemyBindsKeepUnchanged: boolean;
     enemyBindsShowMode: 'always' | 'whenBound' | 'never';
     enemyBindsEnabledSlots: [boolean, boolean, boolean];
+    favoriteMagicTypes?: string[];
+    favoriteMagicKeys?: string[];
 }
 
 export const defaultSettings: Settings = {
@@ -61,4 +63,6 @@ export const defaultSettings: Settings = {
     enemyBindsKeepUnchanged: false,
     enemyBindsShowMode: 'always',
     enemyBindsEnabledSlots: [true, true, true],
+    favoriteMagicTypes: [],
+    favoriteMagicKeys: [],
 };
