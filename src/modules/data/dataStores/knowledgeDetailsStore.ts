@@ -9,27 +9,20 @@ import {
 import {stripPolishCharacters} from '@client/stripPolishCharacters';
 import {
   getBaseCategoryFromName,
-  KNOWLEDGE_CATEGORY_CONFIG,
   KNOWLEDGE_CATEGORY_ORDER,
   KnowledgeCategoryBaseName,
 } from '@client/knowledgeCategories';
 import loadWiedza from '@client/scripts/wiedzaLoader';
+import {
+  KnowledgeDetailsType,
+  KNOWLEDGE_DETAILS_TYPES,
+  KnowledgeCategoryDefinition,
+  KnowledgeDefinitions,
+} from '@modules/data/dataStores/wiedzaStore';
 
-export type KnowledgeDetailsType = 'fight' | 'books' | 'exploration';
-
-export const KNOWLEDGE_DETAILS_TYPES: KnowledgeDetailsType[] = [
-  'fight',
-  'books',
-  'exploration',
-];
-
-export interface KnowledgeCategoryDefinition {
-  fight: string[];
-  books: string[];
-  exploration: string[];
-}
-
-export type KnowledgeDefinitions = Record<KnowledgeCategoryBaseName, KnowledgeCategoryDefinition>;
+// Re-export types from wiedzaStore for backwards compatibility
+export type { KnowledgeDetailsType, KnowledgeCategoryDefinition, KnowledgeDefinitions };
+export { KNOWLEDGE_DETAILS_TYPES };
 
 export type KnowledgeLevelMap = Partial<Record<KnowledgeDetailsType, string>>;
 
@@ -239,22 +232,6 @@ export function buildNormalizedDefinitions(
   return result;
 }
 
-function ensureCategoryDefinition(
-  data: KnowledgeDefinitions,
-  category: KnowledgeCategoryBaseName,
-): KnowledgeCategoryDefinition {
-  let definition = data[category];
-  if (!definition) {
-    definition = {
-      fight: [],
-      books: [],
-      exploration: [],
-    };
-    data[category] = definition;
-  }
-  return definition;
-}
-
 function ensureProgressEntries(progress: KnowledgeEntriesMap | undefined): KnowledgeEntriesMap {
   if (!progress) {
     return createEmptyProgress();
@@ -388,54 +365,6 @@ function sanitizeCharacters(
   return result;
 }
 
-function assignStrings(
-  target: KnowledgeCategoryDefinition,
-  type: KnowledgeDetailsType,
-  strings: string[],
-) {
-  const seen = new Set(target[type].map(normalizeEntry));
-  for (const entry of strings) {
-    const normalized = normalizeEntry(entry);
-    if (normalized.length === 0 || seen.has(normalized)) {
-      continue;
-    }
-    target[type].push(entry.trim());
-    seen.add(normalized);
-  }
-}
-
-function extractStrings(value: unknown): string[] {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? [trimmed] : [];
-  }
-  if (Array.isArray(value)) {
-    const result: string[] = [];
-    for (const entry of value) {
-      result.push(...extractStrings(entry));
-    }
-    return result;
-  }
-  if (value && typeof value === 'object') {
-    const result: string[] = [];
-    for (const entry of Object.values(value as Record<string, unknown>)) {
-      result.push(...extractStrings(entry));
-    }
-    return result;
-  }
-  return [];
-}
-
-function parseCategoryDefinition(raw: unknown): KnowledgeCategoryDefinition {
-  const definition: KnowledgeCategoryDefinition = {
-    fight: [],
-    books: [],
-    exploration: [],
-  };
-
-  assignStrings(definition, 'exploration', extractStrings(raw));
-  return definition;
-}
 
 const KNOWLEDGE_DB_NAME = 'ArkadiaKnowledgeDetailsDBv2';
 const DEFINITIONS_STORE = 'knowledge_definitions';
@@ -597,25 +526,8 @@ class KnowledgeDetailsLoader
   async load(
     context: LoaderContext<KnowledgeDetailsSnapshot, RefreshMetadata>,
   ): Promise<LoaderResult<KnowledgeDetailsSnapshot, RefreshMetadata>> {
-    // Load wiedza data from API
-    const apiCategories = await loadWiedza();
-    const categories = Array.isArray(apiCategories) ? apiCategories : [];
-
-    const definitions: KnowledgeDefinitions = {} as KnowledgeDefinitions;
-
-    categories.forEach((category, index) => {
-      const config = KNOWLEDGE_CATEGORY_CONFIG[index];
-      if (!config) {
-        return;
-      }
-      const definition = parseCategoryDefinition(category);
-      ensureCategoryDefinition(definitions, config.base);
-      definitions[config.base] = definition;
-    });
-
-    for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
-      ensureCategoryDefinition(definitions, config.base);
-    }
+    // Load pre-structured definitions from wiedzaStore (single source of truth)
+    const definitions = await loadWiedza();
 
     const progress = sanitizeProgress(context.previousSnapshot?.data.progress, definitions);
     const characters = sanitizeCharacters(context.previousSnapshot?.data.characters);

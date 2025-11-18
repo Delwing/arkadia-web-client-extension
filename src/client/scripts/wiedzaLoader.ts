@@ -1,32 +1,33 @@
 import {
   getWiedzaStore,
-  WiedzaCategory,
-  WiedzaApiResponse,
+  KnowledgeDefinitions,
+  WiedzaProcessedData,
 } from '@modules/data/dataStores/wiedzaStore';
 import { SubscriptionOptions } from '@modules/data/dataStore/types';
 
 /**
- * Loads wiedza categories from the API or cache.
+ * Loads knowledge definitions from the API or cache.
  * Attempts to refresh data from the server first, falls back to cached data on error.
+ * Data is already transformed and grouped by the store.
  *
- * @returns Promise resolving to an array of wiedza categories
+ * @returns Promise resolving to knowledge definitions
  */
-export default async function loadWiedza(): Promise<WiedzaCategory[]> {
+export default async function loadWiedza(): Promise<KnowledgeDefinitions> {
   const store = getWiedzaStore();
 
   try {
     const snapshot = await store.refresh();
-    if (snapshot?.data.success && snapshot.data.data?.data) {
-      return snapshot.data.data.data;
+    if (snapshot?.data?.definitions) {
+      return snapshot.data.definitions;
     }
-    return [];
+    return {} as KnowledgeDefinitions;
   } catch (error) {
     console.error('Failed to load wiedza data, using cached version:', error);
     const cachedSnapshot = await store.getSnapshot();
-    if (cachedSnapshot?.data.success && cachedSnapshot.data.data?.data) {
-      return cachedSnapshot.data.data.data;
+    if (cachedSnapshot?.data?.definitions) {
+      return cachedSnapshot.data.definitions;
     }
-    return [];
+    return {} as KnowledgeDefinitions;
   }
 }
 
@@ -34,18 +35,18 @@ export default async function loadWiedza(): Promise<WiedzaCategory[]> {
  * Subscribes to wiedza data changes.
  * The listener will be called whenever the data is updated.
  *
- * @param listener - Callback function to receive wiedza categories
+ * @param listener - Callback function to receive knowledge definitions
  * @param options - Subscription options (e.g., notifyImmediately)
  * @returns Unsubscribe function to stop listening to changes
  */
 export function subscribeToWiedza(
-  listener: (categories: WiedzaCategory[] | undefined) => void,
+  listener: (definitions: KnowledgeDefinitions | undefined) => void,
   options?: SubscriptionOptions,
 ): () => void {
   const store = getWiedzaStore();
   return store.subscribe((snapshot) => {
-    if (snapshot?.data.success && snapshot.data.data?.data) {
-      listener(snapshot.data.data.data);
+    if (snapshot?.data?.definitions) {
+      listener(snapshot.data.definitions);
     } else {
       listener(undefined);
     }
@@ -53,13 +54,13 @@ export function subscribeToWiedza(
 }
 
 /**
- * Gets the full wiedza API response including success status.
- * Useful when you need access to the complete response structure.
+ * Gets the full wiedza processed data including version.
+ * Useful when you need access to the complete data structure.
  *
- * @returns Promise resolving to the full API response or undefined
+ * @returns Promise resolving to the full processed data or undefined
  */
-export async function getWiedzaResponse(): Promise<
-  WiedzaApiResponse | undefined
+export async function getWiedzaData(): Promise<
+  WiedzaProcessedData | undefined
 > {
   const store = getWiedzaStore();
 
@@ -68,7 +69,7 @@ export async function getWiedzaResponse(): Promise<
     return snapshot?.data;
   } catch (error) {
     console.error(
-      'Failed to load wiedza response, using cached version:',
+      'Failed to load wiedza data, using cached version:',
       error,
     );
     const cachedSnapshot = await store.getSnapshot();

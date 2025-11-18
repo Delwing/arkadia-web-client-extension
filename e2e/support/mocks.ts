@@ -251,6 +251,7 @@ const MAP_COLORS_ROUTE = '**/arkadia-mapa/data/colors.json';
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
 const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
+const WIEDZA_API_ROUTE = '**/admin-ajax.php?action=wiedza_data';
 const MAGICS_DATA_ROUTE = '**/magics_data.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
 const GITHUB_COMMITS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master';
@@ -301,6 +302,10 @@ const DEFAULT_MAGIC_KEYS_DATA = JSON.parse(
 
 const DEFAULT_KNOWLEDGE_DATA = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'mock-data', 'knowledge-data.json'), 'utf-8')
+);
+
+const DEFAULT_WIEDZA_DATA = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'mock-data', 'wiedza-data.json'), 'utf-8')
 );
 
 export async function mockMapDownloads(
@@ -364,6 +369,24 @@ export async function mockKnowledgeDownload(
     } = DEFAULT_KNOWLEDGE_DATA,
 ): Promise<void> {
     await context.route(KNOWLEDGE_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
+        });
+    });
+}
+
+export async function mockWiedzaDownload(
+    context: BrowserContext,
+    data: {
+        success: boolean;
+        data: {
+            data: unknown[];
+        };
+    } = DEFAULT_WIEDZA_DATA,
+): Promise<void> {
+    await context.route(WIEDZA_API_ROUTE, async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
