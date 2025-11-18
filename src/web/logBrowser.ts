@@ -635,27 +635,16 @@ function initLogBrowser(): boolean {
         console.log("[Logs] Creating IndexedDB open request...");
         const request = indexedDB.open("ArkadiaMessagesDB");
 
-        // Add timeout to prevent infinite hanging
-        const timeout = setTimeout(() => {
-          console.error("[Logs] IndexedDB open timed out after 5 seconds - database may be locked by another tab");
-          resolve(null);
-        }, 5000);
-
         request.onsuccess = () => {
-          clearTimeout(timeout);
           console.log("[Logs] IndexedDB opened successfully");
           resolve(request.result);
         };
         request.onerror = () => {
-          clearTimeout(timeout);
           console.error("[Logs] Failed to open IndexedDB:", request.error);
           resolve(null);
         };
         request.onblocked = () => {
-          clearTimeout(timeout);
-          console.warn("[Logs] IndexedDB open request blocked - database is being used by another connection");
-          // Don't resolve null immediately - the request might still succeed
-          // But we'll let the timeout handle it if it takes too long
+          console.warn("[Logs] IndexedDB open request blocked - waiting for other connections to close");
         };
         request.onupgradeneeded = () => {
           console.log("[Logs] IndexedDB upgrade needed - but we're only reading, this shouldn't happen");
@@ -683,12 +672,12 @@ function initLogBrowser(): boolean {
       select.innerHTML = "";
       sessionInfos = [];
       if (!db) {
-        preview.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--bs-warning);"><h5>⏱️ Baza danych logów jest zajęta</h5><p>Inna karta prawdopodobnie zapisuje logi w tym momencie.</p><p style="font-size: 0.875rem;">Spróbuj ponownie za chwilę lub zamknij inne karty z aplikacją.</p></div>';
+        preview.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--bs-danger);"><h5>❌ Nie udało się otworzyć bazy danych logów</h5><p>Wystąpił błąd podczas otwierania bazy danych.</p><p style="font-size: 0.875rem; color: var(--bs-secondary-color);">Sprawdź konsolę przeglądarki aby zobaczyć szczegóły błędu.</p></div>';
         logGroups = [];
         currentSessionName = null;
         clearHighlight();
-        renderSearchMessage("Baza danych zajęta - spróbuj ponownie.");
-        console.error("[Logs] IndexedDB failed to open - likely locked by another tab or pending version upgrade");
+        renderSearchMessage("Nie udało się otworzyć bazy danych.");
+        console.error("[Logs] IndexedDB failed to open - check previous console errors for details");
         return;
       }
       const available: { name: string; label: string }[] = [];
