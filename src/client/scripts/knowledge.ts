@@ -394,6 +394,95 @@ function buildKnowledgeDetailsReportPayload(
     return {categories};
 }
 
+function buildKnowledgeDetailsReportPayloadWithoutProgress(
+    snapshot: KnowledgeDetailsSnapshot,
+): KnowledgeDetailsReportPayload | null {
+    const {definitions} = snapshot.data;
+
+    const categories: KnowledgeDetailsReportCategory[] = [];
+
+    for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
+        const base = config.base;
+        const definition = definitions[base];
+
+        if (!definition) {
+            continue;
+        }
+
+        const summaries = {} as Record<KnowledgeDetailsType, KnowledgeDetailsReportTypeSummary>;
+        let totalEntries = 0;
+
+        for (const type of KNOWLEDGE_DETAILS_TYPES) {
+            const rawDefinitionEntries =
+                Array.isArray(definition[type]) ? definition[type] : [];
+            const canonicalEntries: {
+                canonical: string;
+                display: string;
+                normalized: string;
+            }[] = [];
+            const seenCanonical = new Set<string>();
+
+            for (const entry of rawDefinitionEntries) {
+                if (typeof entry !== 'string') {
+                    continue;
+                }
+                const canonical = canonicalizeKnowledgeEntryGender(entry);
+                const normalizedCanonical = normalizeKnowledgeEntry(canonical);
+                if (normalizedCanonical.length === 0 || seenCanonical.has(normalizedCanonical)) {
+                    continue;
+                }
+                seenCanonical.add(normalizedCanonical);
+                // Show all entries in canonical form (male) when no character gender is known
+                canonicalEntries.push({
+                    canonical,
+                    display: canonical,
+                    normalized: normalizedCanonical,
+                });
+            }
+
+            const total = canonicalEntries.length;
+            totalEntries += total;
+
+            // All entries are missing (no progress data)
+            const missing: string[] = [];
+            const entriesList: KnowledgeDetailsReportTypeEntry[] = [];
+            for (const entry of canonicalEntries) {
+                entriesList.push({
+                    name: entry.display,
+                    status: 'missing',
+                });
+                missing.push(entry.display);
+            }
+
+            summaries[type] = {
+                total,
+                known: 0,
+                missing,
+                unknown: [],
+                entries: entriesList,
+                levelMax: Math.max(KNOWLEDGE_LEVEL_LABELS.length - 1, 0),
+            };
+        }
+
+        if (totalEntries === 0) {
+            continue;
+        }
+
+        categories.push({
+            name: config.base,
+            dative: getDativeCategoryName(config.base),
+            updatedAt: null,
+            types: summaries,
+        });
+    }
+
+    if (categories.length === 0) {
+        return null;
+    }
+
+    return {categories};
+}
+
 function normalizeCategory(category: string, library: KnowledgeLibraryEntry): string | null {
     const trimmed = category.trim();
     const lowerTrimmed = trimmed.toLowerCase();
@@ -1390,19 +1479,30 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             currentCharacterGender,
         );
 
+        // Show report even if no progress data exists (all entries will be shown as missing)
         if (!payload) {
-            const msg = new AnsiAwareBuffer(
-                'Brak zapisanych danych raportu wiedzy dla tej postaci. Uzyj /wiedza_buduj, aby je zaktualizowac.',
+            // Build a payload with empty progress to show all entries as unmarked
+            const emptyPayload = buildKnowledgeDetailsReportPayloadWithoutProgress(
+                knowledgeDetailsSnapshot,
             );
-            const cmdStart = msg.text.indexOf('/wiedza_buduj');
-            if (cmdStart >= 0) {
-                msg.createLink([cmdStart, cmdStart + 13], {
-                    onClick: () => client.sendCommand('/wiedza_buduj'),
-                    title: 'Kliknij aby zbudować dane wiedzy'
-                });
+
+            if (!emptyPayload) {
+                const msg = new AnsiAwareBuffer(
+                    'Brak danych definicji wiedzy. Uzyj /wiedza_buduj, aby je zaktualizowac.',
+                );
+                const cmdStart = msg.text.indexOf('/wiedza_buduj');
+                if (cmdStart >= 0) {
+                    msg.createLink([cmdStart, cmdStart + 13], {
+                        onClick: () => client.sendCommand('/wiedza_buduj'),
+                        title: 'Kliknij aby zbudować dane wiedzy'
+                    });
+                }
+                client.println(msg);
+                client.sendEvent('knowledgeDetailsReport', null);
+                return;
             }
-            client.println(msg);
-            client.sendEvent('knowledgeDetailsReport', null);
+
+            client.sendEvent('knowledgeDetailsReport', emptyPayload);
             return;
         }
 

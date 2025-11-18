@@ -6,7 +6,6 @@ import {
   RefreshMetadata,
   StorageStrategy,
 } from '@modules/data/dataStore/types';
-import {KNOWLEDGE_DETAILS_DATA} from '@client/data/knowledgeDetailsData';
 import {stripPolishCharacters} from '@client/stripPolishCharacters';
 import {
   getBaseCategoryFromName,
@@ -14,6 +13,7 @@ import {
   KNOWLEDGE_CATEGORY_ORDER,
   KnowledgeCategoryBaseName,
 } from '@client/knowledgeCategories';
+import loadWiedza from '@client/scripts/wiedzaLoader';
 
 export type KnowledgeDetailsType = 'fight' | 'books' | 'exploration';
 
@@ -67,11 +67,6 @@ export interface KnowledgeDetailsSnapshotData {
 export interface KnowledgeDetailsSnapshot {
   data: KnowledgeDetailsSnapshotData;
   timestamp: number;
-}
-
-interface KnowledgeDetailsFile {
-  version?: number;
-  categories: unknown;
 }
 
 const MALE_TO_FEMALE_ENTRY_PREFIX = new Map<string, string>([
@@ -602,8 +597,9 @@ class KnowledgeDetailsLoader
   async load(
     context: LoaderContext<KnowledgeDetailsSnapshot, RefreshMetadata>,
   ): Promise<LoaderResult<KnowledgeDetailsSnapshot, RefreshMetadata>> {
-    const data = KNOWLEDGE_DETAILS_DATA as KnowledgeDetailsFile;
-    const categories = Array.isArray(data.categories) ? data.categories : [];
+    // Load wiedza data from API
+    const apiCategories = await loadWiedza();
+    const categories = Array.isArray(apiCategories) ? apiCategories : [];
 
     const definitions: KnowledgeDefinitions = {} as KnowledgeDefinitions;
 
@@ -630,7 +626,7 @@ class KnowledgeDetailsLoader
           definitions,
           progress,
           characters,
-          version: data.version,
+          version: 2, // API version
         },
         timestamp: Date.now(),
       },
