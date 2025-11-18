@@ -31,6 +31,12 @@ export default class SoundManager {
     private async getKeysToPreload(): Promise<Set<SoundKey>> {
         const keys = new Set<SoundKey>(["beep"]);
         try {
+            const uiSettingsResult = await storage.getItem("uiSettings");
+            const customBeepKey = (uiSettingsResult as any)?.uiSettings?.customBeepSoundKey;
+            if (typeof customBeepKey === "string" && customBeepKey) {
+                keys.add(customBeepKey);
+            }
+
             const result = await storage.getItem("triggers");
             const triggers = Array.isArray((result as any)?.triggers) ? (result as any).triggers : [];
             triggers.forEach((trigger: any) => {
@@ -71,6 +77,11 @@ export default class SoundManager {
         const HowlConstructor = await this.loadHowler();
         switch (key) {
             case "beep": {
+                const uiSettingsResult = await storage.getItem("uiSettings");
+                const customBeepKey = (uiSettingsResult as any)?.uiSettings?.customBeepSoundKey;
+                if (typeof customBeepKey === "string" && customBeepKey) {
+                    return this.createCustomSound(HowlConstructor, customBeepKey);
+                }
                 const {beepSound} = await import("./sounds");
                 const sound = new HowlConstructor({
                     src: beepSound,

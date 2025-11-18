@@ -3,6 +3,21 @@ import {Settings} from "mudlet-map-renderer";
 import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 import eventBus from "@modules/core/eventBus";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
+import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
+
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+function calculateBase64Size(dataUrl: string): number {
+    const base64String = dataUrl.split(',')[1] || '';
+    const padding = (base64String.match(/=/g) || []).length;
+    return (base64String.length * 3 / 4) - padding;
+}
 
 const mapPositions = [
     'top-overlay',
@@ -44,6 +59,7 @@ export interface UiSettings {
     customFontUrl: string;
     customFontFamily: string;
     autoLowercaseCommands: boolean;
+    customBeepSoundKey?: string;
 }
 
 const defaultSettings: UiSettings = {
@@ -73,6 +89,7 @@ const defaultSettings: UiSettings = {
     customFontUrl: '',
     customFontFamily: '',
     autoLowercaseCommands: false,
+    customBeepSoundKey: undefined,
 };
 
 const MIN_MAP_SCALE = 0.01;
@@ -388,6 +405,9 @@ async function load(): Promise<UiSettings> {
             const autoLowercaseCommands = typeof parsed.autoLowercaseCommands === 'boolean'
                 ? parsed.autoLowercaseCommands
                 : defaultSettings.autoLowercaseCommands;
+            const customBeepSoundKey = typeof parsed.customBeepSoundKey === 'string'
+                ? parsed.customBeepSoundKey || undefined
+                : defaultSettings.customBeepSoundKey;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -412,6 +432,7 @@ async function load(): Promise<UiSettings> {
                 customFontUrl: normalizedCustomFontUrl,
                 customFontFamily,
                 autoLowercaseCommands,
+                customBeepSoundKey,
             };
         }
     } catch {
@@ -459,9 +480,103 @@ export default async function initUiSettings() {
     const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
     const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
+    const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
+    const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
+    let customSounds: CustomSound[] = [];
+    const customSoundsRef = { current: customSounds };
+
+    const loadCustomSounds = async () => {
+        try {
+            customSounds = await getCustomSounds();
+            customSoundsRef.current = customSounds;
+            populateCustomBeepOptions();
+        } catch (error) {
+            console.error('Failed to load custom sounds', error);
+        }
+    };
+
+    const populateCustomBeepOptions = () => {
+        if (!customBeepSoundInput) return;
+        const currentValue = customBeepSoundInput.value;
+        customBeepSoundInput.innerHTML = '<option value="">Domyślny beep</option>';
+        customSounds.forEach(sound => {
+            const option = document.createElement('option');
+            option.value = sound.key;
+            option.textContent = sound.name;
+            customBeepSoundInput.appendChild(option);
+        });
+        const uploadOption = document.createElement('option');
+        uploadOption.value = '__upload__';
+        uploadOption.textContent = 'Dodaj dźwięk…';
+        customBeepSoundInput.appendChild(uploadOption);
+        if (currentValue) {
+            customBeepSoundInput.value = currentValue;
+        }
+    };
+
+    const handleCustomBeepFileChange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0] ?? null;
+        target.value = '';
+        if (!file) {
+            // User cancelled file selection - revert to current setting
+            if (customBeepSoundInput) {
+                customBeepSoundInput.value = current.customBeepSoundKey || '';
+            }
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            if (typeof result !== 'string') {
+                if (customBeepSoundInput) {
+                    customBeepSoundInput.value = current.customBeepSoundKey || '';
+                }
+                return;
+            }
+            const baseName = file.name.replace(/\.[^/.]+$/, '') || file.name;
+            const existingKeys = new Set(customSoundsRef.current.map(sound => sound.key));
+            const slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const prefix = slug ? `user:${slug}` : `user:${Date.now()}`;
+            let key = prefix;
+            let counter = 1;
+            while (existingKeys.has(key)) {
+                key = `${prefix}-${counter++}`;
+            }
+            const sound: CustomSound = { key, name: baseName, data: result };
+            const nextSounds = [...customSoundsRef.current, sound];
+            customSoundsRef.current = nextSounds;
+            customSounds = nextSounds;
+            void saveCustomSounds(nextSounds)
+                .then(() => {
+                    // Repopulate options with the new sound
+                    populateCustomBeepOptions();
+                    // Select the newly uploaded sound immediately
+                    if (customBeepSoundInput) {
+                        customBeepSoundInput.value = sound.key;
+                    }
+                    // Update current settings to reflect the new selection
+                    current = { ...current, customBeepSoundKey: sound.key };
+                })
+                .catch(error => {
+                    console.error('Failed to save custom sound', error);
+                    if (customBeepSoundInput) {
+                        customBeepSoundInput.value = current.customBeepSoundKey || '';
+                    }
+                });
+        };
+        reader.onerror = () => {
+            if (customBeepSoundInput) {
+                customBeepSoundInput.value = current.customBeepSoundKey || '';
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    await loadCustomSounds();
 
     const populateFormInputs = (settings: UiSettings) => {
         contentInput.value = String(settings.contentFontSize);
@@ -490,6 +605,9 @@ export default async function initUiSettings() {
         customFontUrlInput.value = settings.customFontUrl;
         customFontFamilyInput.value = settings.customFontFamily;
         autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
+        if (customBeepSoundInput) {
+            customBeepSoundInput.value = settings.customBeepSoundKey || '';
+        }
     };
 
     populateFormInputs(current);
@@ -619,7 +737,27 @@ export default async function initUiSettings() {
         }
     });
 
+    if (customBeepSoundInput) {
+        customBeepSoundInput.addEventListener('change', (e) => {
+            const value = (e.target as HTMLSelectElement).value;
+            if (value === '__upload__') {
+                customBeepFileInput?.click();
+                return;
+            }
+        });
+    }
+
+    if (customBeepFileInput) {
+        customBeepFileInput.addEventListener('change', handleCustomBeepFileChange);
+    }
+
     const handleStorageChange = async (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+        if (CUSTOM_SOUNDS_STORAGE_KEY in changes) {
+            await loadCustomSounds();
+            if (customBeepSoundInput) {
+                customBeepSoundInput.value = current.customBeepSoundKey || '';
+            }
+        }
         const uiSettingsChange = changes.uiSettings;
         if (!uiSettingsChange || !uiSettingsChange.newValue) {
             return;
@@ -682,6 +820,7 @@ export default async function initUiSettings() {
             })(),
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
+            customBeepSoundKey: customBeepSoundInput?.value || undefined,
         };
     }
 
@@ -703,4 +842,77 @@ export default async function initUiSettings() {
         refreshExplorationStats();
         modal.show();
     });
+
+    // Initialize manage sounds modal
+    const manageSoundsButton = document.getElementById('ui-manage-sounds-button');
+    const manageSoundsModalEl = document.getElementById('manage-sounds-modal');
+
+    if (manageSoundsButton && manageSoundsModalEl) {
+        const manageSoundsModal = new Modal(manageSoundsModalEl);
+        const manageSoundsList = document.getElementById('manage-sounds-list');
+        const manageSoundsEmpty = document.getElementById('manage-sounds-empty');
+
+        function renderSoundsList() {
+            if (!manageSoundsList || !manageSoundsEmpty) return;
+
+            manageSoundsList.innerHTML = '';
+
+            if (customSoundsRef.current.length === 0) {
+                manageSoundsList.style.display = 'none';
+                manageSoundsEmpty.style.display = 'block';
+                return;
+            }
+
+            manageSoundsList.style.display = 'flex';
+            manageSoundsEmpty.style.display = 'none';
+
+            customSoundsRef.current.forEach(sound => {
+                const size = calculateBase64Size(sound.data);
+                const item = document.createElement('div');
+                item.className = 'd-flex align-items-center justify-content-between p-2 border rounded';
+                item.innerHTML = `
+                    <div class="d-flex flex-column">
+                        <span class="fw-semibold">${sound.name}</span>
+                        <span class="text-muted small">${formatBytes(size)}</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm" data-sound-key="${sound.key}">Usuń</button>
+                `;
+
+                const deleteBtn = item.querySelector('button');
+                deleteBtn?.addEventListener('click', async () => {
+                    if (!confirm(`Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`)) {
+                        return;
+                    }
+
+                    const nextSounds = customSoundsRef.current.filter(s => s.key !== sound.key);
+                    customSoundsRef.current = nextSounds;
+
+                    try {
+                        await saveCustomSounds(nextSounds);
+
+                        // If deleted sound was selected as custom beep, reset to default
+                        if (current.customBeepSoundKey === sound.key) {
+                            current = { ...current, customBeepSoundKey: undefined };
+                            if (customBeepSoundInput) {
+                                customBeepSoundInput.value = '';
+                            }
+                        }
+
+                        populateCustomBeepOptions();
+                        renderSoundsList();
+                    } catch (error) {
+                        console.error('Failed to delete custom sound', error);
+                        alert('Nie udało się usunąć dźwięku');
+                    }
+                });
+
+                manageSoundsList.appendChild(item);
+            });
+        }
+
+        manageSoundsButton.addEventListener('click', () => {
+            renderSoundsList();
+            manageSoundsModal.show();
+        });
+    }
 }

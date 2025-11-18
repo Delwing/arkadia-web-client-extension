@@ -279,7 +279,7 @@ function Recordings() {
                     </Button>
                     <Button
                         size="sm"
-                        variant="outline-primary"
+                        variant="primary"
                         className="recordings-action"
                         onClick={downloadAutoRecentRecording}
                     >

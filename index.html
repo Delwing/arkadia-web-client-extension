@@ -304,7 +304,7 @@
                 </div>
                 <div class="modal-body overflow-auto" style="min-height: 0;">
                     <div class="ui-settings-layout">
-                        <section class="ui-settings-section">
+                        <section class="ui-settings-section ui-settings-section--map">
                             <h6 class="ui-settings-section-title">Mapa</h6>
                             <div class="ui-settings-stack">
                                 <div>
@@ -370,6 +370,19 @@
                                     <input id="ui-haptic-feedback" type="checkbox" class="form-check-input" />
                                     <label class="form-check-label" for="ui-haptic-feedback">Wibracje przycisków mobilnych</label>
                                 </div>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Dźwięk</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-custom-beep-sound">Własny dźwięk beep</label>
+                                    <select id="ui-custom-beep-sound" class="form-select">
+                                        <option value="">Domyślny beep</option>
+                                    </select>
+                                    <input id="ui-custom-beep-file" type="file" accept="audio/*" style="display: none;" />
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm align-self-start" id="ui-manage-sounds-button">Zarządzaj dźwiękami</button>
                             </div>
                         </section>
                         <section class="ui-settings-section">
@@ -470,6 +483,23 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="ui-settings-save">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="manage-sounds-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Zarządzaj dźwiękami</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="manage-sounds-list" class="d-flex flex-column gap-2"></div>
+                    <div id="manage-sounds-empty" class="text-center text-muted py-4" style="display: none;">
+                        Brak niestandardowych dźwięków
+                    </div>
                 </div>
             </div>
         </div>
