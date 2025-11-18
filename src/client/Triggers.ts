@@ -5,6 +5,7 @@ export type TriggerCallback = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,
     type: string, //TODO I guess we can try to list values
+    originalLine: string,
 ) => AnsiAwareBuffer | null;
 
 export type TriggerMatchFunction = (
@@ -63,9 +64,9 @@ export class Trigger {
     ) {
         const child = this.registerChild(
             pattern,
-            (line, matches, type) => {
+            (line, matches, type, originalLine) => {
                 this.manager.removeTrigger(child);
-                return callback(line, matches, type);
+                return callback(line, matches, type, originalLine);
             },
             tag,
             options
@@ -112,7 +113,7 @@ export class Trigger {
         }
         if (matched) {
             if (matches && this.callback) {
-                const result = this.callback(line, matches, type);
+                const result = this.callback(line, matches, type, originalText ?? line.text);
                 if (result === null) {
                     return null;
                 }
@@ -170,9 +171,9 @@ export default class Triggers {
     registerOneTimeTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerTrigger(
             pattern,
-            (line, matches, type) => {
+            (line, matches, type, originalLine) => {
                 this.removeTrigger(trigger);
-                return callback(line, matches, type);
+                return callback(line, matches, type, originalLine);
             },
             tag,
             options
@@ -196,9 +197,9 @@ export default class Triggers {
     registerOneTimeMultilineTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerMultilineTrigger(
             pattern,
-            (line, matches, type) => {
+            (line, matches, type, originalLine) => {
                 this.removeTrigger(trigger);
-                return callback(line, matches, type);
+                return callback(line, matches, type, originalLine);
             },
             tag,
             options

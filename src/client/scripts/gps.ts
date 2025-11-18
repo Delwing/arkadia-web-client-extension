@@ -33,7 +33,7 @@ export default function initGps(client: Client) {
                     const gpsId = `${room.id}_${idx}`;
                     let current = 1;
                     const checkContext = () => {
-                        if (entry.area_name && client.Map.getAreaName(client.Map.currentRoom?.areaId) !== entry.area_name) {
+                        if (entry.area_name && client.Map.getAreaName(client.Map.currentRoom?.area.toString()) !== entry.area_name) {
                             return false;
                         }
                         if (entry.within_room_ids && entry.within_room_ids.length > 0) {
@@ -64,12 +64,11 @@ export default function initGps(client: Client) {
                         {stayOpenLines: delta}
                     );
                     if (lines.length > 1) {
-                        parent.registerChild(/.*/, (line) => {
+                        parent.registerChild(/.*/, (line, _matches, _type, originalLine) => {
                             if (!checkContext()) {
                                 return line;
                             }
-                            const rawLine = line.text;
-                            if (rawLine === lines[current]) {
+                            if (originalLine === lines[current]) {
                                 current++;
                                 if (current === lines.length) {
                                     if (client.Map.currentRoom?.id !== room.id) {

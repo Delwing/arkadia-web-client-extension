@@ -73,12 +73,12 @@ describe('herb descriptions', () => {
     matches.input = baseLine;
 
     const triggerLineFromRaw = new AnsiAwareBuffer(baseLine);
-    const fromRaw = callback(triggerLineFromRaw, matches, '') as AnsiAwareBuffer;
+    const fromRaw = callback(triggerLineFromRaw, matches, '', baseLine) as AnsiAwareBuffer;
     expect(fromRaw).toBeInstanceOf(AnsiAwareBuffer);
     expect(fromRaw?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
 
     const existingLine = new AnsiAwareBuffer(baseLine);
-    const fromTriggerLine = callback(existingLine, matches, '') as AnsiAwareBuffer;
+    const fromTriggerLine = callback(existingLine, matches, '', baseLine) as AnsiAwareBuffer;
     expect(fromTriggerLine).toBe(existingLine);
     expect(fromTriggerLine?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
   });

@@ -61,4 +61,46 @@ describe('gps triggers', () => {
     expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
     expect(client.sendEvent).not.toHaveBeenCalled();
   });
+
+  test('gps with 3 lines does not match if sequence is broken', () => {
+    const mapData = [
+      {
+        areaName: 'Area',
+        areaId: 'Area',
+        rooms: [
+          {
+            id: 30,
+            area: 1,
+            x: 0,
+            y: 0,
+            z: 0,
+            weight: 1,
+            symbol: '',
+            userData: { gps: JSON.stringify([{ gps_string_lines: ['line1', 'line2', 'line3'], room_id: 30 }]) },
+            customLines: {},
+            stubs: [],
+            doors: {},
+            env: 0,
+            exits: {},
+            specialExits: {},
+            hash: ''
+          }
+        ],
+        labels: []
+      }
+    ];
+
+    client = new FakeClient();
+    client.Map.onMapReady = (cb: any) => cb(mapData);
+    initGps(client as unknown as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    client.Map.currentRoom.id = 1;
+
+    jest.clearAllMocks();
+    parse('line1');
+    parse('some other line');
+    parse('line3');
+    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalled();
+  });
 });
