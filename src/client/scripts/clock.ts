@@ -208,6 +208,14 @@ class ClockDisplay {
 
     private snapshots: Partial<Record<Domain, ClockSnapshot>> = {};
 
+    constructor() {
+        eventBus.on("gmcp.room.info", (payload: any) => {
+            if (payload?.map?.domain) {
+                this.setActiveDomain(payload.map.domain);
+            }
+        })
+    }
+
     public update(domain: Domain, data: ClockSnapshot): void {
         // Always update snapshot and emit event for both domains
         // This allows ClockPopup to show both domains
