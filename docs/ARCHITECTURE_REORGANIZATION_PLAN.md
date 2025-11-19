@@ -10,6 +10,9 @@
 
 This document outlines a comprehensive plan to reorganize the codebase architecture, **completing the React migration** and establishing clear separation of concerns. The plan now includes migrating the entire frontend to a single React application with strategic "islands" for performance-critical rendering.
 
+**IMPORTANT - Testing Strategy**:
+All phases must pass both unit tests (`yarn test`) and E2E tests (`yarn test:e2e`) before proceeding. The E2E tests cover a significant portion of the application's functionality and are critical for catching integration issues that unit tests might miss. Run E2E tests after completing each sub-phase and before committing any changes.
+
 ### Current Issues
 - **16+ legacy vanilla JS components** coexisting with React versions
   - 10 duplicate components (class-based vs React)
@@ -182,7 +185,7 @@ This suggests the line processing mechanism is still being refined. The flag is 
 ## Phase 1: Complete React Migration Strategy
 
 **Priority**: Critical
-**Estimated Effort**: 8-12 hours (expanded from original 2-4 hours)
+**Estimated Effort**: 15-20 hours (expanded to include full HTML migration)
 **Dependencies**: None
 
 ### Objectives
@@ -474,7 +477,109 @@ rm src/web/LetterComposer.ts
 - Help modal
 - About modal
 
-#### 1.11 Refactor main.ts to React Bootstrap
+#### 1.11 Refactor index.html to Minimal React Host
+
+**Current**: 724-line HTML file with extensive hard-coded UI structure
+- Multiple modal definitions (10+ modals with full structure)
+- Hard-coded layout (`#main-container`, `#content-area`, `#char-state`, etc.)
+- Mobile buttons hard-coded in HTML
+- Letter composer form hard-coded
+- All modals with Bootstrap structure
+
+**Target**: Minimal React host - single mount point
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Google Analytics -->
+    <script>
+        if (!window.__DISABLE_GA__) {
+            (function() {
+                var script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://www.googletagmanager.com/gtag/js?id=G-25FPEMWGME';
+                document.head.appendChild(script);
+
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-25FPEMWGME');
+            })();
+        }
+    </script>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="theme-color" content="#000000" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <title>Arkadia</title>
+</head>
+<body>
+    <!-- Single React mount point -->
+    <div id="root"></div>
+
+    <!-- Legacy script entry points (to be removed after full migration) -->
+    <script type="module" src="/src/web/main.ts"></script>
+</body>
+</html>
+```
+
+**Migrate to React Components**:
+
+All current HTML structure becomes React components:
+
+1. **Modals** (10+ modals) → `src/ui/web/components/modals/`
+   - `OptionsModal.tsx`
+   - `ExportImportModal.tsx`
+   - `BindsModal.tsx`
+   - `NpcModal.tsx`
+   - `ScriptsModal.tsx`
+   - `AliasesModal.tsx`
+   - `TriggersModal.tsx`
+   - `RecordingsModal.tsx`
+   - `ShortcutsModal.tsx`
+   - `UiSettingsModal.tsx`
+   - `ManageSoundsModal.tsx`
+   - `MobileButtonsModal.tsx`
+   - `MobileRadialModal.tsx`
+   - `TriggerTesterModal.tsx`
+   - `TriggerFinderModal.tsx`
+   - `LogsModal.tsx`
+   - `LocationShareModal.tsx`
+
+2. **Layout Structure** → `src/ui/web/components/layout/`
+   - `MainContainer.tsx` (replaces `#main-container`)
+   - `ContentArea.tsx` (replaces `#content-area`)
+   - `InputArea.tsx` (replaces `#input-area`)
+   - `Footer.tsx` (replaces `#char-state`)
+
+3. **Mobile UI** → `src/ui/web/components/mobile/`
+   - `DirectionButtons.tsx` (replaces `#mobile-direction-buttons`)
+   - `CommandRadial.tsx` (replaces `#mobile-command-radial`)
+
+4. **Auth Overlay** → `src/ui/web/components/auth/`
+   - `AuthOverlay.tsx` (replaces `#auth-overlay`)
+   - `ConnectionPanel.tsx`
+   - `LoginForm.tsx`
+
+5. **Letter Composer** → `src/ui/web/components/modals/`
+   - `LetterComposer.tsx` (replaces `#letter-composer`)
+
+**Result**:
+- Reduce `index.html` from 724 lines to ~50 lines
+- All UI structure managed by React
+- Single source of truth for component structure
+- Better testability (can test components in isolation)
+- Easier to modify UI without touching HTML
+
+#### 1.12 Refactor main.ts to React Bootstrap
 
 **Current**: 1708 lines of vanilla initialization
 
@@ -490,7 +595,7 @@ async function main() {
   const client = await initializeClient()
 
   // 2. Mount React application
-  const root = createRoot(document.getElementById('app')!)
+  const root = createRoot(document.getElementById('root')!)
   root.render(<App client={client} />)
 
   console.log('Application initialized')
@@ -501,7 +606,7 @@ main()
 
 **Result**: Reduce from 1708 lines to ~50-100 lines
 
-#### 1.12 Create Global State Management
+#### 1.13 Create Global State Management
 
 **Options**:
 1. **React Context + useReducer** (lightweight, built-in)
@@ -543,33 +648,69 @@ export const useGameState = create<GameState>((set) => ({
 }))
 ```
 
-#### 1.13 Run Tests and Verify
+#### 1.14 Run Tests and Verify
+
+**IMPORTANT**: Both unit tests and E2E tests must pass. The E2E tests cover a good chunk of the application's functionality and are critical for verifying the migration didn't break user-facing features.
 
 ```bash
+# Run unit tests
 yarn test
+
+# Run E2E tests - CRITICAL for migration verification
 yarn test:e2e
+
+# Verify build succeeds
 yarn build
 ```
+
+**E2E Test Coverage**:
+The E2E tests verify critical user workflows including:
+- UI interaction (buttons, modals, input fields)
+- Component rendering and state updates
+- User flows (login, settings, navigation)
+- Integration between components
+
+**Testing Strategy**:
+1. Run unit tests after each major component migration (1.2-1.9)
+2. Run full E2E test suite after completing each sub-phase (1a, 1b, 1c, etc.)
+3. Run both test suites before committing any changes
+4. If E2E tests fail, investigate thoroughly - they often catch integration issues unit tests miss
 
 ### Success Criteria
 - ✅ Single React root application
 - ✅ All legacy vanilla components migrated or deleted
 - ✅ Terminal and Map as React islands (lifecycle managed by React)
 - ✅ Global state management in place
+- ✅ index.html reduced from 724 lines to ~50 lines (single mount point)
+- ✅ All modals (17+) migrated to React components
+- ✅ All layout structure (main-container, content-area, input-area, footer) migrated to React
+- ✅ Mobile UI (direction buttons, command radial) migrated to React
+- ✅ Auth overlay migrated to React
+- ✅ Letter composer migrated to React
 - ✅ main.ts reduced to ~50-100 lines
 - ✅ All tests passing
 - ✅ Build successful
 - ✅ No regressions in functionality
-- ✅ ~1000+ lines of legacy code removed
+- ✅ ~1500+ lines of legacy code removed (1000+ from components, 700+ from index.html)
 - ✅ Better maintainability and testability
 
 ### Migration Path
 
+**Recommended execution order:**
+
 1. **Phase 1a** (2-3 hours): Delete duplicate components, verify React versions work
 2. **Phase 1b** (3-4 hours): Create React islands (Terminal, Map)
 3. **Phase 1c** (2-3 hours): Migrate complex components (ObjectList, Mobile UI)
-4. **Phase 1d** (2-3 hours): Set up global state, create App root, refactor main.ts
-5. **Phase 1e** (1-2 hours): Testing, verification, cleanup
+4. **Phase 1d** (3-4 hours): Set up global state, create App root
+5. **Phase 1e** (3-4 hours): Migrate HTML structure to React (index.html → React components)
+6. **Phase 1f** (2-3 hours): Refactor main.ts to slim bootstrap
+7. **Phase 1g** (1-2 hours): Testing, verification, cleanup
+
+**Note on execution order:**
+- Steps 1.1-1.10 (component migration) should be done **before** 1.11 (index.html)
+- Step 1.11 (index.html) should be done **before** 1.12 (main.ts refactor)
+- Step 1.11 (index.html) requires all modals and layout components to be React components first
+- Step 1.12 (main.ts) is the final orchestration that ties everything together
 
 ---
 
@@ -1195,6 +1336,7 @@ Create `docs/SCRIPT_STATE_PATTERNS.md`:
 - Update 5 example scripts
 - Update 5 example components
 - Create bridges for backward compatibility
+- **Run E2E tests** to verify no regressions
 
 **Phase 2** (future): Gradual Migration
 - Update remaining scripts one by one
@@ -1275,7 +1417,7 @@ src/modules/data/dataStores/
    import { multibindStore } from "@modules/data/dataStores/multibindStore";
    ```
 
-4. Run tests
+4. Run tests (both unit and E2E)
 
 **Files to update**:
 - `src/client/PackageHelper.ts`
@@ -1366,7 +1508,7 @@ src/modules/data/dataStores/
 
 6. Remove MockPort from test files
 
-7. Run tests
+7. Run tests (both unit and E2E)
 
 **Files to update**:
 - `src/client/Client.ts` (constructor, connect method, port usage)
@@ -1394,7 +1536,8 @@ grep -r "@web" src/client/
 - ✅ No imports from `@web` in `src/client/`
 - ✅ All dataStores in one location (`src/modules/data/dataStores/`)
 - ✅ MockPort removed, direct storage usage
-- ✅ All tests passing
+- ✅ All unit tests passing
+- ✅ All E2E tests passing (critical for verifying integration)
 - ✅ Clean dependency hierarchy (no circular dependencies)
 
 ---
@@ -1481,7 +1624,8 @@ import { HerbData } from "@shared/types";
 - ✅ No duplicate type definitions
 - ✅ Clear separation: shared vs platform-specific types
 - ✅ All imports updated
-- ✅ All tests passing
+- ✅ All unit tests passing
+- ✅ All E2E tests passing
 
 ---
 
@@ -1640,7 +1784,8 @@ import { createSessionLogger } from "./integrations";
 ### Success Criteria
 - ✅ Clear directory organization
 - ✅ Barrel exports for cleaner imports
-- ✅ All tests passing
+- ✅ All unit tests passing
+- ✅ All E2E tests passing
 - ✅ Easier to locate files
 
 ---
@@ -1811,7 +1956,8 @@ main();
 - ✅ `main.ts` < 200 lines
 - ✅ Clear separation of initialization concerns
 - ✅ Initialization modules are testable
-- ✅ All tests passing
+- ✅ All unit tests passing
+- ✅ All E2E tests passing (critical - verifies initialization flow works)
 - ✅ Application works identically
 
 ---
@@ -1901,6 +2047,8 @@ Update main `README.md` with:
 - ✅ Import rules clear
 - ✅ No deep relative imports
 - ✅ Key components documented
+- ✅ All unit tests passing
+- ✅ All E2E tests passing
 
 ---
 
