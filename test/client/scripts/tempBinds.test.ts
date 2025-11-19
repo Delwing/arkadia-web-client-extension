@@ -19,7 +19,6 @@ describe('temp binds', () => {
       send: jest.fn(),
       output: jest.fn(),
       sendGmcp: jest.fn(),
-      parseAnsiPatterns: jest.fn((text: string) => text),
       flushMessageBuffer: jest.fn(),
     } as any;
     const port = {

@@ -1,4 +1,3 @@
-import {parseAnsiPatterns} from './ansiParser';
 import {RecordedEvent, getRecording} from './recordingStorage';
 import Recorder from './Recorder';
 import Client, {ClientAdapter} from "@client/Client";
@@ -215,11 +214,6 @@ class ArkadiaClient implements ClientAdapter {
     output(text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) {
         const ts = typeof timestamp === 'number' ? timestamp : Date.now();
         this.emit('message', text, type, ts)
-    }
-
-    //Should be done on all ouput
-    parseAnsiPatterns(text: string) {
-        return parseAnsiPatterns(text)
     }
 
     /**

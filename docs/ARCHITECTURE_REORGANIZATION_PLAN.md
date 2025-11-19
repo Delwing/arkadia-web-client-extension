@@ -390,9 +390,105 @@ src/modules/data/dataStores/
 - `src/web/main.ts`
 - Any other files importing from `@web/dataStores/*`
 
-#### 2.3 Verify Dependency Flow
+#### 2.3 Remove MockPort Abstraction
 
-After Phase 2.1 and 2.2, verify no circular dependencies:
+**Current State**:
+- `src/web/MockPort.ts` acts as a message-based wrapper around `storage`
+- `Client` receives a `port` parameter and uses `port.postMessage()` / `port.onMessage`
+- MockPort translates between message-based API and direct storage API
+- Adds unnecessary abstraction layer
+
+**Target**: Direct storage interactions in Client
+
+**Rationale**:
+- MockPort serves no real purpose - it's just a storage wrapper with message API
+- Direct storage usage is simpler and more straightforward
+- `storage.onChanged` already provides change notifications
+- Reduces indirection and makes code easier to understand
+
+**Steps**:
+1. Update `Client` constructor to remove `port` parameter:
+   ```typescript
+   // OLD:
+   constructor(clientAdapter: ClientAdapter, port: any) {
+     this.port = port;
+     port.onMessage.addListener((message) => { ... });
+   }
+
+   // NEW:
+   import storage from "@modules/core/storage";
+
+   constructor(clientAdapter: ClientAdapter) {
+     // Setup storage listeners directly
+     storage.onChanged?.addListener((changes) => {
+       Object.entries(changes).forEach(([key, {newValue}]) => {
+         this.sendEvent(key, newValue);
+       });
+     });
+   }
+   ```
+
+2. Replace `port.postMessage` calls with direct storage calls:
+   ```typescript
+   // OLD:
+   port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
+
+   // NEW:
+   import { getItemSync } from "@modules/core/storage";
+   const data = getItemSync('scripts');
+   this.sendEvent('scripts', data?.scripts);
+   ```
+
+3. Update `Client.connect()` method - no longer needs port parameter:
+   ```typescript
+   // OLD:
+   connect(port: any, initial: boolean) {
+     if (initial) {
+       port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
+     }
+     this.port = port
+     this.sendEvent('port-connected')
+   }
+
+   // NEW:
+   connect(initial: boolean) {
+     if (initial) {
+       const data = getItemSync('scripts');
+       this.sendEvent('scripts', data?.scripts);
+     }
+     this.sendEvent('port-connected')
+   }
+   ```
+
+4. Update Client instantiation in `main.ts`:
+   ```typescript
+   // OLD:
+   const client = new Client(arkadiaClient, new MockPort());
+
+   // NEW:
+   const client = new Client(arkadiaClient);
+   ```
+
+5. Delete `src/web/MockPort.ts`
+
+6. Remove MockPort from test files
+
+7. Run tests
+
+**Files to update**:
+- `src/client/Client.ts` (constructor, connect method, port usage)
+- `src/web/main.ts` (Client instantiation)
+- All test files that mock port (use storage mocks instead)
+
+**Benefits**:
+- ~50 lines of unnecessary abstraction removed
+- Clearer code - direct storage access instead of message passing
+- Easier to test - mock storage instead of port
+- One less file to maintain
+
+#### 2.4 Verify Dependency Flow
+
+After Phase 2.1, 2.2, and 2.3, verify no circular dependencies:
 
 ```bash
 # Check client doesn't import from web
@@ -404,6 +500,7 @@ grep -r "@web" src/client/
 ### Success Criteria
 - ✅ No imports from `@web` in `src/client/`
 - ✅ All dataStores in one location
+- ✅ MockPort removed, direct storage usage
 - ✅ All tests passing
 - ✅ Clean dependency hierarchy
 
@@ -510,7 +607,7 @@ import { HerbData } from "@shared/types";
 ```
 src/web/
 ├── ArkadiaClient.ts
-├── ansiParser.ts (MOVED in Phase 2)
+├── ansiParser.ts (MOVED in Phase 2.1)
 ├── CombatTimer.ts (DELETED in Phase 1)
 ├── embed.ts
 ├── FightTitle.ts
@@ -519,7 +616,7 @@ src/web/
 ├── logBrowser.ts
 ├── main.ts
 ├── mapDataLoader.ts
-├── MockPort.ts
+├── MockPort.ts (DELETED in Phase 2.3)
 ├── ObjectList.ts
 ├── sessionLogger.ts
 ├── statusIndicators.ts
@@ -535,8 +632,7 @@ src/web/
 ```
 src/web/
 ├── adapters/
-│   ├── ArkadiaClient.ts
-│   └── MockPort.ts
+│   └── ArkadiaClient.ts
 ├── loaders/
 │   ├── fontLoader.ts
 │   └── mapDataLoader.ts
@@ -580,13 +676,11 @@ mkdir -p src/web/initialization
 #### 4.2 Move Files to Adapters
 ```bash
 git mv src/web/ArkadiaClient.ts src/web/adapters/
-git mv src/web/MockPort.ts src/web/adapters/
 ```
 
 Create `src/web/adapters/index.ts`:
 ```typescript
 export { default as ArkadiaClient } from './ArkadiaClient';
-export { MockPort } from './MockPort';
 ```
 
 #### 4.3 Move Files to Loaders
@@ -1081,6 +1175,7 @@ class Client {
 ### Medium Risk
 - Phase 2.1 (Move ansiParser) - Must verify interaction with AnsiAwareBuffer
 - Phase 2.2 (Consolidate DataStores) - Requires careful import updates
+- Phase 2.3 (Remove MockPort) - Changes Client constructor and test mocks
 - Phase 4 (Reorganize Web) - Many file moves, but tests will catch issues
 
 ### High Risk
@@ -1139,11 +1234,12 @@ git reset --hard HEAD~1
 - [ ] src/web/MultiBinds.ts
 - [ ] src/web/ReleaseGuard.ts
 
-### Phase 2: Move
-- [ ] src/web/ansiParser.ts → src/client/ansi/ansiParser.ts
-- [ ] src/web/dataStores/mapStore.ts → src/modules/data/dataStores/mapStore.ts
-- [ ] src/web/dataStores/multibindStore.ts → src/modules/data/dataStores/multibindStore.ts
-- [ ] src/web/dataStores/npcStore.ts → src/modules/data/dataStores/npcStore.ts
+### Phase 2: Move/Delete
+- [ ] src/web/ansiParser.ts → src/client/ansi/ansiParser.ts (Phase 2.1)
+- [ ] src/web/dataStores/mapStore.ts → src/modules/data/dataStores/mapStore.ts (Phase 2.2)
+- [ ] src/web/dataStores/multibindStore.ts → src/modules/data/dataStores/multibindStore.ts (Phase 2.2)
+- [ ] src/web/dataStores/npcStore.ts → src/modules/data/dataStores/npcStore.ts (Phase 2.2)
+- [ ] Delete src/web/MockPort.ts (Phase 2.3)
 
 ### Phase 3: Move
 - [ ] src/client/types/herbs.ts → src/shared/types/herbs.ts
@@ -1155,7 +1251,6 @@ git reset --hard HEAD~1
 
 ### Phase 4: Move
 - [ ] src/web/ArkadiaClient.ts → src/web/adapters/ArkadiaClient.ts
-- [ ] src/web/MockPort.ts → src/web/adapters/MockPort.ts
 - [ ] src/web/fontLoader.ts → src/web/loaders/fontLoader.ts
 - [ ] src/web/mapDataLoader.ts → src/web/loaders/mapDataLoader.ts
 - [ ] src/web/embed.ts → src/web/integrations/embed.ts
@@ -1189,6 +1284,31 @@ NEW: import { multibindStore } from "@modules/data/dataStores/multibindStore";
 
 OLD: import { mapStore } from "@web/dataStores/mapStore";
 NEW: import { mapStore } from "@modules/data/dataStores/mapStore";
+
+// MockPort removal (Phase 2.3)
+OLD: import MockPort from "./MockPort";
+     const client = new Client(arkadiaClient, new MockPort());
+NEW: const client = new Client(arkadiaClient);
+
+// In Client.ts:
+OLD: constructor(clientAdapter: ClientAdapter, port: any) {
+       this.port = port;
+       port.onMessage.addListener((message) => { ... });
+     }
+NEW: import storage from "@modules/core/storage";
+     constructor(clientAdapter: ClientAdapter) {
+       storage.onChanged?.addListener((changes) => {
+         Object.entries(changes).forEach(([key, {newValue}]) => {
+           this.sendEvent(key, newValue);
+         });
+       });
+     }
+
+// In tests:
+OLD: const mockPort = { postMessage: jest.fn(), onMessage: { addListener: jest.fn() } };
+     const client = new Client(mockAdapter, mockPort);
+NEW: jest.mock("@modules/core/storage");
+     const client = new Client(mockAdapter);
 ```
 
 ### Phase 3 Import Updates
@@ -1229,6 +1349,14 @@ NEW: import { FightTitle } from "./ui-legacy";
 
 ## Appendix C: Change Log
 
+### 2025-11-19 Update
+- Added Phase 2.3: Remove MockPort abstraction
+- MockPort identified as unnecessary wrapper around storage
+- Updated Phase 4 to remove MockPort from file organization
+- Updated risk assessment to include MockPort removal
+- Added import patterns for direct storage usage
+- Updated appendices with MockPort removal steps
+
 ### 2025-11-11 Update
 - Added Phase 0 documenting recent architectural changes
 - Documented AnsiAwareBuffer introduction (line processing improvement)
@@ -1244,6 +1372,7 @@ NEW: import { FightTitle } from "./ui-legacy";
 2. **Line Count Growth** - main.ts has grown, making Phase 5 more critical
 3. **ANSI Architecture** - Now clear that two components serve different pipeline stages
 4. **Client.inLineProcess** - Flagged for potential refactoring
+5. **MockPort Removal** - Identified unnecessary abstraction layer for removal
 
 ---
 

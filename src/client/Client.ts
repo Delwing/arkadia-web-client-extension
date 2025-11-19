@@ -33,8 +33,6 @@ export interface ClientAdapter {
 
     sendGmcp(type: string, payload?: any): void
 
-    parseAnsiPatterns(text: string): string;
-
     flushMessageBuffer(): void
 
     emit(event: string, ...args: any[]): void;

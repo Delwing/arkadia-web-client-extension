@@ -2090,7 +2090,6 @@ h1 {
 }
 
 #break-item-warning {
-  display: none;
   color: tomato;
   cursor: pointer;
 }
