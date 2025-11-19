@@ -15,6 +15,19 @@ test.beforeEach(async ({context}) => {
     await primeCharInfo(context);
 });
 
+const BOARD_TEXT = [
+    'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
+    ' o============================================================================o',
+    ' |                Adresat badz                     Cena          Czas na      |',
+    ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
+    ' o -------------------------------------------------------------------------- o',
+    ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
+    " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
+    ' o -------------------------------------------------------------------------- o',
+    ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
+    ' o============================================================================o',
+].join('\n');
+
 test('Package helper highlights NPCs and guides selected deliveries', async ({page}) => {
     await page.goto('/');
     await waitForCommandInput(page);
@@ -37,20 +50,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     const locationLabel = page.locator('#location-text');
     await expect(locationLabel, 'should render current map location before selecting delivery').toContainText('#1');
 
-    const boardText = [
-        'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
-        ' o============================================================================o',
-        ' |                Adresat badz                     Cena          Czas na      |',
-        ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
-        ' o -------------------------------------------------------------------------- o',
-        ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
-        " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
-        ' o -------------------------------------------------------------------------- o',
-        ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
-        ' o============================================================================o',
-    ].join('\n');
-
-    await pushText(page, boardText);
+    await pushText(page, BOARD_TEXT);
 
     const boardMessage = page
         .locator('#main_text_output_msg_wrapper .output_msg')
@@ -78,6 +78,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         .toBe('wybierz paczke 1');
 
     await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
+    await page.waitForTimeout(50);
 
     await expect(locationLabel, 'should mark delivery destination on map label').toContainText('→ #4');
     await expect(locationLabel, 'should indicate distance to delivery destination').toContainText('(3)');
@@ -118,20 +119,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await optionsModal.locator('#options-save').click();
     await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
 
-    const boardText = [
-        'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
-        ' o============================================================================o',
-        ' |                Adresat badz                     Cena          Czas na      |',
-        ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
-        ' o -------------------------------------------------------------------------- o',
-        ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
-        " | * 2. Georg Blaskovitz                        0/ 5/ 0        8 godzin     |",
-        ' o -------------------------------------------------------------------------- o',
-        ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
-        ' o============================================================================o',
-    ].join('\n');
-
-    await pushText(page, boardText);
+    await pushText(page, BOARD_TEXT);
 
     const boardMessage = page
         .locator('#main_text_output_msg_wrapper .output_msg')
@@ -169,4 +157,149 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
 
     const locationLabel = page.locator('#location-text');
     await expect(locationLabel, 'should not set navigation target when helper disabled').not.toContainText('→');
+});
+
+test('Package helper sets delivery bind on arrival and clears status after handing off', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
+    });
+
+    await pushText(page, BOARD_TEXT);
+
+    const boardMessage = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+
+    const knownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
+    await knownNpc.click();
+
+    await expect
+        .poll(async () => {
+            return await getLastOutgoingCommand(page);
+        }, {message: 'should send command selecting known NPC package'})
+        .toBe('wybierz paczke 1');
+
+    await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
+
+    const locationLabel = page.locator('#location-text');
+    await expect(locationLabel, 'should set navigation target after receiving package').toContainText('→ #4');
+
+    const pathRooms = [
+        {command: 'e', id: 2, name: 'Rynek', exits: {west: 1, east: 3}, map: {x: 1, y: 0}},
+        {command: 'e', id: 3, name: 'Kamienny Most', exits: {west: 2, north: 4, south: 6}, map: {x: 2, y: 0}},
+        {command: 'n', id: 4, name: 'Rezydencja Borgafa', exits: {south: 3}, map: {x: 2, y: 1}},
+    ];
+
+    for (const room of pathRooms) {
+        await submitCommand(page, room.command);
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: room.id,
+            id: room.id,
+            name: room.name,
+            zone: 'Miasteczko Poslan',
+            exits: room.exits,
+            map: {
+                ...room.map,
+                name: 'Miasteczko Poslan',
+            },
+        });
+    }
+
+    await pushText(page, 'south', {type: 'room.exits'});
+
+    await page.keyboard.press('BracketRight');
+    await expect
+        .poll(async () => {
+            return await getLastOutgoingCommand(page);
+        }, {message: 'should activate delivery bind after reaching destination'})
+        .toBe('oddaj paczke');
+
+    await pushText(page, 'Oddajesz pocztowa paczke. Dziekuje za dostarczenie przesylki.');
+
+    await expect
+        .poll(async () => {
+            return await page.evaluate(() => {
+                const element = document.getElementById('package-status');
+                if (!element) {
+                    return '';
+                }
+                const style = window.getComputedStyle(element);
+                if (style.display === 'none' || style.visibility === 'hidden') {
+                    return '';
+                }
+                return element.textContent?.trim() ?? '';
+            });
+        }, {message: 'should clear package status after delivery'})
+        .toBe('');
+
+    await expect(locationLabel, 'should remove navigation target after delivery').not.toContainText('→');
+});
+
+test('Package helper records new NPC location after delivery when unknown in database', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
+    });
+
+    await pushText(page, BOARD_TEXT);
+
+    const boardMessage = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Georg Blaskovitz'})
+        .last();
+
+    const unknownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Georg Blaskovitz'});
+    await unknownNpc.click();
+
+    await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 5,
+        id: 5,
+        name: 'Opuszczona Altana',
+        zone: 'Miasteczko Poslan',
+        exits: {},
+        map: {
+            x: 4,
+            y: 4,
+            name: 'Miasteczko Poslan',
+        },
+    });
+    await pushGmcp(page, 'gmcp_msg.room.exits', {exits: []});
+
+    await submitCommand(page, 'oddaj paczke');
+    await pushText(page, 'Oddajesz pocztowa paczke. Dziekuje za dostarczenie przesylki.');
+
+    const output = page.locator('#main_text_output_msg_wrapper');
+    await expect(output, 'should log new NPC addition with target room').toContainText(
+        'Nowy adresat: Georg Blaskovitz | 1'
+    );
 });
