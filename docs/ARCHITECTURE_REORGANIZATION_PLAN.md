@@ -19,7 +19,6 @@ This document outlines a comprehensive plan to reorganize the codebase architect
 - Oversized entry point (`main.ts` at 1708 lines, growing)
 - DataStores split across multiple directories
 - Duplicate type definitions
-- ANSI parsing split between `@web/ansiParser` and `@client/ansi/FormatState`
 - No centralized state management
 
 ### Goals
@@ -90,7 +89,6 @@ src/
 #### 2. Circular Dependencies
 ```typescript
 // Client imports from web (BAD)
-src/client/Client.ts:28: import {parseAnsiPatterns} from "@web/ansiParser";
 src/client/PackageHelper.ts:1: import { addLocalNpc } from "@web/dataStores/npcStore";
 src/client/scripts/multibinds.ts:7: from "@web/dataStores/multibindStore";
 
@@ -154,23 +152,13 @@ buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
 - Efficient segment-based storage
 - State tracking and format preservation
 
-#### ANSI Handling Split
+#### ANSI Handling
 
-The codebase now has two ANSI-related components with different purposes:
-
-1. **`src/web/ansiParser.ts`** (112 lines)
-   - Converts ANSI escape codes to HTML spans
-   - Web-specific rendering logic
-   - Used by `ArkadiaClient` for terminal output
-
-2. **`src/client/ansi/FormatState.ts`** (600+ lines)
-   - Platform-agnostic ANSI state tracking
-   - `AnsiAwareBuffer` for format-aware buffering
-   - Used throughout client for line processing
-
-**Current Issue**: Creates circular dependency
-- `src/web/ArkadiaClient.ts:1` imports from `@web/ansiParser`
-- Client layer references should not depend on web layer
+**`src/client/ansi/FormatState.ts`** (600+ lines)
+- Platform-agnostic ANSI state tracking
+- `AnsiAwareBuffer` for format-aware buffering
+- Used throughout client for line processing
+- Converts ANSI escape codes to DOM elements via `toDom()` method
 
 #### Line Processing Architecture
 
@@ -183,21 +171,11 @@ This suggests the line processing mechanism is still being refined. The flag is 
 
 ### Impact on Original Plan
 
-**Phase 2.1 Needs Revision**:
-- Original plan: Move `ansiParser.ts` from `@web` to `@client/ansi/`
-- New consideration: Relationship between `ansiParser.ts` and `AnsiAwareBuffer`
-- Question: Should these be consolidated or kept separate?
-
-**Analysis**:
-- `ansiParser.ts` → HTML rendering (potentially web-specific)
-- `AnsiAwareBuffer` → Format state tracking (client-agnostic)
-- May serve different purposes in the pipeline
-
-**Recommendation**:
-- Move `ansiParser.ts` to `@client/ansi/` as originally planned
-- ANSI parsing is fundamentally client-level functionality
-- Web layer should only consume parsed/formatted output
-- This resolves the circular dependency
+**Phase 2.1 Update**:
+- ✅ `ansiParser.ts` has been removed from the codebase
+- ANSI rendering is now handled by `AnsiAwareBuffer.toDom()` method
+- No circular dependency from ANSI handling
+- Phase 2.1 can focus on DataStore consolidation only
 
 ---
 
@@ -595,6 +573,641 @@ yarn build
 
 ---
 
+## Phase 1.5: Script-React State Integration
+
+**Priority**: Critical (Foundational for Phase 1d)
+**Estimated Effort**: 3-4 hours
+**Dependencies**: Phase 1a, 1b
+**Implement Before**: Phase 1d (state management setup)
+
+### Background: Current Script System
+
+The application has **90+ scripts** in `src/client/scripts/` that handle game logic:
+- Combat timers, herb inventory, deposits, knowledge tracking
+- Multibinds (room-specific keybinds)
+- Lamp timers, transport timers, package status
+- Attack modes, character state tracking
+
+**Current Communication Pattern**:
+```
+Scripts (closure state)
+    ↓ client.sendEvent()
+eventBus
+    ↓ useClientEvent()
+React Components
+```
+
+**Current Issues**:
+1. **No single source of truth**: State lives in script closures AND React component state
+2. **Race conditions**: Components mounting after script init miss initial state
+3. **Multiple subscription patterns**: Port messages, storage events, DataStore subscriptions, eventBus
+4. **Character switching**: No unified character context for state reset
+5. **Difficult testing**: State hidden in closures, hard to mock
+6. **No time travel debugging**: Can't inspect or replay state changes
+
+### Objectives
+
+- ✅ Single source of truth for all script state (Zustand store)
+- ✅ Scripts emit state changes, store manages state
+- ✅ React components read from store, not event handlers
+- ✅ Proper TypeScript types for all script state
+- ✅ Easy to test, debug, and extend
+- ✅ Character-scoped state with proper switching
+- ✅ Backward compatible with existing eventBus (gradual migration)
+
+### Proposed Architecture: Zustand-Based State Bridge
+
+#### Why Zustand?
+
+1. **Minimal boilerplate**: No providers, actions, or reducers needed
+2. **Non-React compatible**: Scripts can access store directly (non-hook API)
+3. **DevTools support**: Time-travel debugging with Redux DevTools
+4. **Middleware ecosystem**: Persist, immer, subscribeWithSelector
+5. **TypeScript-first**: Excellent type inference
+6. **Small bundle**: ~1KB gzipped
+
+#### State Store Architecture
+
+**Location**: `src/ui/web/stores/gameState.ts`
+
+```typescript
+import { create } from 'zustand'
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware'
+
+// State interface with all script data
+interface GameState {
+  // Timer state (from combatTimer, coverTimer, lamp, etc.)
+  timers: {
+    combat: number | null
+    cover: number | null
+    lamp: number | null
+    zask: { seconds: number; ok: boolean } | null
+    transport: { label: string; seconds: number } | null
+    order: number | null
+  }
+
+  // Character state (from GMCP)
+  character: {
+    name: string | null
+    hp: number
+    maxHp: number
+    mana: number
+    maxMana: number
+    fatigue: number
+    maxFatigue: number
+    condition: number
+    exp: number
+    gold: number
+    state: string | null  // Character state text
+    colors: Record<string, string>
+  }
+
+  // Combat state (from GMCP objects)
+  combat: {
+    inCombat: boolean
+    targets: Map<number, ObjectData>
+    attackMode: 'A' | 'AW' | 'AWR'
+    attackQueue: number[]
+  }
+
+  // Inventory state (from herbCounter)
+  inventory: {
+    herbs: Record<number, Record<string, number>>  // bagId -> herbId -> count
+    loading: boolean
+    lastUpdate: number | null
+  }
+
+  // Room state (from multibinds, enterLocation)
+  room: {
+    id: number | null
+    multibinds: Array<{ label: string; command: string }>
+  }
+
+  // UI state
+  ui: {
+    packageStatus: { text: string; severity: number } | null
+    breakItemWarning: { text: string; command?: string } | null
+    releaseGuard: boolean
+    moveMode: number
+  }
+
+  // Deposits (from deposits script)
+  deposits: Record<string, unknown>
+
+  // Knowledge (from knowledge script)
+  knowledge: unknown
+
+  // Actions (for scripts to call)
+  actions: {
+    updateTimer: (timer: keyof GameState['timers'], value: any) => void
+    updateCharacter: (updates: Partial<GameState['character']>) => void
+    updateCombat: (updates: Partial<GameState['combat']>) => void
+    updateInventory: (updates: Partial<GameState['inventory']>) => void
+    updateRoom: (updates: Partial<GameState['room']>) => void
+    updateUI: (updates: Partial<GameState['ui']>) => void
+    setDeposits: (deposits: Record<string, unknown>) => void
+    setKnowledge: (knowledge: unknown) => void
+    reset: () => void  // Called on character switch
+  }
+}
+
+// Initial state
+const initialState: Omit<GameState, 'actions'> = {
+  timers: {
+    combat: null,
+    cover: null,
+    lamp: null,
+    zask: null,
+    transport: null,
+    order: null,
+  },
+  character: {
+    name: null,
+    hp: 0,
+    maxHp: 0,
+    mana: 0,
+    maxMana: 0,
+    fatigue: 0,
+    maxFatigue: 0,
+    condition: 0,
+    exp: 0,
+    gold: 0,
+    state: null,
+    colors: {},
+  },
+  combat: {
+    inCombat: false,
+    targets: new Map(),
+    attackMode: 'A',
+    attackQueue: [],
+  },
+  inventory: {
+    herbs: {},
+    loading: false,
+    lastUpdate: null,
+  },
+  room: {
+    id: null,
+    multibinds: [],
+  },
+  ui: {
+    packageStatus: null,
+    breakItemWarning: null,
+    releaseGuard: false,
+    moveMode: 0,
+  },
+  deposits: {},
+  knowledge: null,
+}
+
+// Create store with middleware
+export const useGameState = create<GameState>()(
+  devtools(
+    subscribeWithSelector(
+      persist(
+        (set) => ({
+          ...initialState,
+          actions: {
+            updateTimer: (timer, value) =>
+              set((state) => ({
+                timers: { ...state.timers, [timer]: value }
+              }), false, `timer/${timer}`),
+
+            updateCharacter: (updates) =>
+              set((state) => ({
+                character: { ...state.character, ...updates }
+              }), false, 'character/update'),
+
+            updateCombat: (updates) =>
+              set((state) => ({
+                combat: { ...state.combat, ...updates }
+              }), false, 'combat/update'),
+
+            updateInventory: (updates) =>
+              set((state) => ({
+                inventory: { ...state.inventory, ...updates }
+              }), false, 'inventory/update'),
+
+            updateRoom: (updates) =>
+              set((state) => ({
+                room: { ...state.room, ...updates }
+              }), false, 'room/update'),
+
+            updateUI: (updates) =>
+              set((state) => ({
+                ui: { ...state.ui, ...updates }
+              }), false, 'ui/update'),
+
+            setDeposits: (deposits) =>
+              set({ deposits }, false, 'deposits/set'),
+
+            setKnowledge: (knowledge) =>
+              set({ knowledge }, false, 'knowledge/set'),
+
+            reset: () =>
+              set(initialState, false, 'reset'),
+          },
+        }),
+        {
+          name: 'arkadia-game-state',
+          // Only persist certain keys (not transient timers)
+          partialize: (state) => ({
+            deposits: state.deposits,
+            knowledge: state.knowledge,
+          }),
+        }
+      )
+    ),
+    { name: 'ArkadiaGameState' }
+  )
+)
+
+// Non-React API for scripts
+export const gameStateStore = useGameState
+```
+
+#### Script Integration Pattern
+
+**Before (Event-Based)**:
+```typescript
+// coverTimer.ts - OLD
+export default function initCoverTimer(client: Client) {
+    let timer: number | null = null
+    let end = 0
+
+    function update() {
+        const left = end - Date.now()
+        if (left <= 0) {
+            timer = null
+            client.sendEvent('coverTimer', null)  // ❌ Event only
+        } else {
+            client.sendEvent('coverTimer', left / 1000)  // ❌ Event only
+        }
+    }
+}
+```
+
+**After (Store-Based)**:
+```typescript
+// coverTimer.ts - NEW
+import { gameStateStore } from '@web-ui/stores/gameState'
+
+export default function initCoverTimer(client: Client) {
+    let timer: number | null = null
+    let end = 0
+    const { updateTimer } = gameStateStore.getState().actions
+
+    function update() {
+        const left = end - Date.now()
+        if (left <= 0) {
+            timer = null
+            updateTimer('cover', null)  // ✅ Store update
+        } else {
+            updateTimer('cover', left / 1000)  // ✅ Store update
+        }
+    }
+}
+```
+
+**Backward Compatibility Bridge**:
+```typescript
+// src/client/scriptStateBridge.ts
+import { gameStateStore } from '@web-ui/stores/gameState'
+
+/**
+ * Bridge that listens to Zustand store changes and emits eventBus events
+ * for backward compatibility with legacy components
+ */
+export function initializeScriptStateBridge(client: Client) {
+    const store = gameStateStore.getState()
+
+    // Subscribe to timer changes and emit events
+    gameStateStore.subscribe(
+        (state) => state.timers.combat,
+        (combat) => client.sendEvent('combatTimer', combat)
+    )
+
+    gameStateStore.subscribe(
+        (state) => state.timers.cover,
+        (cover) => client.sendEvent('coverTimer', cover)
+    )
+
+    gameStateStore.subscribe(
+        (state) => state.timers.lamp,
+        (lamp) => client.sendEvent('lampTimer', lamp)
+    )
+
+    // ... other timer bridges
+
+    // Character state bridges
+    gameStateStore.subscribe(
+        (state) => state.character,
+        (char) => {
+            client.sendEvent('gmcp.char.vitals', {
+                hp: char.hp,
+                maxhp: char.maxHp,
+                mana: char.mana,
+                maxmana: char.maxMana,
+            })
+        }
+    )
+
+    // Combat bridges
+    gameStateStore.subscribe(
+        (state) => state.combat.attackMode,
+        (mode) => client.sendEvent('attackMode', mode)
+    )
+
+    // ... etc
+}
+```
+
+#### React Component Usage
+
+**Before (useClientEvent)**:
+```typescript
+// CombatTimer.tsx - OLD
+export const CombatTimer: React.FC = () => {
+  const [seconds, setSeconds] = useState<number | null>(null)
+
+  useClientEvent<number | null>("combatTimer", (newSeconds) => {
+    setSeconds(newSeconds)  // ❌ Local state, can miss initial value
+  })
+
+  return seconds != null
+    ? <span style={{color: getColor(seconds)}}>Walka: {seconds}</span>
+    : null
+}
+```
+
+**After (Zustand)**:
+```typescript
+// CombatTimer.tsx - NEW
+import { useGameState } from '@web-ui/stores/gameState'
+
+export const CombatTimer: React.FC = () => {
+  const seconds = useGameState(state => state.timers.combat)  // ✅ Always has current value
+
+  return seconds != null
+    ? <span style={{color: getColor(seconds)}}>Walka: {seconds}</span>
+    : null
+}
+```
+
+**Benefits**:
+- ✅ No local state needed
+- ✅ Always has current value (no race conditions)
+- ✅ Automatic re-render on changes
+- ✅ Easy to test (just check store state)
+- ✅ Can use selectors for derived state
+
+#### Character Switching Pattern
+
+**Problem**: When character changes, all character-scoped state must reset.
+
+**Solution**: Character context + reset action
+
+```typescript
+// src/ui/web/contexts/CharacterContext.tsx
+import { createContext, useContext, useEffect } from 'react'
+import { useGameState } from '@web-ui/stores/gameState'
+
+interface CharacterContextValue {
+  characterName: string | null
+  switchCharacter: (name: string) => void
+}
+
+const CharacterContext = createContext<CharacterContextValue | null>(null)
+
+export function CharacterProvider({ children }: { children: React.ReactNode }) {
+  const characterName = useGameState(state => state.character.name)
+  const { reset, updateCharacter } = useGameState(state => state.actions)
+
+  const switchCharacter = (name: string) => {
+    // Reset all state
+    reset()
+
+    // Set new character
+    updateCharacter({ name })
+
+    // Notify scripts (optional, for migration)
+    // client.sendEvent('character-changed', name)
+  }
+
+  useEffect(() => {
+    // Listen for character changes from server
+    const handleGMCPCharInfo = (info: any) => {
+      if (info.name !== characterName) {
+        switchCharacter(info.name)
+      }
+    }
+
+    // Subscribe to GMCP character info
+    // client.on('gmcp.char.info', handleGMCPCharInfo)
+
+    return () => {
+      // Cleanup
+    }
+  }, [characterName])
+
+  return (
+    <CharacterContext.Provider value={{ characterName, switchCharacter }}>
+      {children}
+    </CharacterContext.Provider>
+  )
+}
+
+export const useCharacter = () => {
+  const context = useContext(CharacterContext)
+  if (!context) throw new Error('useCharacter must be used within CharacterProvider')
+  return context
+}
+```
+
+#### Storage Integration Pattern
+
+**Problem**: Scripts use localStorage for persistence, but Zustand has its own persist middleware.
+
+**Solution**: Hybrid approach - Zustand for UI state, storage for script-only data
+
+```typescript
+// For character-scoped data that needs cross-tab sync:
+// Keep using existing storage + DataStore pattern
+
+// For UI-related state:
+// Use Zustand persist middleware
+
+// Bridge pattern for backward compatibility:
+export function initializeStorageBridge(client: Client) {
+  const { setDeposits, setKnowledge } = gameStateStore.getState().actions
+
+  // Listen to storage events and update Zustand
+  client.on('storage', ({ key, value }) => {
+    switch (key) {
+      case 'deposits':
+        setDeposits(value)
+        break
+      case 'knowledge':
+        setKnowledge(value)
+        break
+      // ... other keys
+    }
+  })
+
+  // Listen to Zustand changes and save to storage
+  gameStateStore.subscribe(
+    (state) => state.deposits,
+    (deposits) => {
+      storage.setItem('deposits', deposits)
+    }
+  )
+
+  gameStateStore.subscribe(
+    (state) => state.knowledge,
+    (knowledge) => {
+      storage.setItem('knowledge', knowledge)
+    }
+  )
+}
+```
+
+### Tasks
+
+#### 1.5.1 Create Zustand Store Structure
+
+```bash
+# Install Zustand
+yarn add zustand
+
+# Create store files
+mkdir -p src/ui/web/stores
+touch src/ui/web/stores/gameState.ts
+touch src/ui/web/stores/slices/timersSlice.ts
+touch src/ui/web/stores/slices/characterSlice.ts
+touch src/ui/web/stores/slices/combatSlice.ts
+```
+
+#### 1.5.2 Define State Interfaces
+
+Create comprehensive TypeScript interfaces for all script state in `gameState.ts`.
+
+#### 1.5.3 Implement Store with Actions
+
+Implement the Zustand store with:
+- Initial state for all script data
+- Actions for updating each slice
+- DevTools middleware for debugging
+- Persist middleware for selected keys
+- SubscribeWithSelector for efficient subscriptions
+
+#### 1.5.4 Create Script State Bridge
+
+Create `src/client/scriptStateBridge.ts`:
+- Subscribe to Zustand store changes
+- Emit legacy eventBus events for backward compatibility
+- Allow gradual migration of components
+
+#### 1.5.5 Create Storage Bridge
+
+Create `src/client/storageBridge.ts`:
+- Sync storage events → Zustand store
+- Sync Zustand store → storage
+- Handle character-scoped keys
+
+#### 1.5.6 Update Script Integration
+
+Update 3-5 example scripts to use store directly:
+- `coverTimer.ts` - Simple timer
+- `combatTimer.ts` - Simple timer
+- `herbCounter.ts` - Complex state
+- `multibinds.ts` - Database state
+- `deposits.ts` - Storage state
+
+Pattern:
+```typescript
+import { gameStateStore } from '@web-ui/stores/gameState'
+
+const { updateTimer } = gameStateStore.getState().actions
+updateTimer('cover', value)
+```
+
+#### 1.5.7 Create Character Context
+
+Implement `CharacterContext.tsx` for character switching.
+
+#### 1.5.8 Update React Components
+
+Update 3-5 example components to use Zustand:
+- `CombatTimer.tsx`
+- `CoverTimer.tsx`
+- `CharState.tsx`
+- `CharStateInfo.tsx`
+
+Replace `useClientEvent()` with Zustand selectors.
+
+#### 1.5.9 Test State Synchronization
+
+Verify:
+- Scripts update store correctly
+- Components re-render on state changes
+- Storage persistence works
+- Character switching resets state
+- DevTools show state history
+- No memory leaks from subscriptions
+
+#### 1.5.10 Document Patterns
+
+Create `docs/SCRIPT_STATE_PATTERNS.md`:
+- How to add new script state
+- How to update existing scripts
+- How to use state in React components
+- How to handle character-scoped data
+- How to debug state issues
+- Migration guide from eventBus to Zustand
+
+### Success Criteria
+
+- ✅ Zustand store managing all script state
+- ✅ 5+ scripts updated to use store
+- ✅ 5+ components updated to use store
+- ✅ Backward compatibility bridge working (legacy components still work)
+- ✅ Character switching properly resets state
+- ✅ Storage sync working for persisted data
+- ✅ DevTools show complete state history
+- ✅ All tests passing
+- ✅ Documentation complete
+
+### Benefits
+
+1. **Single Source of Truth**: All state in one place, easy to inspect
+2. **No Race Conditions**: Components always have current state
+3. **Better Testing**: Mock store instead of complex event/storage setup
+4. **Time Travel Debugging**: Redux DevTools support
+5. **Type Safety**: Full TypeScript support with inference
+6. **Performance**: Efficient subscriptions, only re-render what changed
+7. **Gradual Migration**: Backward compatible bridge allows incremental updates
+8. **Developer Experience**: Clear patterns, easy to extend
+
+### Migration Strategy
+
+**Phase 1** (this phase): Foundation
+- Create store structure
+- Update 5 example scripts
+- Update 5 example components
+- Create bridges for backward compatibility
+
+**Phase 2** (future): Gradual Migration
+- Update remaining scripts one by one
+- Update remaining components one by one
+- Remove backward compatibility bridge when done
+
+**Phase 3** (future): Optimization
+- Remove eventBus for script state (keep for system events)
+- Optimize store structure based on usage patterns
+- Add computed/derived state as needed
+
+---
+
 ## Phase 2: Break Circular Dependencies
 
 **Priority**: High
@@ -608,51 +1221,7 @@ yarn build
 
 ### Tasks
 
-#### 2.1 Consolidate ANSI Handling
-
-**Current State**:
-- `src/web/ansiParser.ts` (112 lines) - Converts ANSI codes to HTML spans
-- `src/client/ansi/FormatState.ts` (600+ lines) - AnsiAwareBuffer for state tracking
-- `src/web/ArkadiaClient.ts:1` imports from `@web/ansiParser` (circular dependency)
-
-**Target**: Move ansiParser to `src/client/ansi/ansiParser.ts`
-
-**Rationale**:
-- ANSI parsing is core client functionality, not web-specific
-- Both components handle ANSI codes but serve different purposes:
-  - `ansiParser.ts` → HTML rendering (final output)
-  - `AnsiAwareBuffer` → Format state tracking (intermediate processing)
-- Moving resolves circular dependency
-
-**Steps**:
-1. Move file:
-   ```bash
-   git mv src/web/ansiParser.ts src/client/ansi/ansiParser.ts
-   ```
-
-2. Update imports in affected files:
-   ```typescript
-   // OLD:
-   import {parseAnsiPatterns} from "@web/ansiParser";
-
-   // NEW:
-   import {parseAnsiPatterns} from "@client/ansi/ansiParser";
-   ```
-
-3. Update path alias if needed in `vite.config.ts` and `tsconfig.base.json`
-
-4. Verify AnsiAwareBuffer and ansiParser work together correctly
-
-5. Run tests
-
-**Files to update**:
-- `src/web/ArkadiaClient.ts` (main import)
-- `test/web/ansiParser.test.ts` (test file imports)
-- Any other files importing from `@web/ansiParser`
-
-**Note**: Keep both `ansiParser.ts` and `FormatState.ts` separate - they serve different stages in the ANSI processing pipeline.
-
-#### 2.2 Consolidate DataStores
+#### 2.1 Consolidate DataStores
 
 **Current**:
 ```
@@ -714,7 +1283,7 @@ src/modules/data/dataStores/
 - `src/web/main.ts`
 - Any other files importing from `@web/dataStores/*`
 
-#### 2.3 Remove MockPort Abstraction
+#### 2.2 Remove MockPort Abstraction
 
 **Current State**:
 - `src/web/MockPort.ts` acts as a message-based wrapper around `storage`
@@ -810,9 +1379,9 @@ src/modules/data/dataStores/
 - Easier to test - mock storage instead of port
 - One less file to maintain
 
-#### 2.4 Verify Dependency Flow
+#### 2.3 Verify Dependency Flow
 
-After Phase 2.1, 2.2, and 2.3, verify no circular dependencies:
+After Phase 2.1 and 2.2, verify no circular dependencies:
 
 ```bash
 # Check client doesn't import from web
@@ -823,10 +1392,10 @@ grep -r "@web" src/client/
 
 ### Success Criteria
 - ✅ No imports from `@web` in `src/client/`
-- ✅ All dataStores in one location
+- ✅ All dataStores in one location (`src/modules/data/dataStores/`)
 - ✅ MockPort removed, direct storage usage
 - ✅ All tests passing
-- ✅ Clean dependency hierarchy
+- ✅ Clean dependency hierarchy (no circular dependencies)
 
 ---
 
@@ -1335,6 +1904,927 @@ Update main `README.md` with:
 
 ---
 
+## Phase 6.5: Remove Script State Backward Compatibility Bridge
+
+**Priority**: Medium
+**Estimated Effort**: 2-3 hours
+**Dependencies**: Phase 1.5, Phase 6 (all scripts and components migrated)
+**When to Execute**: After all scripts and components have been migrated to use Zustand store
+
+### Background
+
+In Phase 1.5, we created a backward compatibility bridge (`scriptStateBridge.ts`) that:
+- Listens to Zustand store changes
+- Emits legacy eventBus events
+- Allows gradual migration of scripts and components
+
+Once all scripts and components have been migrated to use the Zustand store directly, this bridge becomes unnecessary overhead and should be removed.
+
+### Objectives
+
+- ✅ Remove backward compatibility bridge
+- ✅ Remove legacy `useClientEvent()` patterns for state (keep for system events)
+- ✅ Verify all scripts use store directly
+- ✅ Verify all components use store directly
+- ✅ Clean up eventBus event types for state (keep system events)
+- ✅ Reduce bundle size and improve performance
+
+### Prerequisites Checklist
+
+Before executing this phase, verify that:
+
+**Scripts Migration (from Phase 1.5)**:
+- [ ] All timer scripts updated (combat, cover, lamp, zask, transport, order)
+- [ ] `herbCounter.ts` updated to use store
+- [ ] `multibinds.ts` updated to use store
+- [ ] `deposits.ts` updated to use store
+- [ ] `knowledge.ts` updated to use store
+- [ ] All other scripts using `client.sendEvent()` for state migrated
+- [ ] No scripts emit state events (only system events)
+
+**Component Migration (from Phase 1)**:
+- [ ] All timer components using Zustand
+- [ ] CharState components using Zustand
+- [ ] All panels using Zustand
+- [ ] No components use `useClientEvent()` for state (only system events)
+
+### Tasks
+
+#### 6.5.1 Audit Script State Events
+
+Create audit script to find remaining state event emissions:
+
+```bash
+# Find scripts still emitting state events
+grep -rn "sendEvent.*Timer" src/client/scripts/
+grep -rn "sendEvent.*herbCounts" src/client/scripts/
+grep -rn "sendEvent.*multibinds" src/client/scripts/
+grep -rn "sendEvent.*deposits" src/client/scripts/
+grep -rn "sendEvent.*packageStatus" src/client/scripts/
+grep -rn "sendEvent.*breakItem" src/client/scripts/
+grep -rn "sendEvent.*attackMode" src/client/scripts/
+grep -rn "sendEvent.*releaseGuard" src/client/scripts/
+
+# Should return: NO MATCHES (or only system events)
+```
+
+If any matches found, migrate those scripts first.
+
+#### 6.5.2 Audit Component State Subscriptions
+
+Find components still using `useClientEvent()` for state:
+
+```bash
+# Find components using useClientEvent for state
+grep -rn "useClientEvent.*Timer" src/ui/
+grep -rn "useClientEvent.*herbCounts" src/ui/
+grep -rn "useClientEvent.*multibinds" src/ui/
+grep -rn "useClientEvent.*packageStatus" src/ui/
+grep -rn "useClientEvent.*breakItem" src/ui/
+grep -rn "useClientEvent.*attackMode" src/ui/
+
+# Should return: NO MATCHES (or only system events)
+```
+
+If any matches found, migrate those components first.
+
+#### 6.5.3 Remove Script State Bridge
+
+Delete the backward compatibility bridge:
+
+```bash
+rm src/client/scriptStateBridge.ts
+```
+
+Remove initialization call from main application:
+
+```typescript
+// src/web/main.ts or initialization file - REMOVE:
+import { initializeScriptStateBridge } from '@client/scriptStateBridge';
+initializeScriptStateBridge(client);
+```
+
+#### 6.5.4 Clean Up Event Type Definitions
+
+Update `src/shared/events/clientEvents.ts` to remove state events:
+
+**Remove state event types** (keep system events):
+```typescript
+// REMOVE - Now handled by Zustand store:
+"combatTimer": number | null;
+"coverTimer": number | null;
+"lampTimer": number | null;
+"zaskTimer": { seconds: number; ok: boolean } | null;
+"orderTimer": number | null;
+"transportTimer": TransportTimerPayload | null;
+"herbCounts": unknown;
+"multibinds": MultibindList;
+"packageStatus": PackageStatus | null;
+"breakItem": { text: string; command?: string } | null;
+"attackMode": "A" | "AW" | "AWR";
+"releaseGuard": boolean;
+"moveMode": number;
+
+// KEEP - System events still needed:
+"gmcp.char.info": any;
+"gmcp.char.state": any;
+"gmcp.char.colors": any;
+"gmcp.objects.data": Map<number, ObjectData>;
+"gmcp.room.info": any;
+"enterLocation": { id: number; room: unknown };
+"client.disconnect": void;
+"reset": void;
+"storage": StorageEventPayload;
+"settings": unknown;
+"binds": unknown;
+"uiSettings": UiSettingsEventPayload;
+"kill": { killer: "ME" | "TEAM" | "OTHER" };
+"knowledgeReport": unknown;
+"attackQueueChange": number[];
+```
+
+#### 6.5.5 Update useClientEvent Hook Documentation
+
+Update `src/ui/web/hooks/useClientEvent.ts` documentation:
+
+```typescript
+/**
+ * Hook to subscribe to client events.
+ *
+ * NOTE: This hook should ONLY be used for system events (GMCP, connection, etc.),
+ * NOT for state events. Use the Zustand store (useGameState) for state subscriptions.
+ *
+ * System events include:
+ * - GMCP events (gmcp.char.info, gmcp.objects.data, etc.)
+ * - Connection events (client.disconnect, reset)
+ * - Storage events (storage, settings, binds)
+ * - Kill events, knowledge reports, etc.
+ *
+ * For game state (timers, character stats, combat, inventory, etc.),
+ * use: const data = useGameState(state => state.path.to.data)
+ *
+ * @example
+ * // ✅ CORRECT - System event
+ * useClientEvent("gmcp.char.info", (info) => {
+ *   console.log("Character loaded:", info.name);
+ * });
+ *
+ * // ❌ INCORRECT - State event (use Zustand instead)
+ * useClientEvent("combatTimer", setSeconds);
+ *
+ * // ✅ CORRECT - State subscription
+ * const seconds = useGameState(state => state.timers.combat);
+ */
+export function useClientEvent<T>(
+  event: keyof ClientEvents,
+  handler: (data: T) => void,
+  options?: { once?: boolean }
+): void {
+  // ... implementation
+}
+```
+
+#### 6.5.6 Remove Storage Bridge (Optional)
+
+If `storageBridge.ts` was created in Phase 1.5 and all storage is now handled by Zustand persist middleware:
+
+Evaluate if storage bridge is still needed:
+- **Keep** if character-scoped storage still needs cross-tab sync
+- **Remove** if all state is in Zustand with persist middleware
+
+```bash
+# If removing:
+rm src/client/storageBridge.ts
+
+# Remove initialization:
+# Delete initializeStorageBridge(client) call from main
+```
+
+**Recommendation**: Keep storage bridge if using character-scoped localStorage. Only remove if fully migrated to Zustand persistence.
+
+#### 6.5.7 Run Full Test Suite
+
+Verify nothing broke:
+
+```bash
+yarn test
+yarn test:e2e
+yarn build
+```
+
+#### 6.5.8 Test State Synchronization
+
+Manual testing checklist:
+
+**Timers**:
+- [ ] Combat timer appears and counts down correctly
+- [ ] Cover timer shows remaining seconds
+- [ ] Lamp timer displays correctly
+- [ ] All timers clear when timer ends
+
+**Character State**:
+- [ ] HP/Mana bars update correctly
+- [ ] Character state text updates
+- [ ] Colors apply correctly
+
+**Combat**:
+- [ ] Target list updates
+- [ ] Attack mode changes work
+- [ ] Attack queue updates
+
+**Inventory**:
+- [ ] Herb counts update correctly
+- [ ] Bag selection works
+
+**Room State**:
+- [ ] Multibinds update on room change
+- [ ] Keybinds execute correctly
+
+**UI State**:
+- [ ] Package status displays
+- [ ] Break item warnings show
+- [ ] Release guard toggles
+
+**Character Switching**:
+- [ ] State resets on character change
+- [ ] New character data loads correctly
+
+#### 6.5.9 Performance Verification
+
+Compare before/after metrics:
+
+```typescript
+// Add to App.tsx temporarily
+useEffect(() => {
+  console.log("Store subscriptions:", Object.keys(useGameState.getState()));
+  console.log("EventBus listeners:", /* count eventBus listeners */);
+}, []);
+```
+
+Expected improvements:
+- Fewer eventBus listeners (only system events)
+- Faster state updates (no bridge overhead)
+- Smaller bundle size (~2-3KB from removed bridge)
+
+#### 6.5.10 Update Documentation
+
+Update `docs/SCRIPT_STATE_PATTERNS.md`:
+- Remove backward compatibility section
+- Update migration guide to reflect completion
+- Mark bridge removal as complete
+- Add note about eventBus usage (system events only)
+
+### Success Criteria
+
+- ✅ `scriptStateBridge.ts` deleted
+- ✅ `storageBridge.ts` evaluated (removed or kept with justification)
+- ✅ No scripts emit state events (only system events)
+- ✅ No components use `useClientEvent()` for state
+- ✅ Event type definitions cleaned (state events removed)
+- ✅ All tests passing
+- ✅ Manual testing confirms all features work
+- ✅ Performance metrics show improvement
+- ✅ Documentation updated
+
+### Rollback Plan
+
+If issues are discovered:
+
+1. **Restore bridge files from git**:
+   ```bash
+   git checkout HEAD -- src/client/scriptStateBridge.ts
+   git checkout HEAD -- src/client/storageBridge.ts
+   ```
+
+2. **Restore initialization**:
+   ```typescript
+   import { initializeScriptStateBridge } from '@client/scriptStateBridge';
+   initializeScriptStateBridge(client);
+   ```
+
+3. **Restore event type definitions**:
+   ```bash
+   git checkout HEAD -- src/shared/events/clientEvents.ts
+   ```
+
+4. **Identify and fix missing migrations**:
+   - Find scripts/components that weren't properly migrated
+   - Complete migration
+   - Retry phase 6.5
+
+### Benefits
+
+1. **Cleaner Architecture**: Single state management pattern (Zustand only)
+2. **Better Performance**: No bridge overhead, direct store updates
+3. **Smaller Bundle**: Remove ~2-3KB of bridge code
+4. **Less Confusion**: Clear pattern - Zustand for state, eventBus for system events
+5. **Easier Maintenance**: One less abstraction layer to understand
+6. **Better Types**: TypeScript can infer state structure from store
+
+---
+
+## Phase 6.6: Unify Event Handling Architecture
+
+**Priority**: Medium
+**Estimated Effort**: 3-4 hours
+**Dependencies**: Phase 6.5 (after bridge removal)
+**When to Execute**: After state events migrated to Zustand, only system events remain
+
+### Background
+
+The codebase currently has **three overlapping event systems**:
+
+1. **EventBus** (`src/modules/core/eventBus.ts`) - The core event emitter
+2. **Client wrapper** (`src/client/Client.ts`) - Provides `client.on()`, `client.sendEvent()`
+3. **ArkadiaClient wrapper** (`src/web/ArkadiaClient.ts`) - Provides `arkadiaClient.on()`, `arkadiaClient.emit()`
+
+**All three delegate to the same EventBus instance** - Client and ArkadiaClient are pure pass-through wrappers with no added functionality.
+
+### Current Redundant Delegation Chain
+
+```
+Script calls client.sendEvent('event', data)
+    ↓
+Client.sendEvent() → eventBus.emit('event', data)
+    ↓
+eventBus broadcasts to all listeners
+    ↓
+Script listening via client.on('event', handler)
+    ↓
+Client.on() → eventBus.on('event', handler)
+```
+
+**Problem**: Two unnecessary wrapper layers that provide no value.
+
+### Analysis
+
+**EventBus** (Core - Keep):
+- Type-safe generic event emitter
+- Listener deduplication
+- One-time listeners (`once` option)
+- AbortSignal support
+- Returns unsubscribe function
+- Returns invocation count from `emit()`
+- **This is the actual event system**
+
+**Client wrapper** (Pass-through - Remove):
+```typescript
+// Lines 300-310 in Client.ts
+on<K extends EventKey>(event: K, listener: ClientEventListener<K>, options?: ListenerOptions): () => void {
+    return eventBus.on(event, listener, options);  // Just passes through
+}
+
+sendEvent(type: string, ...args: unknown[]): void {
+    eventBus.emit(type as EventKey, ...args);  // Just passes through
+}
+```
+- **No added functionality**
+- **No isolation or encapsulation**
+- **Just creates another API surface**
+
+**ArkadiaClient wrapper** (Pass-through - Remove):
+```typescript
+// Lines 82-98 in ArkadiaClient.ts
+on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
+    eventBus.on(event, listener);  // Just passes through
+}
+
+emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
+    eventBus.emit(event, ...args);  // Just passes through
+}
+```
+- **No added functionality**
+- **Duplicates Client's wrapper**
+
+**useClientEvent** (React Integration - Keep):
+```typescript
+export function useClientEvent<T>(event: keyof ClientEvents, handler: (data: T) => void): void {
+  useEffect(() => {
+    const unsubscribe = eventBus.on(event, handler);  // Uses eventBus directly
+    return () => unsubscribe();
+  }, deps);
+}
+```
+- **Provides real value**: React lifecycle integration
+- **Already uses eventBus directly** (not via wrappers)
+
+### Objectives
+
+- ✅ Single event system (EventBus only)
+- ✅ Remove redundant Client.on/sendEvent wrappers
+- ✅ Remove redundant ArkadiaClient.on/emit wrappers
+- ✅ Scripts and React components use eventBus directly
+- ✅ Clear, consistent event handling pattern
+- ✅ Reduced API surface area
+
+### Proposed Architecture
+
+#### **After Unification:**
+
+```
+                  EventBus (Core)
+                       ↓
+        ┌──────────────┼──────────────┐
+        ↓              ↓              ↓
+    Scripts      React Components   System
+  (direct use)   (via useClientEvent) (WebSocket, etc.)
+```
+
+**Scripts:**
+```typescript
+// OLD:
+client.on('gmcp.char.info', handler);
+client.sendEvent('lampTimer', 300);
+
+// NEW:
+import eventBus from '@modules/core/eventBus';
+eventBus.on('gmcp.char.info', handler);
+eventBus.emit('lampTimer', 300);
+```
+
+**React Components:**
+```typescript
+// NO CHANGE - already correct:
+useClientEvent('lampTimer', handleTimer);
+```
+
+**System Events (ArkadiaClient):**
+```typescript
+// OLD:
+this.emit('gmcp.char.info', data);
+
+// NEW:
+import eventBus from '@modules/core/eventBus';
+eventBus.emit('gmcp.char.info', data);
+```
+
+### Tasks
+
+#### 6.6.1 Audit Current Event Usage
+
+Find all uses of Client and ArkadiaClient event methods:
+
+```bash
+# Find Client.on() usage
+grep -rn "client\.on(" src/client/scripts/
+grep -rn "client\.on(" src/
+
+# Find Client.sendEvent() usage
+grep -rn "client\.sendEvent(" src/client/scripts/
+grep -rn "client\.sendEvent(" src/
+
+# Find ArkadiaClient.emit() usage
+grep -rn "this\.emit(" src/web/ArkadiaClient.ts
+
+# Find ArkadiaClient.on() usage
+grep -rn "arkadiaClient\.on(" src/
+grep -rn "this\.on(" src/web/ArkadiaClient.ts
+```
+
+Create a migration checklist of all files that need updating.
+
+#### 6.6.2 Create Event Helper Module
+
+Create `src/client/events.ts` as a centralized import point:
+
+```typescript
+/**
+ * Centralized event system for Arkadia.
+ *
+ * System events are handled via EventBus.
+ * Game state is handled via Zustand store (see @web-ui/stores/gameState).
+ *
+ * System events include:
+ * - GMCP events (gmcp.char.info, gmcp.objects.data, etc.)
+ * - Connection events (client.connect, client.disconnect)
+ * - Storage events (storage, settings, binds)
+ * - Kill events, knowledge reports, etc.
+ *
+ * @example
+ * // Listen to GMCP character info
+ * eventBus.on('gmcp.char.info', (info) => {
+ *   console.log('Character loaded:', info.name);
+ * });
+ *
+ * @example
+ * // Emit a system event
+ * eventBus.emit('client.disconnect');
+ *
+ * @example
+ * // In React components, use the hook instead:
+ * import { useClientEvent } from '@web-ui/hooks/useClientEvent';
+ * useClientEvent('gmcp.char.info', (info) => {
+ *   console.log('Character loaded:', info.name);
+ * });
+ */
+export { default as eventBus } from '@modules/core/eventBus';
+export type { ClientEvents } from '@shared/events/clientEvents';
+```
+
+This provides:
+- Single import point for scripts
+- Documentation about when to use events vs Zustand
+- Type exports for TypeScript support
+
+#### 6.6.3 Update Scripts to Use EventBus Directly
+
+**Migration Pattern:**
+
+```typescript
+// OLD:
+export default function initLamp(client: Client) {
+    function processCounter() {
+        client.sendEvent('lampTimer', seconds);
+    }
+
+    client.on('gmcp.char.info', (info) => {
+        // handle
+    });
+}
+
+// NEW:
+import { eventBus } from '@client/events';
+
+export default function initLamp() {  // Note: No client parameter needed
+    function processCounter() {
+        eventBus.emit('lampTimer', seconds);
+    }
+
+    eventBus.on('gmcp.char.info', (info) => {
+        // handle
+    });
+}
+```
+
+**Scripts to update** (based on exploration):
+- `src/client/scripts/lamp.ts`
+- `src/client/scripts/clock.ts`
+- `src/client/scripts/coverTimer.ts`
+- `src/client/scripts/combatTimer.ts`
+- `src/client/scripts/zaskTimer.ts`
+- `src/client/scripts/transportTimer.ts`
+- All 90+ scripts in `src/client/scripts/`
+
+**Note**: Scripts may still need Client for other functionality (triggers, aliases, sendCommand). Keep Client parameter if needed for non-event functionality.
+
+#### 6.6.4 Update ArkadiaClient to Use EventBus Directly
+
+Update `src/web/ArkadiaClient.ts`:
+
+**Remove wrapper methods** (Lines 82-98):
+```typescript
+// DELETE:
+on<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
+    eventBus.on(event, listener);
+}
+
+off<K extends keyof ClientEvents>(event: K, listener: EventListener<K>): void {
+    eventBus.off(event, listener);
+}
+
+emit<K extends keyof ClientEvents>(event: K, ...args: Params<ClientEvents[K]>): void {
+    eventBus.emit(event, ...args);
+}
+```
+
+**Update internal usage**:
+```typescript
+// OLD:
+this.emit('gmcp.char.info', data);
+this.on('uiSettings', handler);
+
+// NEW:
+import eventBus from '@modules/core/eventBus';
+eventBus.emit('gmcp.char.info', data);
+eventBus.on('uiSettings', handler);
+```
+
+**Files to update in ArkadiaClient**:
+- Constructor listener (Line 71-75)
+- WebSocket event handlers (Lines 124-140)
+- GMCP processing (Lines 44-61)
+- Recorder event handling (Lines 425-436)
+
+#### 6.6.5 Update Client Class
+
+**Option A: Remove Event Wrapper Methods** (Recommended)
+
+Remove from `src/client/Client.ts` (Lines 300-310, 475-478):
+```typescript
+// DELETE:
+on<K extends EventKey>(...) { return eventBus.on(...); }
+off<K extends EventKey>(...) { eventBus.off(...); }
+emit<K extends EventKey>(...) { eventBus.emit(...); }
+sendEvent(...) { eventBus.emit(...); }
+```
+
+**Update Client's internal event listeners**:
+```typescript
+// OLD:
+this.on('settings', handler);
+this.on('gmcp.char.info', handler);
+
+// NEW:
+import eventBus from '@modules/core/eventBus';
+eventBus.on('settings', handler);
+eventBus.on('gmcp.char.info', handler);
+```
+
+**Option B: Keep Convenience Methods for Client-Specific Events** (Alternative)
+
+If Client manages its own lifecycle events, keep methods but document clearly:
+
+```typescript
+/**
+ * Subscribe to client system events.
+ *
+ * @deprecated Use eventBus directly for system events.
+ * This method is kept for backward compatibility only.
+ *
+ * @example
+ * // Preferred:
+ * import { eventBus } from '@client/events';
+ * eventBus.on('gmcp.char.info', handler);
+ */
+on<K extends EventKey>(event: K, listener: ClientEventListener<K>, options?: ListenerOptions): () => void {
+    return eventBus.on(event, listener, options);
+}
+```
+
+**Recommendation**: Option A (complete removal) for cleaner architecture.
+
+#### 6.6.6 Update Script Initialization
+
+Update `src/client/main.ts` to not require Client for event registration:
+
+**OLD:**
+```typescript
+export function registerScripts(client: Client) {
+    initLamp(client);
+    initClock(client);
+    initCoverTimer(client);
+    // ... 90+ scripts
+}
+```
+
+**NEW:**
+```typescript
+export function registerScripts(client: Client) {
+    // Scripts that need Client for triggers/aliases/sendCommand
+    initLamp(client);
+    initClock(client);
+
+    // Scripts that only use events can work without Client
+    // (but keep Client param for consistency if desired)
+}
+```
+
+Or if removing event methods entirely from Client, scripts can import eventBus directly and only receive Client when they need triggers/aliases.
+
+#### 6.6.7 Update Component Event Subscriptions
+
+Verify all React components use `useClientEvent` hook (not direct eventBus):
+
+```bash
+# Find direct eventBus usage in components
+grep -rn "eventBus\.on(" src/ui/
+grep -rn "eventBus\.emit(" src/ui/
+
+# Should only be useClientEvent
+grep -rn "useClientEvent(" src/ui/
+```
+
+**If direct eventBus usage found**, migrate to `useClientEvent`:
+
+```typescript
+// BAD - direct eventBus usage in component:
+useEffect(() => {
+    const unsubscribe = eventBus.on('lampTimer', handler);
+    return unsubscribe;
+}, []);
+
+// GOOD - use hook:
+useClientEvent('lampTimer', handler);
+```
+
+#### 6.6.8 Remove Type Aliases
+
+Remove redundant type aliases from Client.ts (Lines 20-27):
+
+```typescript
+// DELETE - use ClientEvents directly:
+type EventKey = keyof ClientEvents;
+type EventParams<K extends EventKey> = ...;
+type ClientEventListener<K extends EventKey> = ...;
+type ListenerOptions = ...;
+```
+
+Update all usages to use ClientEvents and eventBus types directly.
+
+#### 6.6.9 Update Documentation
+
+**Update `Client.ts` JSDoc**:
+```typescript
+/**
+ * Main game client class.
+ *
+ * Handles connection to game server, processes game state, and manages triggers.
+ *
+ * For event handling, use eventBus directly:
+ * @see {@link eventBus} from '@modules/core/eventBus'
+ *
+ * @example
+ * import { eventBus } from '@client/events';
+ *
+ * eventBus.on('gmcp.char.info', (info) => {
+ *   console.log('Character:', info.name);
+ * });
+ */
+export default class Client {
+  // ... implementation
+}
+```
+
+**Update README.md** with event handling guide:
+```markdown
+## Event Handling
+
+### For Scripts
+Use eventBus directly for system events:
+
+\`\`\`typescript
+import { eventBus } from '@client/events';
+
+// Listen to events
+eventBus.on('gmcp.char.info', (info) => {
+  console.log('Character:', info.name);
+});
+
+// Emit events
+eventBus.emit('client.disconnect');
+\`\`\`
+
+### For React Components
+Use the useClientEvent hook:
+
+\`\`\`typescript
+import { useClientEvent } from '@web-ui/hooks/useClientEvent';
+
+function MyComponent() {
+  useClientEvent('gmcp.char.info', (info) => {
+    console.log('Character:', info.name);
+  });
+}
+\`\`\`
+
+### For Game State
+Use Zustand store, not events:
+
+\`\`\`typescript
+import { useGameState } from '@web-ui/stores/gameState';
+
+function TimerComponent() {
+  const lampTime = useGameState(state => state.timers.lamp);
+  // ...
+}
+\`\`\`
+```
+
+**Create `docs/architecture/EVENT_SYSTEM.md`**:
+```markdown
+# Event System Architecture
+
+## Overview
+
+Arkadia uses a single, centralized event system based on EventBus.
+
+## EventBus
+
+**Location**: `src/modules/core/eventBus.ts`
+
+The core event emitter that all events flow through.
+
+### Features
+- Type-safe with `ClientEvents` interface
+- Listener deduplication
+- One-time listeners (`once` option)
+- AbortSignal support for cancellation
+- Returns unsubscribe function
+- Returns invocation count
+
+### Usage
+
+**In Scripts**:
+\`\`\`typescript
+import { eventBus } from '@client/events';
+
+// Subscribe
+const unsubscribe = eventBus.on('gmcp.char.info', (info) => {
+  console.log('Character:', info.name);
+});
+
+// Emit
+eventBus.emit('client.disconnect');
+
+// Unsubscribe
+unsubscribe();
+\`\`\`
+
+**In React Components**:
+\`\`\`typescript
+import { useClientEvent } from '@web-ui/hooks/useClientEvent';
+
+function MyComponent() {
+  useClientEvent('gmcp.char.info', (info) => {
+    console.log('Character:', info.name);
+  });
+}
+\`\`\`
+
+## Event Types
+
+**System Events** (use EventBus):
+- GMCP events: `gmcp.char.info`, `gmcp.objects.data`, etc.
+- Connection: `client.connect`, `client.disconnect`, `reset`
+- Storage: `storage`, `settings`, `binds`, `uiSettings`
+- Game events: `kill`, `knowledgeReport`, `enterLocation`
+
+**State Events** (use Zustand store, NOT events):
+- Timers: `timers.combat`, `timers.lamp`, `timers.cover`, etc.
+- Character: `character.hp`, `character.mana`, etc.
+- Combat: `combat.targets`, `combat.attackMode`, etc.
+- Inventory: `inventory.herbs`
+- UI state: `ui.packageStatus`, `ui.breakItemWarning`
+
+## Migration from Wrappers
+
+Previously, events were handled through Client and ArkadiaClient wrappers:
+
+\`\`\`typescript
+// OLD:
+client.on('gmcp.char.info', handler);
+client.sendEvent('lampTimer', value);
+arkadiaClient.emit('event', data);
+
+// NEW:
+eventBus.on('gmcp.char.info', handler);
+eventBus.emit('lampTimer', value);
+eventBus.emit('event', data);
+\`\`\`
+
+These wrappers were removed in Phase 6.6 as they provided no added value.
+```
+
+#### 6.6.10 Run Tests and Verification
+
+```bash
+yarn test
+yarn test:e2e
+yarn build
+```
+
+**Manual verification**:
+- [ ] GMCP events still trigger correctly (character info, room info)
+- [ ] WebSocket connection events work (connect, disconnect)
+- [ ] Storage events trigger correctly
+- [ ] Scripts can communicate via events
+- [ ] React components receive events
+- [ ] No console errors about undefined event methods
+
+### Success Criteria
+
+- ✅ Client.on/sendEvent methods removed (or deprecated)
+- ✅ ArkadiaClient.on/emit methods removed
+- ✅ All scripts use eventBus directly (or via centralized import)
+- ✅ All React components use useClientEvent hook
+- ✅ No direct eventBus.on() in React components
+- ✅ Centralized event documentation created
+- ✅ All tests passing
+- ✅ Build successful
+- ✅ No runtime errors
+
+### Benefits
+
+1. **Single Event System**: One clear pattern for all event handling
+2. **Reduced API Surface**: Fewer methods to learn and maintain
+3. **Less Confusion**: No more "should I use client.on or eventBus.on?"
+4. **Better Documentation**: Single source of truth for event docs
+5. **Easier Testing**: Mock eventBus instead of Client/ArkadiaClient
+6. **Cleaner Architecture**: Removed two unnecessary abstraction layers
+7. **Better Type Inference**: Direct use of eventBus types
+
+### Migration Estimate
+
+- **Scripts migration**: 1-2 hours (find/replace across 90+ files)
+- **ArkadiaClient cleanup**: 30 minutes
+- **Client cleanup**: 30 minutes
+- **Documentation**: 1 hour
+- **Testing**: 1 hour
+
+**Total**: 3-4 hours
+
+---
+
 ## Phase 7: Optional Enhancements
 
 **Priority**: Optional
@@ -1440,20 +2930,20 @@ class Client {
 
 ## Implementation Timeline
 
-### Sprint 1 (Week 1)
-- ✅ **Phase 1: Complete React Migration** (8-12 hours) - **EXPANDED SCOPE**
+### Sprint 1 (Week 1-2)
+- ✅ **Phase 1: Complete React Migration** (11-16 hours) - **EXPANDED SCOPE**
   - Phase 1a: Delete duplicates, verify React versions (2-3 hours)
   - Phase 1b: Create React islands (Terminal, Map) (3-4 hours)
+  - Phase 1.5: **Script-React State Integration** (3-4 hours) - **NEW**
   - Phase 1c: Migrate complex components (ObjectList, Mobile UI) (2-3 hours)
   - Phase 1d: Set up state management, App root, refactor main.ts (2-3 hours)
   - Phase 1e: Testing and cleanup (1-2 hours)
 
-### Sprint 2 (Week 2)
+### Sprint 2 (Week 3)
 - ✅ **Phase 2: Break Circular Dependencies** (3-5 hours)
-  - Phase 2.1: Consolidate ANSI handling
-  - Phase 2.2: Consolidate DataStores
-  - Phase 2.3: Remove MockPort abstraction
-  - Phase 2.4: Verify dependency flow
+  - Phase 2.1: Consolidate DataStores
+  - Phase 2.2: Remove MockPort abstraction
+  - Phase 2.3: Verify dependency flow
 
 ### Sprint 3 (Week 3)
 - ✅ **Phase 3: Consolidate Type Definitions** (2-3 hours)
@@ -1462,12 +2952,26 @@ class Client {
 ### Sprint 4 (Week 4)
 - ✅ **Phase 5: Refactor main.ts** (2-3 hours) - **REDUCED** (most work moved to Phase 1)
 - ✅ **Phase 6: Documentation & Cleanup** (2-3 hours)
+
+### Sprint 5 (Week 5+) - After All Scripts/Components Migrated
+- ✅ **Phase 6.5: Remove Backward Compatibility Bridge** (2-3 hours)
+  - Audit all scripts for state event emissions
+  - Audit all components for useClientEvent usage
+  - Remove scriptStateBridge.ts
+  - Clean up event type definitions
+  - Performance verification
+- ✅ **Phase 6.6: Unify Event Handling Architecture** (3-4 hours)
+  - Remove Client.on/sendEvent wrappers
+  - Remove ArkadiaClient.on/emit wrappers
+  - Update all scripts to use eventBus directly
+  - Create centralized event documentation
+  - Verify React components use useClientEvent hook
 - ✅ Final testing and validation
 
 ### Optional (Future)
 - Phase 7: Optional enhancements as needed
 
-**Total Estimated Effort**: 20-30 hours (increased from original 16-23 hours due to complete React migration)
+**Total Estimated Effort**: 28-41 hours (increased from original 16-23 hours due to complete React migration + script-React state integration + bridge removal + event unification)
 
 ---
 
@@ -1589,11 +3093,10 @@ git reset --hard HEAD~1
 - [ ] src/ui/web/stores/gameState.ts
 
 ### Phase 2: Move/Delete
-- [ ] src/web/ansiParser.ts → src/client/ansi/ansiParser.ts (Phase 2.1)
-- [ ] src/web/dataStores/mapStore.ts → src/modules/data/dataStores/mapStore.ts (Phase 2.2)
-- [ ] src/web/dataStores/multibindStore.ts → src/modules/data/dataStores/multibindStore.ts (Phase 2.2)
-- [ ] src/web/dataStores/npcStore.ts → src/modules/data/dataStores/npcStore.ts (Phase 2.2)
-- [ ] Delete src/web/MockPort.ts (Phase 2.3)
+- [ ] src/web/dataStores/mapStore.ts → src/modules/data/dataStores/mapStore.ts (Phase 2.1)
+- [ ] src/web/dataStores/multibindStore.ts → src/modules/data/dataStores/multibindStore.ts (Phase 2.1)
+- [ ] src/web/dataStores/npcStore.ts → src/modules/data/dataStores/npcStore.ts (Phase 2.1)
+- [ ] Delete src/web/MockPort.ts (Phase 2.2)
 
 ### Phase 3: Move
 - [ ] src/client/types/herbs.ts → src/shared/types/herbs.ts
@@ -1615,6 +3118,12 @@ git reset --hard HEAD~1
 - [ ] src/web/ObjectList.ts → src/web/ui-legacy/ObjectList.ts
 - [ ] src/web/statusIndicators.ts → src/web/ui-legacy/statusIndicators.ts
 
+### Phase 6.5: Delete (After All Scripts/Components Migrated)
+- [ ] Delete src/client/scriptStateBridge.ts
+- [ ] Delete src/client/storageBridge.ts (evaluate first - may need to keep)
+- [ ] Clean up state event types from src/shared/events/clientEvents.ts
+- [ ] Update useClientEvent documentation
+
 ---
 
 ## Appendix B: Import Update Patterns
@@ -1622,14 +3131,7 @@ git reset --hard HEAD~1
 ### Phase 2 Import Updates
 
 ```typescript
-// ansiParser moves (Phase 2.1)
-OLD: import { parseAnsiPatterns } from "@web/ansiParser";
-NEW: import { parseAnsiPatterns } from "@client/ansi/ansiParser";
-
-// AnsiAwareBuffer imports (already in place)
-import { AnsiAwareBuffer } from "@client/ansi/FormatState";
-
-// dataStores move (Phase 2.2)
+// dataStores move (Phase 2.1)
 OLD: import { addLocalNpc } from "@web/dataStores/npcStore";
 NEW: import { addLocalNpc } from "@modules/data/dataStores/npcStore";
 
@@ -1639,7 +3141,7 @@ NEW: import { multibindStore } from "@modules/data/dataStores/multibindStore";
 OLD: import { mapStore } from "@web/dataStores/mapStore";
 NEW: import { mapStore } from "@modules/data/dataStores/mapStore";
 
-// MockPort removal (Phase 2.3)
+// MockPort removal (Phase 2.2)
 OLD: import MockPort from "./MockPort";
      const client = new Client(arkadiaClient, new MockPort());
 NEW: const client = new Client(arkadiaClient);
@@ -1702,6 +3204,67 @@ NEW: import { FightTitle } from "./ui-legacy";
 ---
 
 ## Appendix C: Change Log
+
+### 2025-11-19 Update (Event Handling Unification)
+- **NEW PHASE 6.6**: Unify event handling architecture (3-4 hours)
+- Analyzed all three event systems (EventBus, Client wrapper, ArkadiaClient wrapper)
+- Identified redundancy: Client and ArkadiaClient are pure pass-throughs to eventBus
+- No added functionality from wrappers - just extra API surface
+- Proposed removal of wrapper methods from Client and ArkadiaClient
+- Created centralized event helper module (`src/client/events.ts`)
+- Migration guide for scripts (90+ files) and ArkadiaClient
+- Comprehensive documentation (EVENT_SYSTEM.md, README updates, JSDoc)
+- Benefits: single event system, reduced API surface, less confusion
+- Updated timeline: 28-41 hours total (up from 25-37)
+
+### 2025-11-19 Update (Backward Compatibility Bridge Removal)
+- **NEW PHASE 6.5**: Remove backward compatibility bridge (2-3 hours)
+- Added complete guide for removing scriptStateBridge after migration
+- Prerequisites checklist for verifying all scripts/components migrated
+- Audit commands for finding remaining state event usage
+- Event type cleanup guide (remove state events, keep system events)
+- useClientEvent documentation update with clear usage guidelines
+- Manual testing checklist for all state features
+- Performance verification steps
+- Rollback plan for issues
+- Updated timeline: 25-37 hours total (up from 23-34)
+
+### 2025-11-19 Update (ansiParser Cleanup)
+- ✅ Removed all references to ansiParser.ts (already deleted from codebase)
+- Updated Phase 0 to reflect ANSI rendering via AnsiAwareBuffer.toDom()
+- Removed Phase 2.1 (was ansiParser consolidation)
+- Renumbered Phase 2 tasks (2.2 → 2.1, 2.3 → 2.2, 2.4 → 2.3)
+- Updated Appendix A and B to remove ansiParser file moves
+- Cleaned up circular dependency documentation
+
+### 2025-11-19 Update (Script-React State Integration)
+- **NEW PHASE 1.5**: Comprehensive solution for script-React state sharing (3-4 hours)
+- Analyzed entire script system architecture (90+ scripts)
+- Documented current communication patterns:
+  - EventBus-based state emission
+  - Multiple subscription patterns (port, storage, DataStore, eventBus)
+  - Closure-based state management
+  - Character-scoped storage
+- Identified critical issues:
+  - No single source of truth (state in closures + React state)
+  - Race conditions (components mounting after script init)
+  - Difficult testing and debugging
+  - No character context for state reset
+- **Proposed Solution**: Zustand-based state bridge
+  - Single source of truth for all script state
+  - Scripts update Zustand store directly (non-React API)
+  - React components read from store (hooks)
+  - Backward compatibility bridge for gradual migration
+  - Character context for proper state reset
+  - Storage bridge for persistence
+  - DevTools support for debugging
+- Created comprehensive state architecture with:
+  - Complete GameState interface (timers, character, combat, inventory, room, UI)
+  - Actions for scripts to update state
+  - Example migrations for scripts and components
+  - Character switching pattern
+  - Storage integration pattern
+- Updated timeline: 23-34 hours total (up from 20-30)
 
 ### 2025-11-19 Update (Major React Migration)
 - **MAJOR**: Expanded Phase 1 to complete React migration (8-12 hours instead of 2-4)
