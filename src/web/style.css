@@ -578,6 +578,7 @@ h1 {
   color: darkorange;
   white-space: nowrap;
   font-size: 0.775rem;
+  user-select: none;
 }
 
 #logs-search-results .logs-search-result-snippet {
@@ -615,6 +616,7 @@ h1 {
 #logs-preview .log-time {
   color: darkorange;
   padding-right: 0.5rem;
+  user-select: none;
 }
 
 #logs-preview .logs-preview-highlight {
@@ -3441,6 +3443,7 @@ body.mobile-command-radial-active {
   color: darkorange;
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.85em;
+  user-select: none;
 }
 
 #main_text_output_msg_wrapper.output-show-timestamps .output-timestamp,
