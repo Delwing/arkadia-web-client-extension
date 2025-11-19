@@ -2,27 +2,35 @@
 
 **Status**: Planning Phase
 **Created**: 2025-11-04
-**Last Updated**: 2025-11-11
+**Last Updated**: 2025-11-19 (Major React Migration Update)
 
 ---
 
 ## Executive Summary
 
-This document outlines a comprehensive plan to reorganize the codebase architecture, eliminating technical debt from the incomplete React migration and establishing clear separation of concerns.
+This document outlines a comprehensive plan to reorganize the codebase architecture, **completing the React migration** and establishing clear separation of concerns. The plan now includes migrating the entire frontend to a single React application with strategic "islands" for performance-critical rendering.
 
 ### Current Issues
-- 10+ duplicate components (class-based vs React)
+- **16+ legacy vanilla JS components** coexisting with React versions
+  - 10 duplicate components (class-based vs React)
+  - 6 additional vanilla components (ObjectList, Mobile UI, Title updaters, LetterComposer)
+- **Hybrid architecture**: Vanilla JS mixed with React, no single source of truth for UI state
 - Circular dependencies between `@client` ↔ `@web`
 - Oversized entry point (`main.ts` at 1708 lines, growing)
 - DataStores split across multiple directories
 - Duplicate type definitions
 - ANSI parsing split between `@web/ansiParser` and `@client/ansi/FormatState`
+- No centralized state management
 
 ### Goals
+- ✅ **Single React application** with unified state management
+- ✅ **React Islands architecture** for Map rendering and Terminal output (performance-critical)
 - ✅ Zero circular dependencies
 - ✅ Single source of truth for all components and types
 - ✅ Clear, documented dependency hierarchy
 - ✅ Maintainable codebase with separation of concerns
+- ✅ Remove ~1000+ lines of legacy vanilla JS code
+- ✅ Reduce `main.ts` from 1708 lines to ~50-100 lines
 
 ---
 
@@ -193,70 +201,372 @@ This suggests the line processing mechanism is still being refined. The flag is 
 
 ---
 
-## Phase 1: Complete Component Migration
+## Phase 1: Complete React Migration Strategy
 
 **Priority**: Critical
-**Estimated Effort**: 2-4 hours
+**Estimated Effort**: 8-12 hours (expanded from original 2-4 hours)
 **Dependencies**: None
 
 ### Objectives
-- Remove all duplicate class-based components
-- Use only React versions
-- Update `main.ts` to remove legacy initialization
-- Verify no regressions
+- **Full React Application**: Migrate entire frontend to React
+- **React Islands**: Create non-React "islands" for map rendering and terminal output
+- **Remove Legacy Components**: Delete all vanilla JS class-based UI components
+- **Single Root**: Establish single React root managing entire application state
+
+### Background
+
+The current architecture is a **hybrid** with React components coexisting alongside vanilla JavaScript:
+- **10 duplicate components** (React versions already exist, class versions still in use)
+- **Complex vanilla UI**: ObjectList, CharState, MultiBinds with direct DOM manipulation
+- **Mobile UI**: MobileDirectionButtons, MobileCommandRadial (vanilla with complex state)
+- **Map Rendering**: EmbeddedMap wrapper around `mudlet-map-renderer` library
+- **Terminal Output**: OutputMessageHandler with AnsiAwareBuffer integration
+- **Main Bootstrap**: `main.ts` (1708 lines) with extensive vanilla DOM setup
+
+### React Island Strategy
+
+Some components need to remain non-React for performance/architectural reasons:
+
+#### Island 1: Map Rendering
+- **Current**: `src/web/embed.ts` - Vanilla wrapper around `mudlet-map-renderer`
+- **Target**: Keep as non-React island, wrap in React portal/ref
+- **Reason**: External library with custom rendering engine (likely canvas/WebGL)
+- **Integration**: React component manages mount/unmount, passes props, but doesn't control rendering
+
+#### Island 2: Terminal Output
+- **Current**: `src/shared/dom/outputMessageHandler.ts` - Direct DOM manipulation for performance
+- **Target**: Keep core rendering as non-React, wrap in React component
+- **Reason**: High-frequency updates (hundreds of messages), AnsiAwareBuffer optimization
+- **Integration**: React manages container, vanilla handler manages message elements
 
 ### Tasks
 
-#### 1.1 Verify React Components are Production-Ready
-```bash
-# Check all React components are being used
-grep -r "mountComponents" src/web/main.ts
-```
+#### 1.1 Create React Root Architecture
 
-**Components to verify**:
-- ✓ CombatTimer
-- ✓ CoverTimer
-- ✓ LampTimer
-- ✓ TransportTimer
-- ✓ ZaskTimer
-- ✓ CharState
-- ✓ CharStateInfo
-- ✓ BreakItemWarning
-- ✓ MultiBinds
-- ✓ ReleaseGuard
-
-#### 1.2 Update main.ts
-Remove legacy component initialization code:
+Create `src/ui/web/App.tsx` as the main application component:
 ```typescript
-// REMOVE these lines from main.ts:
-import CombatTimer from "./CombatTimer";
-import CoverTimer from "./CoverTimer";
-// ... etc
-
-// REMOVE instantiation:
-const combatTimer = new CombatTimer(...);
-const coverTimer = new CoverTimer(...);
-// ... etc
+// New single root application
+export function App() {
+  return (
+    <AppProvider> {/* Global state */}
+      <Layout>
+        <Header />
+        <MainContent>
+          <TerminalIsland /> {/* Non-React island */}
+          <MapIsland />       {/* Non-React island */}
+        </MainContent>
+        <StatusBar>
+          <CharState />
+          <Timers />
+        </StatusBar>
+        <Panels />
+        <Modals />
+      </Layout>
+    </AppProvider>
+  )
+}
 ```
 
-Ensure only `mountComponents()` from React is used.
+#### 1.2 Migrate Duplicate Components (Already Exists in React)
 
-#### 1.3 Delete Legacy Component Files
+**Components to verify and switch to**:
+- ✓ CombatTimer → `src/ui/web/components/timers/CombatTimer.tsx`
+- ✓ CoverTimer → `src/ui/web/components/timers/CoverTimer.tsx`
+- ✓ LampTimer → `src/ui/web/components/timers/LampTimer.tsx`
+- ✓ TransportTimer → `src/ui/web/components/timers/TransportTimer.tsx`
+- ✓ ZaskTimer → `src/ui/web/components/timers/ZaskTimer.tsx`
+- ✓ BreakItemWarning → `src/ui/web/components/panels/BreakItemWarning.tsx`
+- ✓ MultiBinds → `src/ui/web/components/panels/MultiBinds.tsx`
+- ✓ ReleaseGuard → `src/ui/web/components/panels/ReleaseGuard.tsx`
+
+**Delete legacy class versions**:
 ```bash
-# Files to delete:
 rm src/web/CombatTimer.ts
 rm src/web/CoverTimer.ts
 rm src/web/LampTimer.ts
 rm src/web/TransportTimer.ts
 rm src/web/ZaskTimer.ts
-rm src/web/CharState.ts
-rm src/web/CharStateInfo.ts
 rm src/web/BreakItemWarning.ts
 rm src/web/MultiBinds.ts
 rm src/web/ReleaseGuard.ts
 ```
 
-#### 1.4 Run Tests
+#### 1.3 Migrate Complex Vanilla Components to React
+
+**CharState** (`src/web/CharState.ts` → React)
+- 4 display modes (text, bar variations)
+- Dynamic color coding
+- Emoji label support
+- **Target**: `src/ui/web/components/panels/CharState.tsx` (already exists, verify feature parity)
+
+**CharStateInfo** (`src/web/CharStateInfo.ts` → React)
+- Character state text display
+- **Target**: `src/ui/web/components/panels/CharStateInfo.tsx` (already exists, verify)
+
+**Delete after migration**:
+```bash
+rm src/web/CharState.ts
+rm src/web/CharStateInfo.ts
+```
+
+#### 1.4 Migrate ObjectList to React
+
+**Current**: `src/web/ObjectList.ts` (complex vanilla class)
+- Draggable window with pointer events
+- Picture-in-Picture support
+- Dynamic HP bars and attack indicators
+- Click handlers for combat targeting
+- MutationObserver for DOM changes
+
+**Target**: Create `src/ui/web/components/combat/ObjectList.tsx`
+- Use React DnD or similar for drag
+- Use React Portal for PiP
+- Convert to React state management
+- Replace MutationObserver with React lifecycle
+
+**Steps**:
+1. Create React component with same functionality
+2. Test thoroughly (combat targeting critical)
+3. Delete `src/web/ObjectList.ts`
+
+#### 1.5 Migrate MultiBinds to React
+
+**Current**: `src/web/MultiBinds.ts` (dynamic button generation)
+- Pure HTML element creation
+- Dynamic buttons from server data
+- Active state management
+
+**Target**: Use existing `src/ui/web/components/panels/MultiBinds.tsx`
+- Verify it handles dynamic button generation
+- Ensure active state management works
+- Delete `src/web/MultiBinds.ts`
+
+#### 1.6 Migrate Browser Title Updates
+
+**Current**:
+- `src/web/FightTitle.ts` - Updates title with ⚔/ㅤ
+- `src/web/HpTitle.ts` - Adds HP display to title
+
+**Target**: Create `src/ui/web/hooks/useDocumentTitle.ts`
+```typescript
+export function useDocumentTitle() {
+  const { fighting, hp, maxHp } = useGameState()
+
+  useEffect(() => {
+    const fightIcon = fighting ? '⚔' : 'ㅤ'
+    const hpText = `[${hp}/${maxHp}]`
+    document.title = `${fightIcon} ${hpText} Arkadia`
+  }, [fighting, hp, maxHp])
+}
+```
+
+**Delete**:
+```bash
+rm src/web/FightTitle.ts
+rm src/web/HpTitle.ts
+```
+
+#### 1.7 Migrate Mobile UI Components
+
+**MobileDirectionButtons** (`src/web/scripts/mobileDirectionButtons.ts`)
+- Complex drag/long-press handling
+- Orientation detection
+- Haptic feedback
+- Team/leader mode state
+
+**Target**: Create `src/ui/web/components/mobile/DirectionButtons.tsx`
+- Use React hooks for gesture handling (react-use-gesture or similar)
+- Maintain all existing functionality
+- Better state management with React
+
+**MobileCommandRadial** (`src/web/scripts/mobileCommandRadial.ts`)
+- Radial menu for commands
+
+**Target**: Create `src/ui/web/components/mobile/CommandRadial.tsx`
+
+**Delete after migration**:
+```bash
+rm src/web/scripts/mobileDirectionButtons.ts
+rm src/web/scripts/mobileCommandRadial.ts
+```
+
+#### 1.8 Create React Islands for Performance-Critical Components
+
+##### Terminal Output Island
+
+**Current**: `src/shared/dom/outputMessageHandler.ts`
+- High-frequency updates (hundreds of messages)
+- AnsiAwareBuffer integration
+- Direct DOM manipulation for performance
+
+**Target**: Create `src/ui/web/islands/TerminalIsland.tsx`
+```typescript
+export function TerminalIsland() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const handlerRef = useRef<OutputMessageHandler>()
+
+  useEffect(() => {
+    if (containerRef.current) {
+      handlerRef.current = new OutputMessageHandler(containerRef.current)
+
+      // Subscribe to output events
+      arkadiaClient.on('output', (text, type) => {
+        handlerRef.current?.addMessage(text, type)
+      })
+    }
+
+    return () => handlerRef.current?.cleanup()
+  }, [])
+
+  return <div ref={containerRef} id="output" />
+}
+```
+
+**Keep vanilla handler**: `outputMessageHandler.ts` remains for performance
+**Integration**: React manages lifecycle, vanilla handles rendering
+
+##### Map Rendering Island
+
+**Current**: `src/web/embed.ts` - Wrapper around `mudlet-map-renderer`
+
+**Target**: Create `src/ui/web/islands/MapIsland.tsx`
+```typescript
+export function MapIsland() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<EmbeddedMap>()
+
+  const { currentRoom, path, settings } = useMapState()
+
+  useEffect(() => {
+    if (containerRef.current) {
+      mapRef.current = new EmbeddedMap(containerRef.current)
+      mapRef.current.initialize()
+    }
+
+    return () => mapRef.current?.cleanup()
+  }, [])
+
+  // Update map when state changes
+  useEffect(() => {
+    mapRef.current?.setCurrentRoom(currentRoom)
+  }, [currentRoom])
+
+  useEffect(() => {
+    mapRef.current?.setPath(path)
+  }, [path])
+
+  return <div ref={containerRef} id="map-container" />
+}
+```
+
+**Keep vanilla wrapper**: `embed.ts` remains, wrapped in React
+**Integration**: React provides data, vanilla handles rendering
+
+#### 1.9 Migrate LetterComposer to React
+
+**Current**: `src/web/LetterComposer.ts` (modal with form)
+- Draggable window
+- Form state management
+- LocalStorage integration
+
+**Target**: Create `src/ui/web/components/modals/LetterComposer.tsx`
+- Use React Hook Form or similar
+- React DnD for dragging
+- React state for form data
+- Easy integration with existing React modal system
+
+**Delete**:
+```bash
+rm src/web/LetterComposer.ts
+```
+
+#### 1.10 Extract Modal/Dialog Management to React
+
+**Current**: `main.ts` has extensive modal setup code
+
+**Target**: Create React-based modal system
+- `src/ui/web/components/modals/ModalProvider.tsx`
+- `src/ui/web/hooks/useModal.ts`
+- Centralized modal state management
+
+**Modals to migrate**:
+- Connection modal
+- Settings modal
+- Letter composer
+- Help modal
+- About modal
+
+#### 1.11 Refactor main.ts to React Bootstrap
+
+**Current**: 1708 lines of vanilla initialization
+
+**Target**: Slim bootstrap that mounts React app
+```typescript
+// src/web/main.ts (new)
+import { createRoot } from 'react-dom/client'
+import { App } from '@web-ui/App'
+import { initializeClient } from './initialization'
+
+async function main() {
+  // 1. Initialize core client (non-UI)
+  const client = await initializeClient()
+
+  // 2. Mount React application
+  const root = createRoot(document.getElementById('app')!)
+  root.render(<App client={client} />)
+
+  console.log('Application initialized')
+}
+
+main()
+```
+
+**Result**: Reduce from 1708 lines to ~50-100 lines
+
+#### 1.12 Create Global State Management
+
+**Options**:
+1. **React Context + useReducer** (lightweight, built-in)
+2. **Zustand** (minimal, modern)
+3. **Redux Toolkit** (if complex state needed)
+
+**Recommended**: Zustand for simplicity
+
+Create `src/ui/web/stores/gameState.ts`:
+```typescript
+import { create } from 'zustand'
+
+interface GameState {
+  // Character state
+  hp: number
+  maxHp: number
+  mana: number
+
+  // Combat state
+  fighting: boolean
+  targets: Target[]
+
+  // Timers
+  combatTimer: number
+  lampTimer: number
+
+  // Map state
+  currentRoom: number
+  path: number[]
+
+  // Actions
+  updateVitals: (vitals: Vitals) => void
+  setFighting: (fighting: boolean) => void
+  // ... etc
+}
+
+export const useGameState = create<GameState>((set) => ({
+  // ... implementation
+}))
+```
+
+#### 1.13 Run Tests and Verify
+
 ```bash
 yarn test
 yarn test:e2e
@@ -264,10 +574,24 @@ yarn build
 ```
 
 ### Success Criteria
+- ✅ Single React root application
+- ✅ All legacy vanilla components migrated or deleted
+- ✅ Terminal and Map as React islands (lifecycle managed by React)
+- ✅ Global state management in place
+- ✅ main.ts reduced to ~50-100 lines
 - ✅ All tests passing
 - ✅ Build successful
-- ✅ No references to deleted files
-- ✅ ~500 lines of dead code removed
+- ✅ No regressions in functionality
+- ✅ ~1000+ lines of legacy code removed
+- ✅ Better maintainability and testability
+
+### Migration Path
+
+1. **Phase 1a** (2-3 hours): Delete duplicate components, verify React versions work
+2. **Phase 1b** (3-4 hours): Create React islands (Terminal, Map)
+3. **Phase 1c** (2-3 hours): Migrate complex components (ObjectList, Mobile UI)
+4. **Phase 1d** (2-3 hours): Set up global state, create App root, refactor main.ts
+5. **Phase 1e** (1-2 hours): Testing, verification, cleanup
 
 ---
 
@@ -1117,22 +1441,33 @@ class Client {
 ## Implementation Timeline
 
 ### Sprint 1 (Week 1)
-- ✅ Phase 1: Complete Component Migration (2-4 hours)
-- ✅ Phase 2: Break Circular Dependencies (3-5 hours)
+- ✅ **Phase 1: Complete React Migration** (8-12 hours) - **EXPANDED SCOPE**
+  - Phase 1a: Delete duplicates, verify React versions (2-3 hours)
+  - Phase 1b: Create React islands (Terminal, Map) (3-4 hours)
+  - Phase 1c: Migrate complex components (ObjectList, Mobile UI) (2-3 hours)
+  - Phase 1d: Set up state management, App root, refactor main.ts (2-3 hours)
+  - Phase 1e: Testing and cleanup (1-2 hours)
 
 ### Sprint 2 (Week 2)
-- ✅ Phase 3: Consolidate Type Definitions (2-3 hours)
-- ✅ Phase 4: Reorganize Web Directory (3-4 hours)
+- ✅ **Phase 2: Break Circular Dependencies** (3-5 hours)
+  - Phase 2.1: Consolidate ANSI handling
+  - Phase 2.2: Consolidate DataStores
+  - Phase 2.3: Remove MockPort abstraction
+  - Phase 2.4: Verify dependency flow
 
 ### Sprint 3 (Week 3)
-- ✅ Phase 5: Refactor main.ts (4-6 hours)
+- ✅ **Phase 3: Consolidate Type Definitions** (2-3 hours)
+- ✅ **Phase 4: Reorganize Web Directory** (3-4 hours)
 
 ### Sprint 4 (Week 4)
-- ✅ Phase 6: Documentation & Cleanup (2-3 hours)
+- ✅ **Phase 5: Refactor main.ts** (2-3 hours) - **REDUCED** (most work moved to Phase 1)
+- ✅ **Phase 6: Documentation & Cleanup** (2-3 hours)
 - ✅ Final testing and validation
 
 ### Optional (Future)
 - Phase 7: Optional enhancements as needed
+
+**Total Estimated Effort**: 20-30 hours (increased from original 16-23 hours due to complete React migration)
 
 ---
 
@@ -1222,7 +1557,7 @@ git reset --hard HEAD~1
 
 ## Appendix A: File Move Checklist
 
-### Phase 1: Delete
+### Phase 1: React Migration - Delete Legacy Components
 - [ ] src/web/CombatTimer.ts
 - [ ] src/web/CoverTimer.ts
 - [ ] src/web/LampTimer.ts
@@ -1233,6 +1568,25 @@ git reset --hard HEAD~1
 - [ ] src/web/BreakItemWarning.ts
 - [ ] src/web/MultiBinds.ts
 - [ ] src/web/ReleaseGuard.ts
+- [ ] src/web/FightTitle.ts
+- [ ] src/web/HpTitle.ts
+- [ ] src/web/ObjectList.ts
+- [ ] src/web/LetterComposer.ts
+- [ ] src/web/scripts/mobileDirectionButtons.ts
+- [ ] src/web/scripts/mobileCommandRadial.ts
+
+### Phase 1: React Migration - Create New Components
+- [ ] src/ui/web/App.tsx (main application root)
+- [ ] src/ui/web/islands/TerminalIsland.tsx
+- [ ] src/ui/web/islands/MapIsland.tsx
+- [ ] src/ui/web/components/combat/ObjectList.tsx
+- [ ] src/ui/web/components/modals/LetterComposer.tsx
+- [ ] src/ui/web/components/modals/ModalProvider.tsx
+- [ ] src/ui/web/components/mobile/DirectionButtons.tsx
+- [ ] src/ui/web/components/mobile/CommandRadial.tsx
+- [ ] src/ui/web/hooks/useDocumentTitle.ts
+- [ ] src/ui/web/hooks/useModal.ts
+- [ ] src/ui/web/stores/gameState.ts
 
 ### Phase 2: Move/Delete
 - [ ] src/web/ansiParser.ts → src/client/ansi/ansiParser.ts (Phase 2.1)
@@ -1349,7 +1703,23 @@ NEW: import { FightTitle } from "./ui-legacy";
 
 ## Appendix C: Change Log
 
-### 2025-11-19 Update
+### 2025-11-19 Update (Major React Migration)
+- **MAJOR**: Expanded Phase 1 to complete React migration (8-12 hours instead of 2-4)
+- Introduced "React Islands" architecture for Map and Terminal output
+- Documented all 16 legacy vanilla JS components requiring migration
+- Added comprehensive analysis of non-React UI components:
+  - 10 timer/status components (duplicates)
+  - 3 complex vanilla classes (ObjectList, CharState, MultiBinds)
+  - 2 mobile UI components
+  - 2 browser title updaters
+  - 1 modal (LetterComposer)
+- Proposed single React root application with App.tsx
+- Recommended Zustand for global state management
+- Updated success criteria: ~1000+ lines of legacy code removal
+- Expanded Appendix A with complete file deletion/creation checklist
+- Added 5-phase migration path (Phase 1a-1e)
+
+### 2025-11-19 Update (MockPort Removal)
 - Added Phase 2.3: Remove MockPort abstraction
 - MockPort identified as unnecessary wrapper around storage
 - Updated Phase 4 to remove MockPort from file organization
