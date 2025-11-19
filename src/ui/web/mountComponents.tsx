@@ -13,7 +13,8 @@ import {
   CharState,
   AttackMode,
   PackageStatus,
-  ClockDisplay
+  ClockDisplay,
+  MailStatus
 } from "./components";
 
 type MountResult = {
@@ -41,6 +42,7 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "release-guard", Component: ReleaseGuard },
     { id: "break-item-warning", Component: BreakItemWarning },
     { id: "multi-binds", Component: MultiBinds },
+    { id: "mail-status", Component: MailStatus },
   ];
 
   componentConfigs.forEach(({ id, Component }) => {
