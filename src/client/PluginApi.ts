@@ -39,6 +39,25 @@ import {
 } from "./scripts/prettyContainers";
 import loadMagics from "./scripts/magicsLoader";
 import loadMagicKeys from "./scripts/magicKeyLoader";
+import {
+  objectListFilters,
+  type ObjectListEntryFilter,
+  type EntryContext,
+  type FilterResult,
+  type EntryStyle,
+  type EntryContent,
+  type ObjectData
+} from "@web/objectListFilters";
+
+// Re-export filter types for plugin developers
+export type {
+  ObjectListEntryFilter,
+  EntryContext,
+  FilterResult,
+  EntryStyle,
+  EntryContent,
+  ObjectData
+};
 
 // Event system types
 /**
@@ -921,6 +940,89 @@ export interface HerbsApi {
 }
 
 /**
+ * Object List Filters API - Customize object list entry rendering
+ *
+ * Allows plugins to register filters that modify how objects are displayed
+ * in the object list. Filters can change colors, add icons, modify text, etc.
+ *
+ * Types are available for import:
+ * ```typescript
+ * import type { ObjectListEntryFilter, EntryContext, FilterResult } from "@web/objectListFilters";
+ * ```
+ */
+export interface ObjectListFiltersApi {
+  /**
+   * Register an object list entry filter
+   *
+   * Filters receive context about the object and can modify its appearance
+   * by mutating the result parameter. Multiple filters can compose together.
+   *
+   * @param name - Unique identifier for this filter
+   * @param filter - Filter function that modifies entry appearance
+   * @param priority - Optional priority (higher = runs first, default: 0)
+   *
+   * @example
+   * ```typescript
+   * // Highlight dragons in red with icon
+   * api.objectListFilters.register("dragons", (context, result) => {
+   *   if (context.rawDescription.toLowerCase().includes("smok")) {
+   *     result.style.descriptionColor = "#ff0000";
+   *     result.style.prefix = (result.style.prefix || "") + "🐉 ";
+   *   }
+   * }, 10);
+   *
+   * // Warn about low HP enemies
+   * api.objectListFilters.register("lowHp", (context, result) => {
+   *   if (context.object.hp && context.object.maxhp) {
+   *     const percent = context.object.hp / context.object.maxhp;
+   *     if (percent < 0.2) {
+   *       result.style.hpBarColor = "#ff0000";
+   *       result.style.suffix = (result.style.suffix || "") + " ☠️";
+   *     }
+   *   }
+   * }, 5);
+   * ```
+   */
+  register(name: string, filter: ObjectListEntryFilter, priority?: number): void;
+
+  /**
+   * Unregister an object list entry filter
+   *
+   * @param name - Filter identifier to remove
+   * @returns True if filter was found and removed
+   *
+   * @example
+   * ```typescript
+   * api.objectListFilters.unregister("dragons");
+   * ```
+   */
+  unregister(name: string): boolean;
+
+  /**
+   * Get list of registered filter names
+   *
+   * @returns Array of filter names in priority order
+   *
+   * @example
+   * ```typescript
+   * const filters = api.objectListFilters.getFilterNames();
+   * console.log("Active filters:", filters);
+   * ```
+   */
+  getFilterNames(): string[];
+
+  /**
+   * Clear all registered filters
+   *
+   * @example
+   * ```typescript
+   * api.objectListFilters.clear();
+   * ```
+   */
+  clear(): void;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -1022,6 +1124,8 @@ export interface PluginApi {
   magicKeys: MagicKeysApi;
   /** Herbs - herb inventory management in bags */
   herbs: HerbsApi;
+  /** Object list filters - customize object list entry rendering */
+  objectListFilters: ObjectListFiltersApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1065,6 +1169,7 @@ export class PluginApiImpl implements PluginApi {
   public magics: MagicsApi;
   public magicKeys: MagicKeysApi;
   public herbs: HerbsApi;
+  public objectListFilters: ObjectListFiltersApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client) {
@@ -1088,6 +1193,7 @@ export class PluginApiImpl implements PluginApi {
     this.magics = this.createMagicsApi();
     this.magicKeys = this.createMagicKeysApi();
     this.herbs = this.createHerbsApi();
+    this.objectListFilters = this.createObjectListFiltersApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -1415,6 +1521,30 @@ export class PluginApiImpl implements PluginApi {
           return;
         }
         return await this.client.herbManager.move(options);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Object List Filters API
+  // ============================================================================
+
+  private createObjectListFiltersApi(): ObjectListFiltersApi {
+    return {
+      register: (name: string, filter: ObjectListEntryFilter, priority?: number) => {
+        objectListFilters.register(name, filter, priority);
+      },
+
+      unregister: (name: string): boolean => {
+        return objectListFilters.unregister(name);
+      },
+
+      getFilterNames: (): string[] => {
+        return objectListFilters.getFilterNames();
+      },
+
+      clear: () => {
+        objectListFilters.clear();
       }
     };
   }

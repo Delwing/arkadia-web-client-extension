@@ -460,6 +460,114 @@ export interface Room {
   specialExits: Record<string, number>;
 }
 
+// ============================================================================
+// Object List Filter Types
+// ============================================================================
+
+/**
+ * Object data from GMCP
+ */
+export interface ObjectData {
+  num: number;
+  id?: string;
+  desc?: string;
+  hp?: number;
+  maxhp?: number;
+  image?: string;
+  attackers?: { num: number; id?: string }[];
+}
+
+/**
+ * Entry context provided to filters
+ */
+export interface EntryContext {
+  /** The object data from GMCP */
+  object: ObjectData;
+  /** The display number/shortcut for this entry */
+  displayNum: number;
+  /** Whether this is the avatar's current target */
+  isTarget: boolean;
+  /** Whether this is the avatar's next target in queue */
+  isNextTarget: boolean;
+  /** Whether this object is a team member */
+  isTeammate: boolean;
+  /** The raw description text */
+  rawDescription: string;
+  /** Whether this object is currently attacking */
+  isAttacking: boolean;
+  /** Current attack command being used */
+  attackCommand: string;
+}
+
+/**
+ * Entry style modifications
+ */
+export interface EntryStyle {
+  /** Color for the description text (CSS color value) */
+  descriptionColor?: string;
+  /** Whether to apply italic style to description */
+  italic?: boolean;
+  /** Color for the HP bar (CSS color value) */
+  hpBarColor?: string;
+  /** Additional CSS class names to add to the entry */
+  cssClasses?: string[];
+  /** Custom prefix to add before the entry (e.g., icons, indicators) */
+  prefix?: string;
+  /** Custom suffix to add after the entry */
+  suffix?: string;
+}
+
+/**
+ * Entry content modifications
+ */
+export interface EntryContent {
+  /** Modified description text (replaces original if provided) */
+  description?: string;
+  /** Modified HP display (replaces original if provided) */
+  hpBar?: string;
+  /** Modified number label (replaces original if provided) */
+  numberLabel?: string;
+}
+
+/**
+ * Filter result - mutate this object to modify the entry
+ */
+export interface FilterResult {
+  /** Style modifications - mutate this object to add/change styles */
+  style: EntryStyle;
+  /** Content modifications - mutate this object to replace content */
+  content: EntryContent;
+  /** If true, prevents subsequent filters from running */
+  stopPropagation?: boolean;
+}
+
+/**
+ * Object list entry filter function
+ *
+ * Receives context about the entry and the current accumulated result from previous filters.
+ * Filters modify the result object directly and optionally return { stopPropagation: true }.
+ *
+ * @param context - Information about the object being rendered
+ * @param result - Current accumulated style and content (mutate this object)
+ * @returns void or { stopPropagation: true } to prevent further filters
+ *
+ * @example
+ * ```typescript
+ * const highlightDragons: ObjectListEntryFilter = (context, result) => {
+ *   if (context.rawDescription.toLowerCase().includes("smok")) {
+ *     result.style.descriptionColor = "#ff0000";
+ *     result.style.prefix = (result.style.prefix || "") + "🐉 ";
+ *   }
+ * };
+ *
+ * api.objectListFilters.register("dragons", highlightDragons, 10);
+ * ```
+ */
+export type ObjectListEntryFilter = (
+  context: EntryContext,
+  result: FilterResult
+) => void | { stopPropagation: true };
+
 
 // ============================================================================
 // Event Types
@@ -1854,6 +1962,94 @@ export interface HerbsApi {
 }
 
 /**
+   * Clear all registered filters
+   *
+   * @example
+   * ```typescript
+   * api.objectListFilters.clear();
+   * ```
+   */
+export /**
+ * Object List Filters API - Customize object list entry rendering
+ *
+ * Allows plugins to register filters that modify how objects are displayed
+ * in the object list. Filters can change colors, add icons, modify text, etc.
+ *
+ * Types are available for import:
+ * ```typescript
+ * import type { ObjectListEntryFilter, EntryContext, FilterResult } from "@web/objectListFilters";
+ * ```
+ */
+export interface ObjectListFiltersApi {
+    /**
+     * Register an object list entry filter
+     *
+     * Filters receive context about the object and can modify its appearance
+     * by mutating the result parameter. Multiple filters can compose together.
+     *
+     * @param name - Unique identifier for this filter
+     * @param filter - Filter function that modifies entry appearance
+     * @param priority - Optional priority (higher = runs first, default: 0)
+     *
+     * @example
+     * ```typescript
+     * // Highlight dragons in red with icon
+     * api.objectListFilters.register("dragons", (context, result) => {
+     *   if (context.rawDescription.toLowerCase().includes("smok")) {
+     *     result.style.descriptionColor = "#ff0000";
+     *     result.style.prefix = (result.style.prefix || "") + "🐉 ";
+     *   }
+     * }, 10);
+     *
+     * // Warn about low HP enemies
+     * api.objectListFilters.register("lowHp", (context, result) => {
+     *   if (context.object.hp && context.object.maxhp) {
+     *     const percent = context.object.hp / context.object.maxhp;
+     *     if (percent < 0.2) {
+     *       result.style.hpBarColor = "#ff0000";
+     *       result.style.suffix = (result.style.suffix || "") + " ☠️";
+     *     }
+     *   }
+     * }, 5);
+     * ```
+     */
+    register(name: string, filter: ObjectListEntryFilter, priority?: number): void;
+    /**
+     * Unregister an object list entry filter
+     *
+     * @param name - Filter identifier to remove
+     * @returns True if filter was found and removed
+     *
+     * @example
+     * ```typescript
+     * api.objectListFilters.unregister("dragons");
+     * ```
+     */
+    unregister(name: string): boolean;
+    /**
+     * Get list of registered filter names
+     *
+     * @returns Array of filter names in priority order
+     *
+     * @example
+     * ```typescript
+     * const filters = api.objectListFilters.getFilterNames();
+     * console.log("Active filters:", filters);
+     * ```
+     */
+    getFilterNames(): string[];
+    /**
+     * Clear all registered filters
+     *
+     * @example
+     * ```typescript
+     * api.objectListFilters.clear();
+     * ```
+     */
+    clear(): void;
+}
+
+/**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
    * Use this to create custom formatted output for api.output.print()
@@ -1966,6 +2162,8 @@ export interface PluginApi {
     magicKeys: MagicKeysApi;
     /** Herbs - herb inventory management in bags */
     herbs: HerbsApi;
+    /** Object list filters - customize object list entry rendering */
+    objectListFilters: ObjectListFiltersApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

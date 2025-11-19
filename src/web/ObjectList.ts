@@ -2,6 +2,7 @@ import Client from "@client/Client";
 import { getItemSync, setItemSync } from "@modules/core/storage";
 import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "@client/utils/attackCommand";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
+import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
 
 export default class ObjectList {
     private client: Client;
@@ -270,50 +271,114 @@ export default class ObjectList {
                 numClasses.push("object-num-next-target");
             }
             const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
-            const numLabel = isPlayer
+            let numLabel = isPlayer
                 ? `${prefix}${num}`
                 : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle}>${num}</span>`;
             const rawDesc = obj.desc || "";
-            let coloredDesc = rawDesc;
+            const isTeammate = tm?.isInTeam?.(rawDesc);
+            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+
+            // Apply filters before rendering
+            const filterContext: EntryContext = {
+                object: obj,
+                displayNum: parseInt(num, 10),
+                isTarget: obj.avatar_target || false,
+                isNextTarget: isNextQueued,
+                isTeammate: isTeammate || false,
+                rawDescription: rawDesc,
+                isAttacking,
+                attackCommand: this.attackCommand
+            };
+            const filterResult = objectListFilters.apply(filterContext);
+
+            // Use filtered number label if provided
+            if (filterResult.content?.numberLabel !== undefined) {
+                numLabel = filterResult.content.numberLabel;
+            }
+
+            // Build description with filter overrides
+            let descriptionColor: string | undefined;
+            let descClasses = [] as string[];
+
+            // Default color logic
             if (!isPlayer) {
                 if (obj.avatar_target) {
-                    coloredDesc = `<span style="color:#ffaaaa">${rawDesc}</span>`;
-                } else if (tm?.isInTeam?.(rawDesc)) {
-                    const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-                    const style = "color:springgreen";
-                    const classes = [] as string[];
+                    descriptionColor = "#ffaaaa";
+                } else if (isTeammate) {
+                    descriptionColor = "springgreen";
                     if (teamAttacking && !isAttacking) {
-                        classes.push("team-not-attacking");
+                        descClasses.push("team-not-attacking");
                     }
-                    const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
-                    coloredDesc = `<span${classAttr} style="${style}">${rawDesc}</span>`;
                 } else if (
                     typeof obj.hp === "number" &&
-                    obj.attack_num !== false &&
-                    obj.attack_num !== undefined
+                    isAttacking
                 ) {
-                    coloredDesc = `<span style="color:#b19cd9">${rawDesc}</span>`;
+                    descriptionColor = "#b19cd9";
                 }
             }
+
+            // Apply filter color override
+            if (filterResult.style?.descriptionColor) {
+                descriptionColor = filterResult.style.descriptionColor;
+            }
+
+            // Apply filter italic override (via CSS class)
+            if (filterResult.style?.italic) {
+                descClasses.push("team-not-attacking"); // This CSS class applies italic style
+            }
+
+            // Apply filter CSS classes
+            if (filterResult.style?.cssClasses) {
+                descClasses.push(...filterResult.style.cssClasses);
+            }
+
+            // Use filtered description if provided
+            const displayDesc = filterResult.content?.description !== undefined
+                ? filterResult.content.description
+                : rawDesc;
+
+            // Build colored description
+            let coloredDesc = displayDesc;
+            if (!isPlayer && descriptionColor) {
+                const classAttr = descClasses.length ? ` class="${descClasses.join(" ")}"` : "";
+                coloredDesc = `<span${classAttr} style="color:${descriptionColor}">${displayDesc}</span>`;
+            }
+
             const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
-            const isTeammate = tm?.isInTeam?.(rawDesc) ? "true" : "false";
+            const isTeammateStr = isTeammate ? "true" : "false";
             const desc = isPlayer
-                ? `${rawDesc}${padding}`
-                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammate}">${coloredDesc}</span>${padding}`;
+                ? `${displayDesc}${padding}`
+                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}">${coloredDesc}</span>${padding}`;
+
+            // Build HP bar with filter override
             let bar = "";
-            if (typeof obj.hp === "number") {
+            if (filterResult.content?.hpBar !== undefined) {
+                bar = filterResult.content.hpBar;
+            } else if (typeof obj.hp === "number") {
                 const hp = Math.max(0, Math.min(6, obj.hp)) + 1;
                 const colorLevel = getColorLevel(hp, 7, false, true);
-                const color = COLOR_OBJECT[colorLevel];
+                let color = COLOR_OBJECT[colorLevel];
+
+                // Apply filter HP bar color override
+                if (filterResult.style?.hpBarColor) {
+                    color = filterResult.style.hpBarColor;
+                }
+
                 const filled = "#".repeat(hp);
                 const empty = "-".repeat(7 - hp);
                 bar = `[<span style="color:${color}">${filled}${empty}</span>]`;
             }
+
             const attackers = objects
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => o.shortcut);
             const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
-            return `${numLabel} ${bar} ${desc}${arrow}`.trimEnd();
+
+            // Apply prefix and suffix from filters (only to description)
+            const customPrefix = filterResult.style?.prefix || "";
+            const customSuffix = filterResult.style?.suffix || "";
+
+            return `${numLabel} ${bar} ${customPrefix}${desc}${customSuffix}${arrow}`.trimEnd();
         });
         this.objectLines = lines;
         this.content.innerHTML = lines.join("<br>");

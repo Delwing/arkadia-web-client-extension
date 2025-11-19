@@ -553,6 +553,122 @@ api.bind.clear();
 const label = api.bind.getLabel();
 ```
 
+#### `api.objectListFilters` - Dostosowywanie Listy Obiektów
+
+System filtrów pozwala na pełną customizację wyglądu wpisów na liście obiektów - można zmieniać kolory, dodawać ikony, modyfikować tekst i wiele więcej. Filtry są composable - wiele filtrów może działać razem, budując na swoich modyfikacjach.
+
+```typescript
+// Zarejestruj filtr
+api.objectListFilters.register(
+  "mojPlugin:nazwaFiltra",  // Unikalna nazwa (prefiks pluginu zalecany)
+  (context, result) => {    // Funkcja filtru
+    // Modyfikuj result na podstawie context
+  },
+  10  // Opcjonalny priorytet (wyższy = wykonuje się pierwszy)
+);
+
+// Usuń filtr
+api.objectListFilters.unregister("mojPlugin:nazwaFiltra");
+
+// Pobierz listę aktywnych filtrów
+const filters = api.objectListFilters.getFilterNames();
+
+// Wyczyść wszystkie filtry
+api.objectListFilters.clear();
+```
+
+**Context dostępny w filtrze:**
+- `context.object` - Surowe dane GMCP (hp, maxhp, num, desc, id, attackers, etc.)
+- `context.displayNum` - Numer wpisu/skrót
+- `context.isTarget` - Czy to obecny cel avatara?
+- `context.isNextTarget` - Czy to następny cel w kolejce?
+- `context.isTeammate` - Czy to członek drużyny?
+- `context.rawDescription` - Oryginalny opis
+- `context.isAttacking` - Czy obiekt atakuje?
+- `context.attackCommand` - Obecna komenda ataku
+
+**Result (modyfikuj ten obiekt):**
+```typescript
+// Zmień kolor opisu
+result.style.descriptionColor = "#ff0000";
+
+// Dodaj prefiks (ZAWSZE appenduj, nie zastępuj!)
+result.style.prefix = (result.style.prefix || "") + "🐉 ";
+
+// Dodaj sufiks (ZAWSZE appenduj, nie zastępuj!)
+result.style.suffix = (result.style.suffix || "") + " ⭐";
+
+// Zmień kolor paska HP
+result.style.hpBarColor = "#00ff00";
+
+// Dodaj klasy CSS
+if (!result.style.cssClasses) result.style.cssClasses = [];
+result.style.cssClasses.push("moja-klasa");
+
+// Zamień tekst opisu
+result.content.description = "skrócona nazwa";
+
+// Zamień pasek HP całkowicie
+result.content.hpBar = "<własny html>";
+
+// Zatrzymaj kolejne filtry
+return { stopPropagation: true };
+```
+
+**Przykłady zastosowań:**
+```typescript
+// Podświetl smoki na czerwono z emoji
+api.objectListFilters.register("dragons", (context, result) => {
+  if (context.rawDescription.toLowerCase().includes("smok")) {
+    result.style.descriptionColor = "#ff0000";
+    result.style.prefix = (result.style.prefix || "") + "🐉 ";
+  }
+}, 10);
+
+// Oznacz niskie HP
+api.objectListFilters.register("lowHp", (context, result) => {
+  if (context.object.hp && context.object.maxhp) {
+    const percent = context.object.hp / context.object.maxhp;
+    if (percent < 0.2) {
+      result.style.hpBarColor = "#ff0000";
+      result.style.suffix = (result.style.suffix || "") + " ☠️";
+    }
+  }
+}, 5);
+
+// Skróć długie nazwy
+api.objectListFilters.register("shorten", (context, result) => {
+  let desc = context.rawDescription;
+  desc = desc.replace("bardzo stary ", "");
+  desc = desc.replace("potwornie ", "");
+  if (desc !== context.rawDescription) {
+    result.content.description = desc.trim();
+  }
+});
+```
+
+**Najlepsze praktyki:**
+1. Używaj prefixu nazwy pluginu: `"mojPlugin:filtr"`
+2. ZAWSZE appenduj do prefix/suffix, nigdy nie zastępuj
+3. Sprawdzaj istniejący stan przed ustawieniem
+4. Używaj priorytetów mądrze (wyższy = pierwszy):
+   - 20+ dla dekoracji (ikony, markery)
+   - 10-19 dla podświetleń (kolory, ostrzeżenia)
+   - 0-9 dla modyfikacji (zmiany tekstu)
+5. Czyść filtry przy wyładowaniu pluginu
+6. Filtry działają przy każdym renderze - unikaj ciężkich operacji
+
+**Typy TypeScript:**
+```typescript
+import type { ObjectListEntryFilter } from "@web/objectListFilters";
+
+const myFilter: ObjectListEntryFilter = (context, result) => {
+  // Pełne wsparcie TypeScript z autocomplete!
+};
+```
+
+Zobacz `examples/object-list-filters-plugin.ts` dla pełnego przykładu.
+
 #### `api.AnsiAwareBuffer` - Manipulacja Liniami
 
 ```typescript
@@ -742,3 +858,4 @@ Zobacz katalog `examples/` w repozytorium dla kompletnych przykładów pluginów
 - `simple-highlighter-plugin.ts` - Prosty plugin do podświetlania słów
 - `example-plugin.ts` - Kompleksowy przykład demonstrujący różne funkcje API
 - `combat-alert-plugin.ts` - Zaawansowany plugin śledzący statystyki walki
+- `object-list-filters-plugin.ts` - Plugin customizujący wygląd listy obiektów (ikony, kolory, HP)

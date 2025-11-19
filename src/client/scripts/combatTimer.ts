@@ -60,6 +60,10 @@ export default function initCombatTimer(client: Client) {
             return;
         }
         if (inCombat === lastCombatState) {
+            // Even if the combat state hasn't changed, ensure timer is in correct state
+            if (inCombat && timer !== null) {
+                stopTimer();
+            }
             return;
         }
         lastCombatState = inCombat;
