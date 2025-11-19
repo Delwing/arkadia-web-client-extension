@@ -220,8 +220,7 @@ test('Package helper sets delivery bind on arrival and clears status after handi
         });
     }
 
-    await pushGmcp(page, 'gmcp.room.exits', {exits: ['south']});
-    await pushGmcp(page, 'gmcp_msg.room.exits', {exits: ['south']});
+    await pushText(page, 'south', {type: 'room.exits'});
 
     await page.keyboard.press('BracketRight');
     await expect
