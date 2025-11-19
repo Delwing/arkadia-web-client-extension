@@ -5,7 +5,7 @@ import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type { SendCommandEvent } from "@shared/events";
 import { registerScripts } from "@client/main";
-import { showContextMenu } from "@shared/dom/contextMenu";
+import { showContextMenu, type ContextMenuEntry } from "@shared/dom/contextMenu";
 import { getContextMenuEntries as getPluginContextMenuEntries } from "@modules/core/pluginUiRegistry";
 import { setClientInstance } from "@shared/runtime";
 import {Modal, Dropdown} from 'bootstrap';
@@ -313,7 +313,7 @@ outputWrapper.addEventListener('contextmenu', event => {
     }
     event.preventDefault();
     const isVisible = areOutputTimestampsVisible();
-    const items = [
+    const items: ContextMenuEntry[] = [
         {
             label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
             action: () => setOutputTimestampVisibility(!isVisible),
@@ -334,10 +334,7 @@ outputWrapper.addEventListener('contextmenu', event => {
         },
     );
     getPluginContextMenuEntries().forEach(entry => {
-        items.push({
-            label: entry.label,
-            action: entry.action,
-        });
+        items.push(entry);
     });
     showContextMenu(items, event.clientX, event.clientY);
 });
@@ -621,33 +618,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if (commitInfo) {
         commitInfo.textContent = `${__COMMIT_SHA__} ${__COMMIT_DATE__}`;
 
-        // TODO: Redo version check - temporarily disabled
-        // Check for latest version from GitHub using public API
-        // fetch('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master')
-        //     .then(response => {
-        //         if (!response.ok) {
-        //             if (response.status === 403 || response.status === 429) {
-        //                 console.warn('GitHub API rate limit exceeded, skipping version check');
-        //                 return null;
-        //             }
-        //             throw new Error(`Failed to fetch latest commit: ${response.status}`);
-        //         }
-        //         return response.json();
-        //     })
-        //     .then(data => {
-        //         if (!data) return;
-        //         const latestSha = data.sha?.substring(0, 7);
-        //         if (latestSha && latestSha !== __COMMIT_SHA__) {
-        //             const warningDiv = document.createElement('div');
-        //             warningDiv.style.color = 'red';
-        //             warningDiv.style.marginTop = '0.5rem';
-        //             warningDiv.textContent = 'Nowa wersja dostępna - odśwież stronę';
-        //             commitInfo.appendChild(warningDiv);
-        //         }
-        //     })
-        //     .catch(err => {
-        //         console.warn('Could not check for updates:', err);
-        //     });
+        // Check for latest version from GitHub deployments API
+        fetch('https://api.github.com/repos/Delwing/arkadia-web-client-extension/deployments?environment=github-pages')
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 403 || response.status === 429) {
+                        console.warn('GitHub API rate limit exceeded, skipping version check');
+                        return null;
+                    }
+                    throw new Error(`Failed to fetch latest deployment: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+                // First deployment in the list is the most recent
+                if (Array.isArray(data) && data.length > 0) {
+                    const latestDeployment = data[0];
+                    const latestSha = latestDeployment.sha?.substring(0, 7);
+                    if (latestSha && latestSha !== __COMMIT_SHA__) {
+                        const warningDiv = document.createElement('div');
+                        warningDiv.style.color = 'red';
+                        warningDiv.style.marginTop = '0.5rem';
+                        warningDiv.textContent = 'Nowa wersja dostępna - odśwież stronę';
+                        commitInfo.appendChild(warningDiv);
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Could not check for updates:', err);
+            });
     }
 
     const messageInput = document.getElementById('message-input') as HTMLInputElement;

@@ -8,6 +8,7 @@ import {
     mockNpcDownload,
     mockPeopleDownload,
     getCurrentCommitSha,
+    mockGithubDeployments,
 } from './support/mocks';
 
 // Custom fixture that doesn't include GitHub mocks by default
@@ -25,22 +26,13 @@ const test = base.extend({
     },
 });
 
-// TODO: Re-enable when version check is reimplemented
-test.describe.skip('Version check', () => {
-    test('shows warning when new version is available', async ({page}) => {
+test.describe('Version check', () => {
+    test('shows warning when new version is available', async ({page, context}) => {
         // Set a route that returns a different SHA (simulating new version)
         // The SHA will be truncated to 7 chars by main.ts, so we need a different first 7 chars
         const newVersionSha = 'zzzzzzz1234567890123456789012345678901';
 
-        await page.route('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    sha: newVersionSha,
-                }),
-            });
-        });
+        await mockGithubDeployments(context, {sha: newVersionSha});
 
         await page.goto('/');
 
@@ -59,17 +51,9 @@ test.describe.skip('Version check', () => {
         await expect(warningDiv, 'warning should have correct text').toContainText('Nowa wersja dostępna - odśwież stronę');
     });
 
-    test('does not show warning when version is current', async ({page}) => {
+    test('does not show warning when version is current', async ({page, context}) => {
         // Set up mock that returns the current SHA (simulating no new version)
-        await page.route('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    sha: getCurrentCommitSha(), // Matches current commit
-                }),
-            });
-        });
+        await mockGithubDeployments(context, {sha: getCurrentCommitSha()});
 
         await page.goto('/');
 
@@ -89,7 +73,7 @@ test.describe.skip('Version check', () => {
         await expect(warningDiv, 'should not show new version warning').toHaveCount(0);
     });
 
-    test('handles GitHub API rate limit gracefully', async ({page}) => {
+    test('handles GitHub API rate limit gracefully', async ({page, context}) => {
         // Capture console messages before navigation
         const consoleWarnings: string[] = [];
         page.on('console', (msg) => {
@@ -99,15 +83,7 @@ test.describe.skip('Version check', () => {
         });
 
         // Set up mock to simulate rate limiting
-        await page.route('https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master', async (route) => {
-            await route.fulfill({
-                status: 403,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    message: 'API rate limit exceeded',
-                }),
-            });
-        });
+        await mockGithubDeployments(context, {simulateRateLimit: true});
 
         await page.goto('/');
 

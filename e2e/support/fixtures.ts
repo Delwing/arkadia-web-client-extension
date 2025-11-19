@@ -1,7 +1,7 @@
 import {expect, test as base} from '@playwright/test';
 import {
     installMockWebSocket,
-    mockGithubCommits,
+    mockGithubDeployments,
     mockKnowledgeDownload,
     mockMagicKeysDownload,
     mockMagicsDownload,
@@ -15,6 +15,7 @@ const test = base.extend({
     context: async ({context}, use) => {
         // Disable Google Analytics in tests
         await context.addInitScript(() => {
+            // @ts-expect-error for disabling GA
             window.__DISABLE_GA__ = true;
         });
 
@@ -25,7 +26,7 @@ const test = base.extend({
         await mockPeopleDownload(context);
         await mockKnowledgeDownload(context);
         await mockWiedzaDownload(context);
-        await mockGithubCommits(context);
+        await mockGithubDeployments(context);
         await installMockWebSocket(context);
         // eslint-disable-next-line react-hooks/rules-of-hooks
         await use(context);

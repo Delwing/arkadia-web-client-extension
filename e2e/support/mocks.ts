@@ -254,7 +254,7 @@ const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
 const WIEDZA_API_ROUTE = '**/admin-ajax.php?action=wiedza_data';
 const MAGICS_DATA_ROUTE = '**/magics_data.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
-const GITHUB_COMMITS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/commits/master';
+const GITHUB_DEPLOYMENTS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/deployments?environment=github-pages';
 
 // Get the current commit SHA dynamically
 function getCurrentCommitSha(): string {
@@ -424,11 +424,11 @@ export async function mockMagicKeysDownload(
 // Export for use in tests
 export {getCurrentCommitSha};
 
-export async function mockGithubCommits(
+export async function mockGithubDeployments(
     context: BrowserContext,
     options: {sha?: string; returnCurrent?: boolean; simulateRateLimit?: boolean} = {},
 ): Promise<void> {
-    await context.route(GITHUB_COMMITS_ROUTE, async (route) => {
+    await context.route(GITHUB_DEPLOYMENTS_ROUTE, async (route) => {
         if (options.simulateRateLimit) {
             // Simulate rate limiting
             await route.fulfill({
@@ -442,12 +442,16 @@ export async function mockGithubCommits(
         }
 
         // Return the specified SHA or the current commit SHA so tests don't show false warnings
+        // The first deployment in the array is the most recent
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({
-                sha: options.sha || getCurrentCommitSha(),
-            }),
+            body: JSON.stringify([
+                {
+                    sha: options.sha || getCurrentCommitSha(),
+                    environment: 'github-pages',
+                },
+            ]),
         });
     });
 }
