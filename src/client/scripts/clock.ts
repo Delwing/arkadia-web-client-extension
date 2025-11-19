@@ -211,7 +211,11 @@ class ClockDisplay {
     constructor() {
         eventBus.on("gmcp.room.info", (payload: any) => {
             if (payload?.map?.domain) {
-                this.setActiveDomain(payload.map.domain);
+                if (payload.map.domain === "Imperium") {
+                    this.setActiveDomain("Empire");
+                } else if (payload.map.domain === "Ishtar") {
+                    this.setActiveDomain("Ishtar");
+                }
             }
         })
     }
