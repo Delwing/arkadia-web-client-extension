@@ -227,7 +227,7 @@ export default function initCutting(
 
         // Register trigger to capture body count
         client.Triggers.registerOneTimeTrigger(
-            /^.*Doliczyl.s sie ([a-z]+) sztuk(|i)\.$/,
+            /^.*Doliczyl.s sie ([a-z ]+) sztuk(|i)\.$/,
             (line, matches) => {
                 if (matches && matches[1]) {
                     const countWord = matches[1];

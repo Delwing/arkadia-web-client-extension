@@ -52,6 +52,16 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zbieraj_extra _przedmiot_** - dodaje przedmiot do listy ekstra rzeczy zbieranych z ciał.
 - **/nie_zbieraj_extra [_przedmiot_]** - usuwa wskazany przedmiot z listy ekstra lub bez parametru czyści całą listę.
 
+## Wycinanie/Wyrywanie
+- **/wyc** lub **/wycinaj** - wycina ze wszystkich ciał w pomieszczeniu.
+- **/wyc _numer_** - wycina z ciała o podanym numerze.
+- **/wyr** lub **/wyrywaj** - wyrywa ze wszystkich ciał w pomieszczeniu.
+- **/wyr _numer_** - wyrywa z ciała o podanym numerze.
+
+## Lampa
+- **/zap** - wykonuje polecenie `zapal lampe`.
+- **/zg** - wykonuje polecenie `zgas lampe`.
+
 ## Prowadzenie i ruch
 - **/cofnij** - cofa postać do poprzedniego pomieszczenia na mapie.
 - **/move _kierunek_** - przesuwa postać w wybranym kierunku.
@@ -121,9 +131,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/pro _skrot_** - przekazuje prowadzenie obiektowi o podanym skrócie.
 - **/prze [_skrot_]** - przełamuje obronę oznaczonego celu lub wskazanego obiektu.
 - **/puszczaj** - przełącza automatyczne zwalnianie zasłony przy użyciu `/za` lub `/zas`.
-- **/zap** - wykonuje polecenie `zapal lampe`.
 - **/zap _numer_** - zaprasza do drużyny obiekt o podanym numerze.
-- **/zg** - wykonuje polecenie `zgas lampe`.
 - **/ra _id_** - rozkazuje drużynie zaatakować osobę o podanym numerze.
 - **/ra** - rozkazuje drużynie zaatakować aktualny cel ataku; działa również na przełamywanie celów.
 - **/rz _skrot_** - rozkazuje drużynie zasłonić obiekt o podanym skrócie.

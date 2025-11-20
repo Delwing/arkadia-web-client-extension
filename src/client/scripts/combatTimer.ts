@@ -2,6 +2,7 @@ import Client from "../Client";
 
 const DISPLAY_DURATION_MS = 30_000;
 const INITIAL_SECONDS = Math.ceil(DISPLAY_DURATION_MS / 1000);
+const OUT_OF_COMBAT_DELAY_MS = 5_000;
 
 export default function initCombatTimer(client: Client) {
     let playerNum: number | undefined;
@@ -9,6 +10,7 @@ export default function initCombatTimer(client: Client) {
     let timer: number | null = null;
     let timerStart = 0;
     let lastEmitted: number | null = null;
+    let outOfCombatTimeout: number | null = null;
 
     function emit(seconds: number | null) {
         client.sendEvent('combatTimer', seconds);
@@ -22,6 +24,13 @@ export default function initCombatTimer(client: Client) {
         timerStart = 0;
         lastEmitted = null;
         emit(null);
+    }
+
+    function cancelOutOfCombatDelay() {
+        if (outOfCombatTimeout !== null) {
+            clearTimeout(outOfCombatTimeout);
+            outOfCombatTimeout = null;
+        }
     }
 
     function updateTimer() {
@@ -56,6 +65,7 @@ export default function initCombatTimer(client: Client) {
             lastCombatState = inCombat;
             if (inCombat) {
                 stopTimer();
+                cancelOutOfCombatDelay();
             }
             return;
         }
@@ -64,13 +74,25 @@ export default function initCombatTimer(client: Client) {
             if (inCombat && timer !== null) {
                 stopTimer();
             }
+            if (inCombat && outOfCombatTimeout !== null) {
+                cancelOutOfCombatDelay();
+            }
             return;
         }
         lastCombatState = inCombat;
         if (inCombat) {
             stopTimer();
+            cancelOutOfCombatDelay();
         } else {
-            startTimer();
+            // Wait 5 seconds before starting the timer to avoid brief out-of-combat moments
+            cancelOutOfCombatDelay();
+            outOfCombatTimeout = window.setTimeout(() => {
+                outOfCombatTimeout = null;
+                // Double-check we're still out of combat
+                if (!lastCombatState) {
+                    startTimer();
+                }
+            }, OUT_OF_COMBAT_DELAY_MS);
         }
     }
 
@@ -103,6 +125,7 @@ export default function initCombatTimer(client: Client) {
         playerNum = undefined;
         lastCombatState = null;
         stopTimer();
+        cancelOutOfCombatDelay();
     });
 
     emit(null);
