@@ -463,6 +463,33 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                             </Form.Group>
                         </div>
                     </section>
+                    <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Wycinanie/Wyrywanie</h5>
+                        <div className="character-settings-stack">
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komendy przed wycinaniem:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.cuttingPreAction}
+                                    onChange={e => onChangeSetting(s => s.cuttingPreAction = e.target.value)}
+                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                />
+                                <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komendy po wycinaniu:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.cuttingPostAction}
+                                    onChange={e => onChangeSetting(s => s.cuttingPostAction = e.target.value)}
+                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                />
+                                <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
+                            </Form.Group>
+                        </div>
+                    </section>
                     <section className="character-settings-section character-settings-section--full">
                         <h5 className="character-settings-section-title">Język</h5>
                         <div className="d-flex flex-wrap gap-3 align-items-center">

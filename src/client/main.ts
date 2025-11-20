@@ -100,6 +100,7 @@ import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
 import {initClock} from "@client/scripts/clock.ts";
 import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
+import initCutting from './scripts/cutting'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -227,6 +228,7 @@ export function registerScripts(client: Client) {
     initItemCollector(client, aliases);
     initContainers(client)
     initBagManager(client, aliases)
+    initCutting(client, aliases)
     initDeposits(client, aliases)
     initHerbShop(client)
     initArmorShop(client)

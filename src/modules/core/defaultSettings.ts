@@ -32,6 +32,8 @@ export interface Settings {
     enemyBindsEnabledSlots: [boolean, boolean, boolean];
     favoriteMagicTypes?: string[];
     favoriteMagicKeys?: string[];
+    cuttingPreAction?: string;
+    cuttingPostAction?: string;
 }
 
 export const defaultSettings: Settings = {
@@ -65,4 +67,6 @@ export const defaultSettings: Settings = {
     enemyBindsEnabledSlots: [true, true, true],
     favoriteMagicTypes: [],
     favoriteMagicKeys: [],
+    cuttingPreAction: '',
+    cuttingPostAction: '',
 };
