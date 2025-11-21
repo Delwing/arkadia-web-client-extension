@@ -7,6 +7,7 @@ import type {HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs"
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import { polishWordToNumber } from "./polishNumberConverter";
 
 const headerColor = createColorFormat('#8470ff')
 const WHITE = createColorFormat('#ffffff');
@@ -34,74 +35,6 @@ function getHerbCase(herbId: string, amount: number, herbsData?: HerbsData | nul
 }
 
 
-const polishNumbers: Record<string, number> = {
-    'jeden': 1, 'jedna': 1, 'jedno': 1,
-    'jednego': 1,
-    'jednej': 1,
-    'dwa': 2, 'dwie': 2,
-    'dwoch': 2,
-    'trzy': 3,
-    'trzech': 3,
-    'cztery': 4,
-    'czterech': 4,
-    'piec': 5,
-    'pieciu': 5,
-    'szesc': 6,
-    'szesciu': 6,
-    'siedem': 7,
-    'siedmiu': 7,
-    'osiem': 8,
-    'osmiu': 8,
-    'dziewiec': 9,
-    'dziewieciu': 9,
-    'dziesiec': 10,
-    'dziesieciu': 10,
-    'jedenascie': 11,
-    'jedenastu': 11,
-    'dwanascie': 12,
-    'dwunastu': 12,
-    'trzynascie': 13,
-    'trzynastu': 13,
-    'czternascie': 14,
-    'czternastu': 14,
-    'pietnascie': 15,
-    'pietnastu': 15,
-    'szesnascie': 16,
-    'szesnastu': 16,
-    'siedemnascie': 17,
-    'siedemnastu': 17,
-    'osiemnascie': 18,
-    'osiemnastu': 18,
-    'dziewietnascie': 19,
-    'dziewietnastu': 19,
-    'dwadziescia': 20,
-    'dwudziestu': 20,
-    'dwadziescia jeden': 21, 'dwadziescia jedna': 21,
-    'dwadziescia dwa': 22, 'dwadziescia dwie': 22,
-    'dwudziestu dwoch': 22,
-    'dwadziescia trzy': 23,
-    'dwudziestu trzech': 23,
-    'dwadziescia cztery': 24,
-    'dwudziestu czterech': 24,
-    'dwadziescia piec': 25,
-    'dwudziestu pieciu': 25,
-    'dwadziescia szesc': 26,
-    'dwudziestu szesciu': 26,
-    'dwadziescia siedem': 27,
-    'dwudziestu siedmiu': 27,
-    'dwadziescia osiem': 28,
-    'dwudziestu osmiu': 28,
-    'dwadziescia dziewiec': 29,
-    'dwudziestu dziewieciu': 29,
-    'trzydziesci': 30
-};
-
-function parseNumber(str: string): number {
-    str = str.trim().toLowerCase();
-    if (/^\d+$/.test(str)) return parseInt(str, 10);
-    str = str.replace(/\s+/g, ' ');
-    return polishNumbers[str] || 0;
-}
 
 export default async function initHerbCounter(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     let herbs: HerbsData | null = null;
@@ -490,7 +423,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
         if (!awaiting) return line;
-        left = parseNumber(matches.groups?.num || matches[1]);
+        left = polishWordToNumber(matches.groups?.num || matches[1]);
         for (let i = 1; i <= left; i++) {
             client.sendCommand(`zajrzyj do ${i}. swojego woreczka`);
         }
@@ -504,7 +437,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const bag: Record<string, number> = {};
         items.forEach(it => {
             const key = herbMap[it.name.toLowerCase()] || it.name.toLowerCase();
-            const count = typeof it.count === 'number' ? it.count : parseNumber(String(it.count));
+            const count = typeof it.count === 'number' ? it.count : polishWordToNumber(String(it.count));
             totals[key] = (totals[key] || 0) + count;
             bag[key] = (bag[key] || 0) + count;
         });
@@ -703,7 +636,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             callback: async (m: RegExpMatchArray) => {
                 const action = m[1];
                 const herb = m[2].toLowerCase();
-                let amount = parseNumber(m[3]);
+                let amount = polishWordToNumber(m[3]);
                 if (isNaN(amount)) {
                     amount = 1;
                 }
