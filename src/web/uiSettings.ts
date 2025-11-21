@@ -563,6 +563,7 @@ export default async function initUiSettings() {
     const mapPlayerMarkerSizeFactorInput = modalEl.querySelector('#ui-map-player-marker-size-factor') as HTMLInputElement;
     const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
     const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
+    const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -707,6 +708,7 @@ export default async function initUiSettings() {
     };
 
     populateFormInputs(current);
+
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
             labelRenderModeInput.value = 'data';
@@ -839,46 +841,135 @@ export default async function initUiSettings() {
         embedded?.refreshRender();
     };
 
+    // Function to draw preview of room and player marker
+    const drawPreview = () => {
+        if (!mapPreviewCanvas) return;
+        const ctx = mapPreviewCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const width = mapPreviewCanvas.width;
+        const height = mapPreviewCanvas.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Get current values
+        const roomSize = parseFloat(mapRoomSizeInput.value);
+        const lineWidth = parseFloat(mapLineWidthInput.value);
+        const strokeColor = mapPlayerMarkerStrokeColorInput.value;
+        const fillColor = mapPlayerMarkerFillColorInput.value;
+        const strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
+        const fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
+        const strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
+        const sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
+        const dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
+
+        // Scale for rendering (base size in pixels)
+        const baseSize = 40;
+        const scaledRoomSize = baseSize * roomSize;
+        const scaledLineWidth = baseSize * lineWidth;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        // Draw sample room (square)
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = scaledLineWidth;
+        ctx.strokeRect(
+            centerX - scaledRoomSize / 2,
+            centerY - scaledRoomSize / 2,
+            scaledRoomSize,
+            scaledRoomSize
+        );
+
+        // Draw player marker (circle)
+        const markerRadius = (scaledRoomSize / 2) * sizeFactor;
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, markerRadius, 0, Math.PI * 2);
+
+        // Fill
+        if (fillAlpha > 0) {
+            ctx.fillStyle = fillColor + Math.round(fillAlpha * 255).toString(16).padStart(2, '0');
+            ctx.fill();
+        }
+
+        // Stroke
+        if (strokeAlpha > 0) {
+            ctx.strokeStyle = strokeColor + Math.round(strokeAlpha * 255).toString(16).padStart(2, '0');
+            ctx.lineWidth = scaledRoomSize * strokeWidth;
+
+            if (dashEnabled) {
+                const dashLength = markerRadius * 0.3;
+                ctx.setLineDash([dashLength, dashLength]);
+            } else {
+                ctx.setLineDash([]);
+            }
+
+            ctx.stroke();
+        }
+
+        // Reset line dash
+        ctx.setLineDash([]);
+    };
+
     mapRoomSizeInput.addEventListener('input', () => {
         mapRoomSizeValue.textContent = mapRoomSizeInput.value;
         Settings.roomSize = parseFloat(mapRoomSizeInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapLineWidthInput.addEventListener('input', () => {
         mapLineWidthValue.textContent = mapLineWidthInput.value;
         Settings.lineWidth = parseFloat(mapLineWidthInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapPlayerMarkerStrokeAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeAlphaValue.textContent = mapPlayerMarkerStrokeAlphaInput.value;
         Settings.playerMarker.strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapPlayerMarkerFillAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerFillAlphaValue.textContent = mapPlayerMarkerFillAlphaInput.value;
         Settings.playerMarker.fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapPlayerMarkerStrokeWidthInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeWidthValue.textContent = mapPlayerMarkerStrokeWidthInput.value;
         Settings.playerMarker.strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapPlayerMarkerSizeFactorInput.addEventListener('input', () => {
         mapPlayerMarkerSizeFactorValue.textContent = mapPlayerMarkerSizeFactorInput.value;
         Settings.playerMarker.sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
         refreshEmbeddedMap();
+        drawPreview();
     });
 
     mapPlayerMarkerDashEnabledInput.addEventListener('change', () => {
         Settings.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
         refreshEmbeddedMap();
+        drawPreview();
     });
+
+    mapPlayerMarkerStrokeColorInput.addEventListener('input', () => {
+        drawPreview();
+    });
+
+    mapPlayerMarkerFillColorInput.addEventListener('input', () => {
+        drawPreview();
+    });
+
+    // Initial preview draw
+    drawPreview();
 
     if (customBeepSoundInput) {
         customBeepSoundInput.addEventListener('change', (e) => {
