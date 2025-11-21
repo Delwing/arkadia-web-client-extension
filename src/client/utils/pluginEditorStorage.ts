@@ -1,25 +1,39 @@
 import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from './dataCache'
 import type { PluginInfo } from '@shared/types/Plugin'
 
+/**
+ * Individual file in a plugin's virtual file system
+ */
+export interface PluginFile {
+  /** File path relative to plugin root (e.g., "index.ts", "utils/helper.ts") */
+  path: string
+  /** File content */
+  content: string
+  /** Language/file type */
+  language: 'javascript' | 'typescript'
+}
+
 export interface EditorPluginData {
   /** Unique identifier for the plugin */
   id: string
   /** Plugin name */
   name: string
-  /** Source code (TypeScript or JavaScript) */
-  source: string
-  /** Compiled JavaScript code (always present, either compiled or same as source) */
+  /** Compiled JavaScript code (always present, bundled from all files) */
   compiled: string
-  /** Language of the source file */
-  language: 'javascript' | 'typescript'
+  /** Virtual file system - map of file paths to file data */
+  files: Record<string, PluginFile>
+  /** List of folder paths (without trailing slash, e.g., "utils", "components/ui") */
+  folders?: string[]
+  /** Entry point file path (e.g., "index.ts") */
+  entryPoint: string
   /** Plugin metadata */
   metadata?: PluginInfo
   /** When the plugin was created */
   createdAt: number
   /** Last modification timestamp */
   updatedAt: number
-  /** Last compilation timestamp (for TypeScript files) */
-  lastCompiledAt?: number
+  /** Last compilation timestamp */
+  lastCompiledAt: number
 }
 
 const DB_CONFIG = {
@@ -153,4 +167,77 @@ function simpleHash(str: string): string {
     hash = hash & hash
   }
   return Math.abs(hash).toString(36)
+}
+
+/**
+ * Migrate legacy single-file plugin to multi-file format
+ * This handles plugins stored before the multi-file system was implemented
+ */
+export function migrateLegacyPlugin(plugin: any): EditorPluginData {
+  // If already has proper multi-file structure, no migration needed
+  if (plugin.files && plugin.entryPoint) {
+    return plugin as EditorPluginData
+  }
+
+  // Migrate from legacy source/language format
+  if (plugin.source && plugin.language) {
+    const extension = plugin.language === 'typescript' ? 'ts' : 'js'
+    const entryPoint = `index.${extension}`
+
+    return {
+      id: plugin.id,
+      name: plugin.name,
+      compiled: plugin.compiled,
+      files: {
+        [entryPoint]: {
+          path: entryPoint,
+          content: plugin.source,
+          language: plugin.language,
+        }
+      },
+      entryPoint,
+      metadata: plugin.metadata,
+      createdAt: plugin.createdAt,
+      updatedAt: plugin.updatedAt,
+      lastCompiledAt: plugin.lastCompiledAt || plugin.updatedAt,
+    }
+  }
+
+  // Fallback: create minimal valid plugin structure
+  const entryPoint = 'index.ts'
+  return {
+    id: plugin.id,
+    name: plugin.name,
+    compiled: plugin.compiled || '',
+    files: {
+      [entryPoint]: {
+        path: entryPoint,
+        content: '',
+        language: 'typescript',
+      }
+    },
+    entryPoint,
+    metadata: plugin.metadata,
+    createdAt: plugin.createdAt,
+    updatedAt: plugin.updatedAt,
+    lastCompiledAt: plugin.updatedAt,
+  }
+}
+
+/**
+ * Get the language for a file based on extension
+ */
+export function getLanguageFromPath(path: string): 'javascript' | 'typescript' {
+  return path.endsWith('.ts') ? 'typescript' : 'javascript'
+}
+
+/**
+ * Create a new plugin file
+ */
+export function createPluginFile(path: string, content: string = ''): PluginFile {
+  return {
+    path,
+    content,
+    language: getLanguageFromPath(path),
+  }
 }
