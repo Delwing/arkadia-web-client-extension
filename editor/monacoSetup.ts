@@ -119,6 +119,23 @@ export function defineCustomTheme() {
   })
 }
 
+/**
+ * Get the saved theme preference or default
+ */
+export function getSavedTheme(): string {
+  return localStorage.getItem('editor-theme') || 'dark-plus'
+}
+
+/**
+ * Change the editor theme
+ */
+export function changeTheme(themeName: string) {
+  monaco.editor.setTheme(themeName)
+
+  // Store theme preference
+  localStorage.setItem('editor-theme', themeName)
+}
+
 export async function initializeEditor(
   container: HTMLElement,
   updateStatus: (message: string, type: StatusType) => void,
@@ -132,12 +149,26 @@ export async function initializeEditor(
   updateStatus('Loading syntax highlighter...', 'normal')
   try {
     const highlighter = await createHighlighter({
-      themes: ['dark-plus'],
+      themes: [
+        'dark-plus',
+        'light-plus',
+        'monokai',
+        'github-dark',
+        'github-light',
+        'one-dark-pro',
+        'dracula',
+        'nord',
+        'solarized-dark',
+        'solarized-light',
+      ],
       langs: ['typescript', 'javascript', 'json', 'plaintext']
     })
 
     shikiToMonaco(highlighter, monaco)
     console.log('Shiki TextMate grammars loaded successfully')
+
+    // Store highlighter globally for theme switching
+    ;(window as any).__shikiHighlighter = highlighter
   } catch (error) {
     console.error('Failed to initialize Shiki:', error)
     updateStatus('Warning: Syntax highlighter failed to load', 'error')
@@ -152,9 +183,12 @@ export async function initializeEditor(
 
   updateStatus('Initializing editor...', 'normal')
 
+  // Load saved theme preference
+  const savedTheme = getSavedTheme()
+
   const editor = monaco.editor.create(container, {
     model: model,
-    theme: 'dark-plus',
+    theme: savedTheme,
     automaticLayout: true,
     minimap: { enabled: true },
     fontSize: 14,

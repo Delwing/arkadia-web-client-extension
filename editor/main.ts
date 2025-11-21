@@ -25,7 +25,9 @@ import {
   initializeEditor,
   registerAutoImportCompletion,
   registerImportPathCompletion,
-  updateMonacoFileSystem
+  updateMonacoFileSystem,
+  changeTheme,
+  getSavedTheme
 } from './monacoSetup'
 import {renderFileTree} from './fileTree'
 import {
@@ -963,6 +965,13 @@ function setupEventListeners() {
     }
 
     updateLanguageUI(language)
+  })
+
+  const themeSelect = document.getElementById('theme-select') as HTMLSelectElement
+  themeSelect.value = getSavedTheme()
+  themeSelect.addEventListener('change', (e) => {
+    const target = e.target as HTMLSelectElement
+    changeTheme(target.value)
   })
 
   // New plugin modal
