@@ -171,6 +171,29 @@ function switchToFile(filePath: string) {
 
     state.editorModels.set(filePath, model)
 
+    // Add the file to Monaco's virtual file system immediately
+    const fileUri = `file:///${state.currentPluginId}/${filePath}`
+    if (file.language === 'typescript' || file.language === 'javascript') {
+      monaco.typescript.typescriptDefaults.addExtraLib(file.content, fileUri)
+      monaco.typescript.javascriptDefaults.addExtraLib(file.content, fileUri)
+    } else if (file.language === 'json') {
+      // For JSON files, create a TypeScript declaration module with .d.ts extension
+      const dtsUri = fileUri.replace('.json', '.json.d.ts')
+      try {
+        const jsonContent = JSON.parse(file.content || '{}')
+        const inferredType = inferJsonType(jsonContent)
+        const tsModuleContent = `declare const value: ${inferredType};
+export default value;`
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+      } catch {
+        const tsModuleContent = `declare const value: any;
+export default value;`
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+      }
+    }
+
     // Listen for content changes
     const capturedFilePath = filePath
     const capturedPluginId = state.currentPluginId

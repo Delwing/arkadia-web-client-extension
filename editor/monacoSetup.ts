@@ -88,8 +88,13 @@ export function setupTypeScriptEnvironment() {
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
 
-  // Add wildcard module declaration for JSON files
+  // Add wildcard module declarations for JSON files
   const jsonModuleDeclaration = `declare module "*.json" {
+  const value: any;
+  export default value;
+}
+
+declare module "*data.json" {
   const value: any;
   export default value;
 }`
@@ -278,8 +283,8 @@ export async function initializeEditor(
 }
 
 // Helper to extract exports from a file
-function extractExports(content: string, filePath: string): Array<{ name: string, kind: string }> {
-  const exports: Array<{ name: string, kind: string }> = []
+function extractExports(content: string, filePath: string): Array<{ name: string, kind: string, isDefault?: boolean }> {
+  const exports: Array<{ name: string, kind: string, isDefault?: boolean }> = []
 
   // Match export const/let/var
   const constExports = content.matchAll(/export\s+(?:const|let|var)\s+(\w+)/g)
@@ -317,10 +322,48 @@ function extractExports(content: string, filePath: string): Array<{ name: string
     exports.push({ name: match[1], kind: 'enum' })
   }
 
-  // Match export default (use filename as name)
-  if (content.includes('export default')) {
-    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.(ts|js|json)$/, '')
-    exports.push({ name: fileName, kind: 'default' })
+  // Match export default with various patterns
+  // export default function name() {}
+  const defaultFunctionMatch = content.match(/export\s+default\s+(?:async\s+)?function\s+(\w+)/)
+  if (defaultFunctionMatch) {
+    exports.push({ name: defaultFunctionMatch[1], kind: 'function', isDefault: true })
+  }
+  // export default class name {}
+  else {
+    const defaultClassMatch = content.match(/export\s+default\s+class\s+(\w+)/)
+    if (defaultClassMatch) {
+      exports.push({ name: defaultClassMatch[1], kind: 'class', isDefault: true })
+    }
+    // export default identifier or anonymous
+    else if (content.match(/export\s+default\s+/)) {
+      // Try to extract the identifier being exported
+      const defaultIdentifierMatch = content.match(/export\s+default\s+(\w+)/)
+      if (defaultIdentifierMatch) {
+        const identifierName = defaultIdentifierMatch[1]
+
+        // Try to infer the kind by looking for the identifier's declaration
+        let kind = 'default'
+
+        // Check if it's a function
+        if (content.match(new RegExp(`(?:async\\s+)?function\\s+${identifierName}\\s*\\(`))) {
+          kind = 'function'
+        }
+        // Check if it's a class
+        else if (content.match(new RegExp(`class\\s+${identifierName}\\s*[{<]`))) {
+          kind = 'class'
+        }
+        // Check if it's a const/let/var
+        else if (content.match(new RegExp(`(?:const|let|var)\\s+${identifierName}\\s*[=:]`))) {
+          kind = 'variable'
+        }
+
+        exports.push({ name: identifierName, kind, isDefault: true })
+      } else {
+        // Anonymous default export - use filename as suggestion
+        const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.(ts|js|json)$/, '')
+        exports.push({ name: fileName, kind: 'default', isDefault: true })
+      }
+    }
   }
 
   return exports
@@ -350,6 +393,55 @@ function extractImportedSymbols(content: string): Set<string> {
   }
 
   return imported
+}
+
+// Find existing import statement for a given path and determine how to add new import
+function findExistingImport(content: string, importPath: string): {
+  exists: boolean
+  lineNumber?: number
+  startColumn?: number
+  endColumn?: number
+  hasDefault?: boolean
+  hasNamed?: boolean
+  namedImports?: string[]
+} {
+  const lines = content.split('\n')
+
+  // Normalize the import path for comparison (remove quotes and handle both relative paths)
+  const normalizedPath = importPath.replace(/['"]/g, '')
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Match import statements with the same path
+    const importRegex = /import\s+(?:(\w+)(?:\s*,\s*)?)?(?:\{([^}]+)\})?\s+from\s+['"]([^'"]+)['"]/
+    const match = line.match(importRegex)
+
+    if (match) {
+      const matchedPath = match[3]
+
+      // Check if paths match
+      if (matchedPath === normalizedPath) {
+        const defaultImport = match[1]
+        const namedImportsStr = match[2]
+        const namedImports = namedImportsStr
+          ? namedImportsStr.split(',').map(n => n.trim())
+          : []
+
+        return {
+          exists: true,
+          lineNumber: i + 1,
+          startColumn: 1,
+          endColumn: line.length + 1,
+          hasDefault: !!defaultImport,
+          hasNamed: namedImports.length > 0,
+          namedImports
+        }
+      }
+    }
+  }
+
+  return { exists: false }
 }
 
 // Register completion provider for auto-imports
@@ -386,17 +478,17 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
 
       // Scan all files for exports
       Object.entries(files).forEach(([filePath, file]) => {
-        // Skip current file
+        // Skip current file - don't suggest imports from the same file
         if (filePath === currentFilePath) return
 
-        let exports: Array<{ name: string, kind: string }> = []
+        let exports: Array<{ name: string, kind: string, isDefault?: boolean }> = []
 
         if (file.language === 'typescript' || file.language === 'javascript') {
           exports = extractExports(file.content, filePath)
         } else if (file.language === 'json') {
           // JSON files have a default export
           const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.json$/, '')
-          exports = [{ name: fileName, kind: 'default' }]
+          exports = [{ name: fileName, kind: 'default', isDefault: true }]
         } else {
           return // Skip other file types
         }
@@ -453,7 +545,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           let importStatement: string
           let insertText: string
 
-          if (exp.kind === 'default') {
+          if (exp.isDefault) {
             importStatement = `import ${exp.name} from "${relativePath}"`
             insertText = exp.name
           } else {
@@ -549,6 +641,75 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               sortText: '0' + exp.name, // Sort higher when inside import
             })
           } else {
+            // Check if there's already an import from this file
+            const existingImport = findExistingImport(currentContent, relativePath)
+
+            let additionalEdits: any[] = []
+
+            if (existingImport.exists) {
+              // Merge with existing import
+              const lines = currentContent.split('\n')
+              const existingLine = lines[existingImport.lineNumber! - 1]
+
+              let newImportLine: string
+
+              if (exp.isDefault) {
+                // Adding a default import to existing named imports
+                if (existingImport.hasNamed && !existingImport.hasDefault) {
+                  // Replace: import { foo } from "./bar"
+                  // With: import exp.name, { foo } from "./bar"
+                  const namedPart = existingLine.match(/\{[^}]+\}/)?.[0] || ''
+                  newImportLine = `import ${exp.name}, ${namedPart} from "${relativePath}"`
+                } else {
+                  // Already has default, shouldn't happen since we filter already imported
+                  newImportLine = existingLine
+                }
+              } else {
+                // Adding a named import
+                if (existingImport.hasDefault) {
+                  // Has default: import foo from "./bar"
+                  // Add named: import foo, { exp.name } from "./bar"
+                  const defaultMatch = existingLine.match(/import\s+(\w+)\s+from/)
+                  if (defaultMatch) {
+                    const defaultName = defaultMatch[1]
+                    const existingNamed = existingImport.namedImports || []
+                    const allNamed = [...existingNamed, exp.name].join(', ')
+                    newImportLine = `import ${defaultName}, { ${allNamed} } from "${relativePath}"`
+                  } else {
+                    newImportLine = existingLine
+                  }
+                } else {
+                  // Only has named imports: import { foo } from "./bar"
+                  // Add to named: import { foo, exp.name } from "./bar"
+                  const existingNamed = existingImport.namedImports || []
+                  const allNamed = [...existingNamed, exp.name].join(', ')
+                  newImportLine = `import { ${allNamed} } from "${relativePath}"`
+                }
+              }
+
+              // Replace the existing import line
+              additionalEdits = [{
+                range: {
+                  startLineNumber: existingImport.lineNumber!,
+                  startColumn: 1,
+                  endLineNumber: existingImport.lineNumber!,
+                  endColumn: existingLine.length + 1,
+                },
+                text: newImportLine,
+              }]
+            } else {
+              // No existing import, add new one
+              additionalEdits = [{
+                range: {
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: 1,
+                  endColumn: 1,
+                },
+                text: importStatement + '\n',
+              }]
+            }
+
             suggestions.push({
               label: {
                 label: exp.name,
@@ -558,16 +719,10 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               insertText: insertText,
               range: range,
               detail: `Auto import from ${filePath}`,
-              documentation: `Will add: ${importStatement}`,
-              additionalTextEdits: [{
-                range: {
-                  startLineNumber: 1,
-                  startColumn: 1,
-                  endLineNumber: 1,
-                  endColumn: 1,
-                },
-                text: importStatement + '\n',
-              }],
+              documentation: existingImport.exists
+                ? `Will merge with existing import from ${filePath}`
+                : `Will add: ${importStatement}`,
+              additionalTextEdits: additionalEdits,
               sortText: '1' + exp.name, // Sort auto-imports slightly lower
             })
           }
@@ -611,14 +766,14 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
       Object.entries(files).forEach(([filePath, file]) => {
         if (filePath === currentFilePath) return
 
-        let exports: Array<{ name: string, kind: string }> = []
+        let exports: Array<{ name: string, kind: string, isDefault?: boolean }> = []
 
         if (file.language === 'typescript' || file.language === 'javascript') {
           exports = extractExports(file.content, filePath)
         } else if (file.language === 'json') {
           // JSON files have a default export
           const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.json$/, '')
-          exports = [{ name: fileName, kind: 'default' }]
+          exports = [{ name: fileName, kind: 'default', isDefault: true }]
         } else {
           return // Skip other file types
         }
@@ -669,7 +824,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           let importStatement: string
           let insertText: string
 
-          if (exp.kind === 'default') {
+          if (exp.isDefault) {
             importStatement = `import ${exp.name} from "${relativePath}"`
             insertText = exp.name
           } else {
@@ -764,6 +919,75 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               sortText: '0' + exp.name, // Sort higher when inside import
             })
           } else {
+            // Check if there's already an import from this file
+            const existingImport = findExistingImport(currentContent, relativePath)
+
+            let additionalEdits: any[] = []
+
+            if (existingImport.exists) {
+              // Merge with existing import
+              const lines = currentContent.split('\n')
+              const existingLine = lines[existingImport.lineNumber! - 1]
+
+              let newImportLine: string
+
+              if (exp.isDefault) {
+                // Adding a default import to existing named imports
+                if (existingImport.hasNamed && !existingImport.hasDefault) {
+                  // Replace: import { foo } from "./bar"
+                  // With: import exp.name, { foo } from "./bar"
+                  const namedPart = existingLine.match(/\{[^}]+\}/)?.[0] || ''
+                  newImportLine = `import ${exp.name}, ${namedPart} from "${relativePath}"`
+                } else {
+                  // Already has default, shouldn't happen since we filter already imported
+                  newImportLine = existingLine
+                }
+              } else {
+                // Adding a named import
+                if (existingImport.hasDefault) {
+                  // Has default: import foo from "./bar"
+                  // Add named: import foo, { exp.name } from "./bar"
+                  const defaultMatch = existingLine.match(/import\s+(\w+)\s+from/)
+                  if (defaultMatch) {
+                    const defaultName = defaultMatch[1]
+                    const existingNamed = existingImport.namedImports || []
+                    const allNamed = [...existingNamed, exp.name].join(', ')
+                    newImportLine = `import ${defaultName}, { ${allNamed} } from "${relativePath}"`
+                  } else {
+                    newImportLine = existingLine
+                  }
+                } else {
+                  // Only has named imports: import { foo } from "./bar"
+                  // Add to named: import { foo, exp.name } from "./bar"
+                  const existingNamed = existingImport.namedImports || []
+                  const allNamed = [...existingNamed, exp.name].join(', ')
+                  newImportLine = `import { ${allNamed} } from "${relativePath}"`
+                }
+              }
+
+              // Replace the existing import line
+              additionalEdits = [{
+                range: {
+                  startLineNumber: existingImport.lineNumber!,
+                  startColumn: 1,
+                  endLineNumber: existingImport.lineNumber!,
+                  endColumn: existingLine.length + 1,
+                },
+                text: newImportLine,
+              }]
+            } else {
+              // No existing import, add new one
+              additionalEdits = [{
+                range: {
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: 1,
+                  endColumn: 1,
+                },
+                text: importStatement + '\n',
+              }]
+            }
+
             suggestions.push({
               label: {
                 label: exp.name,
@@ -773,16 +997,10 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
               insertText: insertText,
               range: range,
               detail: `Auto import from ${filePath}`,
-              documentation: `Will add: ${importStatement}`,
-              additionalTextEdits: [{
-                range: {
-                  startLineNumber: 1,
-                  startColumn: 1,
-                  endLineNumber: 1,
-                  endColumn: 1,
-                },
-                text: importStatement + '\n',
-              }],
+              documentation: existingImport.exists
+                ? `Will merge with existing import from ${filePath}`
+                : `Will add: ${importStatement}`,
+              additionalTextEdits: additionalEdits,
               sortText: '1' + exp.name,
             })
           }
