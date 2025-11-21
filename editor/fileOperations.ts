@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor'
-import type { EditorPluginData } from '../src/client/utils/pluginEditorStorage'
-import { createPluginFile, getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
+import type { EditorPluginData } from '@client/utils/pluginEditorStorage.ts'
+import { getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
 import type { StatusType } from './types'
 
 // Helper function to infer TypeScript type from JSON value
@@ -219,9 +219,9 @@ export function moveFileToDirectory(
   filePath: string,
   targetDirectory: string,
   plugin: EditorPluginData,
-  pluginId: string,
-  editorModels: Map<string, monaco.editor.ITextModel>,
-  currentFilePath: string | null,
+  _pluginId: string,
+  _editorModels: Map<string, monaco.editor.ITextModel>,
+  _currentFilePath: string | null,
   updateStatus: (message: string, type: StatusType) => void,
   renameFileFunc: (oldPath: string, newPath: string) => boolean
 ): boolean {
@@ -260,9 +260,9 @@ export function moveFileToDirectory(
 
 export function createFileInline(
   folderPath: string = '',
-  plugin: EditorPluginData,
-  updateStatus: (message: string, type: StatusType) => void,
-  renderFileTree: () => void,
+  _plugin: EditorPluginData,
+  _updateStatus: (message: string, type: StatusType) => void,
+  _renderFileTree: () => void,
   startNewFileCreation: (folderPath: string) => void
 ) {
   // Don't create the file yet, just start the creation UI
@@ -271,9 +271,9 @@ export function createFileInline(
 
 export function createFolderInline(
   basePath: string = '',
-  plugin: EditorPluginData,
-  updateStatus: (message: string, type: StatusType) => void,
-  renderFileTree: () => void,
+  _plugin: EditorPluginData,
+  _updateStatus: (message: string, type: StatusType) => void,
+  _renderFileTree: () => void,
   startNewFolderCreation: (basePath: string) => void
 ) {
   // Don't create the folder yet, just start the creation UI

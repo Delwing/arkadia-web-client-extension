@@ -1,8 +1,8 @@
 import * as monaco from 'monaco-editor'
-import { createHighlighter } from 'shiki'
-import { shikiToMonaco } from '@shikijs/monaco'
+import {createHighlighter} from 'shiki'
+import {shikiToMonaco} from '@shikijs/monaco'
 import pluginApiTypes from './plugin-api.d.ts?raw'
-import type { StatusType } from './types'
+import type {StatusType} from './types'
 
 export function setupTypeScriptEnvironment() {
   // Configure TypeScript compiler options
@@ -303,7 +303,7 @@ function extractImportedSymbols(content: string): Set<string> {
   }
 
   // Match: import { foo, bar } from "..."
-  const namedImports = content.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]/g)
+  const namedImports = content.matchAll(/import\s+\{([^}]+)}\s+from\s+['"]/g)
   for (const match of namedImports) {
     const names = match[1].split(',').map(n => n.trim().split(/\s+as\s+/).pop()!.trim())
     names.forEach(name => imported.add(name))
@@ -375,7 +375,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
 
           // Calculate relative import path
           const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
-          let relativePath = filePath
+          let relativePath: string
 
           if (currentDir) {
             // Both files are in directories
@@ -459,7 +459,6 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             const needsFromClause = !textUntilPosition.includes(' from ')
 
             let inlineInsertText = insertText
-            let command: any = undefined
 
             if (needsFromClause) {
               // Check if we're in named imports { } or default import
@@ -597,7 +596,7 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
           }
 
           const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
-          let relativePath = filePath
+          let relativePath: string
 
           if (currentDir) {
             const currentParts = currentDir.split('/')
@@ -675,7 +674,6 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             const needsFromClause = !textUntilPosition.includes(' from ')
 
             let inlineInsertText = insertText
-            let command: any = undefined
 
             if (needsFromClause) {
               // Check if we're in named imports { } or default import
@@ -833,10 +831,8 @@ export function registerImportPathCompletion(pluginId: string, files: Record<str
             if (filePath !== currentFilePath) {
               // Remove extension only for .ts and .js files, keep .json
               const baseName = fileName.replace(/\.(ts|js)$/, '')
-              const displayName = fileName
-
               suggestions.push({
-                label: displayName,
+                label: fileName,
                 kind: monaco.languages.CompletionItemKind.File,
                 insertText: baseName,
                 detail: filePath,
@@ -915,10 +911,8 @@ export function registerImportPathCompletion(pluginId: string, files: Record<str
             if (filePath !== currentFilePath) {
               // Remove extension only for .ts and .js files, keep .json
               const baseName = fileName.replace(/\.(ts|js)$/, '')
-              const displayName = fileName
-
               suggestions.push({
-                label: displayName,
+                label: fileName,
                 kind: monaco.languages.CompletionItemKind.File,
                 insertText: baseName,
                 detail: filePath,

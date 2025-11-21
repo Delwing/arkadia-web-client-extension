@@ -11,48 +11,48 @@ import 'file-icons-js/css/style.css'
 
 // Import storage utilities
 import {
-  getEditorPlugin,
-  migrateLegacyPlugin,
   createPluginFile,
+  getEditorPlugin,
   getLanguageFromPath,
+  migrateLegacyPlugin,
 } from '@client/utils/pluginEditorStorage.ts'
 
 // Import our refactored modules
-import type { EditorState } from './types'
-import { updateStatus, updateLanguageUI } from './utils'
-import { initEsbuild, bundlePlugin, compileTypeScript } from './bundler'
-import { initializeEditor, updateMonacoFileSystem, registerImportPathCompletion, registerAutoImportCompletion } from './monacoSetup'
-import { renderFileTree } from './fileTree'
+import type {EditorState} from './types'
+import {updateLanguageUI, updateStatus} from './utils'
+import {bundlePlugin, compileTypeScript, initEsbuild} from './bundler'
 import {
+  initializeEditor,
+  registerAutoImportCompletion,
+  registerImportPathCompletion,
+  updateMonacoFileSystem
+} from './monacoSetup'
+import {renderFileTree} from './fileTree'
+import {
+  clearContextMenuTarget,
+  getContextMenuTarget,
+  hideContextMenu,
   showContextMenu,
   showFolderContextMenu,
   showRootContextMenu,
-  getContextMenuTarget,
-  hideContextMenu,
-  clearContextMenuTarget,
 } from './contextMenu'
 import {
-  deleteFile,
-  deleteFolder,
-  renameFile,
-  moveFileToDirectory,
   createFileInline,
   createFolderInline,
+  deleteFile,
+  deleteFolder,
+  moveFileToDirectory,
+  renameFile,
 } from './fileOperations'
 import {
-  showNewPluginModal,
-  hideNewPluginModal,
-  showNewFileModal,
-  hideNewFileModal,
-  showFilePicker,
   closeFilePicker,
+  hideNewFileModal,
+  hideNewPluginModal,
+  showFilePicker,
+  showNewFileModal,
+  showNewPluginModal,
 } from './modals'
-import {
-  refreshPluginList,
-  savePlugin,
-  deletePlugin,
-  createNewPlugin,
-} from './pluginManagement'
+import {createNewPlugin, deletePlugin, refreshPluginList, savePlugin,} from './pluginManagement'
 
 // Configure Monaco Environment for web workers
 self.MonacoEnvironment = {
@@ -310,7 +310,11 @@ export default value;`
   // Load the entry point file
   switchToFile(state.currentFilePath!)
 
-  updateLanguageUI(getLanguageFromPath(state.currentFilePath!))
+  const language = getLanguageFromPath(state.currentFilePath!)
+  // Only update language UI for JS/TS files
+  if (language === 'javascript' || language === 'typescript') {
+    updateLanguageUI(language)
+  }
   updateStatus(`Loaded: ${plugin.name}`, 'success')
 }
 
@@ -432,7 +436,7 @@ function startNewFileCreation(folderPath: string) {
     input.value = ''
     input.focus()
 
-    const finishCreation = async () => {
+    input.onblur = async () => {
       const newName = input.value.trim()
       fileItem.classList.remove('renaming')
 
@@ -461,8 +465,6 @@ function startNewFileCreation(folderPath: string) {
       switchToFile(newPath)
       updateStatus(`Created: ${newPath}`, 'success')
     }
-
-    input.onblur = finishCreation
     input.onkeydown = (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()

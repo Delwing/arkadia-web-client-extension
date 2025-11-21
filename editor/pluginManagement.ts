@@ -1,11 +1,10 @@
-import type { EditorPluginData, PluginFile } from '../src/client/utils/pluginEditorStorage'
+import type { EditorPluginData, PluginFile } from '@client/utils/pluginEditorStorage.ts'
 import {
   storeEditorPlugin,
   getEditorPlugin,
   deleteEditorPlugin,
   getAllEditorPlugins,
   generateEditorPluginId,
-  createPluginFile,
 } from '@client/utils/pluginEditorStorage.ts'
 import {
   storePluginScript,
@@ -14,7 +13,7 @@ import {
 } from '@client/utils/pluginStorage.ts'
 import type { StatusType } from './types'
 
-export async function refreshPluginList(currentPluginId: string | null): Promise<void> {
+export async function refreshPluginList(_currentPluginId: string | null): Promise<void> {
   const plugins = await getAllEditorPlugins()
   const select = document.getElementById('plugin-select') as HTMLSelectElement
 
@@ -33,9 +32,7 @@ export async function refreshPluginList(currentPluginId: string | null): Promise
       // Display file count if multi-file plugin
       const fileCount = plugin.files ? Object.keys(plugin.files).length : 1
       const fileInfo = fileCount > 1 ? ` [${fileCount} files]` : ''
-      const lang = plugin.files
-        ? (plugin.entryPoint?.endsWith('.ts') ? 'TS' : 'JS')
-        : (plugin.language === 'typescript' ? 'TS' : 'JS')
+      const lang = plugin.entryPoint?.endsWith('.ts') ? 'TS' : 'JS'
 
       option.textContent = `${plugin.name} (${lang})${fileInfo}`
       select.appendChild(option)
@@ -81,7 +78,7 @@ export function removeFromLocalStorageList(pluginId: string) {
 export async function savePlugin(
   plugin: EditorPluginData,
   pluginId: string | null,
-  editorValue: string,
+  _editorValue: string,
   modifiedFiles: Set<string>,
   bundlePluginFunc: (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>,
   updateStatus: (message: string, type: StatusType) => void
