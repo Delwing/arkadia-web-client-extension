@@ -490,9 +490,11 @@ export async function waitForMapReady(page: Page): Promise<void> {
         const mapElement = document.querySelector('#map');
         const client = (window as any).clientExtension;
         const mapHelper = client?.Map;
-        // Wait for canvas AND for map data to be loaded (tryGetMapReader returns non-null when ready)
+        const embedded = (window as any).embedded;
+        // Wait for canvas AND for map data to be loaded (tryGetMapReader returns non-null when ready) AND for embedded object to be created
         return mapElement && mapElement.querySelector('canvas') !== null &&
-               mapHelper && typeof mapHelper.tryGetMapReader === 'function' && mapHelper.tryGetMapReader() !== null;
+               mapHelper && typeof mapHelper.tryGetMapReader === 'function' && mapHelper.tryGetMapReader() !== null &&
+               embedded && typeof embedded.leadTo === 'function';
     }, {timeout: 10000});
 }
 
