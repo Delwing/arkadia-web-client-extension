@@ -40,7 +40,7 @@ export type PluginStatus = 'loading' | 'loaded' | 'error' | 'legacy'
  * Internal representation of a loaded plugin
  */
 export interface LoadedPlugin {
-  /** Script URL */
+  /** Script URL or stored plugin ID (if stored in IndexedDB) */
   url: string
   /** Plugin information (if available) */
   info?: PluginInfo
@@ -52,7 +52,7 @@ export interface LoadedPlugin {
   instance?: Plugin
   /** Plugin API instance provided to the plugin */
   apiInstance?: any // PluginApiImpl, but avoiding circular dependency
-  /** Script element (for legacy scripts) */
+  /** Script element (for legacy scripts loaded via URL) */
   scriptElement?: HTMLScriptElement
   /** Timestamp when plugin was loaded */
   loadedAt: number

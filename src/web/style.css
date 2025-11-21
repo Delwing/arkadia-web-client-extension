@@ -3320,7 +3320,7 @@ body.mobile-command-radial-active {
 }
 
 .character-settings-section--full {
-  grid-column: 1 / -1;
+  column-span: all;
 }
 
 .ui-settings-section .form-check,

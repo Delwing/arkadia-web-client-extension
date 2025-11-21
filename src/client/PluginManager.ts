@@ -2,6 +2,7 @@ import type Client from '@client/Client'
 import type { Plugin, LoadedPlugin } from '@shared/types/Plugin'
 import { PluginApiImpl } from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
+import { getPluginScript, isStoredPluginId, updatePluginScript } from '@client/utils/pluginStorage'
 
 /**
  * Manages external plugins and scripts
@@ -15,28 +16,34 @@ export class PluginManager {
   }
 
   /**
-   * Load a plugin from a URL
+   * Load a plugin from a URL or stored plugin ID
    * Attempts to load as ES module first, falls back to legacy script injection
    */
-  async loadPlugin(url: string): Promise<LoadedPlugin> {
+  async loadPlugin(identifier: string): Promise<LoadedPlugin> {
     // Check if already loaded
-    if (this.plugins.has(url)) {
-      const existing = this.plugins.get(url)!
-      console.log(`[PluginManager] Plugin already loaded: ${url}`)
+    if (this.plugins.has(identifier)) {
+      const existing = this.plugins.get(identifier)!
+      console.log(`[PluginManager] Plugin already loaded: ${identifier}`)
       return existing
     }
 
     // Create initial plugin entry
     const plugin: LoadedPlugin = {
-      url,
+      url: identifier,
       status: 'loading',
       loadedAt: Date.now(),
     }
-    this.plugins.set(url, plugin)
+    this.plugins.set(identifier, plugin)
 
     try {
-      // Try to load as ES module
-      const module = await this.loadAsModule(url)
+      // Check if this is a stored plugin (from IndexedDB)
+      let module: any
+      if (isStoredPluginId(identifier)) {
+        module = await this.loadStoredPlugin(identifier)
+      } else {
+        // Try to load as ES module from URL
+        module = await this.loadAsModule(identifier)
+      }
 
       if (module && this.isPlugin(module)) {
         // It's a proper plugin with init method
@@ -52,37 +59,57 @@ export class PluginManager {
           plugin.instance = module
 
           console.log(`[PluginManager] Plugin loaded: ${info.name} v${info.version}`)
-          eventBus.emit('plugin:loaded', { url, info })
+
+          // If this is a stored plugin, update its metadata in IndexedDB
+          if (isStoredPluginId(identifier)) {
+            const storedPlugin = await getPluginScript(identifier)
+            if (storedPlugin) {
+              await updatePluginScript(identifier, storedPlugin.code, info).catch(err => {
+                console.error(`[PluginManager] Failed to update stored plugin metadata:`, err)
+              })
+            }
+          }
+
+          eventBus.emit('plugin:loaded', { url: identifier, info })
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
           plugin.status = 'error'
           plugin.error = `Init failed: ${errorMsg}`
-          console.error(`[PluginManager] Plugin init failed for ${url}:`, error)
-          eventBus.emit('plugin:error', { url, error: errorMsg })
+          console.error(`[PluginManager] Plugin init failed for ${identifier}:`, error)
+          eventBus.emit('plugin:error', { url: identifier, error: errorMsg })
         }
       } else {
         // Module loaded but doesn't implement Plugin interface
         // Treat as legacy script
         plugin.status = 'legacy'
-        console.log(`[PluginManager] Module loaded as legacy script: ${url}`)
+        console.log(`[PluginManager] Module loaded as legacy script: ${identifier}`)
       }
     } catch (_error) {
-      // Failed to load as module, try legacy script injection
-      console.log(`[PluginManager] Failed to load as module, trying legacy script injection: ${url}`)
-      try {
-        await this.loadAsLegacyScript(url, plugin)
-        plugin.status = 'legacy'
-        console.log(`[PluginManager] Legacy script loaded: ${url}`)
-      } catch (scriptError) {
-        const errorMsg = scriptError instanceof Error ? scriptError.message : String(scriptError)
+      // Failed to load as module, try legacy script injection (only for URLs, not stored plugins)
+      if (!isStoredPluginId(identifier)) {
+        console.log(`[PluginManager] Failed to load as module, trying legacy script injection: ${identifier}`)
+        try {
+          await this.loadAsLegacyScript(identifier, plugin)
+          plugin.status = 'legacy'
+          console.log(`[PluginManager] Legacy script loaded: ${identifier}`)
+        } catch (scriptError) {
+          const errorMsg = scriptError instanceof Error ? scriptError.message : String(scriptError)
+          plugin.status = 'error'
+          plugin.error = `Failed to load: ${errorMsg}`
+          console.error(`[PluginManager] Failed to load plugin ${identifier}:`, scriptError)
+          eventBus.emit('plugin:error', { url: identifier, error: errorMsg })
+        }
+      } else {
+        // Stored plugin failed to load
+        const errorMsg = _error instanceof Error ? _error.message : String(_error)
         plugin.status = 'error'
-        plugin.error = `Failed to load: ${errorMsg}`
-        console.error(`[PluginManager] Failed to load plugin ${url}:`, scriptError)
-        eventBus.emit('plugin:error', { url, error: errorMsg })
+        plugin.error = `Failed to load stored plugin: ${errorMsg}`
+        console.error(`[PluginManager] Failed to load stored plugin ${identifier}:`, _error)
+        eventBus.emit('plugin:error', { url: identifier, error: errorMsg })
       }
     }
 
-    this.plugins.set(url, plugin)
+    this.plugins.set(identifier, plugin)
     return plugin
   }
 
@@ -143,6 +170,29 @@ export class PluginManager {
    */
   isLoaded(url: string): boolean {
     return this.plugins.has(url)
+  }
+
+  /**
+   * Load a stored plugin from IndexedDB
+   */
+  private async loadStoredPlugin(pluginId: string): Promise<any> {
+    const storedPlugin = await getPluginScript(pluginId)
+    if (!storedPlugin) {
+      throw new Error(`Stored plugin not found: ${pluginId}`)
+    }
+
+    // Create a blob URL from the code
+    const blob = new Blob([storedPlugin.code], { type: 'application/javascript' })
+    const blobUrl = URL.createObjectURL(blob)
+
+    try {
+      // Import the module from the blob URL
+      const module = await import(/* @vite-ignore */ blobUrl)
+      return module
+    } finally {
+      // Clean up the blob URL after import
+      URL.revokeObjectURL(blobUrl)
+    }
   }
 
   /**

@@ -84,136 +84,154 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
     }, [registerSave, favoriteMagicTypes, favoriteMagics]);
 
+    const [locked, setLocked] = useState(!getCurrentCharacter());
+
+    useEffect(() => {
+        const update = () => setLocked(!getCurrentCharacter());
+        storage.onChanged?.addListener(update);
+        window.addEventListener('storage', update);
+        return () => {
+            storage.onChanged?.removeListener?.(update);
+            window.removeEventListener('storage', update);
+        };
+    }, []);
+
     return (
-        <div>
-            <h5 className="mb-3">Ulubione magiki</h5>
-            <p className="text-muted small mb-3">
-                Wybierz ulubione typy magików lub dodaj konkretne magiki. Będą one oznaczone zieloną gwiazdką w pojemnikach.
-            </p>
+        <div className="p-2 h-100">
+            <fieldset disabled={locked} className="p-0 border-0 m-0">
+                <div className="character-settings-layout">
+                    <section className="character-settings-section character-settings-section--full">
+                        <h5 className="character-settings-section-title">Ulubione magiki</h5>
+                        <p className="text-muted small mb-3">
+                            Wybierz ulubione typy magików lub dodaj konkretne magiki. Będą one oznaczone zieloną gwiazdką w pojemnikach.
+                        </p>
 
-            {/* Specific Magics Section */}
-            <div className="mb-4">
-                <h6 className="mb-2">Konkretne magiki</h6>
-                <div className="mb-2" style={{ position: "relative" }}>
-                    <Form.Control
-                        ref={inputRef}
-                        type="text"
-                        placeholder="Wpisz nazwę magika..."
-                        value={searchInput}
-                        onChange={(e) => {
-                            setSearchInput(e.target.value);
-                            setShowSuggestions(true);
-                        }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && filteredSuggestions.length > 0) {
-                                e.preventDefault();
-                                handleAddMagic(filteredSuggestions[0]);
-                            }
-                        }}
-                    />
-                    {showSuggestions && searchInput && filteredSuggestions.length > 0 && (
-                        <div
-                            className="bg-body border"
-                            style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                borderTop: "none",
-                                borderRadius: "0 0 0.25rem 0.25rem",
-                                maxHeight: "200px",
-                                overflowY: "auto",
-                                zIndex: 1000,
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                            }}
-                        >
-                            {filteredSuggestions.map((suggestion) => (
-                                <div
-                                    key={suggestion}
-                                    className="border-bottom"
-                                    style={{
-                                        padding: "0.5rem",
-                                        cursor: "pointer"
+                        {/* Specific Magics Section */}
+                        <div className="mb-4">
+                            <h6 className="mb-2">Konkretne magiki</h6>
+                            <div className="mb-2" style={{ position: "relative" }}>
+                                <Form.Control
+                                    ref={inputRef}
+                                    type="text"
+                                    placeholder="Wpisz nazwę magika..."
+                                    value={searchInput}
+                                    onChange={(e) => {
+                                        setSearchInput(e.target.value);
+                                        setShowSuggestions(true);
                                     }}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        handleAddMagic(suggestion);
+                                    onFocus={() => setShowSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && filteredSuggestions.length > 0) {
+                                            e.preventDefault();
+                                            handleAddMagic(filteredSuggestions[0]);
+                                        }
                                     }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.classList.add("bg-primary");
-                                        e.currentTarget.classList.add("text-white");
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.classList.remove("bg-primary");
-                                        e.currentTarget.classList.remove("text-white");
-                                    }}
-                                >
-                                    {suggestion}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {favoriteMagics.length > 0 && (
-                    <div className="d-flex flex-wrap gap-2 mb-3">
-                        {favoriteMagics.map((magic) => (
-                            <Badge
-                                key={magic}
-                                bg="primary"
-                                className="d-flex align-items-center"
-                                style={{ fontSize: "0.9rem", padding: "0.4rem 0.6rem" }}
-                            >
-                                {magic}
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveMagic(magic)}
-                                    style={{
-                                        marginLeft: "0.5rem",
-                                        background: "none",
-                                        border: "none",
-                                        color: "white",
-                                        cursor: "pointer",
-                                        fontSize: "1.2rem",
-                                        lineHeight: "1",
-                                        padding: "0",
-                                        fontWeight: "bold"
-                                    }}
-                                >
-                                    ×
-                                </button>
-                            </Badge>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Magic Types Section */}
-            <div>
-                <h6 className="mb-2">Typy magików</h6>
-                {magicTypes.length === 0 ? (
-                    <p className="text-muted">Ładowanie typów magików...</p>
-                ) : (
-                    <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                        gap: "0.5rem"
-                    }}>
-                        {magicTypes.map((type) => (
-                            <div key={type}>
-                                <Form.Check
-                                    type="checkbox"
-                                    id={`magic-type-${type}`}
-                                    label={type}
-                                    checked={favoriteMagicTypes.includes(type)}
-                                    onChange={() => handleToggleMagicType(type)}
                                 />
+                                {showSuggestions && searchInput && filteredSuggestions.length > 0 && (
+                                    <div
+                                        className="bg-body border"
+                                        style={{
+                                            position: "absolute",
+                                            top: "100%",
+                                            left: 0,
+                                            right: 0,
+                                            borderTop: "none",
+                                            borderRadius: "0 0 0.25rem 0.25rem",
+                                            maxHeight: "200px",
+                                            overflowY: "auto",
+                                            zIndex: 1000,
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                                        }}
+                                    >
+                                        {filteredSuggestions.map((suggestion) => (
+                                            <div
+                                                key={suggestion}
+                                                className="border-bottom"
+                                                style={{
+                                                    padding: "0.5rem",
+                                                    cursor: "pointer"
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    handleAddMagic(suggestion);
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.classList.add("bg-primary");
+                                                    e.currentTarget.classList.add("text-white");
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.classList.remove("bg-primary");
+                                                    e.currentTarget.classList.remove("text-white");
+                                                }}
+                                            >
+                                                {suggestion}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            {favoriteMagics.length > 0 && (
+                                <div className="d-flex flex-wrap gap-2 mb-3">
+                                    {favoriteMagics.map((magic) => (
+                                        <Badge
+                                            key={magic}
+                                            bg="primary"
+                                            className="d-flex align-items-center"
+                                            style={{ fontSize: "0.9rem", padding: "0.4rem 0.6rem" }}
+                                        >
+                                            {magic}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveMagic(magic)}
+                                                style={{
+                                                    marginLeft: "0.5rem",
+                                                    background: "none",
+                                                    border: "none",
+                                                    color: "white",
+                                                    cursor: "pointer",
+                                                    fontSize: "1.2rem",
+                                                    lineHeight: "1",
+                                                    padding: "0",
+                                                    fontWeight: "bold"
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Magic Types Section */}
+                        <div>
+                            <h6 className="mb-2">Typy magików</h6>
+                            {magicTypes.length === 0 ? (
+                                <p className="text-muted">Ładowanie typów magików...</p>
+                            ) : (
+                                <div style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                                    gap: "0.5rem"
+                                }}>
+                                    {magicTypes.map((type) => (
+                                        <div key={type}>
+                                            <Form.Check
+                                                type="checkbox"
+                                                id={`magic-type-${type}`}
+                                                label={type}
+                                                checked={favoriteMagicTypes.includes(type)}
+                                                onChange={() => handleToggleMagicType(type)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            </fieldset>
         </div>
     );
 }

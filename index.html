@@ -565,6 +565,31 @@
         </div>
     </div>
 
+    <div id="add-plugin-code-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj plugin z kodu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="plugin-code-name" class="form-label">Nazwa pluginu (opcjonalnie)</label>
+                        <input type="text" class="form-control" id="plugin-code-name" placeholder="Moja wtyczka" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="plugin-code-input" class="form-label">Kod JavaScript</label>
+                        <textarea class="form-control" id="plugin-code-input" rows="15" placeholder="export async function init(api) { ... }" autocomplete="off" style="font-family: monospace; font-size: 0.9em;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-primary" id="plugin-code-submit">Dodaj plugin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="mobile-buttons-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
