@@ -1,0 +1,476 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    background: #1e1e1e;
+    color: #cccccc;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#toolbar {
+    background: #252526;
+    border-bottom: 1px solid #3e3e42;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+#toolbar select,
+#toolbar input,
+#toolbar button {
+    padding: 6px 12px;
+    background: #3c3c3c;
+    border: 1px solid #3e3e42;
+    color: #cccccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+#toolbar button {
+    cursor: pointer;
+}
+
+#toolbar button:hover {
+    background: #505050;
+}
+
+#toolbar button:active {
+    background: #2a2a2a;
+}
+
+#toolbar button.primary {
+    background: #0e639c;
+    border-color: #0e639c;
+}
+
+#toolbar button.primary:hover {
+    background: #1177bb;
+}
+
+#toolbar button.danger {
+    background: #c72e0f;
+    border-color: #c72e0f;
+}
+
+#toolbar button.danger:hover {
+    background: #e03e1d;
+}
+
+#toolbar input {
+    min-width: 200px;
+}
+
+#toolbar select {
+    cursor: pointer;
+}
+
+.spacer {
+    flex: 1;
+}
+
+#main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+#file-tree {
+    width: 250px;
+    min-width: 150px;
+    max-width: 600px;
+    background: #252526;
+    border-right: 1px solid #3e3e42;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+#file-tree-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 100;
+}
+
+#file-tree-header {
+    padding: 8px 12px;
+    background: #2d2d30;
+    border-bottom: 1px solid #3e3e42;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #999;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#file-tree-actions {
+    display: flex;
+    gap: 4px;
+}
+
+#file-tree-actions button {
+    padding: 2px 6px;
+    font-size: 16px;
+    line-height: 1;
+    background: transparent;
+    border: none;
+    color: #cccccc;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+#file-tree-actions button:hover {
+    background: #3e3e42;
+}
+
+#file-list {
+    flex: 1;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.file-tree-item {
+    user-select: none;
+}
+
+.folder-item {
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #cccccc;
+}
+
+.folder-item:hover {
+    background: #2a2d2e;
+}
+
+.folder-item.renaming .folder-name {
+    display: none;
+}
+
+.folder-item.renaming .rename-input {
+    display: block;
+    flex: 1;
+}
+
+.folder-toggle {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: transform 0.1s;
+    flex-shrink: 0;
+}
+
+.folder-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.folder-toggle-spacer {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.folder-icon {
+    font-size: 14px;
+}
+
+.folder-name {
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.folder-children {
+    padding-left: 16px;
+    display: none;
+}
+
+.folder-children.expanded {
+    display: block;
+}
+
+.file-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #cccccc;
+}
+
+.file-item:hover {
+    background: #2a2d2e;
+}
+
+.file-item.active {
+    background: #37373d;
+}
+
+.file-item .file-icon {
+    font-size: 14px;
+}
+
+.file-item .file-name {
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-item .file-modified-indicator {
+    color: #4ec9b0;
+    font-size: 10px;
+    margin-left: 4px;
+}
+
+.file-item .file-delete {
+    opacity: 0;
+    padding: 2px 4px;
+    font-size: 12px;
+    background: transparent;
+    border: none;
+    color: #cccccc;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.file-item:hover .file-delete {
+    opacity: 1;
+}
+
+.file-item .file-delete:hover {
+    background: #c72e0f;
+    color: white;
+}
+
+.file-item.renaming .file-name {
+    display: none;
+}
+
+.file-item.renaming .rename-input {
+    display: block;
+    flex: 1;
+}
+
+.rename-input {
+    display: none;
+    background: #3c3c3c;
+    border: 1px solid transparent;
+    outline: 1px solid #007acc;
+    color: #cccccc;
+    padding: 2px 4px;
+    font-size: 13px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+}
+
+.context-menu {
+    position: fixed;
+    background: #252526;
+    border: 1px solid #454545;
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    min-width: 150px;
+    padding: 4px 0;
+}
+
+.context-menu-item {
+    padding: 6px 16px;
+    cursor: pointer;
+    color: #cccccc;
+    font-size: 13px;
+    transition: background 0.1s;
+}
+
+.context-menu-item:hover {
+    background: #094771;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: #454545;
+    margin: 4px 0;
+}
+
+#editor-container {
+    flex: 1;
+    overflow: hidden;
+}
+
+#status-bar {
+    background: #007acc;
+    color: white;
+    padding: 4px 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+#status-bar.error {
+    background: #c72e0f;
+}
+
+#status-bar.success {
+    background: #16825d;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: #252526;
+    border: 1px solid #3e3e42;
+    border-radius: 6px;
+    padding: 24px;
+    min-width: 400px;
+    max-width: 500px;
+}
+
+.modal h2 {
+    margin-bottom: 16px;
+    font-size: 18px;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.modal input,
+.modal select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 16px;
+    background: #3c3c3c;
+    border: 1px solid #3e3e42;
+    color: #cccccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.modal button {
+    padding: 8px 16px;
+    background: #3c3c3c;
+    border: 1px solid #3e3e42;
+    color: #cccccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.modal button.primary {
+    background: #0e639c;
+    border-color: #0e639c;
+}
+
+.modal button:hover {
+    background: #505050;
+}
+
+.modal button.primary:hover {
+    background: #1177bb;
+}
+
+#compile-status {
+    font-size: 12px;
+}
+
+/* Drag and drop styles */
+.file-item.dragging {
+    opacity: 0.5;
+}
+
+.folder-item {
+    border: 2px solid transparent;
+}
+
+.folder-item.drag-over {
+    background: #094771 !important;
+    border: 2px dashed #007acc;
+}
+
+#file-list {
+    border: 2px solid transparent;
+}
+
+#file-list.drag-over-root {
+    background: rgba(9, 71, 113, 0.2);
+    border: 2px dashed #007acc;
+}
+
+.file-item {
+    cursor: pointer;
+}
+
+.file-item:active {
+    cursor: pointer;
+}

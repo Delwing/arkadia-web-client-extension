@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="stylesheet" href="./styles.css">
+    <title>Arkadia Plugin Editor</title>
+</head>
+<body>
+    <div id="app">
+        <div id="toolbar">
+            <select id="plugin-select">
+                <option value="">Select Plugin...</option>
+            </select>
+            <input type="text" id="plugin-name" placeholder="Plugin name" />
+            <select id="language-select">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript" selected>TypeScript</option>
+            </select>
+            <select id="theme-select" title="Editor Theme">
+                <option value="dark-plus">Dark+</option>
+                <option value="light-plus">Light+</option>
+                <option value="monokai">Monokai</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="github-light">GitHub Light</option>
+                <option value="one-dark-pro">One Dark Pro</option>
+                <option value="dracula">Dracula</option>
+                <option value="nord">Nord</option>
+                <option value="solarized-dark">Solarized Dark</option>
+                <option value="solarized-light">Solarized Light</option>
+            </select>
+            <button id="save-btn" class="primary">Save</button>
+            <button id="new-btn">New</button>
+            <button id="delete-btn" class="danger">Delete</button>
+            <div class="spacer"></div>
+            <button id="compile-btn" style="display: none;">Compile TypeScript</button>
+            <span id="compile-status"></span>
+        </div>
+        <div id="main-content">
+            <div id="file-tree">
+                <div id="file-tree-header">
+                    <span>Files</span>
+                    <div id="file-tree-actions">
+                        <button id="add-file-btn" title="Add File">+</button>
+                    </div>
+                </div>
+                <div id="file-list"></div>
+                <div id="file-tree-resizer"></div>
+            </div>
+            <div id="editor-container"></div>
+        </div>
+        <div id="status-bar">
+            <span id="status-text">Ready</span>
+        </div>
+    </div>
+
+    <div id="new-plugin-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>New Plugin</h2>
+            <label for="new-plugin-name">Plugin Name</label>
+            <input type="text" id="new-plugin-name" placeholder="My Plugin" />
+            <label for="new-plugin-language">Language</label>
+            <select id="new-plugin-language">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript" selected>TypeScript</option>
+            </select>
+            <div class="modal-buttons">
+                <button id="new-plugin-cancel">Cancel</button>
+                <button id="new-plugin-create" class="primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="new-file-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>New File</h2>
+            <label for="new-file-path">File Path</label>
+            <input type="text" id="new-file-path" placeholder="utils/helper.ts" />
+            <div class="modal-buttons">
+                <button id="new-file-cancel">Cancel</button>
+                <button id="new-file-create" class="primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context menu for file tree -->
+    <div id="context-menu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" data-action="rename">Rename</div>
+        <div class="context-menu-item" data-action="delete">Delete</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="new-file">New File</div>
+        <div class="context-menu-item" data-action="new-folder">New Folder</div>
+    </div>
+
+    <!-- File picker modal (Ctrl+P) -->
+    <div id="file-picker-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 600px;">
+            <h2>Go to File</h2>
+            <input type="text" id="file-picker-input" placeholder="Search files..." autofocus />
+            <div id="file-picker-list" style="max-height: 400px; overflow-y: auto; margin-top: 12px;"></div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

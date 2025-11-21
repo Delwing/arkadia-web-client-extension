@@ -28,6 +28,17 @@ export default function initExternalScripts(client: Client) {
         await Promise.all(toLoad.map(id => pluginManager.loadPlugin(id)));
     };
 
+    // Load stored plugins from IndexedDB on initialization
+    const loadStoredPluginsFromDB = async () => {
+        try {
+            const ids = await getAllStoredPluginIds();
+            knownStored = ids;
+            apply(known, knownStored);
+        } catch (error) {
+            console.error("Failed to load stored plugins from IndexedDB:", error);
+        }
+    };
+
     const param = new URLSearchParams(window.location.search).get("add-script");
     let handled = false;
 
@@ -55,14 +66,24 @@ export default function initExternalScripts(client: Client) {
             known = Array.isArray(value) ? value : [];
             apply(known, knownStored);
         } else if (key === STORED_SCRIPTS_KEY) {
-            knownStored = Array.isArray(value) ? value : [];
-            apply(known, knownStored);
+            // Reload from IndexedDB when stored_scripts changes
+            loadStoredPluginsFromDB();
         }
     });
 
     client.on("port-connected", () => {
         checkParam();
     })
+
+    // Load stored plugins from IndexedDB on initialization
+    loadStoredPluginsFromDB();
+
+    // Listen for storage events from other windows (like the editor)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'stored_scripts_updated') {
+            loadStoredPluginsFromDB();
+        }
+    });
 
     // Return plugin manager for access by other modules
     return pluginManager;

@@ -173,7 +173,7 @@ export function generatePluginId(nameOrCode: string): string {
  * Check if a plugin identifier is for a stored plugin (vs URL)
  */
 export function isStoredPluginId(identifier: string): boolean {
-  return identifier.startsWith('stored_')
+  return identifier.startsWith('stored_') || identifier.startsWith('editor_')
 }
 
 /**
