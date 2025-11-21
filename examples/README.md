@@ -62,7 +62,10 @@ Pełna dokumentacja API pluginów dostępna w: `../docs/PLUGINS.md`
 Aby uzyskać pełne wsparcie TypeScript z autocomplete i sprawdzaniem typów, zainstaluj pakiet z definicjami typów:
 
 ```bash
-# Zainstaluj z lokalnego serwera deweloperskiego
+# Zainstaluj z serwera
+npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
+
+# Lub zainstaluj z lokalnego serwera deweloperskiego (jeśli uruchomiony)
 npm install http://localhost:3030/types/arkadia-plugin-types.tgz
 
 # Lub zainstaluj z lokalnego systemu plików

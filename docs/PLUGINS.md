@@ -762,7 +762,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 Dla pełnego wsparcia TypeScript zainstaluj pakiet z typami:
 
 ```bash
-npm install @arkadia/plugin-types
+npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
 ```
 
 Następnie importuj typy w swoim pluginie:

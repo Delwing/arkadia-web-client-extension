@@ -4,26 +4,34 @@ TypeScript type definitions for developing Arkadia Web Client plugins.
 
 ## Installation
 
-### Option 1: Download the tarball
+### Option 1: Install directly from tarball URL
 
-Download the latest `arkadia-plugin-types.tgz` from the plugin development server:
+```bash
+npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
+```
+
+### Option 2: Download the tarball
+
+Download the latest `arkadia-plugin-types.tgz`:
 
 ```bash
 # Download and extract
-curl -O http://localhost:3030/types/arkadia-plugin-types.tgz
+curl -O http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
 tar -xzf arkadia-plugin-types.tgz
 
 # Install as a local dependency
 npm install ./package
 ```
 
-### Option 2: Install directly from tarball URL
+### Option 3: Install from local development server
+
+When running the local development server:
 
 ```bash
 npm install http://localhost:3030/types/arkadia-plugin-types.tgz
 ```
 
-### Option 3: Install from file system (development)
+### Option 4: Install from file system (development)
 
 ```bash
 npm install ../path/to/arkadia-web-client-extension/plugin-types
