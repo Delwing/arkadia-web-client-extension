@@ -387,21 +387,21 @@ function renderFileTree(plugin: EditorPluginData) {
 // Update Monaco's virtual file system for IntelliSense
 function updateMonacoFileSystem(plugin: EditorPluginData) {
   // Get all existing extra libs
-  const existingLibs = monaco.languages.typescript.typescriptDefaults.getExtraLibs()
+  const existingLibs = monaco.typescript.typescriptDefaults.getExtraLibs()
 
   // Remove old plugin files (but keep plugin-api.d.ts)
   Object.keys(existingLibs).forEach(path => {
     if (path.startsWith('file:///') && !path.includes('plugin-api')) {
-      monaco.languages.typescript.typescriptDefaults.addExtraLib('', path)
-      monaco.languages.typescript.javascriptDefaults.addExtraLib('', path)
+      monaco.typescript.typescriptDefaults.addExtraLib('', path)
+      monaco.typescript.javascriptDefaults.addExtraLib('', path)
     }
   })
 
   // Add all current plugin files to Monaco's type system
   Object.values(plugin.files).forEach(file => {
     const uri = `file:///${file.path}`
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri)
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri)
+    monaco.typescript.typescriptDefaults.addExtraLib(file.content, uri)
+    monaco.typescript.javascriptDefaults.addExtraLib(file.content, uri)
   })
 }
 
@@ -417,8 +417,8 @@ function switchToFile(filePath: string) {
 
     // Update Monaco's virtual file system with new content
     const uri = `file:///${currentFilePath}`
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(newContent, uri)
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(newContent, uri)
+    monaco.typescript.typescriptDefaults.addExtraLib(newContent, uri)
+    monaco.typescript.javascriptDefaults.addExtraLib(newContent, uri)
   }
 
   currentFilePath = filePath
@@ -444,8 +444,8 @@ function switchToFile(filePath: string) {
 
         // Update Monaco's virtual file system
         const uri = `file:///${currentFilePath}`
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(content, uri)
-        monaco.languages.typescript.javascriptDefaults.addExtraLib(content, uri)
+        monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
+        monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
       }
     })
   }
@@ -569,8 +569,8 @@ async function createNewFile() {
 
   // Add to Monaco's virtual file system
   const uri = `file:///${filePath}`
-  monaco.languages.typescript.typescriptDefaults.addExtraLib('', uri)
-  monaco.languages.typescript.javascriptDefaults.addExtraLib('', uri)
+  monaco.typescript.typescriptDefaults.addExtraLib('', uri)
+  monaco.typescript.javascriptDefaults.addExtraLib('', uri)
 
   // Update UI
   renderFileTree(currentPlugin)
@@ -767,7 +767,7 @@ function handleContextMenuAction(action: string) {
 }
 
 // Start inline rename
-function startRename(filePath: string, currentName: string) {
+function startRename(filePath: string) {
   const fileItem = document.querySelector(`.file-item[data-path="${filePath}"]`) as HTMLElement
   if (!fileItem) return
 
@@ -848,10 +848,10 @@ async function renameFile(oldPath: string, newPath: string) {
   }
 
   // Update Monaco virtual file system
-  monaco.languages.typescript.typescriptDefaults.addExtraLib('', `file:///${oldPath}`)
-  monaco.languages.typescript.javascriptDefaults.addExtraLib('', `file:///${oldPath}`)
-  monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
-  monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
+  monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${oldPath}`)
+  monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${oldPath}`)
+  monaco.typescript.typescriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
+  monaco.typescript.javascriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
 
   // Update entry point if necessary
   if (currentPlugin.entryPoint === oldPath) {
@@ -908,7 +908,7 @@ function createFileInline(folderPath: string = '') {
 
   // Start rename immediately to let user type the name
   setTimeout(() => {
-    startRename(tempPath, tempPath.split('/').pop() || 'newFile.ts')
+    startRename(tempPath)
   }, 50)
 }
 
@@ -965,8 +965,6 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
   // Create inline input for renaming
   const folderNameSpan = folderItem.querySelector('.folder-name') as HTMLElement
   if (!folderNameSpan) return
-
-  const originalText = folderNameSpan.textContent || currentFolderName
 
   const input = document.createElement('input')
   input.type = 'text'
@@ -1520,7 +1518,7 @@ function setupCustomTokenColors() {
     // Try to get TypeScript worker for more accurate classification
     let tsClient: any = null
     try {
-      const worker = await monaco.languages.typescript.getTypeScriptWorker()
+      const worker = await monaco.typescript.getTypeScriptWorker()
       tsClient = await worker(model.uri)
     } catch (err) {
       console.log('TypeScript worker not available, using syntax-based detection')
