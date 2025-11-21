@@ -49,11 +49,13 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
           }
 
           // Add extension if missing
-          if (!resolved.endsWith('.ts') && !resolved.endsWith('.js')) {
+          if (!resolved.endsWith('.ts') && !resolved.endsWith('.js') && !resolved.endsWith('.json')) {
             if (files[`${resolved}.ts`]) {
               resolved = `${resolved}.ts`
             } else if (files[`${resolved}.js`]) {
               resolved = `${resolved}.js`
+            } else if (files[`${resolved}.json`]) {
+              resolved = `${resolved}.json`
             }
           }
 
@@ -76,9 +78,19 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
             }
           }
 
+          // Determine the correct loader based on file language
+          let loader: esbuild.Loader
+          if (file.language === 'typescript') {
+            loader = 'ts'
+          } else if (file.language === 'json') {
+            loader = 'json'
+          } else {
+            loader = 'js'
+          }
+
           return {
             contents: file.content,
-            loader: file.language === 'typescript' ? 'ts' : 'js'
+            loader: loader
           }
         })
 

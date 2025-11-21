@@ -89,11 +89,24 @@ body {
 
 #file-tree {
     width: 250px;
+    min-width: 150px;
+    max-width: 600px;
     background: #252526;
     border-right: 1px solid #3e3e42;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+#file-tree-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 100;
 }
 
 #file-tree-header {
@@ -107,6 +120,10 @@ body {
     text-transform: uppercase;
     font-weight: 600;
     color: #999;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 #file-tree-actions {
@@ -132,6 +149,8 @@ body {
 #file-list {
     flex: 1;
     padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .file-tree-item {
@@ -153,6 +172,15 @@ body {
     background: #2a2d2e;
 }
 
+.folder-item.renaming .folder-name {
+    display: none;
+}
+
+.folder-item.renaming .rename-input {
+    display: block;
+    flex: 1;
+}
+
 .folder-toggle {
     width: 16px;
     height: 16px;
@@ -161,10 +189,17 @@ body {
     justify-content: center;
     font-size: 10px;
     transition: transform 0.1s;
+    flex-shrink: 0;
 }
 
 .folder-toggle.expanded {
     transform: rotate(90deg);
+}
+
+.folder-toggle-spacer {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .folder-icon {
@@ -172,7 +207,14 @@ body {
 }
 
 .folder-name {
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     flex: 1;
+    min-width: 0;
 }
 
 .folder-children {
@@ -208,7 +250,14 @@ body {
 }
 
 .file-item .file-name {
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     flex: 1;
+    min-width: 0;
 }
 
 .file-item .file-modified-indicator {
@@ -243,23 +292,21 @@ body {
 
 .file-item.renaming .rename-input {
     display: block;
+    flex: 1;
 }
 
 .rename-input {
     display: none;
-    flex: 1;
     background: #3c3c3c;
-    border: 1px solid #007acc;
+    border: 1px solid transparent;
+    outline: 1px solid #007acc;
     color: #cccccc;
     padding: 2px 4px;
     font-size: 13px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    outline: none;
     box-sizing: border-box;
-}
-
-.file-name {
-    border: 1px solid transparent;
+    min-width: 0;
+    width: 100%;
 }
 
 .context-menu {

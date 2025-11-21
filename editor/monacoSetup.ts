@@ -16,6 +16,7 @@ export function setupTypeScriptEnvironment() {
     jsx: monaco.typescript.JsxEmit.React,
     allowJs: true,
     typeRoots: ['node_modules/@types'],
+    resolveJsonModule: true,
   })
 
   // Also configure JavaScript defaults with same options
@@ -30,6 +31,7 @@ export function setupTypeScriptEnvironment() {
     allowJs: true,
     typeRoots: ['node_modules/@types'],
     checkJs: true,
+    resolveJsonModule: true,
   })
 
   // Enable diagnostics
@@ -64,6 +66,21 @@ export function setupTypeScriptEnvironment() {
     pluginApiTypes,
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
+
+  // Add wildcard module declaration for JSON files
+  const jsonModuleDeclaration = `declare module "*.json" {
+  const value: any;
+  export default value;
+}`
+  monaco.typescript.typescriptDefaults.addExtraLib(
+    jsonModuleDeclaration,
+    'file:///node_modules/@types/json-module/index.d.ts'
+  )
+
+  monaco.typescript.javascriptDefaults.addExtraLib(
+    jsonModuleDeclaration,
+    'file:///node_modules/@types/json-module/index.d.ts'
+  )
 }
 
 export function defineCustomTheme() {
@@ -95,7 +112,7 @@ export async function initializeEditor(
   try {
     const highlighter = await createHighlighter({
       themes: ['dark-plus'],
-      langs: ['typescript', 'javascript', 'json']
+      langs: ['typescript', 'javascript', 'json', 'plaintext']
     })
 
     shikiToMonaco(highlighter, monaco)
@@ -130,11 +147,14 @@ export async function initializeEditor(
   monaco.editor.registerEditorOpener({
     openCodeEditor(_source, resource): boolean | Promise<boolean> {
       // Extract file path from URI like: file:///pluginId/path/to/file.ts
-      const fullPath = resource.path.substring(1) // Remove leading /
+      // Remove leading / to get: pluginId/path/to/file.ts
+      const fullPath = resource.path.substring(1)
       const parts = fullPath.split('/')
-      // Skip the first part (pluginId) and join the rest
+      // Skip the first part (pluginId) and join the rest to get: path/to/file.ts
       const filePath = parts.slice(1).join('/')
-      switchToFileCallback(filePath)
+      if (filePath) {
+        switchToFileCallback(filePath)
+      }
       return true
     }
   })
@@ -157,22 +177,252 @@ export async function initializeEditor(
   return editor
 }
 
+// Register completion provider for import paths
+export function registerImportPathCompletion(pluginId: string, files: Record<string, any>) {
+  const disposeTS = monaco.languages.registerCompletionItemProvider('typescript', {
+    triggerCharacters: ['"', "'", '/'],
+    provideCompletionItems: (model, position) => {
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      })
+
+      // Check if we're in an import statement
+      const importMatch = textUntilPosition.match(/(?:import|from)\s+['"]([^'"]*?)$/)
+      if (!importMatch) {
+        return { suggestions: [] }
+      }
+
+      const typedPath = importMatch[1]
+      const isRelative = typedPath.startsWith('./') || typedPath.startsWith('../')
+
+      if (!isRelative && typedPath.length === 0) {
+        // Suggest starting with ./
+        return {
+          suggestions: [{
+            label: './',
+            kind: monaco.languages.CompletionItemKind.Folder,
+            insertText: './',
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            }
+          }]
+        }
+      }
+
+      if (isRelative) {
+        // Get current file path to resolve relative imports
+        const currentUri = model.uri.toString()
+        const currentFilePath = currentUri.replace(`file:///${pluginId}/`, '')
+        const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
+
+        // Resolve the directory we're completing in
+        let targetDir = currentDir
+        if (typedPath.startsWith('./')) {
+          const subPath = typedPath.substring(2)
+          const lastSlash = subPath.lastIndexOf('/')
+          if (lastSlash > -1) {
+            targetDir = currentDir ? `${currentDir}/${subPath.substring(0, lastSlash)}` : subPath.substring(0, lastSlash)
+          }
+        }
+
+        // Find all files in the target directory
+        const suggestions: any[] = []
+        Object.keys(files).forEach(filePath => {
+          const fileDir = filePath.substring(0, filePath.lastIndexOf('/'))
+          const fileName = filePath.substring(filePath.lastIndexOf('/') + 1)
+
+          // Check if file is in target directory
+          if (fileDir === targetDir || (!targetDir && !filePath.includes('/'))) {
+            // Don't suggest the current file
+            if (filePath !== currentFilePath) {
+              // Remove extension for the suggestion
+              const baseName = fileName.replace(/\.(ts|js|json)$/, '')
+              const displayName = fileName
+
+              suggestions.push({
+                label: displayName,
+                kind: monaco.languages.CompletionItemKind.File,
+                insertText: baseName,
+                detail: filePath,
+                range: {
+                  startLineNumber: position.lineNumber,
+                  startColumn: position.column - typedPath.split('/').pop()!.length,
+                  endLineNumber: position.lineNumber,
+                  endColumn: position.column,
+                }
+              })
+            }
+          }
+        })
+
+        return { suggestions }
+      }
+
+      return { suggestions: [] }
+    }
+  })
+
+  const disposeJS = monaco.languages.registerCompletionItemProvider('javascript', {
+    triggerCharacters: ['"', "'", '/'],
+    provideCompletionItems: (model, position) => {
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      })
+
+      const importMatch = textUntilPosition.match(/(?:import|from)\s+['"]([^'"]*?)$/)
+      if (!importMatch) {
+        return { suggestions: [] }
+      }
+
+      const typedPath = importMatch[1]
+      const isRelative = typedPath.startsWith('./') || typedPath.startsWith('../')
+
+      if (!isRelative && typedPath.length === 0) {
+        return {
+          suggestions: [{
+            label: './',
+            kind: monaco.languages.CompletionItemKind.Folder,
+            insertText: './',
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            }
+          }]
+        }
+      }
+
+      if (isRelative) {
+        const currentUri = model.uri.toString()
+        const currentFilePath = currentUri.replace(`file:///${pluginId}/`, '')
+        const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
+
+        let targetDir = currentDir
+        if (typedPath.startsWith('./')) {
+          const subPath = typedPath.substring(2)
+          const lastSlash = subPath.lastIndexOf('/')
+          if (lastSlash > -1) {
+            targetDir = currentDir ? `${currentDir}/${subPath.substring(0, lastSlash)}` : subPath.substring(0, lastSlash)
+          }
+        }
+
+        const suggestions: any[] = []
+        Object.keys(files).forEach(filePath => {
+          const fileDir = filePath.substring(0, filePath.lastIndexOf('/'))
+          const fileName = filePath.substring(filePath.lastIndexOf('/') + 1)
+
+          if (fileDir === targetDir || (!targetDir && !filePath.includes('/'))) {
+            if (filePath !== currentFilePath) {
+              const baseName = fileName.replace(/\.(ts|js|json)$/, '')
+              const displayName = fileName
+
+              suggestions.push({
+                label: displayName,
+                kind: monaco.languages.CompletionItemKind.File,
+                insertText: baseName,
+                detail: filePath,
+                range: {
+                  startLineNumber: position.lineNumber,
+                  startColumn: position.column - typedPath.split('/').pop()!.length,
+                  endLineNumber: position.lineNumber,
+                  endColumn: position.column,
+                }
+              })
+            }
+          }
+        })
+
+        return { suggestions }
+      }
+
+      return { suggestions: [] }
+    }
+  })
+
+  return () => {
+    disposeTS.dispose()
+    disposeJS.dispose()
+  }
+}
+
 export function updateMonacoFileSystem(pluginId: string, files: Record<string, any>) {
   // Get all existing extra libs
   const existingLibs = monaco.typescript.typescriptDefaults.getExtraLibs()
 
   // Clear all old plugin files by setting them to empty string
   Object.keys(existingLibs).forEach(path => {
-    if (path.startsWith('file:///') && !path.includes('plugin-api')) {
+    if (path.startsWith('file:///') && !path.includes('plugin-api') && !path.includes('json-module')) {
       monaco.typescript.typescriptDefaults.addExtraLib('', path)
       monaco.typescript.javascriptDefaults.addExtraLib('', path)
     }
   })
 
-  // Add all current plugin files to Monaco's type system with plugin-specific URIs
+  // Add JS/TS/JSON files to Monaco's type system with plugin-specific URIs
   Object.values(files).forEach((file: any) => {
     const uri = `file:///${pluginId}/${file.path}`
-    monaco.typescript.typescriptDefaults.addExtraLib(file.content, uri)
-    monaco.typescript.javascriptDefaults.addExtraLib(file.content, uri)
+
+    if (file.language === 'typescript' || file.language === 'javascript') {
+      // Add the actual file content for TS/JS files
+      monaco.typescript.typescriptDefaults.addExtraLib(file.content, uri)
+      monaco.typescript.javascriptDefaults.addExtraLib(file.content, uri)
+    } else if (file.language === 'json') {
+      // For JSON files, we need to:
+      // 1. Create a virtual .ts file that exports the JSON as a typed constant
+      // 2. This makes TypeScript recognize the JSON file as a module
+
+      try {
+        const jsonContent = JSON.parse(file.content || '{}')
+        const inferredType = inferJsonType(jsonContent)
+
+        // Create a TypeScript module that exports the JSON value
+        const tsModuleContent = `const value: ${inferredType} = ${file.content || '{}'};
+export default value;`
+
+        // Add this as a TypeScript module
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+      } catch {
+        // If JSON is invalid, create a module with any type
+        const tsModuleContent = `const value: any = {};
+export default value;`
+
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+      }
+    }
   })
+
+  // Don't create Monaco models here - they're created in loadPlugin
+  // This function only manages the TypeScript virtual file system
+}
+
+// Helper function to infer TypeScript type from JSON value
+function inferJsonType(value: any): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'any[]'
+    const itemTypes = value.map(item => inferJsonType(item))
+    const uniqueTypes = [...new Set(itemTypes)]
+    return uniqueTypes.length === 1 ? `${uniqueTypes[0]}[]` : '(' + uniqueTypes.join(' | ') + ')[]'
+  }
+  if (typeof value === 'object') {
+    const props = Object.entries(value)
+      .map(([key, val]) => `  ${JSON.stringify(key)}: ${inferJsonType(val)}`)
+      .join(';\n')
+    return `{\n${props}\n}`
+  }
+  if (typeof value === 'string') return 'string'
+  if (typeof value === 'number') return 'number'
+  if (typeof value === 'boolean') return 'boolean'
+  return 'any'
 }

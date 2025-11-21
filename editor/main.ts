@@ -21,7 +21,7 @@ import {
 import type { EditorState } from './types'
 import { updateStatus, updateLanguageUI } from './utils'
 import { initEsbuild, bundlePlugin, compileTypeScript } from './bundler'
-import { initializeEditor, updateMonacoFileSystem } from './monacoSetup'
+import { initializeEditor, updateMonacoFileSystem, registerImportPathCompletion } from './monacoSetup'
 import { renderFileTree } from './fileTree'
 import {
   showContextMenu,
@@ -69,6 +69,27 @@ self.MonacoEnvironment = {
   }
 }
 
+// Helper function to infer TypeScript type from JSON value
+function inferJsonType(value: any): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'any[]'
+    const itemTypes = value.map(item => inferJsonType(item))
+    const uniqueTypes = [...new Set(itemTypes)]
+    return uniqueTypes.length === 1 ? `${uniqueTypes[0]}[]` : '(' + uniqueTypes.join(' | ') + ')[]'
+  }
+  if (typeof value === 'object') {
+    const props = Object.entries(value)
+      .map(([key, val]) => `  ${JSON.stringify(key)}: ${inferJsonType(val)}`)
+      .join(';\n')
+    return `{\n${props}\n}`
+  }
+  if (typeof value === 'string') return 'string'
+  if (typeof value === 'number') return 'number'
+  if (typeof value === 'boolean') return 'boolean'
+  return 'any'
+}
+
 // Global editor state
 const state: EditorState = {
   editor: null,
@@ -79,6 +100,9 @@ const state: EditorState = {
   modifiedFiles: new Set(),
   esbuildInitialized: false,
 }
+
+// Store completion provider disposer
+let disposeCompletionProvider: (() => void) | null = null
 
 // File tree render wrapper
 function renderCurrentFileTree() {
@@ -131,11 +155,16 @@ function switchToFile(filePath: string) {
   let model = state.editorModels.get(filePath)
   if (!model) {
     const uri = monaco.Uri.parse(`file:///${state.currentPluginId}/${filePath}`)
-    model = monaco.editor.getModel(uri)
+    const existingModel = monaco.editor.getModel(uri)
 
-    if (!model) {
-      model = monaco.editor.createModel(file.content, file.language, uri)
+    // If Monaco has a model but it's not in our editorModels map, dispose it
+    // because it might be stale (created when navigating to old import paths)
+    if (existingModel) {
+      existingModel.dispose()
     }
+
+    // Always create a fresh model with content from plugin.files
+    model = monaco.editor.createModel(file.content, file.language, uri)
 
     state.editorModels.set(filePath, model)
 
@@ -151,10 +180,29 @@ function switchToFile(filePath: string) {
         state.modifiedFiles.add(capturedFilePath)
         renderCurrentFileTree()
 
-        // Update Monaco's virtual file system
+        // Update Monaco's virtual file system (for JS/TS/JSON files)
+        const fileLanguage = state.currentPlugin.files[capturedFilePath].language
         const uri = `file:///${capturedPluginId}/${capturedFilePath}`
-        monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
-        monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
+
+        if (fileLanguage === 'typescript' || fileLanguage === 'javascript') {
+          monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
+          monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
+        } else if (fileLanguage === 'json') {
+          // For JSON files, create a TypeScript module
+          try {
+            const jsonContent = JSON.parse(content || '{}')
+            const inferredType = inferJsonType(jsonContent)
+            const tsModuleContent = `const value: ${inferredType} = ${content || '{}'};
+export default value;`
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+          } catch {
+            const tsModuleContent = `const value: any = {};
+export default value;`
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+          }
+        }
       }
     })
   }
@@ -201,6 +249,12 @@ async function loadPlugin(pluginId: string) {
   // Update Monaco's virtual file system
   updateMonacoFileSystem(pluginId, plugin.files)
 
+  // Dispose old completion provider and register new one
+  if (disposeCompletionProvider) {
+    disposeCompletionProvider()
+  }
+  disposeCompletionProvider = registerImportPathCompletion(pluginId, plugin.files)
+
   // Create models for all files
   for (const [filePath, file] of Object.entries(plugin.files)) {
     const uri = monaco.Uri.parse(`file:///${pluginId}/${filePath}`)
@@ -217,9 +271,29 @@ async function loadPlugin(pluginId: string) {
         state.modifiedFiles.add(capturedFilePath)
         renderCurrentFileTree()
 
+        // Update Monaco's virtual file system
+        const fileLanguage = state.currentPlugin.files[capturedFilePath].language
         const uri = `file:///${capturedPluginId}/${capturedFilePath}`
-        monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
-        monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
+
+        if (fileLanguage === 'typescript' || fileLanguage === 'javascript') {
+          monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
+          monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
+        } else if (fileLanguage === 'json') {
+          // For JSON files, create a TypeScript module
+          try {
+            const jsonContent = JSON.parse(content || '{}')
+            const inferredType = inferJsonType(jsonContent)
+            const tsModuleContent = `const value: ${inferredType} = ${content || '{}'};
+export default value;`
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+          } catch {
+            const tsModuleContent = `const value: any = {};
+export default value;`
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+          }
+        }
       }
     })
   }
@@ -267,7 +341,10 @@ function renameFileWrapper(oldPath: string, newPath: string): boolean {
   )
 
   if (success) {
-    state.currentFilePath = newPath
+    // Only update currentFilePath if the renamed file was the currently open file
+    if (state.currentFilePath === oldPath) {
+      state.currentFilePath = newPath
+    }
     renderCurrentFileTree()
   }
 
@@ -325,6 +402,153 @@ function startRename(filePath: string) {
   }
 }
 
+// New file creation UI handling
+function startNewFileCreation(folderPath: string) {
+  if (!state.currentPlugin) return
+
+  // Create a temporary unique marker for the new file
+  const tempId = `__new_file_${Date.now()}__`
+  const tempPath = folderPath ? `${folderPath}/${tempId}` : tempId
+
+  // Temporarily add to plugin files just for rendering
+  state.currentPlugin.files[tempPath] = createPluginFile(tempPath, '')
+
+  renderCurrentFileTree()
+
+  setTimeout(() => {
+    const fileItem = document.querySelector(`.file-item[data-path="${tempPath}"]`) as HTMLElement
+    if (!fileItem) return
+
+    fileItem.classList.add('renaming')
+    const input = fileItem.querySelector('.rename-input') as HTMLInputElement
+    if (!input) return
+
+    input.value = ''
+    input.focus()
+
+    const finishCreation = async () => {
+      const newName = input.value.trim()
+      fileItem.classList.remove('renaming')
+
+      // Remove the temporary file
+      delete state.currentPlugin!.files[tempPath]
+
+      if (!newName) {
+        // User cancelled, just re-render
+        renderCurrentFileTree()
+        return
+      }
+
+      const newPath = folderPath ? `${folderPath}/${newName}` : newName
+
+      if (state.currentPlugin!.files[newPath]) {
+        updateStatus('File already exists', 'error')
+        renderCurrentFileTree()
+        return
+      }
+
+      // Create the actual file
+      state.currentPlugin!.files[newPath] = createPluginFile(newPath, '')
+      renderCurrentFileTree()
+
+      // Open the newly created file
+      switchToFile(newPath)
+      updateStatus(`Created: ${newPath}`, 'success')
+    }
+
+    input.onblur = finishCreation
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        input.blur()
+      } else if (e.key === 'Escape') {
+        input.value = ''
+        input.blur()
+      }
+    }
+  }, 50)
+}
+
+// New folder creation UI handling
+function startNewFolderCreation(basePath: string) {
+  if (!state.currentPlugin) return
+
+  // Initialize folders array if needed
+  if (!state.currentPlugin.folders) {
+    state.currentPlugin.folders = []
+  }
+
+  // Create a temporary unique marker for the new folder
+  const tempId = `__new_folder_${Date.now()}__`
+  const tempPath = basePath ? `${basePath}${tempId}` : tempId
+
+  // Temporarily add to folders array
+  state.currentPlugin.folders.push(tempPath)
+
+  renderCurrentFileTree()
+
+  setTimeout(() => {
+    const folderItem = document.querySelector(`.folder-item[data-path="${tempPath}"]`) as HTMLElement
+    if (!folderItem) return
+
+    const folderNameSpan = folderItem.querySelector('.folder-name') as HTMLElement
+    if (!folderNameSpan) return
+
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.value = ''
+    input.className = 'rename-input'
+    input.style.display = 'block'
+    input.style.flex = '1'
+
+    folderNameSpan.style.display = 'none'
+    folderItem.appendChild(input)
+    input.focus()
+
+    const finishCreation = async () => {
+      const newFolderName = input.value.trim()
+      input.remove()
+      folderNameSpan.style.display = ''
+
+      // Remove the temporary folder
+      const tempIndex = state.currentPlugin!.folders!.indexOf(tempPath)
+      if (tempIndex > -1) {
+        state.currentPlugin!.folders!.splice(tempIndex, 1)
+      }
+
+      if (!newFolderName) {
+        // User cancelled, just re-render
+        renderCurrentFileTree()
+        return
+      }
+
+      const newFolderPath = basePath ? `${basePath}${newFolderName}` : newFolderName
+
+      if (state.currentPlugin!.folders!.includes(newFolderPath)) {
+        updateStatus('Folder already exists', 'error')
+        renderCurrentFileTree()
+        return
+      }
+
+      // Create the actual folder
+      state.currentPlugin!.folders!.push(newFolderPath)
+      renderCurrentFileTree()
+      updateStatus(`Created folder: ${newFolderPath}`, 'success')
+    }
+
+    input.onblur = finishCreation
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        input.blur()
+      } else if (e.key === 'Escape') {
+        input.value = ''
+        input.blur()
+      }
+    }
+  }, 100)
+}
+
 // Folder rename UI handling
 function startFolderRename(folderPath: string, currentFolderName: string) {
   const folderItem = document.querySelector(`.folder-item[data-path="${folderPath}"]`) as HTMLElement
@@ -350,7 +574,13 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
     input.remove()
     folderNameSpan.style.display = ''
 
-    if (!newFolderName || newFolderName === currentFolderName) {
+    // If name hasn't changed, just return without doing anything
+    if (newFolderName === currentFolderName) {
+      return
+    }
+
+    // If empty, remove the folder (this handles newly created folders that were cancelled)
+    if (!newFolderName) {
       if (!state.currentPlugin || !state.currentPlugin.folders) return
       const index = state.currentPlugin.folders.indexOf(folderPath)
       if (index > -1) {
@@ -416,14 +646,18 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
 
 // Context menu action handler
 function handleContextMenuAction(action: string) {
-  hideContextMenu()
-
   const target = getContextMenuTarget()
   if (!target || !state.currentPlugin) return
 
+  hideContextMenu()
+
   switch (action) {
     case 'rename':
-      if (!target.isFolder) {
+      if (target.isFolder) {
+        const parts = target.path.split('/')
+        const folderName = parts[parts.length - 1]
+        startFolderRename(target.path, folderName)
+      } else {
         startRename(target.path)
       }
       break
@@ -453,11 +687,11 @@ function handleContextMenuAction(action: string) {
       break
     case 'new-file':
       if (target.isFolder || target.path === '') {
-        createFileInline(target.path, state.currentPlugin, updateStatus, renderCurrentFileTree, startRename)
+        createFileInline(target.path, state.currentPlugin, updateStatus, renderCurrentFileTree, startNewFileCreation)
       } else {
         const parts = target.path.split('/')
         const dir = parts.slice(0, -1).join('/')
-        createFileInline(dir, state.currentPlugin, updateStatus, renderCurrentFileTree, startRename)
+        createFileInline(dir, state.currentPlugin, updateStatus, renderCurrentFileTree, startNewFileCreation)
       }
       break
     case 'new-folder':
@@ -469,7 +703,7 @@ function handleContextMenuAction(action: string) {
         const dir = parts.slice(0, -1).join('/')
         folderBase = dir ? dir + '/' : ''
       }
-      createFolderInline(folderBase, state.currentPlugin, updateStatus, renderCurrentFileTree, startFolderRename)
+      createFolderInline(folderBase, state.currentPlugin, updateStatus, renderCurrentFileTree, startNewFolderCreation)
       break
   }
 
@@ -855,6 +1089,46 @@ function setupEventListeners() {
       if (firstItem) {
         firstItem.click()
       }
+    }
+  })
+
+  // File tree resizer
+  const fileTree = document.getElementById('file-tree')!
+  const resizer = document.getElementById('file-tree-resizer')!
+  let isResizing = false
+  let startX = 0
+  let startWidth = 0
+
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true
+    startX = e.clientX
+    startWidth = fileTree.offsetWidth
+    resizer.classList.add('resizing')
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return
+
+    const delta = e.clientX - startX
+    const newWidth = startWidth + delta
+
+    // Apply min/max constraints
+    const minWidth = 150
+    const maxWidth = 600
+    const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
+
+    fileTree.style.width = `${constrainedWidth}px`
+  })
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false
+      resizer.classList.remove('resizing')
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
   })
 }

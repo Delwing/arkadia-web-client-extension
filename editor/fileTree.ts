@@ -87,9 +87,16 @@ export function renderTreeNode(
     folderItem.className = 'folder-item'
     folderItem.dataset.path = node.path
 
+    const hasChildren = node.children.length > 0
+
+    // Show toggle arrow only if folder has children, otherwise show spacer
     const toggle = document.createElement('span')
-    toggle.className = 'folder-toggle expanded'
-    toggle.textContent = '▶'
+    if (hasChildren) {
+      toggle.className = 'folder-toggle expanded'
+      toggle.textContent = '▶'
+    } else {
+      toggle.className = 'folder-toggle-spacer'
+    }
 
     const folderIcon = document.createElement('span')
     folderIcon.className = 'folder-icon'
@@ -106,11 +113,13 @@ export function renderTreeNode(
     const childrenContainer = document.createElement('div')
     childrenContainer.className = 'folder-children expanded'
 
-    // Toggle folder on click
+    // Toggle folder on click (only if it has children)
     folderItem.onclick = (e) => {
       e.stopPropagation()
-      const isExpanded = childrenContainer.classList.toggle('expanded')
-      toggle.classList.toggle('expanded', isExpanded)
+      if (hasChildren) {
+        const isExpanded = childrenContainer.classList.toggle('expanded')
+        toggle.classList.toggle('expanded', isExpanded)
+      }
     }
 
     // Context menu for folders
@@ -158,6 +167,10 @@ export function renderTreeNode(
       fileItem.classList.add('active')
     }
 
+    // Add spacer to align with folders that have toggle arrows
+    const toggleSpacer = document.createElement('span')
+    toggleSpacer.className = 'folder-toggle-spacer'
+
     const icon = document.createElement('span')
     icon.className = `file-icon ${FileIcons.getClassWithColor(node.name)}`
     icon.style.fontSize = '14px'
@@ -186,6 +199,7 @@ export function renderTreeNode(
     modifiedIndicator.textContent = '●'
     modifiedIndicator.style.display = modifiedFiles.has(node.path) ? 'inline' : 'none'
 
+    fileItem.appendChild(toggleSpacer)
     fileItem.appendChild(icon)
     fileItem.appendChild(fileName)
     fileItem.appendChild(modifiedIndicator)
@@ -194,17 +208,29 @@ export function renderTreeNode(
       fileItem.appendChild(deleteBtn)
     }
 
-    fileItem.onclick = () => callbacks.onFileClick(node.path)
+    let isDragging = false
+
+    fileItem.onclick = () => {
+      // Don't open file if it was just dragged
+      if (!isDragging) {
+        callbacks.onFileClick(node.path)
+      }
+    }
 
     // Drag and drop support
     fileItem.ondragstart = (e) => {
       e.dataTransfer!.effectAllowed = 'move'
       e.dataTransfer!.setData('text/plain', node.path)
       fileItem.classList.add('dragging')
+      isDragging = true
     }
 
     fileItem.ondragend = () => {
       fileItem.classList.remove('dragging')
+      // Reset isDragging after a short delay to allow click to be skipped
+      setTimeout(() => {
+        isDragging = false
+      }, 100)
     }
 
     // Context menu support

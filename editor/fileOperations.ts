@@ -3,6 +3,27 @@ import type { EditorPluginData } from '../src/client/utils/pluginEditorStorage'
 import { createPluginFile, getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
 import type { StatusType } from './types'
 
+// Helper function to infer TypeScript type from JSON value
+function inferJsonType(value: any): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'any[]'
+    const itemTypes = value.map(item => inferJsonType(item))
+    const uniqueTypes = [...new Set(itemTypes)]
+    return uniqueTypes.length === 1 ? `${uniqueTypes[0]}[]` : '(' + uniqueTypes.join(' | ') + ')[]'
+  }
+  if (typeof value === 'object') {
+    const props = Object.entries(value)
+      .map(([key, val]) => `  ${JSON.stringify(key)}: ${inferJsonType(val)}`)
+      .join(';\n')
+    return `{\n${props}\n}`
+  }
+  if (typeof value === 'string') return 'string'
+  if (typeof value === 'number') return 'number'
+  if (typeof value === 'boolean') return 'boolean'
+  return 'any'
+}
+
 export function deleteFile(
   filePath: string,
   plugin: EditorPluginData,
@@ -120,28 +141,64 @@ export function renameFile(
     return false
   }
 
-  // Create new file with new path
+  // Get the current content from the model if it exists, otherwise use stored content
+  const model = editorModels.get(oldPath)
+  const currentContent = model ? model.getValue() : file.content
+
+  // Create new file with new path and current content
   plugin.files[newPath] = {
     ...file,
     path: newPath,
-    language: getLanguageFromPath(newPath)
+    language: getLanguageFromPath(newPath),
+    content: currentContent
   }
 
   // Delete old file
   delete plugin.files[oldPath]
 
-  // Handle editor model
-  const model = editorModels.get(oldPath)
+  // Handle editor model - dispose old model
   if (model) {
     model.dispose()
     editorModels.delete(oldPath)
   }
 
-  // Update Monaco virtual file system
-  monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${oldPath}`)
-  monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${oldPath}`)
-  monaco.typescript.typescriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
-  monaco.typescript.javascriptDefaults.addExtraLib(file.content, `file:///${newPath}`)
+  // Also check if Monaco has a model with the old URI and dispose it
+  const oldUri = monaco.Uri.parse(`file:///${pluginId}/${oldPath}`)
+  const oldMonacoModel = monaco.editor.getModel(oldUri)
+  if (oldMonacoModel && oldMonacoModel !== model) {
+    oldMonacoModel.dispose()
+  }
+
+  // Update Monaco virtual file system (for JS/TS/JSON files)
+  const newLanguage = getLanguageFromPath(newPath)
+  if (newLanguage === 'typescript' || newLanguage === 'javascript') {
+    // Clear old path
+    monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
+    monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
+
+    // Add new path
+    monaco.typescript.typescriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
+    monaco.typescript.javascriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
+  } else if (newLanguage === 'json') {
+    // For JSON files, clear old module and create new one
+    monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
+    monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
+
+    const uri = `file:///${pluginId}/${newPath}`
+    try {
+      const jsonContent = JSON.parse(currentContent || '{}')
+      const inferredType = inferJsonType(jsonContent)
+      const tsModuleContent = `const value: ${inferredType} = ${currentContent || '{}'};
+export default value;`
+      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+    } catch {
+      const tsModuleContent = `const value: any = {};
+export default value;`
+      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
+      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+    }
+  }
 
   // Update entry point if necessary
   if (plugin.entryPoint === oldPath) {
@@ -205,27 +262,10 @@ export function createFileInline(
   plugin: EditorPluginData,
   updateStatus: (message: string, type: StatusType) => void,
   renderFileTree: () => void,
-  startRename: (path: string) => void
+  startNewFileCreation: (folderPath: string) => void
 ) {
-  // Create a temporary file entry for inline editing
-  const tempPath = folderPath ? `${folderPath}/newFile.ts` : 'newFile.ts'
-
-  // Check if already exists
-  if (plugin.files[tempPath]) {
-    updateStatus('File already exists', 'error')
-    return
-  }
-
-  // Create the file
-  plugin.files[tempPath] = createPluginFile(tempPath, '')
-
-  // Render tree
-  renderFileTree()
-
-  // Start rename immediately to let user type the name
-  setTimeout(() => {
-    startRename(tempPath)
-  }, 50)
+  // Don't create the file yet, just start the creation UI
+  startNewFileCreation(folderPath)
 }
 
 export function createFolderInline(
@@ -233,30 +273,8 @@ export function createFolderInline(
   plugin: EditorPluginData,
   updateStatus: (message: string, type: StatusType) => void,
   renderFileTree: () => void,
-  startFolderRename: (folderPath: string, folderName: string) => void
+  startNewFolderCreation: (basePath: string) => void
 ) {
-  // Initialize folders array if it doesn't exist
-  if (!plugin.folders) {
-    plugin.folders = []
-  }
-
-  const folderName = 'newFolder'
-  const folderPath = basePath ? `${basePath}${folderName}` : folderName
-
-  // Check if folder already exists
-  if (plugin.folders.includes(folderPath)) {
-    updateStatus('Folder already exists', 'error')
-    return
-  }
-
-  // Add the folder to the folders array
-  plugin.folders.push(folderPath)
-
-  // Render tree to show the folder
-  renderFileTree()
-
-  // Rename the folder
-  setTimeout(() => {
-    startFolderRename(folderPath, folderName)
-  }, 100)
+  // Don't create the folder yet, just start the creation UI
+  startNewFolderCreation(basePath)
 }

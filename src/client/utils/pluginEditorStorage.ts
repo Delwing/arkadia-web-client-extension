@@ -10,7 +10,7 @@ export interface PluginFile {
   /** File content */
   content: string
   /** Language/file type */
-  language: 'javascript' | 'typescript'
+  language: 'javascript' | 'typescript' | 'json' | 'plaintext'
 }
 
 export interface EditorPluginData {
@@ -227,8 +227,23 @@ export function migrateLegacyPlugin(plugin: any): EditorPluginData {
 /**
  * Get the language for a file based on extension
  */
-export function getLanguageFromPath(path: string): 'javascript' | 'typescript' {
-  return path.endsWith('.ts') ? 'typescript' : 'javascript'
+export function getLanguageFromPath(path: string): 'javascript' | 'typescript' | 'json' | 'plaintext' {
+  const extension = path.split('.').pop()?.toLowerCase()
+
+  switch (extension) {
+    case 'ts':
+    case 'tsx':
+      return 'typescript'
+    case 'js':
+    case 'jsx':
+    case 'mjs':
+    case 'cjs':
+      return 'javascript'
+    case 'json':
+      return 'json'
+    default:
+      return 'plaintext'
+  }
 }
 
 /**
