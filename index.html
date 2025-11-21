@@ -362,6 +362,54 @@
                                     <input id="ui-transparent-labels" type="checkbox" class="form-check-input" />
                                     <label class="form-check-label" for="ui-transparent-labels">Przezroczyste etykiety (wymusza tryb danych)</label>
                                 </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-room-size">
+                                        Rozmiar pomieszczeń: <span id="ui-map-room-size-value">0.6</span>
+                                    </label>
+                                    <input id="ui-map-room-size" type="range" step="0.01" min="0.1" max="1.5" class="form-range" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-line-width">
+                                        Szerokość linii: <span id="ui-map-line-width-value">0.025</span>
+                                    </label>
+                                    <input id="ui-map-line-width" type="range" step="0.001" min="0.010" max="0.1" class="form-range" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-stroke-color">Kolor obramowania markera gracza</label>
+                                    <input id="ui-map-player-marker-stroke-color" type="color" class="form-control form-control-color" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-fill-color">Kolor wypełnienia markera gracza</label>
+                                    <input id="ui-map-player-marker-fill-color" type="color" class="form-control form-control-color" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-stroke-alpha">
+                                        Przezroczystość obramowania: <span id="ui-map-player-marker-stroke-alpha-value">1</span>
+                                    </label>
+                                    <input id="ui-map-player-marker-stroke-alpha" type="range" step="0.01" min="0" max="1" class="form-range" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-fill-alpha">
+                                        Przezroczystość wypełnienia: <span id="ui-map-player-marker-fill-alpha-value">0</span>
+                                    </label>
+                                    <input id="ui-map-player-marker-fill-alpha" type="range" step="0.01" min="0" max="1" class="form-range" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-stroke-width">
+                                        Grubość obramowania markera: <span id="ui-map-player-marker-stroke-width-value">0.1</span>
+                                    </label>
+                                    <input id="ui-map-player-marker-stroke-width" type="range" step="0.01" min="0.01" max="0.3" class="form-range" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-map-player-marker-size-factor">
+                                        Mnożnik rozmiaru markera: <span id="ui-map-player-marker-size-factor-value">1.7</span>
+                                    </label>
+                                    <input id="ui-map-player-marker-size-factor" type="range" step="0.1" min="0.5" max="3" class="form-range" />
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-map-player-marker-dash-enabled" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-map-player-marker-dash-enabled">Przerywane obramowanie markera</label>
+                                </div>
                             </div>
                         </section>
                         <section class="ui-settings-section">

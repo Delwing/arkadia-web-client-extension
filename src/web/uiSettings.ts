@@ -60,6 +60,15 @@ export interface UiSettings {
     customFontFamily: string;
     autoLowercaseCommands: boolean;
     customBeepSoundKey?: string;
+    mapRoomSize: number;
+    mapLineWidth: number;
+    mapPlayerMarkerStrokeColor: string;
+    mapPlayerMarkerStrokeAlpha: number;
+    mapPlayerMarkerFillColor: string;
+    mapPlayerMarkerFillAlpha: number;
+    mapPlayerMarkerStrokeWidth: number;
+    mapPlayerMarkerSizeFactor: number;
+    mapPlayerMarkerDashEnabled: boolean;
 }
 
 const defaultSettings: UiSettings = {
@@ -90,6 +99,15 @@ const defaultSettings: UiSettings = {
     customFontFamily: '',
     autoLowercaseCommands: false,
     customBeepSoundKey: undefined,
+    mapRoomSize: 0.6,
+    mapLineWidth: 0.025,
+    mapPlayerMarkerStrokeColor: '#00e5b2',
+    mapPlayerMarkerStrokeAlpha: 1,
+    mapPlayerMarkerFillColor: '#00e5b2',
+    mapPlayerMarkerFillAlpha: 0,
+    mapPlayerMarkerStrokeWidth: 0.1,
+    mapPlayerMarkerSizeFactor: 1.7,
+    mapPlayerMarkerDashEnabled: true,
 };
 
 const MIN_MAP_SCALE = 0.01;
@@ -324,6 +342,18 @@ function apply(settings: UiSettings) {
     embedded?.setInstantMove?.(settings.instantMove);
     Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
+    Settings.roomSize = settings.mapRoomSize;
+    Settings.lineWidth = settings.mapLineWidth;
+    Settings.playerMarker = {
+        strokeColor: settings.mapPlayerMarkerStrokeColor,
+        strokeAlpha: settings.mapPlayerMarkerStrokeAlpha,
+        fillColor: settings.mapPlayerMarkerFillColor,
+        fillAlpha: settings.mapPlayerMarkerFillAlpha,
+        strokeWidth: settings.mapPlayerMarkerStrokeWidth,
+        sizeFactor: settings.mapPlayerMarkerSizeFactor,
+        dashEnabled: settings.mapPlayerMarkerDashEnabled,
+    };
+    embedded?.refresh();
     const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
         hapticFeedback: settings.hapticFeedback,
@@ -408,6 +438,33 @@ async function load(): Promise<UiSettings> {
             const customBeepSoundKey = typeof parsed.customBeepSoundKey === 'string'
                 ? parsed.customBeepSoundKey || undefined
                 : defaultSettings.customBeepSoundKey;
+            const mapRoomSize = typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0
+                ? parsed.mapRoomSize
+                : defaultSettings.mapRoomSize;
+            const mapLineWidth = typeof parsed.mapLineWidth === 'number' && parsed.mapLineWidth > 0
+                ? parsed.mapLineWidth
+                : defaultSettings.mapLineWidth;
+            const mapPlayerMarkerStrokeColor = typeof parsed.mapPlayerMarkerStrokeColor === 'string'
+                ? parsed.mapPlayerMarkerStrokeColor
+                : defaultSettings.mapPlayerMarkerStrokeColor;
+            const mapPlayerMarkerStrokeAlpha = typeof parsed.mapPlayerMarkerStrokeAlpha === 'number'
+                ? parsed.mapPlayerMarkerStrokeAlpha
+                : defaultSettings.mapPlayerMarkerStrokeAlpha;
+            const mapPlayerMarkerFillColor = typeof parsed.mapPlayerMarkerFillColor === 'string'
+                ? parsed.mapPlayerMarkerFillColor
+                : defaultSettings.mapPlayerMarkerFillColor;
+            const mapPlayerMarkerFillAlpha = typeof parsed.mapPlayerMarkerFillAlpha === 'number'
+                ? parsed.mapPlayerMarkerFillAlpha
+                : defaultSettings.mapPlayerMarkerFillAlpha;
+            const mapPlayerMarkerStrokeWidth = typeof parsed.mapPlayerMarkerStrokeWidth === 'number'
+                ? parsed.mapPlayerMarkerStrokeWidth
+                : defaultSettings.mapPlayerMarkerStrokeWidth;
+            const mapPlayerMarkerSizeFactor = typeof parsed.mapPlayerMarkerSizeFactor === 'number'
+                ? parsed.mapPlayerMarkerSizeFactor
+                : defaultSettings.mapPlayerMarkerSizeFactor;
+            const mapPlayerMarkerDashEnabled = typeof parsed.mapPlayerMarkerDashEnabled === 'boolean'
+                ? parsed.mapPlayerMarkerDashEnabled
+                : defaultSettings.mapPlayerMarkerDashEnabled;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -433,6 +490,15 @@ async function load(): Promise<UiSettings> {
                 customFontFamily,
                 autoLowercaseCommands,
                 customBeepSoundKey,
+                mapRoomSize,
+                mapLineWidth,
+                mapPlayerMarkerStrokeColor,
+                mapPlayerMarkerStrokeAlpha,
+                mapPlayerMarkerFillColor,
+                mapPlayerMarkerFillAlpha,
+                mapPlayerMarkerStrokeWidth,
+                mapPlayerMarkerSizeFactor,
+                mapPlayerMarkerDashEnabled,
             };
         }
     } catch {
@@ -482,6 +548,21 @@ export default async function initUiSettings() {
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
+    const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
+    const mapRoomSizeValue = modalEl.querySelector('#ui-map-room-size-value') as HTMLSpanElement;
+    const mapLineWidthInput = modalEl.querySelector('#ui-map-line-width') as HTMLInputElement;
+    const mapLineWidthValue = modalEl.querySelector('#ui-map-line-width-value') as HTMLSpanElement;
+    const mapPlayerMarkerStrokeColorInput = modalEl.querySelector('#ui-map-player-marker-stroke-color') as HTMLInputElement;
+    const mapPlayerMarkerFillColorInput = modalEl.querySelector('#ui-map-player-marker-fill-color') as HTMLInputElement;
+    const mapPlayerMarkerStrokeAlphaInput = modalEl.querySelector('#ui-map-player-marker-stroke-alpha') as HTMLInputElement;
+    const mapPlayerMarkerStrokeAlphaValue = modalEl.querySelector('#ui-map-player-marker-stroke-alpha-value') as HTMLSpanElement;
+    const mapPlayerMarkerFillAlphaInput = modalEl.querySelector('#ui-map-player-marker-fill-alpha') as HTMLInputElement;
+    const mapPlayerMarkerFillAlphaValue = modalEl.querySelector('#ui-map-player-marker-fill-alpha-value') as HTMLSpanElement;
+    const mapPlayerMarkerStrokeWidthInput = modalEl.querySelector('#ui-map-player-marker-stroke-width') as HTMLInputElement;
+    const mapPlayerMarkerStrokeWidthValue = modalEl.querySelector('#ui-map-player-marker-stroke-width-value') as HTMLSpanElement;
+    const mapPlayerMarkerSizeFactorInput = modalEl.querySelector('#ui-map-player-marker-size-factor') as HTMLInputElement;
+    const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
+    const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
@@ -608,6 +689,21 @@ export default async function initUiSettings() {
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
+        mapRoomSizeInput.value = String(settings.mapRoomSize);
+        mapRoomSizeValue.textContent = String(settings.mapRoomSize);
+        mapLineWidthInput.value = String(settings.mapLineWidth);
+        mapLineWidthValue.textContent = String(settings.mapLineWidth);
+        mapPlayerMarkerStrokeColorInput.value = settings.mapPlayerMarkerStrokeColor;
+        mapPlayerMarkerFillColorInput.value = settings.mapPlayerMarkerFillColor;
+        mapPlayerMarkerStrokeAlphaInput.value = String(settings.mapPlayerMarkerStrokeAlpha);
+        mapPlayerMarkerStrokeAlphaValue.textContent = String(settings.mapPlayerMarkerStrokeAlpha);
+        mapPlayerMarkerFillAlphaInput.value = String(settings.mapPlayerMarkerFillAlpha);
+        mapPlayerMarkerFillAlphaValue.textContent = String(settings.mapPlayerMarkerFillAlpha);
+        mapPlayerMarkerStrokeWidthInput.value = String(settings.mapPlayerMarkerStrokeWidth);
+        mapPlayerMarkerStrokeWidthValue.textContent = String(settings.mapPlayerMarkerStrokeWidth);
+        mapPlayerMarkerSizeFactorInput.value = String(settings.mapPlayerMarkerSizeFactor);
+        mapPlayerMarkerSizeFactorValue.textContent = String(settings.mapPlayerMarkerSizeFactor);
+        mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
     };
 
     populateFormInputs(current);
@@ -737,6 +833,53 @@ export default async function initUiSettings() {
         }
     });
 
+    // Helper function to get embedded map reference and refresh
+    const refreshEmbeddedMap = () => {
+        const embedded = (globalThis as any).embedded;
+        embedded?.refreshRender();
+    };
+
+    mapRoomSizeInput.addEventListener('input', () => {
+        mapRoomSizeValue.textContent = mapRoomSizeInput.value;
+        Settings.roomSize = parseFloat(mapRoomSizeInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapLineWidthInput.addEventListener('input', () => {
+        mapLineWidthValue.textContent = mapLineWidthInput.value;
+        Settings.lineWidth = parseFloat(mapLineWidthInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapPlayerMarkerStrokeAlphaInput.addEventListener('input', () => {
+        mapPlayerMarkerStrokeAlphaValue.textContent = mapPlayerMarkerStrokeAlphaInput.value;
+        Settings.playerMarker.strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapPlayerMarkerFillAlphaInput.addEventListener('input', () => {
+        mapPlayerMarkerFillAlphaValue.textContent = mapPlayerMarkerFillAlphaInput.value;
+        Settings.playerMarker.fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapPlayerMarkerStrokeWidthInput.addEventListener('input', () => {
+        mapPlayerMarkerStrokeWidthValue.textContent = mapPlayerMarkerStrokeWidthInput.value;
+        Settings.playerMarker.strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapPlayerMarkerSizeFactorInput.addEventListener('input', () => {
+        mapPlayerMarkerSizeFactorValue.textContent = mapPlayerMarkerSizeFactorInput.value;
+        Settings.playerMarker.sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
+        refreshEmbeddedMap();
+    });
+
+    mapPlayerMarkerDashEnabledInput.addEventListener('change', () => {
+        Settings.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
+        refreshEmbeddedMap();
+    });
+
     if (customBeepSoundInput) {
         customBeepSoundInput.addEventListener('change', (e) => {
             const value = (e.target as HTMLSelectElement).value;
@@ -821,6 +964,15 @@ export default async function initUiSettings() {
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
+            mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultSettings.mapRoomSize,
+            mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultSettings.mapLineWidth,
+            mapPlayerMarkerStrokeColor: mapPlayerMarkerStrokeColorInput.value || defaultSettings.mapPlayerMarkerStrokeColor,
+            mapPlayerMarkerFillColor: mapPlayerMarkerFillColorInput.value || defaultSettings.mapPlayerMarkerFillColor,
+            mapPlayerMarkerStrokeAlpha: parseFloat(mapPlayerMarkerStrokeAlphaInput.value) ?? defaultSettings.mapPlayerMarkerStrokeAlpha,
+            mapPlayerMarkerFillAlpha: parseFloat(mapPlayerMarkerFillAlphaInput.value) ?? defaultSettings.mapPlayerMarkerFillAlpha,
+            mapPlayerMarkerStrokeWidth: parseFloat(mapPlayerMarkerStrokeWidthInput.value) || defaultSettings.mapPlayerMarkerStrokeWidth,
+            mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultSettings.mapPlayerMarkerSizeFactor,
+            mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
         };
     }
 
@@ -841,6 +993,19 @@ export default async function initUiSettings() {
         updateCustomFontState();
         refreshExplorationStats();
         modal.show();
+    });
+
+    // Restore original settings when modal is closed without saving
+    modalEl.addEventListener('hidden.bs.modal', () => {
+        // Restore map rendering settings to their saved values
+        Settings.roomSize = current.mapRoomSize;
+        Settings.lineWidth = current.mapLineWidth;
+        Settings.playerMarker.strokeAlpha = current.mapPlayerMarkerStrokeAlpha;
+        Settings.playerMarker.fillAlpha = current.mapPlayerMarkerFillAlpha;
+        Settings.playerMarker.strokeWidth = current.mapPlayerMarkerStrokeWidth;
+        Settings.playerMarker.sizeFactor = current.mapPlayerMarkerSizeFactor;
+        Settings.playerMarker.dashEnabled = current.mapPlayerMarkerDashEnabled;
+        refreshEmbeddedMap();
     });
 
     // Initialize manage sounds modal

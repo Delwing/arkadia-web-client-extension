@@ -71,8 +71,8 @@ export class EmbeddedMap {
     private map: HTMLDivElement;
     private reader: MapReader;
     private pathFinder: PathFinder;
-    private renderer: Renderer;
-    private currentRoom: any;
+    public renderer: Renderer;
+    public currentRoom: any;
     private destinations: number[] = [];
     private highlights: number[] = []
     private zoom: number;
@@ -148,6 +148,46 @@ export class EmbeddedMap {
         }
         Settings.transparentLabels = transparentLabels;
         Settings.labelRenderMode = labelRenderMode;
+        Settings.playerMarker.dash = [0.05, 0.05]
+
+        // Initialize map rendering settings from storage
+        try {
+            const data = getItemSync('uiSettings');
+            const parsed = data?.uiSettings as any;
+            if (parsed) {
+                if (typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0) {
+                    Settings.roomSize = parsed.mapRoomSize;
+                }
+                if (typeof parsed.mapLineWidth === 'number' && parsed.mapLineWidth > 0) {
+                    Settings.lineWidth = parsed.mapLineWidth;
+                }
+                if (typeof parsed.mapPlayerMarkerStrokeColor === 'string') {
+                    Settings.playerMarker.strokeColor = parsed.mapPlayerMarkerStrokeColor;
+                }
+                if (typeof parsed.mapPlayerMarkerStrokeAlpha === 'number') {
+                    Settings.playerMarker.strokeAlpha = parsed.mapPlayerMarkerStrokeAlpha;
+                }
+                if (typeof parsed.mapPlayerMarkerFillColor === 'string') {
+                    Settings.playerMarker.fillColor = parsed.mapPlayerMarkerFillColor;
+                }
+                if (typeof parsed.mapPlayerMarkerFillAlpha === 'number') {
+                    Settings.playerMarker.fillAlpha = parsed.mapPlayerMarkerFillAlpha;
+                }
+                if (typeof parsed.mapPlayerMarkerStrokeWidth === 'number') {
+                    Settings.playerMarker.strokeWidth = parsed.mapPlayerMarkerStrokeWidth;
+                }
+                if (typeof parsed.mapPlayerMarkerSizeFactor === 'number') {
+                    Settings.playerMarker.sizeFactor = parsed.mapPlayerMarkerSizeFactor;
+                }
+                if (typeof parsed.mapPlayerMarkerDashEnabled === 'boolean') {
+                    Settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
+                }
+                Settings.playerMarker.dashEnabled = true
+            }
+        } catch {
+            // ignore malformed data
+        }
+
         this.renderer = new Renderer(this.map, this.reader);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
@@ -264,6 +304,10 @@ export class EmbeddedMap {
 
     refresh() {
         this.renderRoom(this.currentRoom);
+    }
+
+    refreshRender() {
+        this.renderer.refresh()
     }
 
     getVisitedCount() {
