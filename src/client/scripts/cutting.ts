@@ -152,6 +152,9 @@ export default function initCutting(
         // Execute pre-actions
         await executePreActions();
 
+        // Register trigger for cutting results BEFORE starting
+        registerCuttingTriggers();
+
         // Register trigger to capture body count
         client.Triggers.registerOneTimeTrigger(
             /^.*Doliczyl.s sie ([a-z ]+) sztuk(|i)\.$/,
@@ -170,9 +173,6 @@ export default function initCutting(
                     setTimeout(async () => {
                         // Wait before starting cutting
                         await sleep(randomDelay(1.012512, 0.18351));
-
-                        // Register trigger for cutting results
-                        registerCuttingTriggers();
 
                         // Start with first body
                         state.currentlyProcessing = 1;
@@ -249,6 +249,7 @@ export default function initCutting(
                 /.*Przestajesz wycinac .*/,
                 /.*Jestes w trakcie walki - lepiej skoncentruj sie na niej.*/,
                 /.*Przestajesz wyrywac .*/,
+                /.*Nie mozesz tego tak po prostu wyrwac/
             ],
             (line) => {
                 handleNoBodies();
