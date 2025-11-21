@@ -897,7 +897,9 @@ export default async function initUiSettings() {
             ctx.lineWidth = scaledRoomSize * strokeWidth;
 
             if (dashEnabled) {
-                const dashLength = markerRadius * 0.3;
+                // Match the actual renderer's dash pattern [0.05, 0.05] in map units
+                // scaledRoomSize represents 1.0 map unit (the room size)
+                const dashLength = scaledRoomSize * 0.05;
                 ctx.setLineDash([dashLength, dashLength]);
             } else {
                 ctx.setLineDash([]);
