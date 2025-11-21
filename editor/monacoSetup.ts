@@ -47,6 +47,27 @@ export function setupTypeScriptEnvironment() {
     diagnosticCodesToIgnore: [],
   })
 
+  // Enable auto-imports
+  monaco.typescript.typescriptDefaults.setInlayHintsOptions({
+    includeInlayParameterNameHints: 'all',
+    includeInlayParameterNameHintsWhenArgumentMatchesName: true,
+    includeInlayFunctionParameterTypeHints: true,
+    includeInlayVariableTypeHints: true,
+    includeInlayPropertyDeclarationTypeHints: true,
+    includeInlayFunctionLikeReturnTypeHints: true,
+    includeInlayEnumMemberValueHints: true,
+  })
+
+  monaco.typescript.javascriptDefaults.setInlayHintsOptions({
+    includeInlayParameterNameHints: 'all',
+    includeInlayParameterNameHintsWhenArgumentMatchesName: true,
+    includeInlayFunctionParameterTypeHints: true,
+    includeInlayVariableTypeHints: true,
+    includeInlayPropertyDeclarationTypeHints: true,
+    includeInlayFunctionLikeReturnTypeHints: true,
+    includeInlayEnumMemberValueHints: true,
+  })
+
   // Set eager model sync
   monaco.typescript.typescriptDefaults.setEagerModelSync(true)
   monaco.typescript.javascriptDefaults.setEagerModelSync(true)
@@ -139,8 +160,47 @@ export async function initializeEditor(
     fontSize: 14,
     tabSize: 2,
     fontLigatures: true,
-    quickSuggestions: true,
+    inlayHints: {
+      enabled: 'off'
+    },
+    quickSuggestions: {
+      other: 'on',
+      comments: 'off',
+      strings: 'off'
+    },
     suggestOnTriggerCharacters: true,
+    acceptSuggestionOnCommitCharacter: true,
+    acceptSuggestionOnEnter: 'on',
+    snippetSuggestions: 'inline',
+    suggest: {
+      showWords: true,
+      showMethods: true,
+      showFunctions: true,
+      showConstructors: true,
+      showFields: true,
+      showVariables: true,
+      showClasses: true,
+      showStructs: true,
+      showInterfaces: true,
+      showModules: true,
+      showProperties: true,
+      showEvents: true,
+      showOperators: true,
+      showUnits: true,
+      showValues: true,
+      showConstants: true,
+      showEnums: true,
+      showEnumMembers: true,
+      showKeywords: true,
+      showSnippets: true,
+      showColors: true,
+      showFiles: true,
+      showReferences: true,
+      showFolders: true,
+      showTypeParameters: true,
+      showIssues: true,
+      showUsers: true,
+    },
     "semanticHighlighting.enabled": true,
   })
 
@@ -151,7 +211,13 @@ export async function initializeEditor(
       const fullPath = resource.path.substring(1)
       const parts = fullPath.split('/')
       // Skip the first part (pluginId) and join the rest to get: path/to/file.ts
-      const filePath = parts.slice(1).join('/')
+      let filePath = parts.slice(1).join('/')
+
+      // If the path is a .d.ts file for a JSON module, redirect to the actual .json file
+      if (filePath.endsWith('.json.d.ts')) {
+        filePath = filePath.replace('.json.d.ts', '.json')
+      }
+
       if (filePath) {
         switchToFileCallback(filePath)
       }
@@ -175,6 +241,530 @@ export async function initializeEditor(
 
   updateStatus('Editor initialized', 'success')
   return editor
+}
+
+// Helper to extract exports from a file
+function extractExports(content: string, filePath: string): Array<{ name: string, kind: string }> {
+  const exports: Array<{ name: string, kind: string }> = []
+
+  // Match export const/let/var
+  const constExports = content.matchAll(/export\s+(?:const|let|var)\s+(\w+)/g)
+  for (const match of constExports) {
+    exports.push({ name: match[1], kind: 'variable' })
+  }
+
+  // Match export function
+  const functionExports = content.matchAll(/export\s+(?:async\s+)?function\s+(\w+)/g)
+  for (const match of functionExports) {
+    exports.push({ name: match[1], kind: 'function' })
+  }
+
+  // Match export class
+  const classExports = content.matchAll(/export\s+class\s+(\w+)/g)
+  for (const match of classExports) {
+    exports.push({ name: match[1], kind: 'class' })
+  }
+
+  // Match export interface
+  const interfaceExports = content.matchAll(/export\s+interface\s+(\w+)/g)
+  for (const match of interfaceExports) {
+    exports.push({ name: match[1], kind: 'interface' })
+  }
+
+  // Match export type
+  const typeExports = content.matchAll(/export\s+type\s+(\w+)/g)
+  for (const match of typeExports) {
+    exports.push({ name: match[1], kind: 'type' })
+  }
+
+  // Match export enum
+  const enumExports = content.matchAll(/export\s+enum\s+(\w+)/g)
+  for (const match of enumExports) {
+    exports.push({ name: match[1], kind: 'enum' })
+  }
+
+  // Match export default (use filename as name)
+  if (content.includes('export default')) {
+    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.(ts|js|json)$/, '')
+    exports.push({ name: fileName, kind: 'default' })
+  }
+
+  return exports
+}
+
+// Extract imported symbols from file content
+function extractImportedSymbols(content: string): Set<string> {
+  const imported = new Set<string>()
+
+  // Match: import foo from "..."
+  const defaultImports = content.matchAll(/import\s+(\w+)\s+from\s+['"]/g)
+  for (const match of defaultImports) {
+    imported.add(match[1])
+  }
+
+  // Match: import { foo, bar } from "..."
+  const namedImports = content.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]/g)
+  for (const match of namedImports) {
+    const names = match[1].split(',').map(n => n.trim().split(/\s+as\s+/).pop()!.trim())
+    names.forEach(name => imported.add(name))
+  }
+
+  // Match: import * as foo from "..."
+  const namespaceImports = content.matchAll(/import\s+\*\s+as\s+(\w+)\s+from\s+['"]/g)
+  for (const match of namespaceImports) {
+    imported.add(match[1])
+  }
+
+  return imported
+}
+
+// Register completion provider for auto-imports
+export function registerAutoImportCompletion(pluginId: string, files: Record<string, any>) {
+  const disposeTS = monaco.languages.registerCompletionItemProvider('typescript', {
+    provideCompletionItems: (model, position) => {
+      // Check if we're inside an import statement
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      })
+
+      // Check if we're typing inside an import statement
+      const insideImport = /^\s*import\s/.test(textUntilPosition)
+
+      const word = model.getWordUntilPosition(position)
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      }
+
+      const currentUri = model.uri.toString()
+      const currentFilePath = currentUri.replace(`file:///${pluginId}/`, '')
+
+      // Get already imported symbols
+      const currentContent = model.getValue()
+      const alreadyImported = extractImportedSymbols(currentContent)
+
+      const suggestions: any[] = []
+
+      // Scan all files for exports
+      Object.entries(files).forEach(([filePath, file]) => {
+        // Skip current file
+        if (filePath === currentFilePath) return
+
+        let exports: Array<{ name: string, kind: string }> = []
+
+        if (file.language === 'typescript' || file.language === 'javascript') {
+          exports = extractExports(file.content, filePath)
+        } else if (file.language === 'json') {
+          // JSON files have a default export
+          const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.json$/, '')
+          exports = [{ name: fileName, kind: 'default' }]
+        } else {
+          return // Skip other file types
+        }
+
+        exports.forEach(exp => {
+          // Skip if already imported
+          if (alreadyImported.has(exp.name)) {
+            return
+          }
+
+          // Calculate relative import path
+          const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
+          let relativePath = filePath
+
+          if (currentDir) {
+            // Both files are in directories
+            const currentParts = currentDir.split('/')
+            const targetParts = filePath.substring(0, filePath.lastIndexOf('/')).split('/')
+
+            // Find common ancestor
+            let commonLength = 0
+            for (let i = 0; i < Math.min(currentParts.length, targetParts.length); i++) {
+              if (currentParts[i] === targetParts[i]) {
+                commonLength++
+              } else {
+                break
+              }
+            }
+
+            const upLevels = currentParts.length - commonLength
+            const downPath = targetParts.slice(commonLength)
+
+            if (upLevels === 0 && downPath.length === 0) {
+              // Same directory
+              relativePath = './' + filePath.substring(filePath.lastIndexOf('/') + 1)
+            } else {
+              const upPart = '../'.repeat(upLevels)
+              const downPart = downPath.length > 0 ? downPath.join('/') + '/' : ''
+              relativePath = upPart + downPart + filePath.substring(filePath.lastIndexOf('/') + 1)
+            }
+          } else {
+            // Current file is in root
+            if (filePath.includes('/')) {
+              relativePath = './' + filePath
+            } else {
+              relativePath = './' + filePath
+            }
+          }
+
+          // Remove extension
+          // Only strip .ts and .js extensions, keep .json
+          relativePath = relativePath.replace(/\.(ts|js)$/, '')
+
+          let importStatement: string
+          let insertText: string
+
+          if (exp.kind === 'default') {
+            importStatement = `import ${exp.name} from "${relativePath}"`
+            insertText = exp.name
+          } else {
+            importStatement = `import { ${exp.name} } from "${relativePath}"`
+            insertText = exp.name
+          }
+
+          // Determine completion item kind
+          let kind = monaco.languages.CompletionItemKind.Variable
+          switch (exp.kind) {
+            case 'function':
+              kind = monaco.languages.CompletionItemKind.Function
+              break
+            case 'class':
+              kind = monaco.languages.CompletionItemKind.Class
+              break
+            case 'interface':
+              kind = monaco.languages.CompletionItemKind.Interface
+              break
+            case 'type':
+              kind = monaco.languages.CompletionItemKind.TypeParameter
+              break
+            case 'enum':
+              kind = monaco.languages.CompletionItemKind.Enum
+              break
+            case 'default':
+              kind = monaco.languages.CompletionItemKind.Module
+              break
+          }
+
+          // If we're inside an import statement, complete the current import with "from" part
+          // Otherwise, add the full import at the top
+          if (insideImport) {
+            // Check if we need to complete the import structure
+            // If the line already has "from", just insert the name
+            // Otherwise, complete with from "path"
+            const needsFromClause = !textUntilPosition.includes(' from ')
+
+            let inlineInsertText = insertText
+            let command: any = undefined
+
+            if (needsFromClause) {
+              // Check if we're in named imports { } or default import
+              const inNamedImports = textUntilPosition.includes('{')
+
+              if (inNamedImports) {
+                // Add space after { if needed
+                const needsSpaceAfterBrace = textUntilPosition.endsWith('{')
+                const spacePrefix = needsSpaceAfterBrace ? ' ' : ''
+                // Complete with: symbol from "path" (don't add }, Monaco already closed it)
+                // Use additionalTextEdits to insert " from "path"" after the auto-closed }
+                inlineInsertText = `${spacePrefix}${insertText}`
+
+                // We need to find and move past the closing } and add the from clause
+                // Use a command to trigger additional edits after insertion
+                const fromClause = ` from "${relativePath}"`
+
+                suggestions.push({
+                  label: {
+                    label: exp.name,
+                    description: filePath,
+                  },
+                  kind: kind,
+                  insertText: inlineInsertText,
+                  range: range,
+                  detail: `From ${filePath}`,
+                  sortText: '0' + exp.name,
+                  additionalTextEdits: [{
+                    range: {
+                      startLineNumber: position.lineNumber,
+                      startColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2, // +2 for space and }
+                      endLineNumber: position.lineNumber,
+                      endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                    },
+                    text: fromClause,
+                  }],
+                })
+                return // Skip the normal push below
+              } else {
+                // Complete with: symbol from "path"
+                inlineInsertText = `${insertText} from "${relativePath}"`
+              }
+            }
+
+            suggestions.push({
+              label: {
+                label: exp.name,
+                description: filePath,
+              },
+              kind: kind,
+              insertText: inlineInsertText,
+              range: range,
+              detail: `From ${filePath}`,
+              sortText: '0' + exp.name, // Sort higher when inside import
+            })
+          } else {
+            suggestions.push({
+              label: {
+                label: exp.name,
+                description: filePath,
+              },
+              kind: kind,
+              insertText: insertText,
+              range: range,
+              detail: `Auto import from ${filePath}`,
+              documentation: `Will add: ${importStatement}`,
+              additionalTextEdits: [{
+                range: {
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: 1,
+                  endColumn: 1,
+                },
+                text: importStatement + '\n',
+              }],
+              sortText: '1' + exp.name, // Sort auto-imports slightly lower
+            })
+          }
+        })
+      })
+
+      return { suggestions }
+    }
+  })
+
+  const disposeJS = monaco.languages.registerCompletionItemProvider('javascript', {
+    provideCompletionItems: (model, position) => {
+      // Check if we're inside an import statement
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      })
+
+      // Check if we're typing inside an import statement
+      const insideImport = /^\s*import\s/.test(textUntilPosition)
+
+      const word = model.getWordUntilPosition(position)
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      }
+
+      const currentUri = model.uri.toString()
+      const currentFilePath = currentUri.replace(`file:///${pluginId}/`, '')
+
+      // Get already imported symbols
+      const currentContent = model.getValue()
+      const alreadyImported = extractImportedSymbols(currentContent)
+
+      const suggestions: any[] = []
+
+      Object.entries(files).forEach(([filePath, file]) => {
+        if (filePath === currentFilePath) return
+
+        let exports: Array<{ name: string, kind: string }> = []
+
+        if (file.language === 'typescript' || file.language === 'javascript') {
+          exports = extractExports(file.content, filePath)
+        } else if (file.language === 'json') {
+          // JSON files have a default export
+          const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.json$/, '')
+          exports = [{ name: fileName, kind: 'default' }]
+        } else {
+          return // Skip other file types
+        }
+
+        exports.forEach(exp => {
+          // Skip if already imported
+          if (alreadyImported.has(exp.name)) {
+            return
+          }
+
+          const currentDir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
+          let relativePath = filePath
+
+          if (currentDir) {
+            const currentParts = currentDir.split('/')
+            const targetParts = filePath.substring(0, filePath.lastIndexOf('/')).split('/')
+
+            let commonLength = 0
+            for (let i = 0; i < Math.min(currentParts.length, targetParts.length); i++) {
+              if (currentParts[i] === targetParts[i]) {
+                commonLength++
+              } else {
+                break
+              }
+            }
+
+            const upLevels = currentParts.length - commonLength
+            const downPath = targetParts.slice(commonLength)
+
+            if (upLevels === 0 && downPath.length === 0) {
+              relativePath = './' + filePath.substring(filePath.lastIndexOf('/') + 1)
+            } else {
+              const upPart = '../'.repeat(upLevels)
+              const downPart = downPath.length > 0 ? downPath.join('/') + '/' : ''
+              relativePath = upPart + downPart + filePath.substring(filePath.lastIndexOf('/') + 1)
+            }
+          } else {
+            if (filePath.includes('/')) {
+              relativePath = './' + filePath
+            } else {
+              relativePath = './' + filePath
+            }
+          }
+
+          // Only strip .ts and .js extensions, keep .json
+          relativePath = relativePath.replace(/\.(ts|js)$/, '')
+
+          let importStatement: string
+          let insertText: string
+
+          if (exp.kind === 'default') {
+            importStatement = `import ${exp.name} from "${relativePath}"`
+            insertText = exp.name
+          } else {
+            importStatement = `import { ${exp.name} } from "${relativePath}"`
+            insertText = exp.name
+          }
+
+          let kind = monaco.languages.CompletionItemKind.Variable
+          switch (exp.kind) {
+            case 'function':
+              kind = monaco.languages.CompletionItemKind.Function
+              break
+            case 'class':
+              kind = monaco.languages.CompletionItemKind.Class
+              break
+            case 'interface':
+              kind = monaco.languages.CompletionItemKind.Interface
+              break
+            case 'type':
+              kind = monaco.languages.CompletionItemKind.TypeParameter
+              break
+            case 'enum':
+              kind = monaco.languages.CompletionItemKind.Enum
+              break
+            case 'default':
+              kind = monaco.languages.CompletionItemKind.Module
+              break
+          }
+
+          // If we're inside an import statement, complete the current import with "from" part
+          // Otherwise, add the full import at the top
+          if (insideImport) {
+            // Check if we need to complete the import structure
+            // If the line already has "from", just insert the name
+            // Otherwise, complete with from "path"
+            const needsFromClause = !textUntilPosition.includes(' from ')
+
+            let inlineInsertText = insertText
+            let command: any = undefined
+
+            if (needsFromClause) {
+              // Check if we're in named imports { } or default import
+              const inNamedImports = textUntilPosition.includes('{')
+
+              if (inNamedImports) {
+                // Add space after { if needed
+                const needsSpaceAfterBrace = textUntilPosition.endsWith('{')
+                const spacePrefix = needsSpaceAfterBrace ? ' ' : ''
+                // Complete with: symbol from "path" (don't add }, Monaco already closed it)
+                // Use additionalTextEdits to insert " from "path"" after the auto-closed }
+                inlineInsertText = `${spacePrefix}${insertText}`
+
+                // We need to find and move past the closing } and add the from clause
+                // Use a command to trigger additional edits after insertion
+                const fromClause = ` from "${relativePath}"`
+
+                suggestions.push({
+                  label: {
+                    label: exp.name,
+                    description: filePath,
+                  },
+                  kind: kind,
+                  insertText: inlineInsertText,
+                  range: range,
+                  detail: `From ${filePath}`,
+                  sortText: '0' + exp.name,
+                  additionalTextEdits: [{
+                    range: {
+                      startLineNumber: position.lineNumber,
+                      startColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2, // +2 for space and }
+                      endLineNumber: position.lineNumber,
+                      endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                    },
+                    text: fromClause,
+                  }],
+                })
+                return // Skip the normal push below
+              } else {
+                // Complete with: symbol from "path"
+                inlineInsertText = `${insertText} from "${relativePath}"`
+              }
+            }
+
+            suggestions.push({
+              label: {
+                label: exp.name,
+                description: filePath,
+              },
+              kind: kind,
+              insertText: inlineInsertText,
+              range: range,
+              detail: `From ${filePath}`,
+              sortText: '0' + exp.name, // Sort higher when inside import
+            })
+          } else {
+            suggestions.push({
+              label: {
+                label: exp.name,
+                description: filePath,
+              },
+              kind: kind,
+              insertText: insertText,
+              range: range,
+              detail: `Auto import from ${filePath}`,
+              documentation: `Will add: ${importStatement}`,
+              additionalTextEdits: [{
+                range: {
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: 1,
+                  endColumn: 1,
+                },
+                text: importStatement + '\n',
+              }],
+              sortText: '1' + exp.name,
+            })
+          }
+        })
+      })
+
+      return { suggestions }
+    }
+  })
+
+  return () => {
+    disposeTS.dispose()
+    disposeJS.dispose()
+  }
 }
 
 // Register completion provider for import paths
@@ -241,8 +831,8 @@ export function registerImportPathCompletion(pluginId: string, files: Record<str
           if (fileDir === targetDir || (!targetDir && !filePath.includes('/'))) {
             // Don't suggest the current file
             if (filePath !== currentFilePath) {
-              // Remove extension for the suggestion
-              const baseName = fileName.replace(/\.(ts|js|json)$/, '')
+              // Remove extension only for .ts and .js files, keep .json
+              const baseName = fileName.replace(/\.(ts|js)$/, '')
               const displayName = fileName
 
               suggestions.push({
@@ -323,7 +913,8 @@ export function registerImportPathCompletion(pluginId: string, files: Record<str
 
           if (fileDir === targetDir || (!targetDir && !filePath.includes('/'))) {
             if (filePath !== currentFilePath) {
-              const baseName = fileName.replace(/\.(ts|js|json)$/, '')
+              // Remove extension only for .ts and .js files, keep .json
+              const baseName = fileName.replace(/\.(ts|js)$/, '')
               const displayName = fileName
 
               suggestions.push({
@@ -377,27 +968,30 @@ export function updateMonacoFileSystem(pluginId: string, files: Record<string, a
       monaco.typescript.javascriptDefaults.addExtraLib(file.content, uri)
     } else if (file.language === 'json') {
       // For JSON files, we need to:
-      // 1. Create a virtual .ts file that exports the JSON as a typed constant
+      // 1. Create a virtual .d.ts file that declares the JSON module
       // 2. This makes TypeScript recognize the JSON file as a module
+      // 3. Use a different URI (.d.ts) so TypeScript doesn't try to validate the actual JSON content
+
+      const dtsUri = uri.replace('.json', '.json.d.ts')
 
       try {
         const jsonContent = JSON.parse(file.content || '{}')
         const inferredType = inferJsonType(jsonContent)
 
-        // Create a TypeScript module that exports the JSON value
-        const tsModuleContent = `const value: ${inferredType} = ${file.content || '{}'};
+        // Create a TypeScript declaration module
+        const tsModuleContent = `declare const value: ${inferredType};
 export default value;`
 
-        // Add this as a TypeScript module
-        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+        // Add this as a TypeScript module declaration
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
       } catch {
         // If JSON is invalid, create a module with any type
-        const tsModuleContent = `const value: any = {};
+        const tsModuleContent = `declare const value: any;
 export default value;`
 
-        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
       }
     }
   })

@@ -180,23 +180,24 @@ export function renameFile(
     monaco.typescript.typescriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
     monaco.typescript.javascriptDefaults.addExtraLib(currentContent, `file:///${pluginId}/${newPath}`)
   } else if (newLanguage === 'json') {
-    // For JSON files, clear old module and create new one
-    monaco.typescript.typescriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
-    monaco.typescript.javascriptDefaults.addExtraLib('', `file:///${pluginId}/${oldPath}`)
+    // For JSON files, clear old module and create new one using .d.ts extension
+    const oldDtsUri = `file:///${pluginId}/${oldPath}`.replace('.json', '.json.d.ts')
+    monaco.typescript.typescriptDefaults.addExtraLib('', oldDtsUri)
+    monaco.typescript.javascriptDefaults.addExtraLib('', oldDtsUri)
 
-    const uri = `file:///${pluginId}/${newPath}`
+    const dtsUri = `file:///${pluginId}/${newPath}`.replace('.json', '.json.d.ts')
     try {
       const jsonContent = JSON.parse(currentContent || '{}')
       const inferredType = inferJsonType(jsonContent)
-      const tsModuleContent = `const value: ${inferredType} = ${currentContent || '{}'};
+      const tsModuleContent = `declare const value: ${inferredType};
 export default value;`
-      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
     } catch {
-      const tsModuleContent = `const value: any = {};
+      const tsModuleContent = `declare const value: any;
 export default value;`
-      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+      monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+      monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
     }
   }
 

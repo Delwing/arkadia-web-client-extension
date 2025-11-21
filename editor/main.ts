@@ -21,7 +21,7 @@ import {
 import type { EditorState } from './types'
 import { updateStatus, updateLanguageUI } from './utils'
 import { initEsbuild, bundlePlugin, compileTypeScript } from './bundler'
-import { initializeEditor, updateMonacoFileSystem, registerImportPathCompletion } from './monacoSetup'
+import { initializeEditor, updateMonacoFileSystem, registerImportPathCompletion, registerAutoImportCompletion } from './monacoSetup'
 import { renderFileTree } from './fileTree'
 import {
   showContextMenu,
@@ -101,8 +101,9 @@ const state: EditorState = {
   esbuildInitialized: false,
 }
 
-// Store completion provider disposer
-let disposeCompletionProvider: (() => void) | null = null
+// Store completion provider disposers
+let disposeImportPathProvider: (() => void) | null = null
+let disposeAutoImportProvider: (() => void) | null = null
 
 // File tree render wrapper
 function renderCurrentFileTree() {
@@ -249,11 +250,15 @@ async function loadPlugin(pluginId: string) {
   // Update Monaco's virtual file system
   updateMonacoFileSystem(pluginId, plugin.files)
 
-  // Dispose old completion provider and register new one
-  if (disposeCompletionProvider) {
-    disposeCompletionProvider()
+  // Dispose old completion providers and register new ones
+  if (disposeImportPathProvider) {
+    disposeImportPathProvider()
   }
-  disposeCompletionProvider = registerImportPathCompletion(pluginId, plugin.files)
+  if (disposeAutoImportProvider) {
+    disposeAutoImportProvider()
+  }
+  disposeImportPathProvider = registerImportPathCompletion(pluginId, plugin.files)
+  disposeAutoImportProvider = registerAutoImportCompletion(pluginId, plugin.files)
 
   // Create models for all files
   for (const [filePath, file] of Object.entries(plugin.files)) {
@@ -279,19 +284,20 @@ async function loadPlugin(pluginId: string) {
           monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
           monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
         } else if (fileLanguage === 'json') {
-          // For JSON files, create a TypeScript module
+          // For JSON files, create a TypeScript declaration module with .d.ts extension
+          const dtsUri = uri.replace('.json', '.json.d.ts')
           try {
             const jsonContent = JSON.parse(content || '{}')
             const inferredType = inferJsonType(jsonContent)
-            const tsModuleContent = `const value: ${inferredType} = ${content || '{}'};
+            const tsModuleContent = `declare const value: ${inferredType};
 export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
           } catch {
-            const tsModuleContent = `const value: any = {};
+            const tsModuleContent = `declare const value: any;
 export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
+            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
           }
         }
       }
