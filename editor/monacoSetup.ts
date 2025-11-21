@@ -3,6 +3,7 @@ import {createHighlighter} from 'shiki'
 import {shikiToMonaco} from '@shikijs/monaco'
 import pluginApiTypes from './plugin-api.d.ts?raw'
 import type {StatusType} from './types'
+import { registerSnippets } from './snippets'
 
 export function setupTypeScriptEnvironment() {
   // Configure TypeScript compiler options
@@ -181,6 +182,9 @@ export async function initializeEditor(
 
   // Define custom theme
   defineCustomTheme()
+
+  // Register snippets
+  registerSnippets()
 
   // Create a model with a proper URI including file extension
   const uri = monaco.Uri.parse('file:///plugin.ts')
