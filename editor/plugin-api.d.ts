@@ -518,7 +518,6 @@ interface ObjectListFiltersApi {
  * This is the main interface that plugins interact with.
  * Provides controlled access to client functionality organized by domain.
  *
- * @example
  * ```typescript
  * export async function init(api: PluginApi): Promise<PluginInfo> {
  *   // Register a trigger

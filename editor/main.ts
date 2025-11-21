@@ -1,6 +1,8 @@
 import * as monaco from 'monaco-editor'
 import * as esbuild from 'esbuild-wasm'
 import * as FileIcons from 'file-icons-js'
+import { createHighlighter } from 'shiki'
+import { shikiToMonaco } from '@shikijs/monaco'
 
 // Import Monaco workers using Vite's worker syntax
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
@@ -433,7 +435,15 @@ function switchToFile(filePath: string) {
   let model = editorModels.get(filePath)
   if (!model) {
     const uri = monaco.Uri.parse(`file:///${filePath}`)
-    model = monaco.editor.createModel(file.content, file.language, uri)
+
+    // Check if Monaco already has a model for this URI (prevents "model already exists" error)
+    model = monaco.editor.getModel(uri)
+
+    if (!model) {
+      // Create new model only if it doesn't exist in Monaco
+      model = monaco.editor.createModel(file.content, file.language, uri)
+    }
+
     editorModels.set(filePath, model)
 
     // Listen for content changes to update virtual FS
@@ -483,6 +493,21 @@ async function loadPlugin(pluginId: string) {
 
   // Update Monaco's virtual file system for IntelliSense
   updateMonacoFileSystem(plugin)
+
+  // Create models for all files in the plugin (for go-to-definition support)
+  for (const [filePath, file] of Object.entries(plugin.files)) {
+    const uri = monaco.Uri.parse(`file:///${filePath}`)
+
+    // Check if model already exists
+    let model = monaco.editor.getModel(uri)
+
+    if (!model) {
+      // Create model for this file
+      model = monaco.editor.createModel(file.content, file.language, uri)
+    }
+
+    editorModels.set(filePath, model)
+  }
 
   // Render file tree
   renderFileTree(plugin)
@@ -1369,62 +1394,62 @@ async function manualCompile() {
 // Configure TypeScript compiler options and load type definitions
 function setupTypeScriptEnvironment() {
   // Configure TypeScript compiler options
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ES2020,
+  monaco.typescript.typescriptDefaults.setCompilerOptions({
+    target: monaco.typescript.ScriptTarget.ES2020,
     allowNonTsExtensions: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
+    moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.typescript.ModuleKind.ESNext,
     noEmit: true,
     esModuleInterop: true,
-    jsx: monaco.languages.typescript.JsxEmit.React,
+    jsx: monaco.typescript.JsxEmit.React,
     allowJs: true,
     typeRoots: ['node_modules/@types'],
   })
 
   // Also configure JavaScript defaults with same options
-  monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ES2020,
+  monaco.typescript.javascriptDefaults.setCompilerOptions({
+    target: monaco.typescript.ScriptTarget.ES2020,
     allowNonTsExtensions: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
+    moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.typescript.ModuleKind.ESNext,
     noEmit: true,
     esModuleInterop: true,
-    jsx: monaco.languages.typescript.JsxEmit.React,
+    jsx: monaco.typescript.JsxEmit.React,
     allowJs: true,
     typeRoots: ['node_modules/@types'],
     checkJs: true, // Enable type checking in JS files
   })
 
   // Enable diagnostics for TypeScript - explicitly enable semantic validation
-  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+  monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: false,
     noSyntaxValidation: false,
     diagnosticCodesToIgnore: [], // Don't ignore any diagnostics
   })
 
   // Enable diagnostics for JavaScript - explicitly enable semantic validation
-  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+  monaco.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: false,
     noSyntaxValidation: false,
     diagnosticCodesToIgnore: [],
   })
 
   // Set eager model sync to ensure semantic tokens are updated quickly
-  monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true)
-  monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true)
+  monaco.typescript.typescriptDefaults.setEagerModelSync(true)
+  monaco.typescript.javascriptDefaults.setEagerModelSync(true)
 
   // Enable semantic tokens for better syntax highlighting
-  monaco.languages.typescript.typescriptDefaults.setWorkerOptions({
+  monaco.typescript.typescriptDefaults.setWorkerOptions({
     customWorkerPath: undefined,
   })
 
   // Add Plugin API type definitions (imported as raw string)
-  monaco.languages.typescript.typescriptDefaults.addExtraLib(
+  monaco.typescript.typescriptDefaults.addExtraLib(
     pluginApiTypes,
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
 
-  monaco.languages.typescript.javascriptDefaults.addExtraLib(
+  monaco.typescript.javascriptDefaults.addExtraLib(
     pluginApiTypes,
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
@@ -1455,6 +1480,21 @@ async function initEditor() {
   // Setup TypeScript environment first
   setupTypeScriptEnvironment()
 
+  // Initialize Shiki for TextMate-based syntax highlighting
+  updateStatus('Loading syntax highlighter...', 'normal')
+  try {
+    const highlighter = await createHighlighter({
+      themes: ['dark-plus'], // VS Code's default dark theme
+      langs: ['typescript', 'javascript', 'json']
+    })
+
+    shikiToMonaco(highlighter, monaco)
+    console.log('Shiki TextMate grammars loaded successfully')
+  } catch (error) {
+    console.error('Failed to initialize Shiki:', error)
+    updateStatus('Warning: Syntax highlighter failed to load', 'error')
+  }
+
   // Define custom theme
   defineCustomTheme()
 
@@ -1462,9 +1502,11 @@ async function initEditor() {
   const uri = monaco.Uri.parse('file:///plugin.ts')
   const model = monaco.editor.createModel('', 'typescript', uri)
 
+  updateStatus('Initializing editor...', 'normal')
+
   editor = monaco.editor.create(container, {
     model: model,
-    theme: 'vs-dark',
+    theme: 'dark-plus', // Use Shiki's dark-plus theme
     automaticLayout: true,
     minimap: { enabled: true },
     fontSize: 14,
@@ -1473,6 +1515,25 @@ async function initEditor() {
     quickSuggestions: true,
     suggestOnTriggerCharacters: true,
     "semanticHighlighting.enabled": true,
+  })
+
+  // Intercept Ctrl+Click and F12 to handle file navigation
+  let isNavigatingToDefinition = false
+
+  editor.onMouseDown((e) => {
+    // Detect Ctrl+Click (or Cmd+Click on Mac)
+    if ((e.event.ctrlKey || e.event.metaKey) && e.target.position) {
+      isNavigatingToDefinition = true
+      setTimeout(() => { isNavigatingToDefinition = false }, 100)
+    }
+  })
+
+  editor.onKeyDown((e) => {
+    // Detect F12 key
+    if (e.keyCode === monaco.KeyCode.F12) {
+      isNavigatingToDefinition = true
+      setTimeout(() => { isNavigatingToDefinition = false }, 100)
+    }
   })
 
   // Add command to switch between files via command palette
@@ -1489,371 +1550,127 @@ async function initEditor() {
     }
   })
 
-  // Register a custom token provider for better syntax highlighting
-  // This adds colors for properties and methods which aren't in default Monaco
-  setupCustomTokenColors()
+  // Register definition provider for file navigation (Ctrl+Click on imports)
+  monaco.languages.registerDefinitionProvider('typescript', {
+    provideDefinition: async (model, position) => {
+      console.log('Definition provider triggered, isNavigating:', isNavigatingToDefinition)
 
-  updateStatus('Editor initialized', 'success')
-}
+      // Get the full line to check for import statement
+      const line = model.getLineContent(position.lineNumber)
 
-// Setup custom token colors for properties and methods using decorations with TypeScript worker
-function setupCustomTokenColors() {
-  console.log('Setting up custom token colors using decorations + TypeScript AST')
-
-  let currentDecorationIds: string[] = []
-
-  // Apply decorations whenever the model content changes
-  const applyDecorations = async (model: monaco.editor.ITextModel) => {
-    const text = model.getValue()
-    const lines = text.split('\n')
-
-    const propertyDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const methodDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const functionDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const keywordDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const paramDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const stringDecorations: monaco.editor.IModelDeltaDecoration[] = []
-    const numberDecorations: monaco.editor.IModelDeltaDecoration[] = []
-
-    // Try to get TypeScript worker for more accurate classification
-    let tsClient: any = null
-    try {
-      const worker = await monaco.typescript.getTypeScriptWorker()
-      tsClient = await worker(model.uri)
-    } catch (err) {
-      console.log('TypeScript worker not available, using syntax-based detection')
-    }
-
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex]
-
-      // 0. Find strings and color them orange/brown
-      const stringRegex = /(["'`])(?:(?=(\\?))\2.)*?\1/g
-      let stringMatch
-
-      while ((stringMatch = stringRegex.exec(line)) !== null) {
-        const stringValue = stringMatch[0]
-        const startCol = stringMatch.index + 1 // +1 for Monaco 1-based indexing
-        const endCol = startCol + stringValue.length
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'string-highlight'
-          }
-        }
-
-        stringDecorations.push(decoration)
+      // Check if cursor is on a string in an import statement
+      const importMatch = line.match(/from\s+['"]([^'"]+)['"]/)
+      if (!importMatch) {
+        return null
       }
 
-      // 0.5. Find numbers and color them light green (but skip if inside strings)
-      const numberRegex = /\b\d+\.?\d*\b/g
-      let numberMatch
+      const importPath = importMatch[1]
+      console.log('Found import path:', importPath)
 
-      while ((numberMatch = numberRegex.exec(line)) !== null) {
-        const numberValue = numberMatch[0]
+      // Resolve relative path
+      const currentPath = model.uri.path.substring(1) // Remove leading /
+      const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/'))
 
-        // Check if this number is inside a string
-        const beforeMatch = line.substring(0, numberMatch.index)
-        const quoteCount = (beforeMatch.match(/["'`]/g) || []).length
-        if (quoteCount % 2 !== 0) continue // Inside a string, skip
+      let targetPath = importPath
+      if (importPath.startsWith('./') || importPath.startsWith('../')) {
+        // Handle relative imports
+        const parts = currentDir.split('/').filter(p => p)
+        const importParts = importPath.split('/')
 
-        const startCol = numberMatch.index + 1
-        const endCol = startCol + numberValue.length
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'number-highlight'
+        for (const part of importParts) {
+          if (part === '..') {
+            parts.pop()
+          } else if (part !== '.') {
+            parts.push(part)
           }
         }
 
-        numberDecorations.push(decoration)
+        targetPath = parts.join('/')
       }
 
-      // 1. Find keywords and color them blue
-      const keywords = [
-        'export', 'import', 'from', 'as', 'default',
-        'async', 'await',
-        'function', 'const', 'let', 'var',
-        'return', 'yield',
-        'if', 'else', 'switch', 'case', 'break', 'continue',
-        'for', 'while', 'do',
-        'try', 'catch', 'finally', 'throw',
-        'new', 'delete', 'typeof', 'instanceof', 'in', 'of',
-        'class', 'extends', 'implements', 'interface', 'type',
-        'public', 'private', 'protected', 'static', 'readonly',
-        'this', 'super',
-        'true', 'false', 'null', 'undefined',
-        'void', 'never', 'any', 'unknown',
-        'enum', 'namespace', 'module',
-        'get', 'set',
-        'abstract', 'constructor'
-      ]
+      // Try with different extensions
+      const extensions = ['.ts', '.tsx', '.js', '.jsx', '']
 
-      const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g')
-      let keywordMatch
+      for (const ext of extensions) {
+        const fullPath = targetPath.endsWith('.ts') || targetPath.endsWith('.js')
+          ? targetPath
+          : targetPath + ext
 
-      while ((keywordMatch = keywordRegex.exec(line)) !== null) {
-        const keyword = keywordMatch[1]
-        const startCol = keywordMatch.index + 1 // +1 for Monaco 1-based indexing
-        const endCol = startCol + keyword.length
+        const targetModel = editorModels.get(fullPath)
+        if (targetModel) {
+          console.log('Found target model:', fullPath)
 
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'keyword-highlight'
+          // If user is actually clicking (not just hovering), switch to the file
+          if (isNavigatingToDefinition) {
+            console.log('User clicked - switching to file:', fullPath)
+            switchToFile(fullPath)
           }
-        }
 
-        keywordDecorations.push(decoration)
-      }
-
-      // 1. Find member access patterns (api.output, obj.method())
-      const memberRegex = /\.(\w+)/g
-      let match
-
-      while ((match = memberRegex.exec(line)) !== null) {
-        const memberName = match[1]
-        const startCol = match.index + 2 // +1 for dot, +1 for Monaco 1-based indexing
-        const endCol = startCol + memberName.length
-
-        let isMethod = false
-
-        // Try to use TypeScript worker for accurate detection
-        if (tsClient) {
-          try {
-            // Calculate absolute position in the document
-            let absolutePosition = 0
-            for (let i = 0; i < lineIndex; i++) {
-              absolutePosition += lines[i].length + 1 // +1 for newline
-            }
-            absolutePosition += match.index + 1 // +1 to point to the member name
-
-            const quickInfo = await tsClient.getQuickInfoAtPosition(
-              model.uri.toString(),
-              absolutePosition
-            )
-
-            if (quickInfo && quickInfo.displayParts) {
-              const displayText = quickInfo.displayParts.map((p: any) => p.text).join('')
-              // Check if it's a function/method signature
-              isMethod = displayText.includes('=>') ||
-                        displayText.includes('function') ||
-                        displayText.match(/\(.*\):/) !== null
-            }
-          } catch (err) {
-            // Fallback to syntax-based detection
+          // Return the location for peek definition on hover
+          return {
+            uri: targetModel.uri,
+            range: new monaco.Range(1, 1, 1, 1)
           }
-        }
-
-        // Fallback: check if followed by parentheses
-        if (!tsClient || !isMethod) {
-          const afterMember = line.substring(match.index + match[0].length).trimStart()
-          isMethod = afterMember.startsWith('(')
-        }
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: isMethod ? 'method-highlight' : 'property-highlight'
-          }
-        }
-
-        if (isMethod) {
-          methodDecorations.push(decoration)
-        } else {
-          propertyDecorations.push(decoration)
         }
       }
 
-      // 2. Find function declarations and standalone function calls
-      // Function declarations: function foo(), const foo = function(), const foo = () =>
-      const functionDeclRegex = /(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:function|async\s+function|\(.*?\)\s*=>))/g
-      let funcDeclMatch
-
-      while ((funcDeclMatch = functionDeclRegex.exec(line)) !== null) {
-        const funcName = funcDeclMatch[1] || funcDeclMatch[2]
-        if (!funcName) continue
-
-        const funcNameIndex = funcDeclMatch[0].indexOf(funcName)
-        const startCol = funcDeclMatch.index + funcNameIndex + 1 // +1 for Monaco 1-based indexing
-        const endCol = startCol + funcName.length
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'function-highlight'
-          }
-        }
-
-        functionDecorations.push(decoration)
-      }
-
-      // 3. Find standalone function calls (not member access): functionName()
-      // Match identifier followed by '(' but not preceded by '.'
-      const functionCallRegex = /(?<![.\w])(\w+)\s*\(/g
-      let funcCallMatch
-
-      while ((funcCallMatch = functionCallRegex.exec(line)) !== null) {
-        const funcName = funcCallMatch[1]
-
-        // Skip keywords
-        const keywords = ['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'instanceof']
-        if (keywords.includes(funcName)) continue
-
-        const startCol = funcCallMatch.index + 1 // +1 for Monaco 1-based indexing
-        const endCol = startCol + funcName.length
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'function-highlight'
-          }
-        }
-
-        functionDecorations.push(decoration)
-      }
-
-      // 4. Find object property keys in object literals: { name: "value", version: "1.0.0" }
-      // Match property names that are not inside strings
-      // Must be preceded by { or , to be a real object property
-      const objectPropertyRegex = /([{,])\s*([a-zA-Z_$][\w]*)\s*:/g
-      let objPropMatch
-
-      while ((objPropMatch = objectPropertyRegex.exec(line)) !== null) {
-        const propName = objPropMatch[2] // Group 2 is the property name
-        const propStartInMatch = objPropMatch[0].indexOf(propName)
-        const propIndex = objPropMatch.index + propStartInMatch
-
-        // Skip keywords that might appear before colons (like case:, default:)
-        const skipKeywords = ['case', 'default']
-        if (skipKeywords.includes(propName)) continue
-
-        // Check if this property is inside a string
-        const beforeMatch = line.substring(0, propIndex)
-        const quoteCount = (beforeMatch.match(/["'`]/g) || []).length
-        if (quoteCount % 2 !== 0) continue // Inside a string, skip
-
-        const startCol = propIndex + 1 // +1 for Monaco 1-based indexing
-        const endCol = startCol + propName.length
-
-        const decoration: monaco.editor.IModelDeltaDecoration = {
-          range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-          options: {
-            inlineClassName: 'property-highlight'
-          }
-        }
-
-        propertyDecorations.push(decoration)
-      }
-
-      // 5. Find function parameters in function declarations
-      // Match parameters inside parentheses in function declarations
-      const functionParamsRegex = /\(([^)]*)\)\s*(?:=>|{)/g
-      let paramMatch
-
-      while ((paramMatch = functionParamsRegex.exec(line)) !== null) {
-        const paramsText = paramMatch[1]
-        if (!paramsText.trim()) continue
-
-        // Split by comma and extract parameter names
-        const params = paramsText.split(',')
-        let offset = paramMatch.index + 1 // Position after opening (
-
-        for (const param of params) {
-          // Match parameter name (before : or = or end)
-          const paramNameMatch = param.match(/^\s*([a-zA-Z_$][\w]*)\s*(?:[=:]|$)/)
-          if (paramNameMatch) {
-            const paramName = paramNameMatch[1]
-            const paramStart = offset + param.indexOf(paramName)
-            const startCol = paramStart + 1 // +1 for Monaco 1-based indexing
-            const endCol = startCol + paramName.length
-
-            const decoration: monaco.editor.IModelDeltaDecoration = {
-              range: new monaco.Range(lineIndex + 1, startCol, lineIndex + 1, endCol),
-              options: {
-                inlineClassName: 'parameter-highlight'
-              }
-            }
-
-            paramDecorations.push(decoration)
-          }
-          offset += param.length + 1 // +1 for comma
-        }
-      }
-    }
-
-    // Apply all decorations
-    const allDecorations = [...stringDecorations, ...numberDecorations, ...keywordDecorations, ...propertyDecorations, ...methodDecorations, ...functionDecorations, ...paramDecorations]
-    console.log(`Applying ${allDecorations.length} decorations (${stringDecorations.length} strings, ${numberDecorations.length} numbers, ${keywordDecorations.length} keywords, ${functionDecorations.length} functions, ${methodDecorations.length} methods, ${propertyDecorations.length} properties)`)
-
-    // Clear old decorations and apply new ones
-    currentDecorationIds = editor.deltaDecorations(currentDecorationIds, allDecorations)
-  }
-
-  // Add CSS for decorations
-  const style = document.createElement('style')
-  style.textContent = `
-    .string-highlight {
-      color: #CE9178 !important;
-    }
-    .keyword-highlight {
-      color: #CE9178 !important;
-    }
-    .method-highlight {
-      color: #569CD6 !important;
-    }
-    .property-highlight {
-      color: #C586C0 !important;
-    }
-    .function-highlight {
-      color: #569CD6 !important;
-    }
-    .parameter-highlight {
-      color: #9CDCFE !important;
-    }
-    .number-highlight {
-      color: #B5CEA8 !important;
-    }
-  `
-  document.head.appendChild(style)
-
-  // Debounce function to avoid too frequent updates
-  let decorationTimeout: NodeJS.Timeout | null = null
-  const scheduleDecorationsUpdate = (model: monaco.editor.ITextModel) => {
-    if (decorationTimeout) {
-      clearTimeout(decorationTimeout)
-    }
-    decorationTimeout = setTimeout(() => {
-      applyDecorations(model)
-    }, 300)
-  }
-
-  // Apply decorations to current model
-  const currentModel = editor.getModel()
-  if (currentModel) {
-    applyDecorations(currentModel)
-
-    // Reapply decorations on content change (debounced)
-    currentModel.onDidChangeContent(() => {
-      scheduleDecorationsUpdate(currentModel)
-    })
-  }
-
-  // Apply decorations when model changes
-  editor.onDidChangeModel((e) => {
-    const model = editor.getModel()
-    if (model) {
-      //applyDecorations(model)
-
-      model.onDidChangeContent(() => {
-        scheduleDecorationsUpdate(model)
-      })
+      return null
     }
   })
 
-  console.log('Custom token colors setup complete - properties=purple, methods=blue')
+  // Also register for JavaScript
+  monaco.languages.registerDefinitionProvider('javascript', {
+    provideDefinition: async (model, position) => {
+      const line = model.getLineContent(position.lineNumber)
+      const importMatch = line.match(/from\s+['"]([^'"]+)['"]/)
+      if (!importMatch) return null
+
+      const importPath = importMatch[1]
+      const currentPath = model.uri.path.substring(1)
+      const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/'))
+
+      let targetPath = importPath
+      if (importPath.startsWith('./') || importPath.startsWith('../')) {
+        const parts = currentDir.split('/').filter(p => p)
+        const importParts = importPath.split('/')
+
+        for (const part of importParts) {
+          if (part === '..') {
+            parts.pop()
+          } else if (part !== '.') {
+            parts.push(part)
+          }
+        }
+
+        targetPath = parts.join('/')
+      }
+
+      const extensions = ['.js', '.jsx', '.ts', '.tsx', '']
+      for (const ext of extensions) {
+        const fullPath = targetPath.endsWith('.ts') || targetPath.endsWith('.js')
+          ? targetPath
+          : targetPath + ext
+
+        const targetModel = editorModels.get(fullPath)
+        if (targetModel) {
+          // If user is actually clicking (not just hovering), switch to the file
+          if (isNavigatingToDefinition) {
+            console.log('User clicked - switching to file:', fullPath)
+            switchToFile(fullPath)
+          }
+
+          return {
+            uri: targetModel.uri,
+            range: new monaco.Range(1, 1, 1, 1)
+          }
+        }
+      }
+
+      return null
+    }
+  })
+
+  updateStatus('Editor initialized', 'success')
 }
 
 // Event listeners
