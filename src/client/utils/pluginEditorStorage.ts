@@ -1,22 +1,30 @@
 import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from './dataCache'
 import type { PluginInfo } from '@shared/types/Plugin'
 
-export interface StoredPluginData {
-  /** Unique identifier for the stored plugin */
+export interface EditorPluginData {
+  /** Unique identifier for the plugin */
   id: string
-  /** Plugin JavaScript code */
-  code: string
+  /** Plugin name */
+  name: string
+  /** Source code (TypeScript or JavaScript) */
+  source: string
+  /** Compiled JavaScript code (always present, either compiled or same as source) */
+  compiled: string
+  /** Language of the source file */
+  language: 'javascript' | 'typescript'
   /** Plugin metadata */
   metadata?: PluginInfo
-  /** When the plugin was stored */
+  /** When the plugin was created */
   createdAt: number
   /** Last modification timestamp */
   updatedAt: number
+  /** Last compilation timestamp (for TypeScript files) */
+  lastCompiledAt?: number
 }
 
 const DB_CONFIG = {
-  dbName: 'ArkadiaPluginsDB',
-  storeName: 'storedScripts',
+  dbName: 'ArkadiaPluginEditorDB',
+  storeName: 'editorPlugins',
 }
 
 /**
@@ -30,65 +38,30 @@ function getPluginConfig(pluginId: string) {
 }
 
 /**
- * Store a plugin script in IndexedDB
+ * Store a plugin in the editor database
  */
-export async function storePluginScript(
-  pluginId: string,
-  code: string,
-  metadata?: PluginInfo
-): Promise<void> {
-  const now = Date.now()
-  const pluginData: StoredPluginData = {
-    id: pluginId,
-    code,
-    metadata,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  await storeInIndexedDB(getPluginConfig(pluginId), pluginData)
+export async function storeEditorPlugin(data: EditorPluginData): Promise<void> {
+  await storeInIndexedDB(getPluginConfig(data.id), data)
 }
 
 /**
- * Update an existing plugin script
+ * Get a plugin from the editor database
  */
-export async function updatePluginScript(
-  pluginId: string,
-  code: string,
-  metadata?: PluginInfo
-): Promise<void> {
-  const existing = await getPluginScript(pluginId)
-  const now = Date.now()
-
-  const pluginData: StoredPluginData = {
-    id: pluginId,
-    code,
-    metadata,
-    createdAt: existing?.createdAt || now,
-    updatedAt: now,
-  }
-
-  await storeInIndexedDB(getPluginConfig(pluginId), pluginData)
+export async function getEditorPlugin(pluginId: string): Promise<EditorPluginData | null> {
+  return await getFromIndexedDB<EditorPluginData>(getPluginConfig(pluginId))
 }
 
 /**
- * Get a plugin script from IndexedDB
+ * Delete a plugin from the editor database
  */
-export async function getPluginScript(pluginId: string): Promise<StoredPluginData | null> {
-  return await getFromIndexedDB<StoredPluginData>(getPluginConfig(pluginId))
-}
-
-/**
- * Delete a plugin script from IndexedDB
- */
-export async function deletePluginScript(pluginId: string): Promise<void> {
+export async function deleteEditorPlugin(pluginId: string): Promise<void> {
   await clearIndexedDB(getPluginConfig(pluginId))
 }
 
 /**
- * Get all stored plugin IDs
+ * Get all editor plugin IDs
  */
-export async function getAllStoredPluginIds(): Promise<string[]> {
+export async function getAllEditorPluginIds(): Promise<string[]> {
   const dbName = DB_CONFIG.dbName
   const storeName = DB_CONFIG.storeName
 
@@ -112,7 +85,7 @@ export async function getAllStoredPluginIds(): Promise<string[]> {
       }
 
       getAllRequest.onerror = () => {
-        reject(new Error('Failed to get all plugin IDs'))
+        reject(new Error('Failed to get all editor plugin IDs'))
       }
     }
 
@@ -123,9 +96,9 @@ export async function getAllStoredPluginIds(): Promise<string[]> {
 }
 
 /**
- * Get all stored plugins
+ * Get all editor plugins
  */
-export async function getAllStoredPlugins(): Promise<StoredPluginData[]> {
+export async function getAllEditorPlugins(): Promise<EditorPluginData[]> {
   const dbName = DB_CONFIG.dbName
   const storeName = DB_CONFIG.storeName
 
@@ -145,12 +118,12 @@ export async function getAllStoredPlugins(): Promise<StoredPluginData[]> {
       const getAllRequest = store.getAll()
 
       getAllRequest.onsuccess = () => {
-        const results = getAllRequest.result as Array<{ id: string; data: StoredPluginData; timestamp: number }>
+        const results = getAllRequest.result as Array<{ id: string; data: EditorPluginData; timestamp: number }>
         resolve(results.map(r => r.data))
       }
 
       getAllRequest.onerror = () => {
-        reject(new Error('Failed to get all plugins'))
+        reject(new Error('Failed to get all editor plugins'))
       }
     }
 
@@ -161,19 +134,12 @@ export async function getAllStoredPlugins(): Promise<StoredPluginData[]> {
 }
 
 /**
- * Generate a unique plugin ID from name or code
+ * Generate a unique plugin ID from name
  */
-export function generatePluginId(nameOrCode: string): string {
+export function generateEditorPluginId(name: string): string {
   const timestamp = Date.now()
-  const hash = simpleHash(nameOrCode)
-  return `stored_${hash}_${timestamp}`
-}
-
-/**
- * Check if a plugin identifier is for a stored plugin (vs URL)
- */
-export function isStoredPluginId(identifier: string): boolean {
-  return identifier.startsWith('stored_') || identifier.startsWith('editor_')
+  const hash = simpleHash(name)
+  return `editor_${hash}_${timestamp}`
 }
 
 /**
@@ -184,7 +150,7 @@ function simpleHash(str: string): string {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
     hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & hash
   }
   return Math.abs(hash).toString(36)
 }

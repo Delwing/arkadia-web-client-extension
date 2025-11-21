@@ -88,6 +88,7 @@ export class PluginManager {
       // Failed to load as module, try legacy script injection (only for URLs, not stored plugins)
       if (!isStoredPluginId(identifier)) {
         console.log(`[PluginManager] Failed to load as module, trying legacy script injection: ${identifier}`)
+        console.log(`[PluginManager] Module load error:`, _error)
         try {
           await this.loadAsLegacyScript(identifier, plugin)
           plugin.status = 'legacy'
@@ -97,6 +98,7 @@ export class PluginManager {
           plugin.status = 'error'
           plugin.error = `Failed to load: ${errorMsg}`
           console.error(`[PluginManager] Failed to load plugin ${identifier}:`, scriptError)
+          console.error(`[PluginManager] All attempts to load plugin failed`)
           eventBus.emit('plugin:error', { url: identifier, error: errorMsg })
         }
       } else {
@@ -104,7 +106,11 @@ export class PluginManager {
         const errorMsg = _error instanceof Error ? _error.message : String(_error)
         plugin.status = 'error'
         plugin.error = `Failed to load stored plugin: ${errorMsg}`
-        console.error(`[PluginManager] Failed to load stored plugin ${identifier}:`, _error)
+        console.error(`[PluginManager] ===== STORED PLUGIN LOAD FAILURE =====`)
+        console.error(`[PluginManager] Plugin ID: ${identifier}`)
+        console.error(`[PluginManager] Error: ${errorMsg}`)
+        console.error(`[PluginManager] Full error object:`, _error)
+        console.error(`[PluginManager] ======================================`)
         eventBus.emit('plugin:error', { url: identifier, error: errorMsg })
       }
     }
@@ -176,19 +182,32 @@ export class PluginManager {
    * Load a stored plugin from IndexedDB
    */
   private async loadStoredPlugin(pluginId: string): Promise<any> {
+    console.log(`[PluginManager] Loading stored plugin: ${pluginId}`)
     const storedPlugin = await getPluginScript(pluginId)
     if (!storedPlugin) {
+      console.error(`[PluginManager] Stored plugin not found in IndexedDB: ${pluginId}`)
       throw new Error(`Stored plugin not found: ${pluginId}`)
     }
+
+    console.log(`[PluginManager] Retrieved plugin code from IndexedDB (${storedPlugin.code.length} bytes)`)
+    console.log(`[PluginManager] First 200 chars of code:`, storedPlugin.code.substring(0, 200))
 
     // Create a blob URL from the code
     const blob = new Blob([storedPlugin.code], { type: 'application/javascript' })
     const blobUrl = URL.createObjectURL(blob)
+    console.log(`[PluginManager] Created blob URL: ${blobUrl}`)
 
     try {
       // Import the module from the blob URL
+      console.log(`[PluginManager] Attempting to import module from blob URL...`)
       const module = await import(/* @vite-ignore */ blobUrl)
+      console.log(`[PluginManager] Module imported successfully`, Object.keys(module))
       return module
+    } catch (error) {
+      console.error(`[PluginManager] Failed to import module from blob URL:`, error)
+      console.error(`[PluginManager] Full code that failed to load:`)
+      console.error(storedPlugin.code)
+      throw error
     } finally {
       // Clean up the blob URL after import
       URL.revokeObjectURL(blobUrl)
@@ -219,11 +238,14 @@ export class PluginManager {
       script.async = true
 
       script.onload = () => {
+        console.log(`[PluginManager] Legacy script loaded successfully: ${url}`)
         plugin.scriptElement = script
         resolve()
       }
 
-      script.onerror = () => {
+      script.onerror = (event) => {
+        console.error(`[PluginManager] Legacy script failed to load: ${url}`)
+        console.error(`[PluginManager] Error event:`, event)
         reject(new Error('Script failed to load'))
       }
 

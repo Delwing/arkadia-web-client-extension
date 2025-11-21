@@ -40,6 +40,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 client: resolve('index.html'),
+                editor: resolve('editor/index.html'),
             }
         }
     }

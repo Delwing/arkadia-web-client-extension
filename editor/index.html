@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <title>Arkadia Plugin Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #1e1e1e;
+            color: #cccccc;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #toolbar {
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        #toolbar select,
+        #toolbar input,
+        #toolbar button {
+            padding: 6px 12px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        #toolbar button {
+            cursor: pointer;
+        }
+
+        #toolbar button:hover {
+            background: #505050;
+        }
+
+        #toolbar button:active {
+            background: #2a2a2a;
+        }
+
+        #toolbar button.primary {
+            background: #0e639c;
+            border-color: #0e639c;
+        }
+
+        #toolbar button.primary:hover {
+            background: #1177bb;
+        }
+
+        #toolbar button.danger {
+            background: #c72e0f;
+            border-color: #c72e0f;
+        }
+
+        #toolbar button.danger:hover {
+            background: #e03e1d;
+        }
+
+        #toolbar input {
+            min-width: 200px;
+        }
+
+        #toolbar select {
+            cursor: pointer;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        #editor-container {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #status-bar {
+            background: #007acc;
+            color: white;
+            padding: 4px 16px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        #status-bar.error {
+            background: #c72e0f;
+        }
+
+        #status-bar.success {
+            background: #16825d;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 500px;
+        }
+
+        .modal h2 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .modal label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .modal input,
+        .modal select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 16px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .modal button {
+            padding: 8px 16px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .modal button.primary {
+            background: #0e639c;
+            border-color: #0e639c;
+        }
+
+        .modal button:hover {
+            background: #505050;
+        }
+
+        .modal button.primary:hover {
+            background: #1177bb;
+        }
+
+        #compile-status {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="toolbar">
+            <select id="plugin-select">
+                <option value="">Select Plugin...</option>
+            </select>
+            <input type="text" id="plugin-name" placeholder="Plugin name" />
+            <select id="language-select">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript" selected>TypeScript</option>
+            </select>
+            <button id="save-btn" class="primary">Save</button>
+            <button id="new-btn">New</button>
+            <button id="delete-btn" class="danger">Delete</button>
+            <div class="spacer"></div>
+            <button id="compile-btn" style="display: none;">Compile TypeScript</button>
+            <span id="compile-status"></span>
+        </div>
+        <div id="editor-container"></div>
+        <div id="status-bar">
+            <span id="status-text">Ready</span>
+        </div>
+    </div>
+
+    <div id="new-plugin-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>New Plugin</h2>
+            <label for="new-plugin-name">Plugin Name</label>
+            <input type="text" id="new-plugin-name" placeholder="My Plugin" />
+            <label for="new-plugin-language">Language</label>
+            <select id="new-plugin-language">
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+            </select>
+            <div class="modal-buttons">
+                <button id="new-plugin-cancel">Cancel</button>
+                <button id="new-plugin-create" class="primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>
