@@ -104,11 +104,27 @@ export function renderTreeNode(
 
     const folderName = document.createElement('span')
     folderName.className = 'folder-name'
-    folderName.textContent = node.name
+    // Don't show temp folder names
+    folderName.textContent = node.name.startsWith('__new_folder_') ? '' : node.name
+
+    // Add rename input for folders (similar to files)
+    const renameInput = document.createElement('input')
+    renameInput.className = 'rename-input'
+    renameInput.type = 'text'
+    renameInput.value = node.name.startsWith('__new_folder_') ? '' : node.name
+
+    // If this is a temp folder being created, start in renaming mode
+    if (node.name.startsWith('__new_folder_')) {
+      folderItem.classList.add('renaming')
+      folderName.style.display = 'none'
+      renameInput.style.display = 'block'
+      renameInput.style.flex = '1'
+    }
 
     folderItem.appendChild(toggle)
     folderItem.appendChild(folderIcon)
     folderItem.appendChild(folderName)
+    folderItem.appendChild(renameInput)
 
     const childrenContainer = document.createElement('div')
     childrenContainer.className = 'folder-children expanded'
@@ -166,6 +182,10 @@ export function renderTreeNode(
     if (node.path === currentFilePath) {
       fileItem.classList.add('active')
     }
+    // If this is a temp file being created, start in renaming mode
+    if (node.name.startsWith('__new_file_')) {
+      fileItem.classList.add('renaming')
+    }
 
     // Add spacer to align with folders that have toggle arrows
     const toggleSpacer = document.createElement('span')
@@ -177,12 +197,14 @@ export function renderTreeNode(
 
     const fileName = document.createElement('span')
     fileName.className = 'file-name'
-    fileName.textContent = node.name
+    // Don't show temp file names
+    fileName.textContent = node.name.startsWith('__new_file_') ? '' : node.name
 
     const renameInput = document.createElement('input')
     renameInput.className = 'rename-input'
     renameInput.type = 'text'
-    renameInput.value = node.name
+    // Don't show temp file names in the input
+    renameInput.value = node.name.startsWith('__new_file_') ? '' : node.name
 
     const deleteBtn = document.createElement('button')
     deleteBtn.className = 'file-delete'

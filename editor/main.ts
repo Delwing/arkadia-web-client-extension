@@ -454,11 +454,9 @@ function startNewFileCreation(folderPath: string) {
     const fileItem = document.querySelector(`.file-item[data-path="${tempPath}"]`) as HTMLElement
     if (!fileItem) return
 
-    fileItem.classList.add('renaming')
     const input = fileItem.querySelector('.rename-input') as HTMLInputElement
     if (!input) return
 
-    input.value = ''
     input.focus()
 
     input.onblur = async () => {
@@ -524,24 +522,13 @@ function startNewFolderCreation(basePath: string) {
     const folderItem = document.querySelector(`.folder-item[data-path="${tempPath}"]`) as HTMLElement
     if (!folderItem) return
 
-    const folderNameSpan = folderItem.querySelector('.folder-name') as HTMLElement
-    if (!folderNameSpan) return
+    const input = folderItem.querySelector('.rename-input') as HTMLInputElement
+    if (!input) return
 
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.value = ''
-    input.className = 'rename-input'
-    input.style.display = 'block'
-    input.style.flex = '1'
-
-    folderNameSpan.style.display = 'none'
-    folderItem.appendChild(input)
     input.focus()
 
     const finishCreation = async () => {
       const newFolderName = input.value.trim()
-      input.remove()
-      folderNameSpan.style.display = ''
 
       // Remove the temporary folder
       const tempIndex = state.currentPlugin!.folders!.indexOf(tempPath)
