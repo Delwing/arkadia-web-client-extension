@@ -182,7 +182,6 @@ export class EmbeddedMap {
                 if (typeof parsed.mapPlayerMarkerDashEnabled === 'boolean') {
                     Settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
                 }
-                Settings.playerMarker.dashEnabled = true
             }
         } catch {
             // ignore malformed data

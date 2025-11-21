@@ -344,15 +344,13 @@ function apply(settings: UiSettings) {
     embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
     Settings.roomSize = settings.mapRoomSize;
     Settings.lineWidth = settings.mapLineWidth;
-    Settings.playerMarker = {
-        strokeColor: settings.mapPlayerMarkerStrokeColor,
-        strokeAlpha: settings.mapPlayerMarkerStrokeAlpha,
-        fillColor: settings.mapPlayerMarkerFillColor,
-        fillAlpha: settings.mapPlayerMarkerFillAlpha,
-        strokeWidth: settings.mapPlayerMarkerStrokeWidth,
-        sizeFactor: settings.mapPlayerMarkerSizeFactor,
-        dashEnabled: settings.mapPlayerMarkerDashEnabled,
-    };
+    Settings.playerMarker.strokeColor = settings.mapPlayerMarkerStrokeColor;
+    Settings.playerMarker.strokeAlpha = settings.mapPlayerMarkerStrokeAlpha;
+    Settings.playerMarker.fillColor = settings.mapPlayerMarkerFillColor;
+    Settings.playerMarker.fillAlpha = settings.mapPlayerMarkerFillAlpha;
+    Settings.playerMarker.strokeWidth = settings.mapPlayerMarkerStrokeWidth;
+    Settings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
+    Settings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
     embedded?.refresh();
     const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
