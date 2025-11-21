@@ -1,6 +1,7 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
+import { FiEdit2, FiExternalLink } from "react-icons/fi";
 import { Modal } from "bootstrap";
 import storage from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
@@ -199,6 +200,14 @@ function Scripts() {
 
     const allScripts = [...scripts, ...storedScripts];
 
+    const openEditor = () => {
+        window.open('/editor/index.html', '_blank');
+    };
+
+    const editStoredPlugin = (pluginId: string) => {
+        window.open(`/editor/index.html?plugin=${pluginId}`, '_blank');
+    };
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
             <div className="d-flex flex-wrap gap-2 align-items-center">
@@ -219,6 +228,10 @@ function Scripts() {
                 <Button size="sm" onClick={add}>Dodaj URL</Button>
                 <Button size="sm" variant="success" onClick={() => codeModal?.show()}>
                     Wklej kod
+                </Button>
+                <Button size="sm" variant="info" onClick={openEditor}>
+                    <FiExternalLink className="me-1" />
+                    Otwórz edytor
                 </Button>
             </div>
 
@@ -277,14 +290,25 @@ function Scripts() {
                                     </div>
                                 )}
 
-                                <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => remove(identifier)}
-                                    className="ms-auto"
-                                >
-                                    <TiDelete />
-                                </Button>
+                                <div className="ms-auto d-flex gap-2">
+                                    {isStored && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline-primary"
+                                            onClick={() => editStoredPlugin(identifier)}
+                                            title="Edytuj w edytorze"
+                                        >
+                                            <FiEdit2 />
+                                        </Button>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => remove(identifier)}
+                                    >
+                                        <TiDelete />
+                                    </Button>
+                                </div>
                             </div>
                         </li>
                     );
