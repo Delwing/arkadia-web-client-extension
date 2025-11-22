@@ -55,6 +55,8 @@ import {
   showNewPluginModal,
 } from './modals'
 import {createNewPlugin, deletePlugin, refreshPluginList, savePlugin,} from './pluginManagement'
+import pluginApiTypes from '../plugin-types/index.d.ts?raw'
+import {IPosition, IRange} from "monaco-editor";
 
 // Configure Monaco Environment for web workers
 self.MonacoEnvironment = {
@@ -131,8 +133,36 @@ function renderCurrentFileTree() {
 }
 
 // Switch to a different file in the editor
-function switchToFile(filePath: string) {
+function switchToFile(filePath: string, position?: IPosition | IRange) {
+
   if (!state.currentPlugin || !state.editor) return
+
+    if (filePath.startsWith("@types")) {
+      const model = monaco.editor.createModel(
+          pluginApiTypes,
+          "typescript",
+          monaco.Uri.parse("file:plugin-api.ts")
+      )
+      state.editor.updateOptions({readOnly: true})
+        state.editor.setModel(model)
+      state.editor.onDidChangeModel(() => {
+        model.dispose()
+      })
+
+      if (position !== undefined) {
+        if ("startLineNumber" in position) {
+          state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
+          state.editor.revealLineInCenter(position.startLineNumber)
+        } else if ("lineNumber" in position) {
+          state.editor.setPosition(position)
+          state.editor.revealLineInCenter(position.lineNumber)
+        }
+      }
+        return;
+    }
+
+
+  state.editor.updateOptions({readOnly: false})
 
   // Save current file content before switching
   if (state.currentFilePath && state.editorModels.has(state.currentFilePath)) {
@@ -234,6 +264,17 @@ export default value;`
   }
 
   state.editor.setModel(model)
+
+  if (position !== undefined) {
+    if ("startLineNumber" in position) {
+      state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
+      state.editor.revealLineInCenter(position.startLineNumber)
+    } else if ("lineNumber" in position) {
+      state.editor.setPosition(position)
+      state.editor.revealLineInCenter(position.lineNumber)
+    }
+  }
+
   renderCurrentFileTree()
   updateStatus(`Editing: ${filePath}`, 'normal')
 }

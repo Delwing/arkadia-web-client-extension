@@ -4,6 +4,7 @@ import {shikiToMonaco} from '@shikijs/monaco'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import type {StatusType} from './types'
 import { registerSnippets } from './snippets'
+import {IPosition, IRange} from "monaco-editor";
 
 export function setupTypeScriptEnvironment() {
   // Configure TypeScript compiler options
@@ -148,7 +149,7 @@ export async function initializeEditor(
   container: HTMLElement,
   updateStatus: (message: string, type: StatusType) => void,
   showFilePickerCallback: () => void,
-  switchToFileCallback: (path: string) => void
+  switchToFileCallback: (path: string, position?: IPosition | IRange) => void
 ): Promise<monaco.editor.IStandaloneCodeEditor> {
   // Setup TypeScript environment first
   setupTypeScriptEnvironment()
@@ -250,7 +251,8 @@ export async function initializeEditor(
   })
 
   monaco.editor.registerEditorOpener({
-    openCodeEditor(_source, resource): boolean | Promise<boolean> {
+    openCodeEditor(_source, resource, position): boolean | Promise<boolean> {
+
       // Extract file path from URI like: file:///pluginId/path/to/file.ts
       // Remove leading / to get: pluginId/path/to/file.ts
       const fullPath = resource.path.substring(1)
@@ -264,9 +266,9 @@ export async function initializeEditor(
       }
 
       if (filePath) {
-        switchToFileCallback(filePath)
+        switchToFileCallback(filePath, position)
       }
-      return true
+      return false
     }
   })
 
