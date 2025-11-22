@@ -201,11 +201,11 @@ function Scripts() {
     const allScripts = [...scripts, ...storedScripts];
 
     const openEditor = () => {
-        window.open('/editor/index.html', '_blank');
+        window.open('editor/index.html', '_blank');
     };
 
     const editStoredPlugin = (pluginId: string) => {
-        window.open(`/editor/index.html?plugin=${pluginId}`, '_blank');
+        window.open(`editor/index.html?plugin=${pluginId}`, '_blank');
     };
 
     return (
