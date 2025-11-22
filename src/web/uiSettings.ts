@@ -929,34 +929,29 @@ export default async function initUiSettings() {
     mapPlayerMarkerStrokeAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeAlphaValue.textContent = mapPlayerMarkerStrokeAlphaInput.value;
         Settings.playerMarker.strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
-        refreshEmbeddedMap();
         drawPreview();
     });
 
     mapPlayerMarkerFillAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerFillAlphaValue.textContent = mapPlayerMarkerFillAlphaInput.value;
         Settings.playerMarker.fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
-        refreshEmbeddedMap();
         drawPreview();
     });
 
     mapPlayerMarkerStrokeWidthInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeWidthValue.textContent = mapPlayerMarkerStrokeWidthInput.value;
         Settings.playerMarker.strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
-        refreshEmbeddedMap();
         drawPreview();
     });
 
     mapPlayerMarkerSizeFactorInput.addEventListener('input', () => {
         mapPlayerMarkerSizeFactorValue.textContent = mapPlayerMarkerSizeFactorInput.value;
         Settings.playerMarker.sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
-        refreshEmbeddedMap();
         drawPreview();
     });
 
     mapPlayerMarkerDashEnabledInput.addEventListener('change', () => {
         Settings.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
-        refreshEmbeddedMap();
         drawPreview();
     });
 
@@ -1108,20 +1103,81 @@ export default async function initUiSettings() {
         const manageSoundsList = document.getElementById('manage-sounds-list');
         const manageSoundsEmpty = document.getElementById('manage-sounds-empty');
 
-        function renderSoundsList() {
+        async function playSound(key: string, data?: string) {
+            try {
+                const { Howl } = await import('howler');
+                let soundData: string | undefined = data;
+
+                if (!soundData) {
+                    if (key === 'beep') {
+                        const { beepSound } = await import('../client/sounds');
+                        soundData = beepSound;
+                    } else {
+                        const sound = customSoundsRef.current.find(s => s.key === key);
+                        soundData = sound?.data;
+                    }
+                }
+
+                if (!soundData) {
+                    console.error('Sound data not found for key:', key);
+                    return;
+                }
+
+                const howl = new Howl({
+                    src: [soundData],
+                    preload: true,
+                });
+
+                howl.once('load', () => {
+                    howl.play();
+                });
+
+                howl.load();
+            } catch (error) {
+                console.error('Failed to play sound', error);
+            }
+        }
+
+        async function renderSoundsList() {
             if (!manageSoundsList || !manageSoundsEmpty) return;
 
             manageSoundsList.innerHTML = '';
 
-            if (customSoundsRef.current.length === 0) {
-                manageSoundsList.style.display = 'none';
-                manageSoundsEmpty.style.display = 'block';
-                return;
-            }
-
             manageSoundsList.style.display = 'flex';
             manageSoundsEmpty.style.display = 'none';
 
+            // Add default beep sound (undeletable)
+            const defaultBeepItem = document.createElement('div');
+            defaultBeepItem.className = 'd-flex align-items-center justify-content-between p-2 border rounded';
+
+            let defaultBeepData: string | undefined;
+            try {
+                const { beepSound } = await import('../client/sounds');
+                defaultBeepData = beepSound;
+            } catch (error) {
+                console.error('Failed to load default beep sound', error);
+            }
+
+            const defaultBeepSize = defaultBeepData ? calculateBase64Size(defaultBeepData) : 0;
+
+            defaultBeepItem.innerHTML = `
+                <div class="d-flex flex-column">
+                    <span class="fw-semibold">Domyślny beep</span>
+                    <span class="text-muted small">${formatBytes(defaultBeepSize)}</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm" data-play-key="beep">▶</button>
+                </div>
+            `;
+
+            const defaultPlayBtn = defaultBeepItem.querySelector('[data-play-key]');
+            defaultPlayBtn?.addEventListener('click', () => {
+                void playSound('beep', defaultBeepData);
+            });
+
+            manageSoundsList.appendChild(defaultBeepItem);
+
+            // Add custom sounds
             customSoundsRef.current.forEach(sound => {
                 const size = calculateBase64Size(sound.data);
                 const item = document.createElement('div');
@@ -1131,10 +1187,18 @@ export default async function initUiSettings() {
                         <span class="fw-semibold">${sound.name}</span>
                         <span class="text-muted small">${formatBytes(size)}</span>
                     </div>
-                    <button class="btn btn-danger btn-sm" data-sound-key="${sound.key}">Usuń</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" data-play-key="${sound.key}">▶</button>
+                        <button class="btn btn-danger btn-sm" data-sound-key="${sound.key}">Usuń</button>
+                    </div>
                 `;
 
-                const deleteBtn = item.querySelector('button');
+                const playBtn = item.querySelector('[data-play-key]');
+                playBtn?.addEventListener('click', () => {
+                    void playSound(sound.key, sound.data);
+                });
+
+                const deleteBtn = item.querySelector('[data-sound-key]');
                 deleteBtn?.addEventListener('click', async () => {
                     if (!confirm(`Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`)) {
                         return;
@@ -1155,7 +1219,7 @@ export default async function initUiSettings() {
                         }
 
                         populateCustomBeepOptions();
-                        renderSoundsList();
+                        void renderSoundsList();
                     } catch (error) {
                         console.error('Failed to delete custom sound', error);
                         alert('Nie udało się usunąć dźwięku');
@@ -1167,7 +1231,7 @@ export default async function initUiSettings() {
         }
 
         manageSoundsButton.addEventListener('click', () => {
-            renderSoundsList();
+            void renderSoundsList();
             manageSoundsModal.show();
         });
     }

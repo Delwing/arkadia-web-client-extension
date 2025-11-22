@@ -99,7 +99,6 @@ export default async function initSessionLogger(client: SessionClient) {
       if (db) {
         db.close();
         db = null;
-        console.log('[SessionLogger] Closed database connection due to inactivity');
       }
       closeTimeout = null;
     }, 1000);

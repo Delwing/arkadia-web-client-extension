@@ -96,4 +96,14 @@ export default function initAttackQueue(
         pattern: /^\/nn$/,
         callback: killNext,
     });
+
+    const clearQueue = () => {
+        client.TeamManager.clearEnemyQueue();
+        client.println("Wyczyszczono kolejke ataku.");
+    };
+
+    list.push({
+        pattern: /^\/cq$/,
+        callback: clearQueue,
+    });
 }

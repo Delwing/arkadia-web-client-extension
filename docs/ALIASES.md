@@ -117,6 +117,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/z _skrot_** - wykonuje polecenie `zabij` na obiekcie o podanym skrócie.
 - **/x _skrot_** - wykonuje polecenie `zaskocz` na obiekcie o podanym skrócie.
 - **/q _skrot_ lub ob_id_** - dodaje przeciwnika do kolejki ataku; przyjmuje skróty z listy obiektów lub identyfikatory w formie `ob_id`.
+- **/cq** - czyści kolejkę ataku.
 - **/zas _skrot_** - zasłania obiekt o podanym skrócie; jeśli nie jest w drużynie używa komendy `zaslon przed`.
 - **/za _skrot_** - to samo co `/zas _skrot_`.
 - **/z** - atakuje cel oznaczony jako cel ataku.
