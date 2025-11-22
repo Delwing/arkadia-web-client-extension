@@ -4,12 +4,20 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {getItemSync} from "@modules/core/storage";
 import {
     LUA_GAGS_COLORS_STORAGE_KEY,
+    LUA_GAGS_STORAGE_KEY,
     normalizeLuaGagsColors,
+    normalizeLuaGagsDeleteLines,
+    LuaGagDeleteMode,
 } from "../luaGagsSettings";
+
+function getDeleteMode(type: string): LuaGagDeleteMode {
+    const stored = getItemSync(LUA_GAGS_STORAGE_KEY);
+    const settings = normalizeLuaGagsDeleteLines(stored?.[LUA_GAGS_STORAGE_KEY]);
+    return settings[type as keyof typeof settings] ?? 2;
+}
 
 function getGagColorCodes(): Record<string, number> {
     const stored = getItemSync(LUA_GAGS_COLORS_STORAGE_KEY);
-    console.log(stored);
     const colors = normalizeLuaGagsColors(stored?.[LUA_GAGS_COLORS_STORAGE_KEY]);
     return Object.fromEntries(
         Object.entries(colors).map(([k, v]) => [k, createColorFormat(v)])
@@ -40,6 +48,13 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     }
 
     function gagPrefix(buffer: AnsiAwareBuffer, prefix: string, type: string) {
+        const mode = getDeleteMode(type);
+        if (mode === 1) {
+            return buffer.markAsDeleted();
+        }
+        if (mode !== 2) {
+            return buffer;
+        }
         const prefixText = `[${prefix}] `;
         buffer.prepend(prefixText);
         const colorCodes = getGagColorCodes();
