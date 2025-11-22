@@ -110,8 +110,16 @@ let disposeImportPathProvider: (() => void) | null = null
 let disposeAutoImportProvider: (() => void) | null = null
 
 // File tree render wrapper
+function showDisabledFileTree() {
+  const fileList = document.getElementById('file-list')!
+  fileList.innerHTML = '<div class="file-tree-disabled">No plugin loaded</div>'
+}
+
 function renderCurrentFileTree() {
-  if (!state.currentPlugin) return
+  if (!state.currentPlugin) {
+    showDisabledFileTree()
+    return
+  }
 
   renderFileTree(state.currentPlugin, state.currentFilePath, state.modifiedFiles, {
     onFileClick: switchToFile,
@@ -830,11 +838,31 @@ async function deleteCurrentPlugin() {
 
   await deletePlugin(state.currentPluginId, updateStatus)
 
+  // Clear all editor models
+  state.editorModels.forEach(model => model.dispose())
+  state.editorModels.clear()
+
+  // Dispose Monaco models
+  monaco.editor.getModels().forEach(model => {
+    const uriString = model.uri.toString()
+    if (uriString.startsWith('file:///') && !uriString.includes('plugin-api')) {
+      model.dispose()
+    }
+  })
+
+  // Clear state
   state.currentPluginId = null
+  state.currentPlugin = null
+  state.currentFilePath = null
+  state.modifiedFiles.clear()
+
   state.editor.setValue('')
 
   const nameInput = document.getElementById('plugin-name') as HTMLInputElement
   nameInput.value = ''
+
+  // Show disabled file tree
+  showDisabledFileTree()
 
   await refreshPluginList(null)
 }
@@ -1205,6 +1233,9 @@ async function init() {
     await loadPlugin(pluginIdFromUrl)
     const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
     pluginSelect.value = pluginIdFromUrl
+  } else {
+    // Show disabled state if no plugin is loaded
+    showDisabledFileTree()
   }
 
   updateStatus('Ready', 'success')
