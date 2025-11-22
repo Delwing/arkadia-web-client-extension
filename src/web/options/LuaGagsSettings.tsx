@@ -1,25 +1,29 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Form } from "react-bootstrap";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
+import {useCallback, useEffect, useMemo, useState} from "react";
+import {Button, Form} from "react-bootstrap";
+import storage, {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
+    DEFAULT_LUA_GAGS_COLORS,
     LUA_GAG_LINE_TYPES,
     LUA_GAGS_STORAGE_KEY,
+    LUA_GAGS_COLORS_STORAGE_KEY,
     LuaGagDeleteMode,
     LuaGagLineType,
     normalizeLuaGagsDeleteLines,
+    normalizeLuaGagsColors,
 } from "@client/luaGagsSettings";
 
-import { Settings } from "./defaultSettings";
+import {Settings} from "./defaultSettings";
 
 type RegisterSave = (cb: (sharedSettings: Settings) => void) => void;
 
 type DeleteLineState = Record<LuaGagLineType, LuaGagDeleteMode>;
+type ColorState = Record<LuaGagLineType, string>;
 
 const selectOptions = [
-    { value: 0 as LuaGagDeleteMode, label: "Pozostaw linię" },
-    { value: 1 as LuaGagDeleteMode, label: "Usuń linię" },
-    { value: 2 as LuaGagDeleteMode, label: "Dodaj prefiks" },
+    {value: 0 as LuaGagDeleteMode, label: "Pozostaw linię"},
+    {value: 1 as LuaGagDeleteMode, label: "Usuń linię"},
+    {value: 2 as LuaGagDeleteMode, label: "Dodaj prefiks"},
 ];
 
 function formatLabel(key: LuaGagLineType): string {
@@ -29,10 +33,13 @@ function formatLabel(key: LuaGagLineType): string {
         .join(" ");
 }
 
-function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
+function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const [deleteLines, setDeleteLines] = useState<DeleteLineState>(() => ({
         ...DEFAULT_LUA_GAGS_DELETE_LINES,
+    }));
+    const [colors, setColors] = useState<ColorState>(() => ({
+        ...DEFAULT_LUA_GAGS_COLORS,
     }));
 
     useEffect(() => {
@@ -46,10 +53,8 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
     }, []);
 
     const loadFromStorage = useCallback(() => {
-        storage.getItem(LUA_GAGS_STORAGE_KEY).then(res => {
-            const stored = res?.[LUA_GAGS_STORAGE_KEY];
-            setDeleteLines(normalizeLuaGagsDeleteLines(stored));
-        });
+        setDeleteLines(normalizeLuaGagsDeleteLines(getItemSync(LUA_GAGS_STORAGE_KEY)));
+        setColors(normalizeLuaGagsColors(getItemSync(LUA_GAGS_COLORS_STORAGE_KEY)));
     }, []);
 
     useEffect(() => {
@@ -60,6 +65,11 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
                     normalizeLuaGagsDeleteLines(changes[LUA_GAGS_STORAGE_KEY].newValue),
                 );
             }
+            if (changes[LUA_GAGS_COLORS_STORAGE_KEY]) {
+                setColors(
+                    normalizeLuaGagsColors(changes[LUA_GAGS_COLORS_STORAGE_KEY].newValue),
+                );
+            }
         };
         storage.onChanged?.addListener(listener);
         return () => {
@@ -68,8 +78,11 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
     }, [loadFromStorage]);
 
     useEffect(() => {
-        registerSave((_sharedSettings: Settings) => storage.setItem(LUA_GAGS_STORAGE_KEY, deleteLines));
-    }, [registerSave, deleteLines]);
+        registerSave((_sharedSettings: Settings) => {
+            setItemSync(LUA_GAGS_STORAGE_KEY, deleteLines);
+            setItemSync(LUA_GAGS_COLORS_STORAGE_KEY, colors);
+        });
+    }, [registerSave, deleteLines, colors]);
 
     const labels = useMemo(() => {
         const map: Record<LuaGagLineType, string> = {} as Record<LuaGagLineType, string>;
@@ -91,6 +104,22 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
         });
     };
 
+    const handleColorChange = (key: LuaGagLineType, value: string) => {
+        setColors(prev => {
+            if (prev[key] === value) {
+                return prev;
+            }
+            return {
+                ...prev,
+                [key]: value,
+            };
+        });
+    };
+
+    const resetColorToDefault = (key: LuaGagLineType) => {
+        handleColorChange(key, DEFAULT_LUA_GAGS_COLORS[key]);
+    };
+
     return (
         <div className="p-2 h-100">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
@@ -105,20 +134,39 @@ function LuaGagsSettings({ registerSave }: { registerSave: RegisterSave }) {
                                     controlId={`luaGag-${key}`}
                                 >
                                     <Form.Label className="mb-0 me-2">{labels[key]}</Form.Label>
-                                    <Form.Select
-                                        size="sm"
-                                        className="w-auto"
-                                        value={deleteLines[key]}
-                                        onChange={event =>
-                                            handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
-                                        }
-                                    >
-                                        {selectOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
+                                    <div className="d-flex gap-2 align-items-center">
+                                        <Form.Select
+                                            size="sm"
+                                            className="w-auto"
+                                            value={deleteLines[key]}
+                                            onChange={event =>
+                                                handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
+                                            }
+                                        >
+                                            {selectOptions.map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control
+                                            type="color"
+                                            size="sm"
+                                            value={colors[key]}
+                                            onChange={event => handleColorChange(key, event.target.value)}
+                                            style={{width: "50px"}}
+                                            title="Kolor prefixu"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            variant="outline-secondary"
+                                            onClick={() => resetColorToDefault(key)}
+                                            title="Przywróć domyślny kolor"
+                                            style={{padding: "0.25rem 0.5rem"}}
+                                        >
+                                            ↺
+                                        </Button>
+                                    </div>
                                 </Form.Group>
                             ))}
                         </div>

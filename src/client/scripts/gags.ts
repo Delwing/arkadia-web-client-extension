@@ -1,26 +1,20 @@
 import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import Client from "../Client";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import {getItemSync} from "@modules/core/storage";
+import {
+    LUA_GAGS_COLORS_STORAGE_KEY,
+    normalizeLuaGagsColors,
+} from "../luaGagsSettings";
 
-const gagColors = {
-    "moje_ciosy": "#f0f8ff",
-    "moje_spece": "#adff2f",
-    "innych_ciosy": "#d3d3d3",
-    "innych_ciosy_we_mnie": "#d3d3d3",
-    "innych_spece": "#708090",
-    "moje_uniki": "#4682b4",
-    "innych_uniki": "#2f4f4f",
-    "moje_parowanie": "#4682b4",
-    "innych_parowanie": "#2f4f4f",
-    "zaslony_udane": "#00bfff",
-    "zaslony_nieudane": "#483d8b",
-    "bron": "#ffd700",
-    "npc": "#fffaf0",
-    "npc_spece": "#fffaf0"
-};
-const gagColorCodes: Record<string, number> = Object.fromEntries(
-    Object.entries(gagColors).map(([k, v]) => [k, createColorFormat(v)])
-) as Record<string, number>;
+function getGagColorCodes(): Record<string, number> {
+    const stored = getItemSync(LUA_GAGS_COLORS_STORAGE_KEY);
+    console.log(stored);
+    const colors = normalizeLuaGagsColors(stored?.[LUA_GAGS_COLORS_STORAGE_KEY]);
+    return Object.fromEntries(
+        Object.entries(colors).map(([k, v]) => [k, createColorFormat(v)])
+    ) as Record<string, number>;
+}
 const OWN_HIT_COLOR = createColorFormat('#2db92d');
 const combatTypes = ["combat.avatar", "combat.team", "combat.others"]
 
@@ -48,7 +42,8 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     function gagPrefix(buffer: AnsiAwareBuffer, prefix: string, type: string) {
         const prefixText = `[${prefix}] `;
         buffer.prepend(prefixText);
-        return buffer.color([0, prefixText.length], gagColorCodes[type]);
+        const colorCodes = getGagColorCodes();
+        return buffer.color([0, prefixText.length], colorCodes[type]);
     }
 
     function gagOwnRegularHits(matches: RegExpMatchArray | { index: number }, power: string, buffer: AnsiAwareBuffer) {

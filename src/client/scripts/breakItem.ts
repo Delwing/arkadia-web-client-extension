@@ -9,7 +9,7 @@ export default function initBreakItem(client: Client) {
     type Entry = { pattern: RegExp; command?: string };
 
     const entries: Entry[] = [
-        { pattern: /^Nagle (\w+) rozpruwa sie\..*/ },
+        { pattern: /^Nagle ([\w\- ]+) rozpruwa sie\..*/ },
         { pattern: /^Niestety zbyt mocnym ruchem rozrywasz (?:\w+ )+(\w+), drac go na bezwartosciowe pasy materialu\.$/ },
         { pattern: /^Probujesz zalozyc (?:\w+ )+line(?: z hakiem)?, ale ta peka ci w rekach ze starosci\.$/ },
         { pattern: /^Czujesz, ze (?:\w+ )+(\w+) po prostu rozpada ci sie w rekach\.$/ },

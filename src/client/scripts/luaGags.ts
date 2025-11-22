@@ -15,31 +15,25 @@ import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
     LUA_GAG_LINE_TYPES,
     LUA_GAGS_STORAGE_KEY,
+    LUA_GAGS_COLORS_STORAGE_KEY,
     LuaGagDeleteMode,
     normalizeLuaGagsDeleteLines,
+    normalizeLuaGagsColors,
 } from "../luaGagsSettings";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
 
-const gagColors = {
-    "moje_ciosy": "#f0f8ff",
-    "moje_spece": "#adff2f",
-    "innych_ciosy": "#d3d3d3",
-    "innych_ciosy_we_mnie": "#d3d3d3",
-    "innych_spece": "#708090",
-    "moje_uniki": "#4682b4",
-    "innych_uniki": "#2f4f4f",
-    "moje_parowanie": "#4682b4",
-    "innych_parowanie": "#2f4f4f",
-    "zaslony_udane": "#00bfff",
-    "zaslony_nieudane": "#483d8b",
-    "bron": "#ffd700",
-    "npc": "#fffaf0",
-    "npc_spece": "#fffaf0"
-};
-const gagColorCodes: Record<string, FormatStateSnapshot> = Object.fromEntries(
-    Object.entries(gagColors).map(([k, v]) => [k, createColorFormat(v)])
-)
+function getGagColors(): Record<string, string> {
+    const stored = getItemSync(LUA_GAGS_COLORS_STORAGE_KEY);
+    return normalizeLuaGagsColors(stored?.[LUA_GAGS_COLORS_STORAGE_KEY]);
+}
+
+function getGagColorCodes(): Record<string, FormatStateSnapshot> {
+    const colors = getGagColors();
+    return Object.fromEntries(
+        Object.entries(colors).map(([k, v]) => [k, createColorFormat(v)])
+    );
+}
 const combatTypes = ["combat.avatar", "combat.team", "combat.others"]
 
 class EmptyMatches extends Array<string> implements RegExpMatchArray {
@@ -222,7 +216,8 @@ export default function registerLuaGagTriggers(client: Client) {
                 if (mode !== 2) {
                     return global.line
                 }
-                global.line.prefix(`[${prefix}] `, gagColorCodes[type])
+                const colorCodes = getGagColorCodes();
+                global.line.prefix(`[${prefix}] `, colorCodes[type])
             },
             gag_own_spec: (_, power: string, maxPower: string) => {
                 let prefix = `${power}`
