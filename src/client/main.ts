@@ -15,6 +15,7 @@ import initAttackQueue from './scripts/attackQueue'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initOrderTimer from './scripts/orderTimer'
+import initCombatState from './scripts/combatState'
 import initCombatTimer from './scripts/combatTimer'
 import initZaskTimer from './scripts/zaskTimer'
 import initBinds from './scripts/binds'
@@ -203,6 +204,7 @@ export function registerScripts(client: Client) {
     initLamp(client)
     initCoverTimer(client)
     initOrderTimer(client)
+    initCombatState(client)
     initCombatTimer(client)
     initZaskTimer(client)
     initBinds(client, aliases)

@@ -5,7 +5,6 @@ const INITIAL_SECONDS = Math.ceil(DISPLAY_DURATION_MS / 1000);
 const OUT_OF_COMBAT_DELAY_MS = 5_000;
 
 export default function initCombatTimer(client: Client) {
-    let playerNum: number | undefined;
     let lastCombatState: boolean | null = null;
     let timer: number | null = null;
     let timerStart = 0;
@@ -96,33 +95,12 @@ export default function initCombatTimer(client: Client) {
         }
     }
 
-    client.on('gmcp.char.info', info => {
-        const detail = (info ?? {}) as { object_num?: number };
-        const newPlayerNum = typeof detail.object_num !== 'undefined'
-            ? detail.object_num
-            : undefined;
-        if (newPlayerNum !== playerNum) {
-            playerNum = newPlayerNum;
-            lastCombatState = null;
-            stopTimer();
-        }
-    });
-
-    client.on('gmcp.objects.data', (detail) => {
-        if (!playerNum) {
-            return;
-        }
-        const playerData = detail[playerNum];
-        if (!playerData) {
-            return;
-        }
-        const attackNum = playerData.attack_num;
-        const inCombat = attackNum !== false && typeof attackNum !== 'undefined';
+    // Listen to centralized combat state event
+    client.on('combatState', (inCombat) => {
         setCombatState(inCombat);
     });
 
     client.on('client.disconnect', () => {
-        playerNum = undefined;
         lastCombatState = null;
         stopTimer();
         cancelOutOfCombatDelay();

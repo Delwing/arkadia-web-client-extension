@@ -1,4 +1,5 @@
 import initCombatTimer from "@client/scripts/combatTimer";
+import initCombatState from "@client/scripts/combatState";
 
 describe("combat timer", () => {
   class FakeClient extends EventTarget {
@@ -25,6 +26,7 @@ describe("combat timer", () => {
 
   test("starts countdown when combat ends", () => {
     const client = new FakeClient();
+    initCombatState((client as unknown) as any);
     initCombatTimer((client as unknown) as any);
     expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", null);
     client.sendEvent.mockClear();
@@ -40,8 +42,9 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "7": { attack_num: false } } }),
     );
-    // Timer should not start immediately - there's a 5 second delay
-    expect(client.sendEvent).not.toHaveBeenCalled();
+    // combatState event is emitted, but combatTimer should not start immediately - there's a 5 second delay
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
+    client.sendEvent.mockClear();
 
     // Advance past the 5 second delay
     jest.advanceTimersByTime(5_000);
@@ -62,6 +65,7 @@ describe("combat timer", () => {
 
   test("ignores non-combat updates before first combat", () => {
     const client = new FakeClient();
+    initCombatState((client as unknown) as any);
     initCombatTimer((client as unknown) as any);
     client.sendEvent.mockClear();
 
@@ -70,7 +74,9 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "13": { attack_num: false } } }),
     );
-    expect(client.sendEvent).not.toHaveBeenCalled();
+    // combatState event is emitted, but no other events
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
+    client.sendEvent.mockClear();
 
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "13": { attack_num: 2 } } }),
@@ -85,6 +91,7 @@ describe("combat timer", () => {
 
   test("stops timer when re-entering combat while timer is still running", () => {
     const client = new FakeClient();
+    initCombatState((client as unknown) as any);
     initCombatTimer((client as unknown) as any);
     client.sendEvent.mockClear();
 
@@ -99,8 +106,9 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "5": { attack_num: false } } }),
     );
-    // Timer doesn't start yet - still in 5 second delay
-    expect(client.sendEvent).not.toHaveBeenCalled();
+    // combatState event is emitted, but combatTimer doesn't start yet - still in 5 second delay
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
+    client.sendEvent.mockClear();
 
     // Advance past the delay - timer starts
     jest.advanceTimersByTime(5_000);
@@ -125,6 +133,7 @@ describe("combat timer", () => {
 
   test("cancels timer start if re-entering combat during 5 second delay", () => {
     const client = new FakeClient();
+    initCombatState((client as unknown) as any);
     initCombatTimer((client as unknown) as any);
     client.sendEvent.mockClear();
 
@@ -139,7 +148,9 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "8": { attack_num: false } } }),
     );
-    expect(client.sendEvent).not.toHaveBeenCalled();
+    // combatState event is emitted, but no other events yet
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
+    client.sendEvent.mockClear();
 
     // Advance 3 seconds (still within the 5 second delay)
     jest.advanceTimersByTime(3_000);

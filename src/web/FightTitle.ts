@@ -1,10 +1,8 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
-import {ObjectData} from "@client/ObjectManager.ts";
 
 export default class FightTitle {
   private baseTitle: string;
   private readonly originalTitle: string;
-  private playerNum?: number;
   private isFighting = false;
   private readonly fightPrefix = "⚔ ";
   private readonly idlePrefix = "ㅤ ";
@@ -14,8 +12,10 @@ export default class FightTitle {
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
-    client.on("gmcp.char.info", (info: any) => this.handleCharInfo(info));
-    client.on("gmcp.objects.data", (data) => this.handleObjectsData(data));
+    // Listen to centralized combat state event
+    client.on("combatState", (fighting: boolean) => {
+      this.updateTitle(fighting);
+    });
     client.on("client.disconnect", () => this.reset());
     client.on("uiSettings", (payload) => {
       if (payload && typeof payload.fightTitleIcon === "boolean") {
@@ -25,23 +25,7 @@ export default class FightTitle {
     });
   }
 
-  private handleCharInfo(info: any) {
-    if (info && typeof info.object_num !== "undefined") {
-      this.playerNum = info.object_num;
-    }
-  }
-
-  private handleObjectsData(data: Map<number, ObjectData>) {
-    if (!this.playerNum) return;
-    const obj = data[this.playerNum];
-    if (!obj) return;
-    if (obj.attack_num === undefined) return;
-    const fighting = obj.attack_num !== false;
-    this.updateTitle(fighting);
-  }
-
   private reset() {
-    this.playerNum = undefined;
     this.updateTitle(false, true);
   }
 
