@@ -1,5 +1,5 @@
 import type * as monaco from 'monaco-editor'
-import type { EditorPluginData, PluginFile } from '../src/client/utils/pluginEditorStorage'
+import type { EditorPluginData, PluginFile } from '@client/utils/pluginEditorStorage.ts'
 
 export interface TreeNode {
   name: string

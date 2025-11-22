@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor'
 import {createHighlighter} from 'shiki'
 import {shikiToMonaco} from '@shikijs/monaco'
-import pluginApiTypes from './plugin-api.d.ts?raw'
+import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import type {StatusType} from './types'
 import { registerSnippets } from './snippets'
 
@@ -78,9 +78,12 @@ export function setupTypeScriptEnvironment() {
     customWorkerPath: undefined,
   })
 
+
   // Add Plugin API type definitions
   monaco.typescript.typescriptDefaults.addExtraLib(
-    pluginApiTypes,
+    pluginApiTypes
+
+        .replace(/@example/gm, ""),
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
 

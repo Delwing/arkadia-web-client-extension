@@ -908,6 +908,7 @@ export interface ClientEvents {
 /**
  * Valid event names from ClientEvents
  */
+
 export // Event system types
 /**
  * Valid event names from ClientEvents
@@ -917,9 +918,7 @@ export type EventKey = keyof ClientEvents;
 /**
  * Event parameters for a given event key
  */
-export /**
- * Event parameters for a given event key
- */
+
 export type EventParams<K extends EventKey> = [
     ClientEvents[K]
 ] extends [
@@ -936,18 +935,13 @@ export type EventParams<K extends EventKey> = [
 /**
  * Event listener function type for a given event key
  */
-export /**
- * Event listener function type for a given event key
- */
+
 export type EventListener<K extends EventKey> = (...args: EventParams<K>) => void;
 
 /**
-   * Remove all triggers with a specific tag
-   * @param tag - Tag to filter by
-   */
-export /**
  * Triggers API - Manage pattern-based triggers
  */
+
 export interface TriggersApi {
     /**
      * Register a trigger that fires when a pattern matches
@@ -1005,12 +999,9 @@ export interface TriggersApi {
 }
 
 /**
-   * Remove a command alias by ID
-   * @param id - Alias ID returned from register
-   */
-export /**
  * Aliases API - Manage command aliases
  */
+
 export interface AliasesApi {
     /**
      * Register a command alias
@@ -1027,22 +1018,9 @@ export interface AliasesApi {
 }
 
 /**
-   * Emit an event
-   * @param event - Event name
-   * @param args - Event arguments
-   *
-   * @example
-   * ```typescript
-   * // Emit a notification
-   * api.events.emit("notify", { text: "Hello!", time: 5000 });
-   *
-   * // Send a command
-   * api.events.emit("sendCommand", { command: "look", echo: true });
-   * ```
-   */
-export /**
  * Events API - Subscribe to and emit events
  */
+
 export interface EventsApi {
     /**
      * Subscribe to an event
@@ -1096,14 +1074,9 @@ export interface EventsApi {
 }
 
 /**
-   * Step back to previous map location
-   *
-   * @example
-   * api.map.stepBack();
-   */
-export /**
  * Map API - Access and modify map location
  */
+
 export interface MapApi {
     /**
      * Get current room information
@@ -1136,12 +1109,9 @@ export interface MapApi {
 }
 
 /**
-   * Print text to the game output
-   * @param text - Text or buffer to display
-   */
-export /**
  * Output API - Print to game window
  */
+
 export interface OutputApi {
     /**
      * Print text to the game output
@@ -1153,17 +1123,13 @@ export interface OutputApi {
 /**
  * Popup content that can be rendered inside plugin popups
  */
-export /**
- * Popup content that can be rendered inside plugin popups
- */
+
 export type PopupContent = string | Node;
 
 /**
-   * Close and remove the popup
-   */
-export /**
  * Handle returned when creating a popup window
  */
+
 export interface PopupHandle {
     /**
      * Root popup element (for further customization)
@@ -1197,11 +1163,9 @@ export interface PopupHandle {
 }
 
 /**
-   * Remove the entry from the menu
-   */
-export /**
  * Handle for popup menu entries
  */
+
 export interface PopupMenuEntryHandle {
     /**
      * Update the entry label
@@ -1219,11 +1183,9 @@ export interface PopupMenuEntryHandle {
 }
 
 /**
-   * Remove the entry from the menu
-   */
-export /**
  * Handle for context menu entries
  */
+
 export interface ContextMenuEntryHandle {
     /**
      * Update the entry label
@@ -1241,14 +1203,9 @@ export interface ContextMenuEntryHandle {
 }
 
 /**
-   * Add an entry to the output context menu
-   * @param label - Entry label (string or DOM node for rich content like SVG icons)
-   * @param action - Callback invoked when entry is selected
-   * @returns Handle for updating or removing the entry
-   */
-export /**
  * UI helpers for plugins
  */
+
 export interface UiApi {
     /**
      * Create a draggable popup window
@@ -1274,15 +1231,9 @@ export interface UiApi {
 }
 
 /**
-   * Create a color from RGB values
-   * @param r - Red (0-255)
-   * @param g - Green (0-255)
-   * @param b - Blue (0-255)
-   * @returns Format state with the color applied
-   */
-export /**
  * Colors API - Create and manage colors
  */
+
 export interface ColorsApi {
     /**
      * Create a color from hex string
@@ -1301,20 +1252,9 @@ export interface ColorsApi {
 }
 
 /**
-   * Get the current bind label (key combination)
-   * Returns the configured key combination like "CTRL+]" or "ALT+SHIFT+K"
-   *
-   * @returns Label string representing the key combination
-   *
-   * @example
-   * ```typescript
-   * const label = api.bind.getLabel();
-   * api.output.print(`Function bind key: ${label}`, "system");
-   * ```
-   */
-export /**
  * Function Bind API - Manage keyboard bindings
  */
+
 export interface BindApi {
     /**
      * Set a function bind - binds a command or callback to a key
@@ -1365,12 +1305,9 @@ export interface BindApi {
 }
 
 /**
-   * Get the player's object number
-   * @returns Player object number or undefined
-   */
-export /**
  * Team API - Access team information
  */
+
 export interface TeamApi {
     /**
      * Get list of team member names
@@ -1409,20 +1346,9 @@ export interface TeamApi {
 }
 
 /**
-   * Get the current GMCP data object
-   * Contains all GMCP data received from the server
-   * @returns GMCP data object
-   *
-   * @example
-   * ```typescript
-   * const gmcp = api.gmcp.get();
-   * const hp = gmcp?.char?.vitals?.hp;
-   * const roomName = gmcp?.room?.info?.name;
-   * ```
-   */
-export /**
  * GMCP API - Access GMCP data
  */
+
 export interface GmcpApi {
     /**
      * Get the current GMCP data object
@@ -1440,18 +1366,9 @@ export interface GmcpApi {
 }
 
 /**
-   * Get the current attack queue
-   * @returns Array of enemy object IDs in queue order
-   *
-   * @example
-   * ```typescript
-   * const queue = api.attackQueue.get();
-   * api.output.print(`Queue has ${queue.length} enemies`, "system");
-   * ```
-   */
-export /**
  * Attack Queue API - Manage attack queue
  */
+
 export interface AttackQueueApi {
     /**
      * Add an enemy to the attack queue
@@ -1501,10 +1418,10 @@ export interface AttackQueueApi {
     get(): number[];
 }
 
-/** Category: player, team member, enemy, or non-combat entity */
-export /**
+/**
  * Location object information
  */
+
 export interface LocationObject {
     /** Object number */
     num: number;
@@ -1527,32 +1444,9 @@ export interface LocationObject {
 }
 
 /**
-   * Get all objects in current location
-   * Returns objects organized by category (player, team, enemies, non-combat)
-   * with shortcuts assigned for easy targeting
-   *
-   * @returns Array of location objects with shortcuts and categories
-   *
-   * @example
-   * ```typescript
-   * const objects = api.objects.getObjectsOnLocation();
-   *
-   * // Find player object
-   * const player = objects.find(o => o.__category === 'player');
-   *
-   * // Find all enemies
-   * const enemies = objects.filter(o => o.__category === 'rest');
-   *
-   * // Find object by shortcut
-   * const target = objects.find(o => o.shortcut === '1');
-   * if (target) {
-   *   api.output.print(`Target: ${target.desc} (${target.num})`, "system");
-   * }
-   * ```
-   */
-export /**
  * Objects API - Access objects in current location
  */
+
 export interface ObjectsApi {
     /**
      * Get all objects in current location
@@ -1582,27 +1476,9 @@ export interface ObjectsApi {
 }
 
 /**
-   * Send a command to the server
-   * @param command - Command string to send
-   * @param echo - Whether to echo the command in the output (default: true)
-   * @param options - Additional command options
-   *
-   * @example
-   * ```typescript
-   * // Send a simple command
-   * api.command.send("look");
-   *
-   * // Send a command without echoing it
-   * api.command.send("attack goblin", false);
-   *
-   * // Send multiple commands in a sequence
-   * await api.command.send("get sword");
-   * await api.command.send("wield sword");
-   * ```
-   */
-export /**
  * Command API - Send commands to the server
  */
+
 export interface CommandApi {
     /**
      * Send a command to the server
@@ -1626,10 +1502,10 @@ export interface CommandApi {
     send(command: string, echo?: boolean, options?: any): Promise<void>;
 }
 
-/** Filter function to check if item belongs to this group */
-export /**
+/**
  * Group definition for categorizing container items
  */
+
 export interface GroupDefinition {
     /** Group name */
     name: string;
@@ -1638,15 +1514,9 @@ export interface GroupDefinition {
 }
 
 /**
-   * Transform item buffer with optional formatting
-   * @param buffer - The AnsiAwareBuffer containing the item name
-   * @param item - The container item with name and count
-   * @param group - The group name this item belongs to
-   * @returns The buffer (modified or unmodified)
-   */
-export /**
  * Transform definition for styling container items
  */
+
 export interface TransformDefinition {
     /**
      * Transform item buffer with optional formatting
@@ -1661,10 +1531,10 @@ export interface TransformDefinition {
     }, group: string) => AnsiAwareBuffer;
 }
 
-/** Bag condition (1-5, where 5 is best) */
-export /**
+/**
  * Herb bag state - contains herbs and optional condition
  */
+
 export interface HerbBagState {
     /** Map of herb ID to count */
     herbs: Record<string, number>;
@@ -1675,15 +1545,13 @@ export interface HerbBagState {
 /**
  * All herb bags state - map of bag number to bag state
  */
-export /**
- * All herb bags state - map of bag number to bag state
- */
+
 export type HerbBagsState = Record<number, HerbBagState>;
 
-/** Destination bag number */
-export /**
+/**
  * Options for moving herbs between bags
  */
+
 export interface HerbMoveOptions {
     /** Herb ID to move */
     herbId: string;
@@ -1696,27 +1564,9 @@ export interface HerbMoveOptions {
 }
 
 /**
-   * Add a new transform definition for styling items
-   * New transforms will be applied to all items in containers
-   *
-   * @param definition - Transform definition with transform function
-   *
-   * @example
-   * ```typescript
-   * // Highlight potions in green
-   * api.prettyContainers.addTransform({
-   *   transform: (buffer, item, group) => {
-   *     if (/eliksir|mikstur/.test(item.name)) {
-   *       buffer.color([0, buffer.length], api.colors.fromHex('#00ff00'));
-   *     }
-   *     return buffer;
-   *   }
-   * });
-   * ```
-   */
-export /**
  * Pretty Containers API - Access and extend container formatting
  */
+
 export interface PrettyContainersApi {
     /**
      * Get current group definitions for categorizing items
@@ -1783,24 +1633,9 @@ export interface PrettyContainersApi {
 }
 
 /**
-   * Get current magic item patterns
-   * Returns patterns used to identify magic items in game output
-   *
-   * @returns Promise resolving to array of regex pattern strings
-   *
-   * @example
-   * ```typescript
-   * const patterns = await api.magics.getPatterns();
-   * console.log(`${patterns.length} magic patterns loaded`);
-   *
-   * // Check if an item matches magic patterns
-   * const item = "magiczny miecz";
-   * const ismagic = patterns.some(p => new RegExp(p, 'i').test(item));
-   * ```
-   */
-export /**
  * Magics API - Access magic item patterns
  */
+
 export interface MagicsApi {
     /**
      * Get current magic item patterns
@@ -1822,24 +1657,9 @@ export interface MagicsApi {
 }
 
 /**
-   * Get current magic key patterns
-   * Returns patterns used to identify magic keys in game output
-   *
-   * @returns Promise resolving to array of pattern strings
-   *
-   * @example
-   * ```typescript
-   * const patterns = await api.magicKeys.getPatterns();
-   * console.log(`${patterns.length} magic key patterns loaded`);
-   *
-   * // Check if an item is a magic key
-   * const item = "klucz ze srebra";
-   * const isMagicKey = patterns.some(p => new RegExp(p, 'i').test(item));
-   * ```
-   */
-export /**
  * Magic Keys API - Access magic key patterns
  */
+
 export interface MagicKeysApi {
     /**
      * Get current magic key patterns
@@ -1861,26 +1681,9 @@ export interface MagicKeysApi {
 }
 
 /**
-   * Move herbs between bags
-   * Convenience method that takes from one bag and puts into another
-   *
-   * @param options - Move options with herbId, amount, fromBag, toBag
-   * @returns Promise resolving when move is complete
-   *
-   * @example
-   * ```typescript
-   * // Move 3 herbs from bag 1 to bag 2
-   * await api.herbs.move({
-   *   herbId: "ziolo_many",
-   *   amount: 3,
-   *   fromBag: 1,
-   *   toBag: 2
-   * });
-   * ```
-   */
-export /**
  * Herbs API - Access herb inventory in bags
  */
+
 export interface HerbsApi {
     /**
      * Get current state of all herb bags
@@ -1962,14 +1765,6 @@ export interface HerbsApi {
 }
 
 /**
-   * Clear all registered filters
-   *
-   * @example
-   * ```typescript
-   * api.objectListFilters.clear();
-   * ```
-   */
-export /**
  * Object List Filters API - Customize object list entry rendering
  *
  * Allows plugins to register filters that modify how objects are displayed
@@ -1980,6 +1775,7 @@ export /**
  * import type { ObjectListEntryFilter, EntryContext, FilterResult } from "@web/objectListFilters";
  * ```
  */
+
 export interface ObjectListFiltersApi {
     /**
      * Register an object list entry filter
@@ -2050,17 +1846,6 @@ export interface ObjectListFiltersApi {
 }
 
 /**
-   * AnsiAwareBuffer class for creating formatted text buffers
-   *
-   * Use this to create custom formatted output for api.output.print()
-   *
-   * @example
-   * // Create a formatted buffer
-   * const buffer = new api.AnsiAwareBuffer("Hello ", api.colors.fromHex('#00ff00'));
-   * buffer.append("world!", api.colors.fromHex('#ff0000'));
-   * api.output.print(buffer);
-   */
-export /**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -2127,6 +1912,7 @@ export /**
  * }
  * ```
  */
+
 export interface PluginApi {
     /** Trigger management */
     triggers: TriggersApi;

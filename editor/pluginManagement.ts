@@ -208,14 +208,8 @@ export async function destroy() {
   // Cleanup code here
 }
 `
+  const tsTemplate = `import PluginApi, { PluginInfo } from "plugin-api";
 
-  const tsTemplate = `// Type definitions are available globally when editing
-
-/**
- * Initialize the plugin
- * @param api - The Plugin API providing access to game client functionality
- * @returns Plugin information
- */
 export async function init(api: PluginApi): Promise<PluginInfo> {
   // Your plugin initialization code here
 

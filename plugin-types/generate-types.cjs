@@ -118,14 +118,34 @@ function shouldExport(node) {
   return false;
 }
 
+// Helper to get JSDoc comments (only the leading JSDoc before the node)
+function getLeadingJsDoc(node) {
+  const fullText = node.getFullText(sourceFile);
+  const nodeText = node.getText(sourceFile);
+  const leading = fullText.substring(0, fullText.indexOf(nodeText));
+
+  // Extract JSDoc comment (/** ... */)
+  const jsDocMatch = leading.match(/\/\*\*[\s\S]*?\*\//);
+  return jsDocMatch ? jsDocMatch[0] : null;
+}
+
 // Helper to convert node to string
 function nodeToString(node) {
   const printer = ts.createPrinter({
     newLine: ts.NewLineKind.LineFeed,
-    removeComments: false
+    removeComments: false  // Keep comments for interface members
   });
 
-  return printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+  let result = printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+
+  // Remove leading JSDoc from the result (we'll add it separately to avoid export duplication)
+  // This regex removes JSDoc comments that appear before the first non-comment token
+  result = result.replace(/^(\s*)\/\*\*[\s\S]*?\*\/\s*/, '$1');
+
+  // Remove 'export ' keyword if present (TypeScript printer adds it)
+  result = result.replace(/^export\s+/, '');
+
+  return result;
 }
 
 // Process the source file
@@ -135,13 +155,13 @@ function processNode(node) {
     if (name && !exportedTypes.has(name)) {
       exportedTypes.add(name);
 
-      const jsDoc = getJsDocComments(node);
+      const jsDoc = getLeadingJsDoc(node);
+      const declaration = nodeToString(node);
+
       if (jsDoc) {
         output.push('\n' + jsDoc);
       }
-
-      const declaration = nodeToString(node);
-      output.push('export ' + declaration);
+      output.push('\nexport ' + declaration);
     }
   }
 
