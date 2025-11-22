@@ -1,8 +1,8 @@
 import type Client from '@client/Client'
-import type { Plugin, LoadedPlugin } from '@shared/types/Plugin'
-import { PluginApiImpl } from '@client/PluginApi'
+import type {LoadedPlugin, Plugin} from '@shared/types/Plugin'
+import {PluginApiImpl} from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
-import { getPluginScript, isStoredPluginId, updatePluginScript } from '@client/utils/pluginStorage'
+import {getPluginScript, isStoredPluginId, updatePluginScript} from '@client/utils/pluginStorage'
 
 /**
  * Manages external plugins and scripts
@@ -189,9 +189,6 @@ export class PluginManager {
       throw new Error(`Stored plugin not found: ${pluginId}`)
     }
 
-    console.log(`[PluginManager] Retrieved plugin code from IndexedDB (${storedPlugin.code.length} bytes)`)
-    console.log(`[PluginManager] First 200 chars of code:`, storedPlugin.code.substring(0, 200))
-
     // Create a blob URL from the code
     const blob = new Blob([storedPlugin.code], { type: 'application/javascript' })
     const blobUrl = URL.createObjectURL(blob)
@@ -199,10 +196,8 @@ export class PluginManager {
 
     try {
       // Import the module from the blob URL
-      console.log(`[PluginManager] Attempting to import module from blob URL...`)
-      const module = await import(/* @vite-ignore */ blobUrl)
-      console.log(`[PluginManager] Module imported successfully`, Object.keys(module))
-      return module
+
+      return await import(/* @vite-ignore */ blobUrl)
     } catch (error) {
       console.error(`[PluginManager] Failed to import module from blob URL:`, error)
       console.error(`[PluginManager] Full code that failed to load:`)

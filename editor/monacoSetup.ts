@@ -82,7 +82,6 @@ export function setupTypeScriptEnvironment() {
   // Add Plugin API type definitions
   monaco.typescript.typescriptDefaults.addExtraLib(
     pluginApiTypes
-
         .replace(/@example/gm, ""),
     'file:///node_modules/@types/plugin-api/index.d.ts'
   )
