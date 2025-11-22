@@ -410,6 +410,7 @@ function findExistingImport(content: string, importPath: string): {
   hasDefault?: boolean
   hasNamed?: boolean
   namedImports?: string[]
+  isTypeImport?: boolean
 } {
   const lines = content.split('\n')
 
@@ -419,8 +420,8 @@ function findExistingImport(content: string, importPath: string): {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
 
-    // Match import statements with the same path
-    const importRegex = /import\s+(?:(\w+)(?:\s*,\s*)?)?(?:\{([^}]+)\})?\s+from\s+['"]([^'"]+)['"]/
+    // Match import statements with the same path (including type imports)
+    const importRegex = /import\s+(?:type\s+)?(?:(\w+)(?:\s*,\s*)?)?(?:\{([^}]+)\})?\s+from\s+['"]([^'"]+)['"]/
     const match = line.match(importRegex)
 
     if (match) {
@@ -441,13 +442,102 @@ function findExistingImport(content: string, importPath: string): {
           endColumn: line.length + 1,
           hasDefault: !!defaultImport,
           hasNamed: namedImports.length > 0,
-          namedImports
+          namedImports,
+          isTypeImport: line.includes('import type')
         }
       }
     }
   }
 
   return { exists: false }
+}
+
+// Extract exports from plugin API types
+function extractPluginApiExports(): Array<{ name: string, kind: string, documentation?: string }> {
+  const exports: Array<{ name: string, kind: string, documentation?: string }> = []
+
+  // Parse the plugin API types to extract all exports
+  const content = pluginApiTypes
+
+  // Match export interface/type/class/function with optional JSDoc
+  const patterns = [
+    // Match: export interface Name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+interface\s+(\w+)/g,
+      kind: 'interface'
+    },
+    // Match: export type Name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+type\s+(\w+)/g,
+      kind: 'type'
+    },
+    // Match: export declare class Name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+declare\s+class\s+(\w+)/g,
+      kind: 'class'
+    },
+    // Match: export class Name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+class\s+(\w+)/g,
+      kind: 'class'
+    },
+    // Match: export function name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+function\s+(\w+)/g,
+      kind: 'function'
+    },
+    // Match: export declare function name
+    {
+      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+declare\s+function\s+(\w+)/g,
+      kind: 'function'
+    }
+  ]
+
+  // Extract documentation comment before an export
+  function getDocumentation(content: string, match: RegExpMatchArray): string | undefined {
+    const beforeMatch = content.substring(0, match.index!)
+    const docMatch = beforeMatch.match(/\/\*\*[\s\S]*?\*\/\s*$/)
+    if (docMatch) {
+      // Extract the first line of documentation (summary)
+      const docText = docMatch[0]
+        .replace(/\/\*\*|\*\/|\s*\*\s?/g, '\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('@'))
+        .join(' ')
+        .trim()
+      return docText || undefined
+    }
+    return undefined
+  }
+
+  // Track already added exports to avoid duplicates
+  const addedNames = new Set<string>()
+
+  for (const pattern of patterns) {
+    const regex = new RegExp(pattern.regex.source, pattern.regex.flags)
+    let match: RegExpMatchArray | null
+
+    while ((match = regex.exec(content)) !== null) {
+      const name = match[1]
+
+      // Skip if already added (some items might match multiple patterns)
+      if (addedNames.has(name)) {
+        continue
+      }
+      addedNames.add(name)
+
+      const documentation = getDocumentation(content, match)
+
+      exports.push({
+        name,
+        kind: pattern.kind,
+        documentation
+      })
+    }
+  }
+
+  return exports.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 // Register completion provider for auto-imports
@@ -481,6 +571,147 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
       const alreadyImported = extractImportedSymbols(currentContent)
 
       const suggestions: any[] = []
+
+      // Add plugin API type suggestions
+      const pluginApiExports = extractPluginApiExports()
+      pluginApiExports.forEach(exp => {
+        // Skip if already imported
+        if (alreadyImported.has(exp.name)) {
+          return
+        }
+
+        const importStatement = `import type { ${exp.name} } from "plugin-api"`
+        const insertText = exp.name
+
+        let kind = monaco.languages.CompletionItemKind.Variable
+        switch (exp.kind) {
+          case 'function':
+            kind = monaco.languages.CompletionItemKind.Function
+            break
+          case 'class':
+            kind = monaco.languages.CompletionItemKind.Class
+            break
+          case 'interface':
+            kind = monaco.languages.CompletionItemKind.Interface
+            break
+          case 'type':
+            kind = monaco.languages.CompletionItemKind.TypeParameter
+            break
+        }
+
+        if (insideImport) {
+          const needsFromClause = !textUntilPosition.includes(' from ')
+          let inlineInsertText = insertText
+
+          if (needsFromClause) {
+            const inNamedImports = textUntilPosition.includes('{')
+            if (inNamedImports) {
+              const needsSpaceAfterBrace = textUntilPosition.endsWith('{')
+              const spacePrefix = needsSpaceAfterBrace ? ' ' : ''
+              inlineInsertText = `${spacePrefix}${insertText}`
+
+              suggestions.push({
+                label: {
+                  label: exp.name,
+                  description: 'plugin-api',
+                },
+                kind: kind,
+                insertText: inlineInsertText,
+                range: range,
+                detail: `(${exp.kind}) from plugin-api`,
+                documentation: exp.documentation ? { value: exp.documentation } : undefined,
+                sortText: '0' + exp.name,
+                additionalTextEdits: [{
+                  range: {
+                    startLineNumber: position.lineNumber,
+                    startColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                    endLineNumber: position.lineNumber,
+                    endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                  },
+                  text: ` from "plugin-api"`,
+                }],
+              })
+              return
+            } else {
+              inlineInsertText = `${insertText} from "plugin-api"`
+            }
+          }
+
+          suggestions.push({
+            label: {
+              label: exp.name,
+              description: 'plugin-api',
+            },
+            kind: kind,
+            insertText: inlineInsertText,
+            range: range,
+            detail: `(${exp.kind}) from plugin-api`,
+            documentation: exp.documentation ? { value: exp.documentation } : undefined,
+            sortText: '0' + exp.name,
+          })
+        } else {
+          // Check if there's already an import from plugin-api
+          const existingImport = findExistingImport(currentContent, 'plugin-api')
+
+          let additionalEdits: any[] = []
+
+          if (existingImport.exists) {
+            const lines = currentContent.split('\n')
+            const existingLine = lines[existingImport.lineNumber! - 1]
+            const existingNamed = existingImport.namedImports || []
+
+            // Avoid duplicates when merging
+            const uniqueNamed = [...new Set([...existingNamed, exp.name])]
+            const allNamed = uniqueNamed.join(', ')
+
+            // Preserve 'import type' if it was there, or add it for plugin-api imports
+            const importPrefix = existingImport.isTypeImport ? 'import type' : 'import type'
+            const newImportLine = `${importPrefix} { ${allNamed} } from "plugin-api"`
+
+            additionalEdits = [{
+              range: {
+                startLineNumber: existingImport.lineNumber!,
+                startColumn: 1,
+                endLineNumber: existingImport.lineNumber!,
+                endColumn: existingLine.length + 1,
+              },
+              text: newImportLine,
+            }]
+          } else {
+            additionalEdits = [{
+              range: {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: 1,
+                endColumn: 1,
+              },
+              text: importStatement + '\n',
+            }]
+          }
+
+          suggestions.push({
+            label: {
+              label: exp.name,
+              description: 'plugin-api',
+            },
+            kind: kind,
+            insertText: insertText,
+            range: range,
+            detail: `(${exp.kind}) Auto import from plugin-api`,
+            documentation: exp.documentation
+              ? {
+                  value: `${exp.documentation}\n\n---\n\n${existingImport.exists
+                    ? 'Will merge with existing import from plugin-api'
+                    : `Will add: \`${importStatement}\``}`
+                }
+              : existingImport.exists
+                ? 'Will merge with existing import from plugin-api'
+                : `Will add: ${importStatement}`,
+            additionalTextEdits: additionalEdits,
+            sortText: '0' + exp.name, // Sort plugin API types high
+          })
+        }
+      })
 
       // Scan all files for exports
       Object.entries(files).forEach(([filePath, file]) => {
@@ -768,6 +999,144 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
       const alreadyImported = extractImportedSymbols(currentContent)
 
       const suggestions: any[] = []
+
+      // Add plugin API type suggestions (same as TypeScript)
+      const pluginApiExports = extractPluginApiExports()
+      pluginApiExports.forEach(exp => {
+        if (alreadyImported.has(exp.name)) {
+          return
+        }
+
+        const importStatement = `import { ${exp.name} } from "plugin-api"`
+        const insertText = exp.name
+
+        let kind = monaco.languages.CompletionItemKind.Variable
+        switch (exp.kind) {
+          case 'function':
+            kind = monaco.languages.CompletionItemKind.Function
+            break
+          case 'class':
+            kind = monaco.languages.CompletionItemKind.Class
+            break
+          case 'interface':
+            kind = monaco.languages.CompletionItemKind.Interface
+            break
+          case 'type':
+            kind = monaco.languages.CompletionItemKind.TypeParameter
+            break
+        }
+
+        if (insideImport) {
+          const needsFromClause = !textUntilPosition.includes(' from ')
+          let inlineInsertText = insertText
+
+          if (needsFromClause) {
+            const inNamedImports = textUntilPosition.includes('{')
+            if (inNamedImports) {
+              const needsSpaceAfterBrace = textUntilPosition.endsWith('{')
+              const spacePrefix = needsSpaceAfterBrace ? ' ' : ''
+              inlineInsertText = `${spacePrefix}${insertText}`
+
+              suggestions.push({
+                label: {
+                  label: exp.name,
+                  description: 'plugin-api',
+                },
+                kind: kind,
+                insertText: inlineInsertText,
+                range: range,
+                detail: `(${exp.kind}) from plugin-api`,
+                documentation: exp.documentation ? { value: exp.documentation } : undefined,
+                sortText: '0' + exp.name,
+                additionalTextEdits: [{
+                  range: {
+                    startLineNumber: position.lineNumber,
+                    startColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                    endLineNumber: position.lineNumber,
+                    endColumn: position.column + insertText.length + (needsSpaceAfterBrace ? 1 : 0) + 2,
+                  },
+                  text: ` from "plugin-api"`,
+                }],
+              })
+              return
+            } else {
+              inlineInsertText = `${insertText} from "plugin-api"`
+            }
+          }
+
+          suggestions.push({
+            label: {
+              label: exp.name,
+              description: 'plugin-api',
+            },
+            kind: kind,
+            insertText: inlineInsertText,
+            range: range,
+            detail: `(${exp.kind}) from plugin-api`,
+            documentation: exp.documentation ? { value: exp.documentation } : undefined,
+            sortText: '0' + exp.name,
+          })
+        } else {
+          const existingImport = findExistingImport(currentContent, 'plugin-api')
+
+          let additionalEdits: any[] = []
+
+          if (existingImport.exists) {
+            const lines = currentContent.split('\n')
+            const existingLine = lines[existingImport.lineNumber! - 1]
+            const existingNamed = existingImport.namedImports || []
+
+            // Avoid duplicates when merging
+            const uniqueNamed = [...new Set([...existingNamed, exp.name])]
+            const allNamed = uniqueNamed.join(', ')
+
+            // For JavaScript, we can still use 'import type' syntax in .js files with JSDoc
+            const newImportLine = `import { ${allNamed} } from "plugin-api"`
+
+            additionalEdits = [{
+              range: {
+                startLineNumber: existingImport.lineNumber!,
+                startColumn: 1,
+                endLineNumber: existingImport.lineNumber!,
+                endColumn: existingLine.length + 1,
+              },
+              text: newImportLine,
+            }]
+          } else {
+            additionalEdits = [{
+              range: {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: 1,
+                endColumn: 1,
+              },
+              text: importStatement + '\n',
+            }]
+          }
+
+          suggestions.push({
+            label: {
+              label: exp.name,
+              description: 'plugin-api',
+            },
+            kind: kind,
+            insertText: insertText,
+            range: range,
+            detail: `(${exp.kind}) Auto import from plugin-api`,
+            documentation: exp.documentation
+              ? {
+                  value: `${exp.documentation}\n\n---\n\n${existingImport.exists
+                    ? 'Will merge with existing import from plugin-api'
+                    : `Will add: \`${importStatement}\``}`
+                }
+              : existingImport.exists
+                ? 'Will merge with existing import from plugin-api'
+                : `Will add: ${importStatement}`,
+            additionalTextEdits: additionalEdits,
+            sortText: '0' + exp.name,
+          })
+        }
+      })
 
       Object.entries(files).forEach(([filePath, file]) => {
         if (filePath === currentFilePath) return
