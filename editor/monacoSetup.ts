@@ -452,88 +452,112 @@ function findExistingImport(content: string, importPath: string): {
   return { exists: false }
 }
 
-// Extract exports from plugin API types
+// Extract exports from plugin API types using proper parsing
 function extractPluginApiExports(): Array<{ name: string, kind: string, documentation?: string }> {
   const exports: Array<{ name: string, kind: string, documentation?: string }> = []
-
-  // Parse the plugin API types to extract all exports
   const content = pluginApiTypes
 
-  // Match export interface/type/class/function with optional JSDoc
-  const patterns = [
-    // Match: export interface Name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+interface\s+(\w+)/g,
-      kind: 'interface'
-    },
-    // Match: export type Name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+type\s+(\w+)/g,
-      kind: 'type'
-    },
-    // Match: export declare class Name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+declare\s+class\s+(\w+)/g,
-      kind: 'class'
-    },
-    // Match: export class Name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+class\s+(\w+)/g,
-      kind: 'class'
-    },
-    // Match: export function name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+function\s+(\w+)/g,
-      kind: 'function'
-    },
-    // Match: export declare function name
-    {
-      regex: /(?:\/\*\*[\s\S]*?\*\/\s*)?export\s+declare\s+function\s+(\w+)/g,
-      kind: 'function'
-    }
-  ]
+  // Helper to extract JSDoc summary from comment text
+  function extractDocSummary(commentText: string): string | undefined {
+    if (!commentText) return undefined
 
-  // Extract documentation comment before an export
-  function getDocumentation(content: string, match: RegExpMatchArray): string | undefined {
-    const beforeMatch = content.substring(0, match.index!)
-    const docMatch = beforeMatch.match(/\/\*\*[\s\S]*?\*\/\s*$/)
-    if (docMatch) {
-      // Extract the first line of documentation (summary)
-      const docText = docMatch[0]
-        .replace(/\/\*\*|\*\/|\s*\*\s?/g, '\n')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('@'))
-        .join(' ')
-        .trim()
-      return docText || undefined
-    }
-    return undefined
+    // Remove /** and */ markers, and leading * from each line
+    const cleaned = commentText
+      .replace(/^\/\*\*\s*/, '')
+      .replace(/\s*\*\/$/, '')
+      .split('\n')
+      .map(line => line.replace(/^\s*\*\s?/, '').trim())
+      .filter(line => line && !line.startsWith('@'))
+      .join(' ')
+      .trim()
+
+    return cleaned || undefined
   }
 
-  // Track already added exports to avoid duplicates
+  // Parse line by line to extract exports and their JSDoc
+  const lines = content.split('\n')
+  let currentDoc: string | undefined
   const addedNames = new Set<string>()
 
-  for (const pattern of patterns) {
-    const regex = new RegExp(pattern.regex.source, pattern.regex.flags)
-    let match: RegExpMatchArray | null
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
 
-    while ((match = regex.exec(content)) !== null) {
-      const name = match[1]
+    // Check if this line starts a JSDoc comment
+    if (line.startsWith('/**')) {
+      // Collect the full JSDoc comment
+      const docLines: string[] = []
+      let j = i
 
-      // Skip if already added (some items might match multiple patterns)
-      if (addedNames.has(name)) {
-        continue
+      while (j < lines.length) {
+        const docLine = lines[j].trim()
+        docLines.push(docLine)
+
+        if (docLine.includes('*/')) {
+          break
+        }
+        j++
       }
-      addedNames.add(name)
 
-      const documentation = getDocumentation(content, match)
+      currentDoc = extractDocSummary(docLines.join('\n'))
+      i = j
+      continue
+    }
 
-      exports.push({
-        name,
-        kind: pattern.kind,
-        documentation
-      })
+    // Check if this is an export statement
+    if (line.startsWith('export ')) {
+      let name: string | undefined
+      let kind: string | undefined
+
+      // Match: export interface Name
+      const interfaceMatch = line.match(/^export\s+interface\s+(\w+)/)
+      if (interfaceMatch) {
+        name = interfaceMatch[1]
+        kind = 'interface'
+      }
+
+      // Match: export type Name
+      const typeMatch = line.match(/^export\s+type\s+(\w+)/)
+      if (!name && typeMatch) {
+        name = typeMatch[1]
+        kind = 'type'
+      }
+
+      // Match: export declare class Name or export class Name
+      const classMatch = line.match(/^export\s+(?:declare\s+)?class\s+(\w+)/)
+      if (!name && classMatch) {
+        name = classMatch[1]
+        kind = 'class'
+      }
+
+      // Match: export function name or export declare function name
+      const functionMatch = line.match(/^export\s+(?:declare\s+)?function\s+(\w+)/)
+      if (!name && functionMatch) {
+        name = functionMatch[1]
+        kind = 'function'
+      }
+
+      // Match: export const/let/var (for exported values)
+      const constMatch = line.match(/^export\s+(?:const|let|var)\s+(\w+)/)
+      if (!name && constMatch) {
+        name = constMatch[1]
+        kind = 'const'
+      }
+
+      // If we found an export and haven't added it yet
+      if (name && kind && !addedNames.has(name)) {
+        addedNames.add(name)
+        exports.push({
+          name,
+          kind,
+          documentation: currentDoc
+        })
+
+        // Reset current doc after using it
+        currentDoc = undefined
+      }
+    } else if (line && !line.startsWith('//')) {
+      // Reset doc if we hit a non-comment, non-export line
+      currentDoc = undefined
     }
   }
 
