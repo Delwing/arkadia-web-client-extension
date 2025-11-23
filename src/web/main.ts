@@ -682,12 +682,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const playbackPause = document.getElementById('playback-pause') as HTMLButtonElement | null;
     const playbackStop = document.getElementById('playback-stop') as HTMLButtonElement | null;
     const playbackInfo = document.getElementById('playback-info') as HTMLElement | null;
+    const playbackTimer = document.getElementById('playback-timer') as HTMLElement | null;
     const playbackReplay = document.getElementById('playback-replay') as HTMLButtonElement | null;
     const playbackStepBack = document.getElementById('playback-step-back') as HTMLButtonElement | null;
     const playbackStep = document.getElementById('playback-step') as HTMLButtonElement | null;
-    const playbackSpeedButtons = playbackControls
-        ? Array.from(playbackControls.querySelectorAll<HTMLButtonElement>('[data-playback-speed]'))
-        : [];
+    const playbackStartOver = document.getElementById('playback-start-over') as HTMLButtonElement | null;
+    const playbackLoopSetStart = document.getElementById('playback-loop-set-start') as HTMLButtonElement | null;
+    const playbackLoopSetEnd = document.getElementById('playback-loop-set-end') as HTMLButtonElement | null;
+    const playbackLoopToggle = document.getElementById('playback-loop-toggle') as HTMLButtonElement | null;
+    const playbackLoopClear = document.getElementById('playback-loop-clear') as HTMLButtonElement | null;
+    const playbackLoopInfo = document.getElementById('playback-loop-info') as HTMLElement | null;
+    const playbackSpeedSlider = document.getElementById('playback-speed-slider') as HTMLInputElement | null;
+    const playbackSpeedValue = document.getElementById('playback-speed-value') as HTMLElement | null;
+    const playbackPreviewToggle = document.getElementById('playback-preview-toggle') as HTMLButtonElement | null;
+    const playbackPreviewContent = document.getElementById('playback-preview-content') as HTMLElement | null;
+    const playbackPreviewText = document.getElementById('playback-preview-text') as HTMLElement | null;
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
@@ -981,10 +990,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (playbackPause) {
         playbackPause.addEventListener('click', () => {
-            if (playbackPause.textContent === 'Pause') {
-                arkadiaClient.pausePlayback();
-            } else {
+            const isPaused = playbackPause.getAttribute('data-paused') === 'true';
+            if (isPaused) {
                 arkadiaClient.resumePlayback();
+            } else {
+                arkadiaClient.pausePlayback();
             }
         });
     }
@@ -1013,26 +1023,81 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const updatePlaybackSpeedButtons = (speed: number) => {
-        playbackSpeedButtons.forEach(button => {
-            const value = Number(button.dataset.playbackSpeed);
-            if (Number.isFinite(value) && value > 0 && Math.abs(value - speed) < 0.001) {
-                button.classList.add('is-active');
-            } else {
-                button.classList.remove('is-active');
-            }
+    if (playbackStartOver) {
+        playbackStartOver.addEventListener('click', () => {
+            arkadiaClient.startOver();
         });
+    }
+
+    if (playbackLoopSetStart) {
+        playbackLoopSetStart.addEventListener('click', () => {
+            arkadiaClient.setLoopStart();
+        });
+    }
+
+    if (playbackLoopSetEnd) {
+        playbackLoopSetEnd.addEventListener('click', () => {
+            arkadiaClient.setLoopEnd();
+        });
+    }
+
+    if (playbackLoopToggle) {
+        playbackLoopToggle.addEventListener('click', () => {
+            arkadiaClient.toggleLoop();
+        });
+    }
+
+    if (playbackLoopClear) {
+        playbackLoopClear.addEventListener('click', () => {
+            arkadiaClient.clearLoop();
+        });
+    }
+
+    // Convert slider value (logarithmic scale) to actual speed
+    // Slider: -1 to 4 maps to speed 0.5x to 16x
+    const sliderToSpeed = (sliderValue: number): number => {
+        return Math.pow(2, sliderValue);
     };
 
-    playbackSpeedButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const value = Number(button.dataset.playbackSpeed);
-            if (!Number.isFinite(value) || value <= 0) return;
-            arkadiaClient.setPlaybackSpeed(value);
-        });
-    });
+    // Convert speed to slider value
+    const speedToSlider = (speed: number): number => {
+        return Math.log2(speed);
+    };
 
-    updatePlaybackSpeedButtons(arkadiaClient.getPlaybackSpeed());
+    const updatePlaybackSpeedDisplay = (speed: number) => {
+        if (playbackSpeedValue) {
+            playbackSpeedValue.textContent = `${speed.toFixed(1)}x`;
+        }
+        if (playbackSpeedSlider) {
+            playbackSpeedSlider.value = speedToSlider(speed).toString();
+        }
+    };
+
+    if (playbackSpeedSlider) {
+        playbackSpeedSlider.addEventListener('input', () => {
+            const sliderValue = parseFloat(playbackSpeedSlider.value);
+            const speed = sliderToSpeed(sliderValue);
+            arkadiaClient.setPlaybackSpeed(speed);
+        });
+    }
+
+    // Preview toggle functionality
+    if (playbackPreviewToggle && playbackPreviewContent) {
+        playbackPreviewToggle.addEventListener('click', () => {
+            const isCollapsed = playbackPreviewContent.style.display === 'none';
+            if (isCollapsed) {
+                playbackPreviewContent.style.display = 'block';
+                playbackPreviewToggle.classList.remove('collapsed');
+            } else {
+                playbackPreviewContent.style.display = 'none';
+                playbackPreviewToggle.classList.add('collapsed');
+            }
+        });
+        // Start collapsed
+        playbackPreviewToggle.classList.add('collapsed');
+    }
+
+    updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
 
     if (playbackControls) {
         const dragTarget =
@@ -1112,12 +1177,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordingButton) recordingButton.style.display = 'none';
     });
 
+    arkadiaClient.on('recording.loaded', (data: { name: string; length: number }) => {
+        playbackMode = true;
+        if (playbackControls) playbackControls.style.display = 'flex';
+        if (playbackInfo) playbackInfo.textContent = `Wczytano: ${data.name} (${data.length} zdarzeń)`;
+        if (playbackPause) {
+            playbackPause.textContent = '▶';
+            playbackPause.setAttribute('data-paused', 'true');
+        }
+        updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
+        updateConnectButtons();
+    });
+
     arkadiaClient.on('playback.start', (total: number) => {
         playbackMode = true;
         if (playbackControls) playbackControls.style.display = 'flex';
         if (playbackInfo) playbackInfo.textContent = `0 / ${total}`;
-        if (playbackPause) playbackPause.textContent = 'Pause';
-        updatePlaybackSpeedButtons(arkadiaClient.getPlaybackSpeed());
+        if (playbackPause) {
+            playbackPause.textContent = '⏸';
+            playbackPause.setAttribute('data-paused', 'false');
+        }
+        updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
         updateConnectButtons();
     });
 
@@ -1128,11 +1208,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     arkadiaClient.on('playback.pause', () => {
-        if (playbackPause) playbackPause.textContent = 'Resume';
+        if (playbackPause) {
+            playbackPause.textContent = '▶';
+            playbackPause.setAttribute('data-paused', 'true');
+        }
     });
 
     arkadiaClient.on('playback.resume', () => {
-        if (playbackPause) playbackPause.textContent = 'Pause';
+        if (playbackPause) {
+            playbackPause.textContent = '⏸';
+            playbackPause.setAttribute('data-paused', 'false');
+        }
     });
 
     arkadiaClient.on('playback.index', (index: number, total: number) => {
@@ -1140,7 +1226,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     arkadiaClient.on('playback.speed', (speed: number) => {
-        updatePlaybackSpeedButtons(speed);
+        updatePlaybackSpeedDisplay(speed);
+    });
+
+    arkadiaClient.on('playback.event', (event: any) => {
+        if (playbackPreviewText) {
+            const direction = event.direction === 'in' ? '←' : '→';
+            const preview = `${direction} ${event.message}`;
+            playbackPreviewText.textContent = preview;
+        }
+    });
+
+    arkadiaClient.on('playback.loop.updated', (loopState: { start: number | null; end: number | null; enabled: boolean }) => {
+        if (playbackLoopToggle) {
+            playbackLoopToggle.textContent = loopState.enabled ? 'Pętla: WŁ' : 'Pętla: WYŁ';
+            playbackLoopToggle.setAttribute('data-loop-enabled', loopState.enabled.toString());
+        }
+        if (playbackLoopInfo) {
+            if (loopState.start !== null && loopState.end !== null) {
+                playbackLoopInfo.textContent = `Pętla: ${loopState.start} - ${loopState.end}`;
+            } else if (loopState.start !== null) {
+                playbackLoopInfo.textContent = `Początek pętli: ${loopState.start}`;
+            } else if (loopState.end !== null) {
+                playbackLoopInfo.textContent = `Koniec pętli: ${loopState.end}`;
+            } else {
+                playbackLoopInfo.textContent = '';
+            }
+        }
+    });
+
+    let timerInterval: number | null = null;
+    arkadiaClient.on('playback.timer', (data: { delay: number; startTime: number }) => {
+        // Clear any existing timer interval
+        if (timerInterval !== null) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        if (!playbackTimer) return;
+
+        const updateTimer = () => {
+            const elapsed = Date.now() - data.startTime;
+            const remaining = Math.max(0, data.delay - elapsed);
+
+            if (remaining <= 0) {
+                playbackTimer.textContent = '0.0s';
+                if (timerInterval !== null) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            } else {
+                const seconds = (remaining / 1000).toFixed(1);
+                playbackTimer.textContent = `${seconds}s`;
+            }
+        };
+
+        // Update immediately
+        updateTimer();
+
+        // Update every 100ms for smooth countdown
+        timerInterval = setInterval(updateTimer, 100) as unknown as number;
+    });
+
+    // Clear timer when playback stops or pauses
+    arkadiaClient.on('playback.stop', () => {
+        if (timerInterval !== null) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        if (playbackTimer) playbackTimer.textContent = '';
+    });
+
+    arkadiaClient.on('playback.pause', () => {
+        if (timerInterval !== null) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
     });
 
     if (wakeLockButton) {

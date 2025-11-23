@@ -332,6 +332,30 @@ class ArkadiaClient implements ClientAdapter {
         this.recorder.replayLast();
     }
 
+    startOver() {
+        this.recorder.startOver();
+    }
+
+    setLoopStart() {
+        this.recorder.setLoopStart();
+    }
+
+    setLoopEnd() {
+        this.recorder.setLoopEnd();
+    }
+
+    toggleLoop() {
+        this.recorder.toggleLoop();
+    }
+
+    clearLoop() {
+        this.recorder.clearLoop();
+    }
+
+    getLoopState() {
+        return this.recorder.getLoopState();
+    }
+
     getRecordedMessages() {
         return this.recorder.getRecordedMessages();
     }

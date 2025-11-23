@@ -76,11 +76,13 @@ function Recordings() {
     }
 
     async function handlePlayTimed(name: string) {
+        window.dispatchEvent(new Event('close-options'));
         await window.client.loadRecording(name);
         window.client.replayRecordedMessagesTimed();
     }
 
     async function handleLoad(name: string) {
+        window.dispatchEvent(new Event('close-options'));
         await window.client.loadRecording(name);
     }
 

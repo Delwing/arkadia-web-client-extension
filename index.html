@@ -82,19 +82,40 @@
             <span class="playback-controls-title">Sterowanie nagraniem</span>
         </div>
         <div class="playback-speed-controls">
-            <button class="btn btn-secondary playback-speed-button" data-playback-speed="1">x1</button>
-            <button class="btn btn-secondary playback-speed-button" data-playback-speed="2">x2</button>
-            <button class="btn btn-secondary playback-speed-button" data-playback-speed="4">x4</button>
-            <button class="btn btn-secondary playback-speed-button" data-playback-speed="8">x8</button>
+            <label for="playback-speed-slider" class="playback-speed-label">
+                Prędkość: <span id="playback-speed-value">1.0x</span>
+            </label>
+            <input type="range" id="playback-speed-slider" class="playback-speed-slider"
+                   min="-1" max="4" step="0.1" value="0">
         </div>
         <div class="playback-controls-actions">
-            <button id="playback-pause" class="btn btn-secondary">Pauza</button>
-            <button id="playback-stop" class="btn btn-secondary">Zatrzymaj</button>
+            <button id="playback-pause" class="btn btn-secondary" data-paused="true">▶</button>
+            <button id="playback-stop" class="btn btn-secondary">⏹</button>
+            <button id="playback-start-over" class="btn btn-secondary">Od początku</button>
             <button id="playback-replay" class="btn btn-secondary">Powtórz</button>
             <button id="playback-step-back" class="btn btn-secondary">Wstecz</button>
             <button id="playback-step" class="btn btn-secondary">Krok</button>
         </div>
-        <div id="playback-info" class="playback-controls-progress"></div>
+        <div class="playback-loop-controls">
+            <button id="playback-loop-set-start" class="btn btn-secondary">Początek pętli</button>
+            <button id="playback-loop-set-end" class="btn btn-secondary">Koniec pętli</button>
+            <button id="playback-loop-toggle" class="btn btn-secondary" data-loop-enabled="false">Pętla: WYŁ</button>
+            <button id="playback-loop-clear" class="btn btn-secondary">Wyczyść pętlę</button>
+        </div>
+        <div class="playback-controls-progress-container">
+            <div id="playback-info" class="playback-controls-progress"></div>
+            <div id="playback-timer" class="playback-controls-timer"></div>
+        </div>
+        <div id="playback-loop-info" class="playback-controls-loop-info"></div>
+        <div class="playback-preview-section">
+            <button id="playback-preview-toggle" class="playback-preview-toggle">
+                <span class="playback-preview-toggle-icon">▼</span>
+                Ostatnie zdarzenie
+            </button>
+            <div id="playback-preview-content" class="playback-preview-content" style="display: none;">
+                <div id="playback-preview-text" class="playback-preview-text"></div>
+            </div>
+        </div>
     </div>
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
     <div id="options-modal" class="modal fade" tabindex="-1">

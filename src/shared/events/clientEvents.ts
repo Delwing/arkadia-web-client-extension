@@ -4,6 +4,7 @@ import {TransportTimerPayload} from "@client/types/transport.ts";
 import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
+import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -30,6 +31,12 @@ type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, times
 type RecordingAutoStopPayload = [name: string | null, save?: boolean];
 
 type PlaybackIndexPayload = [current: number, total: number];
+
+type PlaybackLoopState = {
+    start: number | null;
+    end: number | null;
+    enabled: boolean;
+};
 
 export type KnowledgeReportAction =
     | { type: "completeLibrary"; libraryId: string }
@@ -152,6 +159,7 @@ export interface KnownEvents {
     "gmcp": { path: string; value: unknown };
     "recording.start": string;
     "recording.stop": boolean | undefined;
+    "recording.loaded": { name: string; length: number };
     "recording.auto.start": string | null | undefined;
     "recording.auto.stop": RecordingAutoStopPayload;
     "playback.stop": void;
@@ -160,6 +168,9 @@ export interface KnownEvents {
     "playback.start": number | undefined;
     "playback.speed": number;
     "playback.index": PlaybackIndexPayload;
+    "playback.loop.updated": PlaybackLoopState;
+    "playback.event": RecordedEvent;
+    "playback.timer": { delay: number; startTime: number };
     "message": MessageEventPayload;
     "attackQueueChange": number[];
     "clearAttackQueue": void;

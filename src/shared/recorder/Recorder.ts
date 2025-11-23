@@ -35,6 +35,9 @@ export default class Recorder<CommandOptions = unknown> {
     private isPlaying = false;
     private paused = false;
     private playbackSpeed = 1;
+    private loopEnabled = false;
+    private loopStartIndex: number | null = null;
+    private loopEndIndex: number | null = null;
 
     constructor(
         private readonly hooks: RecorderHooks<CommandOptions>,
@@ -82,6 +85,23 @@ export default class Recorder<CommandOptions = unknown> {
     async loadRecording(name: string) {
         const data = await this.storage.getRecording(name);
         this.recordedMessages = data || [];
+        this.currentRecordingName = name;
+
+        // Start playback in paused state
+        if (this.recordedMessages.length > 0) {
+            this.applyInitialLocation();
+            this.isPlaying = true;
+            this.paused = true;
+            this.playbackIndex = 0;
+            this.hooks.emit('playback.start', this.recordedMessages.length);
+            this.hooks.emit('playback.pause');
+            this.hooks.emit('playback.index', 0, this.recordedMessages.length);
+        }
+
+        this.hooks.emit('recording.loaded', {
+            name,
+            length: this.recordedMessages.length
+        });
     }
 
     listRecordings() {
@@ -102,6 +122,9 @@ export default class Recorder<CommandOptions = unknown> {
         this.playbackIndex = 0;
         this.playbackBaseDelay = 0;
         this.pausedDelay = 0;
+        this.loopEnabled = false;
+        this.loopStartIndex = null;
+        this.loopEndIndex = null;
         this.hooks.emit('playback.stop');
     }
 
@@ -207,6 +230,20 @@ export default class Recorder<CommandOptions = unknown> {
         this.scheduleNext(0);
     }
 
+    startOver() {
+        if (!this.isPlaying || this.recordedMessages.length === 0) return;
+        if (this.playbackTimeout !== null) {
+            clearTimeout(this.playbackTimeout);
+            this.playbackTimeout = null;
+        }
+        this.applyInitialLocation();
+        this.playbackIndex = 0;
+        this.paused = false;
+        this.hooks.emit("message", '== Playback restart ==');
+        this.hooks.emit('playback.index', 0, this.recordedMessages.length);
+        this.scheduleNext(0);
+    }
+
     setPlaybackSpeed(speed: number) {
         const normalized = Number.isFinite(speed) && speed > 0 ? speed : 1;
         const previousSpeed = this.playbackSpeed;
@@ -236,6 +273,55 @@ export default class Recorder<CommandOptions = unknown> {
         return this.playbackSpeed;
     }
 
+    setLoopStart() {
+        if (!this.isPlaying) return;
+        this.loopStartIndex = this.playbackIndex;
+        this.hooks.emit('playback.loop.updated', {
+            start: this.loopStartIndex,
+            end: this.loopEndIndex,
+            enabled: this.loopEnabled
+        });
+    }
+
+    setLoopEnd() {
+        if (!this.isPlaying) return;
+        this.loopEndIndex = this.playbackIndex;
+        this.hooks.emit('playback.loop.updated', {
+            start: this.loopStartIndex,
+            end: this.loopEndIndex,
+            enabled: this.loopEnabled
+        });
+    }
+
+    toggleLoop() {
+        if (!this.isPlaying) return;
+        this.loopEnabled = !this.loopEnabled;
+        this.hooks.emit('playback.loop.updated', {
+            start: this.loopStartIndex,
+            end: this.loopEndIndex,
+            enabled: this.loopEnabled
+        });
+    }
+
+    clearLoop() {
+        this.loopEnabled = false;
+        this.loopStartIndex = null;
+        this.loopEndIndex = null;
+        this.hooks.emit('playback.loop.updated', {
+            start: null,
+            end: null,
+            enabled: false
+        });
+    }
+
+    getLoopState() {
+        return {
+            enabled: this.loopEnabled,
+            start: this.loopStartIndex,
+            end: this.loopEndIndex
+        };
+    }
+
     private playEvent(ev: RecordedEvent) {
         const timestamp = typeof ev.timestamp === 'number' ? ev.timestamp : Date.now();
         if (ev.direction === 'in') {
@@ -245,6 +331,7 @@ export default class Recorder<CommandOptions = unknown> {
             this.hooks.notifySendCommand?.(ev.message, false);
             this.hooks.sendCommand(ev.message, false);
         }
+        this.hooks.emit('playback.event', ev);
     }
 
     private applyInitialLocation() {
@@ -260,6 +347,11 @@ export default class Recorder<CommandOptions = unknown> {
     }
 
     private recordEvent(message: string, direction: 'in' | 'out') {
+        // Filter out ping events
+        if (message === 'ÿûñÿúÉcore.ping {}ÿð' || message === 'ÿûñ') {
+            return;
+        }
+
         const event: RecordedEvent = {
             message,
             timestamp: Date.now(),
@@ -300,6 +392,17 @@ export default class Recorder<CommandOptions = unknown> {
         this.playEvent(ev);
         this.playbackIndex++;
         this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+
+        // Check if we've reached the loop end point
+        if (this.loopEnabled &&
+            this.loopStartIndex !== null &&
+            this.loopEndIndex !== null &&
+            this.playbackIndex > this.loopEndIndex) {
+            // Reset to loop start and apply initial location
+            this.playbackIndex = this.loopStartIndex;
+            this.applyInitialLocation();
+            this.hooks.emit('playback.index', this.playbackIndex, this.recordedMessages.length);
+        }
     }
 
     private scheduleNext(initialDelay: number, overrideDelay = false) {
@@ -325,6 +428,13 @@ export default class Recorder<CommandOptions = unknown> {
         const adjustedDelay = baseDelay / this.playbackSpeed;
         this.playbackBaseDelay = baseDelay;
         this.playbackStart = Date.now();
+
+        // Emit timer info for UI countdown
+        this.hooks.emit('playback.timer', {
+            delay: Math.max(0, adjustedDelay),
+            startTime: this.playbackStart
+        });
+
         this.playbackTimeout = window.setTimeout(() => {
             if (!this.isPlaying || this.paused) return;
             this.executeCurrent();
