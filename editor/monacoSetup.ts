@@ -136,6 +136,120 @@ export function getSavedTheme(): string {
 }
 
 /**
+ * Helper to determine if a color is light or dark
+ */
+function isLightColor(hexColor: string): boolean {
+  // Remove # if present
+  const hex = hexColor.replace('#', '')
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5
+}
+
+/**
+ * Darken a color by a percentage
+ */
+function darkenColor(hexColor: string, percent: number): string {
+  const hex = hexColor.replace('#', '')
+  const r = Math.max(0, parseInt(hex.substr(0, 2), 16) * (1 - percent))
+  const g = Math.max(0, parseInt(hex.substr(2, 2), 16) * (1 - percent))
+  const b = Math.max(0, parseInt(hex.substr(4, 2), 16) * (1 - percent))
+  return '#' + Math.round(r).toString(16).padStart(2, '0') +
+               Math.round(g).toString(16).padStart(2, '0') +
+               Math.round(b).toString(16).padStart(2, '0')
+}
+
+/**
+ * Lighten a color by a percentage
+ */
+function lightenColor(hexColor: string, percent: number): string {
+  const hex = hexColor.replace('#', '')
+  const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + (255 - parseInt(hex.substr(0, 2), 16)) * percent)
+  const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + (255 - parseInt(hex.substr(2, 2), 16)) * percent)
+  const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + (255 - parseInt(hex.substr(4, 2), 16)) * percent)
+  return '#' + Math.round(r).toString(16).padStart(2, '0') +
+               Math.round(g).toString(16).padStart(2, '0') +
+               Math.round(b).toString(16).padStart(2, '0')
+}
+
+/**
+ * Apply theme colors to the UI
+ */
+function applyThemeToUI(themeName: string) {
+  const highlighter = (window as any).__shikiHighlighter
+  if (!highlighter) return
+
+  try {
+    const theme = highlighter.getTheme(themeName)
+    const colors = theme.colors || {}
+
+    // Get background and foreground colors
+    const editorBg = colors['editor.background'] || '#1E1E1E'
+    const editorFg = colors['editor.foreground'] || '#D4D4D4'
+    const isLight = isLightColor(editorBg)
+
+    // For light themes, we need to derive darker colors, for dark themes lighter colors
+    const menuBg = colors['sideBar.background'] || colors['menu.background'] || colors['editor.background'] ||
+                   (isLight ? lightenColor(editorBg, 0.05) : darkenColor(editorBg, 0.05))
+
+    const inputBg = colors['input.background'] || colors['dropdown.background'] ||
+                    (isLight ? darkenColor(editorBg, 0.05) : lightenColor(editorBg, 0.1))
+
+    const borderColor = colors['widget.border'] || colors['panel.border'] || colors['sideBar.border'] ||
+                        (isLight ? darkenColor(editorBg, 0.15) : lightenColor(editorBg, 0.15))
+
+    const hoverBg = colors['list.hoverBackground'] ||
+                    (isLight ? darkenColor(editorBg, 0.05) : lightenColor(editorBg, 0.05))
+
+    const activeBg = colors['list.activeSelectionBackground'] ||
+                     (isLight ? darkenColor(editorBg, 0.1) : lightenColor(editorBg, 0.1))
+
+    const accentColor = colors['focusBorder'] || colors['activityBarBadge.background'] || '#007acc'
+
+    // Additional colors for better theming
+    const sidebarHeaderBg = colors['sideBarSectionHeader.background'] || menuBg
+    const sidebarFg = colors['sideBar.foreground'] || editorFg
+    const buttonBg = colors['button.background'] || accentColor
+    const buttonFg = colors['button.foreground'] || (isLightColor(buttonBg) ? '#000000' : '#ffffff')
+    const buttonHoverBg = colors['button.hoverBackground'] ||
+                          (isLightColor(buttonBg) ? darkenColor(buttonBg, 0.1) : lightenColor(buttonBg, 0.1))
+
+    const errorButtonBg = colors['statusBarItem.errorBackground'] || colors['errorForeground'] ||
+                          (isLight ? '#c72e0f' : '#f48771')
+    const errorButtonFg = isLightColor(errorButtonBg) ? '#000000' : '#ffffff'
+    const inputFg = colors['input.foreground'] || editorFg
+
+    // Apply CSS variables
+    document.documentElement.style.setProperty('--editor-bg', editorBg)
+    document.documentElement.style.setProperty('--editor-fg', editorFg)
+    document.documentElement.style.setProperty('--menu-bg', menuBg)
+    document.documentElement.style.setProperty('--input-bg', inputBg)
+    document.documentElement.style.setProperty('--border-color', borderColor)
+    document.documentElement.style.setProperty('--hover-bg', hoverBg)
+    document.documentElement.style.setProperty('--active-bg', activeBg)
+    document.documentElement.style.setProperty('--accent-color', accentColor)
+    document.documentElement.style.setProperty('--sidebar-header-bg', sidebarHeaderBg)
+    document.documentElement.style.setProperty('--sidebar-fg', sidebarFg)
+    document.documentElement.style.setProperty('--button-bg', buttonBg)
+    document.documentElement.style.setProperty('--button-fg', buttonFg)
+    document.documentElement.style.setProperty('--button-hover-bg', buttonHoverBg)
+    document.documentElement.style.setProperty('--error-button-bg', errorButtonBg)
+    document.documentElement.style.setProperty('--error-button-fg', errorButtonFg)
+    document.documentElement.style.setProperty('--input-fg', inputFg)
+
+    // Apply to body background
+    document.body.style.background = editorBg
+    document.body.style.color = editorFg
+  } catch (error) {
+    console.error('Failed to apply theme to UI:', error)
+  }
+}
+
+/**
  * Change the editor theme
  */
 export function changeTheme(themeName: string) {
@@ -143,6 +257,9 @@ export function changeTheme(themeName: string) {
 
   // Store theme preference
   localStorage.setItem('editor-theme', themeName)
+
+  // Apply theme colors to UI
+  applyThemeToUI(themeName)
 }
 
 export async function initializeEditor(
@@ -159,16 +276,66 @@ export async function initializeEditor(
   try {
     const highlighter = await createHighlighter({
       themes: [
+        'andromeeda',
+        'aurora-x',
+        'ayu-dark',
+        'catppuccin-frappe',
+        'catppuccin-latte',
+        'catppuccin-macchiato',
+        'catppuccin-mocha',
         'dark-plus',
-        'light-plus',
-        'monokai',
-        'github-dark',
-        'github-light',
-        'one-dark-pro',
         'dracula',
+        'dracula-soft',
+        'everforest-dark',
+        'everforest-light',
+        'github-dark',
+        'github-dark-default',
+        'github-dark-dimmed',
+        'github-dark-high-contrast',
+        'github-light',
+        'github-light-default',
+        'github-light-high-contrast',
+        'gruvbox-dark-hard',
+        'gruvbox-dark-medium',
+        'gruvbox-dark-soft',
+        'gruvbox-light-hard',
+        'gruvbox-light-medium',
+        'gruvbox-light-soft',
+        'houston',
+        'kanagawa-dragon',
+        'kanagawa-lotus',
+        'kanagawa-wave',
+        'laserwave',
+        'light-plus',
+        'material-theme',
+        'material-theme-darker',
+        'material-theme-lighter',
+        'material-theme-ocean',
+        'material-theme-palenight',
+        'min-dark',
+        'min-light',
+        'monokai',
+        'night-owl',
         'nord',
+        'one-dark-pro',
+        'one-light',
+        'plastic',
+        'poimandres',
+        'red',
+        'rose-pine',
+        'rose-pine-dawn',
+        'rose-pine-moon',
+        'slack-dark',
+        'slack-ochin',
+        'snazzy-light',
         'solarized-dark',
         'solarized-light',
+        'synthwave-84',
+        'tokyo-night',
+        'vesper',
+        'vitesse-black',
+        'vitesse-dark',
+        'vitesse-light',
       ],
       langs: ['typescript', 'javascript', 'json', 'plaintext']
     })
@@ -285,6 +452,9 @@ export async function initializeEditor(
       showFilePickerCallback()
     }
   })
+
+  // Apply initial theme to UI
+  applyThemeToUI(savedTheme)
 
   updateStatus('Editor initialized', 'success')
   return editor

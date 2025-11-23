@@ -1,3 +1,22 @@
+:root {
+    --editor-bg: #1E1E1E;
+    --editor-fg: #D4D4D4;
+    --menu-bg: #252526;
+    --input-bg: #3c3c3c;
+    --border-color: #3e3e42;
+    --hover-bg: #2a2d2e;
+    --active-bg: #37373d;
+    --accent-color: #007acc;
+    --sidebar-header-bg: #252526;
+    --sidebar-fg: #D4D4D4;
+    --button-bg: #007acc;
+    --button-fg: #ffffff;
+    --button-hover-bg: #1177bb;
+    --error-button-bg: #f48771;
+    --error-button-fg: #000000;
+    --input-fg: #D4D4D4;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -8,8 +27,8 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     height: 100vh;
     overflow: hidden;
-    background: #1e1e1e;
-    color: #cccccc;
+    background: var(--editor-bg);
+    color: var(--editor-fg);
 }
 
 #app {
@@ -19,8 +38,8 @@ body {
 }
 
 #toolbar {
-    background: #252526;
-    border-bottom: 1px solid #3e3e42;
+    background: var(--menu-bg);
+    border-bottom: 1px solid var(--border-color);
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -32,9 +51,9 @@ body {
 #toolbar input,
 #toolbar button {
     padding: 6px 12px;
-    background: #3c3c3c;
-    border: 1px solid #3e3e42;
-    color: #cccccc;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--input-fg);
     border-radius: 4px;
     font-size: 13px;
 }
@@ -52,21 +71,24 @@ body {
 }
 
 #toolbar button.primary {
-    background: #0e639c;
-    border-color: #0e639c;
+    background: var(--button-bg);
+    border-color: var(--button-bg);
+    color: var(--button-fg);
 }
 
 #toolbar button.primary:hover {
-    background: #1177bb;
+    background: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
 }
 
 #toolbar button.danger {
-    background: #c72e0f;
-    border-color: #c72e0f;
+    background: var(--error-button-bg);
+    border-color: var(--error-button-bg);
+    color: var(--error-button-fg);
 }
 
 #toolbar button.danger:hover {
-    background: #e03e1d;
+    opacity: 0.9;
 }
 
 #toolbar input {
@@ -91,8 +113,8 @@ body {
     width: 250px;
     min-width: 150px;
     max-width: 600px;
-    background: #252526;
-    border-right: 1px solid #3e3e42;
+    background: var(--menu-bg);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -111,15 +133,16 @@ body {
 
 #file-tree-header {
     padding: 8px 12px;
-    background: #2d2d30;
-    border-bottom: 1px solid #3e3e42;
+    background: var(--sidebar-header-bg);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 11px;
     text-transform: uppercase;
     font-weight: 600;
-    color: #999;
+    color: var(--sidebar-fg);
+    opacity: 0.7;
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -137,13 +160,13 @@ body {
     line-height: 1;
     background: transparent;
     border: none;
-    color: #cccccc;
+    color: var(--sidebar-fg);
     cursor: pointer;
     border-radius: 3px;
 }
 
 #file-tree-actions button:hover {
-    background: #3e3e42;
+    background: var(--hover-bg);
 }
 
 #file-list {
@@ -173,11 +196,11 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #cccccc;
+    color: var(--sidebar-fg);
 }
 
 .folder-item:hover {
-    background: #2a2d2e;
+    background: var(--hover-bg);
 }
 
 .folder-item.renaming .folder-name {
@@ -242,15 +265,15 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #cccccc;
+    color: var(--sidebar-fg);
 }
 
 .file-item:hover {
-    background: #2a2d2e;
+    background: var(--hover-bg);
 }
 
 .file-item.active {
-    background: #37373d;
+    background: var(--active-bg);
 }
 
 .file-item .file-icon {
@@ -280,7 +303,7 @@ body {
     font-size: 12px;
     background: transparent;
     border: none;
-    color: #cccccc;
+    color: var(--sidebar-fg);
     cursor: pointer;
     border-radius: 2px;
 }
@@ -290,8 +313,8 @@ body {
 }
 
 .file-item .file-delete:hover {
-    background: #c72e0f;
-    color: white;
+    background: var(--error-button-bg);
+    color: var(--error-button-fg);
 }
 
 .file-item.renaming .file-name {
@@ -305,10 +328,10 @@ body {
 
 .rename-input {
     display: none;
-    background: #3c3c3c;
+    background: var(--input-bg);
     border: 1px solid transparent;
-    outline: 1px solid #007acc;
-    color: #cccccc;
+    outline: 1px solid var(--accent-color);
+    color: var(--editor-fg);
     padding: 2px 4px;
     font-size: 13px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -319,8 +342,8 @@ body {
 
 .context-menu {
     position: fixed;
-    background: #252526;
-    border: 1px solid #454545;
+    background: var(--menu-bg);
+    border: 1px solid var(--border-color);
     border-radius: 3px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     z-index: 10000;
@@ -331,18 +354,18 @@ body {
 .context-menu-item {
     padding: 6px 16px;
     cursor: pointer;
-    color: #cccccc;
+    color: var(--editor-fg);
     font-size: 13px;
     transition: background 0.1s;
 }
 
 .context-menu-item:hover {
-    background: #094771;
+    background: var(--active-bg);
 }
 
 .context-menu-separator {
     height: 1px;
-    background: #454545;
+    background: var(--border-color);
     margin: 4px 0;
 }
 
@@ -388,8 +411,8 @@ body {
 }
 
 .modal {
-    background: #252526;
-    border: 1px solid #3e3e42;
+    background: var(--menu-bg);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 24px;
     min-width: 400px;
@@ -399,12 +422,14 @@ body {
 .modal h2 {
     margin-bottom: 16px;
     font-size: 18px;
+    color: var(--editor-fg);
 }
 
 .modal label {
     display: block;
     margin-bottom: 8px;
     font-size: 13px;
+    color: var(--editor-fg);
 }
 
 .modal input,
@@ -412,9 +437,9 @@ body {
     width: 100%;
     padding: 8px;
     margin-bottom: 16px;
-    background: #3c3c3c;
-    border: 1px solid #3e3e42;
-    color: #cccccc;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--input-fg);
     border-radius: 4px;
     font-size: 13px;
 }
@@ -427,25 +452,28 @@ body {
 
 .modal button {
     padding: 8px 16px;
-    background: #3c3c3c;
-    border: 1px solid #3e3e42;
-    color: #cccccc;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--editor-fg);
     border-radius: 4px;
     cursor: pointer;
     font-size: 13px;
 }
 
 .modal button.primary {
-    background: #0e639c;
-    border-color: #0e639c;
+    background: var(--button-bg);
+    border-color: var(--button-bg);
+    color: var(--button-fg);
 }
 
 .modal button:hover {
-    background: #505050;
+    opacity: 0.8;
 }
 
 .modal button.primary:hover {
-    background: #1177bb;
+    background: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
+    opacity: 1;
 }
 
 #compile-status {
@@ -462,8 +490,8 @@ body {
 }
 
 .folder-item.drag-over {
-    background: #094771 !important;
-    border: 2px dashed #007acc;
+    background: var(--active-bg) !important;
+    border: 2px dashed var(--accent-color);
 }
 
 #file-list {
@@ -472,7 +500,7 @@ body {
 
 #file-list.drag-over-root {
     background: rgba(9, 71, 113, 0.2);
-    border: 2px dashed #007acc;
+    border: 2px dashed var(--accent-color);
 }
 
 .file-item {
