@@ -1019,6 +1019,17 @@ function setupEventListeners() {
   pluginSelect.addEventListener('change', (e) => {
     const target = e.target as HTMLSelectElement
     if (target.value) {
+      // Warn if there are unsaved changes
+      if (state.modifiedFiles.size > 0) {
+        const confirmed = confirm(
+          'You have unsaved changes. Are you sure you want to switch plugins? All unsaved changes will be lost.'
+        )
+        if (!confirmed) {
+          // Revert the dropdown selection
+          target.value = state.currentPluginId || ''
+          return
+        }
+      }
       loadPlugin(target.value)
     }
   })
@@ -1186,6 +1197,15 @@ function setupEventListeners() {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
       saveCurrentPlugin()
+    }
+  })
+
+  // Warn before closing window/tab with unsaved changes
+  window.addEventListener('beforeunload', (e) => {
+    if (state.modifiedFiles.size > 0) {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
     }
   })
 
