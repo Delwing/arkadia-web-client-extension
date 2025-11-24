@@ -39,7 +39,7 @@ export const MailStatus: React.FC = () => {
     statusParts.push("Niewyslana");
   }
 
-  return <span onClick={handleClick} style={{ cursor: "pointer" }}>✉: {statusParts.join(", ")}</span>;
+  return <span onClick={handleClick} style={{ cursor: "pointer", color: "orange" }}>✉: {statusParts.join(", ")}</span>;
 };
 
 export default MailStatus;
