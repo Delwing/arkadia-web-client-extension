@@ -331,6 +331,7 @@ export default class MapHelper {
 
     setMapRoomById(id: number) {
         if (this.currentRoom?.id === id) {
+            this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
             return;
         }
         this.renderRoomById(id);
