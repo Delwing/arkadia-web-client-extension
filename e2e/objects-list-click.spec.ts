@@ -216,4 +216,65 @@ test.describe('Objects list clicking', () => {
         const healthBars = objectsList.locator('span').filter({hasText: /#/});
         await expect(healthBars, 'should display health bars for all objects').toHaveCount(4);
     });
+
+    test('clicking teammate number does not attack them', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Hero', object_num: 100});
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
+            '100': {desc: 'Hero', team: true, team_leader: true},
+            '201': {desc: 'Goblin Scout', attack_num: false, num: 201},
+            '202': {desc: 'Ally Fighter', team: true, num: 202},
+        });
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 201, 202]);
+
+        // Wait for objects to appear
+        const teammateNum = page.locator('#objects-list .object-num[data-object-id="202"]');
+        await expect(teammateNum, 'should display teammate object').toBeVisible();
+
+        // Get the command count before clicking
+        const commandsBefore = await page.evaluate(() => {
+            const sockets: any[] = (window as any).__mockSockets ?? [];
+            for (let i = sockets.length - 1; i >= 0; i--) {
+                const cmds: unknown = sockets[i]?.commands;
+                if (Array.isArray(cmds)) {
+                    return cmds.length;
+                }
+            }
+            return 0;
+        });
+
+        // Click the teammate number
+        await teammateNum.click();
+
+        // Wait a bit to ensure no command was sent
+        await page.waitForTimeout(200);
+
+        // Verify no new command was sent
+        const commandsAfter = await page.evaluate(() => {
+            const sockets: any[] = (window as any).__mockSockets ?? [];
+            for (let i = sockets.length - 1; i >= 0; i--) {
+                const cmds: unknown = sockets[i]?.commands;
+                if (Array.isArray(cmds)) {
+                    return cmds.length;
+                }
+            }
+            return 0;
+        });
+
+        expect(commandsAfter, 'should not send attack command for teammate').toBe(commandsBefore);
+
+        // Now verify that clicking an enemy still works
+        const enemyNum = page.locator('#objects-list .object-num[data-object-id="201"]');
+        await expect(enemyNum, 'should display enemy object').toBeVisible();
+        await enemyNum.click();
+
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {
+                message: 'should send attack command when clicking enemy number',
+            })
+            .toBe('zabij ob_201');
+    });
 });

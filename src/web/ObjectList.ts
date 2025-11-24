@@ -214,6 +214,16 @@ export default class ObjectList {
         if (numEl) {
             const id = numEl.getAttribute("data-object-id");
             if (id) {
+                // Check if target is a teammate before attacking
+                const manager = this.client.ObjectManager;
+                const objects = manager?.getObjectsOnLocation() || [];
+                const targetObj = objects.find((o: any) => String(o.num) === id);
+                const isTeammate = targetObj && this.client.TeamManager?.isInTeam?.(targetObj.desc);
+
+                if (isTeammate) {
+                    // Don't attack teammates
+                    return;
+                }
                 this.client.sendCommand(`${this.attackCommand} ob_${id}`);
             } else {
                 const num = numEl.getAttribute("data-object-num");
