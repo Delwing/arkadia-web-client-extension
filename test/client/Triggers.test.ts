@@ -125,6 +125,71 @@ describe('Triggers', () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
+  test('caseInsensitive option matches string patterns regardless of case', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTrigger('HELLO', cb, undefined, { caseInsensitive: true });
+
+    triggers.parseLine(new AnsiAwareBuffer('hello world'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  test('caseInsensitive option preserves original matched text in callback', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn((_buffer: AnsiAwareBuffer, _matches: RegExpMatchArray) => {
+      return _buffer;
+    });
+    triggers.registerTrigger('hello', cb, undefined, { caseInsensitive: true });
+
+    triggers.parseLine(new AnsiAwareBuffer('say HELLO there'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+    const matches = cb.mock.calls[0][1] as RegExpMatchArray;
+    expect(matches[0]).toBe('HELLO');
+    expect(matches.index).toBe(4);
+  });
+
+  test('string pattern without caseInsensitive does not match different case', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTrigger('HELLO', cb);
+
+    triggers.parseLine(new AnsiAwareBuffer('hello world'), '');
+
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  test('caseInsensitive option works with RegExp patterns', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTrigger(/HELLO/, cb, undefined, { caseInsensitive: true });
+
+    triggers.parseLine(new AnsiAwareBuffer('hello world'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  test('caseInsensitive option does not duplicate i flag on RegExp', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTrigger(/HELLO/i, cb, undefined, { caseInsensitive: true });
+
+    triggers.parseLine(new AnsiAwareBuffer('hello world'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  test('RegExp without caseInsensitive does not match different case', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTrigger(/HELLO/, cb);
+
+    triggers.parseLine(new AnsiAwareBuffer('hello world'), '');
+
+    expect(cb).not.toHaveBeenCalled();
+  });
+
   test('array of patterns uses first match and stops checking further', () => {
     const triggers = new Triggers({} as any);
     const second = jest.fn();

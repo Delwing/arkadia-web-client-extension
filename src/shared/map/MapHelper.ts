@@ -107,7 +107,7 @@ export default class MapHelper {
             const parsed = parseInt(String(value.mapperRoomId));
             if (!Number.isNaN(parsed)) {
                 this.savedRoomId = parsed;
-                this.setMapRoomById(this.savedRoomId);
+                this.setMapRoomById(this.savedRoomId, { silent: true });
             }
         });
 
@@ -329,9 +329,11 @@ export default class MapHelper {
         return false;
     }
 
-    setMapRoomById(id: number) {
+    setMapRoomById(id: number, options?: { silent?: boolean }) {
         if (this.currentRoom?.id === id) {
-            this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
+            if (!options?.silent) {
+                this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
+            }
             return;
         }
         this.renderRoomById(id);

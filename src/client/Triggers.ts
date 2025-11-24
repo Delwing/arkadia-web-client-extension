@@ -82,7 +82,11 @@ export class Trigger {
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         for (const pattern of patterns) {
             if (pattern instanceof RegExp) {
-                matches = plainLine.match(pattern);
+                let effectivePattern = pattern;
+                if (this.options.caseInsensitive && !pattern.flags.includes('i')) {
+                    effectivePattern = new RegExp(pattern.source, pattern.flags + 'i');
+                }
+                matches = plainLine.match(effectivePattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
                 const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
