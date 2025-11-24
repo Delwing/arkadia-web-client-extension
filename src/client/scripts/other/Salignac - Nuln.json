@@ -6,7 +6,7 @@
     "show_path": true,
     "stops": [
         {
-            "start": 4824,
+            "start": 4922,
             "destination": 4985,
             "time": 11,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem 'Pod piegowata elfka'\\.$",
@@ -45,7 +45,7 @@
         },
         {
             "start": 4985,
-            "destination": 4824,
+            "destination": 4922,
             "time": 12,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, rynek miejski Salignac La Rouge\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Salignac La Rouge!$",
