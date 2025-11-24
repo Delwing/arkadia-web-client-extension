@@ -1,9 +1,6 @@
 import {useEffect, useState} from "react";
 import {useClientEvent} from "../../hooks";
 import eventBus from "@modules/core/eventBus";
-import {type StoredMultibindRecord, subscribe as subscribeMultibinds} from "@web/dataStores/multibindStore";
-import {getMultibindLabel} from "@client/multibindKeys";
-import {getClientInstance} from "@shared/runtime";
 
 interface DisplayMultibind {
   index: number;
@@ -18,38 +15,13 @@ interface DisplayMultibind {
  * Note: This component manages the "active" class on its container (#multi-binds)
  * directly via DOM manipulation to match the CSS expectations.
  *
- * This component subscribes directly to the multibindStore to get initial state,
- * ensuring binds are shown even if the component mounts after the initial load.
+ * The component listens to the 'multibinds' client event which includes
+ * user-created multibinds as well as room binds and drinkable binds.
  */
 export const MultiBinds: React.FC = () => {
   const [binds, setBinds] = useState<DisplayMultibind[]>([]);
 
-  // Subscribe to store for initial state and updates
-  useEffect(() => {
-    return subscribeMultibinds((stored: StoredMultibindRecord[]) => {
-      const client = getClientInstance();
-      const currentRoomId = client?.Map?.currentRoom?.id;
-
-      if (typeof currentRoomId !== 'number') {
-        setBinds([]);
-        return;
-      }
-
-      // Filter and convert to display format
-      const display = stored
-          .filter(record => record.roomId === currentRoomId)
-          .map(({index, action}) => ({
-            index,
-            action,
-            label: getMultibindLabel(index),
-          }))
-          .sort((a, b) => a.index - b.index);
-
-      setBinds(display);
-    });
-  }, []);
-
-  // Also listen to client event for room changes
+  // Listen to client event for multibinds updates (includes room binds and drinkable binds)
   useClientEvent<{ list?: DisplayMultibind[] }>("multibinds", (payload) => {
     const list = Array.isArray(payload?.list) ? payload.list : [];
     setBinds(list);

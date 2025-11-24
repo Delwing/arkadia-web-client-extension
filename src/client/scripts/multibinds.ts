@@ -152,7 +152,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     function sendUpdate(roomId: number | null) {
         let payload = roomId === null ? [] : toDisplay(roomId);
 
-        // Add userData.bind or drinkable if present in current room
+        // Add userData.bind and/or drinkable if present in the room being displayed
         if (roomId !== null) {
             const room = client.Map.currentRoom as any;
             if (room?.id === roomId) {
@@ -164,9 +164,11 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
                         action: room.userData.bind,
                         label: bindLabel(roomBind)
                     });
-                } else if (room?.userData?.drinkable) {
+                }
+
+                if (room?.userData?.drinkable) {
                     additionalBinds.push({
-                        index: MAX_BINDS + 1,
+                        index: MAX_BINDS + 2,
                         action: "napij sie do syta wody",
                         label: bindLabel(drinkableBind)
                     });
