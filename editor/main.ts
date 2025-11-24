@@ -57,6 +57,7 @@ import {
 import {createNewPlugin, deletePlugin, refreshPluginList, savePlugin,} from './pluginManagement'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
+import {CodingAgentPanel} from './codingAgentPanel';
 
 // Configure Monaco Environment for web workers
 self.MonacoEnvironment = {
@@ -108,6 +109,9 @@ const state: EditorState = {
 // Store completion provider disposers
 let disposeImportPathProvider: (() => void) | null = null
 let disposeAutoImportProvider: (() => void) | null = null
+
+// Initialize coding agent panel
+let agentPanel: CodingAgentPanel | null = null
 
 // File tree render wrapper
 function showDisabledFileTree() {
@@ -390,6 +394,11 @@ export default value;`
     updateLanguageUI(language)
   }
   updateStatus(`Loaded: ${plugin.name}`, 'success')
+
+  // Notify agent panel of plugin change
+  if (agentPanel) {
+    agentPanel.onPluginChanged(pluginId)
+  }
 }
 
 // File operations wrappers
@@ -1053,6 +1062,14 @@ function setupEventListeners() {
     changeTheme(target.value)
   })
 
+  // Toggle agent panel
+  const toggleAgentBtn = document.getElementById('toggle-agent-btn')!
+  toggleAgentBtn.addEventListener('click', () => {
+    if (agentPanel) {
+      agentPanel.toggle()
+    }
+  })
+
   // New plugin modal
   const newPluginCancel = document.getElementById('new-plugin-cancel')!
   newPluginCancel.addEventListener('click', hideNewPluginModal)
@@ -1227,6 +1244,47 @@ function setupEventListeners() {
       document.body.style.userSelect = ''
     }
   })
+
+  // Agent panel resizer
+  const agentPanelElement = document.getElementById('agent-panel')!
+  const agentResizer = document.getElementById('agent-resizer')!
+  let isResizingAgent = false
+  let startAgentX = 0
+  let startAgentWidth = 0
+
+  agentResizer.addEventListener('mousedown', (e) => {
+    isResizingAgent = true
+    startAgentX = e.clientX
+    startAgentWidth = agentPanelElement.offsetWidth
+    agentResizer.classList.add('resizing')
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizingAgent) return
+
+    // For right-side panel, moving mouse left increases width
+    const delta = startAgentX - e.clientX
+    const newWidth = startAgentWidth + delta
+
+    // Apply min/max constraints
+    const minWidth = 300
+    const maxWidth = 800
+    const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
+
+    agentPanelElement.style.width = `${constrainedWidth}px`
+  })
+
+  document.addEventListener('mouseup', () => {
+    if (isResizingAgent) {
+      isResizingAgent = false
+      agentResizer.classList.remove('resizing')
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  })
 }
 
 // Initialize
@@ -1235,6 +1293,19 @@ async function init() {
 
   const container = document.getElementById('editor-container')!
   state.editor = await initializeEditor(container, updateStatus, showFilePickerHandler, switchToFile)
+
+  // Initialize agent panel
+  agentPanel = new CodingAgentPanel(() => ({
+    plugin: state.currentPlugin,
+    pluginId: state.currentPluginId,
+    editor: state.editor,
+    editorModels: state.editorModels,
+    modifiedFiles: state.modifiedFiles,
+    currentFilePath: state.currentFilePath,
+    updateStatus,
+    renderFileTree: renderCurrentFileTree,
+    switchToFile
+  }))
 
   await initEsbuild(updateStatus)
   await refreshPluginList(null)

@@ -88,6 +88,7 @@
             <div class="spacer"></div>
             <button id="compile-btn" style="display: none;">Compile TypeScript</button>
             <span id="compile-status"></span>
+            <button id="toggle-agent-btn" title="Toggle AI Agent Panel">AI Agent</button>
         </div>
         <div id="main-content">
             <div id="file-tree">
@@ -101,6 +102,29 @@
                 <div id="file-tree-resizer"></div>
             </div>
             <div id="editor-container"></div>
+            <div id="agent-panel" style="display: none;">
+                <div id="agent-panel-header">
+                    <span>AI Coding Agent</span>
+                    <button id="agent-close-btn" title="Close Agent Panel">×</button>
+                </div>
+                <div id="agent-content">
+                    <div id="agent-messages"></div>
+                    <div id="agent-input-container">
+                        <textarea id="agent-input" placeholder="Ask the AI to help with your plugin..." rows="3"></textarea>
+                        <div id="agent-controls">
+                            <button id="agent-send-btn" class="primary">Send</button>
+                            <button id="agent-preview-btn" title="Preview request context">Preview</button>
+                            <button id="agent-settings-btn" title="Settings">⚙</button>
+                            <button id="agent-clear-btn" title="Clear conversation">Clear</button>
+                        </div>
+                        <div id="agent-info" style="font-size: 11px; color: #888; margin-top: 4px; display: none;">
+                            <span id="agent-model-info"></span>
+                            <span id="agent-token-info" style="margin-left: 12px;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="agent-resizer"></div>
+            </div>
         </div>
         <div id="status-bar">
             <span id="status-text">Ready</span>
@@ -151,6 +175,76 @@
             <h2>Go to File</h2>
             <input type="text" id="file-picker-input" placeholder="Search files..." autofocus />
             <div id="file-picker-list" style="max-height: 400px; overflow-y: auto; margin-top: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- Agent Settings Modal -->
+    <div id="agent-settings-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 600px;">
+            <h2>AI Agent Settings</h2>
+            <div style="margin-bottom: 16px;">
+                <label for="agent-provider">AI Provider</label>
+                <select id="agent-provider">
+                    <option value="openai">OpenAI (ChatGPT)</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="agent-openai-key">OpenAI API Key</label>
+                <input type="password" id="agent-openai-key" placeholder="sk-..." />
+                <button type="button" id="agent-openai-fetch-models" style="margin-top: 8px; display: none;">Fetch Models</button>
+            </div>
+            <div id="agent-openai-model-container" style="margin-bottom: 16px; display: none;">
+                <label for="agent-openai-model">OpenAI Model</label>
+                <select id="agent-openai-model">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="agent-anthropic-key">Anthropic API Key</label>
+                <input type="password" id="agent-anthropic-key" placeholder="sk-ant-..." />
+                <button type="button" id="agent-anthropic-fetch-models" style="margin-top: 8px; display: none;">Fetch Models</button>
+            </div>
+            <div id="agent-anthropic-model-container" style="margin-bottom: 16px; display: none;">
+                <label for="agent-anthropic-model">Anthropic Model</label>
+                <select id="agent-anthropic-model">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button id="agent-settings-cancel">Cancel</button>
+                <button id="agent-settings-save" class="primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Preview Modal -->
+    <div id="agent-preview-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 800px; max-height: 90vh;">
+            <h2>Request Preview</h2>
+            <div id="agent-preview-stats" style="margin-bottom: 16px; font-family: monospace; font-size: 12px;">
+                <div><strong>Total Characters:</strong> <span id="preview-total-chars">0</span></div>
+                <div><strong>Estimated Tokens:</strong> <span id="preview-estimated-tokens">0</span> (rough estimate: chars / 4)</div>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 14px; margin-bottom: 8px;">System Prompt</h3>
+                <pre id="preview-system-prompt" style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow: auto; max-height: 150px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;"></pre>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 14px; margin-bottom: 8px;">User Prompt</h3>
+                <pre id="preview-user-prompt" style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow: auto; max-height: 100px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;"></pre>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 14px; margin-bottom: 8px;">Context</h3>
+                <pre id="preview-context" style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow: auto; max-height: 300px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;"></pre>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 14px; margin-bottom: 8px;">Conversation History (<span id="preview-history-count">0</span> messages)</h3>
+                <pre id="preview-history" style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; overflow: auto; max-height: 200px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;"></pre>
+            </div>
+            <div class="modal-buttons">
+                <button id="agent-preview-close">Close</button>
+            </div>
         </div>
     </div>
 

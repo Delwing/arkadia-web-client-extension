@@ -1,0 +1,65 @@
+/**
+ * Coding Agent Types
+ * Type definitions for the AI coding assistant panel
+ */
+
+export type AIProvider = 'openai' | 'anthropic';
+
+export type OpenAIModel = string; // Dynamic models from API
+export type AnthropicModel = string; // Dynamic models from API
+
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey: string;
+  model: OpenAIModel | AnthropicModel;
+}
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+  fileOperations?: FileOperation[];
+  isLoading?: boolean;
+}
+
+export interface ConversationHistory {
+  pluginId: string;
+  messages: Message[];
+  lastUpdated: number;
+}
+
+export interface FileOperation {
+  type: 'create' | 'modify' | 'delete' | 'createDir' | 'deleteDir';
+  path: string;
+  content?: string;
+  language?: 'typescript' | 'javascript' | 'json' | 'plaintext';
+}
+
+export interface AgentRequest {
+  prompt: string;
+  context: {
+    currentFile?: string;
+    currentFileContent?: string;
+    pluginFiles?: Record<string, string>;
+    cursorPosition?: { line: number; column: number };
+    selectedText?: string;
+    pluginApiDocs?: string;
+  };
+  conversationHistory: Message[];
+}
+
+export interface AgentResponse {
+  message: string;
+  fileOperations?: FileOperation[];
+  error?: string;
+}
+
+export interface AgentSettings {
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+  defaultProvider: AIProvider;
+  defaultOpenAIModel: OpenAIModel;
+  defaultAnthropicModel: AnthropicModel;
+  systemPrompt: string;
+}
