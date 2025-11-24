@@ -239,6 +239,14 @@ export default class ObjectList {
         const manager = this.client.ObjectManager;
         if (!manager) return;
         const objects = manager.getObjectsOnLocation();
+
+        // Show placeholder if no objects
+        if (objects.length === 0) {
+            this.objectLines = [];
+            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
+            this.rebuildPictureInPictureHtml();
+            return;
+        }
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
         const tm = this.client.TeamManager;
         const nextQueuedId = tm?.getEnemyQueue?.()?.[0];

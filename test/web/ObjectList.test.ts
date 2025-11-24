@@ -37,6 +37,17 @@ describe('ObjectList', () => {
     Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
   });
 
+  test('shows placeholder when no objects', () => {
+    document.body.innerHTML = '<div id="objects-list"></div>';
+    const client = new MockClient();
+    const objectList = new ObjectList(client as any);
+    client.ObjectManager.getObjectsOnLocation = () => [];
+    (objectList as any).render();
+    const content = document.querySelector('#objects-list .objects-list-content') as HTMLElement;
+    expect(content.innerHTML).toContain('Brak obiektów');
+    expect(content.innerHTML).toContain('font-style: italic');
+  });
+
   test('non team members not fighting are not purple', () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     const client = new MockClient();

@@ -90,8 +90,8 @@ test.describe('Recording and Playback', () => {
         await page.click('#playback-pause');
         await page.waitForTimeout(200);
 
-        // Test speed control
-        await page.click('[data-playback-speed="2"]');
+        // Test speed control (using slider)
+        await page.locator('#playback-speed-slider').fill('0.7');
         await page.waitForTimeout(200);
 
         // Stop playback
