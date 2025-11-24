@@ -40,6 +40,7 @@ import MariborGrabowa from "./other/Maribor - Grabowa Buchta.json";
 import PodgrodzieTretogoruGelibol from "./other/Podgrodzie Tretogoru - Gelibol.json";
 import MariborObawa from "./other/Maribor - Obawa.json";
 import Salignac from "./other/Salignac - Nuln.json";
+import NulnBlekitnaWstega from "./other/Nuln - Blekitna Wstega.json";
 import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
 import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
 import QuenellesMontlacMerceauxDescloux from "./other/Quenelles - Montlac - Merceaux-Descloux.json";
@@ -118,6 +119,7 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Podgrodzie Tretogoru - Gelibol", PodgrodzieTretogoruGelibol as RawTransportDefinition],
     ["Maribor - Obawa", MariborObawa as RawTransportDefinition],
     ["Salignac - Nuln", Salignac as RawTransportDefinition],
+    ["Nuln - Blekitna Wstega", NulnBlekitnaWstega as RawTransportDefinition],
     ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
     ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
     [
@@ -584,10 +586,13 @@ class TransportTracker {
     }
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
-        const journey = this.ensureJourney(definition);
         const stop = definition.stops[index];
 
-        if (!journey.onBoard) {
+        // Check if we should handle this transport before creating/modifying journey
+        const isCurrentJourney = this.currentJourney?.definition === definition;
+        const onBoard = isCurrentJourney && this.currentJourney.onBoard;
+
+        if (!onBoard) {
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
             const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
@@ -606,6 +611,9 @@ class TransportTracker {
                 return;
             }
 
+            // Only now create/ensure journey after validation
+            const journey = this.ensureJourney(definition);
+
             let indexes: number[];
             if (setGroup && setGroup.length > 0) {
                 const matches = setGroup.filter(candidateIndex => definition.stops[candidateIndex].start === locationId);
@@ -621,6 +629,9 @@ class TransportTracker {
             );
             return;
         }
+
+        // We're on board - ensure we have the journey
+        const journey = this.ensureJourney(definition);
 
         if (journey.candidateIndexes.size <= 1) {
             this.log(
