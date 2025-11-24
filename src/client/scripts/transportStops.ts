@@ -708,14 +708,7 @@ class TransportTracker {
         journey.startTimes.clear();
 
         const activeDuringStop = journey.activeIndex!;
-        const patternGroup = journey.definition.stopPatternGroups.get(stop.patternKey);
-        let nextIndex = (index + 1) % journey.definition.stops.length;
-        if (!stop.set_pattern && patternGroup && patternGroup.length > 1) {
-            const alternateWithSet = patternGroup.find(candidate => candidate !== index && !!journey.definition.stops[candidate].set_pattern);
-            if (alternateWithSet !== undefined) {
-                nextIndex = (alternateWithSet + 1) % journey.definition.stops.length;
-            }
-        }
+        const nextIndex = (index + 1) % journey.definition.stops.length;
         journey.candidateIndexes = new Set([nextIndex]);
 
         this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);

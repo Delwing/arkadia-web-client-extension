@@ -104,7 +104,7 @@ describe('transport stop triggers', () => {
     expect(payload.total).toBe(11);
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem \'Pod piegowata elfka\'.');
-    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Salignac La Rouge", remaining: 12, total: 12 });
+    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Kreutzhofen", remaining: 50, total: 50 });
 
     emitCommand('wyjscie');
     expect(lastEvent()).toBeNull();
