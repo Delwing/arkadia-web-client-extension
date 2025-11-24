@@ -5,6 +5,7 @@ import {
     subscribe as subscribeMultibinds,
     type StoredMultibindRecord,
 } from "@web/dataStores/multibindStore";
+import storage from "@modules/core/storage";
 
 const MAX_BINDS = 4;
 
@@ -14,14 +15,55 @@ interface DisplayMultibind {
     label: string;
 }
 
+interface Bind {
+    key: string;
+    ctrl?: boolean;
+    alt?: boolean;
+    shift?: boolean;
+}
+
 function isValidIndex(index: number) {
     return Number.isInteger(index) && index >= 1 && index <= MAX_BINDS;
+}
+
+function bindLabel(bind: Bind): string {
+    let key = bind.key;
+    if (key.startsWith('Digit')) key = key.substring(5);
+    else if (key.startsWith('Key')) key = key.substring(3);
+    else if (key === 'BracketRight') key = ']';
+    else if (key === 'BracketLeft') key = '[';
+    else if (key === 'Backquote') key = '`';
+    const parts: string[] = [];
+    if (bind.ctrl) parts.push('CTRL');
+    if (bind.alt) parts.push('ALT');
+    if (bind.shift) parts.push('SHIFT');
+    parts.push(key);
+    return parts.join('+');
+}
+
+function bindMatches(ev: KeyboardEvent, bind: Bind): boolean {
+    const matchesKey = ev.code === bind.key || ev.key === bind.key.toLowerCase();
+    if (!matchesKey) return false;
+    return (!!bind.ctrl === ev.ctrlKey) && (!!bind.alt === ev.altKey) && (!!bind.shift === ev.shiftKey);
 }
 
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const data = new Map<number, Map<number, string>>();
     let isInitialized = false;
     const pendingActions: (() => void)[] = [];
+
+    // Load configured binds
+    let roomBind: Bind = { key: 'KeyP', alt: true };
+    let drinkableBind: Bind = { key: 'KeyN', alt: true };
+
+    storage.getItem('binds').then(res => {
+        if (res?.binds?.roomBind) {
+            roomBind = res.binds.roomBind;
+        }
+        if (res?.binds?.drinkable) {
+            drinkableBind = res.binds.drinkable;
+        }
+    });
 
     function runWhenReady(action: () => void) {
         if (isInitialized) {
@@ -108,7 +150,32 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     }
 
     function sendUpdate(roomId: number | null) {
-        const payload = roomId === null ? [] : toDisplay(roomId);
+        let payload = roomId === null ? [] : toDisplay(roomId);
+
+        // Add userData.bind or drinkable if present in current room
+        if (roomId !== null) {
+            const room = client.Map.currentRoom as any;
+            if (room?.id === roomId) {
+                const additionalBinds: DisplayMultibind[] = [];
+
+                if (room?.userData?.bind) {
+                    additionalBinds.push({
+                        index: MAX_BINDS + 1,
+                        action: room.userData.bind,
+                        label: bindLabel(roomBind)
+                    });
+                } else if (room?.userData?.drinkable) {
+                    additionalBinds.push({
+                        index: MAX_BINDS + 1,
+                        action: "napij sie do syta wody",
+                        label: bindLabel(drinkableBind)
+                    });
+                }
+
+                payload = [...payload, ...additionalBinds];
+            }
+        }
+
         client.sendEvent('multibinds', { list: payload });
     }
 
@@ -270,6 +337,35 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         const index = parseInt(entry[0], 10);
         runCurrent(index);
         ev.preventDefault();
+    });
+
+    // Handle room bind and drinkable binds
+    window.addEventListener('keydown', (ev) => {
+        if (ev.repeat) {
+            return;
+        }
+        const room = client.Map.currentRoom as any;
+        if (!room) {
+            return;
+        }
+
+        // userData.bind
+        if (bindMatches(ev, roomBind)) {
+            if (room?.userData?.bind) {
+                client.sendCommand(room.userData.bind);
+                ev.preventDefault();
+            }
+            return;
+        }
+
+        // drinkable
+        if (bindMatches(ev, drinkableBind)) {
+            if (room?.userData?.drinkable) {
+                client.sendCommand("napij sie do syta wody");
+                ev.preventDefault();
+            }
+            return;
+        }
     });
 
     if (aliases) {

@@ -45,6 +45,8 @@ interface BindSettings {
     attack: Bind;
     support: Bind;
     moveMode: Bind;
+    roomBind: Bind;
+    drinkable: Bind;
     directions: DirectionBinds;
     custom: CustomBind[];
     temp: Bind[];
@@ -58,6 +60,8 @@ const defaultBinds: BindSettings = {
     attack: { key: 'Digit1', ctrl: true },
     support: { key: 'KeyQ', ctrl: true },
     moveMode: { key: 'Backquote' },
+    roomBind: { key: 'KeyP', alt: true },
+    drinkable: { key: 'KeyN', alt: true },
     temp: [
         { key: 'F4' },
         { key: 'F5' },
@@ -245,6 +249,8 @@ function Binds() {
                 attack: res?.binds?.attack || defaultBinds.attack,
                 support: res?.binds?.support || defaultBinds.support,
                 moveMode: res?.binds?.moveMode || defaultBinds.moveMode,
+                roomBind: res?.binds?.roomBind || defaultBinds.roomBind,
+                drinkable: res?.binds?.drinkable || defaultBinds.drinkable,
                 temp: [
                     { ...defaultBinds.temp[0], ...(res?.binds?.temp?.[0] || {}) },
                     { ...defaultBinds.temp[1], ...(res?.binds?.temp?.[1] || {}) },
@@ -687,6 +693,30 @@ function Binds() {
                                     size="sm"
                                     value={label(binds.moveMode)}
                                     onKeyDown={ev => handleCapture('moveMode', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Bind w lokacji</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.roomBind)}
+                                    onKeyDown={ev => handleCapture('roomBind', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Napij się wody</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.drinkable)}
+                                    onKeyDown={ev => handleCapture('drinkable', ev)}
                                 />
                             </td>
                         </tr>

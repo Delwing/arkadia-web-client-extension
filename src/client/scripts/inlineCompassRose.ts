@@ -93,7 +93,7 @@ export default function initInlineCompassRose(client: Client) {
         const line = new AnsiAwareBuffer();
         for (const part of parts) {
             if (typeof part === "string") {
-                line.append(part);
+                line.append(part, {}); // Explicitly pass empty state to prevent color bleeding
             } else {
                 line.appendBuffer(part);
             }
