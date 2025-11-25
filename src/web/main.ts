@@ -41,6 +41,7 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
+import { copyOutputAsImage } from "./copyOutputAsImage";
 import {
     loadSettings as loadMobileButtonSettings,
     applySettings as applyMobileButtonSettings
@@ -313,12 +314,23 @@ outputWrapper.addEventListener('contextmenu', event => {
     }
     event.preventDefault();
     const isVisible = areOutputTimestampsVisible();
+    const hasSelection = !window.getSelection()?.isCollapsed;
     const items: ContextMenuEntry[] = [
         {
             label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
             action: () => setOutputTimestampVisibility(!isVisible),
         },
     ];
+    if (hasSelection) {
+        items.push({
+            label: 'Kopiuj jako obraz',
+            action: () => {
+                copyOutputAsImage().catch(err => {
+                    console.error('Failed to copy as image:', err);
+                });
+            },
+        });
+    }
     items.push(
         {
             label: 'Wiedza',
