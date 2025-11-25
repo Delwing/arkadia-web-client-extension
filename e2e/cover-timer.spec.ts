@@ -50,6 +50,7 @@ test.describe('Cover timer', () => {
     });
 
     test('returns to ready state after timer expires', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -67,7 +68,7 @@ test.describe('Cover timer', () => {
         await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
 
         // Wait for timer to expire (5 seconds + buffer)
-        await page.waitForTimeout(5500);
+        await page.clock.runFor(5500);
 
         // Timer should return to ready state
         await expect(coverTimer, 'should return to ready state after timer expires').toHaveText('Zas: OK');

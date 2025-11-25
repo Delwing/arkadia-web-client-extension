@@ -130,7 +130,9 @@ test.describe('Transport timer', () => {
     });
 
     test('timer shows correct color based on remaining time', async ({page}) => {
-        test.setTimeout(60000); // Increase timeout to 60 seconds for this test
+        // Install fake timers before navigating
+        await page.clock.install();
+
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -153,12 +155,12 @@ test.describe('Transport timer', () => {
 
         // Start journey
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
+        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
 
         // Initially should have green or yellow class (more than 10 seconds remaining)
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
         const initialClass = await transportTimer.getAttribute('class');
         expect(
             initialClass === 'green' || initialClass === 'yellow',
@@ -167,11 +169,11 @@ test.describe('Transport timer', () => {
 
         // Wait for timer to count down (the journey to Kraina Zgromadzenia is 43 seconds)
         // After 20 seconds, should be yellow (about 23 seconds remaining, in 10-30 range)
-        await page.waitForTimeout(20000);
+        await page.clock.runFor(20000);
         await expect(transportTimer, 'should be yellow when close to arrival').toHaveClass('yellow');
 
         // Wait until less than 10 seconds remain (wait another 15 seconds)
-        await page.waitForTimeout(15000);
+        await page.clock.runFor(15000);
         await expect(transportTimer, 'should be red when very close to arrival').toHaveClass('red');
     });
 
@@ -248,4 +250,69 @@ test.describe('Transport timer', () => {
         const timerTextAfterWait = await transportTimer.textContent();
         expect(timerTextAfterWait, 'should show countdown').toMatch(/\d+:\d{2}/);
     });
+
+    test('uses learned shorter duration on subsequent journeys', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const transportTimer = page.locator('#transport-timer');
+
+        // Send location update
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: {x: 0, y: 0, name: 'Transport Docks'},
+        });
+
+        // First journey - board and depart
+        await submitCommand(page, 'wejdz na statek');
+        await page.waitForTimeout(50);
+        await pushText(page, 'Wchodzisz na wielka galere.');
+        await pushText(page, 'Galera odbija od brzegu.');
+
+        // Wait real time for 5 seconds to simulate a shorter journey
+        await page.waitForTimeout(5000);
+
+        // Simulate arrival after ~5 seconds (shorter than config 43s)
+        await pushText(page, 'Czarnowlosy barczysty mezczyzna krzyczy: Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!');
+        await page.waitForTimeout(100);
+
+        // Exit and go back for second journey
+        await pushText(page, 'Schodzisz z galery.');
+        await page.waitForTimeout(50);
+
+        // Return to original location
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: {x: 0, y: 0, name: 'Transport Docks'},
+        });
+
+        // Start second journey
+        await submitCommand(page, 'wejdz na statek');
+        await page.waitForTimeout(50);
+        await pushText(page, 'Wchodzisz na wielka galere.');
+        await pushText(page, 'Galera odbija od brzegu.');
+        await page.waitForTimeout(100);
+
+        // Timer should now use the learned shorter duration (~5s instead of config 43s)
+        const timerText = await transportTimer.textContent();
+        expect(timerText).toContain('Kraina Zgromadzenia');
+
+        // Extract the time value - should be around 5 seconds (learned), not 43 (config)
+        const match = timerText?.match(/(\d+):(\d{2})/);
+        expect(match, 'should show countdown time').toBeTruthy();
+        if (match) {
+            const seconds = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+            // Should be around 5 seconds (learned duration), not 43 (config)
+            expect(seconds, 'should use learned duration not config (43s)').toBeLessThanOrEqual(10);
+        }
+    });
+
 });

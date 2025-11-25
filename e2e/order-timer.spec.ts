@@ -131,6 +131,7 @@ test.describe('Order timer', () => {
     });
 
     test('returns to ready state after timer expires', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -154,7 +155,7 @@ test.describe('Order timer', () => {
         await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
 
         // Wait for timer to expire (15 seconds + buffer)
-        await page.waitForTimeout(15500);
+        await page.clock.runFor(15500);
 
         // Timer should return to ready state
         await expect(orderTimer, 'should return to ready state after timer expires').toHaveText('Rozkaz: OK');

@@ -89,6 +89,7 @@ test.describe('Leader attack warning', () => {
     });
 
     test('throttles warnings to once per 5 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -112,7 +113,7 @@ test.describe('Leader attack warning', () => {
         await pushGmcp(page, 'objects.data', {
             '10': {attack_num: 20},
         });
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Get text content after second event
         const secondWarningContent = await output.textContent();
@@ -125,13 +126,13 @@ test.describe('Leader attack warning', () => {
         expect(secondCount, 'should not show second warning due to throttling').toBe(firstCount);
 
         // Wait for throttle period to expire (5 seconds + buffer)
-        await page.waitForTimeout(5100);
+        await page.clock.runFor(5100);
 
         // Trigger another event after throttle expires
         await pushGmcp(page, 'objects.data', {
             '10': {attack_num: 20},
         });
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Get text content after third event
         const thirdWarningContent = await output.textContent();
@@ -142,6 +143,7 @@ test.describe('Leader attack warning', () => {
     });
 
     test('does not show warning when attack target disappears', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -163,19 +165,19 @@ test.describe('Leader attack warning', () => {
         const initialCount = (initialContent || '').split('Zaatakuj cel ataku').length - 1;
 
         // Wait for throttle to expire
-        await page.waitForTimeout(5100);
+        await page.clock.runFor(5100);
 
         // Remove attack target
         await pushGmcp(page, 'objects.data', {
             '20': {attack_target: false},
         });
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Trigger another event - should not show warning
         await pushGmcp(page, 'objects.data', {
             '10': {attack_num: 20},
         });
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         const finalContent = await output.textContent();
         const finalCount = (finalContent || '').split('Zaatakuj cel ataku').length - 1;
@@ -220,6 +222,7 @@ test.describe('Leader attack warning', () => {
     });
 
     test('shows correct keybind in warning message', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -247,7 +250,7 @@ test.describe('Leader attack warning', () => {
         await expect(output, 'should display custom attack keybind').toContainText('CTRL+2');
 
         // Wait for throttle
-        await page.waitForTimeout(5100);
+        await page.clock.runFor(5100);
 
         // Trigger support warning
         await pushGmcp(page, 'objects.data', {

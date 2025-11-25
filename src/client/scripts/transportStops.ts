@@ -327,21 +327,18 @@ class TransportTracker {
         }
 
         const key = createSegmentKey(definition.name, stop.start, stop.destination);
-        const currentTime = typeof stop.time === "number" && !Number.isNaN(stop.time) ? stop.time : undefined;
         if (duration < 1) {
-            if (this.segmentDurationOverrides.has(key)) {
-                const existing = this.segmentDurationOverrides.get(key);
-                if (existing !== undefined && existing <= duration) {
-                    return;
-                }
-            } else if (currentTime !== undefined) {
+            const existing = this.segmentDurationOverrides.get(key);
+            if (existing !== undefined && existing <= duration) {
+                return;
+            }
+            if (!this.segmentDurationOverrides.has(key)) {
                 return;
             }
         }
 
         const existingOverride = this.segmentDurationOverrides.get(key);
-        const bestDuration = existingOverride ?? currentTime;
-        const nextDuration = bestDuration !== undefined ? Math.min(bestDuration, duration) : duration;
+        const nextDuration = existingOverride !== undefined ? Math.min(existingOverride, duration) : duration;
 
         if (existingOverride !== undefined && existingOverride <= nextDuration) {
             return;

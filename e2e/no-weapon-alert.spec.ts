@@ -76,6 +76,7 @@ test.describe('No weapon alert', () => {
     });
 
     test('throttles alerts to once per 5 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -91,7 +92,7 @@ test.describe('No weapon alert', () => {
 
         // Second attack immediately after
         await pushText(page, 'Probujesz trafic Orka prawym piescia.');
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Get text content after second attack
         const secondAlertContent = await output.textContent();
@@ -104,11 +105,11 @@ test.describe('No weapon alert', () => {
         expect(secondCount, 'should not show second alert due to throttling').toBe(firstCount);
 
         // Wait for throttle period to expire (5 seconds + buffer)
-        await page.waitForTimeout(5100);
+        await page.clock.runFor(5100);
 
         // Third attack after throttle expires
         await pushText(page, 'Probujesz trafic Orka lewym kolanem.');
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Get text content after third attack
         const thirdAlertContent = await output.textContent();
@@ -119,6 +120,7 @@ test.describe('No weapon alert', () => {
     });
 
     test('alerts for different attack types', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -135,11 +137,11 @@ test.describe('No weapon alert', () => {
         for (let i = 0; i < attackTypes.length; i++) {
             // Wait for throttle to expire between attacks
             if (i > 0) {
-                await page.waitForTimeout(5100);
+                await page.clock.runFor(5100);
             }
 
             await pushText(page, attackTypes[i]);
-            await page.waitForTimeout(100);
+            await page.clock.runFor(100);
 
             await expect(output, `should display alert for attack type: ${attackTypes[i]}`).toContainText('Walczysz bez broni');
         }

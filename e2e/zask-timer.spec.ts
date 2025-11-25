@@ -48,6 +48,7 @@ test.describe('Zask timer', () => {
     });
 
     test('shows red color for first 20 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -58,7 +59,7 @@ test.describe('Zask timer', () => {
         await triggerRoomChange(page);
 
         // Wait a few seconds
-        await page.waitForTimeout(3000);
+        await page.clock.runFor(3000);
 
         // Should still be red
         await expect(zaskTimer, 'should display countdown in red').toContainText('Zask: ');
@@ -136,6 +137,7 @@ test.describe('Zask timer', () => {
     });
 
     test('stops and hides when exiting sneak mode', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -150,7 +152,7 @@ test.describe('Zask timer', () => {
         await expect(zaskTimer, 'should be visible in sneak mode').toBeVisible();
 
         // Wait a bit
-        await page.waitForTimeout(2000);
+        await page.clock.runFor(2000);
 
         // Exit sneak mode
         await setMoveMode(page, 0);
@@ -160,6 +162,7 @@ test.describe('Zask timer', () => {
     });
 
     test('continues timer when changing rooms in sneak mode', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -170,7 +173,7 @@ test.describe('Zask timer', () => {
         await triggerRoomChange(page);
 
         // Get initial time
-        await page.waitForTimeout(2000);
+        await page.clock.runFor(2000);
         const firstText = await zaskTimer.textContent();
         const firstSeconds = parseInt(firstText?.replace('Zask: ', '') || '0');
 
@@ -178,7 +181,7 @@ test.describe('Zask timer', () => {
         await triggerRoomChange(page);
 
         // Timer should reset and start from 0
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
         const secondText = await zaskTimer.textContent();
         const secondSeconds = parseInt(secondText?.replace('Zask: ', '') || '0');
 

@@ -27,6 +27,7 @@ test.describe('Clock System', () => {
     });
 
     test('second check within same hour reduces precision to 30', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -38,7 +39,7 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('±60');
 
         // Wait 30 seconds for clock to advance
-        await page.waitForTimeout(4000);
+        await page.clock.runFor(4000);
 
         // Second check still at 8:00 (same hour) - precision should reduce to 30
         await pushText(page, 'Jest w przyblizeniu osma rano, 15 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -46,6 +47,8 @@ test.describe('Clock System', () => {
     });
 
     test('sunrise event sets clock to rounded hour with precision 0', async ({page}) => {
+        // Note: This test cannot use page.clock because the clock internal state
+        // depends on real timestamps for daylight transition detection
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -74,6 +77,8 @@ test.describe('Clock System', () => {
     });
 
     test('sunset event at 20:59 sets clock to 21:00 with precision 0', async ({page}) => {
+        // Note: This test cannot use page.clock because the clock internal state
+        // depends on real timestamps for daylight transition detection
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -157,6 +162,7 @@ test.describe('Clock System', () => {
     });
 
     test('Ishtar sunrise event works independently from Empire', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -173,11 +179,11 @@ test.describe('Clock System', () => {
 
         // Ishtar sunrise event (need to change daylight state)
         await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
         await pushGmcp(page, 'room.time', { daylight: true });
 
         // Wait for clock to update
-        await page.waitForTimeout(1500);
+        await page.clock.runFor(1500);
 
         // Clock should update with precision 0
         const text = await clockDisplay.textContent();
@@ -186,6 +192,7 @@ test.describe('Clock System', () => {
     });
 
     test('clock persists across page reloads', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -204,7 +211,7 @@ test.describe('Clock System', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'TestHero'});
-        await page.waitForTimeout(1000);
+        await page.clock.runFor(1000);
 
         // Clock should show time again (might have ticked a bit)
         await expect(clockDisplay).toContainText(':');
@@ -213,6 +220,7 @@ test.describe('Clock System', () => {
     });
 
     test('clock shows day/night color coding', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -227,7 +235,7 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: true });
 
         // Wait for display to update
-        await page.waitForTimeout(1000);
+        await page.clock.runFor(1000);
 
         // Check that clock has yellow color for daytime (calculated from hour vs sunrise/sunset)
         const innerHTML = await clockDisplay.innerHTML();
@@ -240,7 +248,7 @@ test.describe('Clock System', () => {
 
         // Sunset event - should show nighttime (already at daytime, so just change to false)
         await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(2000);
+        await page.clock.runFor(2000);
 
         const innerHTMLNight = await clockDisplay.innerHTML();
         // Nighttime color is #60a5fa (blue)
