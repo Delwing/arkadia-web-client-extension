@@ -11,7 +11,7 @@ jest.mock('@modules/core/storage', () => ({
 class MockClient {
   private emitter = new EventEmitter();
   ObjectManager = { getObjectsOnLocation: () => [] as any[] };
-  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as number[] };
+  TeamManager = { isInTeam: (_d: string) => false, getEnemyQueue: () => [] as number[], isLeader: () => false };
   on(event: string, handler: (...args: any[]) => void) {
     this.emitter.on(event, handler);
     return () => this.off(event, handler);
@@ -26,6 +26,7 @@ class MockClient {
     this.emit(event, payload);
   }
   sendCommand = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('ObjectList', () => {

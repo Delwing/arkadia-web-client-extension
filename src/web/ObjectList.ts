@@ -1,6 +1,6 @@
 import Client from "@client/Client";
 import { getItemSync, setItemSync } from "@modules/core/storage";
-import { DEFAULT_ATTACK_COMMAND, normalizeAttackCommand } from "@client/utils/attackCommand";
+import { createAttackController } from "@client/utils/attackController";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
 
@@ -28,18 +28,14 @@ export default class ObjectList {
     private pipCoverTimerText = "";
     private pipLastOutputHtml = "";
     private cachedPipHtml = "";
-    private attackCommand = DEFAULT_ATTACK_COMMAND;
+    private attackController: ReturnType<typeof createAttackController>;
 
     constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
         this.content = this.setupContainer();
         this.isMobile = this.isMobileBrowser();
-        const storedSettings = getItemSync("settings")?.settings;
-        this.attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
-        this.client.on("settings", (settings) => {
-            this.attackCommand = normalizeAttackCommand((settings as any)?.attackCommand);
-        });
+        this.attackController = createAttackController(client);
         this.setupDraggable();
         if (!this.isMobile) {
             this.container?.addEventListener("click", this.onClick);
@@ -224,7 +220,7 @@ export default class ObjectList {
                     // Don't attack teammates
                     return;
                 }
-                this.client.sendCommand(`${this.attackCommand} ob_${id}`);
+                this.attackController.attackById(parseInt(id, 10));
             } else {
                 const num = numEl.getAttribute("data-object-num");
                 if (num) {
@@ -315,7 +311,7 @@ export default class ObjectList {
                 isTeammate: isTeammate || false,
                 rawDescription: rawDesc,
                 isAttacking,
-                attackCommand: this.attackCommand
+                attackCommand: this.attackController.getAttackCommand()
             };
             const filterResult = objectListFilters.apply(filterContext);
 
