@@ -1756,7 +1756,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
     new ObjectList(client);
-    new LetterComposer(arkadiaClient);
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
@@ -1855,6 +1854,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const clockRoot = document.getElementById('clock-root');
     if (clockRoot) {
         createRoot(clockRoot).render(createElement(ClockPopup));
+    }
+
+    const letterComposerRoot = document.getElementById('letter-composer-root');
+    if (letterComposerRoot) {
+        createRoot(letterComposerRoot).render(createElement(LetterComposer));
     }
 });
 

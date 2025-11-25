@@ -1,0 +1,309 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import eventBus from '@modules/core/eventBus';
+import { useDraggablePopup } from './hooks/useDraggablePopup';
+import {
+    LETTER_TEMPLATE_CHOICES,
+    LETTER_TEMPLATE_DEFINITIONS,
+    LETTER_TEMPLATE_PREVIEW_LABELS,
+    isLetterTemplate,
+    type LetterTemplate,
+} from "@client/types/letter";
+import { renderLetter } from "@shared/letterRenderer";
+
+const TEMPLATE_STORAGE_KEY = "letter-composer-template";
+const DEFAULT_LINE_WIDTH = 60;
+const WIDE_SCREEN_THRESHOLD = 900;
+
+function isSelectableTemplate(value: unknown): value is LetterTemplate {
+    return isLetterTemplate(value) && Boolean(LETTER_TEMPLATE_DEFINITIONS[value]?.supportsJustification);
+}
+
+function loadTemplateSelection(): LetterTemplate {
+    try {
+        const stored = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+        if (isSelectableTemplate(stored)) {
+            return stored;
+        }
+    } catch {
+        // ignore storage errors
+    }
+    return LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
+}
+
+function saveTemplateSelection(value: LetterTemplate) {
+    try {
+        localStorage.setItem(TEMPLATE_STORAGE_KEY, value);
+    } catch {
+        // ignore storage errors
+    }
+}
+
+const LetterComposer: React.FC = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isPinned, setIsPinned] = useState(false);
+    const [templateSelection, setTemplateSelection] = useState<LetterTemplate>(loadTemplateSelection);
+    const [contentText, setContentText] = useState("");
+    const [isWideScreen, setIsWideScreen] = useState(false);
+
+    const toInputRef = useRef<HTMLInputElement>(null);
+    const ccInputRef = useRef<HTMLInputElement>(null);
+    const subjectInputRef = useRef<HTMLInputElement>(null);
+    const contentInputRef = useRef<HTMLTextAreaElement>(null);
+    const templateSelectRef = useRef<HTMLSelectElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const close = useCallback(() => {
+        setIsOpen(false);
+    }, []);
+
+    const togglePinned = useCallback(() => {
+        setIsPinned((prev) => !prev);
+    }, []);
+
+    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
+        isOpen,
+        isPinned,
+        onClose: close,
+        minWidth: 400,
+        minHeight: 300,
+    });
+
+    // Check container width and update wide screen state
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const checkWidth = () => {
+            const container = panelRef.current;
+            if (container) {
+                const width = size?.width ?? container.offsetWidth;
+                setIsWideScreen(width >= WIDE_SCREEN_THRESHOLD);
+            }
+        };
+
+        checkWidth();
+
+        const resizeObserver = new ResizeObserver(checkWidth);
+        if (panelRef.current) {
+            resizeObserver.observe(panelRef.current);
+        }
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [isOpen, size, panelRef]);
+
+    const getPayload = useCallback(() => {
+        const template = templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value)
+            ? templateSelectRef.current.value
+            : templateSelection;
+        setTemplateSelection(template);
+        saveTemplateSelection(template);
+        return {
+            to: toInputRef.current?.value ?? "",
+            cc: ccInputRef.current?.value ?? "",
+            subject: subjectInputRef.current?.value ?? "",
+            content: contentInputRef.current?.value ?? "",
+            template,
+        };
+    }, [templateSelection]);
+
+    const resetForm = useCallback(() => {
+        if (toInputRef.current) toInputRef.current.value = "";
+        if (ccInputRef.current) ccInputRef.current.value = "";
+        if (subjectInputRef.current) subjectInputRef.current.value = "";
+        if (contentInputRef.current) contentInputRef.current.value = "";
+        setContentText("");
+    }, []);
+
+    const handleSubmit = useCallback((ev: React.FormEvent) => {
+        ev.preventDefault();
+        const payload = getPayload();
+        eventBus.emit("letterComposer.submit", payload);
+        close();
+        resetForm();
+    }, [getPayload, close, resetForm]);
+
+    const handlePreview = useCallback((ev: React.MouseEvent) => {
+        ev.preventDefault();
+        const payload = getPayload();
+        eventBus.emit("letterComposer.preview", payload);
+    }, [getPayload]);
+
+    const handleTemplateChange = useCallback(() => {
+        if (templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value)) {
+            const newTemplate = templateSelectRef.current.value;
+            setTemplateSelection(newTemplate);
+            saveTemplateSelection(newTemplate);
+        }
+    }, []);
+
+    const handleContentChange = useCallback((ev: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setContentText(ev.target.value);
+    }, []);
+
+    // Listen for open event
+    useEffect(() => {
+        const handleOpen = () => {
+            const savedTemplate = loadTemplateSelection();
+            setTemplateSelection(savedTemplate);
+            resetForm();
+            setIsOpen(true);
+            requestAnimationFrame(() => {
+                toInputRef.current?.focus();
+            });
+        };
+
+        eventBus.on("letterComposer", handleOpen);
+        return () => {
+            eventBus.off("letterComposer", handleOpen);
+        };
+    }, [resetForm]);
+
+    // Apply template selection when it changes
+    useEffect(() => {
+        if (templateSelectRef.current && isSelectableTemplate(templateSelection)) {
+            templateSelectRef.current.value = templateSelection;
+        }
+    }, [templateSelection, isOpen]);
+
+    // Compute rendered preview
+    const previewLines = useMemo(() => {
+        if (!isWideScreen || !contentText.trim()) {
+            return null;
+        }
+        const result = renderLetter(contentText, templateSelection, DEFAULT_LINE_WIDTH);
+        return result.lines;
+    }, [contentText, templateSelection, isWideScreen]);
+
+    const templateLabel = LETTER_TEMPLATE_PREVIEW_LABELS[templateSelection] ?? templateSelection;
+
+    if (!isOpen) {
+        return null;
+    }
+
+    return (
+        <div
+            ref={panelRef}
+            className={`letter-composer ${
+                position ? 'letter-composer--floating' : 'letter-composer--center'
+            } ${isWideScreen ? 'letter-composer--wide' : ''}`}
+            style={{
+                ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
+                ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
+            }}
+        >
+            <div className="letter-composer-inner" ref={containerRef}>
+                <div className="letter-composer-header" onPointerDown={handlePointerDown}>
+                    <span>Nowy list</span>
+                    <div
+                        className="window-header-actions"
+                        onPointerDownCapture={(event) => event.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                            onClick={togglePinned}
+                            title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+                        />
+                        <button type="button" className="btn-close btn-close-white" onClick={close} />
+                    </div>
+                </div>
+                <div className="letter-composer-body">
+                    <form className="letter-composer-form" onSubmit={handleSubmit}>
+                        <div className="letter-composer-field">
+                            <label htmlFor="letter-to" className="form-label">Do:</label>
+                            <input
+                                ref={toInputRef}
+                                id="letter-to"
+                                name="letter-to"
+                                className="form-control form-control-sm"
+                                type="text"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="letter-composer-field">
+                            <label htmlFor="letter-cc" className="form-label">CC:</label>
+                            <input
+                                ref={ccInputRef}
+                                id="letter-cc"
+                                name="letter-cc"
+                                className="form-control form-control-sm"
+                                type="text"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="letter-composer-field">
+                            <label htmlFor="letter-subject" className="form-label">Temat:</label>
+                            <input
+                                ref={subjectInputRef}
+                                id="letter-subject"
+                                name="letter-subject"
+                                className="form-control form-control-sm"
+                                type="text"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="letter-composer-field letter-composer-field--grow">
+                            <label htmlFor="letter-content" className="form-label">Tresc:</label>
+                            <textarea
+                                ref={contentInputRef}
+                                id="letter-content"
+                                name="letter-content"
+                                className="form-control"
+                                onChange={handleContentChange}
+                            />
+                        </div>
+                        <div className="letter-composer-actions">
+                            <div className="letter-template-group">
+                                <label htmlFor="letter-template" className="form-label mb-0">Szablon:</label>
+                                <select
+                                    ref={templateSelectRef}
+                                    id="letter-template"
+                                    name="letter-template"
+                                    className="form-select form-select-sm letter-template-select"
+                                    defaultValue={templateSelection}
+                                    onChange={handleTemplateChange}
+                                >
+                                    {LETTER_TEMPLATE_CHOICES.map((choice) => (
+                                        <option key={choice.value} value={choice.value}>
+                                            {choice.displayLabel}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreview}>
+                                Podglad
+                            </button>
+                            <button type="submit" className="btn btn-primary btn-sm">Wyslij</button>
+                        </div>
+                    </form>
+                    {isWideScreen && (
+                        <div className="letter-composer-preview">
+                            <div className="letter-composer-preview-header">
+                                Podglad ({templateLabel})
+                            </div>
+                            <div className="letter-composer-preview-content">
+                                {previewLines ? (
+                                    <pre className="letter-composer-preview-text">
+                                        {previewLines.join('\n')}
+                                    </pre>
+                                ) : (
+                                    <div className="letter-composer-preview-empty">
+                                        Wpisz tresc listu, aby zobaczyc podglad
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div
+                    className="letter-composer-resize-handle"
+                    onPointerDown={handleResizePointerDown}
+                    title="Drag to resize"
+                />
+            </div>
+        </div>
+    );
+};
+
+export default LetterComposer;

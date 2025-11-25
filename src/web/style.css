@@ -3268,11 +3268,10 @@ body.mobile-command-radial-active {
 
 .letter-composer {
   position: fixed;
-  top: 4rem;
-  left: 4rem;
-  width: min(32rem, 90vw);
-  min-height: 23rem;
-  max-height: min(42rem, 90vh);
+  width: min(900px, 90vw);
+  min-width: 400px;
+  min-height: 300px;
+  max-height: 90vh;
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);
   border-radius: 0.5rem;
@@ -3284,8 +3283,21 @@ body.mobile-command-radial-active {
   flex-direction: column;
 }
 
-.letter-composer[hidden] {
-  display: none !important;
+.letter-composer--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.letter-composer--floating {
+  transform: none;
+}
+
+.letter-composer-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .letter-composer-header {
@@ -3297,10 +3309,17 @@ body.mobile-command-radial-active {
   background-color: rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   cursor: move;
+  flex-shrink: 0;
 }
 
 .letter-composer-header span {
   font-weight: 600;
+}
+
+.letter-composer-header .window-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .letter-composer-form {
@@ -3317,11 +3336,23 @@ body.mobile-command-radial-active {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.letter-composer-field--grow {
+  flex: 1;
+  min-height: 0;
+}
+
+.letter-composer-field--grow textarea {
+  flex: 1;
+  min-height: 8rem;
+  resize: none;
 }
 
 .letter-composer textarea {
   resize: vertical;
-  min-height: 10.5rem;
+  min-height: 8rem;
 }
 
 .letter-composer-actions {
@@ -3333,6 +3364,7 @@ body.mobile-command-radial-active {
   margin-top: auto;
   padding-top: 0.5rem;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .letter-template-group {
@@ -3345,6 +3377,98 @@ body.mobile-command-radial-active {
 .letter-template-select {
   width: auto;
   min-width: 9rem;
+}
+
+.letter-composer-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  border-bottom-right-radius: 0.5rem;
+}
+
+.letter-composer-resize-handle:hover {
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+}
+
+.letter-composer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.letter-composer--wide .letter-composer-body {
+  flex-direction: row;
+}
+
+.letter-composer--wide .letter-composer-form {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.letter-composer-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.letter-composer-preview-header {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.letter-composer-preview-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.letter-composer-preview-text {
+  margin: 0;
+  font-family: monospace;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  white-space: pre;
+  color: #e0e0e0;
+}
+
+.letter-composer-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
 }
 
 .docs-content {
