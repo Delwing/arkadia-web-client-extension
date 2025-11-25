@@ -15,6 +15,7 @@ export interface UserMacro {
 
 export interface UserTrigger {
     pattern: string;
+    flags?: string;
     macros: UserMacro[];
 }
 
@@ -153,6 +154,7 @@ function MacroEditor({
 function UserTriggers() {
     const [triggers, setTriggers] = useState<UserTrigger[]>([]);
     const [pattern, setPattern] = useState('');
+    const [flags, setFlags] = useState('');
     const [macros, setMacros] = useState<UserMacro[]>([]);
     const [editIndex, setEditIndex] = useState<number | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -275,6 +277,7 @@ function UserTriggers() {
 
     function resetForm() {
         setPattern('');
+        setFlags('');
         setMacros([]);
         setEditIndex(null);
     }
@@ -287,6 +290,7 @@ function UserTriggers() {
     function edit(idx: number) {
         const t = triggers[idx];
         setPattern(t.pattern);
+        setFlags(t.flags || '');
         setMacros(t.macros ? t.macros.map(normalizeMacro) : []);
         setEditIndex(idx);
         setShowCreateForm(false);
@@ -314,7 +318,10 @@ function UserTriggers() {
         const p = pattern.trim();
         if (!p) return;
         const list = [...triggers];
-        const entry = { pattern: p, macros };
+        const entry: UserTrigger = { pattern: p, macros };
+        if (flags.trim()) {
+            entry.flags = flags.trim();
+        }
         if (editIndex === null) {
             list.push(entry);
         } else {
@@ -388,15 +395,25 @@ function UserTriggers() {
                 <div className="border rounded p-3 mb-3">
                     <h6 className="mb-3">{editIndex === null ? 'Dodaj trigger' : 'Edytuj trigger'}</h6>
                     <Form.Group className="d-flex flex-column gap-2">
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            placeholder="Pattern"
-                            value={pattern}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                            style={{ width: '100%' }}
-                            className="font-monospace"
-                        />
+                        <div className="d-flex gap-2">
+                            <Form.Control
+                                type="text"
+                                size="sm"
+                                placeholder="Pattern"
+                                value={pattern}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                className="font-monospace flex-grow-1"
+                            />
+                            <Form.Control
+                                type="text"
+                                size="sm"
+                                placeholder="Flagi (np. i, g, gi)"
+                                value={flags}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setFlags(e.target.value)}
+                                className="font-monospace"
+                                style={{ width: '120px' }}
+                            />
+                        </div>
                         {macros.map((m, i) => (
                             <MacroEditor
                                 key={i}
@@ -423,15 +440,25 @@ function UserTriggers() {
                             <div className="border rounded p-3 mb-3">
                                 <h6 className="mb-3">Edytuj trigger</h6>
                                 <Form.Group className="d-flex flex-column gap-2">
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        placeholder="Pattern"
-                                        value={pattern}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                        style={{ width: '100%' }}
-                                        className="font-monospace"
-                                    />
+                                    <div className="d-flex gap-2">
+                                        <Form.Control
+                                            type="text"
+                                            size="sm"
+                                            placeholder="Pattern"
+                                            value={pattern}
+                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                            className="font-monospace flex-grow-1"
+                                        />
+                                        <Form.Control
+                                            type="text"
+                                            size="sm"
+                                            placeholder="Flagi (np. i, g, gi)"
+                                            value={flags}
+                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setFlags(e.target.value)}
+                                            className="font-monospace"
+                                            style={{ width: '120px' }}
+                                        />
+                                    </div>
                                     {macros.map((m, i) => (
                                         <MacroEditor
                                             key={i}
@@ -454,6 +481,7 @@ function UserTriggers() {
                         <li key={t.idx} className="alias-list-item d-flex flex-column flex-md-row gap-2 align-items-stretch align-items-md-center">
                             <div className="alias-entry flex-grow-1">
                                 <code className="alias-pattern">{t.pattern}</code>
+                                {t.flags && <code className="alias-flags text-muted ms-1">/{t.flags}</code>}
                                 {t.macros?.length ? (
                                     <>
                                         <span className="alias-divider">→</span>
