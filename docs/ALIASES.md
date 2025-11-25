@@ -64,7 +64,7 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 
 ## Prowadzenie i ruch
 - **/cofnij** - cofa postać do poprzedniego pomieszczenia na mapie.
-- **/move _kierunek_** - przesuwa postać w wybranym kierunku.
+- **/move _kierunek_** - przesuwa mapę w wybranym kierunku bez wysyłania komendy do serwera.
 - **/ustaw _id_** - ustawia bieżącą pozycję na mapie na podany identyfikator.
 - **/zlok** - wymusza odświeżenie bieżącej pozycji na mapie.
 - **/przeszukaj _tekst_** - wyszukuje w danych mapy pokoje z nazwami zawierającymi podany tekst i wypisuje do 10 najbliższych.

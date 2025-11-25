@@ -83,20 +83,15 @@ export async function copyOutputAsImage(): Promise<void> {
     const fontSize = 14;
     const lineHeight = 1.4;
     const padding = 16;
-    const maxWidth = 800;
     const font = `${fontSize}px monospace`;
     const boldFont = `bold ${fontSize}px monospace`;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    ctx.font = font;
 
-    const charWidth = ctx.measureText('M').width;
-    const maxCharsPerLine = Math.floor((maxWidth - padding * 2) / charWidth);
-
+    // Split spans into lines (by newlines only, no wrapping)
     const lines: StyledSpan[][] = [];
     let currentLine: StyledSpan[] = [];
-    let currentLineLength = 0;
 
     for (const span of spans) {
         const parts = span.text.split('\n');
@@ -104,23 +99,9 @@ export async function copyOutputAsImage(): Promise<void> {
             if (i > 0) {
                 lines.push(currentLine);
                 currentLine = [];
-                currentLineLength = 0;
             }
-
-            let text = parts[i];
-            while (text.length > 0) {
-                const remaining = maxCharsPerLine - currentLineLength;
-                if (text.length <= remaining) {
-                    currentLine.push({ text, color: span.color, bold: span.bold });
-                    currentLineLength += text.length;
-                    break;
-                } else {
-                    currentLine.push({ text: text.slice(0, remaining), color: span.color, bold: span.bold });
-                    lines.push(currentLine);
-                    currentLine = [];
-                    currentLineLength = 0;
-                    text = text.slice(remaining);
-                }
+            if (parts[i]) {
+                currentLine.push({ text: parts[i], color: span.color, bold: span.bold });
             }
         }
     }
@@ -128,9 +109,20 @@ export async function copyOutputAsImage(): Promise<void> {
         lines.push(currentLine);
     }
 
+    // Measure actual width of each line
+    let maxLineWidth = 0;
+    for (const line of lines) {
+        let lineWidth = 0;
+        for (const span of line) {
+            ctx.font = span.bold ? boldFont : font;
+            lineWidth += ctx.measureText(span.text).width;
+        }
+        maxLineWidth = Math.max(maxLineWidth, lineWidth);
+    }
+
     const scale = 2;
     const lineHeightPx = fontSize * lineHeight;
-    const width = maxWidth;
+    const width = Math.max(200, maxLineWidth + padding * 2);
     const height = padding * 2 + lines.length * lineHeightPx;
 
     canvas.width = width * scale;
