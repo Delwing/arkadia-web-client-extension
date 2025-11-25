@@ -29,7 +29,7 @@ interface CuttingState {
  */
 export default function initCutting(
     client: Client,
-    aliases?: { pattern: RegExp; callback: (matches: RegExpMatchArray) => void }[]
+    aliases?: { pattern: RegExp; callback: Function }[]
 ) {
     const state: CuttingState = {
         mode: null,

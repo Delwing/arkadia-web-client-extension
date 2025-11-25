@@ -278,7 +278,6 @@ export default class MapHelper {
                 }
             }
 
-            console.log(direction, specials);
             for (const ex of specials) {
                 const part = ex.substring(0, Math.round(ex.length * 0.7));
                 if (direction.includes(part)) {
@@ -315,7 +314,9 @@ export default class MapHelper {
 
     refresh() {
         const roomId = this.currentRoom.id;
-        this.setMapPosition(this.gmcpPosition);
+        if (this.setMapPosition(this.gmcpPosition)) {
+            this.refreshPosition = false;
+        }
         return roomId === this.currentRoom.id;
     }
 
