@@ -9,6 +9,46 @@ import { searchDocs, getDocsSummary } from './docsRegistry';
 /** Maximum continuation loops to prevent infinite loops */
 const MAX_CONTINUATIONS = 10;
 
+/** Model context and output limits */
+const MODEL_LIMITS: Record<string, { context: number; maxOutput: number }> = {
+  'gpt-5': { context: 128000, maxOutput: 32768 },
+  'gpt-5-mini': { context: 128000, maxOutput: 16384 },
+  'gpt-4o': { context: 128000, maxOutput: 16384 },
+  'gpt-4-turbo': { context: 128000, maxOutput: 4096 },
+  'gpt-4': { context: 8192, maxOutput: 4096 },
+  'o1': { context: 200000, maxOutput: 100000 },
+  'o3': { context: 200000, maxOutput: 100000 },
+  'default': { context: 128000, maxOutput: 8192 }
+};
+
+/** Estimate token count from text (rough: ~4 chars per token) */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/** Calculate dynamic max_tokens based on input size and model limits */
+function calculateMaxTokens(messages: any[], model: string): number {
+  // Estimate input tokens
+  const inputText = messages.map(m =>
+    typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+  ).join('');
+  const inputTokens = estimateTokens(inputText);
+
+  // Find matching model config
+  const config = Object.entries(MODEL_LIMITS).find(([key]) =>
+    key !== 'default' && model.includes(key)
+  )?.[1] || MODEL_LIMITS.default;
+
+  // Calculate available tokens for response
+  const available = config.context - inputTokens - 500; // 500 token buffer
+
+  // Clamp between reasonable min/max
+  const minTokens = 4000;
+  const maxTokens = Math.min(available, config.maxOutput);
+
+  return Math.max(minTokens, maxTokens);
+}
+
 /** Tool definitions for OpenAI function calling */
 const tools = [
   {
@@ -130,7 +170,18 @@ export async function callOpenAI(
       const hasMoreSteps = parsed.hasMoreSteps || wasTruncated;
 
       if (hasMoreSteps && continuationCount < MAX_CONTINUATIONS - 1) {
-        // Report progress
+        // Emit step_complete with partial response so UI can display it immediately
+        onProgress?.({
+          type: 'step_complete',
+          message: `Step ${continuationCount + 1} complete`,
+          step: continuationCount + 1,
+          partialResponse: {
+            message: parsed.message,
+            fileOperations: parsed.fileOperations
+          }
+        });
+
+        // Report continuation status
         if (wasTruncated) {
           onProgress?.({
             type: 'truncated',
@@ -140,7 +191,7 @@ export async function callOpenAI(
         } else {
           onProgress?.({
             type: 'continuation',
-            message: `Step ${continuationCount + 1} complete, continuing...`,
+            message: `Continuing to next step...`,
             step: continuationCount + 1
           });
         }
@@ -183,6 +234,9 @@ async function makeApiCall(
   model: string,
   messages: any[]
 ): Promise<Response> {
+  // Calculate dynamic max tokens based on input size and model limits
+  const maxTokens = calculateMaxTokens(messages, model);
+
   // GPT-4o and newer models use max_completion_tokens instead of max_tokens
   const useNewTokenParam = model.includes('gpt-4o') ||
                            model.includes('gpt-5') ||
@@ -196,9 +250,9 @@ async function makeApiCall(
   };
 
   if (useNewTokenParam) {
-    requestBody.max_completion_tokens = 4000;
+    requestBody.max_completion_tokens = maxTokens;
   } else {
-    requestBody.max_tokens = 4000;
+    requestBody.max_tokens = maxTokens;
   }
 
   return fetch('https://api.openai.com/v1/chat/completions', {
@@ -247,8 +301,9 @@ function parseAgentResponse(content: string): ParsedResponse {
     hasMoreSteps: false
   };
 
-  // First, try to parse as pure JSON (AI responded with just JSON object)
   const trimmedContent = content.trim();
+
+  // First, try to parse as pure JSON (AI responded with just JSON object)
   if (trimmedContent.startsWith('{')) {
     try {
       const parsed = JSON.parse(trimmedContent);
@@ -264,6 +319,31 @@ function parseAgentResponse(content: string): ParsedResponse {
       }
     } catch (_e) {
       // Not pure JSON, continue to check for markdown blocks
+    }
+  }
+
+  // Try to find JSON object anywhere in the content (AI might add text before/after)
+  const jsonObjectMatch = trimmedContent.match(/\{[\s\S]*"fileOperations"[\s\S]*\}/);
+  if (jsonObjectMatch) {
+    try {
+      const parsed = JSON.parse(jsonObjectMatch[0]);
+      if (parsed.fileOperations && Array.isArray(parsed.fileOperations)) {
+        response.fileOperations = parsed.fileOperations;
+        response.hasMoreSteps = parsed.hasMoreSteps || false;
+        // Remove the JSON from the message
+        const messageWithoutJson = trimmedContent.replace(jsonObjectMatch[0], '').trim();
+        if (messageWithoutJson) {
+          response.message = messageWithoutJson;
+        } else {
+          const operationsSummary = parsed.fileOperations.map((op: any) =>
+            `${op.type} ${op.path}`
+          ).join(', ');
+          response.message = `Executing file operations: ${operationsSummary}`;
+        }
+        return response;
+      }
+    } catch (_e) {
+      // Not valid JSON, continue
     }
   }
 

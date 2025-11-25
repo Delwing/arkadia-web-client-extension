@@ -244,8 +244,61 @@ export class CodingAgentPanel {
         conversationHistory: this.messages.filter(m => m.role !== 'user' || m.id !== userMessage.id)
       };
 
-      // Progress callback to update loading message
+      // Progress callback to update loading message and show partial responses
       const onProgress = (progress: AgentProgress) => {
+        // Handle step_complete - show partial response immediately
+        if (progress.type === 'step_complete' && progress.partialResponse) {
+          // Remove loading message temporarily
+          this.messages = this.messages.filter(m => !m.isLoading);
+
+          // Add the partial response as a message
+          if (progress.partialResponse.message) {
+            const partialMessage: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: progress.partialResponse.message,
+              timestamp: Date.now(),
+              fileOperations: progress.partialResponse.fileOperations
+            };
+            this.messages.push(partialMessage);
+          }
+
+          // Execute file operations immediately if any
+          if (progress.partialResponse.fileOperations && progress.partialResponse.fileOperations.length > 0) {
+            const fileOpsContext: AgentFileOperationsContext = {
+              plugin: context.plugin,
+              pluginId: context.pluginId,
+              editorModels: context.editorModels,
+              modifiedFiles: context.modifiedFiles,
+              currentFilePath: context.currentFilePath,
+              updateStatus: context.updateStatus,
+              renderFileTree: context.renderFileTree,
+              switchToFile: context.switchToFile,
+              updateEditorModel: (path: string, content: string) => {
+                const model = context.editorModels.get(path);
+                if (model) {
+                  model.setValue(content);
+                }
+              }
+            };
+            executeFileOperations(progress.partialResponse.fileOperations, fileOpsContext);
+          }
+
+          // Add loading message back for next step
+          this.messages.push({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: 'Processing...',
+            timestamp: Date.now(),
+            isLoading: true
+          });
+
+          this.renderMessages();
+          this.saveConversationToHistory();
+          return;
+        }
+
+        // Update loading message for other progress types
         const loadingMsg = this.messages.find(m => m.isLoading);
         if (loadingMsg) {
           loadingMsg.content = `Processing... ${progress.message}`;
@@ -443,9 +496,13 @@ export class CodingAgentPanel {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Format code blocks
-    formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, _lang, code) => {
-      return `<pre><code>${code.trim()}</code></pre>`;
+    // Format code blocks - skip empty ones
+    formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, _lang, code) => {
+      const trimmedCode = code.trim();
+      if (!trimmedCode) {
+        return ''; // Skip empty code blocks
+      }
+      return `<pre><code>${trimmedCode}</code></pre>`;
     });
 
     // Format inline code

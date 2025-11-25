@@ -5,6 +5,7 @@ import {
   deleteEditorPlugin,
   getAllEditorPlugins,
   generateEditorPluginId,
+  getLanguageFromPath,
 } from '@client/utils/pluginEditorStorage.ts'
 import {
   storePluginScript,
@@ -12,6 +13,7 @@ import {
   deletePluginScript,
 } from '@client/utils/pluginStorage.ts'
 import type { StatusType } from './types'
+import JSZip from 'jszip'
 
 export async function refreshPluginList(_currentPluginId: string | null): Promise<void> {
   const plugins = await getAllEditorPlugins()
@@ -274,4 +276,165 @@ export async function destroy(): Promise<void> {
   localStorage.setItem('stored_scripts_updated', Date.now().toString())
 
   return pluginData
+}
+
+/**
+ * Download a plugin as a ZIP file containing all source files
+ */
+export async function downloadPlugin(
+  pluginId: string,
+  updateStatus: (message: string, type: StatusType) => void
+): Promise<void> {
+  const plugin = await getEditorPlugin(pluginId)
+  if (!plugin) {
+    updateStatus('Plugin not found', 'error')
+    return
+  }
+
+  updateStatus('Creating ZIP file...', 'normal')
+
+  const zip = new JSZip()
+
+  // Add all files to the ZIP
+  for (const [filePath, file] of Object.entries(plugin.files)) {
+    zip.file(filePath, file.content)
+  }
+
+  // Add plugin metadata
+  const metadata = {
+    name: plugin.name,
+    entryPoint: plugin.entryPoint,
+    metadata: plugin.metadata,
+    folders: plugin.folders || [],
+  }
+  zip.file('plugin.json', JSON.stringify(metadata, null, 2))
+
+  // Generate and download the ZIP file
+  const blob = await zip.generateAsync({ type: 'blob' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${plugin.name.replace(/[^a-zA-Z0-9-_]/g, '_')}.zip`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+
+  updateStatus(`Downloaded: ${plugin.name}.zip`, 'success')
+}
+
+/**
+ * Upload a plugin from a ZIP file
+ */
+export async function uploadPlugin(
+  file: File,
+  bundlePluginFunc: (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>,
+  updateStatus: (message: string, type: StatusType) => void
+): Promise<EditorPluginData | null> {
+  updateStatus('Reading ZIP file...', 'normal')
+
+  try {
+    const zip = await JSZip.loadAsync(file)
+
+    // Look for plugin.json metadata
+    const metadataFile = zip.file('plugin.json')
+    let pluginName = file.name.replace(/\.zip$/i, '')
+    let entryPoint = ''
+    let folders: string[] = []
+    let pluginMetadata: EditorPluginData['metadata'] | undefined
+
+    if (metadataFile) {
+      try {
+        const metadataContent = await metadataFile.async('string')
+        const metadata = JSON.parse(metadataContent)
+        pluginName = metadata.name || pluginName
+        entryPoint = metadata.entryPoint || ''
+        folders = metadata.folders || []
+        pluginMetadata = metadata.metadata
+      } catch {
+        // Ignore metadata parse errors
+      }
+    }
+
+    // Extract all files (except plugin.json)
+    const files: Record<string, PluginFile> = {}
+    const filePromises: Promise<void>[] = []
+
+    zip.forEach((relativePath, zipEntry) => {
+      if (zipEntry.dir || relativePath === 'plugin.json') return
+
+      filePromises.push(
+        zipEntry.async('string').then(content => {
+          files[relativePath] = {
+            path: relativePath,
+            content,
+            language: getLanguageFromPath(relativePath),
+          }
+        })
+      )
+    })
+
+    await Promise.all(filePromises)
+
+    if (Object.keys(files).length === 0) {
+      updateStatus('ZIP file contains no source files', 'error')
+      return null
+    }
+
+    // Try to determine entry point if not specified
+    if (!entryPoint) {
+      const possibleEntryPoints = ['index.ts', 'index.js', 'main.ts', 'main.js']
+      for (const ep of possibleEntryPoints) {
+        if (files[ep]) {
+          entryPoint = ep
+          break
+        }
+      }
+      // Fallback to first TypeScript or JavaScript file
+      if (!entryPoint) {
+        const firstTsFile = Object.keys(files).find(f => f.endsWith('.ts'))
+        const firstJsFile = Object.keys(files).find(f => f.endsWith('.js'))
+        entryPoint = firstTsFile || firstJsFile || Object.keys(files)[0]
+      }
+    }
+
+    updateStatus('Bundling plugin...', 'normal')
+
+    // Bundle the plugin
+    const compiled = await bundlePluginFunc(files, entryPoint)
+
+    const now = Date.now()
+    const pluginData: EditorPluginData = {
+      id: generateEditorPluginId(pluginName),
+      name: pluginName,
+      files,
+      folders,
+      entryPoint,
+      compiled,
+      metadata: pluginMetadata || {
+        name: pluginName,
+        version: '1.0.0',
+        author: 'Imported',
+        description: 'Imported from ZIP file',
+      },
+      createdAt: now,
+      updatedAt: now,
+      lastCompiledAt: now,
+    }
+
+    // Store the plugin
+    await storeEditorPlugin(pluginData)
+    await storePluginScript(pluginData.id, compiled, pluginData.metadata)
+
+    // Add to localStorage list
+    updateLocalStorageList(pluginData.id)
+    localStorage.setItem('stored_scripts_updated', Date.now().toString())
+
+    updateStatus(`Imported: ${pluginName}`, 'success')
+    return pluginData
+  } catch (error) {
+    updateStatus('Failed to import plugin: ' + (error as Error).message, 'error')
+    console.error('Plugin import error:', error)
+    return null
+  }
 }

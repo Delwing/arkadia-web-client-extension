@@ -136,6 +136,28 @@ export function getSavedTheme(): string {
 }
 
 /**
+ * Apply cached theme colors immediately on page load (before Shiki initializes)
+ * This prevents the flash of wrong colors when the page loads
+ */
+export function applyInitialThemeFromCache(): void {
+  const savedTheme = getSavedTheme()
+  const cachedColors = localStorage.getItem(`editor-theme-colors-${savedTheme}`)
+
+  if (cachedColors) {
+    try {
+      const colors = JSON.parse(cachedColors)
+      Object.entries(colors).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value as string)
+      })
+      document.body.style.background = colors['--editor-bg'] || '#1E1E1E'
+      document.body.style.color = colors['--editor-fg'] || '#D4D4D4'
+    } catch {
+      // Ignore parse errors, will use defaults
+    }
+  }
+}
+
+/**
  * Helper to determine if a color is light or dark
  */
 function isLightColor(hexColor: string): boolean {
@@ -223,27 +245,41 @@ function applyThemeToUI(themeName: string) {
     const errorButtonFg = isLightColor(errorButtonBg) ? '#000000' : '#ffffff'
     const inputFg = colors['input.foreground'] || editorFg
 
+    // Build the color map
+    const colorMap: Record<string, string> = {
+      '--editor-bg': editorBg,
+      '--editor-fg': editorFg,
+      '--menu-bg': menuBg,
+      '--input-bg': inputBg,
+      '--border-color': borderColor,
+      '--hover-bg': hoverBg,
+      '--active-bg': activeBg,
+      '--accent-color': accentColor,
+      '--sidebar-header-bg': sidebarHeaderBg,
+      '--sidebar-fg': sidebarFg,
+      '--button-bg': buttonBg,
+      '--button-fg': buttonFg,
+      '--button-hover-bg': buttonHoverBg,
+      '--error-button-bg': errorButtonBg,
+      '--error-button-fg': errorButtonFg,
+      '--input-fg': inputFg,
+    }
+
     // Apply CSS variables
-    document.documentElement.style.setProperty('--editor-bg', editorBg)
-    document.documentElement.style.setProperty('--editor-fg', editorFg)
-    document.documentElement.style.setProperty('--menu-bg', menuBg)
-    document.documentElement.style.setProperty('--input-bg', inputBg)
-    document.documentElement.style.setProperty('--border-color', borderColor)
-    document.documentElement.style.setProperty('--hover-bg', hoverBg)
-    document.documentElement.style.setProperty('--active-bg', activeBg)
-    document.documentElement.style.setProperty('--accent-color', accentColor)
-    document.documentElement.style.setProperty('--sidebar-header-bg', sidebarHeaderBg)
-    document.documentElement.style.setProperty('--sidebar-fg', sidebarFg)
-    document.documentElement.style.setProperty('--button-bg', buttonBg)
-    document.documentElement.style.setProperty('--button-fg', buttonFg)
-    document.documentElement.style.setProperty('--button-hover-bg', buttonHoverBg)
-    document.documentElement.style.setProperty('--error-button-bg', errorButtonBg)
-    document.documentElement.style.setProperty('--error-button-fg', errorButtonFg)
-    document.documentElement.style.setProperty('--input-fg', inputFg)
+    Object.entries(colorMap).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(key, value)
+    })
 
     // Apply to body background
     document.body.style.background = editorBg
     document.body.style.color = editorFg
+
+    // Cache the colors for instant load next time
+    try {
+      localStorage.setItem(`editor-theme-colors-${themeName}`, JSON.stringify(colorMap))
+    } catch {
+      // Ignore storage errors
+    }
   } catch (error) {
     console.error('Failed to apply theme to UI:', error)
   }
@@ -580,6 +616,7 @@ function findExistingImport(content: string, importPath: string): {
   startColumn?: number
   endColumn?: number
   hasDefault?: boolean
+  defaultImportName?: string
   hasNamed?: boolean
   namedImports?: string[]
   isTypeImport?: boolean
@@ -613,6 +650,7 @@ function findExistingImport(content: string, importPath: string): {
           startColumn: 1,
           endColumn: line.length + 1,
           hasDefault: !!defaultImport,
+          defaultImportName: defaultImport,
           hasNamed: namedImports.length > 0,
           namedImports,
           isTypeImport: line.includes('import type')
@@ -796,7 +834,9 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
         }
 
         if (insideImport) {
-          const needsFromClause = !textUntilPosition.includes(' from ')
+          // Get the full line to check if from clause already exists
+          const fullLine = model.getLineContent(position.lineNumber)
+          const needsFromClause = !fullLine.includes(' from ')
           let inlineInsertText = insertText
 
           if (needsFromClause) {
@@ -860,9 +900,15 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             const uniqueNamed = [...new Set([...existingNamed, exp.name])]
             const allNamed = uniqueNamed.join(', ')
 
-            // Preserve 'import type' if it was there, or add it for plugin-api imports
-            const importPrefix = existingImport.isTypeImport ? 'import type' : 'import type'
-            const newImportLine = `${importPrefix} { ${allNamed} } from "plugin-api"`
+            // Build the new import line, preserving default import if present
+            let newImportLine: string
+            if (existingImport.hasDefault && existingImport.defaultImportName) {
+              // Has default import - use regular import (not import type) to preserve default
+              newImportLine = `import ${existingImport.defaultImportName}, { ${allNamed} } from "plugin-api"`
+            } else {
+              // No default import - use import type for plugin-api
+              newImportLine = `import type { ${allNamed} } from "plugin-api"`
+            }
 
             additionalEdits = [{
               range: {
@@ -1015,7 +1061,9 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             // Check if we need to complete the import structure
             // If the line already has "from", just insert the name
             // Otherwise, complete with from "path"
-            const needsFromClause = !textUntilPosition.includes(' from ')
+            // Use full line to check for "from" clause (not just text until position)
+            const fullLine = model.getLineContent(position.lineNumber)
+            const needsFromClause = !fullLine.includes(' from ')
 
             let inlineInsertText = insertText
 
@@ -1431,7 +1479,9 @@ export function registerAutoImportCompletion(pluginId: string, files: Record<str
             // Check if we need to complete the import structure
             // If the line already has "from", just insert the name
             // Otherwise, complete with from "path"
-            const needsFromClause = !textUntilPosition.includes(' from ')
+            // Use full line to check for "from" clause (not just text until position)
+            const fullLine = model.getLineContent(position.lineNumber)
+            const needsFromClause = !fullLine.includes(' from ')
 
             let inlineInsertText = insertText
 

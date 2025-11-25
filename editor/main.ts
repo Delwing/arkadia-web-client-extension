@@ -27,7 +27,8 @@ import {
   registerImportPathCompletion,
   updateMonacoFileSystem,
   changeTheme,
-  getSavedTheme
+  getSavedTheme,
+  applyInitialThemeFromCache
 } from './monacoSetup'
 import {renderFileTree} from './fileTree'
 import {
@@ -54,10 +55,13 @@ import {
   showNewFileModal,
   showNewPluginModal,
 } from './modals'
-import {createNewPlugin, deletePlugin, refreshPluginList, savePlugin,} from './pluginManagement'
+import {createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
 import {CodingAgentPanel} from './codingAgentPanel';
+
+// Apply cached theme colors immediately to prevent flash of wrong colors
+applyInitialThemeFromCache()
 
 // Configure Monaco Environment for web workers
 self.MonacoEnvironment = {
@@ -908,6 +912,39 @@ async function createNewPluginHandler() {
   }
 }
 
+// Download plugin wrapper
+async function downloadCurrentPlugin() {
+  if (!state.currentPluginId) {
+    updateStatus('No plugin selected', 'error')
+    return
+  }
+
+  await downloadPlugin(state.currentPluginId, updateStatus)
+}
+
+// Upload plugin wrapper
+async function uploadPluginFromFile() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.zip'
+
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+
+    const pluginData = await uploadPlugin(file, bundlePlugin, updateStatus)
+    if (pluginData) {
+      await refreshPluginList(pluginData.id)
+      await loadPlugin(pluginData.id)
+
+      const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
+      pluginSelect.value = pluginData.id
+    }
+  }
+
+  input.click()
+}
+
 // Manual compile button
 async function manualCompile() {
   if (!state.editor) return
@@ -1042,6 +1079,12 @@ function setupEventListeners() {
 
   const deleteBtn = document.getElementById('delete-btn')!
   deleteBtn.addEventListener('click', deleteCurrentPlugin)
+
+  const downloadBtn = document.getElementById('download-btn')!
+  downloadBtn.addEventListener('click', downloadCurrentPlugin)
+
+  const uploadBtn = document.getElementById('upload-btn')!
+  uploadBtn.addEventListener('click', uploadPluginFromFile)
 
   const compileBtn = document.getElementById('compile-btn')!
   compileBtn.addEventListener('click', manualCompile)

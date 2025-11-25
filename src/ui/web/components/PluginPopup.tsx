@@ -10,7 +10,10 @@ export interface PluginPopupProps {
     onTitleChange?: (callback: (title: string) => void) => void;
     onBodyChange?: (callback: (body: string | Node) => void) => void;
     onPanelRef?: (element: HTMLDivElement | null) => void;
+    /** Register setter to allow external code to change pinned state */
     onPinChange?: (callback: (pinned: boolean) => void) => void;
+    /** Called when user toggles the pin button */
+    onPinToggle?: (pinned: boolean) => void;
 }
 
 /**
@@ -26,14 +29,17 @@ export function PluginPopup({
     onTitleChange,
     onBodyChange,
     onPanelRef,
-    onPinChange
+    onPinChange,
+    onPinToggle
 }: PluginPopupProps) {
     const [title, setTitle] = useState(initialTitle);
     const [body, setBody] = useState<string | Node>(initialBody);
     const [isPinned, setIsPinned] = useState(initialPinned);
 
     const togglePinned = () => {
-        setIsPinned(prev => !prev);
+        const newPinned = !isPinned;
+        setIsPinned(newPinned);
+        onPinToggle?.(newPinned);
     };
 
     const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({

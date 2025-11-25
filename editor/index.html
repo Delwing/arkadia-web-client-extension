@@ -6,6 +6,25 @@
     <meta name="theme-color" content="#000000" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <script>
+        // Apply cached theme colors immediately to prevent flash
+        (function() {
+            try {
+                var savedTheme = localStorage.getItem('editor-theme') || 'dark-plus';
+                var cachedColors = localStorage.getItem('editor-theme-colors-' + savedTheme);
+                if (cachedColors) {
+                    var colors = JSON.parse(cachedColors);
+                    var style = '';
+                    for (var key in colors) {
+                        if (colors.hasOwnProperty(key)) {
+                            style += key + ':' + colors[key] + ';';
+                        }
+                    }
+                    document.documentElement.style.cssText = style;
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="./styles.css">
     <title>Arkadia Plugin Editor</title>
 </head>
@@ -84,6 +103,8 @@
             </select>
             <button id="save-btn" class="primary">Save</button>
             <button id="new-btn">New</button>
+            <button id="download-btn" title="Download plugin as ZIP">Download</button>
+            <button id="upload-btn" title="Upload plugin from ZIP">Upload</button>
             <button id="delete-btn" class="danger">Delete</button>
             <div class="spacer"></div>
             <button id="compile-btn" style="display: none;">Compile TypeScript</button>

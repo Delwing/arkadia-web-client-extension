@@ -1628,6 +1628,10 @@ export class PluginApiImpl implements PluginApi {
                 callback(pinned);
               };
             },
+            onPinToggle: (pinned: boolean) => {
+              // User toggled pin button - update our local state
+              isPinned = pinned;
+            },
             onPanelRef: (element) => {
               panelRef = element;
               // Resolve the promise once the panel is mounted

@@ -57,9 +57,14 @@ export interface AgentResponse {
 
 /** Progress update during multi-step execution */
 export interface AgentProgress {
-  type: 'tool_call' | 'continuation' | 'truncated';
+  type: 'tool_call' | 'continuation' | 'truncated' | 'step_complete';
   message: string;
   step: number;
+  /** Partial response from a completed step (for incremental display) */
+  partialResponse?: {
+    message: string;
+    fileOperations?: FileOperation[];
+  };
 }
 
 /** Callback for progress updates during agent execution */
