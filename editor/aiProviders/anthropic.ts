@@ -1,13 +1,37 @@
 /**
  * Anthropic Claude API Integration
+ * Supports tool calling for documentation lookup and chunked execution for large tasks.
  */
 
-import type { AgentRequest, AgentResponse } from '../types/codingAgent';
+import type { AgentRequest, AgentResponse, AgentProgressCallback } from '../types/codingAgent';
+import { searchDocs, getDocsSummary } from './docsRegistry';
+
+/** Maximum continuation loops to prevent infinite loops */
+const MAX_CONTINUATIONS = 10;
+
+/** Tool definitions for Anthropic tool use */
+const tools = [
+  {
+    name: 'get_api_docs',
+    description: 'Fetch PluginApi documentation for a specific topic. Use this to look up API details for triggers, events, map, colors, commands, aliases, ui, bind, team, gmcp, attackQueue, objects, prettyContainers, herbs, objectListFilters, AnsiAwareBuffer, etc.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        topic: {
+          type: 'string',
+          description: 'The API topic to look up (e.g., "triggers", "events", "map", "colors", "AnsiAwareBuffer")'
+        }
+      },
+      required: ['topic']
+    }
+  }
+];
 
 export async function callAnthropic(
   request: AgentRequest,
   apiKey: string,
-  model: string
+  model: string,
+  onProgress?: AgentProgressCallback
 ): Promise<AgentResponse> {
   if (!apiKey) {
     return {
@@ -19,7 +43,7 @@ export async function callAnthropic(
   try {
     // Build system message from conversation history
     let systemMessage = '';
-    const userMessages = [];
+    const userMessages: Array<{ role: string; content: any }> = [];
 
     for (const msg of request.conversationHistory) {
       if (msg.role === 'system') {
@@ -32,45 +56,162 @@ export async function callAnthropic(
       }
     }
 
+    // Add docs summary to system message
+    systemMessage = systemMessage + '\n\n' + getDocsSummary();
+
     // Add current request
     userMessages.push({
       role: 'user',
       content: buildPrompt(request)
     });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: systemMessage,
-        messages: userMessages
-      })
-    });
+    // Accumulated response for multi-step execution
+    const allFileOperations: any[] = [];
+    const messagesParts: string[] = [];
+    let continuationCount = 0;
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-      return {
-        message: '',
-        error: `Anthropic API error: ${error.error?.message || response.statusText}`
-      };
+    while (continuationCount < MAX_CONTINUATIONS) {
+      const response = await makeApiCall(apiKey, model, systemMessage, userMessages);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+        return {
+          message: '',
+          error: `Anthropic API error: ${error.error?.message || response.statusText}`
+        };
+      }
+
+      const data = await response.json();
+
+      // Check if there are tool uses in the response
+      const toolUses = data.content.filter((block: any) => block.type === 'tool_use');
+
+      if (toolUses.length > 0) {
+        // Add assistant message with tool uses to history
+        userMessages.push({
+          role: 'assistant',
+          content: data.content
+        });
+
+        // Process tool uses and build tool results
+        const toolResults: any[] = [];
+        for (const toolUse of toolUses) {
+          if (toolUse.name === 'get_api_docs') {
+            const docs = searchDocs(toolUse.input.topic);
+
+            // Report progress
+            onProgress?.({
+              type: 'tool_call',
+              message: `Looking up documentation: "${toolUse.input.topic}"`,
+              step: continuationCount + 1
+            });
+
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: docs
+            });
+          }
+        }
+
+        // Add tool results as user message
+        userMessages.push({
+          role: 'user',
+          content: toolResults
+        });
+
+        // Continue the loop to get the next response
+        continuationCount++;
+        continue;
+      }
+
+      // Extract text content from response
+      const textBlocks = data.content.filter((block: any) => block.type === 'text');
+      const assistantMessage = textBlocks.map((block: any) => block.text).join('\n');
+
+      const parsed = parseAgentResponse(assistantMessage);
+
+      if (parsed.fileOperations && parsed.fileOperations.length > 0) {
+        allFileOperations.push(...parsed.fileOperations);
+      }
+      if (parsed.message) {
+        messagesParts.push(parsed.message);
+      }
+
+      // Check if response was truncated or has more steps
+      const wasTruncated = data.stop_reason === 'max_tokens';
+      const hasMoreSteps = parsed.hasMoreSteps || wasTruncated;
+
+      if (hasMoreSteps && continuationCount < MAX_CONTINUATIONS - 1) {
+        // Report progress
+        if (wasTruncated) {
+          onProgress?.({
+            type: 'truncated',
+            message: 'Response was truncated, requesting continuation...',
+            step: continuationCount + 1
+          });
+        } else {
+          onProgress?.({
+            type: 'continuation',
+            message: `Step ${continuationCount + 1} complete, continuing...`,
+            step: continuationCount + 1
+          });
+        }
+
+        // Add the assistant's response to history
+        userMessages.push({
+          role: 'assistant',
+          content: assistantMessage
+        });
+
+        // Ask to continue
+        userMessages.push({
+          role: 'user',
+          content: 'Continue with the next step. Remember to set "hasMoreSteps": true if there are more steps after this one.'
+        });
+
+        continuationCount++;
+        continue;
+      }
+
+      // Done - return accumulated results
+      break;
     }
 
-    const data = await response.json();
-    const assistantMessage = data.content[0]?.text || '';
+    return {
+      message: messagesParts.join('\n\n---\n\n'),
+      fileOperations: allFileOperations
+    };
 
-    return parseAgentResponse(assistantMessage);
   } catch (error) {
     return {
       message: '',
       error: `Request failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
+}
+
+async function makeApiCall(
+  apiKey: string,
+  model: string,
+  systemMessage: string,
+  messages: any[]
+): Promise<Response> {
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system: systemMessage,
+      messages,
+      tools
+    })
+  });
 }
 
 function buildPrompt(request: AgentRequest): string {
@@ -91,17 +232,22 @@ function buildPrompt(request: AgentRequest): string {
     }
   }
 
-  if (request.context.pluginApiDocs) {
-    prompt += `\n\nPluginApi documentation:\n${request.context.pluginApiDocs}`;
-  }
+  // Note: pluginApiDocs is no longer included here - AI will use get_api_docs tool instead
 
   return prompt;
 }
 
-function parseAgentResponse(content: string): AgentResponse {
-  const response: AgentResponse = {
+interface ParsedResponse {
+  message: string;
+  fileOperations?: any[];
+  hasMoreSteps?: boolean;
+}
+
+function parseAgentResponse(content: string): ParsedResponse {
+  const response: ParsedResponse = {
     message: '',
-    fileOperations: []
+    fileOperations: [],
+    hasMoreSteps: false
   };
 
   // First, try to parse as pure JSON (AI responded with just JSON object)
@@ -111,6 +257,7 @@ function parseAgentResponse(content: string): AgentResponse {
       const parsed = JSON.parse(trimmedContent);
       if (parsed.fileOperations && Array.isArray(parsed.fileOperations)) {
         response.fileOperations = parsed.fileOperations;
+        response.hasMoreSteps = parsed.hasMoreSteps || false;
         // Generate a helpful message describing the operations
         const operationsSummary = parsed.fileOperations.map((op: any) =>
           `${op.type} ${op.path}`
@@ -118,7 +265,7 @@ function parseAgentResponse(content: string): AgentResponse {
         response.message = `Executing file operations: ${operationsSummary}`;
         return response;
       }
-    } catch (e) {
+    } catch (_e) {
       // Not pure JSON, continue to check for markdown blocks
     }
   }
@@ -133,10 +280,11 @@ function parseAgentResponse(content: string): AgentResponse {
       const parsed = JSON.parse(match[1]);
       if (parsed.fileOperations && Array.isArray(parsed.fileOperations)) {
         response.fileOperations = parsed.fileOperations;
+        response.hasMoreSteps = parsed.hasMoreSteps || false;
         // Remove the JSON block from the message content
         messageContent = messageContent.replace(match[0], '').trim();
       }
-    } catch (e) {
+    } catch (_e) {
       // Not valid JSON, ignore
     }
   }

@@ -5,13 +5,12 @@
 
 import * as monaco from 'monaco-editor';
 import type { EditorPluginData } from '@client/utils/pluginEditorStorage.ts';
-import type { Message, AgentRequest, AIProvider, FileOperation } from './types/codingAgent';
+import type { Message, AgentRequest, AIProvider, FileOperation, AgentProgress } from './types/codingAgent';
 import { getAgentSettings, saveAgentSettings, getConversationHistory, saveConversationHistory, clearConversationHistory } from './agentStorage';
 import { callOpenAI } from './aiProviders/openai';
 import { callAnthropic } from './aiProviders/anthropic';
 import { executeFileOperations, type AgentFileOperationsContext } from './agentFileOperations';
 import type { StatusType } from './types';
-import pluginApiTypes from '../plugin-types/index.d.ts?raw';
 
 export class CodingAgentPanel {
   private panel: HTMLElement;
@@ -239,17 +238,26 @@ export class CodingAgentPanel {
             Object.entries(context.plugin.files).map(([path, file]) => [path, file.content])
           ),
           selectedText: this.getSelectedText(context.editor),
-          cursorPosition: this.getCursorPosition(context.editor),
-          pluginApiDocs: await this.getPluginApiDocs()
+          cursorPosition: this.getCursorPosition(context.editor)
+          // Note: pluginApiDocs removed - AI uses get_api_docs tool instead
         },
         conversationHistory: this.messages.filter(m => m.role !== 'user' || m.id !== userMessage.id)
+      };
+
+      // Progress callback to update loading message
+      const onProgress = (progress: AgentProgress) => {
+        const loadingMsg = this.messages.find(m => m.isLoading);
+        if (loadingMsg) {
+          loadingMsg.content = `Processing... ${progress.message}`;
+          this.renderMessages();
+        }
       };
 
       // Call AI provider
       const provider = settings.defaultProvider;
       const response = provider === 'openai'
-        ? await callOpenAI(request, settings.openaiApiKey || '', settings.defaultOpenAIModel)
-        : await callAnthropic(request, settings.anthropicApiKey || '', settings.defaultAnthropicModel);
+        ? await callOpenAI(request, settings.openaiApiKey || '', settings.defaultOpenAIModel, onProgress)
+        : await callAnthropic(request, settings.anthropicApiKey || '', settings.defaultAnthropicModel, onProgress);
 
       // Remove loading message
       this.messages = this.messages.filter(m => !m.isLoading);
@@ -319,11 +327,6 @@ export class CodingAgentPanel {
     const position = editor.getPosition();
     if (!position) return undefined;
     return { line: position.lineNumber, column: position.column };
-  }
-
-  private async getPluginApiDocs(): Promise<string> {
-    // Return the actual PluginApi type definitions
-    return pluginApiTypes;
   }
 
   private showError(message: string): void {
@@ -683,7 +686,6 @@ export class CodingAgentPanel {
 
     const selectedText = this.getSelectedText(context.editor);
     const cursorPosition = this.getCursorPosition(context.editor);
-    const pluginApiDocs = await this.getPluginApiDocs();
 
     // Build context preview
     let contextPreview = '';
@@ -709,7 +711,7 @@ export class CodingAgentPanel {
     }
     contextPreview += `Total Plugin Content: ${totalPluginSize} chars\n\n`;
 
-    contextPreview += `PluginApi Documentation: ${pluginApiDocs.length} chars\n`;
+    contextPreview += `PluginApi Documentation: On-demand via get_api_docs tool\n`;
 
     // Build history preview
     const historyMessages = this.messages.filter(m => m.role !== 'user' || m.content !== prompt);
@@ -720,9 +722,9 @@ export class CodingAgentPanel {
       historyPreview += `[${msg.role}] ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}\n\n`;
     }
 
-    // Calculate total size
+    // Calculate total size (docs are now on-demand, not included upfront)
     const totalChars = settings.systemPrompt.length + prompt.length +
-                      totalPluginSize + pluginApiDocs.length +
+                      totalPluginSize +
                       totalHistorySize +
                       (currentFileContent?.length || 0) +
                       (selectedText?.length || 0);
@@ -768,11 +770,11 @@ export class CodingAgentPanel {
       .reduce((sum, file) => sum + file.content.length, 0);
 
     const selectedText = this.getSelectedText(context.editor) || '';
-    const pluginApiDocs = await this.getPluginApiDocs();
     const historySize = this.messages.reduce((sum, msg) => sum + msg.content.length, 0);
 
+    // Docs are now on-demand via get_api_docs tool, not included upfront
     const totalChars = settings.systemPrompt.length + prompt.length +
-                      pluginFilesSize + pluginApiDocs.length +
+                      pluginFilesSize +
                       historySize + currentFileContent.length + selectedText.length;
 
     const estimatedTokens = Math.ceil(totalChars / 4);

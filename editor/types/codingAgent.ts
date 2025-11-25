@@ -55,6 +55,16 @@ export interface AgentResponse {
   error?: string;
 }
 
+/** Progress update during multi-step execution */
+export interface AgentProgress {
+  type: 'tool_call' | 'continuation' | 'truncated';
+  message: string;
+  step: number;
+}
+
+/** Callback for progress updates during agent execution */
+export type AgentProgressCallback = (progress: AgentProgress) => void;
+
 export interface AgentSettings {
   openaiApiKey?: string;
   anthropicApiKey?: string;
