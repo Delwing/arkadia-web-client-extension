@@ -37,6 +37,8 @@ export interface EntryContext {
 export interface EntryStyle {
     /** Color for the description text (CSS color value) */
     descriptionColor?: string;
+    /** Background color for the description text (CSS color value) */
+    descriptionBackgroundColor?: string;
     /** Whether to apply italic style to description */
     italic?: boolean;
     /** Color for the HP bar (CSS color value) */

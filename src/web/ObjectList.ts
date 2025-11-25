@@ -45,6 +45,9 @@ export default class ObjectList {
         this.client.on("gmcp.objects.nums", () => this.render());
         this.client.on("gmcp.objects.data", () => this.render());
         this.client.on("gmcp.char.state", () => this.render());
+        this.client.on("enemy.paralyzed", () => this.render());
+        this.client.on("enemy.paralyzed.end", () => this.render());
+        this.client.on("enemy.broken_defense", () => this.render());
         this.client.on("output-sent", () => this.handleOutputUpdate());
         this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();
@@ -363,9 +366,16 @@ export default class ObjectList {
 
             // Build colored description
             let coloredDesc = displayDesc;
-            if (!isPlayer && descriptionColor) {
+            if (!isPlayer && (descriptionColor || filterResult.style?.descriptionBackgroundColor)) {
                 const classAttr = descClasses.length ? ` class="${descClasses.join(" ")}"` : "";
-                coloredDesc = `<span${classAttr} style="color:${descriptionColor}">${displayDesc}</span>`;
+                let style = "";
+                if (descriptionColor) {
+                    style += `color:${descriptionColor};`;
+                }
+                if (filterResult.style?.descriptionBackgroundColor) {
+                    style += `background-color:${filterResult.style.descriptionBackgroundColor};`;
+                }
+                coloredDesc = `<span${classAttr} style="${style}">${displayDesc}</span>`;
             }
 
             const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));

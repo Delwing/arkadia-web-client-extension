@@ -97,7 +97,14 @@ type PluginDestroyedPayload = {
     url: string;
 };
 
+export type EnemyStatusPayload = {
+    name: string;
+};
+
 export interface KnownEvents {
+    "enemy.paralyzed": EnemyStatusPayload;
+    "enemy.paralyzed.end": EnemyStatusPayload;
+    "enemy.broken_defense": EnemyStatusPayload;
     "command": string;
     "port-connected": void;
     "output-sent": number;

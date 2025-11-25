@@ -10,6 +10,7 @@ import { getContextMenuEntries as getPluginContextMenuEntries } from "@modules/c
 import { setClientInstance } from "@shared/runtime";
 import {Modal, Dropdown} from 'bootstrap';
 import ObjectList from "./ObjectList";
+import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 import { mountMigratedComponents } from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
@@ -1767,6 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mountMigratedComponents();
     const fightTitle = new FightTitle(arkadiaClient);
     new HpTitle(arkadiaClient, fightTitle);
+    registerEnemyStatusFilter(client);
     new ObjectList(client);
 
     // Initialize mobile direction buttons

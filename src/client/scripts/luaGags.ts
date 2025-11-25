@@ -291,9 +291,18 @@ export default function registerLuaGagTriggers(client: Client) {
         })
 
         const ateam = {
-            may_setup_paralyzed_name: (_, name: string) => console.log("Ogluch " + name),
-            may_setup_broken_defense: (_, name: string) => console.log("Przelamanie " + name),
-            may_end_paralyzed_name: (_, name: string) => console.log("Koniec oglucha " + name),
+            may_setup_paralyzed_name: (_, name: string) => {
+                console.log("Ogluch " + name);
+                client.sendEvent("enemy.paralyzed", { name });
+            },
+            may_setup_broken_defense: (_, name: string) => {
+                console.log("Przelamanie " + name);
+                client.sendEvent("enemy.broken_defense", { name });
+            },
+            may_end_paralyzed_name: (_, name: string) => {
+                console.log("Koniec oglucha " + name);
+                client.sendEvent("enemy.paralyzed.end", { name });
+            },
             team_names: team_names
         }
 
