@@ -358,6 +358,7 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
 export class AnsiAwareBuffer {
     private segments: BufferSegment[] = [];
     private _deleted = false;
+    private _onRender?: (container: HTMLElement) => void;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
@@ -382,6 +383,26 @@ export class AnsiAwareBuffer {
     markAsDeleted(): this {
         this._deleted = true;
         return this;
+    }
+
+    /**
+     * Registers a callback to be invoked when this buffer is rendered to the DOM.
+     * The callback receives the container element where the content was appended.
+     */
+    onRender(callback: (container: HTMLElement) => void): this {
+        this._onRender = callback;
+        return this;
+    }
+
+    /**
+     * Called by the output handler after the buffer content is appended to the DOM.
+     * @internal
+     */
+    notifyRender(container: HTMLElement): void {
+        if (this._onRender) {
+            this._onRender(container);
+            this._onRender = undefined; // Clear after calling
+        }
     }
 
     clone(): AnsiAwareBuffer {

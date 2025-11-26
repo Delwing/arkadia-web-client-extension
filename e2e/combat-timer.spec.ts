@@ -26,8 +26,7 @@ test.describe('Combat timer', () => {
             12345: { attack_num: false },
         });
 
-        // Wait for the 5 second delay before timer starts
-        await page.clock.runFor(5500);
+        await page.clock.runFor(100);
 
         // Timer should be visible showing countdown after combat
         await expect(combatTimer, 'should be visible after combat ends').toBeVisible();
@@ -77,8 +76,7 @@ test.describe('Combat timer', () => {
             12345: { attack_num: false },
         });
 
-        // Wait for the 5 second delay before timer starts
-        await page.clock.runFor(5500);
+        await page.clock.runFor(100);
 
         // Timer should be visible
         await expect(combatTimer, 'should be visible after combat').toBeVisible();
@@ -113,13 +111,12 @@ test.describe('Combat timer', () => {
 
         await page.clock.runFor(100);
 
-        // Exit combat - timer starts after delay
+        // Exit combat - timer starts immediately
         await pushGmcp(page, 'objects.data', {
             12345: { attack_num: false },
         });
 
-        // Wait for the 5 second delay before timer starts
-        await page.clock.runFor(5500);
+        await page.clock.runFor(100);
 
         // Timer should be visible
         await expect(combatTimer, 'should be visible after leaving combat').toBeVisible();
@@ -144,47 +141,5 @@ test.describe('Combat timer', () => {
         // Wait some time and verify timer doesn't come back
         await page.clock.runFor(2000);
         await expect(combatTimer, 'should stay hidden during combat').not.toBeVisible();
-    });
-
-    test('does not start timer if re-entering combat during 5 second delay', async ({page}) => {
-        await page.clock.install();
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-
-        const combatTimer = page.locator('#combat-timer');
-
-        // Set player and enter combat
-        await pushGmcp(page, 'char.info', {
-            object_num: 12345,
-        });
-
-        await pushGmcp(page, 'objects.data', {
-            12345: { attack_num: 67890 },
-        });
-
-        await page.clock.runFor(100);
-
-        // Exit combat - starts 5 second delay
-        await pushGmcp(page, 'objects.data', {
-            12345: { attack_num: false },
-        });
-
-        // Wait 2 seconds (still within the 5 second delay)
-        await page.clock.runFor(2000);
-
-        // Timer should NOT be visible yet
-        await expect(combatTimer, 'should not be visible during delay').not.toBeVisible();
-
-        // Re-enter combat before delay completes
-        await pushGmcp(page, 'objects.data', {
-            12345: { attack_num: 11111 },
-        });
-
-        // Wait past when the delay would have completed
-        await page.clock.runFor(5000);
-
-        // Timer should still NOT be visible because combat was re-entered
-        await expect(combatTimer, 'should not start if combat re-entered during delay').not.toBeVisible();
     });
 });

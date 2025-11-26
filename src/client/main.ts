@@ -27,6 +27,7 @@ import initIdz from './scripts/idz'
 import {initKillCounter} from './scripts/kill'
 import {initImproveCounter} from './scripts/improveCounter'
 import initEscape from './scripts/escape'
+import initTracking from './scripts/tracking'
 import {initItemCollector} from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
 import initChatHistory from './scripts/chatHistory'
@@ -219,6 +220,7 @@ export function registerScripts(client: Client) {
     ;(client as any).killCounter = killCounter
     initImproveCounter(client, killCounter, aliases)
     initEscape(client)
+    initTracking(client)
     initGps(client)
     initLocalizers(client)
     initShipLocalizers(client)

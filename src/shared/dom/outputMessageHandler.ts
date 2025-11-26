@@ -94,6 +94,7 @@ function createMessageWrapper(
             contentSpan.innerHTML = '&nbsp;';
         } else {
             contentSpan.appendChild(message.toDom());
+            message.notifyRender(contentSpan);
         }
     }
 

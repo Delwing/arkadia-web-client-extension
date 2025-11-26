@@ -42,18 +42,14 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "7": { attack_num: false } } }),
     );
-    // combatState event is emitted, but combatTimer should not start immediately - there's a 5 second delay
-    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
-    client.sendEvent.mockClear();
-
-    // Advance past the 5 second delay
-    jest.advanceTimersByTime(5_000);
-    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 30);
+    // combatState event is emitted, and combatTimer starts immediately
+    expect(client.sendEvent).toHaveBeenCalledWith("combatState", false);
+    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 32);
 
     jest.advanceTimersByTime(1_000);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", 29);
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", 31);
 
-    jest.advanceTimersByTime(29_000);
+    jest.advanceTimersByTime(31_000);
     expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", null);
 
     client.sendEvent.mockClear();
@@ -84,9 +80,8 @@ describe("combat timer", () => {
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "13": { attack_num: false } } }),
     );
-    // Wait for the 5 second delay
-    jest.advanceTimersByTime(5_000);
-    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 30);
+    // Timer starts immediately
+    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 32);
   });
 
   test("stops timer when re-entering combat while timer is still running", () => {
@@ -102,21 +97,16 @@ describe("combat timer", () => {
     );
     client.sendEvent.mockClear();
 
-    // Player leaves combat
+    // Player leaves combat - timer starts immediately
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "5": { attack_num: false } } }),
     );
-    // combatState event is emitted, but combatTimer doesn't start yet - still in 5 second delay
-    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
-    client.sendEvent.mockClear();
-
-    // Advance past the delay - timer starts
-    jest.advanceTimersByTime(5_000);
-    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 30);
+    expect(client.sendEvent).toHaveBeenCalledWith("combatState", false);
+    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", 32);
 
     // Advance timer partway through
     jest.advanceTimersByTime(5_000);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", 25);
+    expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", 27);
     client.sendEvent.mockClear();
 
     // Player re-enters combat while timer is still running
@@ -131,42 +121,4 @@ describe("combat timer", () => {
     expect(client.sendEvent).not.toHaveBeenCalled();
   });
 
-  test("cancels timer start if re-entering combat during 5 second delay", () => {
-    const client = new FakeClient();
-    initCombatState((client as unknown) as any);
-    initCombatTimer((client as unknown) as any);
-    client.sendEvent.mockClear();
-
-    // Setup: player enters combat
-    client.dispatchEvent(new CustomEvent("gmcp.char.info", { detail: { object_num: 8 } }));
-    client.dispatchEvent(
-      new CustomEvent("gmcp.objects.data", { detail: { "8": { attack_num: 100 } } }),
-    );
-    client.sendEvent.mockClear();
-
-    // Player leaves combat - starts 5 second delay
-    client.dispatchEvent(
-      new CustomEvent("gmcp.objects.data", { detail: { "8": { attack_num: false } } }),
-    );
-    // combatState event is emitted, but no other events yet
-    expect(client.sendEvent).toHaveBeenLastCalledWith("combatState", false);
-    client.sendEvent.mockClear();
-
-    // Advance 3 seconds (still within the 5 second delay)
-    jest.advanceTimersByTime(3_000);
-    expect(client.sendEvent).not.toHaveBeenCalled();
-
-    // Player re-enters combat before delay completes
-    client.dispatchEvent(
-      new CustomEvent("gmcp.objects.data", { detail: { "8": { attack_num: 200 } } }),
-    );
-    // stopTimer is called which emits null (ensuring timer is stopped)
-    expect(client.sendEvent).toHaveBeenCalledWith("combatTimer", null);
-    client.sendEvent.mockClear();
-
-    // Advance past when the delay would have completed
-    jest.advanceTimersByTime(10_000);
-    // Timer should NOT start because combat was re-entered
-    expect(client.sendEvent).not.toHaveBeenCalled();
-  });
 });

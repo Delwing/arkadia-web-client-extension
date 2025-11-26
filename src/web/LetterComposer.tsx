@@ -141,6 +141,16 @@ const LetterComposer: React.FC = () => {
         setContentText(ev.target.value);
     }, []);
 
+    const handleKeyDown = useCallback((ev: React.KeyboardEvent) => {
+        if (ev.key === 'Enter' && ev.ctrlKey) {
+            ev.preventDefault();
+            const payload = getPayload();
+            eventBus.emit("letterComposer.submit", payload);
+            close();
+            resetForm();
+        }
+    }, [getPayload, close, resetForm]);
+
     // Listen for open event
     useEffect(() => {
         const handleOpen = () => {
@@ -251,6 +261,7 @@ const LetterComposer: React.FC = () => {
                                 name="letter-content"
                                 className="form-control"
                                 onChange={handleContentChange}
+                                onKeyDown={handleKeyDown}
                             />
                         </div>
                         <div className="letter-composer-actions">
