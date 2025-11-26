@@ -332,9 +332,12 @@ export default class MapHelper {
 
     setMapRoomById(id: number, options?: { silent?: boolean }) {
         if (this.currentRoom?.id === id) {
+            if (!options?.silent) {
+                this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
+            }
             return;
         }
-        this.renderRoomById(id, !options?.silent);
+        this.renderRoomById(id);
     }
 
     setMapRoom(room: number) {
