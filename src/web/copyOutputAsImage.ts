@@ -30,9 +30,15 @@ function extractStyledText(node: Node, defaultColor: string): StyledSpan[] {
             const tagName = el.tagName;
             const isBlock = BLOCK_ELEMENTS.has(tagName);
 
-            const style = window.getComputedStyle(el);
-            const color = style.color || inheritedColor;
-            const bold = inheritedBold || style.fontWeight === 'bold' || parseInt(style.fontWeight) >= 700;
+            // Only use inline style.color - don't use computed style for color
+            // because the cloned content loses its original context
+            let color = inheritedColor;
+            if (el.style.color) {
+                color = el.style.color;
+            }
+
+            const computedStyle = window.getComputedStyle(el);
+            const bold = inheritedBold || computedStyle.fontWeight === 'bold' || parseInt(computedStyle.fontWeight) >= 700;
 
             for (const child of n.childNodes) {
                 walk(child, color, bold);
@@ -51,6 +57,20 @@ function extractStyledText(node: Node, defaultColor: string): StyledSpan[] {
     return spans;
 }
 
+function getAncestorColor(node: Node): string | null {
+    let current: Node | null = node;
+    while (current && current !== document.body) {
+        if (current.nodeType === Node.ELEMENT_NODE) {
+            const el = current as HTMLElement;
+            if (el.style.color) {
+                return el.style.color;
+            }
+        }
+        current = current.parentNode;
+    }
+    return null;
+}
+
 function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean } {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
@@ -58,13 +78,17 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean } {
     }
 
     const range = selection.getRangeAt(0);
+
+    // Get color from ancestors of the original selection (before cloning loses it)
+    const ancestorColor = getAncestorColor(range.startContainer);
+
     const fragment = range.cloneContents();
     const container = document.createElement('div');
     container.appendChild(fragment);
     document.body.appendChild(container);
 
     const bodyStyle = window.getComputedStyle(document.body);
-    const defaultColor = bodyStyle.color || '#ffffff';
+    const defaultColor = ancestorColor || bodyStyle.color || '#ffffff';
     const spans = extractStyledText(container, defaultColor);
 
     document.body.removeChild(container);
