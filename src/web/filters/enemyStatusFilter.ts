@@ -1,6 +1,6 @@
 import Client from "@client/Client";
-import { objectListFilters } from "../objectListFilters";
-import { fuzzyMatch } from "@client/utils/fuzzyMatch";
+import {objectListFilters} from "../objectListFilters";
+import {fuzzyMatch} from "@client/utils/fuzzyMatch";
 
 const FUZZY_THRESHOLD = 0.6;
 const PARALYZED_TIMEOUT_MS = 15000;
@@ -89,25 +89,13 @@ export function registerEnemyStatusFilter(client: Client) {
         }, BROKEN_DEFENSE_TIMEOUT_MS);
     });
 
-    const clearAllTimersAndMap = () => {
-        for (const status of enemyStatusMap.values()) {
-            clearParalyzedTimer(status);
-            clearBrokenDefenseTimer(status);
-        }
-        enemyStatusMap.clear();
-    };
-
-    client.on("parsedObjects", clearAllTimersAndMap);
-    client.on("enterLocation", clearAllTimersAndMap);
-
     objectListFilters.register("enemy-status", (context, result) => {
         const desc = context.rawDescription;
 
         for (const [name, status] of enemyStatusMap.entries()) {
             if (fuzzyMatch(desc, name, FUZZY_THRESHOLD)) {
                 if (status.paralyzed || status.brokenDefense) {
-                    const currentColor = result.style.descriptionColor || "#ffffff";
-                    result.style.descriptionBackgroundColor = currentColor;
+                    result.style.descriptionBackgroundColor = result.style.descriptionColor || "#ffffff";
                     result.style.descriptionColor = "#000000";
                 }
                 break;

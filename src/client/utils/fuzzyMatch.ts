@@ -37,10 +37,26 @@ export function fuzzyMatchScore(a: string, b: string): number {
 
 /**
  * Checks if two strings match with at least the given threshold.
+ * Splits both strings by whitespace and checks that all words from the shorter
+ * string have a fuzzy match in the longer string.
  * @param a First string
  * @param b Second string
  * @param threshold Match threshold (0-1), default 0.6
  */
 export function fuzzyMatch(a: string, b: string, threshold = 0.6): boolean {
-    return fuzzyMatchScore(a, b) >= threshold;
+    const aWords = a.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const bWords = b.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+
+    if (aWords.length === 0 || bWords.length === 0) return false;
+
+    const [shorter, longer] = aWords.length <= bWords.length
+        ? [aWords, bWords]
+        : [bWords, aWords];
+
+    for (const word of shorter) {
+        const hasMatch = longer.some(other => fuzzyMatchScore(word, other) >= threshold);
+        if (!hasMatch) return false;
+    }
+
+    return true;
 }
