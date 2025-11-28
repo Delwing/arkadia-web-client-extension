@@ -64,6 +64,7 @@ export default class MapHelper {
     private gmcpPosition!: Position;
     public paused = false;
     private savedRoomId: number | null = null;
+    private lastMoveDirection: string | null = null;
     private areas: Record<string, string> = {};
     private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];
     private mapData?: MapData.Map;
@@ -249,6 +250,7 @@ export default class MapHelper {
             const locationId = allExits[getLongDir(actualDirection)];
             if (locationId) {
                 this.locationHistory.push(locationId);
+                this.lastMoveDirection = getLongDir(actualDirection);
                 this.renderRoomById(locationId, true);
                 if (!this.client.getSuppressMapMoveEvent()) {
                     this.client.sendEvent("mapMove");
@@ -330,19 +332,21 @@ export default class MapHelper {
         return false;
     }
 
-    setMapRoomById(id: number, options?: { silent?: boolean }) {
+    setMapRoomById(id: number, options?: { silent?: boolean; direction?: string | null }) {
         if (this.currentRoom?.id === id) {
             if (!options?.silent) {
-                this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
+                this.client.sendEvent("enterLocation", { id, room: this.currentRoom, direction: options?.direction ?? null });
             }
             return;
         }
+        this.lastMoveDirection = options?.direction ?? null;
         this.renderRoomById(id);
     }
 
-    setMapRoom(room: number) {
+    setMapRoom(room: number, direction?: string | null) {
         this.locationHistory.length = 0;
         this.locationHistory.push(room);
+        this.lastMoveDirection = direction ?? null;
         this.renderRoomById(room);
         if (!this.client.getSuppressMapMoveEvent()) {
             this.client.sendEvent("mapMove");
@@ -388,7 +392,9 @@ export default class MapHelper {
         this.savedRoomId = id;
         this.storage.setItem(STORAGE_KEY, id.toString());
         if (sendEvent) {
-            this.client.sendEvent("enterLocation", { id, room: this.currentRoom });
+            const direction = this.lastMoveDirection;
+            this.lastMoveDirection = null;
+            this.client.sendEvent("enterLocation", { id, room: this.currentRoom, direction });
         }
     }
 

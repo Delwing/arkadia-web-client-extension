@@ -419,14 +419,30 @@ export default class Client {
     }
 
     private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
-        const moveRes = this.Map.move(command)
+        // Check if command is already prefixed with przemknij/jedz - extract direction and move map
+        let direction: string
+        let alreadyPrefixed = false
+
+        if (command.startsWith('przemknij z druzyna ')) {
+            direction = command.substring(20)
+            alreadyPrefixed = true
+        } else if (command.startsWith('przemknij ')) {
+            direction = command.substring(10)
+            alreadyPrefixed = true
+        } else {
+            direction = command
+        }
+
+        const moveRes = this.Map.move(direction)
         if (moveRes.suppress) {
             return
         }
         if (moveRes.moved) {
             this.Map.setBlockable(true)
         }
-        const commandToSend = this.applyMoveMode(moveRes.direction, moveRes.moved)
+
+        // If command was already prefixed, send it as-is; otherwise apply move mode
+        const commandToSend = alreadyPrefixed ? command : this.applyMoveMode(moveRes.direction, moveRes.moved)
         this.clientAdapter.send(commandToSend, echo, options)
     }
 

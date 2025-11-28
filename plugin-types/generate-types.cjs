@@ -920,8 +920,8 @@ export interface ClientEvents {
   "attackMode": "A" | "AW" | "AWR";
   /** Content width changed */
   "contentWidth": number;
-  /** Entered a location */
-  "enterLocation": { id: number; room: unknown };
+  /** Entered a location. direction is the direction that led to this location (null when set via other means than move) */
+  "enterLocation": { id: number; room: unknown; direction: string | null };
   /** Highlights updated */
   "highlights": [number[]];
   /** Multibind list updated */

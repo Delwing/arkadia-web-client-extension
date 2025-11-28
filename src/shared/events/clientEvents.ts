@@ -121,7 +121,7 @@ export interface KnownEvents {
     "releaseGuard": boolean;
     "attackMode": "A" | "AW" | "AWR";
     "contentWidth": number;
-    "enterLocation": { id: number; room: unknown };
+    "enterLocation": { id: number; room: unknown; direction: string | null };
     "highlights": [number[]];
     "multibinds": MultibindList;
     "letterComposer": { open: boolean };
