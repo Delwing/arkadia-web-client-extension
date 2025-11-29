@@ -1,6 +1,15 @@
 import { DEFAULT_ATTACK_COMMAND } from "@client/utils/attackCommand";
 import { DEFAULT_DRAW_WEAPON_COMMAND } from "@client/utils/drawWeaponCommand";
 
+export interface CollectOverride {
+    enemy: string;
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    collectExtra: string[];
+}
+
 export interface Settings {
     packageHelper: boolean;
     inlineCompassRose: boolean;
@@ -14,6 +23,7 @@ export interface Settings {
     collectGold: boolean;
     collectGems: boolean;
     collectExtra: string[];
+    collectOverrides: CollectOverride[];
     language: string;
     languageAdjective: string;
     languageAliases: { alias: string; adjective: string; language: string }[];
@@ -49,6 +59,16 @@ export const defaultSettings: Settings = {
     collectGold: true,
     collectGems: true,
     collectExtra: [],
+    collectOverrides: [
+        { enemy: 'trolla', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'bykocentaura', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'ghoula', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'grzyboczleka', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'bagiennika', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'zjawe', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'wyverne', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'harpie', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+    ],
     language: 'potoczna',
     languageAdjective: '',
     languageAliases: [],

@@ -1,9 +1,10 @@
 import "../style.css";
-import { useEffect, useState } from "react";
-import { Form, Button } from "react-bootstrap";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
-import { defaultSettings } from "./defaultSettings";
-import type { Settings as BaseSettings } from "./defaultSettings";
+import {useEffect, useState} from "react";
+import {Form, Button} from "react-bootstrap";
+import storage, {getCurrentCharacter} from "@modules/core/storage";
+import {defaultSettings} from "./defaultSettings";
+import type {Settings as BaseSettings} from "./defaultSettings";
+import {CollectOverridesModal} from "./CollectOverridesModal";
 
 interface FormSettings extends BaseSettings {
 }
@@ -21,19 +22,6 @@ const collectTimingOptions = [
     "po kazdym zabiciu i na koniec",
 ];
 
-const LEGACY_COIN_MODES = new Set([1, 3, 4, 6]);
-const LEGACY_GEM_MODES = new Set([2, 3, 5, 6]);
-
-function translateLegacyCollectMode(value?: number): number {
-    if (value === 7) {
-        return 4;
-    }
-    if (typeof value === "number" && value >= 4 && value <= 6) {
-        return 3;
-    }
-    return 1;
-}
-
 function normalizeCollectMode(value: any): number {
     const parsed = Number(value);
     const numeric = Number.isFinite(parsed) ? Math.round(parsed) : defaultSettings.collectMode;
@@ -45,42 +33,16 @@ function normalizeCollectMode(value: any): number {
 
 function normalizeSettingsValue(saved: any): FormSettings {
     const merged: any = Object.assign({}, defaultSettings, saved ?? {});
-    const isLegacy = typeof saved?.collectMoneyType === "number";
 
-    if (isLegacy) {
-        const legacyMode = typeof saved?.collectMode === "number" ? saved.collectMode : undefined;
-        merged.collectMode = translateLegacyCollectMode(legacyMode);
-        const collectsCoins = legacyMode === undefined ? true : LEGACY_COIN_MODES.has(legacyMode);
-        if (!collectsCoins) {
-            merged.collectCopper = false;
-            merged.collectSilver = false;
-            merged.collectGold = false;
-        } else {
-            const moneyType = saved?.collectMoneyType ?? 1;
-            if (moneyType === 3) {
-                merged.collectCopper = false;
-                merged.collectSilver = false;
-                merged.collectGold = true;
-            } else if (moneyType === 2) {
-                merged.collectCopper = false;
-                merged.collectSilver = true;
-                merged.collectGold = true;
-            } else {
-                merged.collectCopper = true;
-                merged.collectSilver = true;
-                merged.collectGold = true;
-            }
-        }
-        merged.collectGems = legacyMode === undefined ? defaultSettings.collectGems : LEGACY_GEM_MODES.has(legacyMode);
-    } else {
-        merged.collectMode = normalizeCollectMode(merged.collectMode);
-        merged.collectCopper = !!merged.collectCopper;
-        merged.collectSilver = !!merged.collectSilver;
-        merged.collectGold = !!merged.collectGold;
-        merged.collectGems = !!merged.collectGems;
+    merged.collectMode = normalizeCollectMode(merged.collectMode);
+    merged.collectCopper = !!merged.collectCopper;
+    merged.collectSilver = !!merged.collectSilver;
+    merged.collectGold = !!merged.collectGold;
+    merged.collectGems = !!merged.collectGems;
+
+    if (!Array.isArray(merged.collectOverrides)) {
+        merged.collectOverrides = defaultSettings.collectOverrides;
     }
-
-    delete merged.collectMoneyType;
 
     return merged as FormSettings;
 }
@@ -110,21 +72,21 @@ const languageOptions = [
 ]
 
 const lowHpAlertOptions = [
-    { value: 0, label: '0 - Wylaczony' },
-    { value: 1, label: '1 - Ledwo zywy' },
-    { value: 2, label: '2 - Ciezko ranny' },
-    { value: 3, label: '3 - W zlej kondycji' },
-    { value: 4, label: '4 - Ranny' },
-    { value: 5, label: '5 - Lekko ranny' },
-    { value: 6, label: '6 - W dobrym stanie' },
-    { value: 7, label: '7 - W swietnej kondycji' },
+    {value: 0, label: '0 - Wylaczony'},
+    {value: 1, label: '1 - Ledwo zywy'},
+    {value: 2, label: '2 - Ciezko ranny'},
+    {value: 3, label: '3 - W zlej kondycji'},
+    {value: 4, label: '4 - Ranny'},
+    {value: 5, label: '5 - Lekko ranny'},
+    {value: 6, label: '6 - W dobrym stanie'},
+    {value: 7, label: '7 - W swietnej kondycji'},
 ];
 
 const LETTER_LINE_WIDTH_MIN = 40;
 const LETTER_LINE_WIDTH_MAX = 120;
 
-function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
-    const [settings, setSettings] = useState<FormSettings>({ ...defaultSettings });
+function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
+    const [settings, setSettings] = useState<FormSettings>({...defaultSettings});
 
     const [locked, setLocked] = useState(!getCurrentCharacter());
 
@@ -142,6 +104,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
     const [aliasInput, setAliasInput] = useState<string>('')
     const [aliasAdjInput, setAliasAdjInput] = useState<string>('')
     const [aliasLangInput, setAliasLangInput] = useState<string>('potoczna')
+    const [showOverridesModal, setShowOverridesModal] = useState(false)
 
     function onChangeSetting(modifier: (settings: FormSettings) => void) {
         setSettings(prev => {
@@ -150,6 +113,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
             return updated
         })
     }
+
     useEffect(() => {
         registerSave((sharedSettings: Settings) => {
             // Update the shared settings object with our values
@@ -222,7 +186,8 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                 className="me-2"
                             />
                             <Form.Group className="d-flex align-items-center me-2">
-                                <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii listu:</Form.Label>
+                                <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii
+                                    listu:</Form.Label>
                                 <Form.Control
                                     type="number"
                                     min={LETTER_LINE_WIDTH_MIN}
@@ -238,11 +203,12 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                         );
                                         onChangeSetting(s => s.letterLineWidth = clamped);
                                     }}
-                                    style={{ width: '100%', maxWidth: '5rem' }}
+                                    style={{width: '100%', maxWidth: '5rem'}}
                                 />
                             </Form.Group>
                             <Form.Group className="d-flex align-items-center me-2">
-                                <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego zdrowia:</Form.Label>
+                                <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego
+                                    zdrowia:</Form.Label>
                                 <Form.Select
                                     size="sm"
                                     id="lowHpAlert"
@@ -277,7 +243,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     id="containerColumns"
                                     value={settings.containerColumns}
                                     onChange={ev => onChangeSetting(s => s.containerColumns = parseInt(ev.target.value) || 1)}
-                                    style={{ width: '100%', maxWidth: '4rem' }}
+                                    style={{width: '100%', maxWidth: '4rem'}}
                                 />
                             </Form.Group>
                         </div>
@@ -363,7 +329,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                         }
                                     }}
                                     className="d-inline-block me-1 w-auto"
-                                    style={{ width: '100%', maxWidth: '10rem' }}
+                                    style={{width: '100%', maxWidth: '10rem'}}
                                 />
                                 <Button
                                     size="sm"
@@ -401,6 +367,22 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     Wyczyść wszystko
                                 </Button>
                             )}
+                            <Form.Group className="mt-3 d-flex align-items-center">
+                                <Form.Label className="me-1 mb-0">Nadpisania dla wrogów:</Form.Label>
+                                <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setShowOverridesModal(true)}
+                                >
+                                    Konfiguruj ({settings.collectOverrides.length})
+                                </Button>
+                            </Form.Group>
+                            <CollectOverridesModal
+                                show={showOverridesModal}
+                                overrides={settings.collectOverrides}
+                                onClose={() => setShowOverridesModal(false)}
+                                onSave={(overrides) => onChangeSetting(s => s.collectOverrides = overrides)}
+                            />
                         </div>
                     </section>
                     <section className="character-settings-section">
@@ -414,7 +396,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     value={settings.attackCommand}
                                     placeholder="zabij"
                                     onChange={e => onChangeSetting(s => s.attackCommand = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">
                                     Uzywana przy ataku na numery obiektow. Domyslnie "zabij".
@@ -428,10 +410,11 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     value={settings.drawWeaponCommand}
                                     placeholder="dobadz"
                                     onChange={e => onChangeSetting(s => s.drawWeaponCommand = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">
-                                    Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.
+                                    Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane
+                                    automatycznie.
                                 </Form.Text>
                             </Form.Group>
                         </div>
@@ -446,7 +429,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     size="sm"
                                     value={settings.herbPreUseCommand}
                                     onChange={e => onChangeSetting(s => s.herbPreUseCommand = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                             </Form.Group>
@@ -457,7 +440,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     size="sm"
                                     value={settings.herbPostUseCommand}
                                     onChange={e => onChangeSetting(s => s.herbPostUseCommand = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                             </Form.Group>
@@ -473,7 +456,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     size="sm"
                                     value={settings.cuttingPreAction}
                                     onChange={e => onChangeSetting(s => s.cuttingPreAction = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                             </Form.Group>
@@ -484,7 +467,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     size="sm"
                                     value={settings.cuttingPostAction}
                                     onChange={e => onChangeSetting(s => s.cuttingPostAction = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '20rem' }}
+                                    style={{width: '100%', maxWidth: '20rem'}}
                                 />
                                 <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                             </Form.Group>
@@ -500,7 +483,7 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                                     size="sm"
                                     value={settings.languageAdjective}
                                     onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
-                                    style={{ width: '100%', maxWidth: '10rem' }}
+                                    style={{width: '100%', maxWidth: '10rem'}}
                                 />
                             </Form.Group>
                             <Form.Group className="d-flex align-items-center">
@@ -519,91 +502,96 @@ function SettingsForm({ registerSave }: { registerSave: (cb: (sharedSettings: Se
                         </div>
                         <table className="table table-modern table-sm table-hover table-zebra mt-3 mb-0">
                             <thead>
-                                <tr>
-                                    <th>Alias</th>
-                                    <th>Przyslowek</th>
-                                    <th>Język</th>
-                                    <th></th>
-                                </tr>
+                            <tr>
+                                <th>Alias</th>
+                                <th>Przyslowek</th>
+                                <th>Język</th>
+                                <th></th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {settings.languageAliases.map(item => (
-                                    <tr key={item.alias}>
-                                        <td>{item.alias}</td>
-                                        <td>{item.adjective}</td>
-                                        <td>{item.language}</td>
-                                        <td>
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
-                                                onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}
-                                            >
-                                                Usuń
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                <tr>
-                                    <td>
-                                        <Form.Control
-                                            type="text"
-                                            size="sm"
-                                            value={aliasInput}
-                                            onChange={e => setAliasInput(e.target.value)}
-                                            style={{ width: '100%', maxWidth: '6rem' }}
-                                        />
-                                    </td>
-                                    <td>
-                                        <Form.Control
-                                            type="text"
-                                            size="sm"
-                                            value={aliasAdjInput}
-                                            onChange={e => setAliasAdjInput(e.target.value)}
-                                            style={{ width: '100%', maxWidth: '10rem' }}
-                                        />
-                                    </td>
-                                    <td>
-                                        <Form.Select
-                                            size="sm"
-                                            value={aliasLangInput}
-                                            onChange={e => setAliasLangInput(e.target.value)}
-                                            className="w-auto"
-                                        >
-                                            {languageOptions.map(lang => (
-                                                <option key={lang} value={lang}>{lang}</option>
-                                            ))}
-                                        </Form.Select>
-                                    </td>
+                            {settings.languageAliases.map(item => (
+                                <tr key={item.alias}>
+                                    <td>{item.alias}</td>
+                                    <td>{item.adjective}</td>
+                                    <td>{item.language}</td>
                                     <td>
                                         <Button
                                             size="sm"
-                                            onClick={() => {
-                                                if (aliasInput.trim()) {
-                                                    onChangeSetting(s => s.languageAliases = [
-                                                        ...s.languageAliases,
-                                                        {
-                                                            alias: aliasInput.trim(),
-                                                            adjective: aliasAdjInput.trim(),
-                                                            language: aliasLangInput,
-                                                        },
-                                                    ]);
-                                                    setAliasInput('');
-                                                    setAliasAdjInput('');
-                                                    setAliasLangInput('potoczna');
-                                                }
-                                            }}
+                                            variant="secondary"
+                                            onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}
                                         >
-                                            Dodaj
+                                            Usuń
                                         </Button>
                                     </td>
                                 </tr>
+                            ))}
+                            <tr>
+                                <td>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        value={aliasInput}
+                                        onChange={e => setAliasInput(e.target.value)}
+                                        placeholder="np. /po"
+                                        style={{width: '100%', maxWidth: '10rem'}}
+                                    />
+                                </td>
+                                <td>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        value={aliasAdjInput}
+                                        onChange={e => setAliasAdjInput(e.target.value)}
+                                        placeholder="np. potocznie"
+                                        style={{width: '100%', maxWidth: '10rem'}}
+                                    />
+                                </td>
+                                <td>
+                                    <Form.Select
+                                        size="sm"
+                                        value={aliasLangInput}
+                                        onChange={e => setAliasLangInput(e.target.value)}
+                                        className="w-auto"
+                                    >
+                                        {languageOptions.map(lang => (
+                                            <option key={lang} value={lang}>{lang}</option>
+                                        ))}
+                                    </Form.Select>
+                                </td>
+                                <td>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            if (aliasInput.trim()) {
+                                                onChangeSetting(s => s.languageAliases = [...s.languageAliases, {
+                                                    alias: aliasInput.trim(),
+                                                    adjective: aliasAdjInput.trim(),
+                                                    language: aliasLangInput
+                                                }]);
+                                                setAliasInput('');
+                                                setAliasAdjInput('');
+                                            }
+                                        }}
+                                    >
+                                        Dodaj
+                                    </Button>
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </section>
                 </div>
             </fieldset>
         </div>
-    );
+    )
 }
 
-export default SettingsForm;
+interface Settings extends BaseSettings {
+}
+
+export default function SettingsPane({registerSave}: {
+    registerSave: (cb: (sharedSettings: Settings) => void) => void
+}) {
+    return <SettingsForm registerSave={registerSave}/>;
+}

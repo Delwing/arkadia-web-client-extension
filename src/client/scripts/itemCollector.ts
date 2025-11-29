@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { containerAction, getContainer, ContainerType } from "./bagManager";
+import type { CollectOverride } from "@modules/core/defaultSettings";
 
 type KillerType = "ME" | "TEAM" | "OTHER";
 
@@ -20,6 +21,15 @@ interface KillRecord {
     killer: KillerType;
     hasBody: boolean;
     collected: boolean;
+    enemyDesc?: string;
+}
+
+interface CollectionPrefs {
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    extra: string[];
 }
 
 interface CollectionResult {
@@ -38,6 +48,7 @@ export default class ItemCollector {
     private collectGold = true;
     private collectGems = true;
     extra: string[] = [];
+    private overrides: CollectOverride[] = [];
     private kills: KillRecord[] = [];
     private bindActive = false;
 
@@ -49,7 +60,7 @@ export default class ItemCollector {
         });
 
         this.client.on("enemyKilled", (event) => {
-            this.recordKill(event.killer, this.resolveHasBody(event));
+            this.recordKill(event.killer, this.resolveHasBody(event), event.enemyDesc);
             if (this.collectionTiming === CollectionTiming.AfterEachKill || this.collectionTiming === CollectionTiming.Both) {
                 this.handleAfterKillCollection();
             }
@@ -67,10 +78,8 @@ export default class ItemCollector {
     }
 
     private applySettings(settings: any) {
-        const isLegacy = this.isLegacySettings(settings);
-
         if (typeof settings.collectMode === "number") {
-            this.setMode(settings.collectMode, isLegacy);
+            this.setMode(settings.collectMode);
         }
 
         if (typeof settings.collectTiming === "number") {
@@ -79,12 +88,6 @@ export default class ItemCollector {
 
         if (Array.isArray(settings.collectExtra)) {
             this.extra = [...settings.collectExtra];
-        }
-
-        if (isLegacy) {
-            this.applyLegacyCoinPreferences(settings);
-            this.collectGems = this.shouldCollectGemsLegacy(settings.collectMode);
-            return;
         }
 
         if (typeof settings.collectCopper === "boolean") {
@@ -99,13 +102,12 @@ export default class ItemCollector {
         if (typeof settings.collectGems === "boolean") {
             this.collectGems = settings.collectGems;
         }
+        if (Array.isArray(settings.collectOverrides)) {
+            this.overrides = [...settings.collectOverrides];
+        }
     }
 
-    private setMode(mode: number, isLegacy: boolean) {
-        if (isLegacy) {
-            this.collectionMode = this.translateLegacyMode(mode);
-            return;
-        }
+    private setMode(mode: number) {
         const normalized = Math.round(mode);
         if (normalized >= CollectionMode.All && normalized <= CollectionMode.None) {
             this.collectionMode = normalized as CollectionMode;
@@ -166,27 +168,6 @@ export default class ItemCollector {
         });
     }
 
-    private collectCoins(from: string): boolean {
-        if (this.collectCopper && this.collectSilver && this.collectGold) {
-            this.client.sendCommand(`wez monety z ${from}`);
-            return true;
-        }
-        let collected = false;
-        if (this.collectCopper) {
-            this.client.sendCommand(`wez miedziane monety z ${from}`);
-            collected = true;
-        }
-        if (this.collectSilver) {
-            this.client.sendCommand(`wez srebrne monety z ${from}`);
-            collected = true;
-        }
-        if (this.collectGold) {
-            this.client.sendCommand(`wez zlote monety z ${from}`);
-            collected = true;
-        }
-        return collected;
-    }
-
     private collectGemstones(from: string): boolean {
         this.client.sendCommand(`wez kamienie z ${from}`);
         this.client.sendCommand("ocen kamienie");
@@ -206,67 +187,48 @@ export default class ItemCollector {
         }
     }
 
-    private shouldCollectAnything(): boolean {
-        return this.collectCopper || this.collectSilver || this.collectGold || this.collectGems || this.extra.length > 0;
+    private findOverride(enemyDesc?: string): CollectOverride | undefined {
+        if (!enemyDesc) return undefined;
+        const descLower = enemyDesc.toLowerCase();
+        return this.overrides.find(o => descLower.includes(o.enemy.toLowerCase()));
     }
 
-    private isLegacySettings(settings: any): boolean {
-        return typeof settings.collectMoneyType === "number";
+    private getCollectionPrefs(enemyDesc?: string): CollectionPrefs {
+        const override = this.findOverride(enemyDesc);
+        if (override) {
+            return {
+                collectCopper: override.collectCopper,
+                collectSilver: override.collectSilver,
+                collectGold: override.collectGold,
+                collectGems: override.collectGems,
+                extra: override.collectExtra,
+            };
+        }
+        return {
+            collectCopper: this.collectCopper,
+            collectSilver: this.collectSilver,
+            collectGold: this.collectGold,
+            collectGems: this.collectGems,
+            extra: this.extra,
+        };
     }
 
-    private translateLegacyMode(mode: number): CollectionMode {
-        if (mode === 7) {
-            return CollectionMode.None;
-        }
-        if (mode >= 4 && mode <= 6) {
-            return CollectionMode.Team;
-        }
-        return CollectionMode.All;
+    private shouldCollectAnythingForEnemy(enemyDesc?: string): boolean {
+        const prefs = this.getCollectionPrefs(enemyDesc);
+        return prefs.collectCopper || prefs.collectSilver || prefs.collectGold || prefs.collectGems || prefs.extra.length > 0;
     }
 
-    private applyLegacyCoinPreferences(settings: any) {
-        const legacyMode = typeof settings.collectMode === "number" ? settings.collectMode : undefined;
-        const collectsCoins = legacyMode === undefined ? true : [1, 3, 4, 6].includes(legacyMode);
-        if (!collectsCoins) {
-            this.collectCopper = false;
-            this.collectSilver = false;
-            this.collectGold = false;
-            return;
-        }
-
-        const legacyMoneyType = typeof settings.collectMoneyType === "number" ? settings.collectMoneyType : 1;
-        if (legacyMoneyType === 3) {
-            this.collectCopper = false;
-            this.collectSilver = false;
-            this.collectGold = true;
-        } else if (legacyMoneyType === 2) {
-            this.collectCopper = false;
-            this.collectSilver = true;
-            this.collectGold = true;
-        } else {
-            this.collectCopper = true;
-            this.collectSilver = true;
-            this.collectGold = true;
-        }
-    }
-
-    private shouldCollectGemsLegacy(mode?: number): boolean {
-        if (typeof mode !== "number") {
-            return this.collectGems;
-        }
-        return [2, 3, 5, 6].includes(mode);
-    }
-
-    private collectBody(target: string): CollectionResult {
+    private collectBody(target: string, enemyDesc?: string): CollectionResult {
         const result: CollectionResult = { money: false, gems: false, extras: [] };
-        if (this.collectCopper || this.collectSilver || this.collectGold) {
-            result.money = this.collectCoins(target);
+        const prefs = this.getCollectionPrefs(enemyDesc);
+        if (prefs.collectCopper || prefs.collectSilver || prefs.collectGold) {
+            result.money = this.collectCoinsWithPrefs(target, prefs);
         }
-        if (this.collectGems) {
+        if (prefs.collectGems) {
             result.gems = this.collectGemstones(target);
         }
-        if (this.extra.length > 0) {
-            this.extra.forEach((it) => {
+        if (prefs.extra.length > 0) {
+            prefs.extra.forEach((it) => {
                 this.client.sendCommand(`wez ${it} z ${target}`);
                 result.extras.push(it);
             });
@@ -274,8 +236,29 @@ export default class ItemCollector {
         return result;
     }
 
-    private recordKill(killer: KillerType, hasBody: boolean) {
-        this.kills.push({ killer, hasBody, collected: !hasBody });
+    private collectCoinsWithPrefs(from: string, prefs: CollectionPrefs): boolean {
+        if (prefs.collectCopper && prefs.collectSilver && prefs.collectGold) {
+            this.client.sendCommand(`wez monety z ${from}`);
+            return true;
+        }
+        let collected = false;
+        if (prefs.collectCopper) {
+            this.client.sendCommand(`wez miedziane monety z ${from}`);
+            collected = true;
+        }
+        if (prefs.collectSilver) {
+            this.client.sendCommand(`wez srebrne monety z ${from}`);
+            collected = true;
+        }
+        if (prefs.collectGold) {
+            this.client.sendCommand(`wez zlote monety z ${from}`);
+            collected = true;
+        }
+        return collected;
+    }
+
+    private recordKill(killer: KillerType, hasBody: boolean, enemyDesc?: string) {
+        this.kills.push({ killer, hasBody, collected: !hasBody, enemyDesc });
     }
 
     private resetKills() {
@@ -295,20 +278,24 @@ export default class ItemCollector {
 
     // AfterEachKill: Create bind for the most recent kill
     private handleAfterKillCollection() {
-        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+        if (this.collectionMode === CollectionMode.None) {
             return;
         }
 
         // Find the most recent uncollected body
         const lastKill = this.kills[this.kills.length - 1];
         if (lastKill && lastKill.hasBody && !lastKill.collected && this.shouldCollectForKill(lastKill.killer)) {
+            // Check if there's anything to collect for this enemy (considering overrides)
+            if (!this.shouldCollectAnythingForEnemy(lastKill.enemyDesc)) {
+                return;
+            }
             this.client.FunctionalBind.set("wez z ciala", () => this.collectLastBody());
             this.bindActive = true;
         }
     }
 
     private collectLastBody() {
-        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+        if (this.collectionMode === CollectionMode.None) {
             return;
         }
 
@@ -322,10 +309,14 @@ export default class ItemCollector {
                 record.collected = true;
                 continue;
             }
+            if (!this.shouldCollectAnythingForEnemy(record.enemyDesc)) {
+                record.collected = true;
+                continue;
+            }
 
             // Collect from this body (always use "ciala" without index for the most recent)
             const target = this.formatBodyTarget();
-            const result = this.collectBody(target);
+            const result = this.collectBody(target, record.enemyDesc);
             this.depositCollected(result.money, result.gems, result.extras);
             record.collected = true;
 
@@ -338,7 +329,7 @@ export default class ItemCollector {
 
     // AtEnd: Create bind for all bodies
     private handleAtEndCollection() {
-        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+        if (this.collectionMode === CollectionMode.None) {
             return;
         }
 
@@ -347,6 +338,9 @@ export default class ItemCollector {
         const isBothMode = this.collectionTiming === CollectionTiming.Both;
         const hasBodies = this.kills.some((record) => {
             if (!record.hasBody || !this.shouldCollectForKill(record.killer)) {
+                return false;
+            }
+            if (!this.shouldCollectAnythingForEnemy(record.enemyDesc)) {
                 return false;
             }
             return isBothMode || !record.collected;
@@ -359,7 +353,7 @@ export default class ItemCollector {
     }
 
     private collectAllBodies() {
-        if (!this.shouldCollectAnything() || this.collectionMode === CollectionMode.None) {
+        if (this.collectionMode === CollectionMode.None) {
             return;
         }
 
@@ -384,9 +378,13 @@ export default class ItemCollector {
             if (!this.shouldCollectForKill(record.killer)) {
                 continue;
             }
+            if (!this.shouldCollectAnythingForEnemy(record.enemyDesc)) {
+                record.collected = true;
+                continue;
+            }
 
             const target = this.formatBodyTarget(currentBodyIndex);
-            const result = this.collectBody(target);
+            const result = this.collectBody(target, record.enemyDesc);
             aggregated.money = aggregated.money || result.money;
             aggregated.gems = aggregated.gems || result.gems;
             if (result.extras.length > 0) {

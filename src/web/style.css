@@ -3613,6 +3613,7 @@ body.mobile-command-radial-active {
 
 .character-settings-section--full {
   column-span: all;
+  margin-top: 1rem;
 }
 
 .ui-settings-section .form-check,

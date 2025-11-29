@@ -186,7 +186,7 @@ export interface KnownEvents {
     "parsedObjects": void;
     "parsedNums": { nums: number[] };
     "kill": { killer: "ME" | "TEAM" | "OTHER" };
-    "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
+    "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean; enemyDesc?: string };
     "allEnemiesKilled": void;
     "plugin:loaded": PluginLoadedPayload;
     "plugin:error": PluginErrorPayload;

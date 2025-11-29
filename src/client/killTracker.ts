@@ -44,7 +44,7 @@ export default function initKillTracker(client: Client) {
             const id = diff[0];
             const desc = client.TeamManager.getAccumulatedObjectsData().get(id);
 
-            client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody: desc ? !isBodiless(desc.desc) : true });
+            client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody: desc ? !isBodiless(desc.desc) : true, enemyDesc: desc?.desc });
             if (diff.length > 1) {
                 console.log("DIFF handling not perfect");
             }
