@@ -89,10 +89,11 @@ describe("AnsiAwareBuffer", () => {
         });
 
         it("returns all formatting attributes at index", () => {
+            // Note: bold from ANSI input is intentionally ignored (only programmatic bold is supported)
             const buffer = new AnsiAwareBuffer("\u001b[1;3;31mBold Italic Red\u001b[0m");
             const state = buffer.getStateAt(0);
             expect(state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
-            expect(state?.bold).toBe(true);
+            expect(state?.bold).toBeUndefined(); // bold from ANSI is ignored
             expect(state?.italic).toBe(true);
         });
 

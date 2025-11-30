@@ -121,18 +121,39 @@ export default function initInlineCompassRose(client: Client) {
         // Only show on lines 0, 2, 4 (same lines as NE, E, SE)
         if (specialExits.length > 0) {
             const exitLines = [0, 2, 4]; // Lines where exits should appear
+
+            // Find the max length of lines that will have special exits, to align them
+            const baseLength = Math.max(...exitLines.map(i => lines[i].length));
+
             let exitIndex = 0;
 
             // Process exits in columns of 3
             while (exitIndex < specialExits.length) {
-                for (let lineIdx of exitLines) {
+                // Find max width needed for this column
+                const columnExits: string[] = [];
+                for (let i = 0; i < exitLines.length && exitIndex + i < specialExits.length; i++) {
+                    columnExits.push(specialExits[exitIndex + i].toUpperCase());
+                }
+                const columnWidth = Math.max(...columnExits.map(e => e.length));
+
+                for (let i = 0; i < exitLines.length; i++) {
+                    const lineIdx = exitLines[i];
+                    // Pad line to base length before adding special exits
+                    const currentLength = lines[lineIdx].length;
+                    if (currentLength < baseLength) {
+                        lines[lineIdx].append(" ".repeat(baseLength - currentLength));
+                    }
+
                     if (exitIndex < specialExits.length) {
                         const specialExit = specialExits[exitIndex].toUpperCase();
-                        const exitBuffer = new AnsiAwareBuffer(specialExit);
-                        exitBuffer.color([0, exitBuffer.length], SPRING_GREEN);
+                        const exitBuffer = new AnsiAwareBuffer(specialExit.padEnd(columnWidth));
+                        exitBuffer.color([0, specialExit.length], SPRING_GREEN);
                         lines[lineIdx].append("    ");
                         lines[lineIdx].appendBuffer(exitBuffer);
                         exitIndex++;
+                    } else {
+                        // Pad empty space to keep alignment for next column
+                        lines[lineIdx].append("    " + " ".repeat(columnWidth));
                     }
                 }
             }

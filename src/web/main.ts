@@ -3,15 +3,15 @@ import './style.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import type { SendCommandEvent } from "@shared/events";
-import { registerScripts } from "@client/main";
-import { showContextMenu, type ContextMenuEntry } from "@shared/dom/contextMenu";
-import { getContextMenuEntries as getPluginContextMenuEntries } from "@modules/core/pluginUiRegistry";
-import { setClientInstance } from "@shared/runtime";
-import {Modal, Dropdown} from 'bootstrap';
+import type {SendCommandEvent} from "@shared/events";
+import {registerScripts} from "@client/main";
+import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
+import {getContextMenuEntries as getPluginContextMenuEntries} from "@modules/core/pluginUiRegistry";
+import {setClientInstance} from "@shared/runtime";
+import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
-import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
-import { mountMigratedComponents } from "@web-ui/mountComponents.tsx";
+import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
+import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
@@ -26,7 +26,7 @@ import initUiSettings from "./uiSettings";
 import "@client/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
-import {loadMapData, loadColors} from "./mapDataLoader.ts";
+import {loadColors, loadMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -42,10 +42,10 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import MobileButtons from "./options/MobileButtons.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
-import { copyOutputAsImage } from "./copyOutputAsImage";
+import {copyOutputAsImage} from "./copyOutputAsImage";
 import {
-    loadSettings as loadMobileButtonSettings,
-    applySettings as applyMobileButtonSettings
+    applySettings as applyMobileButtonSettings,
+    loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
 import {getItemSync} from "@modules/core/storage"
 import {
@@ -56,6 +56,8 @@ import {
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
+
+let mobileRadial: MobileCommandRadial | null = null;
 
 const client = new Client(arkadiaClient, new MockPort());
 setClientInstance(client);
@@ -344,6 +346,14 @@ outputWrapper.addEventListener('contextmenu', event => {
         {
             label: 'Zioła',
             action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
+        },
+        {
+            label: 'Skróty',
+            action: () => { eventBus.emit('sendCommand', { command: '/pokaz_skroty' }); },
+        },
+        {
+            label: 'Pokaż radial',
+            action: () => { mobileRadial?.showAt(event.clientX, event.clientY); },
         },
     );
     getPluginContextMenuEntries().forEach(entry => {
@@ -1245,8 +1255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     arkadiaClient.on('playback.event', (event: any) => {
         if (playbackPreviewText) {
             const direction = event.direction === 'in' ? '←' : '→';
-            const preview = `${direction} ${event.message}`;
-            playbackPreviewText.textContent = preview;
+            playbackPreviewText.textContent = `${direction} ${event.message}`;
         }
     });
 
@@ -1773,7 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
-    new MobileCommandRadial(client);
+    mobileRadial = new MobileCommandRadial(client);
 
     loadMobileButtonSettings().then(s => {
         const inTeam = !!client.TeamManager.isInAnyTeam?.();

@@ -208,7 +208,7 @@ class FormatState {
                     this.reset();
                     break;
                 case 1:
-                    this.bold = true;
+                    // Ignore bold from ANSI input - only allow programmatic bold via triggers
                     break;
                 case 3:
                     this.italic = true;
@@ -229,7 +229,7 @@ class FormatState {
                     this.strikethrough = true;
                     break;
                 case 22:
-                    this.bold = undefined;
+                    // Ignore bold reset from ANSI input
                     break;
                 case 23:
                     this.italic = undefined;
@@ -738,7 +738,7 @@ export class AnsiAwareBuffer {
 
             // Font styles
             if (state.bold) {
-                //styles.push("font-weight: bold");
+                styles.push("font-weight: bold");
             }
 
             if (state.italic) {
@@ -818,7 +818,7 @@ export class AnsiAwareBuffer {
 
             // Font styles
             if (state.bold) {
-                //styles.push("font-weight: bold");
+                styles.push("font-weight: bold");
             }
 
             if (state.italic) {

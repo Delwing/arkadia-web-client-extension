@@ -85,6 +85,7 @@ export default class People {
 
             const descCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
                 const token = matches[0]
+                const isTableLine = line.text.includes('|')
 
                 // Find the description in the current line text (which may have been modified by previous triggers)
                 const indices = this.findTokenIndices(line.text, token)
@@ -100,6 +101,10 @@ export default class People {
                     .replace(/^\s+/, '')
                 if (nextWord.startsWith('chaosu')) {
                     return line
+                }
+
+                if (isTableLine) {
+                    return this.buildDescHighlightInPlace(line, index + token.length, replacement, state, token)
                 }
                 return this.buildDescHighlight(line, index + token.length, replacement, state, token)
             }
@@ -201,6 +206,49 @@ export default class People {
             .append(')', parenthesisColor)
 
         return line.replaceBuffer([descStart, descEnd], replacement_buffer)
+    }
+
+    private buildDescHighlightInPlace(
+        line: AnsiAwareBuffer,
+        position: number,
+        replacement: { name: string; guild: string },
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
+        descriptionToken: string
+    ): AnsiAwareBuffer {
+        const parenthesisColor = this.getNameColor(state)
+        const guildColor = this.getGuildColor(state)
+
+        const descStart = position - descriptionToken.length
+        const descEnd = position
+
+        // Only color description when guild color is set or when it's an enemy
+        const descriptionColor = (state.guildColor !== undefined || state.isEnemy) ? parenthesisColor : line.getStateAt(descStart)
+
+        // Color the description in place
+        if (descriptionColor) {
+            line.color([descStart, descEnd], descriptionColor)
+        }
+
+        // Build the suffix to insert: " (Name Guild)"
+        const suffix = ` (${replacement.name} ${replacement.guild})`
+
+        // Find how many spaces are available after the description (until next non-space or |)
+        const textAfterDesc = line.text.substring(descEnd)
+        const spaceMatch = textAfterDesc.match(/^(\s+)/)
+        const availableSpaces = spaceMatch ? spaceMatch[1].length : 0
+
+        // Only insert if we have enough space (need suffix length worth of spaces)
+        if (availableSpaces >= suffix.length) {
+            // Replace spaces with the colored suffix
+            const suffixBuffer = new AnsiAwareBuffer("")
+                .append(` (${replacement.name} `, parenthesisColor)
+                .append(replacement.guild, guildColor)
+                .append(')', parenthesisColor)
+
+            line.replaceBuffer([descEnd, descEnd + suffix.length], suffixBuffer)
+        }
+
+        return line
     }
 
     private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {

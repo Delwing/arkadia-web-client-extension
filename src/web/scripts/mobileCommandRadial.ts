@@ -41,14 +41,7 @@ export default class MobileCommandRadial {
 
     constructor(client: Client) {
         this.client = client;
-        if (!('ontouchstart' in window) || window.navigator.maxTouchPoints === 0) {
-            this.overlay = null;
-            this.commandsLayer = null;
-            this.threshold = null;
-            this.selectionLabel = null;
-            this.contentArea = null;
-            return;
-        }
+        const hasTouchSupport = ('ontouchstart' in window) && window.navigator.maxTouchPoints > 0;
 
         this.overlay = document.getElementById('mobile-command-radial') as HTMLDivElement | null;
         this.commandsLayer = this.overlay?.querySelector('.mobile-command-radial__commands') as HTMLDivElement | null;
@@ -65,20 +58,17 @@ export default class MobileCommandRadial {
             console.warn('Mobile radial command selection label missing.');
         }
 
-        if (!this.contentArea) {
-            console.warn('Mobile radial command content area missing.');
-            return;
+        if (hasTouchSupport && this.contentArea) {
+            this.registerEventListeners();
         }
-
-        this.registerEventListeners();
         this.loadInitialSettings();
     }
 
     private registerEventListeners() {
-        this.contentArea.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        this.contentArea.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        this.contentArea.addEventListener('touchend', this.handleTouchEnd, { passive: false });
-        this.contentArea.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
+        this.contentArea!.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+        this.contentArea!.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.contentArea!.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        this.contentArea!.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
 
         this.client.on('mobileButtonsSettings', () => {
             this.reloadSettings();
@@ -497,6 +487,79 @@ export default class MobileCommandRadial {
         }
         return null;
     }
+
+    public showAt(x?: number, y?: number): void {
+        if (!this.overlay || !this.commandsLayer || !this.threshold || !this.commands.length) {
+            return;
+        }
+        if (!this.isRadialEnabled()) {
+            return;
+        }
+        const centerX = x ?? window.innerWidth / 2;
+        const centerY = y ?? window.innerHeight / 2;
+        this.activateMenu(centerX, centerY);
+        this.addMouseListeners();
+    }
+
+    private addMouseListeners(): void {
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.handleMouseUp);
+        document.addEventListener('keydown', this.handleKeyDown);
+    }
+
+    private removeMouseListeners(): void {
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('keydown', this.handleKeyDown);
+    }
+
+    private readonly handleMouseMove = (event: MouseEvent): void => {
+        if (!this.isMenuActive) {
+            return;
+        }
+        const dx = event.clientX - this.centerX;
+        const dy = event.clientY - this.centerY;
+        const distance = Math.hypot(dx, dy);
+        if (distance < ACTIVATION_RADIUS) {
+            this.highlightCommand(null);
+            return;
+        }
+        let closest: { id: string; distance: number } | null = null;
+        for (const cmd of this.commands) {
+            const commandDistance = Math.hypot(event.clientX - (this.centerX + cmd.x), event.clientY - (this.centerY + cmd.y));
+            if (!closest || commandDistance < closest.distance) {
+                closest = { id: cmd.id, distance: commandDistance };
+            }
+        }
+        this.highlightCommand(closest ? closest.id : null);
+    };
+
+    private readonly handleMouseUp = (event: MouseEvent): void => {
+        if (!this.isMenuActive) {
+            return;
+        }
+        const dx = event.clientX - this.centerX;
+        const dy = event.clientY - this.centerY;
+        const distance = Math.hypot(dx, dy);
+        if (distance >= ACTIVATION_RADIUS && this.highlightedCommandId) {
+            const command = this.commands.find(c => c.id === this.highlightedCommandId);
+            if (command) {
+                this.client.sendCommand(command.command);
+            }
+        }
+        this.removeMouseListeners();
+        this.hideMenu();
+    };
+
+    private readonly handleKeyDown = (event: KeyboardEvent): void => {
+        if (!this.isMenuActive) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            this.removeMouseListeners();
+            this.hideMenu();
+        }
+    };
 
     private isEligibleTouch(touch: Touch, origin: EventTarget | null = null): boolean {
         if (!this.contentArea) {
