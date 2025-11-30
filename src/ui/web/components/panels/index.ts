@@ -1,5 +1,5 @@
 export { CharStateInfo } from "./CharStateInfo";
-export { ReleaseGuard } from "./ReleaseGuard";
+export { ReleaseGuardTimer } from "./ReleaseGuardTimer";
 export { BreakItemWarning } from "./BreakItemWarning";
 export { MultiBinds } from "./MultiBinds";
 export { CharState } from "./CharState";

@@ -229,11 +229,51 @@ export default class People {
             line.color([descStart, descEnd], descriptionColor)
         }
 
+        const textAfterDesc = line.text.substring(descEnd)
+
+        // Check if there's already a "(to chyba Name)" pattern after the description
+        const existingNameMatch = textAfterDesc.match(/^\s*\(to chyba ([^)]+)\)/)
+        if (existingNameMatch) {
+            const fullMatch = existingNameMatch[0]
+            const existingName = existingNameMatch[1]
+            const matchStart = descEnd + textAfterDesc.indexOf(fullMatch)
+            const matchEnd = matchStart + fullMatch.length
+
+            // Build replacement with colored name and guild suffix: "(to chyba Name GUILD)"
+            const newSuffix = ` (to chyba ${existingName} ${replacement.guild})`
+
+            // Find spaces available after the closing parenthesis
+            const textAfterParen = line.text.substring(matchEnd)
+            const spaceMatchAfter = textAfterParen.match(/^(\s+)/)
+            const availableSpacesAfter = spaceMatchAfter ? spaceMatchAfter[1].length : 0
+
+            // Calculate extra space needed for guild suffix
+            const extraNeeded = newSuffix.length - fullMatch.length
+            const leadingSpaces = fullMatch.match(/^\s*/)?.[0].length ?? 0
+
+            if (extraNeeded <= availableSpacesAfter + leadingSpaces) {
+                // We have enough space - build replacement with only Name and Guild colored
+                // Keep "to chyba" and parentheses with their original color
+                const originalState = line.getStateAt(matchStart)
+                const suffixBuffer = new AnsiAwareBuffer("")
+                    .append(` (to chyba `, originalState)
+                    .append(existingName, parenthesisColor)
+                    .append(` `, originalState)
+                    .append(replacement.guild, guildColor)
+                    .append(')', originalState)
+
+                // Replace from match start (including leading space) to end of available space
+                const replaceEnd = matchEnd + Math.max(0, extraNeeded)
+                line.replaceBuffer([matchStart, replaceEnd], suffixBuffer)
+            }
+
+            return line
+        }
+
         // Build the suffix to insert: " (Name Guild)"
         const suffix = ` (${replacement.name} ${replacement.guild})`
 
         // Find how many spaces are available after the description (until next non-space or |)
-        const textAfterDesc = line.text.substring(descEnd)
         const spaceMatch = textAfterDesc.match(/^(\s+)/)
         const availableSpaces = spaceMatch ? spaceMatch[1].length : 0
 

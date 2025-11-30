@@ -148,8 +148,11 @@ const PATTERNS: Record<Domain, RegExp[]> = {
         )
     ],
     Ishtar: [
+        // Matches both formats:
+        // "Jest w przyblizeniu X w nocy, pierwszy dzien pory Imbaelk wedlug rachuby czasu Starszego Ludu."
+        // "Jest w przyblizeniu X w nocy, Imbaelk - Dzien Kielkowania wedlug rachuby czasu Starszego Ludu."
         new RegExp(
-            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?<day>[\\w ]+?) dzien pory (?<month>\\w+) wedlug rachuby czasu Starszego Ludu\\."
+            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?:(?<day>[\\w ]+?) dzien pory )?(?<month>\\w+)(?: -[^.]+)? wedlug rachuby czasu Starszego Ludu\\."
         )
     ]
 };

@@ -348,3 +348,88 @@ describe('people triggers case sensitivity', () => {
     expect(result?.text).toContain('EAMON');
   });
 });
+
+describe('people triggers wanted letter with existing name', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+  type SettingsPayload = { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> };
+  let settingsHandler: ((event: SettingsPayload) => void) | undefined;
+  const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
+
+  beforeEach(async () => {
+    subscribers.length = 0;
+    subscribeMock.mockReset().mockImplementation((listener) => {
+      subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+      return () => {
+        const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
+        if (index >= 0) {
+          subscribers.splice(index, 1);
+        }
+      };
+    });
+    refreshMock.mockReset().mockImplementation(async () => {
+      subscribers.forEach((listener) => listener(MOCK_PEOPLE));
+      return MOCK_PEOPLE;
+    });
+
+    client = new FakeClient();
+    new People((client as unknown) as any);
+    await refreshMock.mock.results[0]?.value;
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1] as
+      | ((event: SettingsPayload) => void)
+      | undefined;
+    const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
+    await lastGuildCall?.value;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    subscribers.length = 0;
+  });
+
+  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
+    settingsHandler?.(detail);
+  };
+
+  test('adds guild suffix to existing "(to chyba Name)" in table line', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+    const result = parse('|    | wysoki mezczyzna (to chyba Eamon)                  |   |');
+
+    // Should add guild suffix inside the parentheses
+    expect(result?.text).toContain('(to chyba Eamon CKN)');
+    // Description should be colored
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
+    // Name should be colored
+    expect(hasColoredText(result, 'Eamon')).toBe(true);
+    // Guild should be colored
+    expect(hasColoredText(result, 'CKN')).toBe(true);
+    // "to chyba" should NOT be colored
+    expect(hasColoredText(result, 'to chyba')).toBe(false);
+  });
+
+  test('colors enemy in red when "(to chyba Name)" exists', () => {
+    emitSettings({ guilds: [], enemyGuilds: ['CKN'], guildColors: {} });
+    const result = parse('|    | wysoki mezczyzna (to chyba Eamon)                  |   |');
+
+    // Should add guild suffix inside the parentheses
+    expect(result?.text).toContain('(to chyba Eamon CKN)');
+    // Description should be colored (red for enemy)
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
+    // Name should be colored (red for enemy)
+    expect(hasColoredText(result, 'Eamon')).toBe(true);
+    // Guild should be colored
+    expect(hasColoredText(result, 'CKN')).toBe(true);
+    // "to chyba" should NOT be colored
+    expect(hasColoredText(result, 'to chyba')).toBe(false);
+  });
+
+  test('handles "(to chyba Name)" without enough space gracefully', () => {
+    emitSettings({ guilds: ['CKN'], enemyGuilds: [], guildColors: { CKN: '#00ff00' } });
+    // Very little space after the parentheses
+    const result = parse('|    | wysoki mezczyzna (to chyba Eamon)|');
+
+    // Should still color description even if no space for guild suffix
+    expect(hasColoredText(result, 'wysoki mezczyzna')).toBe(true);
+  });
+});

@@ -2033,18 +2033,8 @@ h1 {
   color: tomato;
 }
 
-#cover-timer {
+#release-guard-timer {
   display: none;
-}
-
-#cover-timer.green {
-  display: block;
-  color: springgreen;
-}
-
-#cover-timer.yellow {
-  display: block;
-  color: yellow;
 }
 
 #zask-timer {
@@ -2094,18 +2084,6 @@ h1 {
   cursor: pointer;
 }
 
-#release-guard {
-  display: none;
-  cursor: pointer;
-}
-
-#release-guard.on {
-  color: springgreen;
-}
-
-#release-guard.off {
-  color: tomato;
-}
 
 #attack-mode {
   display: none;

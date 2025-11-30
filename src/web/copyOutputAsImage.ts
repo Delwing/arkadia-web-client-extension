@@ -71,13 +71,33 @@ function getAncestorColor(node: Node): string | null {
     return null;
 }
 
-function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean } {
+function getFirstLineOffset(range: Range): number {
+    // When selection spans multiple output_msg divs, the browser merges text into one node.
+    // We find the offset by looking at what text precedes the selection on its first line.
+    const startContainer = range.startContainer;
+    const startOffset = range.startOffset;
+
+    if (startContainer.nodeType !== Node.TEXT_NODE) {
+        return 0;
+    }
+
+    const textBefore = startContainer.textContent?.substring(0, startOffset) || '';
+    const lastNewlineIndex = textBefore.lastIndexOf('\n');
+
+    // Return characters after the last newline (or all if no newline)
+    return lastNewlineIndex >= 0 ? textBefore.length - lastNewlineIndex - 1 : textBefore.length;
+}
+
+function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; firstLineCharOffset: number } {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
-        return { spans: [], hasSelection: false };
+        return { spans: [], hasSelection: false, firstLineCharOffset: 0 };
     }
 
     const range = selection.getRangeAt(0);
+
+    // Get the character offset for the first line (before cloning)
+    const firstLineCharOffset = getFirstLineOffset(range);
 
     // Get color from ancestors of the original selection (before cloning loses it)
     const ancestorColor = getAncestorColor(range.startContainer);
@@ -92,11 +112,11 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean } {
     const spans = extractStyledText(container, defaultColor);
 
     document.body.removeChild(container);
-    return { spans, hasSelection: true };
+    return { spans, hasSelection: true, firstLineCharOffset };
 }
 
 export async function copyOutputAsImage(): Promise<void> {
-    const { spans, hasSelection } = getSelectedContent();
+    const { spans, hasSelection, firstLineCharOffset } = getSelectedContent();
     if (!hasSelection || spans.length === 0) {
         throw new Error('Brak zaznaczenia');
     }
@@ -133,11 +153,15 @@ export async function copyOutputAsImage(): Promise<void> {
         lines.push(currentLine);
     }
 
-    // Measure actual width of each line
+    // Calculate first line pixel offset (only if multiple lines)
+    ctx.font = font;
+    const firstLinePixelOffset = lines.length > 1 ? ctx.measureText(' '.repeat(firstLineCharOffset)).width : 0;
+
+    // Measure actual width of each line (including first line offset)
     let maxLineWidth = 0;
-    for (const line of lines) {
-        let lineWidth = 0;
-        for (const span of line) {
+    for (let i = 0; i < lines.length; i++) {
+        let lineWidth = i === 0 ? firstLinePixelOffset : 0;
+        for (const span of lines[i]) {
             ctx.font = span.bold ? boldFont : font;
             lineWidth += ctx.measureText(span.text).width;
         }
@@ -160,7 +184,8 @@ export async function copyOutputAsImage(): Promise<void> {
 
     for (let i = 0; i < lines.length; i++) {
         const y = padding + i * lineHeightPx + (lineHeightPx - fontSize) / 2;
-        let x = padding;
+        // Add offset for first line when there are multiple lines
+        let x = padding + (i === 0 ? firstLinePixelOffset : 0);
 
         for (const span of lines[i]) {
             ctx.font = span.bold ? boldFont : font;
