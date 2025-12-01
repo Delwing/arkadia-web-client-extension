@@ -104,6 +104,7 @@ import initKillTracker from "@client/killTracker.ts";
 import {initClock} from "@client/scripts/clock.ts";
 import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
 import initCutting from './scripts/cutting'
+import initWyroznienieOptions from './scripts/wyroznienieOptions'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -296,5 +297,6 @@ export function registerScripts(client: Client) {
     initInlineCompassRose(client)
     initClock(client)
     initSunCalendarLogger(client)
+    initWyroznienieOptions(client)
 
 }
