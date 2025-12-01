@@ -631,6 +631,15 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Request persistent storage
+    if (navigator.storage?.persist) {
+        navigator.storage.persist().then(granted => {
+            console.log(granted ? 'Persistent storage granted' : 'Persistent storage not granted');
+        }).catch(err => {
+            console.warn('Failed to request persistent storage:', err);
+        });
+    }
+
     // Activate tab sleep prevention for mobile devices
     if (window.innerWidth < 768) {
         preventTabSleep();

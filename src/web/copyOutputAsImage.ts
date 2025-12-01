@@ -1,3 +1,5 @@
+import {areOutputTimestampsVisible} from "@shared/dom/outputMessageHandler";
+
 interface StyledSpan {
     text: string;
     color: string;
@@ -9,7 +11,9 @@ const BLOCK_ELEMENTS = new Set([
     'BLOCKQUOTE', 'PRE', 'HR', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER',
 ]);
 
-function extractStyledText(node: Node, defaultColor: string): StyledSpan[] {
+const TIMESTAMP_COLOR = 'darkorange';
+
+function extractStyledText(node: Node, defaultColor: string, includeTimestamps: boolean): StyledSpan[] {
     const spans: StyledSpan[] = [];
 
     function walk(n: Node, inheritedColor: string, inheritedBold: boolean) {
@@ -24,6 +28,12 @@ function extractStyledText(node: Node, defaultColor: string): StyledSpan[] {
         if (n.nodeType === Node.ELEMENT_NODE) {
             const el = n as HTMLElement;
             if (el.classList.contains('output-timestamp')) {
+                if (includeTimestamps) {
+                    const text = el.textContent || '';
+                    if (text) {
+                        spans.push({ text: text + ' ', color: TIMESTAMP_COLOR, bold: false });
+                    }
+                }
                 return;
             }
 
@@ -88,10 +98,29 @@ function getFirstLineOffset(range: Range): number {
     return lastNewlineIndex >= 0 ? textBefore.length - lastNewlineIndex - 1 : textBefore.length;
 }
 
-function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; firstLineCharOffset: number } {
+function findFirstLineTimestamp(range: Range): string | null {
+    // Find the output_msg element that contains the start of the selection
+    let node: Node | null = range.startContainer;
+    while (node && node !== document.body) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            if (el.classList.contains('output_msg')) {
+                const timestampEl = el.querySelector('.output-timestamp');
+                if (timestampEl) {
+                    return timestampEl.textContent || null;
+                }
+                return null;
+            }
+        }
+        node = node.parentNode;
+    }
+    return null;
+}
+
+function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; firstLineCharOffset: number; firstLineHasPrependedTimestamp: boolean } {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
-        return { spans: [], hasSelection: false, firstLineCharOffset: 0 };
+        return { spans: [], hasSelection: false, firstLineCharOffset: 0, firstLineHasPrependedTimestamp: false };
     }
 
     const range = selection.getRangeAt(0);
@@ -100,6 +129,7 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; fir
     const firstLineCharOffset = getFirstLineOffset(range);
 
     // Get color from ancestors of the original selection (before cloning loses it)
+    // This is ONLY for the first line's content that may have inherited color
     const ancestorColor = getAncestorColor(range.startContainer);
 
     const fragment = range.cloneContents();
@@ -108,15 +138,43 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; fir
     document.body.appendChild(container);
 
     const bodyStyle = window.getComputedStyle(document.body);
-    const defaultColor = ancestorColor || bodyStyle.color || '#ffffff';
-    const spans = extractStyledText(container, defaultColor);
+    const defaultColor = bodyStyle.color || '#ffffff';
+    const includeTimestamps = areOutputTimestampsVisible();
+    const spans = extractStyledText(container, defaultColor, includeTimestamps);
+
+    // Apply ancestor color only to spans before the first newline (first line content)
+    if (ancestorColor && spans.length > 0) {
+        for (const span of spans) {
+            if (span.text.includes('\n')) {
+                // Split at newline - only color content before it
+                break;
+            }
+            if (span.color === defaultColor) {
+                span.color = ancestorColor;
+            }
+        }
+    }
+
+    // If timestamps are visible and the first line doesn't have a timestamp,
+    // try to find and prepend it (timestamps have user-select: none so they're not in the selection)
+    let firstLineHasPrependedTimestamp = false;
+    if (includeTimestamps && spans.length > 0) {
+        const hasTimestampAtStart = spans[0].color === TIMESTAMP_COLOR;
+        if (!hasTimestampAtStart) {
+            const firstLineTimestamp = findFirstLineTimestamp(range);
+            if (firstLineTimestamp) {
+                spans.unshift({ text: firstLineTimestamp + ' ', color: TIMESTAMP_COLOR, bold: false });
+                firstLineHasPrependedTimestamp = true;
+            }
+        }
+    }
 
     document.body.removeChild(container);
-    return { spans, hasSelection: true, firstLineCharOffset };
+    return { spans, hasSelection: true, firstLineCharOffset, firstLineHasPrependedTimestamp };
 }
 
 export async function copyOutputAsImage(): Promise<void> {
-    const { spans, hasSelection, firstLineCharOffset } = getSelectedContent();
+    const { spans, hasSelection, firstLineCharOffset, firstLineHasPrependedTimestamp } = getSelectedContent();
     if (!hasSelection || spans.length === 0) {
         throw new Error('Brak zaznaczenia');
     }
@@ -153,14 +211,31 @@ export async function copyOutputAsImage(): Promise<void> {
         lines.push(currentLine);
     }
 
-    // Calculate first line pixel offset (only if multiple lines)
+    // Calculate first line pixel offset (only if multiple lines and first line has prepended timestamp)
     ctx.font = font;
-    const firstLinePixelOffset = lines.length > 1 ? ctx.measureText(' '.repeat(firstLineCharOffset)).width : 0;
+    // Only apply offset if we prepended a timestamp (meaning selection started mid-content)
+    const firstLinePixelOffset = (lines.length > 1 && firstLineHasPrependedTimestamp)
+        ? ctx.measureText(' '.repeat(firstLineCharOffset)).width
+        : 0;
 
-    // Measure actual width of each line (including first line offset)
+    // Check if we have any timestamps - if so, lines without timestamps need to be indented
+    const hasAnyTimestamp = lines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
+    // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
+    const timestampIndent = hasAnyTimestamp ? ctx.measureText(' '.repeat(13)).width : 0;
+
+    // Measure actual width of each line (including offsets)
     let maxLineWidth = 0;
     for (let i = 0; i < lines.length; i++) {
-        let lineWidth = i === 0 ? firstLinePixelOffset : 0;
+        const lineHasTimestamp = lines[i].length > 0 && lines[i][0].color === TIMESTAMP_COLOR;
+        let lineWidth: number;
+        if (i === 0 && firstLineHasPrependedTimestamp) {
+            // First line with prepended timestamp: timestamp width + offset + content
+            lineWidth = firstLinePixelOffset;
+        } else if (!lineHasTimestamp && hasAnyTimestamp) {
+            lineWidth = timestampIndent;
+        } else {
+            lineWidth = 0;
+        }
         for (const span of lines[i]) {
             ctx.font = span.bold ? boldFont : font;
             lineWidth += ctx.measureText(span.text).width;
@@ -184,14 +259,30 @@ export async function copyOutputAsImage(): Promise<void> {
 
     for (let i = 0; i < lines.length; i++) {
         const y = padding + i * lineHeightPx + (lineHeightPx - fontSize) / 2;
-        // Add offset for first line when there are multiple lines
-        let x = padding + (i === 0 ? firstLinePixelOffset : 0);
+        const lineHasTimestamp = lines[i].length > 0 && lines[i][0].color === TIMESTAMP_COLOR;
+        // Calculate x offset based on line position and timestamp presence
+        let x: number;
+        if (i === 0 && firstLineHasPrependedTimestamp) {
+            // First line with prepended timestamp starts at padding, timestamp renders first,
+            // then offset is applied after timestamp for the content
+            x = padding;
+        } else if (!lineHasTimestamp && hasAnyTimestamp) {
+            x = padding + timestampIndent;
+        } else {
+            x = padding;
+        }
 
-        for (const span of lines[i]) {
+        for (let j = 0; j < lines[i].length; j++) {
+            const span = lines[i][j];
             ctx.font = span.bold ? boldFont : font;
             ctx.fillStyle = span.color;
             ctx.fillText(span.text, x, y);
             x += ctx.measureText(span.text).width;
+
+            // After rendering the timestamp on first line with prepended timestamp, add the offset
+            if (i === 0 && firstLineHasPrependedTimestamp && j === 0 && span.color === TIMESTAMP_COLOR) {
+                x += firstLinePixelOffset;
+            }
         }
     }
 
