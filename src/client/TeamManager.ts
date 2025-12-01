@@ -101,6 +101,9 @@ export default class TeamManager {
             }
             if (obj?.living === false) {
                 this.removeEnemyFromQueue(id);
+                if (this.leaderAttackTargetId === id) {
+                    this.leaderAttackTargetId = undefined;
+                }
             }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
@@ -111,10 +114,6 @@ export default class TeamManager {
     }
 
     private handleObjectsNums(detail: any) {
-        if (this.enemies.length === 0) {
-            return;
-        }
-        const previousQueue = this.enemies.join(",");
         let nums: number[] | null = null;
         if (Array.isArray(detail)) {
             nums = detail
@@ -125,6 +124,16 @@ export default class TeamManager {
             return;
         }
         const allowed = new Set(nums);
+
+        if (this.leaderAttackTargetId && !allowed.has(this.leaderAttackTargetId)) {
+            this.leaderAttackTargetId = undefined;
+            this.client.sendEvent('teamLeaderTargetAvatar');
+        }
+
+        if (this.enemies.length === 0) {
+            return;
+        }
+        const previousQueue = this.enemies.join(",");
         const remaining: number[] = [];
 
         this.enemies.forEach(id => {

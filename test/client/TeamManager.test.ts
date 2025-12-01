@@ -242,4 +242,32 @@ describe('TeamManager', () => {
     );
   });
 
+  test('clears leader attack target when target dies', () => {
+    const avatarCallback = jest.fn();
+    client.on('teamLeaderTargetAvatar', avatarCallback);
+    // Setup leader attacking target 3
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: 3 },
+      '99': { desc: 'You', living: true, team: true, attack_num: false },
+    });
+    avatarCallback.mockClear();
+    // Target 3 dies
+    client.sendEvent('gmcp.objects.data', { '3': { living: false } });
+    expect(avatarCallback).toHaveBeenCalled();
+  });
+
+  test('clears leader attack target when target disappears from objects.nums', () => {
+    const avatarCallback = jest.fn();
+    client.on('teamLeaderTargetAvatar', avatarCallback);
+    // Setup leader attacking target 3
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: 3 },
+      '99': { desc: 'You', living: true, team: true, attack_num: false },
+    });
+    avatarCallback.mockClear();
+    // Target 3 no longer visible (not in objects.nums)
+    client.sendEvent('gmcp.objects.nums', [1, 99, 4, 5]);
+    expect(avatarCallback).toHaveBeenCalled();
+  });
+
 });
