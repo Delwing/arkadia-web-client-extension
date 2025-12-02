@@ -32,6 +32,7 @@ import {loadColors, loadMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
+import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import Binds from "./options/Binds.tsx"
 import Npc from "./options/Npc.tsx"
 import Scripts from "./options/Scripts.tsx"
@@ -66,7 +67,7 @@ setClientInstance(client);
 registerScripts(client);
 client.connect(client.port, true);
 
-const handleClientCommand = ({ command, echo = true, options }: SendCommandEvent) => {
+const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {
     if (typeof command !== 'string') {
         return;
     }
@@ -339,27 +340,39 @@ outputWrapper.addEventListener('contextmenu', event => {
     items.push(
         {
             label: 'Wiedza',
-            action: () => { eventBus.emit('sendCommand', { command: '/wiedza' }); },
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/wiedza'});
+            },
         },
         {
             label: 'Biblioteki',
-            action: () => { eventBus.emit('sendCommand', { command: '/biblioteki' }); },
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/biblioteki'});
+            },
         },
         {
             label: 'Zioła',
-            action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/ziola'});
+            },
         },
         {
             label: 'Zlecenia',
-            action: () => { eventBus.emit('sendCommand', { command: '/zlecenia' }); },
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/zlecenia'});
+            },
         },
         {
             label: 'Skróty',
-            action: () => { eventBus.emit('sendCommand', { command: '/pokaz_skroty' }); },
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/pokaz_skroty'});
+            },
         },
         {
             label: 'Pokaż radial',
-            action: () => { mobileRadial?.showAt(event.clientX, event.clientY); },
+            action: () => {
+                mobileRadial?.showAt(event.clientX, event.clientY);
+            },
         },
     );
     getPluginContextMenuEntries().forEach(entry => {
@@ -421,8 +434,13 @@ Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
-        const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        (globalThis as any).embedded = new EmbeddedMap(reader, pathFinder, startId);
+        const {startId, reader} = client.Map.initialize(mapData, colors);
+        (globalThis as any).embedded = new EmbeddedMap(reader, startId);
+
+        const locationTextElement = document.getElementById('location-text');
+        if (locationTextElement) {
+            createRoot(locationTextElement).render(createElement(LocationLabel));
+        }
     })
     .catch(error => {
         progressContainer.style.display = 'none';
@@ -555,22 +573,22 @@ interface RawDirectionBind {
 }
 
 const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
-    n: { key: 'Numpad8' },
-    s: { key: 'Numpad2' },
-    w: { key: 'Numpad4' },
-    e: { key: 'Numpad6' },
-    nw: { key: 'Numpad7' },
-    ne: { key: 'Numpad9' },
-    sw: { key: 'Numpad1' },
-    se: { key: 'Numpad3' },
-    u: { key: 'NumpadMultiply' },
-    d: { key: 'NumpadSubtract' },
-    special: { key: 'Numpad0' },
+    n: {key: 'Numpad8'},
+    s: {key: 'Numpad2'},
+    w: {key: 'Numpad4'},
+    e: {key: 'Numpad6'},
+    nw: {key: 'Numpad7'},
+    ne: {key: 'Numpad9'},
+    sw: {key: 'Numpad1'},
+    se: {key: 'Numpad3'},
+    u: {key: 'NumpadMultiply'},
+    d: {key: 'NumpadSubtract'},
+    special: {key: 'Numpad0'},
 };
 
 const CONSTANT_DIRECTION_BINDS: DirectionBinding[] = [
-    { direction: 'd', code: 'NumpadDivide' },
-    { direction: 'zerknij', code: 'Numpad5' },
+    {direction: 'd', code: 'NumpadDivide'},
+    {direction: 'zerknij', code: 'Numpad5'},
 ];
 
 let directionBindings: DirectionBinding[] = buildDirectionBindings();
@@ -589,7 +607,7 @@ function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> 
     });
 
     if (!resolved.some(bind => bind.code === 'Numpad0')) {
-        resolved.push({ direction: 'special', code: 'Numpad0' });
+        resolved.push({direction: 'special', code: 'Numpad0'});
     }
 
     return [...resolved, ...CONSTANT_DIRECTION_BINDS];
@@ -628,7 +646,7 @@ document.addEventListener('keydown', (e) => {
             const exits = client.Map.currentRoom?.specialExits ?? {};
             const first = Object.keys(exits)[0];
             if (first) {
-                eventBus.emit('sendCommand', { command: first });
+                eventBus.emit('sendCommand', {command: first});
             }
         } else {
             client.sendCommand(binding.direction);
@@ -796,7 +814,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             messageInput.focus();
-            setTimeout(() => {messageInput.focus()}, 1)
+            setTimeout(() => {
+                messageInput.focus()
+            }, 1)
         };
 
         if (window.PointerEvent) {
@@ -1274,7 +1294,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    arkadiaClient.on('playback.loop.updated', (loopState: { start: number | null; end: number | null; enabled: boolean }) => {
+    arkadiaClient.on('playback.loop.updated', (loopState: {
+        start: number | null;
+        end: number | null;
+        enabled: boolean
+    }) => {
         if (playbackLoopToggle) {
             playbackLoopToggle.textContent = loopState.enabled ? 'Pętla: WŁ' : 'Pętla: WYŁ';
             playbackLoopToggle.setAttribute('data-loop-enabled', loopState.enabled.toString());

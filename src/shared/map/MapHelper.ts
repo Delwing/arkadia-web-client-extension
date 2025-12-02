@@ -71,6 +71,8 @@ export default class MapHelper {
     private colors?: any;
     private mapReady = false;
     public isBlockable = false;
+    private destinations: number[] = [];
+    private highlights: number[] = [];
 
     constructor(client: MapHelperClient, options: MapHelperOptions = {}) {
         this.client = client;
@@ -116,6 +118,18 @@ export default class MapHelper {
             this.gmcpPosition = undefined;
             this.client.sendEvent("refreshPositionWhenAble");
         })
+
+        this.client.on("leadTo", (target: number) => {
+            this.leadTo(target);
+        });
+
+        this.client.on("clearLeadTo", () => {
+            this.clearLeadTo();
+        });
+
+        this.client.on("highlights", (highlights: number[]) => {
+            this.setHighlights(highlights);
+        });
 
         this.client.sendEvent("refreshPositionWhenAble");
     }
@@ -396,6 +410,7 @@ export default class MapHelper {
             this.lastMoveDirection = null;
             this.client.sendEvent("enterLocation", { id, room: this.currentRoom, direction });
         }
+        this.emitDrawData();
     }
 
     findRoomByExit(room: MapData.Room, targetRoom: MapData.Room, targetDir: string) {
@@ -443,5 +458,85 @@ export default class MapHelper {
 
     findPath(fromId: number, targetId: number) {
         return this.pathFinder.findPath(fromId, targetId);
+    }
+
+    leadTo(id: number) {
+        this.destinations = [id];
+        this.emitDrawData();
+    }
+
+    clearLeadTo() {
+        this.destinations = [];
+        this.emitDrawData();
+    }
+
+    setHighlights(highlights: number[]) {
+        this.highlights = highlights;
+        this.emitDrawData();
+    }
+
+    checkDestinationReached(roomId: number) {
+        const index = this.destinations.indexOf(roomId);
+        if (index > -1) {
+            this.destinations.splice(index, 1);
+            this.emitDrawData();
+        }
+    }
+
+    emitDrawData() {
+        this.emitPath();
+        this.emitHighlights();
+        this.emitLocationLabel();
+    }
+
+    emitPath() {
+        const currentId = this.currentRoom?.id;
+        if (this.destinations.length > 0 && currentId) {
+            const destId = this.destinations[0];
+            const path = this.pathFinder?.findPath(currentId, destId) ?? null;
+            if (path) {
+                this.client.sendEvent("mapPath", { path, color: "#66E64D" });
+                return;
+            }
+        }
+        this.client.sendEvent("mapPath", null);
+    }
+
+    emitHighlights() {
+        this.client.sendEvent("mapHighlights", this.highlights.map(roomId => ({ roomId, color: "yellow" })));
+    }
+
+    emitLocationLabel() {
+        this.client.sendEvent("mapLocationLabel", this.buildLocationLabel());
+    }
+
+    private buildLocationLabel(): string {
+        const currentId = this.currentRoom?.id;
+        if (!currentId || !this.mapReader) {
+            return "";
+        }
+
+        const room = this.currentRoom;
+        const area = this.mapReader.getArea(room?.area);
+        if (!area) {
+            return "";
+        }
+
+        const roomName = room?.name || "";
+        const areaName = area.getAreaName();
+        const showRoomName = roomName && roomName !== String(currentId);
+        let text = showRoomName ? `#${currentId} ${roomName} (${areaName})` : `#${currentId} ${areaName}`;
+
+        if (this.destinations.length > 0) {
+            const destId = this.destinations[0];
+            const path = this.pathFinder?.findPath(currentId, destId) ?? null;
+            const distance = path ? path.length - 1 : 0;
+            const destRoom = this.mapReader?.getRoom(destId);
+            const destArea = destRoom ? this.mapReader.getArea(destRoom.area) : null;
+            const destName = destArea ? destArea.getAreaName() : String(destId);
+            text += ` → #${destId} ${destName} (${distance})`;
+        }
+
+        return text;
     }
 }

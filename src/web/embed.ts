@@ -1,7 +1,6 @@
 import {
     MapReader,
     Renderer,
-    PathFinder,
     Settings,
     RoomContextMenuEventDetail,
     LabelRenderMode
@@ -70,23 +69,21 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
 export class EmbeddedMap {
     private map: HTMLDivElement;
     private reader: MapReader;
-    private pathFinder: PathFinder;
     public renderer: Renderer;
     public currentRoom: any;
-    private destinations: number[] = [];
-    private highlights: number[] = []
     private zoom: number;
     private explorationMode = false;
     private visited = new Set<number>();
     private totalRooms: number;
+    private currentPath: { path: number[]; color: string } | null = null;
+    private currentHighlights: { roomId: number; color: string }[] = [];
 
-    constructor(reader: MapReader, pathFinder: PathFinder, startId?: number) {
+    constructor(reader: MapReader, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
-        this.reader = reader
-        this.pathFinder = pathFinder;
+        this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
         eventBus.on('pauserStart', () => {
@@ -198,21 +195,19 @@ export class EmbeddedMap {
             this.reader.addVisitedRoom(id);
             setItemSync(STORAGE_KEY, id.toString());
             saveVisitedRooms(Array.from(this.visited));
+            getClientInstance()?.Map?.checkDestinationReached(id);
             this.renderRoomById(id);
         });
 
-        eventBus.on('leadTo', (target) => {
-            this.leadTo(target);
+        eventBus.on('mapPath', (data: { path: number[]; color: string } | null) => {
+            this.currentPath = data;
+            this.refresh();
         });
 
-        eventBus.on('clearLeadTo', () => {
-            this.clearLeadTo();
-        })
-
-        eventBus.on('highlights', (highlights: number[]) => {
-            this.highlights = highlights
+        eventBus.on('mapHighlights', (data: { roomId: number; color: string }[]) => {
+            this.currentHighlights = data;
             this.refresh();
-        })
+        });
 
         this.initVisitedRooms(initialRoom);
     }
@@ -264,45 +259,17 @@ export class EmbeddedMap {
     renderRoom(roomId: number) {
         this.renderer.setPosition(roomId)
         this.renderer.setZoom(this.zoom);
-        const area = this.renderer.getCurrentArea()
         this.currentRoom = roomId;
-        const label = document.getElementById('location-text');
-
-        if (this.destinations.indexOf(roomId) > -1) {
-            this.destinations.splice(this.destinations.indexOf(roomId), 1);
-        }
 
         this.renderer.clearPaths()
-
-        if (label && area) {
-            const room = this.reader.getRoom(roomId);
-            const roomName = room?.name || "";
-            const areaName = area.getAreaName();
-            const showRoomName = roomName && roomName !== String(roomId);
-            let text = showRoomName ? `#${roomId} ${roomName} (${areaName})` : `#${roomId} ${areaName}`;
-            if (this.destinations.length > 0) {
-                const destId = this.destinations[0];
-                const path = this.getPath(roomId, destId);
-                const distance = path ? path.length - 1 : 0;
-                const destRoom = this.reader.getRoom(destId);
-                const destArea = destRoom ? this.reader.getArea(destRoom.area) : null;
-                const destName = destArea ? destArea.getAreaName() : destId;
-                text += ` → #${destId} ${destName} (${distance})`;
-                if (path) {
-                    this.renderer.renderPath(path, '#66E64D');
-                }
-            }
-            label.textContent = text;
+        if (this.currentPath) {
+            this.renderer.renderPath(this.currentPath.path, this.currentPath.color);
         }
 
         this.renderer.clearHighlights()
-        this.highlights?.forEach((highlight) => {
-            this.renderer.renderHighlight(highlight, 'yellow');
+        this.currentHighlights.forEach(({ roomId: highlightId, color }) => {
+            this.renderer.renderHighlight(highlightId, color);
         });
-    }
-
-    private getPath(from: number, to: number): number[] | null {
-        return this.pathFinder?.findPath(from, to) ?? null;
     }
 
     refresh() {
@@ -377,15 +344,5 @@ export class EmbeddedMap {
         }
         this.renderer.drawArea(room.area, room.z);
         this.renderRoom(this.currentRoom);
-    }
-
-    leadTo(id: number) {
-        this.destinations = [id]
-        this.refresh();
-    }
-
-    clearLeadTo() {
-        this.destinations = [];
-        this.refresh();
     }
 }

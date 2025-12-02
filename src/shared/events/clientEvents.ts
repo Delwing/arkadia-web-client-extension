@@ -114,6 +114,9 @@ export interface KnownEvents {
     "stepBack": void;
     "leadTo": number;
     "clearLeadTo": void;
+    "mapPath": { path: number[]; color: string } | null;
+    "mapHighlights": [{ roomId: number; color: string }[]];
+    "mapLocationLabel": string;
     "notify": NotificationPayload;
     "lampTimer": number | null;
     "coverTimer": number | null;
