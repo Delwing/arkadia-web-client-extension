@@ -485,10 +485,35 @@ function DesktopButtons() {
                         </div>
                     </div>
 
-                    <div className="small text-muted mt-2">
-                        Pozycja: X={Math.round(selectedBtn.x)}, Y={Math.round(selectedBtn.y)}
-                        <br />
-                        Przeciągnij przycisk na ekranie, aby zmienić jego pozycję.
+                    <div className="row g-2 mb-2">
+                        <div className="col-6">
+                            <Form.Group>
+                                <Form.Label>Pozycja X</Form.Label>
+                                <Form.Control
+                                    size="sm"
+                                    type="number"
+                                    min={0}
+                                    value={Math.round(selectedBtn.x)}
+                                    onChange={e => updateButton(selectedBtn.id, {
+                                        x: Math.max(0, Number(e.target.value) || 0)
+                                    })}
+                                />
+                            </Form.Group>
+                        </div>
+                        <div className="col-6">
+                            <Form.Group>
+                                <Form.Label>Pozycja Y</Form.Label>
+                                <Form.Control
+                                    size="sm"
+                                    type="number"
+                                    min={0}
+                                    value={Math.round(selectedBtn.y)}
+                                    onChange={e => updateButton(selectedBtn.id, {
+                                        y: Math.max(0, Number(e.target.value) || 0)
+                                    })}
+                                />
+                            </Form.Group>
+                        </div>
                     </div>
 
                     <div className="mt-3 pt-3 border-top">
