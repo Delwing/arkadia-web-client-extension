@@ -65,6 +65,48 @@ const POLISH_NUMBERS: Record<string, number> = {
     dziewietnascie: 19,
     dwudziestu: 20,
     dwadziescia: 20,
+    "dwudziestu jeden": 21,
+    "dwudziestu jednej": 21,
+    "dwudziestu jednego": 21,
+    "dwudziestu dwoch": 22,
+    "dwudziestu dwu": 22,
+    "dwudziestu trzech": 23,
+    "dwudziestu czterech": 24,
+    "dwudziestu pieciu": 25,
+    "dwudziestu szesciu": 26,
+    "dwudziestu siedmiu": 27,
+    "dwudziestu osmiu": 28,
+    "dwudziestu dziewieciu": 29,
+    trzydziestu: 30,
+    trzydziesci: 30,
+    "trzydziestu jeden": 31,
+    "trzydziestu jednej": 31,
+    "trzydziestu jednego": 31,
+    "trzydziestu dwoch": 32,
+    "trzydziestu dwu": 32,
+    "trzydziestu trzech": 33,
+    "trzydziestu czterech": 34,
+    "trzydziestu pieciu": 35,
+    "trzydziestu szesciu": 36,
+    "trzydziestu siedmiu": 37,
+    "trzydziestu osmiu": 38,
+    "trzydziestu dziewieciu": 39,
+    czterdziestu: 40,
+    czterdziesci: 40,
+    "czterdziestu jeden": 41,
+    "czterdziestu jednej": 41,
+    "czterdziestu jednego": 41,
+    "czterdziestu dwoch": 42,
+    "czterdziestu dwu": 42,
+    "czterdziestu trzech": 43,
+    "czterdziestu czterech": 44,
+    "czterdziestu pieciu": 45,
+    "czterdziestu szesciu": 46,
+    "czterdziestu siedmiu": 47,
+    "czterdziestu osmiu": 48,
+    "czterdziestu dziewieciu": 49,
+    pieedziesieciu: 50,
+    piedziesiat: 50,
 };
 
 const POLISH_DAYS: Record<string, number> = {
@@ -186,7 +228,8 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
 
     // Pattern for contract offer line
     // "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
-    const contractOfferPattern = /\w+ do ciebie: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
+    // "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
+    const contractOfferPattern = /\w+ do ciebie: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+(?: [a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
 
     // Pattern for deadline line
     // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."

@@ -3,9 +3,10 @@ import Client from "../Client";
 export default function initLanguageTeacher(client: Client) {
     const tag = "languageTeacher";
 
-    // Pattern: "Name chce cie uczyc mowic po languageName."
+    // Pattern: "Name chce cie uczyc mowic po/w jezyku languageName."
     // Language name can be complex (multiple words)
-    const pattern = /^(.+) chce cie uczyc mowic po (.+)\.$/;
+    // Supports both "mowic po X" and "mowic w jezyku X" formats
+    const pattern = /^(.+) chce cie uczyc mowic (?:po|w)(?: jezyku)? (.+)\.$/;
 
     client.Triggers.registerTrigger(pattern, (line, matches) => {
         if (!matches || !matches[1] || !matches[2]) return line;
