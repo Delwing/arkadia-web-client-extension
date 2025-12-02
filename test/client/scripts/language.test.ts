@@ -252,4 +252,20 @@ describe('language speech handling', () => {
     expect(context.sendMock).toHaveBeenCalledWith("'", false);
     expect(context.outputMock).toHaveBeenCalledWith("→ '", 'command');
   });
+
+  test('double quote does not trigger language alias', () => {
+    const context = createMockClient();
+
+    initLanguage(context.client as any, context.client.aliases);
+
+    context.dispatch('settings', {
+      language: 'elficki',
+      languageAdjective: '',
+      languageAliases: [],
+    });
+
+    // Double quote should NOT match language alias - should be sent directly to game
+    const matchingAlias = context.client.aliases.find(({ pattern }) => pattern.test("''wesolo Cos"));
+    expect(matchingAlias).toBeUndefined();
+  });
 });
