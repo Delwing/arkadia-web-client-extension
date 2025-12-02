@@ -32,6 +32,7 @@ export interface DesktopButtonSetting {
     enemySlot?: number;
     listPosition?: ListPosition;
     listGrowDirection?: ListGrowDirection;
+    listCloseOnlyByButton?: boolean;
 }
 
 export interface DesktopButtonsSettings {
@@ -104,7 +105,8 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
     const listGrowDirection: ListGrowDirection | undefined = validListGrowDirections.includes(candidate.listGrowDirection as ListGrowDirection)
         ? candidate.listGrowDirection as ListGrowDirection
         : undefined;
-    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, listPosition, listGrowDirection };
+    const listCloseOnlyByButton = typeof candidate.listCloseOnlyByButton === 'boolean' ? candidate.listCloseOnlyByButton : undefined;
+    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, listPosition, listGrowDirection, listCloseOnlyByButton };
 }
 
 export async function loadSettings(): Promise<DesktopButtonsSettings> {

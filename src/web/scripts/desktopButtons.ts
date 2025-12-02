@@ -58,9 +58,13 @@ export default class DesktopButtons {
         document.addEventListener('touchend', this.handleTouchEnd.bind(this));
         document.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
 
-        // Close lists when clicking outside
+        // Close lists when clicking outside (unless listCloseOnlyByButton is set)
         document.addEventListener('click', (e) => {
             if (this.activeListButtonId) {
+                const activeButtonSettings = this.settings.buttons.find(b => b.id === this.activeListButtonId);
+                if (activeButtonSettings?.listCloseOnlyByButton) {
+                    return; // Don't close on outside click
+                }
                 const target = e.target as HTMLElement;
                 const listContainer = this.listContainers.get(this.activeListButtonId);
                 const button = this.buttonElements.get(this.activeListButtonId);
@@ -233,8 +237,11 @@ export default class DesktopButtons {
     }
 
     private applyListItemStyle(btn: HTMLButtonElement, settings: DesktopButtonSetting) {
+        btn.style.boxSizing = 'border-box';
         btn.style.width = `${settings.width}px`;
         btn.style.height = `${settings.height}px`;
+        btn.style.padding = '0';
+        btn.style.margin = '0';
         btn.style.backgroundColor = hexToRgba(settings.color, settings.backgroundOpacity);
         btn.style.color = settings.fontColor;
         btn.style.fontSize = `${settings.fontSize}px`;

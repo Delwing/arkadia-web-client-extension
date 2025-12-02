@@ -301,36 +301,46 @@ function DesktopButtons() {
                     )}
 
                     {isListMacro(selectedBtn.macroType) && (
-                        <div className="row g-2 mb-2">
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Pozycja listy</Form.Label>
-                                    <Form.Select
-                                        size="sm"
-                                        value={selectedBtn.listPosition ?? 'bottom'}
-                                        onChange={e => updateButton(selectedBtn.id, { listPosition: e.target.value as ListPosition })}
-                                    >
-                                        <option value="bottom">Na dole</option>
-                                        <option value="top">Na górze</option>
-                                        <option value="left">Po lewej</option>
-                                        <option value="right">Po prawej</option>
-                                    </Form.Select>
-                                </Form.Group>
+                        <>
+                            <div className="row g-2 mb-2">
+                                <div className="col-6">
+                                    <Form.Group>
+                                        <Form.Label>Pozycja listy</Form.Label>
+                                        <Form.Select
+                                            size="sm"
+                                            value={selectedBtn.listPosition ?? 'bottom'}
+                                            onChange={e => updateButton(selectedBtn.id, { listPosition: e.target.value as ListPosition })}
+                                        >
+                                            <option value="bottom">Na dole</option>
+                                            <option value="top">Na górze</option>
+                                            <option value="left">Po lewej</option>
+                                            <option value="right">Po prawej</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </div>
+                                <div className="col-6">
+                                    <Form.Group>
+                                        <Form.Label>Kierunek rozrostu</Form.Label>
+                                        <Form.Select
+                                            size="sm"
+                                            value={selectedBtn.listGrowDirection ?? 'horizontal'}
+                                            onChange={e => updateButton(selectedBtn.id, { listGrowDirection: e.target.value as ListGrowDirection })}
+                                        >
+                                            <option value="horizontal">Poziomo</option>
+                                            <option value="vertical">Pionowo</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </div>
                             </div>
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Kierunek rozrostu</Form.Label>
-                                    <Form.Select
-                                        size="sm"
-                                        value={selectedBtn.listGrowDirection ?? 'horizontal'}
-                                        onChange={e => updateButton(selectedBtn.id, { listGrowDirection: e.target.value as ListGrowDirection })}
-                                    >
-                                        <option value="horizontal">Poziomo</option>
-                                        <option value="vertical">Pionowo</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </div>
-                        </div>
+                            <Form.Check
+                                id={`list-close-only-by-button-${selectedBtn.id}`}
+                                type="checkbox"
+                                className="mb-2"
+                                label="Zamykaj tylko przyciskiem"
+                                checked={selectedBtn.listCloseOnlyByButton ?? false}
+                                onChange={e => updateButton(selectedBtn.id, { listCloseOnlyByButton: e.target.checked })}
+                            />
+                        </>
                     )}
 
                     <div className="row g-2 mb-2">
