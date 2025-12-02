@@ -92,7 +92,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     });
 
     aliases.push({
-        pattern: /^' ?(.*)$/,
+        pattern: /^'(?!')(.*)$/,
         callback: (matches: RegExpMatchArray) => {
             const msg = matches[1];
             const lang = currentLang;
