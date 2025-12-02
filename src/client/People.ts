@@ -98,15 +98,18 @@ export default class People {
                 const plainSuffix = line.text.substring(index + token.length)
                 const nextWord = plainSuffix
                     .toLowerCase()
-                    .replace(/^\s+/, '')
+                    .replace(/^[,\s]+/, '')
                 if (nextWord.startsWith('chaosu')) {
                     return line
                 }
 
+                // When followed by "znany/znana jako" - only color, no suffix
+                const skipSuffix = nextWord.startsWith('znany jako') || nextWord.startsWith('znana jako')
+
                 if (isTableLine) {
-                    return this.buildDescHighlightInPlace(line, index + token.length, replacement, state, token)
+                    return this.buildDescHighlightInPlace(line, index + token.length, replacement, state, token, skipSuffix)
                 }
-                return this.buildDescHighlight(line, index + token.length, replacement, state, token)
+                return this.buildDescHighlight(line, index + token.length, replacement, state, token, skipSuffix)
             }
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
@@ -186,7 +189,8 @@ export default class People {
         position: number,
         replacement: { name: string; guild: string },
         state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
-        descriptionToken: string
+        descriptionToken: string,
+        skipSuffix = false
     ): AnsiAwareBuffer {
         const parenthesisColor = this.getNameColor(state)
         const guildColor = this.getGuildColor(state)
@@ -198,6 +202,11 @@ export default class People {
 
         // Only color description when guild color is set or when it's an enemy
         const descriptionColor = (state.guildColor !== undefined || state.isEnemy) ? parenthesisColor : line.getStateAt(descStart)
+
+        if (skipSuffix) {
+            // Only color the description, no suffix
+            return line.replace([descStart, descEnd], originalDesc, descriptionColor)
+        }
 
         const replacement_buffer = new AnsiAwareBuffer("")
             .append(originalDesc, descriptionColor)
@@ -213,7 +222,8 @@ export default class People {
         position: number,
         replacement: { name: string; guild: string },
         state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
-        descriptionToken: string
+        descriptionToken: string,
+        skipSuffix = false
     ): AnsiAwareBuffer {
         const parenthesisColor = this.getNameColor(state)
         const guildColor = this.getGuildColor(state)
@@ -227,6 +237,10 @@ export default class People {
         // Color the description in place
         if (descriptionColor) {
             line.color([descStart, descEnd], descriptionColor)
+        }
+
+        if (skipSuffix) {
+            return line
         }
 
         const textAfterDesc = line.text.substring(descEnd)
