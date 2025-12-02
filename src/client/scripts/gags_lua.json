@@ -6576,26 +6576,6 @@
                           }
                         ],
                         "script": "trigger_func_skrypty_ui_gags_color_color_moje_spece_bronie_jasniejacy_zdobiony_jatagan()"
-                      },
-                      {
-                        "name": "ja_gigantyczny_granitowy_mlot",
-                        "patterns": [
-                          {
-                            "pattern": "^Bierzesz ogromny zamach swoim gigantycznym granitowym mlotem i uderzasz nim w glowe (?<target>.+?)\\. Przeciwnik mruga oczami, nie bardzo wiedzac, co sie dzieje\\. Porzadnie (?:go|ja) zamroczylo\\.$",
-                            "type": 1
-                          }
-                        ],
-                        "script": "trigger_func_skrypty_ui_gags_color_color_moje_spece_bar_ja_granit()"
-                      },
-                      {
-                        "name": "ja_jasniejacy_zdobiony_jatagan",
-                        "patterns": [
-                          {
-                            "pattern": "^Rozblysk swiatla oslepia (?<target>.*)!$",
-                            "type": 1
-                          }
-                        ],
-                        "script": "trigger_func_skrypty_ui_gags_color_color_moje_spece_bronie_jasniejacy_zdobiony_jatagan()"
                       }
                     ]
                   }
