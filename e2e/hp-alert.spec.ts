@@ -1,5 +1,32 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import type {Page} from '@playwright/test';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
+
+const MENU_BUTTON = '#menu-button';
+const OPTIONS_BUTTON = '#options-button';
+const OPTIONS_MODAL = '#options-modal';
+const LOW_HP_ALERT_SELECT = '#lowHpAlert';
+
+async function openOptionsModal(page: Page) {
+    await page.click(MENU_BUTTON);
+    await page.click(OPTIONS_BUTTON);
+    const modal = page.locator(OPTIONS_MODAL);
+    await expect(modal, 'should open options modal').toBeVisible();
+    return modal;
+}
+
+async function setLowHpAlert(page: Page, level: number) {
+    const modal = await openOptionsModal(page);
+    await modal.locator(LOW_HP_ALERT_SELECT).selectOption(String(level));
+    // Save settings by clicking the "Zapisz" button
+    await modal.locator('#options-save').click();
+    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+}
+
+// Login to enable settings (settings are locked until char.info is received)
+async function loginForSettings(page: Page) {
+    await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
+}
 
 test.describe('HP alert', () => {
     test('alerts when HP drops below threshold', async ({page}) => {
@@ -7,13 +34,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Configure HP alert threshold to 2 (ciezko ranny)
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 2});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Configure HP alert threshold to 2 (ciezko ranny) via UI
+        await setLowHpAlert(page, 2);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -39,12 +64,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 2});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Configure HP alert threshold to 2 via UI
+        await setLowHpAlert(page, 2);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -67,12 +91,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 2});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Configure HP alert threshold to 2 via UI
+        await setLowHpAlert(page, 2);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -103,13 +126,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Disable HP alert
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 0});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Disable HP alert via UI (level 0)
+        await setLowHpAlert(page, 0);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -138,13 +159,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Set threshold to 3 (w zlej kondycji)
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 3});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Set threshold to 3 (w zlej kondycji) via UI
+        await setLowHpAlert(page, 3);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -163,12 +182,11 @@ test.describe('HP alert', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('settings', {lowHpAlert: 5});
-            }
-        });
+        // Login to enable settings
+        await loginForSettings(page);
+
+        // Set threshold to 5 (lekko ranny) via UI
+        await setLowHpAlert(page, 5);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 

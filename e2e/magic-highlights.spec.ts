@@ -1,30 +1,11 @@
 import {expect, test} from './support/fixtures';
-import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
-
-async function waitForTokenTrigger(page: Page, tag: string): Promise<void> {
-    await page.waitForFunction((expectedTag) => {
-        const client: any = (globalThis as any).clientExtension;
-        const triggers: any = client?.Triggers;
-        const tokenTriggers: any = triggers?.tokenTriggers;
-        if (!tokenTriggers || typeof tokenTriggers.values !== 'function') {
-            return false;
-        }
-        for (const bucket of Array.from(tokenTriggers.values())) {
-            if (Array.isArray(bucket) && bucket.some((entry) => entry?.trigger?.tag === expectedTag)) {
-                return true;
-            }
-        }
-        return false;
-    }, tag);
-}
 
 test.describe('Magic and key highlights', () => {
     test('colors magic items using configured palette', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await waitForTokenTrigger(page, 'magics');
 
         await pushText(page, 'Na ziemi lezy magiczny miecz.');
 
@@ -42,7 +23,6 @@ test.describe('Magic and key highlights', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await waitForTokenTrigger(page, 'magicKeys');
 
         await pushText(page, 'Sekretny klucz lezy tutaj.');
 

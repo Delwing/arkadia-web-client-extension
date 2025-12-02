@@ -84,19 +84,20 @@ test.describe('Auto lowercase commands', () => {
         // Enable auto lowercase
         await setAutoLowercaseSetting(page, true);
 
-        // Wait for the setting to propagate
-        await page.waitForTimeout(500);
-
-        // Verify the setting was saved
-        const debugInfo = await page.evaluate(() => {
-            const client = (window as any).clientExtension?.clientAdapter;
-            return {
-                autoLowercaseCommands: client?.autoLowercaseCommands,
-                receivedFirstGmcp: client?.receivedFirstGmcp,
-                clientExists: !!client,
-            };
+        // Verify the setting was saved to localStorage
+        await page.waitForFunction(() => {
+            const keys = Object.keys(localStorage);
+            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
+            if (!key) return false;
+            try {
+                const stored = localStorage.getItem(key);
+                if (!stored) return false;
+                const parsed = JSON.parse(stored);
+                return parsed?.autoLowercaseCommands === true;
+            } catch {
+                return false;
+            }
         });
-        expect(debugInfo.autoLowercaseCommands, 'autoLowercaseCommands should be set in client').toBe(true);
 
         // Submit a command with uppercase letters
         await submitCommand(page, 'Patrz NA Polnoc');

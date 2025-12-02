@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
 
 test.describe('Release guard timer', () => {
     test('displays initial state with guard ON and timer OK', async ({page}) => {
@@ -64,7 +64,7 @@ test.describe('Release guard timer', () => {
         await expect(releaseGuardTimer, 'should remain visible after toggle').toBeVisible();
     });
 
-    test('shows timer countdown when coverTimer event is emitted', async ({page}) => {
+    test('shows timer countdown when cover is triggered', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -74,16 +74,11 @@ test.describe('Release guard timer', () => {
         // Initially shows OK
         await expect(releaseGuardTimer, 'should display OK initially').toContainText('OK');
 
-        // Emit coverTimer event with countdown value
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('coverTimer', 5.5);
-            }
-        });
+        // Trigger cover timer with a cover message
+        await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
 
-        // Should show countdown value
-        await expect(releaseGuardTimer, 'should show countdown').toContainText('5.50');
+        // Should show countdown value (5 second timer)
+        await expect(releaseGuardTimer, 'should show countdown').toContainText('Zas:');
 
         // The countdown value should be yellow
         const valueSpan = releaseGuardTimer.locator('span').nth(2);
@@ -91,29 +86,21 @@ test.describe('Release guard timer', () => {
     });
 
     test('shows OK when timer completes', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const releaseGuardTimer = page.locator('#release-guard-timer');
 
-        // Start a countdown
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('coverTimer', 2.0);
-            }
-        });
+        // Trigger cover timer with a cover message
+        await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
 
-        await expect(releaseGuardTimer, 'should show countdown').toContainText('2.00');
+        // Should show countdown
+        await expect(releaseGuardTimer, 'should show countdown').toContainText('Zas:');
 
-        // Set timer to null/0 to indicate completion
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('coverTimer', null);
-            }
-        });
+        // Wait for timer to expire (5 seconds + buffer)
+        await page.clock.runFor(5500);
 
         // Should show OK again
         await expect(releaseGuardTimer, 'should show OK after timer completes').toContainText('OK');

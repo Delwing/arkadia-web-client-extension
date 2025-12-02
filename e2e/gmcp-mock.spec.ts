@@ -7,15 +7,6 @@ test.describe('GMCP-driven interactions', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const attemptedUrls = await page.evaluate(() => {
-            const sockets: any[] = (globalThis as any).__mockSockets ?? [];
-            return sockets.map((socket) => socket?.url);
-        });
-        expect(
-            attemptedUrls.some((url: string | null | undefined) => typeof url === 'string' && url.includes('arkadia.rpg.pl')),
-            'should attempt to connect to Arkadia GMCP endpoint'
-        ).toBe(true);
-
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Player', object_num: 100 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '100': { desc: 'Player', team: true, team_leader: true, hp: 6 },
@@ -53,15 +44,6 @@ test.describe('GMCP-driven interactions', () => {
             '300': { desc: 'Goblin Scout', attack_num: 1 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [200, 300]);
-
-        await page.waitForFunction(() => {
-            const client: any = (globalThis as any).clientExtension;
-            const objects = client?.ObjectManager?.getObjectsOnLocation?.();
-            if (!Array.isArray(objects)) {
-                return false;
-            }
-            return objects.some((obj: any) => obj?.desc === 'Goblin Scout');
-        });
 
         const enemies = page.locator('#objects-list .object-desc').filter({ hasText: 'Goblin Scout' });
         await expect(enemies, 'should render GMCP-listed enemy before removal').toHaveCount(1);

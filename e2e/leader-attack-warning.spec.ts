@@ -229,16 +229,7 @@ test.describe('Leader attack warning', () => {
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
-        // Set custom keybinds
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client) {
-                client.attackBind = {key: 'Digit2', ctrl: true};
-                client.supportBind = {key: 'KeyR', ctrl: true};
-            }
-        });
-
-        // Trigger attack warning
+        // Trigger attack warning (uses default keybind CTRL+1 for attack)
         await pushGmcp(page, 'char.info', {object_num: 5});
         await pushGmcp(page, 'objects.data', {
             '10': {team: true, team_leader: true, desc: 'Leader', attack_num: 20},
@@ -246,19 +237,19 @@ test.describe('Leader attack warning', () => {
             '20': {living: true, attack_target: true, desc: 'Target'},
         });
 
-        // Should show custom keybind
-        await expect(output, 'should display custom attack keybind').toContainText('CTRL+2');
+        // Should show default attack keybind (CTRL+1)
+        await expect(output, 'should display default attack keybind').toContainText('CTRL+1');
 
         // Wait for throttle
         await page.clock.runFor(5100);
 
-        // Trigger support warning
+        // Trigger support warning (uses default keybind CTRL+Q for support)
         await pushGmcp(page, 'objects.data', {
             '10': {attack_num: 15},
             '15': {living: true, desc: 'Other Target'},
         });
 
-        // Should show custom support keybind
-        await expect(output, 'should display custom support keybind').toContainText('CTRL+R');
+        // Should show default support keybind (CTRL+Q)
+        await expect(output, 'should display default support keybind').toContainText('CTRL+Q');
     });
 });

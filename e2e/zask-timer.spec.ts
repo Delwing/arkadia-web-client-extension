@@ -1,17 +1,14 @@
 import {expect, test} from './support/fixtures';
+import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
 
-async function setMoveMode(page: any, mode: number) {
-    await page.evaluate(([targetMode]) => {
-        const client = (window as any).clientExtension;
-        if (client) {
-            client.moveMode = targetMode;
-            client.sendEvent('moveModeChanged', targetMode);
-        }
-    }, [mode]);
+// Toggle move mode using the default keybind (Backquote = `)
+// Mode cycles: 0 (normal) -> 1 (sneak) -> 0 (normal)
+async function toggleMoveMode(page: Page) {
+    await page.keyboard.press('Backquote');
 }
 
-async function triggerRoomChange(page: any) {
+async function triggerRoomChange(page: Page) {
     await pushGmcp(page, 'room.info', {
         num: 1,
         name: 'Test Room',
@@ -23,6 +20,7 @@ async function triggerRoomChange(page: any) {
 
 test.describe('Zask timer', () => {
     test('starts counting when entering sneak mode and changing rooms', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -32,8 +30,8 @@ test.describe('Zask timer', () => {
         // Initially, the timer should be hidden
         await expect(zaskTimer, 'should be hidden initially').not.toBeVisible();
 
-        // Enable sneak mode (przemknij)
-        await setMoveMode(page, 1);
+        // Enable sneak mode (przemknij) by pressing the move mode toggle key
+        await toggleMoveMode(page);
 
         // Change room to trigger the timer
         await triggerRoomChange(page);
@@ -55,7 +53,8 @@ test.describe('Zask timer', () => {
 
         const zaskTimer = page.locator('#zask-timer');
 
-        await setMoveMode(page, 1);
+        // Enable sneak mode
+        await toggleMoveMode(page);
         await triggerRoomChange(page);
 
         // Wait a few seconds
@@ -75,26 +74,19 @@ test.describe('Zask timer', () => {
     });
 
     test('changes to yellow at 20 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const zaskTimer = page.locator('#zask-timer');
 
-        await setMoveMode(page, 1);
+        // Enable sneak mode
+        await toggleMoveMode(page);
         await triggerRoomChange(page);
 
-        // Wait for timer to start
-        await page.waitForTimeout(100);
-
-        // Manipulate the timer by setting start time to 21 seconds in the past
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                // Manually trigger update with 21 seconds elapsed
-                client.sendEvent('zaskTimer', { seconds: 21, ok: false });
-            }
-        });
+        // Wait for timer to reach 21 seconds
+        await page.clock.runFor(21000);
 
         await expect(zaskTimer, 'should display countdown at 20+ seconds').toContainText('Zask: ');
 
@@ -108,26 +100,19 @@ test.describe('Zask timer', () => {
     });
 
     test('shows OK in green after 30 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const zaskTimer = page.locator('#zask-timer');
 
-        await setMoveMode(page, 1);
+        // Enable sneak mode
+        await toggleMoveMode(page);
         await triggerRoomChange(page);
 
-        // Wait for timer to start
-        await page.waitForTimeout(100);
-
-        // Manipulate the timer by manually sending the OK state
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                // Manually trigger update with 30 seconds elapsed (OK state)
-                client.sendEvent('zaskTimer', { seconds: 30, ok: true });
-            }
-        });
+        // Wait for timer to reach 30 seconds (OK state)
+        await page.clock.runFor(30000);
 
         await expect(zaskTimer, 'should display OK after 30 seconds').toHaveText('Zask: OK');
 
@@ -145,7 +130,7 @@ test.describe('Zask timer', () => {
         const zaskTimer = page.locator('#zask-timer');
 
         // Start timer in sneak mode
-        await setMoveMode(page, 1);
+        await toggleMoveMode(page);
         await triggerRoomChange(page);
 
         // Timer should be visible
@@ -154,8 +139,8 @@ test.describe('Zask timer', () => {
         // Wait a bit
         await page.clock.runFor(2000);
 
-        // Exit sneak mode
-        await setMoveMode(page, 0);
+        // Exit sneak mode (toggle back to normal)
+        await toggleMoveMode(page);
 
         // Timer should be hidden
         await expect(zaskTimer, 'should be hidden after exiting sneak mode').not.toBeVisible();
@@ -169,7 +154,8 @@ test.describe('Zask timer', () => {
 
         const zaskTimer = page.locator('#zask-timer');
 
-        await setMoveMode(page, 1);
+        // Enable sneak mode
+        await toggleMoveMode(page);
         await triggerRoomChange(page);
 
         // Get initial time

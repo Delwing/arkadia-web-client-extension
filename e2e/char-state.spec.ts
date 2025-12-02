@@ -1,5 +1,45 @@
 import {expect, test} from './support/fixtures';
+import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+
+const MENU_BUTTON = '#menu-button';
+const UI_SETTINGS_BUTTON = '#ui-settings-button';
+const UI_MODAL = '#ui-settings-modal';
+const FOOTER_MODE_SELECT = '#ui-footer-mode';
+const EMOJI_LABELS_CHECKBOX = '#ui-emoji-labels';
+
+async function openUiSettings(page: Page) {
+    await page.click(MENU_BUTTON);
+    await page.click(UI_SETTINGS_BUTTON);
+    const modal = page.locator(UI_MODAL);
+    await expect(modal, 'should open UI settings modal').toBeVisible();
+    return modal;
+}
+
+async function setFooterMode(page: Page, mode: number) {
+    const modal = await openUiSettings(page);
+    await modal.locator(FOOTER_MODE_SELECT).selectOption(String(mode));
+    await modal.locator('#ui-settings-save').click();
+    await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+}
+
+async function setEmojiLabels(page: Page, enabled: boolean) {
+    const modal = await openUiSettings(page);
+    const checkbox = modal.locator(EMOJI_LABELS_CHECKBOX);
+
+    if (enabled) {
+        if (!(await checkbox.isChecked())) {
+            await checkbox.check();
+        }
+    } else {
+        if (await checkbox.isChecked()) {
+            await checkbox.uncheck();
+        }
+    }
+
+    await modal.locator('#ui-settings-save').click();
+    await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+}
 
 test.describe('Character state', () => {
     test('displays character stats in text mode', async ({page}) => {
@@ -62,21 +102,14 @@ test.describe('Character state', () => {
         const charStateBars = page.locator('#char-state-bars');
         const charStateText = page.locator('#char-state-text');
 
-        // Set footer mode to 3 (bars)
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('uiSettings', { footerMode: 3 });
-            }
-        });
+        // Set footer mode to 3 (bars) via UI
+        await setFooterMode(page, 3);
 
         // Send character state
         await pushGmcp(page, 'char.state', {
             hp: 4,
             fatigue: 5,
         });
-
-        await page.waitForTimeout(100);
 
         // Verify bars are visible and text is hidden
         await expect(charStateBars, 'should display bars mode').toBeVisible();
@@ -100,21 +133,18 @@ test.describe('Character state', () => {
             fatigue: 3,
         });
 
-        await page.waitForTimeout(100);
-
         // Verify text labels initially
         await expect(charStateText, 'should display HP text label').toContainText('HP');
         await expect(charStateText, 'should display fatigue text label').toContainText('ZM');
 
-        // Switch to emoji labels
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('uiSettings', { emojiLabels: true });
-            }
-        });
+        // Switch to emoji labels via UI
+        await setEmojiLabels(page, true);
 
-        await page.waitForTimeout(100);
+        // Resend character state to trigger re-render
+        await pushGmcp(page, 'char.state', {
+            hp: 5,
+            fatigue: 3,
+        });
 
         // Verify emoji labels
         await expect(charStateText, 'should display HP emoji').toContainText('❤');
@@ -191,21 +221,14 @@ test.describe('Character state', () => {
 
         const charStateText = page.locator('#char-state-text');
 
-        // Set footer mode to 1 (bars with variable length)
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('uiSettings', { footerMode: 1 });
-            }
-        });
+        // Set footer mode to 1 (bars with variable length) via UI
+        await setFooterMode(page, 1);
 
         // Send character state
         await pushGmcp(page, 'char.state', {
             hp: 4, // 5/7 after transform
             fatigue: 6,
         });
-
-        await page.waitForTimeout(100);
 
         // Verify bars with # and - characters are rendered
         const html = await charStateText.innerHTML();

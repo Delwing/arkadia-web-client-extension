@@ -29,23 +29,19 @@ test.describe('Lamp timer', () => {
     });
 
     test('changes to yellow when below 60 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const lampTimer = page.locator('#lamp-timer');
 
-        // Light the lamp
+        // Light the lamp (starts at 300 seconds)
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(lampTimer, 'should be visible').toBeVisible();
 
-        // Manually set timer to 59 seconds
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('lampTimer', 59);
-            }
-        });
+        // Advance time to 59 seconds remaining (300 - 59 = 241 seconds elapsed)
+        await page.clock.runFor(241000);
 
         // Timer should show yellow
         await expect(lampTimer, 'should display countdown below 60s').toContainText('lamp ');
@@ -54,23 +50,19 @@ test.describe('Lamp timer', () => {
     });
 
     test('changes to red when below 30 seconds', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const lampTimer = page.locator('#lamp-timer');
 
-        // Light the lamp
+        // Light the lamp (starts at 300 seconds)
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(lampTimer, 'should be visible').toBeVisible();
 
-        // Manually set timer to 29 seconds
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('lampTimer', 29);
-            }
-        });
+        // Advance time to 29 seconds remaining (300 - 29 = 271 seconds elapsed)
+        await page.clock.runFor(271000);
 
         // Timer should show red
         await expect(lampTimer, 'should display countdown below 30s').toContainText('lamp ');
@@ -97,26 +89,21 @@ test.describe('Lamp timer', () => {
     });
 
     test('resets when lamp is refilled', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const lampTimer = page.locator('#lamp-timer');
 
-        // Light the lamp
+        // Light the lamp (starts at 300 seconds)
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(lampTimer, 'should be visible').toBeVisible();
 
-        // Set timer to 50 seconds
-        await page.evaluate(() => {
-            const client = (window as any).clientExtension;
-            if (client && client.sendEvent) {
-                client.sendEvent('lampTimer', 50);
-            }
-        });
+        // Advance time to 50 seconds remaining (300 - 50 = 250 seconds elapsed)
+        await page.clock.runFor(250000);
 
-        // Wait a bit to ensure timer is at 50s
-        await page.waitForTimeout(200);
+        // Get timer value before refill
         const timerTextBefore = await lampTimer.textContent();
         const matchBefore = timerTextBefore?.match(/lamp ([0-9]):([0-9]{2})/);
         let secondsBefore = 0;
@@ -124,11 +111,11 @@ test.describe('Lamp timer', () => {
             secondsBefore = parseInt(matchBefore[1]) * 60 + parseInt(matchBefore[2]);
         }
 
-        // Refill the lamp
+        // Refill the lamp (resets internal counter to 300 seconds)
         await pushText(page, 'Dopelniasz swoja lampe oleju.');
 
-        // Wait for the timer to update after refill
-        await page.waitForTimeout(1500); // Wait for next tick
+        // Wait for the next timer tick
+        await page.clock.runFor(1000);
 
         // Timer should have more time than before (it resets to 300s internally)
         const timerTextAfter = await lampTimer.textContent();
