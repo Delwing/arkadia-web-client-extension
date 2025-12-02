@@ -21,6 +21,7 @@ import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
 import ClockPopup from "./ClockPopup";
 import ContractsPopup from "./ContractsPopup";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
+import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
 
@@ -40,7 +41,7 @@ import CharacterSettings from "./options/CharacterSettings.tsx"
 import ExportImport from "./options/ExportImport.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
-import MobileButtons from "./options/MobileButtons.tsx"
+import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
 import {copyOutputAsImage} from "./copyOutputAsImage";
@@ -1798,6 +1799,9 @@ document.addEventListener('DOMContentLoaded', () => {
     new MobileDirectionButtons(client);
     mobileRadial = new MobileCommandRadial(client);
 
+    // Initialize desktop buttons
+    new DesktopButtons(client);
+
     loadMobileButtonSettings().then(s => {
         const inTeam = !!client.TeamManager.isInAnyTeam?.();
         const isLeader = !!client.TeamManager.isLeader?.();
@@ -1865,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mobileButtonsRoot = document.getElementById('mobile-buttons-options');
     if (mobileButtonsRoot) {
-        createRoot(mobileButtonsRoot).render(createElement(MobileButtons));
+        createRoot(mobileButtonsRoot).render(createElement(ButtonsSettings));
     }
 
     const mobileRadialRoot = document.getElementById('mobile-radial-options');
