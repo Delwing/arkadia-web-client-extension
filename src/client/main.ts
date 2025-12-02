@@ -105,6 +105,8 @@ import {initClock} from "@client/scripts/clock.ts";
 import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
 import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
+import initContracts from './scripts/contracts'
+import initLanguageTeacher from './scripts/languageTeacher'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -298,5 +300,7 @@ export function registerScripts(client: Client) {
     initClock(client)
     initSunCalendarLogger(client)
     initWyroznienieOptions(client)
+    initContracts(client, aliases)
+    initLanguageTeacher(client)
 
 }

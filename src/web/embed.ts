@@ -275,7 +275,11 @@ export class EmbeddedMap {
         this.renderer.clearPaths()
 
         if (label && area) {
-            let text = `#${roomId} ${area.getAreaName()}`;
+            const room = this.reader.getRoom(roomId);
+            const roomName = room?.name || "";
+            const areaName = area.getAreaName();
+            const showRoomName = roomName && roomName !== String(roomId);
+            let text = showRoomName ? `#${roomId} ${roomName} (${areaName})` : `#${roomId} ${areaName}`;
             if (this.destinations.length > 0) {
                 const destId = this.destinations[0];
                 const path = this.getPath(roomId, destId);

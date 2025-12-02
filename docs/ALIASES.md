@@ -140,6 +140,9 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/wa _id_** - oznacza obiekt jako cel ataku.
 - **/wz _skrot_** - oznacza obiekt z drużyny jako cel obrony.
 
+## Zlecenia
+- **/zlecenia** - otwiera okno z listą aktywnych zleceń od rzemieślników.
+
 ## Naprawy i ocena
 - **/napraw** - Naprawianie sprzetu u kowala.
 - **/naprawa** - Alias do `/napraw`.
@@ -147,3 +150,11 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/ocen** - ocenia swoje bronie i zbroje, wypisujac jedynie ich stan.
 - **/sprzet** - Alias do `/ocen`.
 - **/ocenkamienie** - oblicza łączną wartość kamieni.
+
+## Wrogowie na bindach
+- **/nabindach** - wyświetla aktualnie przypisanych wrogów na bindach.
+- **/nabindach--** - czyści bindy wrogów i tymczasowo je wyłącza (do zmiany lokacji).
+
+## Języki
+- **jezyki** - wyświetla zestawienie umiejętności językowych w czytelnej tabeli z kolorowymi poziomami.
+- **jezyki maksymalne** - wyświetla umiejętności językowe z maksymalnymi wartościami.

@@ -5,6 +5,7 @@ import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
+import type {Contract} from "@client/scripts/contracts.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -197,6 +198,9 @@ export interface KnownEvents {
     "clock.mismatch": ClockMismatchPayload;
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;
+    "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
+    "contracts.updated": { contracts: Contract[] };
+    "contracts.remove": { id: string };
 }
 
 export interface ObjectData {

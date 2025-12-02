@@ -19,6 +19,7 @@ import LetterComposer from "./LetterComposer";
 import KnowledgeReport from "./KnowledgeReport";
 import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
 import ClockPopup from "./ClockPopup";
+import ContractsPopup from "./ContractsPopup";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
@@ -346,6 +347,10 @@ outputWrapper.addEventListener('contextmenu', event => {
         {
             label: 'Zioła',
             action: () => { eventBus.emit('sendCommand', { command: '/ziola' }); },
+        },
+        {
+            label: 'Zlecenia',
+            action: () => { eventBus.emit('sendCommand', { command: '/zlecenia' }); },
         },
         {
             label: 'Skróty',
@@ -1886,6 +1891,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const clockRoot = document.getElementById('clock-root');
     if (clockRoot) {
         createRoot(clockRoot).render(createElement(ClockPopup));
+    }
+
+    const contractsRoot = document.getElementById('contracts-root');
+    if (contractsRoot) {
+        createRoot(contractsRoot).render(createElement(ContractsPopup));
     }
 
     const letterComposerRoot = document.getElementById('letter-composer-root');
