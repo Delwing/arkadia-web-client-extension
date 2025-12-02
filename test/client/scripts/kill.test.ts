@@ -50,7 +50,7 @@ describe('kill counter team kills', () => {
 
     client.TeamManager.isInTeam.mockReturnValue(true);
     result = parse(line);
-    expect(result!?.text).toContain('(0 / 1)');
+    expect(result!.text).toContain('(0 / 1)');
   });
 
   test('counts kills from team members', () => {
@@ -58,18 +58,18 @@ describe('kill counter team kills', () => {
     const line = '> Eamon zabil smoka chaosu.';
     const result = parse(line);
     expect(result?.text).toContain('[   ZABIL   ]');
-    expect(result!?.text).toContain('(0 / 1)');
+    expect(result!.text).toContain('(0 / 1)');
   });
 
   test('session count persists after storage update', () => {
     client.TeamManager.isInTeam.mockReturnValue(true);
     let result = parse('> Eamon zabil smoka chaosu.');
-    expect(result!?.text).toContain('(0 / 1)');
+    expect(result!.text).toContain('(0 / 1)');
 
     client.dispatch('storage', { key: 'kill_counter', value: { 'smoka chaosu': 1 } });
 
     result = parse('> Eamon zabil smoka chaosu.');
-    expect(result!?.text).toContain('(0 / 2)');
+    expect(result!.text).toContain('(0 / 2)');
   });
 });
 

@@ -497,7 +497,7 @@ export class CodingAgentPanel {
       .replace(/>/g, '&gt;');
 
     // Format code blocks - skip empty ones
-    formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, _lang, code) => {
+    formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (_match, _lang, code) => {
       const trimmedCode = code.trim();
       if (!trimmedCode) {
         return ''; // Skip empty code blocks

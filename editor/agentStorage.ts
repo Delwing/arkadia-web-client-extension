@@ -90,7 +90,7 @@ export function saveAgentSettings(settings: Partial<AgentSettings>): void {
   const current = getAgentSettings();
   const updated = { ...current, ...settings };
   // Never save systemPrompt to storage - it should always come from code
-  const { systemPrompt, ...toSave } = updated;
+  const { systemPrompt: _systemPrompt, ...toSave } = updated;
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(toSave));
 }
 

@@ -160,7 +160,7 @@ export function searchDocs(query: string): string {
 
   const matches: { section: DocSection; score: number }[] = [];
 
-  for (const [key, section] of registry) {
+  for (const [_key, section] of registry) {
     let score = 0;
 
     // Check section name

@@ -5,6 +5,7 @@ import {
     DesktopButtonsSettings,
     hexToRgba,
     ListGrowDirection,
+    ListPosition,
     saveSettings,
 } from "../desktopButtonSettings";
 

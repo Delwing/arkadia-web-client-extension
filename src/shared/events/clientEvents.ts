@@ -160,6 +160,8 @@ export interface KnownEvents {
     "binds": unknown;
     "uiSettings": UiSettingsEventPayload | null | undefined;
     "mobileButtonsSettings": unknown;
+    "desktopButtonsSettings": unknown;
+    "orderTimer": number | null;
     "pauserStart": void;
     "pauserEnd": void;
     "client.connect": void;
