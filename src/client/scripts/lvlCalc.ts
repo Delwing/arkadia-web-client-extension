@@ -239,10 +239,10 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
         currentStats = [];
         currentSteps = [];
         client.Triggers.removeByTag(tag);
-        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.$/, (line, matches) => {
+        client.Triggers.registerTrigger(/^Jestes ([a-z ]+) i ([a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) ([a-z]+)\.(?:\s+\( [+-].+ \))?$/, (line, matches) => {
             return formatLine(line, matches[1], matches[2]);
         }, tag);
-        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.$/, (line, matches) => {
+        client.Triggers.registerTrigger(/^Twoja \w+? osiagnela (nadludzki poziom)\.(?:\s+\( [+-].+ \))?$/, (line, matches) => {
             return formatLine(line, matches[1]);
         }, tag);
         client.Triggers.registerOneTimeTrigger(/^Obecnie do waznych cech zaliczasz/, (line) => {

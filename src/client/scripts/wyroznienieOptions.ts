@@ -8,7 +8,8 @@ const DISABLE_COLOR = createColorFormat("#ff6b6b"); // light red
 
 export default function initWyroznienieOptions(client: Client) {
     // Match the header line: "Tytul zwiazany z WYROZNIENIEm:" followed by the current title
-    const headerPattern = /^Tytul zwiazany z WYROZNIENIEm:\s+(.+)$/i;
+    // Capture the spacing between colon and title value
+    const headerPattern = /^(Tytul zwiazany z WYROZNIENIEm:)(\s+)(.+)$/i;
 
     // Match "Do wyboru sa:" line
     const doWyboruPattern = /^Do wyboru sa:$/;
@@ -20,33 +21,41 @@ export default function initWyroznienieOptions(client: Client) {
     let currentTitle: string | null = null;
 
     // Main trigger to detect header
-    client.Triggers.registerTrigger(headerPattern, (_, matches) => {
-        currentTitle = matches[1].trim();
+    client.Triggers.registerTrigger(headerPattern, (line, matches) => {
+        const label = matches[1];
+        const spacing = matches[2];
+        currentTitle = matches[3].trim();
         collectingOptions = false;
+
+        // For "Niewidoczny", just recolor without adding disable button
+        if (currentTitle.toLowerCase() === "niewidoczny") {
+            const titleStart = label.length + spacing.length;
+            const titleEnd = titleStart + currentTitle.length;
+            line.color([titleStart, titleEnd], OPTION_COLOR);
+            return line;
+        }
 
         // Make the line with current title clickable to disable
         const lineBuffer = new AnsiAwareBuffer();
-        lineBuffer.append("Tytul zwiazany z WYROZNIENIEm:        ");
+        lineBuffer.append(label + spacing);
 
         const titleText = currentTitle;
         const titleBuffer = colorString(titleText, OPTION_COLOR);
         lineBuffer.appendBuffer(titleBuffer);
 
-        // Add clickable disable option if not already "Niewidoczny"
-        if (currentTitle.toLowerCase() !== "niewidoczny") {
-            lineBuffer.append(" [ ", {});
-            const disableText = "wylacz";
-            const disableBuffer = new AnsiAwareBuffer();
-            disableBuffer.append(disableText, DISABLE_COLOR);
-            disableBuffer.createLink([0, disableText.length], {
-                onClick: () => {
-                    client.sendCommand("opcje wyroznienie niewidoczne");
-                },
-                title: "Wylacz wyroznienie"
-            });
-            lineBuffer.appendBuffer(disableBuffer);
-            lineBuffer.append(" ]", {});
-        }
+        // Add clickable disable option
+        lineBuffer.append(" [ ", {});
+        const disableText = "wylacz";
+        const disableBuffer = new AnsiAwareBuffer();
+        disableBuffer.append(disableText, DISABLE_COLOR);
+        disableBuffer.createLink([0, disableText.length], {
+            onClick: () => {
+                client.sendCommand("opcje wyroznienie niewidoczne");
+            },
+            title: "Wylacz wyroznienie"
+        });
+        lineBuffer.appendBuffer(disableBuffer);
+        lineBuffer.append(" ]", {});
 
         return lineBuffer;
     }, TAG);
