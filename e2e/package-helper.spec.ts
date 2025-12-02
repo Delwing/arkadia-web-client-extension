@@ -11,10 +11,6 @@ import {
     waitForMapReady,
 } from './support/mocks';
 
-test.beforeEach(async ({context}) => {
-    await primeCharInfo(context);
-});
-
 const BOARD_TEXT = [
     'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
     ' o============================================================================o',
@@ -32,6 +28,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
     await waitForMapReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
@@ -92,6 +89,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
     await waitForMapReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
@@ -163,6 +161,7 @@ test('Package helper sets delivery bind on arrival and clears status after handi
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
     await waitForMapReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
@@ -254,6 +253,7 @@ test('Package helper records new NPC location after delivery when unknown in dat
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
     await waitForMapReady(page);
 
     await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {

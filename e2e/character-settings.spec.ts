@@ -36,11 +36,11 @@ async function getStoredSettings(page: Page, character: string) {
 }
 
 test.describe('Character settings', () => {
-    test('settings take effect for current character', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'TestHero'});
+    test('settings take effect for current character', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'TestHero'});
 
         // Wait for character to be set
         await page.waitForFunction(() => {
@@ -70,11 +70,11 @@ test.describe('Character settings', () => {
         expect(settings.lowHpAlert, 'lowHpAlert should be 5').toBe(5);
     });
 
-    test('settings persist after reload', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'PersistHero'});
+    test('settings persist after reload', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'PersistHero'});
 
         // Wait for character to be set
         await page.waitForFunction(() => {
@@ -135,11 +135,11 @@ test.describe('Character settings', () => {
         ).toHaveValue('bretonski');
     });
 
-    test('settings change on character switch via gmcp.char.info', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'FirstChar'});
+    test('settings change on character switch via gmcp.char.info', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'FirstChar'});
 
         // Wait for first character to be set
         await page.waitForFunction(() => {
@@ -268,11 +268,11 @@ test.describe('Character settings', () => {
         ).toHaveValue('3');
     });
 
-    test('settings are isolated between characters', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'AliceChar'});
+    test('settings are isolated between characters', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'AliceChar'});
 
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'AliceChar';

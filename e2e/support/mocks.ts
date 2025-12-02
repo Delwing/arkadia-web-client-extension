@@ -117,30 +117,6 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
             );
         };
 
-        const registerCommandListener = () => {
-            if (globalScope.__commandListenerInstalled) {
-                return;
-            }
-            const client = globalScope.clientExtension;
-            if (!client || typeof client.addEventListener !== 'function') {
-                return;
-            }
-            const handler = (event: CustomEvent<string>) => {
-                const value = typeof event.detail === 'string' ? event.detail.trim() : '';
-                if (value) {
-                    const socket = getGameSocket();
-                    if (socket && socket.commands[socket.commands.length - 1] !== value) {
-                        socket.commands.push(value);
-                    }
-                    if (commandLog[commandLog.length - 1] !== value) {
-                        commandLog.push(value);
-                    }
-                }
-            };
-            client.addEventListener('command', handler as unknown as EventListener);
-            globalScope.__commandListenerInstalled = true;
-        };
-
         const resetCommandLog = () => {
             commandLog.length = 0;
             sockets.forEach((socket) => {
@@ -153,7 +129,6 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
         globalScope.__mockSockets = sockets;
         globalScope.__MockWebSocket = MockWebSocket;
         globalScope.__mockCommandLog = commandLog;
-        globalScope.__registerCommandListener = registerCommandListener;
         globalScope.__resetCommandLog = resetCommandLog;
         globalScope.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 
@@ -189,27 +164,10 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 }
 
 export async function primeCharInfo(
-    context: BrowserContext,
+    page: Page,
     data: {name: string} = {name: 'Tester'},
 ): Promise<void> {
-    await context.addInitScript(([payload]) => {
-        const charInfo = payload;
-        const attemptSend = () => {
-            const client = (window as any).clientExtension;
-            if (client?.sendEvent) {
-                client.sendEvent('gmcp.char.info', charInfo);
-                return true;
-            }
-            return false;
-        };
-        if (!attemptSend()) {
-            const interval = setInterval(() => {
-                if (attemptSend()) {
-                    clearInterval(interval);
-                }
-            }, 50);
-        }
-    }, [data]);
+    await pushGmcp(page, 'char.info', data);
 }
 
 type MockMapRoom = {
@@ -488,13 +446,14 @@ export async function waitForCommandInput(page: Page): Promise<void> {
 export async function waitForMapReady(page: Page): Promise<void> {
     await page.waitForFunction(() => {
         const mapElement = document.querySelector('#map');
-        const client = (window as any).clientExtension;
-        const mapHelper = client?.Map;
-        const embedded = (window as any).embedded;
-        // Wait for canvas AND for map data to be loaded (tryGetMapReader returns non-null when ready) AND for embedded object to be created
-        return mapElement && mapElement.querySelector('canvas') !== null &&
-               mapHelper && typeof mapHelper.tryGetMapReader === 'function' && mapHelper.tryGetMapReader() !== null &&
-               embedded && typeof embedded.leadTo === 'function';
+        if (!mapElement) return false;
+
+        // Konva creates multiple canvases, check if any have content
+        const canvases = mapElement.querySelectorAll<HTMLCanvasElement>('canvas');
+        if (canvases.length === 0) return false;
+
+        // Check that at least one canvas has non-zero dimensions
+        return Array.from(canvases).some(canvas => canvas.width > 0 && canvas.height > 0);
     }, {timeout: 10000});
 }
 
@@ -508,31 +467,22 @@ export async function pushGmcp(page: Page, path: string, payload: unknown): Prom
 const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')}\n`;
 
 export async function ensureGameSocket(page: Page): Promise<void> {
-    await page.evaluate(() => {
-        const globalScope: any = window;
-        const adapter = globalScope.clientExtension?.clientAdapter;
-        if (adapter?.connect) {
-            adapter.connect();
-        }
+    const connectButton = page.locator('#connect-button');
+    const connectButtonFloat = page.locator('#connect-button-float');
+    if (await connectButton.isVisible()) {
+        await connectButton.click();
+    } else if (await connectButtonFloat.isVisible()) {
+        await connectButtonFloat.click();
+    }
+    await page.waitForFunction(() => {
+        const sockets: any[] = (window as any).__mockSockets ?? [];
+        return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
     await page.evaluate(() => {
         const globalScope: any = window;
         if (typeof globalScope.__resetCommandLog === 'function') {
             globalScope.__resetCommandLog();
-            return;
         }
-        const log = globalScope.__mockCommandLog;
-        if (Array.isArray(log)) {
-            log.length = 0;
-        }
-    });
-    await page.evaluate(() => {
-        const globalScope: any = window;
-        globalScope.__registerCommandListener?.();
-    });
-    await page.waitForFunction(() => {
-        const sockets: any[] = (window as any).__mockSockets ?? [];
-        return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
 
     const alreadyPrimed = await page.evaluate(() => Boolean((window as any).__outputPrimed));
@@ -553,13 +503,6 @@ export async function pushText(page: Page, text: string, options: { type?: strin
         }
         globalScope.__pushText(payload, gmcpType);
     }, [text, type]);
-    await page.evaluate(() => {
-        const adapter = (window as any).clientExtension?.clientAdapter as any;
-        if (!adapter || typeof adapter.flushMessageBuffer !== 'function') {
-            throw new Error('Arkadia client is not ready');
-        }
-        adapter.flushMessageBuffer();
-    });
 }
 
 export async function submitCommand(page: Page, command: string): Promise<void> {

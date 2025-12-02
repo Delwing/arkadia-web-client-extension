@@ -7,14 +7,11 @@ import {
     waitForCommandInput,
 } from './support/mocks';
 
-test.beforeEach(async ({context}) => {
-    await primeCharInfo(context);
-});
-
 test('User trigger creation executes command and persists after reload', async ({page}) => {
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
 
     await page.click('#menu-button');
     await page.click('#triggers-button');

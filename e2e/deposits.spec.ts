@@ -96,11 +96,11 @@ async function getAllRecentOutput(page: Page, count: number = 3): Promise<string
 }
 
 test.describe('Deposits', () => {
-    test('parses deposit contents from game messages', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'TestHero'});
+    test('parses deposit contents from game messages', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'TestHero'});
         await waitForMapReady(page);
 
         // Navigate to a bank
@@ -124,11 +124,11 @@ test.describe('Deposits', () => {
         ]);
     });
 
-    test('handles empty deposit', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'EmptyHero'});
+    test('handles empty deposit', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'EmptyHero'});
         await waitForMapReady(page);
 
         await navigateToBankById(page, 101);
@@ -143,11 +143,11 @@ test.describe('Deposits', () => {
         expect(deposits['101'].items, 'empty deposit should have empty items array').toEqual([]);
     });
 
-    test('handles no deposit case', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'NoDepositHero'});
+    test('handles no deposit case', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'NoDepositHero'});
         await waitForMapReady(page);
 
         await navigateToBankById(page, 102);
@@ -162,11 +162,11 @@ test.describe('Deposits', () => {
         expect(deposits['102'].items, 'no deposit should have null items').toBeNull();
     });
 
-    test('reads deposits using /depozyty command', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'ReaderHero'});
+    test('reads deposits using /depozyty command', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'ReaderHero'});
         await waitForMapReady(page);
 
         // Store deposits in two different banks
@@ -193,11 +193,11 @@ test.describe('Deposits', () => {
         expect(output, 'should show count for klejnoty').toContain('3');
     });
 
-    test('updates deposit when contents change', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'UpdateHero'});
+    test('updates deposit when contents change', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'UpdateHero'});
         await waitForMapReady(page);
 
         await navigateToBankById(page, 300);
@@ -237,11 +237,11 @@ test.describe('Deposits', () => {
         expect(deposits['300'].items, 'should update to no deposit').toBeNull();
     });
 
-    test('deposits are isolated per character', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'Alice'});
+    test('deposits are isolated per character', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'Alice'});
         await waitForMapReady(page);
 
         // Alice's deposits
@@ -298,11 +298,11 @@ test.describe('Deposits', () => {
         expect(aliceOutput, 'Alice should not see Bob\'s klejnoty').not.toContain('klejnotow');
     });
 
-    test('handles multiple deposits across different banks', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'Traveler'});
+    test('handles multiple deposits across different banks', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'Traveler'});
         await waitForMapReady(page);
 
         // Store deposits in 3 different banks
@@ -332,11 +332,11 @@ test.describe('Deposits', () => {
         expect(output, 'should show all three bank names').toMatch(/Poslan Bank.*Eltar Bank.*Czarnolas Bank/s);
     });
 
-    test('parses Polish numbers and special cases', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'PolishNumbers'});
+    test('parses Polish numbers and special cases', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'PolishNumbers'});
         await waitForMapReady(page);
 
         await navigateToBankById(page, 600);
@@ -362,11 +362,11 @@ test.describe('Deposits', () => {
         expect(output, 'should show count 100').toContain('100');
     });
 
-    test('/depozyt command sends examine deposit command', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'Examiner'});
+    test('/depozyt command sends examine deposit command', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'Examiner'});
         await waitForMapReady(page);
 
         // Submit /depozyt alias
@@ -384,11 +384,11 @@ test.describe('Deposits', () => {
         expect(lastCommand, 'should send przejrzyj depozyt command').toBe('przejrzyj depozyt');
     });
 
-    test('shows message when no deposits are saved', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'NoDeposits'});
+    test('shows message when no deposits are saved', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'NoDeposits'});
         await waitForMapReady(page);
 
         // Try to read deposits when none exist
@@ -399,11 +399,11 @@ test.describe('Deposits', () => {
         expect(output, 'should show no deposits message').toContain('Brak zapisanych depozytow');
     });
 
-    test('/depozyt_reset clears all deposits', async ({page, context}) => {
-        await primeCharInfo(context, {name: 'Resetter'});
+    test('/depozyt_reset clears all deposits', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'Resetter'});
         await waitForMapReady(page);
 
         // Create some deposits

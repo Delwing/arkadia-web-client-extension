@@ -15,6 +15,7 @@ async function prepareClient(page: Page): Promise<void> {
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await primeCharInfo(page);
     await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'Tester');
 }
 
@@ -84,13 +85,6 @@ async function pushAndWaitForNoHighlight(
     }
     throw new Error('Highlight was not removed');
 }
-
-test.beforeEach(async ({context, page}) => {
-    await primeCharInfo(context);
-    await page.addInitScript(() => {
-        localStorage.setItem('currentCharacter', 'Tester');
-    });
-});
 
 test.describe('People highlights', () => {
     test('allows configuring guild highlight colors and disabling them', async ({page}) => {
