@@ -1,5 +1,5 @@
 import { RefObject, MouseEvent, CSSProperties } from "react";
-import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultFontColor } from "../mobileButtonSettings";
+import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultFontColor, computeBoxShadow } from "../mobileButtonSettings";
 
 export type Mode = 'solo' | 'team' | 'leader';
 
@@ -15,6 +15,7 @@ interface Props {
 
 export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef }: Props) {
     const set = settings[mode];
+    const bgColor = set.background || defaultBackground;
     return (
         <div
             ref={gridRef}
@@ -22,7 +23,8 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
             className={`mobile-direction-buttons preview mb-2 ${view === mode ? '' : 'd-none'}`}
             style={{
                 gridTemplateColumns: `repeat(${set.cols}, auto)`,
-                backgroundColor: set.background || defaultBackground,
+                backgroundColor: bgColor,
+                boxShadow: computeBoxShadow(bgColor),
             }}
         >
             {set.order.map(id => {

@@ -358,6 +358,20 @@ export function saveSettings(settings: Settings) {
     storage.setItem('mobileButtonSettings', settings);
 }
 
+export function extractAlpha(color: string): number {
+    const rgbaMatch = color.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*([\d.]+)\s*)?\)/i);
+    if (rgbaMatch) {
+        return rgbaMatch[1] !== undefined ? parseFloat(rgbaMatch[1]) : 1;
+    }
+    return 1;
+}
+
+export function computeBoxShadow(bgColor: string): string {
+    const alpha = extractAlpha(bgColor);
+    const shadowOpacity = Math.min(0.2, alpha * 0.3);
+    return `0 2px 5px rgba(0, 0, 0, ${shadowOpacity})`;
+}
+
 export function applySettings(settings: Settings, inTeam = false, isLeader = false) {
     const set = isLeader ? settings.leader : inTeam ? settings.team : settings.solo;
     const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
@@ -369,7 +383,9 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             container.removeAttribute('data-drag-locked');
         }
         container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
-        container.style.backgroundColor = set.background || defaultBackground;
+        const bgColor = set.background || defaultBackground;
+        container.style.backgroundColor = bgColor;
+        container.style.boxShadow = computeBoxShadow(bgColor);
 
         // Preserve current button size
         const ref = container.querySelector('.mobile-button') as HTMLButtonElement | null;
