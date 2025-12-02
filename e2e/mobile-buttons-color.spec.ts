@@ -1,5 +1,5 @@
 import { expect, test } from './support/fixtures';
-import { ensureGameSocket, waitForCommandInput } from './support/mocks';
+import { ensureGameSocket, getLastOutgoingCommand, waitForCommandInput } from './support/mocks';
 import {Page} from "@playwright/test";
 
 const MENU_BUTTON = '#menu-button';
@@ -270,5 +270,68 @@ test.describe('Mobile buttons color and command configuration', () => {
 
         const soloGrid = page.locator('#mobile-buttons-preview-solo');
         await expect(soloGrid, 'solo buttons preview grid should be visible').toBeVisible();
+    });
+
+    test('clicking configured button sends command', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Open mobile buttons settings modal
+        const modal = await openMobileButtonsSettings(page);
+
+        // Get the solo preview grid
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
+
+        // Configure button-1 with a command
+        const button1 = soloPreview.locator('[data-button-id="button-1"]');
+        await button1.click();
+
+        const configPanel = page.locator('.mobile-button-config');
+        await expect(configPanel, 'configuration panel should be visible').toBeVisible();
+
+        const macroSelect = configPanel.locator('.mobile-button-macro');
+        await macroSelect.selectOption('command');
+
+        const commandInput = configPanel.locator('.mobile-button-command');
+        await commandInput.fill('zerknij');
+
+        const labelInput = configPanel.locator('.mobile-button-label');
+        await labelInput.fill('Zerknij');
+
+        // Save and close modal
+        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await expect(modal, 'modal should close after save').not.toBeVisible();
+
+        // Now click the actual button in the mobile buttons container
+        const mobileButtons = page.locator('#mobile-direction-buttons');
+        const actualButton1 = mobileButtons.locator('#button-1');
+        await expect(actualButton1, 'button-1 should be visible').toBeVisible();
+
+        // Click the button
+        await actualButton1.click();
+
+        // Verify the command was sent
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand, 'should send configured command when button clicked').toBe('zerknij');
+    });
+
+    test('direction button sends direction command', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // The direction buttons are pre-configured - click north button
+        const mobileButtons = page.locator('#mobile-direction-buttons');
+        const northButton = mobileButtons.locator('#n-button');
+        await expect(northButton, 'north button should be visible').toBeVisible();
+
+        // Click the north button
+        await northButton.click();
+
+        // Verify the direction command was sent
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand, 'should send north direction command').toBe('n');
     });
 });
