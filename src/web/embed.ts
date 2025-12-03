@@ -67,14 +67,14 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
 }
 
 export class EmbeddedMap {
-    private map: HTMLDivElement;
-    private reader: MapReader;
+    private readonly map: HTMLDivElement;
+    private readonly reader: MapReader;
     public renderer: Renderer;
     public currentRoom: any;
     private zoom: number;
     private explorationMode = false;
     private visited = new Set<number>();
-    private totalRooms: number;
+    private readonly totalRooms: number;
     private currentPath: { path: number[]; color: string } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
 
@@ -86,18 +86,6 @@ export class EmbeddedMap {
         this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
-        eventBus.on('pauserStart', () => {
-            const icon = document.getElementById('pause-icon');
-            if (icon) {
-                icon.hidden = false;
-            }
-        });
-        eventBus.on('pauserEnd', () => {
-            const icon = document.getElementById('pause-icon');
-            if (icon) {
-                icon.hidden = true;
-            }
-        });
         let zoom = 0.30;
         let explorationMode = false;
         let instantMove = true;

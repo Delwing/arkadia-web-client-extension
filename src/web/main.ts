@@ -33,6 +33,7 @@ import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
+import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import Binds from "./options/Binds.tsx"
 import Npc from "./options/Npc.tsx"
 import Scripts from "./options/Scripts.tsx"
@@ -440,6 +441,11 @@ Promise.all([mapDataPromise, colorsPromise])
         const locationTextElement = document.getElementById('location-text');
         if (locationTextElement) {
             createRoot(locationTextElement).render(createElement(LocationLabel));
+        }
+
+        const pauseIconElement = document.getElementById('pause-icon');
+        if (pauseIconElement) {
+            createRoot(pauseIconElement).render(createElement(PauseIcon));
         }
 
         const {startId, reader} = client.Map.initialize(mapData, colors);
