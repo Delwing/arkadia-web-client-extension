@@ -3714,6 +3714,7 @@ body.mobile-command-radial-active {
   align-items: center;
   z-index: 1011;
   position: relative;
+  transform: translateY(-5vh);
 }
 
 #connecting-spinner {

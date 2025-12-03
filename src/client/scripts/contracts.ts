@@ -164,7 +164,7 @@ function generateContractId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_INGAME_DAY_MS = 48 * 60 * 1000; // 48 real minutes = 1 in-game day
 
 export default function initContracts(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     let contracts: Contract[] = [];
@@ -198,9 +198,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
 
     const addContract = (contract: Contract): void => {
         const existingIdx = contracts.findIndex(
-            c => c.locationId === contract.locationId &&
-                 c.type === contract.type &&
-                 c.item === contract.item
+            c => c.locationId === contract.locationId
         );
         if (existingIdx >= 0) {
             contracts[existingIdx] = contract;
@@ -262,7 +260,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     client.Triggers.registerTrigger(deadlinePattern, (line, matches) => {
         if (matches && pendingContract && pendingContract.type) {
             const daysRemaining = parsePolishDays(matches[1]);
-            const deadlineTimestamp = Date.now() + (daysRemaining * ONE_DAY_MS);
+            const deadlineTimestamp = Date.now() + (daysRemaining * ONE_INGAME_DAY_MS);
 
             const contract: Contract = {
                 id: generateContractId(),
