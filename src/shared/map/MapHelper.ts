@@ -131,6 +131,10 @@ export default class MapHelper {
             this.setHighlights(highlights);
         });
 
+        this.client.on("requestMapLocationLabel", () => {
+            this.emitLocationLabel();
+        });
+
         this.client.sendEvent("refreshPositionWhenAble");
     }
 

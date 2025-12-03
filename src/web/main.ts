@@ -434,13 +434,16 @@ Promise.all([mapDataPromise, colorsPromise])
     .then(([mapData, colors]) => {
         console.log('Map data and colors loaded successfully');
         progressContainer.style.display = 'none';
-        const {startId, reader} = client.Map.initialize(mapData, colors);
-        (globalThis as any).embedded = new EmbeddedMap(reader, startId);
 
+        // Render LocationLabel component before initializing the map
+        // so it can receive the initial location event
         const locationTextElement = document.getElementById('location-text');
         if (locationTextElement) {
             createRoot(locationTextElement).render(createElement(LocationLabel));
         }
+
+        const {startId, reader} = client.Map.initialize(mapData, colors);
+        (globalThis as any).embedded = new EmbeddedMap(reader, startId);
     })
     .catch(error => {
         progressContainer.style.display = 'none';
