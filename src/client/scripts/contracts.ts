@@ -110,6 +110,7 @@ const POLISH_NUMBERS: Record<string, number> = {
 };
 
 const POLISH_DAYS: Record<string, number> = {
+    kilka: 0.5,
     jeden: 1,
     dwa: 2,
     trzy: 3,
@@ -231,7 +232,8 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
 
     // Pattern for deadline line
     // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
-    const deadlinePattern = /.+? do ciebie: Na realizacje zamowienia mam ([a-z ]+) (?:dni|dzien), pozniej zapewne bede potrzebowac czego innego\./;
+    // "Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego."
+    const deadlinePattern = /.+? do ciebie: Na realizacje zamowienia mam ([a-z ]+) (?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
 
     // Pattern for asking about contract
     // "Pytasz blekitnookiego krotkowlosego mezczyzne o zlecenie."
