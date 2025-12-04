@@ -228,7 +228,8 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     // Pattern for contract offer line
     // "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
     // "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
-    const contractOfferPattern = /.+? do ciebie: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+(?: [a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
+    // Note: (?!sztuk) prevents capturing "sztuk" as part of the number
+    const contractOfferPattern = /.+? do ciebie: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+(?: (?!sztuk)[a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
 
     // Pattern for deadline line
     // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."

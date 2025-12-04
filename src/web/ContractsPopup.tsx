@@ -13,7 +13,7 @@ type SortMode = 'distance' | 'time';
 
 const SORT_STORAGE_KEY = 'contractsSortMode';
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_INGAME_DAY_MS = 48 * 60 * 1000; // 48 real minutes = 1 in-game day
 
 function getDistance(fromId: number | null, toId: number | null): number | null {
     if (fromId === null || toId === null) return null;
@@ -27,7 +27,7 @@ function getDaysRemaining(contract: Contract): number {
     const now = Date.now();
     const diff = contract.deadlineTimestamp - now;
     if (diff <= 0) return 0;
-    return Math.ceil(diff / ONE_DAY_MS);
+    return Math.ceil(diff / ONE_INGAME_DAY_MS);
 }
 
 function formatDaysRemaining(days: number): string {
