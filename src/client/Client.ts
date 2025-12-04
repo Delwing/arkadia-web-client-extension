@@ -1,5 +1,6 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
+import {isDirection} from "@shared/map/directions";
 import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
 import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
@@ -442,12 +443,12 @@ export default class Client {
         }
 
         // If command was already prefixed, send it as-is; otherwise apply move mode
-        const commandToSend = alreadyPrefixed ? command : this.applyMoveMode(moveRes.direction, moveRes.moved)
+        const commandToSend = alreadyPrefixed ? command : this.applyMoveMode(moveRes.direction)
         this.clientAdapter.send(commandToSend, echo, options)
     }
 
-    private applyMoveMode(cmd: string, moved?: boolean): string {
-        if (!moved) return cmd
+    private applyMoveMode(cmd: string): string {
+        if (!isDirection(cmd)) return cmd
         if (this.carriageMode) return `jedz na ${cmd}`
         if (this.moveMode === 1) return `przemknij ${cmd}`
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
