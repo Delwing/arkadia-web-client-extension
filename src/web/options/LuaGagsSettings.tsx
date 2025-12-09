@@ -53,8 +53,8 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
     }, []);
 
     const loadFromStorage = useCallback(() => {
-        setDeleteLines(normalizeLuaGagsDeleteLines(getItemSync(LUA_GAGS_STORAGE_KEY)));
-        setColors(normalizeLuaGagsColors(getItemSync(LUA_GAGS_COLORS_STORAGE_KEY)));
+        setDeleteLines(normalizeLuaGagsDeleteLines(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]));
+        setColors(normalizeLuaGagsColors(getItemSync(LUA_GAGS_COLORS_STORAGE_KEY)?.[LUA_GAGS_COLORS_STORAGE_KEY]));
     }, []);
 
     useEffect(() => {
