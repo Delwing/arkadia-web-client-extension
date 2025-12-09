@@ -91,14 +91,16 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
+    let wieleCount = 25;
     client.on('settings', (settings) => {
-        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
+        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string; herbWieleCount?: number };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
         postUseCommands = typeof st.herbPostUseCommand === 'string'
             ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
+        wieleCount = typeof st.herbWieleCount === 'number' && st.herbWieleCount > 0 ? st.herbWieleCount : 25;
     });
 
     async function ensureData() {
@@ -437,7 +439,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const bag: Record<string, number> = {};
         items.forEach(it => {
             const key = herbMap[it.name.toLowerCase()] || it.name.toLowerCase();
-            const count = typeof it.count === 'number' ? it.count : polishWordToNumber(String(it.count));
+            let count: number;
+            if (typeof it.count === 'number') {
+                count = it.count;
+            } else if (it.count === 'wie') {
+                count = wieleCount;
+            } else {
+                count = polishWordToNumber(String(it.count));
+            }
             totals[key] = (totals[key] || 0) + count;
             bag[key] = (bag[key] || 0) + count;
         });

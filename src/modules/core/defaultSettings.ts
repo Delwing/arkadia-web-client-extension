@@ -29,6 +29,7 @@ export interface Settings {
     languageAliases: { alias: string; adjective: string; language: string }[];
     herbPreUseCommand: string;
     herbPostUseCommand: string;
+    herbWieleCount: number;
     attackCommand: string;
     drawWeaponCommand: string;
     fullHpMessage: boolean;
@@ -74,6 +75,7 @@ export const defaultSettings: Settings = {
     languageAliases: [],
     herbPreUseCommand: '',
     herbPostUseCommand: '',
+    herbWieleCount: 25,
     attackCommand: DEFAULT_ATTACK_COMMAND,
     drawWeaponCommand: DEFAULT_DRAW_WEAPON_COMMAND,
     fullHpMessage: false,

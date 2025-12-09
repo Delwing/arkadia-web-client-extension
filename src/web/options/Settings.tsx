@@ -444,6 +444,21 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                 />
                                 <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
                             </Form.Group>
+                            <Form.Group className="d-flex align-items-center">
+                                <Form.Label className="me-1 mb-0">Ilosc "wiele":</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min={1}
+                                    id="herbWieleCount"
+                                    value={settings.herbWieleCount}
+                                    onChange={ev => {
+                                        const parsed = parseInt(ev.target.value, 10);
+                                        const value = Number.isFinite(parsed) && parsed > 0 ? parsed : 25;
+                                        onChangeSetting(s => s.herbWieleCount = value);
+                                    }}
+                                    style={{width: '100%', maxWidth: '5rem'}}
+                                />
+                            </Form.Group>
                         </div>
                     </section>
                     <section className="character-settings-section">
