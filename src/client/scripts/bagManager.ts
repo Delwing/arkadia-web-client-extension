@@ -276,13 +276,13 @@ export default function initBagManager(
     window.addEventListener("beforeunload", () => saveConfig(client));
 
     if (aliases) {
-        aliases.push({ pattern: /\/pojemnik$/, callback: () => configure(client) });
-        aliases.push({ pattern: /\/pojemniki$/, callback: () => showConfig(client) });
-        aliases.push({ pattern: /\/wdp (.*)/, callback: (m: RegExpMatchArray) => containerAction(client, "other", "put", m[1]) });
-        aliases.push({ pattern: /\/wzp (.*)/, callback: (m: RegExpMatchArray) => containerAction(client, "other", "take", m[1]) });
-        aliases.push({ pattern: /\/wlp$/, callback: () => containerAction(client, "other", "put", "pocztowa paczke") });
-        aliases.push({ pattern: /\/wep$/, callback: () => containerAction(client, "other", "take", "pocztowa paczke") });
-        aliases.push({ pattern: /\/?wem$/, callback: () => containerAction(client, "money", "take", "monety") });
-        aliases.push({ pattern: /\/?wlm$/, callback: () => containerAction(client, "money", "put", "monety") });
+        aliases.push({ pattern: /^\/pojemnik$/, callback: () => configure(client) });
+        aliases.push({ pattern: /^\/pojemniki$/, callback: () => showConfig(client) });
+        aliases.push({ pattern: /^\/wdp (.*)/, callback: (m: RegExpMatchArray) => containerAction(client, "other", "put", m[1]) });
+        aliases.push({ pattern: /^\/wzp (.*)/, callback: (m: RegExpMatchArray) => containerAction(client, "other", "take", m[1]) });
+        aliases.push({ pattern: /^\/wlp$/, callback: () => containerAction(client, "other", "put", "pocztowa paczke") });
+        aliases.push({ pattern: /^\/wep$/, callback: () => containerAction(client, "other", "take", "pocztowa paczke") });
+        aliases.push({ pattern: /^\/?wem$/, callback: () => containerAction(client, "money", "take", "monety") });
+        aliases.push({ pattern: /^\/?wlm$/, callback: () => containerAction(client, "money", "put", "monety") });
     }
 }
