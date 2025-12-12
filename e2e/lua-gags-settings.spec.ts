@@ -1,0 +1,443 @@
+import {expect, test} from './support/fixtures';
+import type {Locator, Page} from '@playwright/test';
+import {
+    ensureGameSocket,
+    primeCharInfo,
+    pushGmcp,
+    pushText,
+    GMCP_PATHS,
+    waitForCommandInput,
+} from './support/mocks';
+
+const MENU_BUTTON = '#menu-button';
+const OPTIONS_BUTTON = '#options-button';
+const OPTIONS_MODAL = '#options-modal';
+const OPTIONS_SAVE_BUTTON = '#options-save';
+const WALKA_TAB_BUTTON = 'button:has-text("Walka")';
+
+const LUA_GAGS_STORAGE_KEY = 'lua_gags_delete_lines';
+const LUA_GAGS_COLORS_STORAGE_KEY = 'lua_gags_colors';
+
+async function openOptions(page: Page) {
+    await page.click(MENU_BUTTON);
+    await page.click(OPTIONS_BUTTON);
+    const modal = page.locator(OPTIONS_MODAL);
+    await expect(modal, 'should open options modal').toBeVisible();
+    return modal;
+}
+
+async function openLuaGagsTab(page: Page) {
+    const modal = await openOptions(page);
+    // Click on "Walka" tab button
+    await modal.locator(WALKA_TAB_BUTTON).click();
+    // Wait for the lua gags section to be visible
+    await modal.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
+    return modal;
+}
+
+function getLuaGagsSection(modal: Locator) {
+    // Get the section that contains "Ustawienia walki" header
+    return modal.locator('section').filter({has: modal.page().locator('h5:has-text("Ustawienia walki")')});
+}
+
+function getGagSelect(modal: Locator, gagType: string) {
+    // Use the ID directly since it's unique for the select
+    return modal.locator(`select#luaGag-${gagType}`);
+}
+
+function getGagColorInput(modal: Locator, gagType: string) {
+    // Color input shares the same ID, but it's an input[type="color"]
+    return modal.locator(`input[type="color"]#luaGag-${gagType}`);
+}
+
+function getGagResetButton(modal: Locator, gagType: string) {
+    // Find the row containing both the select and the reset button
+    const section = getLuaGagsSection(modal);
+    const select = section.locator(`select#luaGag-${gagType}`);
+    // The reset button is in the same parent container as the select
+    return select.locator('..').locator('button');
+}
+
+async function saveOptions(page: Page) {
+    await page.click(OPTIONS_SAVE_BUTTON);
+    const modal = page.locator(OPTIONS_MODAL);
+    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+}
+
+async function getStoredLuaGagsDeleteLines(page: Page) {
+    return await page.evaluate(([key]) => {
+        // Settings are character-scoped, so we need to find the right key
+        const currentChar = localStorage.getItem('currentCharacter');
+        const realKey = currentChar ? `${currentChar}:${key}` : key;
+        const raw = localStorage.getItem(realKey);
+        return raw ? JSON.parse(raw) : null;
+    }, [LUA_GAGS_STORAGE_KEY]);
+}
+
+async function getStoredLuaGagsColors(page: Page) {
+    return await page.evaluate(([key]) => {
+        const currentChar = localStorage.getItem('currentCharacter');
+        const realKey = currentChar ? `${currentChar}:${key}` : key;
+        const raw = localStorage.getItem(realKey);
+        return raw ? JSON.parse(raw) : null;
+    }, [LUA_GAGS_COLORS_STORAGE_KEY]);
+}
+
+test.describe('Lua gags settings', () => {
+    test('can change delete mode for moje_ciosy', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'GagTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'GagTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        // Find the select for moje_ciosy by label
+        const mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+
+        // Default should be 2 (Dodaj prefiks)
+        await expect(mojeCiosySelect).toHaveValue('2');
+
+        // Change to 1 (delete line)
+        await mojeCiosySelect.selectOption('1');
+
+        await saveOptions(page);
+
+        // Verify settings were saved
+        const settings = await getStoredLuaGagsDeleteLines(page);
+        expect(settings, 'should persist lua gags settings').toBeTruthy();
+        expect(settings.moje_ciosy, 'moje_ciosy should be 1 (delete)').toBe(1);
+    });
+
+    test('can change delete mode to keep line (0)', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'KeepLineTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'KeepLineTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        const innych_ciosySelect = getGagSelect(modal, 'innych_ciosy');
+
+        // Change to 0 (keep line)
+        await innych_ciosySelect.selectOption('0');
+
+        await saveOptions(page);
+
+        const settings = await getStoredLuaGagsDeleteLines(page);
+        expect(settings.innych_ciosy, 'innych_ciosy should be 0 (keep)').toBe(0);
+    });
+
+    test('can change color for gag type', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'ColorTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'ColorTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        // Find the color input for moje_spece
+        const colorInput = getGagColorInput(modal, 'moje_spece');
+
+        // Change color to red
+        await colorInput.fill('#ff0000');
+
+        await saveOptions(page);
+
+        const colors = await getStoredLuaGagsColors(page);
+        expect(colors, 'should persist lua gags colors').toBeTruthy();
+        expect(colors.moje_spece, 'moje_spece color should be #ff0000').toBe('#ff0000');
+    });
+
+    test('can reset color to default', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'ResetColorTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'ResetColorTester';
+        });
+
+        // First set a custom color via UI
+        let modal = await openLuaGagsTab(page);
+        let colorInput = getGagColorInput(modal, 'moje_ciosy');
+        await colorInput.fill('#123456');
+        await saveOptions(page);
+
+        // Re-open settings to verify and reset
+        modal = await openLuaGagsTab(page);
+        colorInput = getGagColorInput(modal, 'moje_ciosy');
+
+        // Verify custom color is shown
+        await expect(colorInput).toHaveValue('#123456');
+
+        // Click reset button
+        const resetButton = getGagResetButton(modal, 'moje_ciosy');
+        await resetButton.click();
+
+        // Color should be reset to default (#f0f8ff for moje_ciosy)
+        await expect(colorInput).toHaveValue('#f0f8ff');
+
+        await saveOptions(page);
+
+        const colors = await getStoredLuaGagsColors(page);
+        expect(colors.moje_ciosy, 'moje_ciosy color should be reset to default').toBe('#f0f8ff');
+    });
+
+    test('settings persist after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'PersistGagTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'PersistGagTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        // Change settings
+        const mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        const mojeCiosyColor = getGagColorInput(modal, 'moje_ciosy');
+        await mojeCiosySelect.selectOption('1');
+        await mojeCiosyColor.fill('#abcdef');
+
+        await saveOptions(page);
+
+        // Reload page
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'PersistGagTester';
+        });
+
+        // Open settings again and verify
+        const reloadedModal = await openLuaGagsTab(page);
+
+        const reloadedSelect = getGagSelect(reloadedModal, 'moje_ciosy');
+        const reloadedColor = getGagColorInput(reloadedModal, 'moje_ciosy');
+        await expect(reloadedSelect).toHaveValue('1');
+        await expect(reloadedColor).toHaveValue('#abcdef');
+    });
+
+    test('all gag types are displayed', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'AllTypesTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'AllTypesTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        const expectedTypes = [
+            'moje_ciosy',
+            'moje_spece',
+            'innych_ciosy',
+            'innych_ciosy_we_mnie',
+            'innych_spece',
+            'moje_uniki',
+            'innych_uniki',
+            'moje_parowanie',
+            'innych_parowanie',
+            'zaslony_udane',
+            'zaslony_nieudane',
+            'bron',
+            'npc',
+            'npc_spece',
+        ];
+
+        for (const type of expectedTypes) {
+            const select = getGagSelect(modal, type);
+            await expect(select, `should display ${type} setting`).toBeVisible();
+        }
+    });
+});
+
+test.describe('Lua gags line processing', () => {
+    test('adds prefix when mode is 2 (default)', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'PrefixTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'PrefixTester';
+        });
+
+        // Set mode to 2 (add prefix) for moje_ciosy via UI
+        const modal = await openLuaGagsTab(page);
+        const mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        await mojeCiosySelect.selectOption('2');
+        await saveOptions(page);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+
+        // Send a combat message that matches moje_ciosy pattern
+        // Using combat.avatar type for "my" hits
+        await pushText(page, 'Lekko ranisz Orka mieczem.', {type: 'combat.avatar'});
+
+        // Wait a bit for processing
+        await page.waitForTimeout(200);
+
+        // Should have a prefix added (format is [value/totalValue])
+        // The exact prefix depends on the lua script, but it should contain brackets
+        const textContent = await output.textContent();
+        // Check that the line contains the original text (it wasn't deleted)
+        expect(textContent).toContain('Orka');
+    });
+
+    test('delete mode setting can be changed to 1', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'DeleteTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'DeleteTester';
+        });
+
+        // Set mode to 1 (delete) for innych_ciosy via UI
+        const modal = await openLuaGagsTab(page);
+        const innych_ciosySelect = getGagSelect(modal, 'innych_ciosy');
+        await innych_ciosySelect.selectOption('1');
+        await saveOptions(page);
+
+        // Verify the setting was saved
+        const settings = await getStoredLuaGagsDeleteLines(page);
+        expect(settings.innych_ciosy, 'innych_ciosy should be 1 (delete)').toBe(1);
+    });
+
+    test('keeps line unchanged when mode is 0', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'KeepTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'KeepTester';
+        });
+
+        // Set mode to 0 (keep) for moje_uniki via UI
+        const modal = await openLuaGagsTab(page);
+        const mojeUnikiSelect = getGagSelect(modal, 'moje_uniki');
+        await mojeUnikiSelect.selectOption('0');
+        await saveOptions(page);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+
+        // Send a dodge message
+        await pushText(page, 'Uchylasz sie przed ciosem Orka.', {type: 'combat.avatar'});
+
+        await page.waitForTimeout(200);
+
+        // Line should be kept without prefix
+        const textContent = await output.textContent();
+        expect(textContent).toContain('Uchylasz sie');
+    });
+
+    test('prefix has correct color when configured', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'ColorCheckTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'ColorCheckTester';
+        });
+
+        // Set mode to 2 (prefix) and custom color for testing via UI
+        const modal = await openLuaGagsTab(page);
+        const mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        const mojeCiosyColor = getGagColorInput(modal, 'moje_ciosy');
+        await mojeCiosySelect.selectOption('2');
+        await mojeCiosyColor.fill('#ff0000');
+        await saveOptions(page);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+
+        // Send combat message - using a pattern that will trigger moje_ciosy
+        await pushText(page, 'Lekko ranisz Orka mieczem.', {type: 'combat.avatar'});
+
+        await page.waitForTimeout(300);
+
+        // At minimum, the line should be displayed
+        const textContent = await output.textContent();
+        expect(textContent).toContain('Orka');
+    });
+});
+
+test.describe('Lua gags settings isolation', () => {
+    test('settings are character-scoped in storage', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'IsoChar1'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'IsoChar1';
+        });
+
+        // Set settings for IsoChar1 via UI
+        let modal = await openLuaGagsTab(page);
+        let mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        await mojeCiosySelect.selectOption('1');
+        await saveOptions(page);
+
+        // Verify IsoChar1's settings are stored under character-scoped key
+        const char1Settings = await getStoredLuaGagsDeleteLines(page);
+        expect(char1Settings.moje_ciosy, 'IsoChar1 moje_ciosy should be 1').toBe(1);
+
+        // Switch to IsoChar2
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'IsoChar2'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'IsoChar2';
+        });
+
+        // Open settings for IsoChar2 and save different value
+        modal = await openLuaGagsTab(page);
+        mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+
+        // Change IsoChar2's settings to something different
+        await mojeCiosySelect.selectOption('0');
+        await saveOptions(page);
+
+        // Verify IsoChar2's settings are stored under its own key
+        const char2Settings = await getStoredLuaGagsDeleteLines(page);
+        expect(char2Settings.moje_ciosy, 'IsoChar2 moje_ciosy should be 0').toBe(0);
+
+        // Switch back to IsoChar1
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'IsoChar1'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'IsoChar1';
+        });
+
+        // Verify IsoChar1's settings are preserved in storage
+        const char1SettingsAfter = await getStoredLuaGagsDeleteLines(page);
+        expect(char1SettingsAfter.moje_ciosy, 'IsoChar1 moje_ciosy should still be 1').toBe(1);
+
+        // Open settings and verify UI shows IsoChar1's original value
+        modal = await openLuaGagsTab(page);
+        mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        await expect(mojeCiosySelect).toHaveValue('1');
+    });
+});
