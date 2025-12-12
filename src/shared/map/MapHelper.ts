@@ -1,6 +1,6 @@
-import { MapReader, PathFinder } from "mudlet-map-renderer";
-import { getLongDir, getShortDir, longToShort } from "./directions";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import {MapReader, PathFinder} from "mudlet-map-renderer";
+import {getLongDir, getShortDir, longToShort} from "./directions";
+import {getItemSync, setItemSync} from "@modules/core/storage";
 
 const STORAGE_KEY = "mapperRoomId";
 
@@ -13,16 +13,16 @@ type Position = {
 };
 
 const directionDeltas = {
-    north: { x: 0, y: -1, z: 0 },
-    south: { x: 0, y: 1, z: 0 },
-    east: { x: 1, y: 0, z: 0 },
-    west: { x: -1, y: 0, z: 0 },
-    northwest: { x: -1, y: -1, z: 0 },
-    northeast: { x: 1, y: -1, z: 0 },
-    southwest: { x: -1, y: 1, z: 0 },
-    southeast: { x: 1, y: 1, z: 0 },
-    up: { x: 0, y: 0, z: 1 },
-    down: { x: 0, y: 0, z: -1 },
+    north: {x: 0, y: -1, z: 0},
+    south: {x: 0, y: 1, z: 0},
+    east: {x: 1, y: 0, z: 0},
+    west: {x: -1, y: 0, z: 0},
+    northwest: {x: -1, y: -1, z: 0},
+    northeast: {x: 1, y: -1, z: 0},
+    southwest: {x: -1, y: 1, z: 0},
+    southeast: {x: 1, y: 1, z: 0},
+    up: {x: 0, y: 0, z: 1},
+    down: {x: 0, y: 0, z: -1},
 };
 
 export interface MapFunctionalBind {
@@ -31,15 +31,21 @@ export interface MapFunctionalBind {
 
 export interface MapHelperClient {
     on(event: string, listener: (detail?: any) => void, options?: any): (() => void) | void;
+
     sendCommand(command: string, echo?: boolean, options?: any): void;
+
     sendEvent(event: string, payload?: any): void;
+
     getSuppressMapMoveEvent(): boolean;
+
     setSuppressMapMoveEvent(value: boolean): void;
+
     functionalBind?: MapFunctionalBind;
 }
 
 export interface MapStorage {
     getItem(key: string): any;
+
     setItem(key: string, value: any): void;
 }
 
@@ -110,7 +116,7 @@ export default class MapHelper {
             const parsed = parseInt(String(value.mapperRoomId));
             if (!Number.isNaN(parsed)) {
                 this.savedRoomId = parsed;
-                this.setMapRoomById(this.savedRoomId, { silent: true });
+                this.setMapRoomById(this.savedRoomId, {silent: true});
             }
         });
 
@@ -160,7 +166,7 @@ export default class MapHelper {
         this.mapReady = true;
         this.mapReadyCallbacks.forEach(cb => cb(mapData, colors));
         this.mapReadyCallbacks = [];
-        return { startId, reader: this.mapReader, pathFinder: this.pathFinder };
+        return {startId, reader: this.mapReader, pathFinder: this.pathFinder};
     }
 
     onMapReady(callback: (mapData: MapData.Map, colors: any) => void) {
@@ -233,10 +239,10 @@ export default class MapHelper {
 
     move(direction: string, isTeamFollow: boolean = false): { direction: string; moved: boolean; suppress?: boolean } {
         if (!this.mapReader) {
-            return { direction, moved: false };
+            return {direction, moved: false};
         }
         if (this.paused) {
-            return { direction, moved: false };
+            return {direction, moved: false};
         }
         let actualDirection = direction;
         if (this.currentRoom) {
@@ -262,7 +268,7 @@ export default class MapHelper {
                 if (!isTeamFollow) {
                     this.client.sendCommand(actualDirection);
                 }
-                return { direction: actualDirection, moved: false, suppress: true };
+                return {direction: actualDirection, moved: false, suppress: true};
             }
 
             const locationId = allExits[getLongDir(actualDirection)];
@@ -275,10 +281,10 @@ export default class MapHelper {
                 } else {
                     this.client.setSuppressMapMoveEvent(false);
                 }
-                return { direction: actualDirection, moved: true };
+                return {direction: actualDirection, moved: true};
             }
         }
-        return { direction: actualDirection, moved: false };
+        return {direction: actualDirection, moved: false};
     }
 
     followMove(direction: string, fullFollow?: string) {
@@ -287,7 +293,7 @@ export default class MapHelper {
             return result.direction;
         }
 
-       if (this.currentRoom?.specialExits) {
+        if (this.currentRoom?.specialExits) {
             const specials = Object.keys(this.currentRoom.specialExits);
             for (const ex of specials) {
                 if (direction.includes(ex)) {
@@ -353,7 +359,11 @@ export default class MapHelper {
     setMapRoomById(id: number, options?: { silent?: boolean; direction?: string | null }) {
         if (this.currentRoom?.id === id) {
             if (!options?.silent) {
-                this.client.sendEvent("enterLocation", { id, room: this.currentRoom, direction: options?.direction ?? null });
+                this.client.sendEvent("enterLocation", {
+                    id,
+                    room: this.currentRoom,
+                    direction: options?.direction ?? null
+                });
             }
             return;
         }
@@ -412,12 +422,16 @@ export default class MapHelper {
         if (sendEvent) {
             const direction = this.lastMoveDirection;
             this.lastMoveDirection = null;
-            this.client.sendEvent("enterLocation", { id, room: this.currentRoom, direction });
+            this.client.sendEvent("enterLocation", {id, room: this.currentRoom, direction});
         }
         this.emitDrawData();
     }
 
     findRoomByExit(room: MapData.Room, targetRoom: MapData.Room, targetDir: string) {
+        if (room.area !== targetRoom.area) {
+            return false;
+        }
+
         const delta = directionDeltas[targetDir];
         if (!delta) {
             return false;
@@ -436,7 +450,7 @@ export default class MapHelper {
         return check(dx, delta.x) && check(dy, delta.y) && check(dz, delta.z);
     }
 
-    handleNewLocation({ room }: { room: MapData.Room }) {
+    handleNewLocation({room}: { room: MapData.Room }) {
         this.client.on(
             "output-sent",
             () => {
@@ -452,7 +466,7 @@ export default class MapHelper {
                     );
                 }
             },
-            { once: true }
+            {once: true}
         );
     }
 
@@ -499,7 +513,7 @@ export default class MapHelper {
             const destId = this.destinations[0];
             const path = this.pathFinder?.findPath(currentId, destId) ?? null;
             if (path) {
-                this.client.sendEvent("mapPath", { path, color: "#66E64D" });
+                this.client.sendEvent("mapPath", {path, color: "#66E64D"});
                 return;
             }
         }
@@ -507,7 +521,7 @@ export default class MapHelper {
     }
 
     emitHighlights() {
-        this.client.sendEvent("mapHighlights", this.highlights.map(roomId => ({ roomId, color: "yellow" })));
+        this.client.sendEvent("mapHighlights", this.highlights.map(roomId => ({roomId, color: "yellow"})));
     }
 
     emitLocationLabel() {

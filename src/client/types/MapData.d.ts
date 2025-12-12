@@ -43,7 +43,6 @@ declare namespace MapData {
         x: number;
         y: number;
         z: number;
-        areaId: string;
         weight: number;
         symbol: string;
         name: string;
