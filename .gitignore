@@ -10,3 +10,4 @@ vite.config.js
 playwright-report/
 test-results/
 .claude
+data

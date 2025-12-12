@@ -6595,6 +6595,10 @@
                       {
                         "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|smiertelnie rani) (?<target_weapon>.+?), trafiajac (?:go|ja|je) w (?<where>.*)\\.$",
                         "type": 1
+                      },
+                      {
+                        "pattern": "^(\\S+(?:\\s+\\S+){0,3})\\s+nie\\s+udaje\\s+sie\\s+trafic\\s+(\\S+(?:\\s+\\S+){0,3})\\s+((?:lewym|lewa|prawym|prawa)\\s+\\S+|\\S+(?:\\s+\\S+){2,3})\\.$",
+                        "type": 1
                       }
                     ],
                     "script": "trigger_func_skrypty_ui_gags_color_color_innych_ciosy_ktos()"
@@ -8803,6 +8807,10 @@
                       {
                         "pattern": "naciera na (?!ciebie).+?, lecz jego .+? z hukiem trafia w",
                         "type": 1
+                      },
+                      {
+                        "pattern": "nadstawia starozytny piecioboczny puklerz, zbijajac uderzenie",
+                        "type": 0
                       }
                     ],
                     "script": "trigger_func_skrypty_ui_gags_color_color_innych_parowanie_ktos_tarcza_paruje()"
@@ -9252,26 +9260,6 @@
             "patterns": [],
             "triggers": [
               {
-                "name": "zabiles_color",
-                "patterns": [
-                  {
-                    "pattern": "(^[ >]*(Zabil(?:es|as|)) (?<target>[a-zA-Z (),!]+)\\.$)",
-                    "type": 1
-                  }
-                ],
-                "script": "trigger_func_skrypty_ui_gags_color_color_other_zabiles_color()"
-              },
-              {
-                "name": "zabil_color",
-                "patterns": [
-                  {
-                    "pattern": "(^[ >]*([a-zA-Z (),!]+) (zabil(?:|a)) ([a-zA-Z (),!]+)\\.$)",
-                    "type": 1
-                  }
-                ],
-                "script": "trigger_func_skrypty_ui_gags_color_color_other_zabil_color()"
-              },
-              {
                 "name": "mozesz_dobywac",
                 "patterns": [
                   {
@@ -9431,7 +9419,7 @@
                 "name": "wycofanie_sie_ty",
                 "patterns": [
                   {
-                    "pattern": "[ >]*Unosisz swoja .* i szybko przesuwasz sie za .*, kryjac sie przed atakami",
+                    "pattern": "[ >]*Unosisz swoja .* i (?:szybko )?przesuwasz sie za .*, kryjac sie przed atakami",
                     "type": 1
                   }
                 ],
@@ -9476,10 +9464,6 @@
                   },
                   {
                     "pattern": "(^[ >]*([a-zA-Z (),!]+) probuje zaslonic .* przed twoimi ciosami, jednak nie jest w stanie tego uczynic\\.$)",
-                    "type": 1
-                  },
-                  {
-                    "pattern": "(\\w+(?: \\w+){0,4}?) unosi swoja .+? i szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac skryc sie za toba przed atakami .*\\.$",
                     "type": 1
                   }
                 ],

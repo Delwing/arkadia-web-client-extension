@@ -1,18 +1,43 @@
-const fs = require('fs');
-const path = require('path');
-const xml2js = require('xml2js');
-const xpath = require("xml2js-xpath");
+import fs from 'fs';
+import path from 'path';
+import xml2js from 'xml2js';
+import xpath from 'xml2js-xpath';
+import { fileURLToPath } from 'url';
+import { Listr } from 'listr2';
 
-const repoPath = process.argv[2] || '.';
-const luaDir = path.join(repoPath, 'skrypty');
-const xmlPath = path.join(repoPath, 'Arkadia.xml');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.join(__dirname, '..');
+
+const downloadFlag = process.argv.includes('--download');
+const repoPath = process.argv.find(arg => arg !== '--download' && process.argv.indexOf(arg) > 1) || '.';
+
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/tjurczyk/arkadia/master';
+const GITHUB_API_BASE = 'https://api.github.com/repos/tjurczyk/arkadia/contents';
 
 const funcCalls = {};
 const funcRe = /^function\s+(trigger_func_[^(]+)\s*\(/;
 const callRe = /scripts\.gags:(gag_own_spec|gag_prefix|gag_spec|gag)\(([^)]*)\)/;
 
+const FILTERED_SCRIPTS = [
+    'trigger_func_skrypty_ui_gags_color_color_other_zabiles_color',
+    'trigger_func_skrypty_ui_gags_color_color_other_zabil_color',
+];
+
+async function downloadFile(url, destPath, normalizeLineEndings = false) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to download ${url}: ${response.status}`);
+    let content = await response.text();
+    if (normalizeLineEndings) {
+        content = content.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+    }
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.writeFileSync(destPath, content, 'utf8');
+}
+
 function walk(dir) {
-    const entries = fs.readdirSync(dir, {withFileTypes: true});
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) {
@@ -46,13 +71,11 @@ function parseLua(file) {
                     .map(a => a.replace("scripts.gags.fin_prefix", "FIN"))
                     .map(a => a.trim());
                 if (!funcCalls[current]) funcCalls[current] = [];
-                funcCalls[current].push({func, args});
+                funcCalls[current].push({ func, args });
             }
         }
     }
 }
-
-walk(luaDir);
 
 function toArray(x) {
     if (!x) return [];
@@ -66,25 +89,9 @@ function extractPatterns(obj) {
     for (let i = 0; i < Math.max(pats.length, pats.length); i++) {
         const pattern = pats[i].replaceAll(/\?'(.*?)'/g, "?<$1>") || '';
         const type = props[i] !== undefined ? Number(props[i]) : null;
-        if (pattern || type !== null) out.push({pattern, type});
+        if (pattern || type !== null) out.push({ pattern, type });
     }
     return out;
-}
-
-function _getCalls(script) {
-    let funcName = script;
-    if (funcName.endsWith('()')) funcName = funcName.slice(0, -2);
-    if (funcCalls[funcName]) return funcCalls[funcName];
-    const mCall = callRe.exec(script);
-    if (mCall) {
-        return [{
-            func: mCall[1], args: mCall[2].split(',')
-                .map(a => a.replace(/"/g, ""))
-                .map(a => a.replace("scripts.gags.fin_prefix", "FIN"))
-                .map(a => a.trim())
-        }];
-    }
-    return [];
 }
 
 function processNode(node) {
@@ -92,6 +99,12 @@ function processNode(node) {
     const patterns = extractPatterns(node);
     const scriptNode = node.script;
     const script = scriptNode ? String(scriptNode).trim() : '';
+
+    // Filter out specific scripts
+    if (FILTERED_SCRIPTS.some(f => script.startsWith(f))) {
+        return null;
+    }
+
     const children = [];
     toArray(node.Trigger).forEach(t => {
         const res = processNode(t);
@@ -111,11 +124,106 @@ function processNode(node) {
     return out;
 }
 
-const xmlData = fs.readFileSync(xmlPath, 'utf8');
-xml2js.parseString(xmlData, {explicitArray: false}, (err, result) => {
-    if (err) throw err;
-    const root = xpath.find(result, "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']")
-    if (!root) return;
-    const groups = toArray(root).map(processNode).filter(Boolean);
-    fs.writeFileSync("./client/src/scripts/gags_lua.json", JSON.stringify(groups, null, 2));
+function extractGags(xmlPath) {
+    return new Promise((resolve, reject) => {
+        const xmlData = fs.readFileSync(xmlPath, 'utf8');
+        xml2js.parseString(xmlData, { explicitArray: false }, (err, result) => {
+            if (err) return reject(err);
+            const root = xpath.find(result, "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']");
+            if (!root) return resolve([]);
+            const groups = toArray(root).map(processNode).filter(Boolean);
+            resolve(groups);
+        });
+    });
+}
+
+async function main() {
+    const ctx = {
+        luaFiles: [],
+        xmlPath: '',
+        luaDir: '',
+    };
+
+    const tasks = new Listr([
+        {
+            title: 'Download files from GitHub',
+            enabled: () => downloadFlag,
+            task: (ctx, task) => task.newListr([
+                {
+                    title: 'Download Arkadia.xml',
+                    task: async () => {
+                        const destPath = path.join(rootDir, 'data', 'Arkadia.xml');
+                        await downloadFile(`${GITHUB_RAW_BASE}/Arkadia.xml`, destPath);
+                        ctx.xmlPath = destPath;
+                    }
+                },
+                {
+                    title: 'Fetch lua file list',
+                    task: async (ctx) => {
+                        const colorGagsUrl = `${GITHUB_API_BASE}/skrypty/ui/gags/color`;
+                        const response = await fetch(colorGagsUrl);
+                        if (!response.ok) throw new Error(`Failed to list directory: ${response.status}`);
+                        const files = await response.json();
+                        ctx.luaFiles = files.filter(f => f.name.endsWith('.lua'));
+                    }
+                },
+                {
+                    title: 'Download lua files',
+                    task: (ctx, task) => task.newListr(
+                        ctx.luaFiles.map(file => ({
+                            title: file.name,
+                            task: async () => {
+                                const destPath = path.join(rootDir, 'src', 'client', 'lua', file.name);
+                                await downloadFile(file.download_url, destPath, true);
+                            }
+                        })),
+                        { concurrent: true }
+                    )
+                }
+            ], { concurrent: false })
+        },
+        {
+            title: 'Setup paths',
+            task: (ctx) => {
+                if (downloadFlag) {
+                    ctx.xmlPath = path.join(rootDir, 'data', 'Arkadia.xml');
+                    ctx.luaDir = path.join(rootDir, 'src', 'client', 'lua');
+                } else {
+                    ctx.xmlPath = path.join(repoPath, 'Arkadia.xml');
+                    ctx.luaDir = path.join(repoPath, 'skrypty');
+                }
+            }
+        },
+        {
+            title: 'Parse lua files',
+            task: (ctx) => {
+                walk(ctx.luaDir);
+            }
+        },
+        {
+            title: 'Extract gags from XML',
+            task: async (ctx) => {
+                ctx.gags = await extractGags(ctx.xmlPath);
+            }
+        },
+        {
+            title: 'Write gags_lua.json',
+            task: (ctx) => {
+                const outputPath = path.join(rootDir, 'src', 'client', 'scripts', 'gags_lua.json');
+                fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+                fs.writeFileSync(outputPath, JSON.stringify(ctx.gags, null, 2));
+            }
+        }
+    ], {
+        rendererOptions: {
+            collapseSubtasks: false
+        }
+    });
+
+    await tasks.run(ctx);
+}
+
+main().catch(err => {
+    console.error(err);
+    process.exit(1);
 });
