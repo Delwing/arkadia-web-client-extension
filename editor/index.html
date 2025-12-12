@@ -110,6 +110,7 @@
             <button id="compile-btn" style="display: none;">Compile TypeScript</button>
             <span id="compile-status"></span>
             <button id="toggle-agent-btn" title="Toggle AI Agent Panel">AI Agent</button>
+            <button id="toggle-js-preview-btn" title="Toggle JavaScript Preview">JS Preview</button>
         </div>
         <div id="main-content">
             <div id="file-tree">
@@ -123,6 +124,20 @@
                 <div id="file-tree-resizer"></div>
             </div>
             <div id="editor-container"></div>
+            <div id="js-preview-panel" style="display: none;">
+                <div id="js-preview-header">
+                    <span>Compiled JavaScript</span>
+                    <div id="js-preview-actions">
+                        <button id="js-preview-refresh-btn" title="Refresh preview">Refresh</button>
+                        <button id="js-preview-copy-btn" title="Copy to clipboard">Copy</button>
+                        <button id="js-preview-close-btn" title="Close">×</button>
+                    </div>
+                </div>
+                <div id="js-preview-content">
+                    <div id="js-preview-editor"></div>
+                </div>
+                <div id="js-preview-resizer"></div>
+            </div>
             <div id="agent-panel" style="display: none;">
                 <div id="agent-panel-header">
                     <span>AI Coding Agent</span>

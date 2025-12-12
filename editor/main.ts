@@ -117,6 +117,10 @@ let disposeAutoImportProvider: (() => void) | null = null
 // Initialize coding agent panel
 let agentPanel: CodingAgentPanel | null = null
 
+// JS Preview panel state
+let jsPreviewEditor: monaco.editor.IStandaloneCodeEditor | null = null
+let jsPreviewVisible = false
+
 // File tree render wrapper
 function showDisabledFileTree() {
   const fileList = document.getElementById('file-list')!
@@ -963,6 +967,78 @@ async function manualCompile() {
   }
 }
 
+// JS Preview panel functions
+function initJsPreviewEditor() {
+  if (jsPreviewEditor) return
+
+  const container = document.getElementById('js-preview-editor')!
+  jsPreviewEditor = monaco.editor.create(container, {
+    value: '// Compiled JavaScript will appear here\n// Click "Refresh" or edit TypeScript code to see the output',
+    language: 'javascript',
+    readOnly: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    wordWrap: 'on',
+    theme: getSavedTheme(),
+    fontSize: 13,
+    lineNumbers: 'on',
+    folding: true,
+  })
+}
+
+function toggleJsPreview() {
+  const panel = document.getElementById('js-preview-panel')!
+  jsPreviewVisible = !jsPreviewVisible
+
+  if (jsPreviewVisible) {
+    panel.style.display = 'flex'
+    if (!jsPreviewEditor) {
+      initJsPreviewEditor()
+    }
+    refreshJsPreview()
+  } else {
+    panel.style.display = 'none'
+  }
+}
+
+async function refreshJsPreview() {
+  if (!jsPreviewEditor || !state.currentPlugin) {
+    if (jsPreviewEditor) {
+      jsPreviewEditor.setValue('// No plugin loaded')
+    }
+    return
+  }
+
+  try {
+    // Bundle the entire plugin to get the compiled output
+    const filesRecord: Record<string, import('../src/client/utils/pluginEditorStorage').PluginFile> = {}
+    for (const [path, file] of Object.entries(state.currentPlugin.files)) {
+      filesRecord[path] = file
+    }
+
+    const compiled = await bundlePlugin(filesRecord, state.currentPlugin.entryPoint)
+    jsPreviewEditor.setValue(compiled)
+    updateStatus('JS preview updated', 'success')
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    jsPreviewEditor.setValue(`// Compilation error:\n// ${errorMessage}`)
+    updateStatus('JS preview compilation failed', 'error')
+  }
+}
+
+async function copyJsPreview() {
+  if (!jsPreviewEditor) return
+
+  const code = jsPreviewEditor.getValue()
+  try {
+    await navigator.clipboard.writeText(code)
+    updateStatus('Copied to clipboard', 'success')
+  } catch (error) {
+    updateStatus(`Failed to copy to clipboard ${error.message}`, 'error')
+  }
+}
+
 // File picker
 function renderFilePickerList(filter: string) {
   if (!state.currentPlugin) return
@@ -1114,6 +1190,10 @@ function setupEventListeners() {
   themeSelect.addEventListener('change', (e) => {
     const target = e.target as HTMLSelectElement
     changeTheme(target.value)
+    // Also update JS preview editor theme
+    if (jsPreviewEditor) {
+      monaco.editor.setTheme(target.value)
+    }
   })
 
   // Toggle agent panel
@@ -1123,6 +1203,22 @@ function setupEventListeners() {
       agentPanel.toggle()
     }
   })
+
+  // Toggle JS preview panel
+  const toggleJsPreviewBtn = document.getElementById('toggle-js-preview-btn')!
+  toggleJsPreviewBtn.addEventListener('click', toggleJsPreview)
+
+  const jsPreviewCloseBtn = document.getElementById('js-preview-close-btn')!
+  jsPreviewCloseBtn.addEventListener('click', () => {
+    jsPreviewVisible = false
+    document.getElementById('js-preview-panel')!.style.display = 'none'
+  })
+
+  const jsPreviewRefreshBtn = document.getElementById('js-preview-refresh-btn')!
+  jsPreviewRefreshBtn.addEventListener('click', refreshJsPreview)
+
+  const jsPreviewCopyBtn = document.getElementById('js-preview-copy-btn')!
+  jsPreviewCopyBtn.addEventListener('click', copyJsPreview)
 
   // New plugin modal
   const newPluginCancel = document.getElementById('new-plugin-cancel')!
@@ -1344,6 +1440,47 @@ function setupEventListeners() {
     if (isResizingAgent) {
       isResizingAgent = false
       agentResizer.classList.remove('resizing')
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  })
+
+  // JS Preview panel resizer
+  const jsPreviewPanelElement = document.getElementById('js-preview-panel')!
+  const jsPreviewResizer = document.getElementById('js-preview-resizer')!
+  let isResizingJsPreview = false
+  let startJsPreviewX = 0
+  let startJsPreviewWidth = 0
+
+  jsPreviewResizer.addEventListener('mousedown', (e) => {
+    isResizingJsPreview = true
+    startJsPreviewX = e.clientX
+    startJsPreviewWidth = jsPreviewPanelElement.offsetWidth
+    jsPreviewResizer.classList.add('resizing')
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizingJsPreview) return
+
+    // For right-side panel, moving mouse left increases width
+    const delta = startJsPreviewX - e.clientX
+    const newWidth = startJsPreviewWidth + delta
+
+    // Apply min/max constraints
+    const minWidth = 200
+    const maxWidth = 800
+    const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth))
+
+    jsPreviewPanelElement.style.width = `${constrainedWidth}px`
+  })
+
+  document.addEventListener('mouseup', () => {
+    if (isResizingJsPreview) {
+      isResizingJsPreview = false
+      jsPreviewResizer.classList.remove('resizing')
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }

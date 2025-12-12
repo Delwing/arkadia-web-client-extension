@@ -817,3 +817,99 @@ body {
 #agent-resizer.resizing {
     background: var(--accent-color);
 }
+
+/* JS Preview Panel */
+#js-preview-panel {
+    display: none;
+    flex-direction: column;
+    width: 400px;
+    min-width: 200px;
+    max-width: 800px;
+    background: var(--sidebar-header-bg);
+    border-left: 1px solid var(--border-color);
+    position: relative;
+}
+
+#js-preview-header {
+    padding: 8px 12px;
+    background: var(--sidebar-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+#js-preview-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+#js-preview-actions button {
+    padding: 4px 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--input-fg);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#js-preview-actions button:hover {
+    background: var(--hover-bg);
+}
+
+#js-preview-close-btn {
+    font-size: 16px !important;
+    padding: 2px 6px !important;
+    line-height: 1;
+}
+
+#js-preview-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#js-preview-editor {
+    flex: 1;
+    overflow: hidden;
+}
+
+#js-preview-resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: col-resize;
+    z-index: 10;
+}
+
+#js-preview-resizer:hover {
+    background: var(--accent-color);
+}
+
+#js-preview-resizer.resizing {
+    background: var(--accent-color);
+}
+
+#toggle-js-preview-btn {
+    background: #10b981 !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+#toggle-js-preview-btn:hover {
+    background: #34d399 !important;
+    border-color: #34d399 !important;
+}
+
+#toggle-js-preview-btn:active {
+    background: #059669 !important;
+}
