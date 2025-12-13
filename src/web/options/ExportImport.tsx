@@ -7,6 +7,40 @@ import type {RecordedEvent} from "./recordingStorage";
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
 const DRIVE_TOKEN_STORAGE_KEY = "arkadia.driveToken";
+const AUTO_BACKUP_SETTINGS_KEY = "arkadia.autoBackup";
+const AUTO_BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const AUTO_BACKUP_RETENTION_DAYS = 7;
+const AUTO_BACKUP_PREFIX = "arkadia-auto-backup-";
+
+interface AutoBackupSettings {
+    enabled: boolean;
+    lastBackupTime: number | null;
+}
+
+function loadAutoBackupSettings(): AutoBackupSettings {
+    const defaults: AutoBackupSettings = { enabled: true, lastBackupTime: null };
+    if (typeof localStorage === "undefined") return defaults;
+    try {
+        const raw = localStorage.getItem(AUTO_BACKUP_SETTINGS_KEY);
+        if (!raw) return defaults;
+        const parsed = JSON.parse(raw);
+        return {
+            enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : true,
+            lastBackupTime: typeof parsed.lastBackupTime === "number" ? parsed.lastBackupTime : null,
+        };
+    } catch {
+        return defaults;
+    }
+}
+
+function saveAutoBackupSettings(settings: AutoBackupSettings) {
+    if (typeof localStorage === "undefined") return;
+    try {
+        localStorage.setItem(AUTO_BACKUP_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (err) {
+        console.error("Failed to save auto-backup settings", err);
+    }
+}
 
 interface StoredDriveToken {
     token: string;
@@ -116,6 +150,7 @@ interface ExportOptions {
     aliases: boolean;
     buttons: boolean;
     radial: boolean;
+    scripts: boolean;
     multibinds: boolean;
     recordings: boolean;
     visitedRooms: boolean;
@@ -128,6 +163,7 @@ const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
     aliases: true,
     buttons: true,
     radial: true,
+    scripts: true,
     multibinds: true,
     recordings: true,
     visitedRooms: true,
@@ -138,6 +174,8 @@ const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = {
     aliases: "aliases",
     mobileButtonSettings: "buttons",
     desktopButtonSettings: "buttons",
+    scripts: "scripts",
+    stored_scripts: "scripts",
 };
 
 interface ExportPayload {
@@ -261,7 +299,7 @@ function exportLocalStorage(selectedCharacters: string[], options: ExportOptions
                     if (options.buttons && options.radial) {
                         global[key] = raw;
                     } else if (options.buttons && !options.radial) {
-                        const {radial, ...rest} = parsed;
+                        const {radial: _radial, ...rest} = parsed;
                         global[key] = JSON.stringify(rest);
                     } else if (!options.buttons && options.radial && parsed.radial) {
                         global[key] = JSON.stringify({radial: parsed.radial});
@@ -489,6 +527,10 @@ function ExportImport() {
     const tokenClientRef = useRef<GoogleTokenClient | null>(null);
     const driveTokenRef = useRef<string | null>(null);
     const driveTokenExpiryRef = useRef(0);
+    const [autoBackupEnabled, setAutoBackupEnabled] = useState(() => loadAutoBackupSettings().enabled);
+    const [lastAutoBackup, setLastAutoBackup] = useState<number | null>(() => loadAutoBackupSettings().lastBackupTime);
+    const [isAutoBackupRunning, setIsAutoBackupRunning] = useState(false);
+    const autoBackupRunningRef = useRef(false);
 
     const selectedCharacters = useMemo(
         () => characters.filter(name => selection[name]),
@@ -676,6 +718,139 @@ function ExportImport() {
         },
         [driveFetch]
     );
+
+    const cleanupOldAutoBackups = useCallback(
+        async (filesList?: DriveFileSummary[]) => {
+            const files = filesList ?? driveFiles;
+            const cutoffDate = Date.now() - AUTO_BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+            const oldAutoBackups = files.filter(file => {
+                if (!file.name.startsWith(AUTO_BACKUP_PREFIX)) return false;
+                if (!file.modifiedTime) return false;
+                const fileTime = new Date(file.modifiedTime).getTime();
+                return fileTime < cutoffDate;
+            });
+
+            for (const file of oldAutoBackups) {
+                try {
+                    const response = await driveFetch(
+                        `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}`,
+                        { method: "DELETE" }
+                    );
+                    if (response.ok) {
+                        console.log(`Auto-backup cleanup: deleted old backup "${file.name}"`);
+                    }
+                } catch (err) {
+                    console.error(`Failed to delete old auto-backup "${file.name}"`, err);
+                }
+            }
+            return oldAutoBackups.length;
+        },
+        [driveFetch, driveFiles]
+    );
+
+    const performAutoBackup = useCallback(
+        async () => {
+            if (autoBackupRunningRef.current) return;
+            if (!tokenClientRef.current || !driveTokenRef.current) return;
+
+            autoBackupRunningRef.current = true;
+            setIsAutoBackupRunning(true);
+
+            try {
+                // Get all characters for auto-backup
+                const allCharacters = collectCharacters();
+                const payload = await buildExport(allCharacters, DEFAULT_EXPORT_OPTIONS);
+                const json = JSON.stringify(payload, null, 2);
+                const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+                const metadata = {
+                    name: `${AUTO_BACKUP_PREFIX}${timestamp}.json`,
+                    parents: ["appDataFolder"],
+                };
+                const boundary = `-------arkadia-auto-${Date.now().toString(16)}`;
+                const body = [
+                    `--${boundary}`,
+                    "Content-Type: application/json; charset=UTF-8",
+                    "",
+                    JSON.stringify(metadata),
+                    `--${boundary}`,
+                    "Content-Type: application/json",
+                    "",
+                    json,
+                    `--${boundary}--`,
+                    "",
+                ].join("\r\n");
+
+                const response = await driveFetch(
+                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+                        body,
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Auto-backup upload failed with status ${response.status}`);
+                }
+
+                const now = Date.now();
+                setLastAutoBackup(now);
+                saveAutoBackupSettings({ enabled: autoBackupEnabled, lastBackupTime: now });
+                console.log("Auto-backup completed successfully");
+
+                // Refresh file list and cleanup old backups
+                const params = new URLSearchParams({
+                    spaces: "appDataFolder",
+                    fields: "files(id,name,modifiedTime,size)",
+                    orderBy: "modifiedTime desc",
+                    pageSize: "50",
+                });
+                const listResponse = await driveFetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
+                if (listResponse.ok) {
+                    const data = await listResponse.json();
+                    const files: DriveFileSummary[] = Array.isArray(data?.files)
+                        ? data.files
+                            .filter((f: any) => typeof f?.id === "string" && typeof f?.name === "string")
+                            .map((f: any) => ({
+                                id: f.id as string,
+                                name: f.name as string,
+                                modifiedTime: typeof f.modifiedTime === "string" ? f.modifiedTime : undefined,
+                                size: typeof f.size === "string" ? f.size : undefined,
+                            }))
+                        : [];
+                    setDriveFiles(files);
+                    await cleanupOldAutoBackups(files);
+                }
+            } catch (err) {
+                console.error("Auto-backup failed", err);
+            } finally {
+                autoBackupRunningRef.current = false;
+                setIsAutoBackupRunning(false);
+            }
+        },
+        [driveFetch, autoBackupEnabled, cleanupOldAutoBackups]
+    );
+
+    // Auto-backup effect - runs when Drive is connected
+    useEffect(() => {
+        if (!driveToken || !autoBackupEnabled || !isDriveScriptReady) return;
+        if (autoBackupRunningRef.current) return;
+
+        const shouldBackup = !lastAutoBackup || (Date.now() - lastAutoBackup) > AUTO_BACKUP_INTERVAL_MS;
+        if (!shouldBackup) return;
+
+        // Delay auto-backup slightly to let the UI settle
+        const timer = setTimeout(() => {
+            void performAutoBackup();
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, [driveToken, autoBackupEnabled, lastAutoBackup, isDriveScriptReady, performAutoBackup]);
+
+    // Save auto-backup enabled state when it changes
+    useEffect(() => {
+        saveAutoBackupSettings({ enabled: autoBackupEnabled, lastBackupTime: lastAutoBackup });
+    }, [autoBackupEnabled, lastAutoBackup]);
 
     const refreshCharacters = useCallback(() => {
         const list = collectCharacters();
@@ -951,9 +1126,34 @@ function ExportImport() {
                 Wybierz postacie, które chcesz uwzględnić w eksporcie. Dane pobierane z internetu (mapy, zioła, magiki
                 itp.) nie są dołączane.
             </p>
-            {characters.length > 0 ? (
-                <div className="d-flex flex-column gap-2">
-                    <div className="d-flex flex-wrap gap-3 align-items-center">
+            <div className="border rounded p-3">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span className="fw-semibold">Postacie</span>
+                    {characters.length > 0 && (
+                        <div className="d-flex gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                className="py-0 px-2"
+                                style={{fontSize: "0.75rem"}}
+                                onClick={() => handleToggleAll(true)}
+                            >
+                                Wszystkie
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                className="py-0 px-2"
+                                style={{fontSize: "0.75rem"}}
+                                onClick={() => handleToggleAll(false)}
+                            >
+                                Żadna
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                {characters.length > 0 ? (
+                    <div className="d-flex flex-wrap gap-3">
                         {characters.map(name => (
                             <Form.Check
                                 key={name}
@@ -965,82 +1165,128 @@ function ExportImport() {
                             />
                         ))}
                     </div>
+                ) : (
+                    <p className="text-muted mb-0">Brak zapisanych postaci.</p>
+                )}
+            </div>
+            <div className="border rounded p-3">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span className="fw-semibold">Dane do eksportu</span>
                     <div className="d-flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(true)}>Zaznacz
-                            wszystkie</Button>
-                        <Button size="sm" variant="secondary" onClick={() => handleToggleAll(false)}>Odznacz
-                            wszystkie</Button>
+                        <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            className="py-0 px-2"
+                            style={{fontSize: "0.75rem"}}
+                            onClick={() => setExportOptions({...DEFAULT_EXPORT_OPTIONS})}
+                        >
+                            Wszystko
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            className="py-0 px-2"
+                            style={{fontSize: "0.75rem"}}
+                            onClick={() => setExportOptions({
+                                globalSettings: false,
+                                characterSettings: false,
+                                triggers: false,
+                                aliases: false,
+                                buttons: false,
+                                radial: false,
+                                scripts: false,
+                                multibinds: false,
+                                recordings: false,
+                                visitedRooms: false,
+                            })}
+                        >
+                            Nic
+                        </Button>
                     </div>
                 </div>
-            ) : (
-                <p className="text-muted mb-0">Brak zapisanych postaci.</p>
-            )}
-            <div className="d-flex flex-column gap-2">
-                <p className="mb-0 fw-semibold">Wybierz dane do eksportu:</p>
-                <div className="d-flex flex-wrap gap-3 align-items-center">
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-globalSettings"
-                        label="Ustawienia globalne"
-                        checked={exportOptions.globalSettings}
-                        onChange={e => setExportOptions(prev => ({...prev, globalSettings: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-characterSettings"
-                        label="Ustawienia postaci"
-                        checked={exportOptions.characterSettings}
-                        onChange={e => setExportOptions(prev => ({...prev, characterSettings: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-triggers"
-                        label="Triggery"
-                        checked={exportOptions.triggers}
-                        onChange={e => setExportOptions(prev => ({...prev, triggers: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-aliases"
-                        label="Aliasy"
-                        checked={exportOptions.aliases}
-                        onChange={e => setExportOptions(prev => ({...prev, aliases: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-buttons"
-                        label="Przyciski"
-                        checked={exportOptions.buttons}
-                        onChange={e => setExportOptions(prev => ({...prev, buttons: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-radial"
-                        label="Menu radialne"
-                        checked={exportOptions.radial}
-                        onChange={e => setExportOptions(prev => ({...prev, radial: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-multibinds"
-                        label="Multibindy"
-                        checked={exportOptions.multibinds}
-                        onChange={e => setExportOptions(prev => ({...prev, multibinds: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-recordings"
-                        label="Nagrania"
-                        checked={exportOptions.recordings}
-                        onChange={e => setExportOptions(prev => ({...prev, recordings: e.target.checked}))}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="export-option-visitedRooms"
-                        label="Odwiedzone lokacje"
-                        checked={exportOptions.visitedRooms}
-                        onChange={e => setExportOptions(prev => ({...prev, visitedRooms: e.target.checked}))}
-                    />
+                <div className="row g-3">
+                    <div className="col-6 col-md-4">
+                        <div className="text-muted small mb-1">Ustawienia</div>
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-globalSettings"
+                            label="Globalne"
+                            checked={exportOptions.globalSettings}
+                            onChange={e => setExportOptions(prev => ({...prev, globalSettings: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-characterSettings"
+                            label="Postaci"
+                            checked={exportOptions.characterSettings}
+                            onChange={e => setExportOptions(prev => ({...prev, characterSettings: e.target.checked}))}
+                        />
+                    </div>
+                    <div className="col-6 col-md-4">
+                        <div className="text-muted small mb-1">Automatyzacja</div>
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-triggers"
+                            label="Triggery"
+                            checked={exportOptions.triggers}
+                            onChange={e => setExportOptions(prev => ({...prev, triggers: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-aliases"
+                            label="Aliasy"
+                            checked={exportOptions.aliases}
+                            onChange={e => setExportOptions(prev => ({...prev, aliases: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-multibinds"
+                            label="Multibindy"
+                            checked={exportOptions.multibinds}
+                            onChange={e => setExportOptions(prev => ({...prev, multibinds: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-scripts"
+                            label="Skrypty"
+                            checked={exportOptions.scripts}
+                            onChange={e => setExportOptions(prev => ({...prev, scripts: e.target.checked}))}
+                        />
+                    </div>
+                    <div className="col-6 col-md-4">
+                        <div className="text-muted small mb-1">Interfejs</div>
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-buttons"
+                            label="Przyciski"
+                            checked={exportOptions.buttons}
+                            onChange={e => setExportOptions(prev => ({...prev, buttons: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-radial"
+                            label="Menu radialne"
+                            checked={exportOptions.radial}
+                            onChange={e => setExportOptions(prev => ({...prev, radial: e.target.checked}))}
+                        />
+                    </div>
+                    <div className="col-6 col-md-4">
+                        <div className="text-muted small mb-1">Dane</div>
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-recordings"
+                            label="Nagrania"
+                            checked={exportOptions.recordings}
+                            onChange={e => setExportOptions(prev => ({...prev, recordings: e.target.checked}))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-visitedRooms"
+                            label="Odwiedzone lokacje"
+                            checked={exportOptions.visitedRooms}
+                            onChange={e => setExportOptions(prev => ({...prev, visitedRooms: e.target.checked}))}
+                        />
+                    </div>
                 </div>
             </div>
             <div className="d-flex flex-wrap gap-2 align-items-center">
@@ -1068,8 +1314,36 @@ function ExportImport() {
             <div className="border-top pt-3 d-flex flex-column gap-3">
                 <div>
                     <h6 className="mb-1">Google Drive</h6>
-                    <p className="mb-2 text-muted">Połącz konto Google, aby zapisywać kopie zapasowe w chmurze.</p>
+                    <p className="mb-0 text-muted">Połącz konto Google, aby zapisywać kopie zapasowe w chmurze.</p>
                 </div>
+                <div className="d-flex flex-wrap align-items-center gap-3">
+                    <Form.Check
+                        type="switch"
+                        id="auto-backup-toggle"
+                        label="Automatyczne kopie zapasowe"
+                        checked={autoBackupEnabled}
+                        onChange={e => setAutoBackupEnabled(e.target.checked)}
+                    />
+                    {driveToken && autoBackupEnabled && (
+                        <span className="text-muted small">
+                            {isAutoBackupRunning ? (
+                                <span className="d-inline-flex align-items-center gap-1">
+                                    <Spinner animation="border" size="sm" />
+                                    <span>Tworzenie kopii…</span>
+                                </span>
+                            ) : lastAutoBackup ? (
+                                `Ostatnia: ${new Date(lastAutoBackup).toLocaleString()}`
+                            ) : (
+                                "Oczekuje na pierwszy backup"
+                            )}
+                        </span>
+                    )}
+                </div>
+                {autoBackupEnabled && (
+                    <p className="text-muted small mb-0">
+                        Kopie tworzone automatycznie raz dziennie, przechowywane przez 7 dni.
+                    </p>
+                )}
                 <div className="d-flex flex-wrap gap-2 align-items-center">
                     {!isDriveScriptReady ? (
                         <div className="d-inline-flex align-items-center gap-2 text-muted">
@@ -1143,13 +1417,23 @@ function ExportImport() {
                         ) : driveFiles.length > 0 ? (
                             driveFiles.map(file => {
                                 const sizeText = formatDriveSize(file.size);
+                                const isAutoBackup = file.name.startsWith(AUTO_BACKUP_PREFIX);
+                                const displayName = isAutoBackup
+                                    ? file.name.replace(AUTO_BACKUP_PREFIX, "").replace(".json", "")
+                                    : file.name.replace("arkadia-backup-", "").replace(".json", "");
                                 return (
                                     <div
                                         key={file.id}
                                         className="d-flex flex-wrap align-items-center justify-content-between gap-2 border rounded px-2 py-2"
+                                        style={isAutoBackup ? { borderColor: "var(--bs-secondary)" } : undefined}
                                     >
                                         <div className="me-auto">
-                                            <div className="fw-semibold">{file.name}</div>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className="fw-semibold">{displayName}</span>
+                                                {isAutoBackup && (
+                                                    <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>auto</span>
+                                                )}
+                                            </div>
                                             <div className="text-muted small">
                                                 {formatDriveDate(file.modifiedTime)}
                                                 {sizeText ? ` • ${sizeText}` : ""}
