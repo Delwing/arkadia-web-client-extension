@@ -608,23 +608,14 @@ function ExportImport() {
         });
     }, [isDriveScriptReady]);
 
-    const ensureDriveToken = useCallback(
-        async (forcePrompt = false): Promise<string> => {
-            const client = tokenClientRef.current;
-            if (!client) {
-                throw new Error("Integracja z Google Drive nie jest dostępna.");
-            }
-            if (!forcePrompt) {
-                const existingToken = driveTokenRef.current;
-                const expiry = driveTokenExpiryRef.current;
-                if (existingToken && expiry && Date.now() < expiry) {
-                    return existingToken;
-                }
-            }
+    const requestNewToken = useCallback(
+        (client: GoogleTokenClient, promptType: "" | "none" | "consent"): Promise<string> => {
             return new Promise<string>((resolve, reject) => {
                 client.callback = (response: GoogleTokenResponse) => {
                     if (response?.error) {
-                        reject(new Error("Dostęp do Google Drive został odrzucony."));
+                        reject(new Error(response.error === "access_denied"
+                            ? "Dostęp do Google Drive został odrzucony."
+                            : response.error));
                         return;
                     }
                     const token = response?.access_token;
@@ -645,13 +636,45 @@ function ExportImport() {
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({prompt: forcePrompt || !driveTokenRef.current ? "consent" : ""});
+                    client.requestAccessToken({prompt: promptType});
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
             });
         },
         []
+    );
+
+    const ensureDriveToken = useCallback(
+        async (forcePrompt = false): Promise<string> => {
+            const client = tokenClientRef.current;
+            if (!client) {
+                throw new Error("Integracja z Google Drive nie jest dostępna.");
+            }
+            if (!forcePrompt) {
+                const existingToken = driveTokenRef.current;
+                const expiry = driveTokenExpiryRef.current;
+                if (existingToken && expiry && Date.now() < expiry) {
+                    return existingToken;
+                }
+            }
+
+            // If we have a previously granted token (even if expired), try silent refresh first
+            const hadPreviousToken = driveTokenRef.current !== null || loadStoredDriveToken() !== null;
+
+            if (!forcePrompt && hadPreviousToken) {
+                try {
+                    // Try silent refresh with prompt: "none" - works if user's Google session is active
+                    return await requestNewToken(client, "none");
+                } catch {
+                    // Silent refresh failed, fall through to consent prompt
+                }
+            }
+
+            // Need user interaction - request with consent prompt
+            return requestNewToken(client, forcePrompt ? "consent" : (hadPreviousToken ? "" : "consent"));
+        },
+        [requestNewToken]
     );
 
     const driveFetch = useCallback(
@@ -672,6 +695,46 @@ function ExportImport() {
         },
         [ensureDriveToken]
     );
+
+    // Proactive token refresh - refresh token before it expires to maintain connection
+    useEffect(() => {
+        if (!driveToken || !tokenClientRef.current) {
+            return;
+        }
+
+        const expiry = driveTokenExpiryRef.current;
+        if (!expiry) {
+            return;
+        }
+
+        const now = Date.now();
+        const timeUntilExpiry = expiry - now;
+
+        // Refresh when 50% of token lifetime has passed, or at least 5 minutes before expiry
+        // This gives us plenty of buffer for the refresh to complete
+        const refreshAt = Math.max(timeUntilExpiry / 2, Math.min(timeUntilExpiry - 5 * 60 * 1000, timeUntilExpiry * 0.8));
+
+        if (refreshAt <= 0) {
+            // Token is about to expire or already expired, try immediate refresh
+            requestNewToken(tokenClientRef.current, "none").catch(() => {
+                // Silent refresh failed - token will be refreshed on next API call
+            });
+            return;
+        }
+
+        const timerId = setTimeout(() => {
+            const client = tokenClientRef.current;
+            if (!client) return;
+
+            // Try silent refresh
+            requestNewToken(client, "none").catch(() => {
+                // Silent refresh failed - token will be refreshed on next API call
+                // This is fine, the user will be prompted when they try to use Drive
+            });
+        }, refreshAt);
+
+        return () => clearTimeout(timerId);
+    }, [driveToken, requestNewToken]);
 
     const refreshDriveFiles = useCallback(
         async (options?: { action?: "list" }) => {
