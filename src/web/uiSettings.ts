@@ -1235,4 +1235,45 @@ export default async function initUiSettings() {
             manageSoundsModal.show();
         });
     }
+
+    // Map version display and refresh
+    const mapVersionElement = document.getElementById('ui-map-version');
+    const mapRefreshButton = document.getElementById('ui-map-refresh-btn');
+
+    async function updateMapVersionDisplay() {
+        if (!mapVersionElement) return;
+        const { getMapVersion } = await import('./mapDataLoader');
+        const version = await getMapVersion();
+        mapVersionElement.textContent = version ? `v${version}` : '';
+    }
+
+    if (mapRefreshButton) {
+        mapRefreshButton.addEventListener('click', async () => {
+            mapRefreshButton.setAttribute('disabled', 'disabled');
+
+            try {
+                const { forceRefreshMapData, loadColors } = await import('./mapDataLoader');
+                const [mapData, colors] = await Promise.all([
+                    forceRefreshMapData(),
+                    loadColors(),
+                ]);
+
+                const embedded = (globalThis as any).embedded;
+                if (embedded?.initialize) {
+                    embedded.initialize(mapData, colors);
+                }
+
+                await updateMapVersionDisplay();
+            } catch (error) {
+                console.error('Failed to refresh map data:', error);
+            } finally {
+                mapRefreshButton.removeAttribute('disabled');
+            }
+        });
+    }
+
+    // Update version when modal opens
+    modalEl.addEventListener('show.bs.modal', () => {
+        void updateMapVersionDisplay();
+    });
 }

@@ -207,6 +207,7 @@ type MockMapColor = {
 
 const MAP_DATA_ROUTE = '**/arkadia-mapa/data/mapExport.json';
 const MAP_COLORS_ROUTE = '**/arkadia-mapa/data/colors.json';
+const MAP_RELEASE_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-mapa/releases/latest';
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
 const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
@@ -287,6 +288,25 @@ export async function mockMapDownloads(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(colorsData),
+        });
+    });
+}
+
+export async function mockMapReleaseVersion(
+    context: BrowserContext,
+    options: {tagName?: string} = {},
+): Promise<void> {
+    const tagName = options.tagName ?? '0.160.0';
+
+    await context.route(MAP_RELEASE_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                tag_name: tagName,
+                name: `Release ${tagName}`,
+                published_at: new Date().toISOString(),
+            }),
         });
     });
 }

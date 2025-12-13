@@ -98,6 +98,11 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     return this.currentSnapshot;
   }
 
+  async getMetadata(): Promise<TMeta | undefined> {
+    await this.ensureInitialized();
+    return this.currentMetadata;
+  }
+
   async applyLocalChange(mutator: (current: TSnapshot | undefined) => TSnapshot): Promise<TSnapshot> {
     await this.ensureInitialized();
     const nextSnapshot = mutator(this.currentSnapshot);

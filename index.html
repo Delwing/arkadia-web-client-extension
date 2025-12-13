@@ -336,7 +336,13 @@
                 <div class="modal-body overflow-auto" style="min-height: 0;">
                     <div class="ui-settings-layout">
                         <section class="ui-settings-section ui-settings-section--map">
-                            <h6 class="ui-settings-section-title">Mapa</h6>
+                            <div class="ui-settings-section-header">
+                                <h6 class="ui-settings-section-title">Mapa</h6>
+                                <button type="button" id="ui-map-refresh-btn" class="ui-map-version-badge" title="Kliknij, aby odświeżyć dane mapy">
+                                    <span class="ui-map-refresh-icon">↻</span>
+                                    <span id="ui-map-version"></span>
+                                </button>
+                            </div>
                             <div class="ui-settings-stack">
                                 <div>
                                     <label class="form-label" for="ui-map-scale">Powiększenie mapy</label>

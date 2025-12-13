@@ -3670,6 +3670,58 @@ body.mobile-command-radial-active {
   margin: 0;
 }
 
+.ui-settings-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ui-map-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-default);
+  border: 1px solid var(--surface-border);
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ui-map-version-badge:hover {
+  color: var(--text-default);
+  border-color: var(--primary);
+  background: var(--surface-raised);
+}
+
+.ui-map-version-badge:active {
+  transform: scale(0.95);
+}
+
+.ui-map-refresh-icon {
+  display: inline-block;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.ui-map-version-badge:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.ui-map-version-badge:disabled .ui-map-refresh-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .ui-settings-stack,
 .character-settings-stack {
   display: flex;

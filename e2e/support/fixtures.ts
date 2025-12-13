@@ -6,6 +6,7 @@ import {
     mockMagicKeysDownload,
     mockMagicsDownload,
     mockMapDownloads,
+    mockMapReleaseVersion,
     mockNpcDownload,
     mockPeopleDownload,
     mockWiedzaDownload,
@@ -20,6 +21,7 @@ const test = base.extend({
         });
 
         await mockMapDownloads(context);
+        await mockMapReleaseVersion(context);
         await mockMagicsDownload(context);
         await mockMagicKeysDownload(context);
         await mockNpcDownload(context);
