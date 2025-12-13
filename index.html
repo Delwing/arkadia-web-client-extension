@@ -122,7 +122,11 @@
             <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Opcje</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="options-export-import-btn">Eksport/Import</button>
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="options-characters-btn">Postacie</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                 </div>
                 <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
                     <div id="options" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
@@ -142,6 +146,19 @@
                 </div>
                 <div class="modal-body">
                     <div id="export-import-root"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="character-management-modal" class="modal fade" tabindex="-1" style="z-index: 1060;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Zarządzanie postaciami</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="character-management-root"></div>
                 </div>
             </div>
         </div>

@@ -41,6 +41,7 @@ import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
 import CharacterSettings from "./options/CharacterSettings.tsx"
 import ExportImport from "./options/ExportImport.tsx"
+import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
@@ -770,6 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const optionsModal = optionsModalElement ? new Modal(optionsModalElement) : null;
     const exportImportModalElement = document.getElementById('export-import-modal');
     const exportImportModal = exportImportModalElement ? new Modal(exportImportModalElement) : null;
+    const characterManagementModalElement = document.getElementById('character-management-modal');
+    const characterManagementModal = characterManagementModalElement ? new Modal(characterManagementModalElement) : null;
     const bindsModalElement = document.getElementById('binds-modal');
     const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
     const npcModalElement = document.getElementById('npc-modal');
@@ -961,6 +964,29 @@ document.addEventListener('DOMContentLoaded', () => {
             exportImportModal.show();
         }
     });
+
+    window.addEventListener('show-character-management', () => {
+        if (characterManagementModal) {
+            characterManagementModal.show();
+        }
+    });
+
+    // Header buttons in options modal
+    const optionsExportImportBtn = document.getElementById('options-export-import-btn');
+    const optionsCharactersBtn = document.getElementById('options-characters-btn');
+
+    if (optionsExportImportBtn) {
+        optionsExportImportBtn.addEventListener('click', () => {
+            optionsModal?.hide();
+            setTimeout(() => window.dispatchEvent(new Event('show-export-import')), 150);
+        });
+    }
+
+    if (optionsCharactersBtn) {
+        optionsCharactersBtn.addEventListener('click', () => {
+            window.dispatchEvent(new Event('show-character-management'));
+        });
+    }
 
     // Add event listener to options button
     if (optionsButton && optionsModal) {
@@ -1862,6 +1888,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportImportRoot = document.getElementById('export-import-root');
     if (exportImportRoot) {
         createRoot(exportImportRoot).render(createElement(ExportImport));
+    }
+
+    const characterManagementRoot = document.getElementById('character-management-root');
+    if (characterManagementRoot) {
+        createRoot(characterManagementRoot).render(createElement(CharacterManagement));
     }
 
     const bindsRoot = document.getElementById('binds-options');

@@ -109,28 +109,16 @@ function CharacterSettings() {
     return (
         <div className="p-2 d-flex flex-column h-100" style={{ minHeight: 0 }}>
             {locked ? (
-                <div className="alert alert-info" role="alert">
+                <div className="alert alert-info py-2" role="alert">
                     Opcje zależne od postaci są zablokowane do momentu jej wybrania.
                 </div>
             ) : (
                 char && (
-                    <div className="alert alert-info" role="alert">
+                    <div className="alert alert-info py-2" role="alert">
                         Ustawienia dotyczą postaci: <strong>{char}</strong>
                     </div>
                 )
             )}
-            <div className="mb-3">
-                <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                        window.dispatchEvent(new Event("close-options"));
-                        setTimeout(() => window.dispatchEvent(new Event("show-export-import")), 0);
-                    }}
-                >
-                    Eksportuj i importuj ustawienia…
-                </button>
-            </div>
             <div className="mb-3 pb-2 flex-shrink-0">
                 <div className="d-flex gap-2">
                     <button

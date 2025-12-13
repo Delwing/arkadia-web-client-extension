@@ -109,6 +109,37 @@ interface ExportedVisitedRoomsEntry {
     rooms: number[];
 }
 
+interface ExportOptions {
+    globalSettings: boolean;
+    characterSettings: boolean;
+    triggers: boolean;
+    aliases: boolean;
+    buttons: boolean;
+    radial: boolean;
+    multibinds: boolean;
+    recordings: boolean;
+    visitedRooms: boolean;
+}
+
+const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
+    globalSettings: true,
+    characterSettings: true,
+    triggers: true,
+    aliases: true,
+    buttons: true,
+    radial: true,
+    multibinds: true,
+    recordings: true,
+    visitedRooms: true,
+};
+
+const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = {
+    triggers: "triggers",
+    aliases: "aliases",
+    mobileButtonSettings: "buttons",
+    desktopButtonSettings: "buttons",
+};
+
 interface ExportPayload {
     version: 1;
     createdAt: string;
@@ -193,7 +224,7 @@ function collectCharacters(): string[] {
     return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, {sensitivity: "base"}));
 }
 
-function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage {
+function exportLocalStorage(selectedCharacters: string[], options: ExportOptions): ExportedLocalStorage {
     const global: Record<string, string> = {};
     const characters: Record<string, Record<string, string>> = {};
     const selectedSet = new Set(selectedCharacters);
@@ -218,6 +249,32 @@ function exportLocalStorage(selectedCharacters: string[]): ExportedLocalStorage 
             continue;
         }
         if (isExcludedLocalStorageKey(key)) continue;
+
+        // Handle specific global keys based on export options
+        const specificOption = EXPORT_SPECIFIC_GLOBAL_KEYS[key];
+        if (specificOption) {
+            if (key === "mobileButtonSettings") {
+                // Handle mobileButtonSettings specially for radial
+                if (!options.buttons && !options.radial) continue;
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (options.buttons && options.radial) {
+                        global[key] = raw;
+                    } else if (options.buttons && !options.radial) {
+                        const {radial, ...rest} = parsed;
+                        global[key] = JSON.stringify(rest);
+                    } else if (!options.buttons && options.radial && parsed.radial) {
+                        global[key] = JSON.stringify({radial: parsed.radial});
+                    }
+                } catch {
+                    if (options.buttons) global[key] = raw;
+                }
+            } else if (options[specificOption]) {
+                global[key] = raw;
+            }
+            continue;
+        }
+
         global[key] = raw;
     }
 
@@ -236,6 +293,31 @@ async function openRecordingsDb(): Promise<IDBDatabase> {
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(new Error("Failed to open recordings IndexedDB"));
     });
+}
+
+async function exportRecordings(): Promise<ExportedRecording[]> {
+    try {
+        const db = await openRecordingsDb();
+        return await new Promise<ExportedRecording[]>((resolve, reject) => {
+            const tx = db.transaction(["recordings"], "readonly");
+            const store = tx.objectStore("recordings");
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const list = Array.isArray(req.result) ? req.result : [];
+                const result: ExportedRecording[] = list
+                    .filter((entry: any) => typeof entry?.id === "string" && Array.isArray(entry?.events))
+                    .map((entry: any) => ({
+                        id: entry.id as string,
+                        events: entry.events as RecordedEvent[],
+                    }));
+                resolve(result);
+            };
+            req.onerror = () => reject(new Error("Failed to read recordings"));
+        });
+    } catch (err) {
+        console.error("Failed to export recordings", err);
+        return [];
+    }
 }
 
 async function importRecordings(records: ExportedRecording[]): Promise<void> {
@@ -321,22 +403,38 @@ async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): Promise
     });
 }
 
-async function buildExport(selectedCharacters: string[]): Promise<ExportPayload> {
-    const [multibinds, visitedRooms] = await Promise.all([
-        getMultibindsSnapshot().catch(err => {
-            console.error("Failed to export multibinds", err);
-            return [] as StoredMultibindRecord[];
-        }),
-        exportVisitedRooms(selectedCharacters),
+async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
+    const [multibinds, recordings, visitedRooms] = await Promise.all([
+        options.multibinds
+            ? getMultibindsSnapshot().catch(err => {
+                console.error("Failed to export multibinds", err);
+                return [] as StoredMultibindRecord[];
+            })
+            : Promise.resolve([] as StoredMultibindRecord[]),
+        options.recordings
+            ? exportRecordings()
+            : Promise.resolve([] as ExportedRecording[]),
+        options.visitedRooms
+            ? exportVisitedRooms(selectedCharacters)
+            : Promise.resolve([] as ExportedVisitedRoomsEntry[]),
     ]);
+
+    const localStorageData = exportLocalStorage(selectedCharacters, options);
+    const filteredLocalStorage: ExportedLocalStorage = {
+        global: options.globalSettings || options.triggers || options.aliases || options.buttons || options.radial
+            ? localStorageData.global
+            : {},
+        characters: options.characterSettings ? localStorageData.characters : {},
+    };
 
     return {
         version: 1,
         createdAt: new Date().toISOString(),
         characters: selectedCharacters,
-        localStorage: exportLocalStorage(selectedCharacters),
+        localStorage: filteredLocalStorage,
         indexedDB: {
             multibinds,
+            recordings,
             visitedRooms,
         },
     };
@@ -375,6 +473,7 @@ function validatePayload(input: unknown): input is ExportPayload {
 function ExportImport() {
     const [characters, setCharacters] = useState<string[]>([]);
     const [selection, setSelection] = useState<Record<string, boolean>>({});
+    const [exportOptions, setExportOptions] = useState<ExportOptions>({...DEFAULT_EXPORT_OPTIONS});
     const [status, setStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -639,7 +738,7 @@ function ExportImport() {
         setStatus(null);
         setIsProcessing(true);
         try {
-            const payload = await buildExport(selectedCharacters);
+            const payload = await buildExport(selectedCharacters, exportOptions);
             const json = JSON.stringify(payload, null, 2);
             const blob = new Blob([json], {type: "application/json"});
             const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
@@ -715,7 +814,7 @@ function ExportImport() {
         setDriveAction("upload");
         setIsDriveBusy(true);
         try {
-            const payload = await buildExport(selectedCharacters);
+            const payload = await buildExport(selectedCharacters, exportOptions);
             const json = JSON.stringify(payload, null, 2);
             const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
             const metadata = {
@@ -876,6 +975,74 @@ function ExportImport() {
             ) : (
                 <p className="text-muted mb-0">Brak zapisanych postaci.</p>
             )}
+            <div className="d-flex flex-column gap-2">
+                <p className="mb-0 fw-semibold">Wybierz dane do eksportu:</p>
+                <div className="d-flex flex-wrap gap-3 align-items-center">
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-globalSettings"
+                        label="Ustawienia globalne"
+                        checked={exportOptions.globalSettings}
+                        onChange={e => setExportOptions(prev => ({...prev, globalSettings: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-characterSettings"
+                        label="Ustawienia postaci"
+                        checked={exportOptions.characterSettings}
+                        onChange={e => setExportOptions(prev => ({...prev, characterSettings: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-triggers"
+                        label="Triggery"
+                        checked={exportOptions.triggers}
+                        onChange={e => setExportOptions(prev => ({...prev, triggers: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-aliases"
+                        label="Aliasy"
+                        checked={exportOptions.aliases}
+                        onChange={e => setExportOptions(prev => ({...prev, aliases: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-buttons"
+                        label="Przyciski"
+                        checked={exportOptions.buttons}
+                        onChange={e => setExportOptions(prev => ({...prev, buttons: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-radial"
+                        label="Menu radialne"
+                        checked={exportOptions.radial}
+                        onChange={e => setExportOptions(prev => ({...prev, radial: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-multibinds"
+                        label="Multibindy"
+                        checked={exportOptions.multibinds}
+                        onChange={e => setExportOptions(prev => ({...prev, multibinds: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-recordings"
+                        label="Nagrania"
+                        checked={exportOptions.recordings}
+                        onChange={e => setExportOptions(prev => ({...prev, recordings: e.target.checked}))}
+                    />
+                    <Form.Check
+                        type="checkbox"
+                        id="export-option-visitedRooms"
+                        label="Odwiedzone lokacje"
+                        checked={exportOptions.visitedRooms}
+                        onChange={e => setExportOptions(prev => ({...prev, visitedRooms: e.target.checked}))}
+                    />
+                </div>
+            </div>
             <div className="d-flex flex-wrap gap-2 align-items-center">
                 <Button onClick={handleExport} disabled={isProcessing}>
                     {isProcessing ? (
