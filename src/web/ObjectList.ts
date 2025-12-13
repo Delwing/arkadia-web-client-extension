@@ -103,7 +103,7 @@ export default class ObjectList {
             pointerType === "mouse" || (pointerType === "" && !this.isMobile);
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot")
         ) {
             return;
         }
@@ -207,6 +207,28 @@ export default class ObjectList {
         if (target.closest(".objects-list-controls")) {
             return;
         }
+        // Handle attack target dot click (leader only, /wz command)
+        const attackDotEl = target.closest(
+            ".target-dot-attack[data-object-num]"
+        ) as HTMLElement | null;
+        if (attackDotEl) {
+            const num = attackDotEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/wz ${num}`);
+            }
+            return;
+        }
+        // Handle defense target dot click (leader only, /wa command)
+        const defenseDotEl = target.closest(
+            ".target-dot-defense[data-object-num]"
+        ) as HTMLElement | null;
+        if (defenseDotEl) {
+            const num = defenseDotEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/wa ${num}`);
+            }
+            return;
+        }
         const numEl = target.closest(
             ".object-num[data-object-num]"
         ) as HTMLElement | null;
@@ -282,11 +304,20 @@ export default class ObjectList {
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut);
             const isPlayer = obj.shortcut === '@';
+            // Target indicator dot - only visible for team leader
+            const isLeader = tm?.isLeader?.();
+            const isTeammateForDot = tm?.isInTeam?.(obj.desc || "");
             let prefix = "  ";
-            if (obj.attack_target) {
-                prefix = `<span style="color:orangered">>></span>`;
-            } else if (obj.defense_target) {
-                prefix = `<span style="color:greenyellow">>></span>`;
+            if (isLeader) {
+                if (isPlayer || isTeammateForDot) {
+                    // Self or teammate - defense target dot (greenyellow), command /wa
+                    const activeClass = obj.defense_target ? "target-dot-active" : "";
+                    prefix = `<span class="target-dot target-dot-defense ${activeClass}" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226;</span> `;
+                } else {
+                    // Enemy - attack target dot (orangered), command /wz
+                    const activeClass = obj.attack_target ? "target-dot-active" : "";
+                    prefix = `<span class="target-dot target-dot-attack ${activeClass}" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226;</span> `;
+                }
             }
             const isNextQueued =
                 !isPlayer &&
@@ -325,7 +356,7 @@ export default class ObjectList {
 
             // Build description with filter overrides
             let descriptionColor: string | undefined;
-            let descClasses = [] as string[];
+            const descClasses = [] as string[];
 
             // Default color logic
             if (!isPlayer) {
@@ -657,6 +688,17 @@ html, body {
 #objects-list-pip .object-num,
 #objects-list-pip .object-desc {
     cursor: pointer;
+}
+#objects-list-pip .target-dot {
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.15s ease;
+}
+#objects-list-pip .target-dot:hover {
+    opacity: 1;
+}
+#objects-list-pip .target-dot.target-dot-active {
+    opacity: 1;
 }
 #objects-list-pip .team-not-attacking {
     font-style: italic;
