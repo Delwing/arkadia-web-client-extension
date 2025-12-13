@@ -5,6 +5,7 @@ import {
     mockMagicKeysDownload,
     mockMagicsDownload,
     mockMapDownloads,
+    mockMapReleaseVersion,
     mockNpcDownload,
     mockPeopleDownload,
     getCurrentCommitSha,
@@ -15,6 +16,7 @@ import {
 const test = base.extend({
     context: async ({context}, use) => {
         await mockMapDownloads(context);
+        await mockMapReleaseVersion(context);
         await mockMagicsDownload(context);
         await mockMagicKeysDownload(context);
         await mockNpcDownload(context);
