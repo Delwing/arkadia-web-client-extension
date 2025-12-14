@@ -207,25 +207,27 @@ export default class ObjectList {
         if (target.closest(".objects-list-controls")) {
             return;
         }
-        // Handle attack target dot click (leader only, /wz command)
+        // Handle attack target dot click (leader only, /wa to mark or /ra to order attack)
         const attackDotEl = target.closest(
             ".target-dot-attack[data-object-num]"
         ) as HTMLElement | null;
         if (attackDotEl) {
             const num = attackDotEl.getAttribute("data-object-num");
             if (num) {
-                this.client.sendCommand(`/wz ${num}`);
+                const isActive = attackDotEl.classList.contains("target-dot-active");
+                this.client.sendCommand(isActive ? "/ra" : `/wa ${num}`);
             }
             return;
         }
-        // Handle defense target dot click (leader only, /wa command)
+        // Handle defense target dot click (leader only, /wz to mark or /rz to order shield)
         const defenseDotEl = target.closest(
             ".target-dot-defense[data-object-num]"
         ) as HTMLElement | null;
         if (defenseDotEl) {
             const num = defenseDotEl.getAttribute("data-object-num");
             if (num) {
-                this.client.sendCommand(`/wa ${num}`);
+                const isActive = defenseDotEl.classList.contains("target-dot-active");
+                this.client.sendCommand(isActive ? "/rz" : `/wz ${num}`);
             }
             return;
         }
@@ -304,19 +306,38 @@ export default class ObjectList {
         const lines = objects.map((obj: any) => {
             const num = String(obj.shortcut);
             const isPlayer = obj.shortcut === '@';
-            // Target indicator dot - only visible for team leader
+            // Target indicators
+            let prefix = "  ";
             const isLeader = tm?.isLeader?.();
             const isTeammateForDot = tm?.isInTeam?.(obj.desc || "");
-            let prefix = "  ";
+
             if (isLeader) {
+                // Leader sees clickable indicators
                 if (isPlayer || isTeammateForDot) {
-                    // Self or teammate - defense target dot (greenyellow), command /wa
-                    const activeClass = obj.defense_target ? "target-dot-active" : "";
-                    prefix = `<span class="target-dot target-dot-defense ${activeClass}" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226;</span> `;
+                    // Self or teammate - defense target (greenyellow), command /wz
+                    if (obj.defense_target) {
+                        // Active - show >> that can be clicked to remove
+                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">>></span>`;
+                    } else {
+                        // Not active - show dot that can be clicked to set
+                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226;</span> `;
+                    }
                 } else {
-                    // Enemy - attack target dot (orangered), command /wz
-                    const activeClass = obj.attack_target ? "target-dot-active" : "";
-                    prefix = `<span class="target-dot target-dot-attack ${activeClass}" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226;</span> `;
+                    // Enemy - attack target (orangered), command /wa
+                    if (obj.attack_target) {
+                        // Active - show >> that can be clicked to remove
+                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">>></span>`;
+                    } else {
+                        // Not active - show dot that can be clicked to set
+                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226;</span> `;
+                    }
+                }
+            } else {
+                // Non-leaders see >> when target is set (not clickable)
+                if (obj.attack_target) {
+                    prefix = `<span style="color:orangered">>></span>`;
+                } else if (obj.defense_target) {
+                    prefix = `<span style="color:greenyellow">>></span>`;
                 }
             }
             const isNextQueued =

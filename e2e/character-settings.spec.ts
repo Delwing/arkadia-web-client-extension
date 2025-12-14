@@ -212,9 +212,9 @@ test.describe('Character settings', () => {
         // Open options and verify UI shows SecondChar's settings
         modal = await openOptions(page);
 
-        // Wait for the alert to show the character name
+        // Wait for the alert to show the character name (formatted with first letter uppercase, rest lowercase)
         const characterAlert = modal.locator('.alert-info');
-        await expect(characterAlert).toContainText('SecondChar');
+        await expect(characterAlert).toContainText('Secondchar');
 
         // Verify the UI reflects SecondChar's settings
         await expect(
@@ -248,12 +248,12 @@ test.describe('Character settings', () => {
         // Wait for settings to propagate
         await page.waitForTimeout(100);
 
-        // Verify settings switched back to FirstChar
+        // Verify settings switched back to FirstChar (formatted with first letter uppercase, rest lowercase)
         modal = await openOptions(page);
         await expect(
             modal.locator('.alert-info'),
-            'should show FirstChar in alert'
-        ).toContainText('FirstChar');
+            'should show Firstchar in alert'
+        ).toContainText('Firstchar');
         await expect(
             modal.locator('#shortenExits'),
             'shortenExits should be checked for FirstChar'
