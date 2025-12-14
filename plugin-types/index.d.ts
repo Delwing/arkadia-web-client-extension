@@ -1846,6 +1846,139 @@ export interface ObjectListFiltersApi {
 }
 
 /**
+ * Button Macros API - Register custom button macros
+ *
+ * Allows plugins to define custom macros that can be assigned to mobile and desktop buttons.
+ * Macros can be stateless (simple click actions) or stateful (toggle/mode buttons).
+ */
+
+export interface ButtonMacrosApi {
+    /**
+     * Register a custom button macro
+     *
+     * @param options - Macro configuration
+     * @param options.id - Unique identifier (will be prefixed with "plugin:")
+     * @param options.label - Display label shown in button configuration
+     * @param options.onClick - Handler called when button is clicked
+     * @param options.configFields - Optional custom configuration fields
+     * @param options.states - For stateful macros: array of possible states
+     * @param options.initialState - Initial state ID (defaults to first state)
+     *
+     * @example Simple macro
+     * ```typescript
+     * api.buttonMacros.register({
+     *   id: "myAction",
+     *   label: "My Custom Action",
+     *   onClick: (button, client, config) => {
+     *     client.sendCommand(config.command || "look");
+     *   },
+     *   configFields: [
+     *     { name: "command", type: "text", label: "Command" }
+     *   ]
+     * });
+     * ```
+     *
+     * @example Stateful toggle macro
+     * ```typescript
+     * api.buttonMacros.register({
+     *   id: "autoHeal",
+     *   label: "Auto Heal Toggle",
+     *   states: [
+     *     { id: "off", label: "OFF", color: "#666666" },
+     *     { id: "on", label: "ON", color: "#00ff00" }
+     *   ],
+     *   initialState: "off",
+     *   onClick: (ctx) => {
+     *     // ctx.stateCtx is available for stateful macros
+     *     ctx.stateCtx.cycleState(); // Toggle to next state
+     *     if (ctx.stateCtx.state === "off") {
+     *       // Turning on
+     *       ctx.client.sendCommand("autoheal on");
+     *     } else {
+     *       // Turning off
+     *       ctx.client.sendCommand("autoheal off");
+     *     }
+     *   }
+     * });
+     * ```
+     *
+     * @example Stateful mode macro
+     * ```typescript
+     * api.buttonMacros.register({
+     *   id: "combatMode",
+     *   label: "Combat Mode",
+     *   states: [
+     *     { id: "defensive", label: "DEF", color: "#0066ff" },
+     *     { id: "balanced", label: "BAL", color: "#ffff00" },
+     *     { id: "aggressive", label: "AGR", color: "#ff0000" }
+     *   ],
+     *   onClick: (ctx) => {
+     *     ctx.stateCtx.cycleState();
+     *     ctx.client.sendCommand(`combat ${ctx.stateCtx.state}`);
+     *   }
+     * });
+     * ```
+     */
+    register(options: {
+        id: string;
+        label: string;
+        onClick: ((context: ButtonMacroClickContext) => void) | ((button: ButtonSetting, client: Client, config: Record<string, any>) => void);
+        configFields?: MacroConfigField[];
+        states?: MacroState[];
+        initialState?: string;
+    }): void;
+    /**
+     * Unregister a previously registered button macro
+     * @param id - Macro ID (without "plugin:" prefix)
+     */
+    unregister(id: string): void;
+}
+
+/**
+ * Trigger Macros API - Register custom trigger macros
+ *
+ * Allows plugins to define custom macros that can be used in user triggers.
+ */
+
+export interface TriggerMacrosApi {
+    /**
+     * Register a custom trigger macro
+     *
+     * @param options - Macro configuration
+     * @param options.id - Unique identifier (will be prefixed with "plugin:")
+     * @param options.label - Display label shown in trigger configuration
+     * @param options.onMatch - Handler called when trigger pattern matches
+     * @param options.configFields - Optional custom configuration fields
+     *
+     * @example
+     * ```typescript
+     * api.triggerMacros.register({
+     *   id: "customHighlight",
+     *   label: "Custom Highlight",
+     *   onMatch: (context) => {
+     *     const color = context.config.color || "#ff0000";
+     *     context.line.color(context.matchRange, api.colors.fromHex(color));
+     *   },
+     *   configFields: [
+     *     { name: "color", type: "text", label: "Color (hex)", defaultValue: "#ff0000" }
+     *   ]
+     * });
+     * ```
+     */
+    register(options: {
+        id: string;
+        label: string;
+        onMatch: (context: TriggerMacroContext) => void;
+        configFields?: MacroConfigField[];
+    }): void;
+    /**
+     * Unregister a previously registered trigger macro
+     * @param id - Macro ID (without "plugin:" prefix)
+     */
+    unregister(id: string): void;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -1950,6 +2083,10 @@ export interface PluginApi {
     herbs: HerbsApi;
     /** Object list filters - customize object list entry rendering */
     objectListFilters: ObjectListFiltersApi;
+    /** Button macros - register custom button macros */
+    buttonMacros: ButtonMacrosApi;
+    /** Trigger macros - register custom trigger macros */
+    triggerMacros: TriggerMacrosApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *
