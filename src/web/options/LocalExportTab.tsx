@@ -97,10 +97,10 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
             anchor.download = filename;
             anchor.click();
             URL.revokeObjectURL(url);
-            setStatus("Eksport zakoczony sukcesem.");
+            setStatus("Eksport zakończony sukcesem.");
         } catch (err) {
             console.error("Failed to export settings", err);
-            setError("Nie udalo sie wyeksportowac danych.");
+            setError("Nie udało się wyeksportować danych.");
         } finally {
             setIsProcessing(false);
         }
@@ -126,11 +126,11 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                 throw new Error("invalid");
             }
             await applyImportedData(parsed as ExportPayload);
-            setStatus("Import zakoczony sukcesem. Niektore ustawienia moga wymagac odswiezenia strony.");
+            setStatus("Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.");
             refreshCharacters();
         } catch (err) {
             console.error("Failed to import settings", err);
-            setError("Nie udalo sie zaimportowac danych.");
+            setError("Nie udało się zaimportować danych.");
         } finally {
             setIsProcessing(false);
         }
@@ -163,7 +163,7 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                                 style={{ fontSize: "0.75rem" }}
                                 onClick={() => handleToggleAll(false)}
                             >
-                                Zadna
+                                Żadna
                             </Button>
                         </div>
                     )}
