@@ -1222,7 +1222,7 @@ function ExportImport() {
                                 key={name}
                                 type="checkbox"
                                 id={`export-character-${name}`}
-                                label={name}
+                                label={name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()}
                                 checked={!!selection[name]}
                                 onChange={e => setSelection(prev => ({...prev, [name]: e.target.checked}))}
                             />

@@ -117,7 +117,7 @@ export default function CharacterManagement() {
                     <tbody>
                     {characters.map(name => (
                         <tr key={name}>
-                            <td>{name}</td>
+                            <td>{name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()}</td>
                             <td className="text-center text-muted">{keyCounts[name] || 0}</td>
                             <td>
                                 <Button

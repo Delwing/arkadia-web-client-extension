@@ -115,7 +115,7 @@ function CharacterSettings() {
             ) : (
                 char && (
                     <div className="alert alert-info py-2" role="alert">
-                        Ustawienia dotyczą postaci: <strong>{char}</strong>
+                        Ustawienia dotyczą postaci: <strong>{char.charAt(0).toUpperCase() + char.slice(1).toLowerCase()}</strong>
                     </div>
                 )
             )}
