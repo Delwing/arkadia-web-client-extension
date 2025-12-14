@@ -138,14 +138,14 @@
         </div>
     </div>
     <div id="export-import-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable h-100">
+            <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Eksport i import ustawień</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div id="export-import-root"></div>
+                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
+                    <div id="export-import-root" class="h-100 flex-grow-1 overflow-hidden p-3" style="min-height:0;"></div>
                 </div>
             </div>
         </div>
