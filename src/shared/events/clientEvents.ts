@@ -207,6 +207,8 @@ export interface KnownEvents {
     "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };
+    "pluginButtonMacrosChanged": void;
+    "pluginTriggerMacrosChanged": void;
 }
 
 export interface ObjectData {

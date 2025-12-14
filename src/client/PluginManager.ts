@@ -49,7 +49,7 @@ export class PluginManager {
         // It's a proper plugin with init method
         try {
           // Create a PluginApi instance for this plugin
-          const apiInstance = new PluginApiImpl(this.client)
+          const apiInstance = new PluginApiImpl(this.client, identifier)
           plugin.apiInstance = apiInstance
 
           // Initialize plugin with the API

@@ -15,6 +15,12 @@ import {
     Settings,
 } from "../mobileButtonSettings";
 import {getClientInstance} from "@shared/runtime";
+import {
+    getRegisteredButtonMacros,
+    isButtonMacroAvailable,
+    type PluginButtonMacro,
+} from "@modules/core/pluginButtonMacroRegistry";
+import eventBus from "@modules/core/eventBus";
 
 import ButtonGrid, {Mode} from "./ButtonGrid";
 
@@ -98,6 +104,7 @@ function MobileButtons() {
     const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+    const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
     const [view, setView] = useState<Mode>('solo');
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
@@ -111,6 +118,15 @@ function MobileButtons() {
 
     useEffect(() => {
         loadSettings().then(setSettings);
+        setPluginMacros(getRegisteredButtonMacros());
+
+        const handleMacrosChanged = () => {
+            setPluginMacros(getRegisteredButtonMacros());
+        };
+        eventBus.on('pluginButtonMacrosChanged', handleMacrosChanged);
+        return () => {
+            eventBus.off('pluginButtonMacrosChanged', handleMacrosChanged);
+        };
     }, []);
     const notEditable = ['buttons-toggle'];
 
@@ -478,10 +494,10 @@ function MobileButtons() {
                         <Form.Label>Makro</Form.Label>
                         <Form.Select
                             size="sm"
-                            className="mobile-button-macro"
+                            className={`mobile-button-macro ${!isButtonMacroAvailable(activeCfg.macro) ? 'border-warning' : ''}`}
                             value={activeCfg.macro}
                             onChange={e => {
-                                const val = e.target.value as MacroType;
+                                const val = e.target.value;
                                 if (val === 'empty') {
                                     makeBlank(active!.set, active!.id);
                                 } else {
@@ -492,7 +508,24 @@ function MobileButtons() {
                             {macroOptions.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
+                            {pluginMacros.length > 0 && (
+                                <optgroup label="Makra z wtyczek">
+                                    {pluginMacros.map(pm => (
+                                        <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            {activeCfg.macro.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macro) && (
+                                <option value={activeCfg.macro} disabled>
+                                    {activeCfg.macro} (wtyczka niedostepna)
+                                </option>
+                            )}
                         </Form.Select>
+                        {!isButtonMacroAvailable(activeCfg.macro) && (
+                            <Form.Text className="text-warning">
+                                Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                            </Form.Text>
+                        )}
                     </Form.Group>
                     {activeCfg.macro !== 'empty' && (
                         <Form.Group className="form-label mb-2">
@@ -642,6 +675,61 @@ function MobileButtons() {
                             </Form.Select>
                         </Form.Group>
                     )}
+                    {/* Plugin macro config fields */}
+                    {activeCfg.macro.startsWith('plugin:') && (() => {
+                        const pluginMacro = pluginMacros.find(pm => pm.id === activeCfg.macro);
+                        if (!pluginMacro?.configFields?.length) return null;
+                        const config = activeCfg.pluginConfig || {};
+                        return pluginMacro.configFields.map(field => (
+                            <Form.Group key={field.name} className="form-label mb-2">
+                                <Form.Label>{field.label}</Form.Label>
+                                {field.type === 'text' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="text"
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                    />
+                                )}
+                                {field.type === 'textarea' && (
+                                    <Form.Control
+                                        as="textarea"
+                                        size="sm"
+                                        rows={2}
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                    />
+                                )}
+                                {field.type === 'number' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="number"
+                                        value={config[field.name] ?? field.defaultValue ?? 0}
+                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: Number(e.target.value) })}
+                                    />
+                                )}
+                                {field.type === 'select' && field.options && (
+                                    <Form.Select
+                                        size="sm"
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                    >
+                                        {field.options.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
+                                {field.type === 'checkbox' && (
+                                    <Form.Check
+                                        id={`plugin-config-mobile-${active!.id}-${field.name}`}
+                                        type="checkbox"
+                                        checked={config[field.name] ?? field.defaultValue ?? false}
+                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.checked })}
+                                    />
+                                )}
+                            </Form.Group>
+                        ));
+                    })()}
                 </div>
             )}
             <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mt-2">

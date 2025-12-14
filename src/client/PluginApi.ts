@@ -48,6 +48,22 @@ import {
   type EntryContent,
   type ObjectData
 } from "@web/objectListFilters";
+import {
+  registerButtonMacro,
+  unregisterButtonMacro,
+  type PluginButtonMacro,
+  type MacroConfigField,
+  type MacroState,
+  type MacroStateContext,
+  type ButtonMacroClickContext
+} from "@modules/core/pluginButtonMacroRegistry";
+import {
+  registerTriggerMacro,
+  unregisterTriggerMacro,
+  type PluginTriggerMacro,
+  type TriggerMacroContext
+} from "@modules/core/pluginTriggerMacroRegistry";
+import type { ButtonSetting } from "@web/mobileButtonSettings";
 
 // Re-export filter types for plugin developers
 export type {
@@ -57,6 +73,16 @@ export type {
   EntryStyle,
   EntryContent,
   ObjectData
+};
+
+// Re-export macro types for plugin developers
+export type {
+  MacroConfigField,
+  MacroState,
+  MacroStateContext,
+  ButtonMacroClickContext,
+  TriggerMacroContext,
+  ButtonSetting
 };
 
 // Event system types
@@ -1023,6 +1049,139 @@ export interface ObjectListFiltersApi {
 }
 
 /**
+ * Button Macros API - Register custom button macros
+ *
+ * Allows plugins to define custom macros that can be assigned to mobile and desktop buttons.
+ * Macros can be stateless (simple click actions) or stateful (toggle/mode buttons).
+ */
+export interface ButtonMacrosApi {
+  /**
+   * Register a custom button macro
+   *
+   * @param options - Macro configuration
+   * @param options.id - Unique identifier (will be prefixed with "plugin:")
+   * @param options.label - Display label shown in button configuration
+   * @param options.onClick - Handler called when button is clicked
+   * @param options.configFields - Optional custom configuration fields
+   * @param options.states - For stateful macros: array of possible states
+   * @param options.initialState - Initial state ID (defaults to first state)
+   *
+   * @example Simple macro
+   * ```typescript
+   * api.buttonMacros.register({
+   *   id: "myAction",
+   *   label: "My Custom Action",
+   *   onClick: (button, client, config) => {
+   *     client.sendCommand(config.command || "look");
+   *   },
+   *   configFields: [
+   *     { name: "command", type: "text", label: "Command" }
+   *   ]
+   * });
+   * ```
+   *
+   * @example Stateful toggle macro
+   * ```typescript
+   * api.buttonMacros.register({
+   *   id: "autoHeal",
+   *   label: "Auto Heal Toggle",
+   *   states: [
+   *     { id: "off", label: "OFF", color: "#666666" },
+   *     { id: "on", label: "ON", color: "#00ff00" }
+   *   ],
+   *   initialState: "off",
+   *   onClick: (ctx) => {
+   *     // ctx.stateCtx is available for stateful macros
+   *     ctx.stateCtx.cycleState(); // Toggle to next state
+   *     if (ctx.stateCtx.state === "off") {
+   *       // Turning on
+   *       ctx.client.sendCommand("autoheal on");
+   *     } else {
+   *       // Turning off
+   *       ctx.client.sendCommand("autoheal off");
+   *     }
+   *   }
+   * });
+   * ```
+   *
+   * @example Stateful mode macro
+   * ```typescript
+   * api.buttonMacros.register({
+   *   id: "combatMode",
+   *   label: "Combat Mode",
+   *   states: [
+   *     { id: "defensive", label: "DEF", color: "#0066ff" },
+   *     { id: "balanced", label: "BAL", color: "#ffff00" },
+   *     { id: "aggressive", label: "AGR", color: "#ff0000" }
+   *   ],
+   *   onClick: (ctx) => {
+   *     ctx.stateCtx.cycleState();
+   *     ctx.client.sendCommand(`combat ${ctx.stateCtx.state}`);
+   *   }
+   * });
+   * ```
+   */
+  register(options: {
+    id: string;
+    label: string;
+    onClick: ((context: ButtonMacroClickContext) => void) | ((button: ButtonSetting, client: Client, config: Record<string, any>) => void);
+    configFields?: MacroConfigField[];
+    states?: MacroState[];
+    initialState?: string;
+  }): void;
+
+  /**
+   * Unregister a previously registered button macro
+   * @param id - Macro ID (without "plugin:" prefix)
+   */
+  unregister(id: string): void;
+}
+
+/**
+ * Trigger Macros API - Register custom trigger macros
+ *
+ * Allows plugins to define custom macros that can be used in user triggers.
+ */
+export interface TriggerMacrosApi {
+  /**
+   * Register a custom trigger macro
+   *
+   * @param options - Macro configuration
+   * @param options.id - Unique identifier (will be prefixed with "plugin:")
+   * @param options.label - Display label shown in trigger configuration
+   * @param options.onMatch - Handler called when trigger pattern matches
+   * @param options.configFields - Optional custom configuration fields
+   *
+   * @example
+   * ```typescript
+   * api.triggerMacros.register({
+   *   id: "customHighlight",
+   *   label: "Custom Highlight",
+   *   onMatch: (context) => {
+   *     const color = context.config.color || "#ff0000";
+   *     context.line.color(context.matchRange, api.colors.fromHex(color));
+   *   },
+   *   configFields: [
+   *     { name: "color", type: "text", label: "Color (hex)", defaultValue: "#ff0000" }
+   *   ]
+   * });
+   * ```
+   */
+  register(options: {
+    id: string;
+    label: string;
+    onMatch: (context: TriggerMacroContext) => void;
+    configFields?: MacroConfigField[];
+  }): void;
+
+  /**
+   * Unregister a previously registered trigger macro
+   * @param id - Macro ID (without "plugin:" prefix)
+   */
+  unregister(id: string): void;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -1126,6 +1285,10 @@ export interface PluginApi {
   herbs: HerbsApi;
   /** Object list filters - customize object list entry rendering */
   objectListFilters: ObjectListFiltersApi;
+  /** Button macros - register custom button macros */
+  buttonMacros: ButtonMacrosApi;
+  /** Trigger macros - register custom trigger macros */
+  triggerMacros: TriggerMacrosApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1147,10 +1310,13 @@ export interface PluginApi {
  */
 export class PluginApiImpl implements PluginApi {
   private client: Client;
+  private pluginId: string;
   private aliasMap: Map<string, PluginAlias> = new Map();
   private popupHandles: Set<PopupHandle> = new Set();
   private popupMenuEntryIds: Set<string> = new Set();
   private contextMenuEntryIds: Set<string> = new Set();
+  private buttonMacroIds: Set<string> = new Set();
+  private triggerMacroIds: Set<string> = new Set();
 
   public triggers: TriggersApi;
   public aliases: AliasesApi;
@@ -1170,10 +1336,13 @@ export class PluginApiImpl implements PluginApi {
   public magicKeys: MagicKeysApi;
   public herbs: HerbsApi;
   public objectListFilters: ObjectListFiltersApi;
+  public buttonMacros: ButtonMacrosApi;
+  public triggerMacros: TriggerMacrosApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
-  constructor(client: Client) {
+  constructor(client: Client, pluginId: string = 'unknown') {
     this.client = client;
+    this.pluginId = pluginId;
 
     // Initialize namespaced APIs
     this.triggers = this.createTriggersApi();
@@ -1194,6 +1363,8 @@ export class PluginApiImpl implements PluginApi {
     this.magicKeys = this.createMagicKeysApi();
     this.herbs = this.createHerbsApi();
     this.objectListFilters = this.createObjectListFiltersApi();
+    this.buttonMacros = this.createButtonMacrosApi();
+    this.triggerMacros = this.createTriggerMacrosApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -1550,12 +1721,68 @@ export class PluginApiImpl implements PluginApi {
   }
 
   // ============================================================================
+  // Button Macros API
+  // ============================================================================
+
+  private createButtonMacrosApi(): ButtonMacrosApi {
+    return {
+      register: (options) => {
+        const fullId = `plugin:${this.pluginId}:${options.id}`;
+        const macro: PluginButtonMacro = {
+          id: fullId,
+          label: options.label,
+          pluginId: this.pluginId,
+          onClick: options.onClick,
+          configFields: options.configFields,
+          states: options.states,
+          initialState: options.initialState
+        };
+        registerButtonMacro(macro);
+        this.buttonMacroIds.add(fullId);
+      },
+
+      unregister: (id) => {
+        const fullId = `plugin:${this.pluginId}:${id}`;
+        unregisterButtonMacro(fullId);
+        this.buttonMacroIds.delete(fullId);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Trigger Macros API
+  // ============================================================================
+
+  private createTriggerMacrosApi(): TriggerMacrosApi {
+    return {
+      register: (options) => {
+        const fullId = `plugin:${this.pluginId}:${options.id}`;
+        const macro: PluginTriggerMacro = {
+          id: fullId,
+          label: options.label,
+          pluginId: this.pluginId,
+          onMatch: options.onMatch,
+          configFields: options.configFields
+        };
+        registerTriggerMacro(macro);
+        this.triggerMacroIds.add(fullId);
+      },
+
+      unregister: (id) => {
+        const fullId = `plugin:${this.pluginId}:${id}`;
+        unregisterTriggerMacro(fullId);
+        this.triggerMacroIds.delete(fullId);
+      }
+    };
+  }
+
+  // ============================================================================
   // Cleanup
   // ============================================================================
 
   /**
    * Cleanup method called when plugin is unloaded
-   * Removes all registered aliases
+   * Removes all registered aliases, macros, and UI elements
    */
   cleanup(): void {
     // Remove all aliases registered by this plugin
@@ -1578,6 +1805,18 @@ export class PluginApiImpl implements PluginApi {
       unregisterContextMenuEntry(id);
     }
     this.contextMenuEntryIds.clear();
+
+    // Remove all button macros registered by this plugin
+    for (const id of Array.from(this.buttonMacroIds)) {
+      unregisterButtonMacro(id);
+    }
+    this.buttonMacroIds.clear();
+
+    // Remove all trigger macros registered by this plugin
+    for (const id of Array.from(this.triggerMacroIds)) {
+      unregisterTriggerMacro(id);
+    }
+    this.triggerMacroIds.clear();
   }
 
   private createPopup(title: string, body: PopupContent): Promise<PopupHandle> {

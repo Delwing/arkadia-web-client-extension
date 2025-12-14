@@ -3,14 +3,23 @@ import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@modules/core/storage";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
+import {
+    getRegisteredTriggerMacros,
+    isTriggerMacroAvailable,
+    type PluginTriggerMacro,
+} from "@modules/core/pluginTriggerMacroRegistry";
+import eventBus from "@modules/core/eventBus";
+
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
+    type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
     color?: string;
     to?: string;
     command?: string;
     soundKey?: string;
     label?: string;
+    pluginConfig?: Record<string, any>;
 }
 
 export interface UserTrigger {
@@ -41,12 +50,14 @@ function MacroEditor({
     onRemove,
     sounds,
     onRequestSoundUpload,
+    pluginMacros,
 }: {
     macro: UserMacro;
     onChange: (m: UserMacro) => void;
     onRemove: () => void;
     sounds: CustomSound[];
     onRequestSoundUpload: () => Promise<string | undefined>;
+    pluginMacros: PluginTriggerMacro[];
 }) {
     return (
         <div className="d-flex align-items-start gap-2 mb-1">
@@ -54,8 +65,9 @@ function MacroEditor({
                 <Form.Select
                     size="sm"
                     value={macro.type}
+                    className={!isTriggerMacroAvailable(macro.type) ? 'border-warning' : ''}
                     onChange={e => {
-                        const nextType = e.target.value as UserMacro['type'];
+                        const nextType = e.target.value;
                         onChange({
                             ...macro,
                             type: nextType,
@@ -65,13 +77,30 @@ function MacroEditor({
                 >
                     <option value="uppercase">Wielkie litery</option>
                     <option value="color">Koloruj</option>
-                    <option value="replace">Zamień</option>
-                    <option value="beep">Dźwięk</option>
+                    <option value="replace">Zamien</option>
+                    <option value="beep">Dzwiek</option>
                     <option value="command">Komenda</option>
                     <option value="slowBlink">Wolne miganie</option>
                     <option value="rapidBlink">Szybkie miganie</option>
                     <option value="functionalBind">Funkcyjny bind</option>
+                    {pluginMacros.length > 0 && (
+                        <optgroup label="Makra z wtyczek">
+                            {pluginMacros.map(pm => (
+                                <option key={pm.id} value={pm.id}>{pm.label}</option>
+                            ))}
+                        </optgroup>
+                    )}
+                    {macro.type.startsWith('plugin:') && !isTriggerMacroAvailable(macro.type) && (
+                        <option value={macro.type} disabled>
+                            {macro.type} (wtyczka niedostepna)
+                        </option>
+                    )}
                 </Form.Select>
+                {!isTriggerMacroAvailable(macro.type) && (
+                    <Form.Text className="text-warning d-block">
+                        Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                    </Form.Text>
+                )}
                 {macro.type === 'beep' && (
                     <Form.Select
                         className="mt-1"
@@ -146,6 +175,58 @@ function MacroEditor({
                     style={{ width: '100%', maxWidth: '8rem' }}
                 />
             )}
+            {/* Plugin macro config fields */}
+            {macro.type.startsWith('plugin:') && (() => {
+                const pluginMacro = pluginMacros.find(pm => pm.id === macro.type);
+                if (!pluginMacro?.configFields?.length) return null;
+                const config = macro.pluginConfig || {};
+                return (
+                    <div className="d-flex flex-column gap-1">
+                        {pluginMacro.configFields.map(field => (
+                            <div key={field.name}>
+                                {field.type === 'text' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="text"
+                                        placeholder={field.label}
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => onChange({
+                                            ...macro,
+                                            pluginConfig: { ...config, [field.name]: e.target.value }
+                                        })}
+                                    />
+                                )}
+                                {field.type === 'number' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="number"
+                                        placeholder={field.label}
+                                        value={config[field.name] ?? field.defaultValue ?? 0}
+                                        onChange={e => onChange({
+                                            ...macro,
+                                            pluginConfig: { ...config, [field.name]: Number(e.target.value) }
+                                        })}
+                                    />
+                                )}
+                                {field.type === 'select' && field.options && (
+                                    <Form.Select
+                                        size="sm"
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => onChange({
+                                            ...macro,
+                                            pluginConfig: { ...config, [field.name]: e.target.value }
+                                        })}
+                                    >
+                                        {field.options.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                );
+            })()}
             <Button size="sm" variant="secondary" onClick={onRemove}><TiDelete /></Button>
         </div>
     );
@@ -160,6 +241,7 @@ function UserTriggers() {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState('');
     const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
+    const [pluginMacros, setPluginMacros] = useState<PluginTriggerMacro[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const pendingSoundResolver = useRef<((value?: string) => void) | null>(null);
     const customSoundsRef = useRef<CustomSound[]>([]);
@@ -167,6 +249,17 @@ function UserTriggers() {
     useEffect(() => {
         customSoundsRef.current = customSounds;
     }, [customSounds]);
+
+    useEffect(() => {
+        setPluginMacros(getRegisteredTriggerMacros());
+        const handleMacrosChanged = () => {
+            setPluginMacros(getRegisteredTriggerMacros());
+        };
+        eventBus.on('pluginTriggerMacrosChanged', handleMacrosChanged);
+        return () => {
+            eventBus.off('pluginTriggerMacrosChanged', handleMacrosChanged);
+        };
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -422,6 +515,7 @@ function UserTriggers() {
                                 onRemove={() => removeMacro(i)}
                                 sounds={customSounds}
                                 onRequestSoundUpload={requestSoundUpload}
+                                pluginMacros={pluginMacros}
                             />
                         ))}
                         <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>
@@ -467,6 +561,7 @@ function UserTriggers() {
                                             onRemove={() => removeMacro(i)}
                                             sounds={customSounds}
                                             onRequestSoundUpload={requestSoundUpload}
+                                            pluginMacros={pluginMacros}
                                         />
                                     ))}
                                     <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>

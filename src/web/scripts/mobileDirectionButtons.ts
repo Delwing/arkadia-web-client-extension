@@ -6,9 +6,15 @@ import {
     Settings,
     defaultFontColor,
     defaultBackground,
+    saveSettings as saveMobileButtonSettings,
 } from "../mobileButtonSettings";
 import {getItemSync, setItemSync} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
+import {
+    executeButtonMacro,
+    getButtonMacroDisplayInfo,
+    isStatefulMacro
+} from "@modules/core/pluginButtonMacroRegistry";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];
@@ -822,6 +828,8 @@ export default class MobileDirectionButtons {
         // Handle color syncing for special exit buttons
         let effectiveColor = cfg.color;
         let effectiveActiveColor = cfg.activeColor;
+        let effectiveLabel = cfg.label;
+
         if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
             // Find a direction button to sync colors from
             const directionButton = Object.values(this.buttonSettings).find(b => b.macro === 'kierunek');
@@ -831,8 +839,17 @@ export default class MobileDirectionButtons {
             }
         }
 
-        const isEmpty = cfg.macro === 'empty' || !cfg.label;
-        btn.textContent = isEmpty ? '' : cfg.label;
+        // Handle stateful plugin macros
+        if (cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+            const displayInfo = getButtonMacroDisplayInfo(cfg.macro, cfg.pluginConfig || {});
+            if (displayInfo) {
+                if (displayInfo.label) effectiveLabel = displayInfo.label;
+                if (displayInfo.color) effectiveColor = displayInfo.color;
+            }
+        }
+
+        const isEmpty = cfg.macro === 'empty' || !effectiveLabel;
+        btn.textContent = isEmpty ? '' : effectiveLabel;
         if (isEmpty) {
             btn.classList.add('empty');
             btn.style.backgroundColor = 'transparent';
@@ -997,6 +1014,24 @@ export default class MobileDirectionButtons {
                 case 'blockEnemy':
                     if (typeof cfg.enemySlot === 'number') {
                         this.client.blockEnemySlot(cfg.enemySlot);
+                    }
+                    break;
+                default:
+                    // Handle plugin macros
+                    if (cfg.macro.startsWith('plugin:')) {
+                        const onStateChange = (newState: string) => {
+                            // Update the button's pluginConfig with the new state
+                            const updatedConfig = { ...(cfg.pluginConfig || {}), __state: newState };
+                            cfg.pluginConfig = updatedConfig;
+
+                            // Save settings
+                            saveMobileButtonSettings({ buttons: this.buttonSettings });
+
+                            // Re-apply config to update display
+                            this.applyConfigToButton(id, newBtn);
+                        };
+
+                        executeButtonMacro(cfg.macro, cfg, this.client, cfg.pluginConfig || {}, onStateChange);
                     }
                     break;
             }

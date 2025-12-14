@@ -19,7 +19,7 @@ export type MacroType =
     | 'empty';
 
 export interface ButtonSetting {
-    macro: MacroType;
+    macro: MacroType | string;  // string allows plugin macros like "plugin:..."
     label: string;
     color: string;
     activeColor?: string;
@@ -28,6 +28,7 @@ export interface ButtonSetting {
     direction?: string;
     syncWithDirections?: boolean;
     enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
+    pluginConfig?: Record<string, any>;
 }
 
 export interface RadialCommandSetting {

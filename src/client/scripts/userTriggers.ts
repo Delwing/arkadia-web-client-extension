@@ -2,14 +2,18 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, TextRange} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
+import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
+
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
 
 export interface UserMacro {
-    type: 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
+    type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
     color?: string;
     to?: string;
     command?: string;
     soundKey?: string;
     label?: string;
+    pluginConfig?: Record<string, any>;
 }
 
 export interface UserTrigger {
@@ -64,6 +68,17 @@ function applyMacrosToMatch(
                     client.FunctionalBind.set(macro.label, () => {
                         client.sendCommand(macro.command!);
                     });
+                }
+                break;
+            default:
+                // Handle plugin trigger macros
+                if (macro.type.startsWith('plugin:')) {
+                    executeTriggerMacro(macro.type, {
+                        client,
+                        line,
+                        match,
+                        matchRange,
+                    }, macro.pluginConfig || {});
                 }
                 break;
         }

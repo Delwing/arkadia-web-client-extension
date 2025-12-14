@@ -1,17 +1,6 @@
 import storage from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
-
-export type DesktopMacroType =
-    | 'command'
-    | 'zList'
-    | 'zaList'
-    | 'wList'
-    | 'przeList'
-    | 'idzList'
-    | 'wesprzyj'
-    | 'moveMode'
-    | 'attackEnemy'
-    | 'blockEnemy';
+import { MacroType } from "./mobileButtonSettings";
 
 export type ListPosition = 'top' | 'bottom' | 'left' | 'right';
 export type ListGrowDirection = 'horizontal' | 'vertical';
@@ -19,7 +8,7 @@ export type ListGrowDirection = 'horizontal' | 'vertical';
 export interface DesktopButtonSetting {
     id: string;
     label: string;
-    macroType: DesktopMacroType;
+    macroType: MacroType | string;  // string allows plugin macros like "plugin:..."
     command: string;
     color: string;
     fontColor: string;
@@ -30,9 +19,11 @@ export interface DesktopButtonSetting {
     y: number;
     backgroundOpacity: number;
     enemySlot?: number;
+    direction?: string;
     listPosition?: ListPosition;
     listGrowDirection?: ListGrowDirection;
     listCloseOnlyByButton?: boolean;
+    pluginConfig?: Record<string, any>;
 }
 
 export interface DesktopButtonsSettings {
@@ -71,9 +62,10 @@ export function createDefaultSettings(): DesktopButtonsSettings {
     };
 }
 
-const validMacroTypes: DesktopMacroType[] = [
-    'command', 'zList', 'zaList', 'wList', 'przeList', 'idzList',
-    'wesprzyj', 'moveMode', 'attackEnemy', 'blockEnemy'
+const validMacroTypes: MacroType[] = [
+    'functional', 'zList', 'zaList', 'wList', 'przeList', 'idzList',
+    'command', 'specialExit', 'kierunek', 'wesprzyj', 'moveMode',
+    'toggleButtons', 'attackEnemy', 'blockEnemy', 'empty'
 ];
 
 function parseButton(raw: unknown): DesktopButtonSetting | null {
@@ -82,8 +74,10 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
     const id = typeof candidate.id === 'string' ? candidate.id : '';
     if (!id) return null;
     const label = typeof candidate.label === 'string' ? candidate.label : 'Nowy';
-    const macroType: DesktopMacroType = validMacroTypes.includes(candidate.macroType as DesktopMacroType)
-        ? candidate.macroType as DesktopMacroType
+    // Accept valid built-in macro types or plugin macros (starting with "plugin:")
+    const rawMacroType = typeof candidate.macroType === 'string' ? candidate.macroType : 'command';
+    const macroType: MacroType | string = validMacroTypes.includes(rawMacroType as MacroType) || rawMacroType.startsWith('plugin:')
+        ? rawMacroType
         : 'command';
     const command = typeof candidate.command === 'string' ? candidate.command : '';
     const color = typeof candidate.color === 'string' ? candidate.color : defaultButtonColor;
@@ -97,6 +91,7 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
         ? Math.min(1, Math.max(0, candidate.backgroundOpacity))
         : defaultBackgroundOpacity;
     const enemySlot = typeof candidate.enemySlot === 'number' ? candidate.enemySlot : undefined;
+    const direction = typeof candidate.direction === 'string' ? candidate.direction : undefined;
     const validListPositions: ListPosition[] = ['top', 'bottom', 'left', 'right'];
     const listPosition: ListPosition | undefined = validListPositions.includes(candidate.listPosition as ListPosition)
         ? candidate.listPosition as ListPosition
@@ -106,7 +101,8 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
         ? candidate.listGrowDirection as ListGrowDirection
         : undefined;
     const listCloseOnlyByButton = typeof candidate.listCloseOnlyByButton === 'boolean' ? candidate.listCloseOnlyByButton : undefined;
-    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, listPosition, listGrowDirection, listCloseOnlyByButton };
+    const pluginConfig = candidate.pluginConfig && typeof candidate.pluginConfig === 'object' ? candidate.pluginConfig as Record<string, any> : undefined;
+    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig };
 }
 
 export async function loadSettings(): Promise<DesktopButtonsSettings> {

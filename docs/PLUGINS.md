@@ -9,6 +9,8 @@ Klient Arkadia Web wspiera zewnętrzne pluginy jako moduły ES. Pluginy mogą ro
 - [Kolorowanie Tekstu Triggerami](#kolorowanie-tekstu-triggerami)
 - [Zaawansowane Przykłady](#zaawansowane-przykłady)
 - [Dokumentacja API](#dokumentacja-api)
+  - [Własne Makra Przycisków](#apibuttonmacros---własne-makra-przycisków)
+  - [Własne Makra Triggerów](#apitriggermacros---własne-makra-triggerów)
 - [Ładowanie Pluginów](#ładowanie-pluginów)
 - [Typy TypeScript](#typy-typescript)
 - [Kompatybilność Wsteczna](#kompatybilność-wsteczna)
@@ -692,6 +694,239 @@ buffer.createLinksForText(text, opts) // Stwórz linki dla wszystkich wystąpie�
 buffer.clone()                        // Sklonuj buffer
 buffer.clear()                        // Wyczyść buffer
 ```
+
+#### `api.buttonMacros` - Własne Makra Przycisków
+
+Pozwala pluginom definiować własne makra dla przycisków (mobilnych i desktopowych), które użytkownicy mogą wybrać w konfiguracji przycisków.
+
+```typescript
+// Zarejestruj makro przycisku
+api.buttonMacros.register({
+  id: "mojeMakro",              // Unikalny identyfikator (zostanie poprzedzony "plugin:")
+  label: "Moje Własne Makro",   // Etykieta wyświetlana w select box
+  onClick: (button, client, config) => {
+    // Wykonaj akcję przy kliknięciu przycisku
+    client.sendCommand(config.command || "domyslna komenda");
+  },
+  configFields: [               // Opcjonalne pola konfiguracji
+    {
+      name: "command",
+      type: "text",
+      label: "Komenda do wykonania",
+      defaultValue: "look"
+    }
+  ]
+});
+
+// Usuń makro
+api.buttonMacros.unregister("mojeMakro");
+```
+
+**Dostępne typy pól konfiguracji (`configFields`):**
+- `text` - Pole tekstowe jednoliniowe
+- `textarea` - Pole tekstowe wieloliniowe
+- `number` - Pole numeryczne
+- `checkbox` - Checkbox (true/false)
+- `select` - Lista rozwijana (wymaga `options`)
+
+**Przykład z różnymi typami pól:**
+```typescript
+api.buttonMacros.register({
+  id: "zaawansowaneMakro",
+  label: "Zaawansowane Makro",
+  onClick: (button, client, config) => {
+    if (config.enabled) {
+      for (let i = 0; i < config.repeat; i++) {
+        client.sendCommand(config.command);
+      }
+    }
+  },
+  configFields: [
+    { name: "command", type: "text", label: "Komenda" },
+    { name: "repeat", type: "number", label: "Powtórzenia", defaultValue: 1 },
+    { name: "enabled", type: "checkbox", label: "Włączone", defaultValue: true },
+    {
+      name: "target",
+      type: "select",
+      label: "Cel",
+      options: [
+        { value: "self", label: "Ja" },
+        { value: "enemy", label: "Wróg" },
+        { value: "ally", label: "Sojusznik" }
+      ]
+    }
+  ]
+});
+```
+
+**Uwagi:**
+- ID makra zostanie automatycznie poprzedzone `plugin:` (np. `plugin:mojeMakro`)
+- Makra są automatycznie usuwane przy wyładowaniu pluginu
+- Jeśli plugin jest wyładowany, przyciski z jego makrami pokażą ostrzeżenie w UI
+
+#### Makra Stanowe (Toggle/Tryby)
+
+Makra mogą mieć stan, który jest zachowywany między kliknięciami. Pozwala to tworzyć przyciski typu toggle (ON/OFF) lub przyciski cyklicznie przełączające tryby (jak wbudowany przycisk trybu ruchu).
+
+**Przykład: Prosty toggle (ON/OFF):**
+```typescript
+api.buttonMacros.register({
+  id: "autoHeal",
+  label: "Auto Leczenie",
+  states: [
+    { id: "off", label: "OFF", color: "#666666" },
+    { id: "on", label: "ON", color: "#00ff00" }
+  ],
+  initialState: "off",
+  onClick: (ctx) => {
+    // Najpierw przełącz stan
+    ctx.stateCtx!.cycleState();
+
+    // Wykonaj akcję na podstawie NOWEGO stanu
+    // (cycleState przełącza, więc sprawdzamy poprzedni stan)
+    if (ctx.stateCtx!.state === "off") {
+      ctx.client.sendCommand("autoheal wlacz");
+    } else {
+      ctx.client.sendCommand("autoheal wylacz");
+    }
+  }
+});
+```
+
+**Przykład: Przełącznik trybów (jak moveMode):**
+```typescript
+api.buttonMacros.register({
+  id: "combatMode",
+  label: "Tryb Walki",
+  states: [
+    { id: "defensive", label: "DEF", color: "#0066ff" },
+    { id: "balanced", label: "BAL", color: "#ffff00" },
+    { id: "aggressive", label: "AGR", color: "#ff0000" }
+  ],
+  initialState: "balanced",
+  onClick: (ctx) => {
+    // Przełącz na następny tryb
+    ctx.stateCtx!.cycleState();
+
+    // Pobierz nowy tryb (po cycleState)
+    const modes = ["defensive", "balanced", "aggressive"];
+    const nextIndex = (ctx.stateCtx!.stateIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
+
+    ctx.client.sendCommand(`tryb ${nextMode}`);
+  }
+});
+```
+
+**Kontekst stanowy (`stateCtx`):**
+- `stateCtx.state` - Aktualny identyfikator stanu
+- `stateCtx.stateIndex` - Indeks aktualnego stanu w tablicy states
+- `stateCtx.setState(id)` - Ustaw konkretny stan
+- `stateCtx.cycleState()` - Przełącz na następny stan (cyklicznie)
+
+**Właściwości stanu (`MacroState`):**
+- `id` - Unikalny identyfikator stanu
+- `label` - Etykieta wyświetlana na przycisku w tym stanie
+- `color` - Opcjonalny kolor tła przycisku w tym stanie (hex)
+
+**Uwagi dotyczące makr stanowych:**
+- Stan jest automatycznie zapisywany w konfiguracji przycisku
+- Przycisk automatycznie zmienia etykietę i kolor zgodnie z aktualnym stanem
+- Stan jest zachowywany po odświeżeniu strony
+- Jeśli `initialState` nie jest podany, używany jest pierwszy stan z tablicy
+
+#### `api.triggerMacros` - Własne Makra Triggerów
+
+Pozwala pluginom definiować własne makra dla triggerów użytkownika, które mogą modyfikować tekst lub wykonywać akcje przy dopasowaniu wzorca.
+
+```typescript
+// Zarejestruj makro triggera
+api.triggerMacros.register({
+  id: "mojeMakroTriggera",      // Unikalny identyfikator
+  label: "Moje Makro Triggera", // Etykieta wyświetlana w select box
+  onMatch: (context) => {
+    // context zawiera:
+    // - client: Client - instancja klienta
+    // - line: AnsiAwareBuffer - linia tekstu do modyfikacji
+    // - match: RegExpMatchArray - wynik dopasowania regex
+    // - matchRange: [number, number] - zakres dopasowania
+    // - config: Record<string, any> - konfiguracja użytkownika
+
+    // Przykład: pokoloruj dopasowanie i odtwórz dźwięk
+    const color = { foreground: { space: "hex", color: context.config.color || "#ff0000" } };
+    context.line.applyFormat(context.matchRange, color);
+    context.client.sendEvent("sound:play", { key: context.config.sound || "beep" });
+  },
+  configFields: [
+    { name: "color", type: "text", label: "Kolor (hex)", defaultValue: "#ff0000" },
+    {
+      name: "sound",
+      type: "select",
+      label: "Dźwięk",
+      options: [
+        { value: "beep", label: "Beep" },
+        { value: "alert", label: "Alert" },
+        { value: "notification", label: "Powiadomienie" }
+      ]
+    }
+  ]
+});
+
+// Usuń makro
+api.triggerMacros.unregister("mojeMakroTriggera");
+```
+
+**Context dostępny w `onMatch`:**
+- `context.client` - Instancja klienta do wysyłania komend/wydarzeń
+- `context.line` - AnsiAwareBuffer z tekstem linii (możesz modyfikować)
+- `context.match` - Wynik dopasowania regex (matches[0], matches[1], itp.)
+- `context.matchRange` - Zakres dopasowania [start, end] do kolorowania
+- `context.config` - Wartości konfiguracji ustawione przez użytkownika
+
+**Przykład: Makro z wieloma akcjami:**
+```typescript
+api.triggerMacros.register({
+  id: "alertZWalki",
+  label: "Alert z Walki",
+  onMatch: (context) => {
+    const { client, line, match, matchRange, config } = context;
+
+    // Pokoloruj tekst
+    if (config.highlight) {
+      line.applyFormat(matchRange, {
+        foreground: { space: "hex", color: config.highlightColor }
+      });
+    }
+
+    // Odtwórz dźwięk
+    if (config.playSound) {
+      client.sendEvent("sound:play", { key: "beep" });
+    }
+
+    // Wyślij komendę
+    if (config.autoCommand) {
+      client.sendCommand(config.autoCommand);
+    }
+
+    // Wyświetl powiadomienie
+    if (config.notify) {
+      client.sendEvent("notify", { text: `Dopasowano: ${match[0]}` });
+    }
+  },
+  configFields: [
+    { name: "highlight", type: "checkbox", label: "Podświetl", defaultValue: true },
+    { name: "highlightColor", type: "text", label: "Kolor", defaultValue: "#ff6600" },
+    { name: "playSound", type: "checkbox", label: "Odtwórz dźwięk", defaultValue: false },
+    { name: "autoCommand", type: "text", label: "Auto-komenda" },
+    { name: "notify", type: "checkbox", label: "Powiadomienie", defaultValue: false }
+  ]
+});
+```
+
+**Uwagi:**
+- ID makra zostanie automatycznie poprzedzone `plugin:` (np. `plugin:alertZWalki`)
+- Makra triggerów działają w kontekście triggerów użytkownika (Ustawienia → Triggery)
+- Jeśli plugin jest wyładowany, triggery z jego makrami wykonają się jako no-op (bez akcji)
 
 ### Popularne Kolory
 

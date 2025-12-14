@@ -8,6 +8,11 @@ import {
     ListPosition,
     saveSettings,
 } from "../desktopButtonSettings";
+import {
+    executeButtonMacro,
+    getButtonMacroDisplayInfo,
+    isStatefulMacro
+} from "@modules/core/pluginButtonMacroRegistry";
 
 const LONG_PRESS_DURATION = 500;
 
@@ -106,15 +111,28 @@ export default class DesktopButtons {
         const btn = document.createElement('button');
         btn.id = settings.id;
         btn.className = 'desktop-button';
-        btn.textContent = settings.label;
         btn.dataset.buttonId = settings.id;
+
+        // Get display info for stateful plugin macros
+        let displayLabel = settings.label;
+        let displayColor = settings.color;
+
+        if (settings.macroType.startsWith('plugin:') && isStatefulMacro(settings.macroType)) {
+            const displayInfo = getButtonMacroDisplayInfo(settings.macroType, settings.pluginConfig || {});
+            if (displayInfo) {
+                if (displayInfo.label) displayLabel = displayInfo.label;
+                if (displayInfo.color) displayColor = displayInfo.color;
+            }
+        }
+
+        btn.textContent = displayLabel;
 
         // Apply styles
         btn.style.left = `${settings.x}px`;
         btn.style.top = `${settings.y}px`;
         btn.style.width = `${settings.width}px`;
         btn.style.height = `${settings.height}px`;
-        btn.style.backgroundColor = hexToRgba(settings.color, settings.backgroundOpacity);
+        btn.style.backgroundColor = hexToRgba(displayColor, settings.backgroundOpacity);
         btn.style.color = settings.fontColor;
         btn.style.fontSize = `${settings.fontSize}px`;
 
@@ -311,6 +329,31 @@ export default class DesktopButtons {
         if (this.isDragging) {
             e.preventDefault();
             e.stopPropagation();
+            return;
+        }
+
+        // Handle plugin macros
+        if (settings.macroType.startsWith('plugin:')) {
+            const onStateChange = (newState: string) => {
+                // Update the button's pluginConfig with the new state
+                const updatedConfig = { ...(settings.pluginConfig || {}), __state: newState };
+
+                // Update settings
+                this.settings.buttons = this.settings.buttons.map(btn =>
+                    btn.id === settings.id ? { ...btn, pluginConfig: updatedConfig } : btn
+                );
+
+                // Also update the local settings reference
+                settings.pluginConfig = updatedConfig;
+
+                // Save settings
+                saveSettings(this.settings);
+
+                // Re-render to update the button display
+                this.render();
+            };
+
+            executeButtonMacro(settings.macroType, settings, this.client, settings.pluginConfig || {}, onStateChange);
             return;
         }
 

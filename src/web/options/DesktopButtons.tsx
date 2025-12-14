@@ -12,39 +12,61 @@ import {
     defaultWidth,
     DesktopButtonSetting,
     DesktopButtonsSettings,
-    DesktopMacroType,
     hexToRgba,
     ListGrowDirection,
     ListPosition,
     loadSettings,
     saveSettings,
 } from "../desktopButtonSettings";
+import { MacroType } from "../mobileButtonSettings";
+import {
+    getRegisteredButtonMacros,
+    isButtonMacroAvailable,
+    type PluginButtonMacro,
+    type MacroConfigField
+} from "@modules/core/pluginButtonMacroRegistry";
+import eventBus from "@modules/core/eventBus";
 
 const listMacros = ['zList', 'zaList', 'wList', 'przeList', 'idzList'];
 
-function isListMacro(macroType: DesktopMacroType): boolean {
+function isListMacro(macroType: string): boolean {
     return listMacros.includes(macroType);
 }
 
-const macroOptions: { value: DesktopMacroType; label: string }[] = [
-    { value: "command", label: "Wyślij komendę" },
+const macroOptions: { value: MacroType; label: string }[] = [
+    { value: "command", label: "Wyslij komende" },
     { value: "zList", label: "Lista /z" },
     { value: "zaList", label: "Lista /za" },
     { value: "wList", label: "Lista /w" },
     { value: "przeList", label: "Lista /prze" },
     { value: "idzList", label: "Lista idz" },
-    { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
+    { value: "wesprzyj", label: "Wesprzyj prowadzacego" },
     { value: "moveMode", label: "Tryb ruchu" },
     { value: "attackEnemy", label: "Atakuj wroga" },
     { value: "blockEnemy", label: "Zablokuj wroga" },
+    { value: "functional", label: "Bind funkcyjny" },
+    { value: "kierunek", label: "Kierunek" },
+    { value: "specialExit", label: "Wyjscie specjalne" },
+    { value: "toggleButtons", label: "Pokaz/ukryj przyciski" },
+    { value: "empty", label: "Pusty" },
 ];
 
 function DesktopButtons() {
     const [settings, setSettings] = useState<DesktopButtonsSettings>(createDefaultSettings);
     const [selected, setSelected] = useState<string | null>(null);
+    const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
 
     useEffect(() => {
         loadSettings().then(setSettings);
+        setPluginMacros(getRegisteredButtonMacros());
+
+        const handleMacrosChanged = () => {
+            setPluginMacros(getRegisteredButtonMacros());
+        };
+        eventBus.on('pluginButtonMacrosChanged', handleMacrosChanged);
+        return () => {
+            eventBus.off('pluginButtonMacrosChanged', handleMacrosChanged);
+        };
     }, []);
 
     function nextId(): string {
@@ -263,12 +285,30 @@ function DesktopButtons() {
                         <Form.Select
                             size="sm"
                             value={selectedBtn.macroType}
-                            onChange={e => updateButton(selectedBtn.id, { macroType: e.target.value as DesktopMacroType })}
+                            onChange={e => updateButton(selectedBtn.id, { macroType: e.target.value })}
+                            className={!isButtonMacroAvailable(selectedBtn.macroType) ? 'border-warning' : ''}
                         >
                             {macroOptions.map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
+                            {pluginMacros.length > 0 && (
+                                <optgroup label="Makra z wtyczek">
+                                    {pluginMacros.map(pm => (
+                                        <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            {selectedBtn.macroType.startsWith('plugin:') && !isButtonMacroAvailable(selectedBtn.macroType) && (
+                                <option value={selectedBtn.macroType} disabled>
+                                    {selectedBtn.macroType} (wtyczka niedostepna)
+                                </option>
+                            )}
                         </Form.Select>
+                        {!isButtonMacroAvailable(selectedBtn.macroType) && (
+                            <Form.Text className="text-warning">
+                                Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                            </Form.Text>
+                        )}
                     </Form.Group>
 
                     {selectedBtn.macroType === 'command' && (
@@ -343,10 +383,76 @@ function DesktopButtons() {
                         </>
                     )}
 
+                    {/* Plugin macro config fields */}
+                    {selectedBtn.macroType.startsWith('plugin:') && (() => {
+                        const pluginMacro = pluginMacros.find(pm => pm.id === selectedBtn.macroType);
+                        if (!pluginMacro?.configFields?.length) return null;
+                        const config = selectedBtn.pluginConfig || {};
+                        return pluginMacro.configFields.map(field => (
+                            <Form.Group key={field.name} className="mb-2">
+                                <Form.Label>{field.label}</Form.Label>
+                                {field.type === 'text' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="text"
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => updateButton(selectedBtn.id, {
+                                            pluginConfig: { ...config, [field.name]: e.target.value }
+                                        })}
+                                    />
+                                )}
+                                {field.type === 'textarea' && (
+                                    <Form.Control
+                                        as="textarea"
+                                        size="sm"
+                                        rows={2}
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => updateButton(selectedBtn.id, {
+                                            pluginConfig: { ...config, [field.name]: e.target.value }
+                                        })}
+                                    />
+                                )}
+                                {field.type === 'number' && (
+                                    <Form.Control
+                                        size="sm"
+                                        type="number"
+                                        value={config[field.name] ?? field.defaultValue ?? 0}
+                                        onChange={e => updateButton(selectedBtn.id, {
+                                            pluginConfig: { ...config, [field.name]: Number(e.target.value) }
+                                        })}
+                                    />
+                                )}
+                                {field.type === 'select' && field.options && (
+                                    <Form.Select
+                                        size="sm"
+                                        value={config[field.name] ?? field.defaultValue ?? ''}
+                                        onChange={e => updateButton(selectedBtn.id, {
+                                            pluginConfig: { ...config, [field.name]: e.target.value }
+                                        })}
+                                    >
+                                        {field.options.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
+                                {field.type === 'checkbox' && (
+                                    <Form.Check
+                                        id={`plugin-config-${selectedBtn.id}-${field.name}`}
+                                        type="checkbox"
+                                        checked={config[field.name] ?? field.defaultValue ?? false}
+                                        onChange={e => updateButton(selectedBtn.id, {
+                                            pluginConfig: { ...config, [field.name]: e.target.checked }
+                                        })}
+                                    />
+                                )}
+                            </Form.Group>
+                        ));
+                    })()}
+
                     <div className="row g-2 mb-2">
                         <div className="col-6">
                             <Form.Group>
-                                <Form.Label>Kolor tła</Form.Label>
+                                <Form.Label>Kolor tla</Form.Label>
                                 <div className="d-flex gap-2 align-items-center">
                                     <Form.Control
                                         size="sm"
