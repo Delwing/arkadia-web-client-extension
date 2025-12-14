@@ -320,7 +320,7 @@ export default class ObjectList {
                         prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">>></span>`;
                     } else {
                         // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226;</span> `;
+                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226; </span>`;
                     }
                 } else {
                     // Enemy - attack target (orangered), command /wa
@@ -329,7 +329,7 @@ export default class ObjectList {
                         prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">>></span>`;
                     } else {
                         // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226;</span> `;
+                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226; </span>`;
                     }
                 }
             } else {
