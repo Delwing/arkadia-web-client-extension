@@ -2968,6 +2968,10 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   font-size: 0.85em;
   opacity: 0.9;
   user-select: none;
+  touch-action: manipulation;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  margin-left: 0.1rem;
 }
 
 .location-note-icon:hover {

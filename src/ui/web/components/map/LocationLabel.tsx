@@ -42,7 +42,13 @@ export const LocationLabel = () => {
         }
     });
 
-    const handleIconClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const handleIconClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowPopup(prev => !prev);
+    }, []);
+
+    const handleIconTouch = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
         e.stopPropagation();
         setShowPopup(prev => !prev);
     }, []);
@@ -77,7 +83,7 @@ export const LocationLabel = () => {
                     ref={iconRef}
                     className="location-note-icon"
                     onClick={handleIconClick}
-                    onTouchEnd={handleIconClick}
+                    onTouchStart={handleIconTouch}
                     title="Notatka"
                 >
                     &#128221;
