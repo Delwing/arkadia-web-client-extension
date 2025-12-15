@@ -565,6 +565,10 @@ export default class DesktopButtons {
 
         // Record press start for hold detection
         if (settings.holdEnabled && settings.hold?.macroType) {
+            // Prevent synthetic mouse events from firing after touch events
+            // Without this, tap would execute macro twice (touchend + mouseup)
+            e.preventDefault();
+
             this.buttonPressStart.set(settings.id, {
                 time: Date.now(),
                 x: touch.clientX,

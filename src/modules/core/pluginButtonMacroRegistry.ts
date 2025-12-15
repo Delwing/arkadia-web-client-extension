@@ -1,6 +1,10 @@
 import type Client from "@client/Client";
 import type { ButtonSetting } from "@web/mobileButtonSettings";
+import type { DesktopButtonSetting } from "@web/desktopButtonSettings";
 import eventBus from "./eventBus";
+
+// Union type for button settings from both mobile and desktop
+export type AnyButtonSetting = ButtonSetting | DesktopButtonSetting;
 
 export interface MacroConfigField {
     name: string;
@@ -37,7 +41,7 @@ export interface MacroStateContext {
  * Combined context for onClick handler
  */
 export interface ButtonMacroClickContext {
-    button: ButtonSetting;
+    button: AnyButtonSetting;
     client: Client;
     config: Record<string, any>;
     /** State context - only present for stateful macros */
@@ -269,7 +273,7 @@ export function getMacroStates(macroType: string): MacroState[] | undefined {
 
 export function executeButtonMacro(
     macroType: string,
-    button: ButtonSetting,
+    button: AnyButtonSetting,
     client: Client,
     config: Record<string, any> = {}
 ): boolean {
@@ -316,7 +320,7 @@ export function executeButtonMacro(
             if (macro.onClick.length <= 1) {
                 (macro.onClick as (context: ButtonMacroClickContext) => void)(context);
             } else {
-                (macro.onClick as (button: ButtonSetting, client: Client, config: Record<string, any>) => void)(button, client, config);
+                (macro.onClick as (button: AnyButtonSetting, client: Client, config: Record<string, any>) => void)(button, client, config);
             }
         }
         return true;
