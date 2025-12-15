@@ -2,6 +2,7 @@ import type Client from "@client/Client";
 import {mudletColorLine} from "./Colors";
 import type {HerbUse} from "@client/scripts/herbsLoader";
 import {showContextMenu} from "@shared/dom/contextMenu";
+import eventBus from "@modules/core/eventBus";
 
 export interface ContextMenuItem {
     label: string;
@@ -97,6 +98,14 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
         {
             label: 'Idź do lokacji',
             action: () => client.sendCommand(`/idz ${roomId}`),
+        },
+        {
+            label: 'Dodaj skrót',
+            action: () => eventBus.emit('shortcuts.addWithRoom', { roomId }),
+        },
+        {
+            label: 'Notatka',
+            action: () => eventBus.emit('locationNote.edit', { roomId }),
         },
     ];
 

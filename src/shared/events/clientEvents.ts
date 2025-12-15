@@ -210,6 +210,10 @@ export interface KnownEvents {
     "pluginButtonMacrosChanged": void;
     "pluginButtonMacroStateChanged": { macroType: string; newState: string; oldState: string | undefined };
     "pluginTriggerMacrosChanged": void;
+    "shortcuts.addWithRoom": { roomId: number };
+    "locationNote.edit": { roomId: number; roomName?: string; areaName?: string };
+    "locationNote.open": { roomId: number };
+    "locationNote.changed": { roomId: number };
 }
 
 export interface ObjectData {

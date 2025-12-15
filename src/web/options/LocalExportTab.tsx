@@ -216,6 +216,7 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                                 multibinds: false,
                                 recordings: false,
                                 visitedRooms: false,
+                                locationNotes: false,
                             })}
                         >
                             Nic
@@ -317,6 +318,13 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                             label="Odwiedzone lokacje"
                             checked={exportOptions.visitedRooms}
                             onChange={e => setExportOptions(prev => ({ ...prev, visitedRooms: e.target.checked }))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-locationNotes"
+                            label="Notatki lokacji"
+                            checked={exportOptions.locationNotes}
+                            onChange={e => setExportOptions(prev => ({ ...prev, locationNotes: e.target.checked }))}
                         />
                     </div>
                 </div>

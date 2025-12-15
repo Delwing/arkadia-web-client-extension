@@ -80,6 +80,17 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             }
         },
         {
+            pattern: /^\/note$/i,
+            callback: () => {
+                const room = client.Map.currentRoom as SearchableRoom | undefined;
+                if (room) {
+                    client.sendEvent('locationNote.open', { roomId: room.id });
+                } else {
+                    client.println('Brak aktualnej lokalizacji.');
+                }
+            }
+        },
+        {
             pattern: /^\/przeszukaj (.+)$/,
             callback: async (m: RegExpMatchArray) => {
                 const termRaw = m[1];

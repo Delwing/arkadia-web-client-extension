@@ -4,6 +4,7 @@ import { TiDelete } from 'react-icons/ti';
 import storage from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getClientInstance } from "@shared/runtime";
+import type { ClientEvents } from "@modules/core/eventBus";
 
 interface ShortcutEntry {
     key: string;
@@ -23,6 +24,14 @@ function Shortcuts() {
             const arr = Array.isArray(res?.shortcuts) ? res.shortcuts : [];
             setList(arr);
         });
+    }, []);
+
+    useEffect(() => {
+        const handleAddWithRoom = ({ roomId }: ClientEvents['shortcuts.addWithRoom']) => {
+            setLoc(String(roomId));
+            setShowForm(true);
+        };
+        return eventBus.on('shortcuts.addWithRoom', handleAddWithRoom);
     }, []);
 
     function saveList(newList: ShortcutEntry[]) {

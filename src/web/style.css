@@ -2958,6 +2958,40 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   border-radius: 7px;
   backdrop-filter: blur(2px);
   opacity: 0.75;
+  position: relative;
+}
+
+.location-note-icon {
+  margin-left: 0.35rem;
+  cursor: pointer;
+  pointer-events: auto;
+  font-size: 0.85em;
+  opacity: 0.9;
+  user-select: none;
+}
+
+.location-note-icon:hover {
+  opacity: 1;
+}
+
+.location-note-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  max-width: 250px;
+  min-width: 100px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  pointer-events: auto;
+  z-index: 1012;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 #pause-icon {

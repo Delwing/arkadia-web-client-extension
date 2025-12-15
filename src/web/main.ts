@@ -44,6 +44,8 @@ import ExportImport from "./options/ExportImport.tsx"
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
+import LocationNotes from "./options/LocationNotes.tsx"
+import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import HerbManager from "./herbs/HerbManager";
@@ -741,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
     const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
+    const locationNotesButton = document.getElementById('location-notes-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const mobileRadialButton = document.getElementById('mobile-radial-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
@@ -787,6 +790,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
     const shortcutsModalElement = document.getElementById('shortcuts-modal');
     const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
+    const locationNotesModalElement = document.getElementById('location-notes-modal');
+    const locationNotesModal = locationNotesModalElement ? new Modal(locationNotesModalElement) : null;
     const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
     const mobileButtonsModal = mobileButtonsModalElement ? new Modal(mobileButtonsModalElement) : null;
     const mobileRadialModalElement = document.getElementById('mobile-radial-modal');
@@ -951,6 +956,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (shortcutsModal) {
             shortcutsModal.hide();
         }
+        if (locationNotesModal) {
+            locationNotesModal.hide();
+        }
         if (mobileButtonsModal) {
             mobileButtonsModal.hide();
         }
@@ -1046,6 +1054,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shortcutsButton && shortcutsModal) {
         shortcutsButton.addEventListener('click', () => {
+            shortcutsModal.show();
+        });
+    }
+
+    if (locationNotesButton && locationNotesModal) {
+        locationNotesButton.addEventListener('click', () => {
+            locationNotesModal.show();
+        });
+    }
+
+    if (shortcutsModal) {
+        eventBus.on('shortcuts.addWithRoom', () => {
             shortcutsModal.show();
         });
     }
@@ -1929,6 +1949,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsRoot = document.getElementById('shortcuts-options');
     if (shortcutsRoot) {
         createRoot(shortcutsRoot).render(createElement(Shortcuts));
+    }
+
+    const locationNotesRoot = document.getElementById('location-notes-options');
+    if (locationNotesRoot) {
+        createRoot(locationNotesRoot).render(createElement(LocationNotes));
+    }
+
+    const locationNoteEditorRoot = document.getElementById('location-note-editor-root');
+    if (locationNoteEditorRoot) {
+        createRoot(locationNoteEditorRoot).render(createElement(LocationNoteEditor));
     }
 
     const mobileButtonsRoot = document.getElementById('mobile-buttons-options');

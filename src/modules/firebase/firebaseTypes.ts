@@ -23,6 +23,7 @@ export interface SyncOptions {
     radial: boolean;
     recordings: boolean;
     visitedRooms: boolean;
+    locationNotes: boolean;    // Location notes
     killCounts: boolean;       // Lifetime kill counts per character
     improveCounts: boolean;    // Lifetime improve counts per character
     deposits: boolean;         // Deposit tracking per character
@@ -42,6 +43,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
     radial: true,
     recordings: true,
     visitedRooms: true,
+    locationNotes: true,
     killCounts: true,
     improveCounts: true,
     deposits: true,
@@ -72,6 +74,7 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     'radial',
     'recordings',
     'visitedRooms',
+    'locationNotes',
     'killCounts',
     'improveCounts',
     'deposits',
@@ -92,6 +95,7 @@ export const SYNC_CATEGORY_NAMES: Record<SyncCategory, string> = {
     radial: 'Menu radialne',
     recordings: 'Nagrania',
     visitedRooms: 'Odwiedzone lokacje',
+    locationNotes: 'Notatki lokacji',
     killCounts: 'Licznik zabitych',
     improveCounts: 'Licznik postepow',
     deposits: 'Depozyty',

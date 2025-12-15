@@ -81,6 +81,9 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/szybciej** - zmniejsza opoznienie o 0.5 s.
 - **/wolniej** - zwieksza opoznienie o 0.5 s.
 
+## Notatki lokacji
+- **/note** - otwiera edytor notatki dla bieżącej lokacji (tworzy nową, jeśli nie istnieje).
+
 ## Multibindy
 - **/mbind _numer akcja_** - ustawia pod numerem 1-4 akcję multibinda dla bieżącej lokacji.
 - **/mbind+ _akcja_** - dodaje akcję do pierwszego wolnego multibinda w bieżącej lokacji.

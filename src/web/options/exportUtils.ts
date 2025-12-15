@@ -1,5 +1,6 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "./recordingStorage";
+import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -29,6 +30,7 @@ export interface ExportOptions {
     multibinds: boolean;
     recordings: boolean;
     visitedRooms: boolean;
+    locationNotes: boolean;
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -44,6 +46,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
     multibinds: true,
     recordings: true,
     visitedRooms: true,
+    locationNotes: true,
 };
 
 // Map specific global keys to their export options
@@ -83,6 +86,7 @@ export interface ExportPayload {
         multibinds: StoredMultibindRecord[];
         recordings?: ExportedRecording[];
         visitedRooms: ExportedVisitedRoomsEntry[];
+        locationNotes?: LocationNote[];
     };
 }
 
@@ -327,7 +331,7 @@ export async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): 
 }
 
 export async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms] = await Promise.all([
+    const [multibinds, recordings, visitedRooms, locationNotes] = await Promise.all([
         options.multibinds
             ? getMultibindsSnapshot().catch(err => {
                 console.error("Failed to export multibinds", err);
@@ -340,6 +344,12 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
         options.visitedRooms
             ? exportVisitedRooms(selectedCharacters)
             : Promise.resolve([] as ExportedVisitedRoomsEntry[]),
+        options.locationNotes
+            ? exportNotes().catch(err => {
+                console.error("Failed to export location notes", err);
+                return [] as LocationNote[];
+            })
+            : Promise.resolve([] as LocationNote[]),
     ]);
 
     const localStorageData = exportLocalStorage(selectedCharacters, options);
@@ -360,6 +370,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             multibinds,
             recordings,
             visitedRooms,
+            locationNotes,
         },
     };
 }
@@ -398,6 +409,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     await replaceMultibinds(payload.indexedDB.multibinds ?? []);
     await importRecordings(payload.indexedDB.recordings ?? []);
     await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
+    await importNotes(payload.indexedDB.locationNotes ?? []);
 }
 
 // ============================================================================
@@ -419,6 +431,7 @@ export interface CategoryData {
     radial?: { radial?: unknown };
     recordings?: ExportedRecording[];
     visitedRooms?: ExportedVisitedRoomsEntry[];
+    locationNotes?: LocationNote[];
     killCounts?: Record<string, string>;      // CharacterName -> kill_counter JSON
     improveCounts?: Record<string, string>;   // CharacterName -> improve_counter_lifetime JSON
     deposits?: Record<string, string>;        // CharacterName -> deposits JSON
@@ -523,6 +536,10 @@ export async function exportCategory(
             case 'visitedRooms': {
                 const visitedRooms = await exportVisitedRooms(selectedCharacters);
                 return visitedRooms.length > 0 ? JSON.stringify(visitedRooms) : null;
+            }
+            case 'locationNotes': {
+                const locationNotes = await exportNotes();
+                return locationNotes.length > 0 ? JSON.stringify(locationNotes) : null;
             }
             case 'killCounts': {
                 const result: Record<string, string> = {};
@@ -701,6 +718,10 @@ export async function importCategory(
             }
             case 'visitedRooms': {
                 await importVisitedRooms(Array.isArray(data) ? data : []);
+                break;
+            }
+            case 'locationNotes': {
+                await importNotes(Array.isArray(data) ? data : []);
                 break;
             }
             case 'killCounts': {
