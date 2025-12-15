@@ -529,6 +529,12 @@ interface ButtonMacrosApi {
   }): void;
 
   unregister(id: string): void;
+
+  getState(id: string): string | undefined;
+
+  setState(id: string, stateId: string): boolean;
+
+  onStateChange(id: string, listener: (macroType: string, newState: string, oldState: string | undefined) => void): () => void;
 }
 
 /**

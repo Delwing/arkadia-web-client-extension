@@ -1932,6 +1932,55 @@ export interface ButtonMacrosApi {
      * @param id - Macro ID (without "plugin:" prefix)
      */
     unregister(id: string): void;
+    /**
+     * Get the current state of a stateful macro
+     * @param id - Macro ID (without "plugin:" prefix)
+     * @returns Current state ID or undefined if not stateful
+     *
+     * @example
+     * ```typescript
+     * const state = api.buttonMacros.getState("autoHeal");
+     * if (state === "on") {
+     *   // Auto-heal is enabled
+     * }
+     * ```
+     */
+    getState(id: string): string | undefined;
+    /**
+     * Set the state of a stateful macro programmatically
+     * This will update all buttons using this macro across the UI
+     *
+     * @param id - Macro ID (without "plugin:" prefix)
+     * @param stateId - State ID to set (must be valid for this macro)
+     * @returns True if state was set successfully
+     *
+     * @example
+     * ```typescript
+     * // Turn off auto-heal programmatically
+     * api.buttonMacros.setState("autoHeal", "off");
+     * ```
+     */
+    setState(id: string, stateId: string): boolean;
+    /**
+     * Subscribe to state changes for a macro
+     * Useful for syncing state with game events
+     *
+     * @param id - Macro ID (without "plugin:" prefix)
+     * @param listener - Callback called when state changes
+     * @returns Unsubscribe function
+     *
+     * @example
+     * ```typescript
+     * // Listen for auto-heal state changes
+     * const unsubscribe = api.buttonMacros.onStateChange("autoHeal", (macroType, newState, oldState) => {
+     *   console.log(`Auto-heal changed from ${oldState} to ${newState}`);
+     * });
+     *
+     * // Later: stop listening
+     * unsubscribe();
+     * ```
+     */
+    onStateChange(id: string, listener: (macroType: string, newState: string, oldState: string | undefined) => void): () => void;
 }
 
 /**
