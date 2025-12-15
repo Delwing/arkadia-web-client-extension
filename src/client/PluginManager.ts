@@ -58,6 +58,9 @@ export class PluginManager {
           plugin.status = 'loaded'
           plugin.instance = module
 
+          // Set the plugin name on the API instance for macro registration
+          apiInstance.setPluginName(info.name)
+
           console.log(`[PluginManager] Plugin loaded: ${info.name} v${info.version}`)
 
           // If this is a stored plugin, update its metadata in IndexedDB

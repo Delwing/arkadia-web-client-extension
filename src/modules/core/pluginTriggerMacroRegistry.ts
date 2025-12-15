@@ -17,6 +17,8 @@ export interface PluginTriggerMacro {
     id: string;
     label: string;
     pluginId: string;
+    /** Plugin display name (if available) */
+    pluginName?: string;
     onMatch: (context: TriggerMacroContext) => void;
     configFields?: MacroConfigField[];
 }
@@ -42,6 +44,19 @@ export function unregisterTriggerMacrosByPlugin(pluginId: string): void {
     for (const [id, macro] of registeredMacros) {
         if (macro.pluginId === pluginId) {
             registeredMacros.delete(id);
+            changed = true;
+        }
+    }
+    if (changed) {
+        eventBus.emit('pluginTriggerMacrosChanged');
+    }
+}
+
+export function updateTriggerMacroPluginName(pluginId: string, pluginName: string): void {
+    let changed = false;
+    for (const macro of registeredMacros.values()) {
+        if (macro.pluginId === pluginId && macro.pluginName !== pluginName) {
+            macro.pluginName = pluginName;
             changed = true;
         }
     }

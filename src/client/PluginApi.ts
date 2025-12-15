@@ -55,6 +55,7 @@ import {
   getButtonMacroState,
   setButtonMacroState,
   onButtonMacroStateChange,
+  updateButtonMacroPluginName,
   type PluginButtonMacro,
   type MacroConfigField,
   type MacroState,
@@ -64,6 +65,7 @@ import {
 import {
   registerTriggerMacro,
   unregisterTriggerMacro,
+  updateTriggerMacroPluginName,
   type PluginTriggerMacro,
   type TriggerMacroContext
 } from "@modules/core/pluginTriggerMacroRegistry";
@@ -1388,6 +1390,7 @@ export interface PluginApi {
 export class PluginApiImpl implements PluginApi {
   private client: Client;
   private pluginId: string;
+  private _pluginName?: string;
   private aliasMap: Map<string, PluginAlias> = new Map();
   private popupHandles: Set<PopupHandle> = new Set();
   private popupMenuEntryIds: Set<string> = new Set();
@@ -1446,6 +1449,24 @@ export class PluginApiImpl implements PluginApi {
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
+  }
+
+  /**
+   * Set the plugin name (called by PluginManager after init)
+   * Also updates any macros that were registered during init
+   */
+  setPluginName(name: string): void {
+    this._pluginName = name;
+    // Update any macros that were registered during init (before name was set)
+    updateButtonMacroPluginName(this.pluginId, name);
+    updateTriggerMacroPluginName(this.pluginId, name);
+  }
+
+  /**
+   * Get the plugin name (or pluginId if name is not set)
+   */
+  get pluginName(): string {
+    return this._pluginName || this.pluginId;
   }
 
   // ============================================================================
@@ -1810,6 +1831,7 @@ export class PluginApiImpl implements PluginApi {
           id: fullId,
           label: options.label,
           pluginId: this.pluginId,
+          pluginName: this._pluginName,
           onClick: options.onClick,
           configFields: options.configFields,
           states: options.states,
@@ -1878,6 +1900,7 @@ export class PluginApiImpl implements PluginApi {
           id: fullId,
           label: options.label,
           pluginId: this.pluginId,
+          pluginName: this._pluginName,
           onMatch: options.onMatch,
           configFields: options.configFields
         };

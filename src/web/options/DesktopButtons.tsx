@@ -24,7 +24,6 @@ import {
     isButtonMacroAvailable,
     getMacroStates,
     type PluginButtonMacro,
-    type MacroConfigField
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 
@@ -321,13 +320,22 @@ function DesktopButtons() {
                             {macroOptions.map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
-                            {pluginMacros.length > 0 && (
-                                <optgroup label="Makra z wtyczek">
-                                    {pluginMacros.map(pm => (
-                                        <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                    ))}
-                                </optgroup>
-                            )}
+                            {(() => {
+                                // Group macros by plugin
+                                const byPlugin = new Map<string, typeof pluginMacros>();
+                                for (const pm of pluginMacros) {
+                                    const key = pm.pluginName || pm.pluginId;
+                                    if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                    byPlugin.get(key)!.push(pm);
+                                }
+                                return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                    <optgroup key={pluginName} label={pluginName}>
+                                        {macros.map(pm => (
+                                            <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ));
+                            })()}
                             {selectedBtn.macroType.startsWith('plugin:') && !isButtonMacroAvailable(selectedBtn.macroType) && (
                                 <option value={selectedBtn.macroType} disabled>
                                     {selectedBtn.macroType} (wtyczka niedostepna)

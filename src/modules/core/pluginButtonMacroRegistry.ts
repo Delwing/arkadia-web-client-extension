@@ -48,6 +48,8 @@ export interface PluginButtonMacro {
     id: string;
     label: string;
     pluginId: string;
+    /** Plugin display name (if available) */
+    pluginName?: string;
     /**
      * Click handler - receives full context object
      * For backwards compatibility, also supports (button, client, config) signature
@@ -94,6 +96,19 @@ export function unregisterButtonMacrosByPlugin(pluginId: string): void {
     for (const [id, macro] of registeredMacros) {
         if (macro.pluginId === pluginId) {
             registeredMacros.delete(id);
+            changed = true;
+        }
+    }
+    if (changed) {
+        eventBus.emit('pluginButtonMacrosChanged');
+    }
+}
+
+export function updateButtonMacroPluginName(pluginId: string, pluginName: string): void {
+    let changed = false;
+    for (const macro of registeredMacros.values()) {
+        if (macro.pluginId === pluginId && macro.pluginName !== pluginName) {
+            macro.pluginName = pluginName;
             changed = true;
         }
     }

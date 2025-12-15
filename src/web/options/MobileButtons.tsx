@@ -509,13 +509,22 @@ function MobileButtons() {
                             {macroOptions.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
-                            {pluginMacros.length > 0 && (
-                                <optgroup label="Makra z wtyczek">
-                                    {pluginMacros.map(pm => (
-                                        <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                    ))}
-                                </optgroup>
-                            )}
+                            {(() => {
+                                // Group macros by plugin
+                                const byPlugin = new Map<string, typeof pluginMacros>();
+                                for (const pm of pluginMacros) {
+                                    const key = pm.pluginName || pm.pluginId;
+                                    if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                    byPlugin.get(key)!.push(pm);
+                                }
+                                return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                    <optgroup key={pluginName} label={pluginName}>
+                                        {macros.map(pm => (
+                                            <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ));
+                            })()}
                             {activeCfg.macro.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macro) && (
                                 <option value={activeCfg.macro} disabled>
                                     {activeCfg.macro} (wtyczka niedostepna)

@@ -835,6 +835,67 @@ api.buttonMacros.register({
 - Stan jest zachowywany po odświeżeniu strony
 - Jeśli `initialState` nie jest podany, używany jest pierwszy stan z tablicy
 
+#### Handle do kontroli stanu makra
+
+Metoda `register()` zwraca handle, który pozwala kontrolować stan makra z zewnątrz (np. z aliasów):
+
+```typescript
+// Zarejestruj makro i zachowaj handle
+const moveMode = api.buttonMacros.register({
+  id: "moveMode",
+  label: "Tryb ruchu",
+  states: [
+    { id: "normalny", label: "zwykly" },
+    { id: "przeszukiwanie", label: "prz" }
+  ],
+  onClick: (ctx) => {
+    ctx.stateCtx?.cycleState();
+    api.send(`ruch ${ctx.stateCtx?.state}`);
+  }
+});
+
+// Użyj handle do kontroli stanu:
+moveMode.getState();              // Pobierz aktualny stan (np. "normalny")
+moveMode.setState("przeszukiwanie"); // Ustaw konkretny stan
+moveMode.cycleState();            // Przełącz na następny stan
+moveMode.onStateChange((newState, oldState) => {
+  // Reaguj na zmianę stanu
+  console.log(`Zmiana stanu: ${oldState} -> ${newState}`);
+});
+```
+
+**Metody handle (`ButtonMacroHandle`):**
+- `getState()` - Zwraca aktualny identyfikator stanu lub `undefined`
+- `setState(stateId)` - Ustawia stan na podany ID, zwraca `true` jeśli sukces
+- `cycleState()` - Przełącza na następny stan (cyklicznie)
+- `onStateChange(listener)` - Subskrybuje zmiany stanu, zwraca funkcję do anulowania subskrypcji
+
+**Przykład: Synchronizacja z aliasem:**
+```typescript
+const combatMode = api.buttonMacros.register({
+  id: "combatMode",
+  label: "Tryb walki",
+  states: [
+    { id: "defensywny", label: "DEF" },
+    { id: "zrownowazony", label: "BAL" },
+    { id: "agresywny", label: "AGR" }
+  ],
+  onClick: (ctx) => {
+    ctx.stateCtx?.cycleState();
+    api.send(`tryb ${ctx.stateCtx?.state}`);
+  }
+});
+
+// Alias który zmienia stan przycisku
+api.aliases.register({
+  pattern: /^tryb (.+)$/,
+  handler: (match) => {
+    combatMode.setState(match[1]);
+    return `tryb ${match[1]}`;
+  }
+});
+```
+
 #### `api.triggerMacros` - Własne Makra Triggerów
 
 Pozwala pluginom definiować własne makra dla triggerów użytkownika, które mogą modyfikować tekst lub wykonywać akcje przy dopasowaniu wzorca.

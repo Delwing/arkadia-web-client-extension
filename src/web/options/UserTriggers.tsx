@@ -83,13 +83,22 @@ function MacroEditor({
                     <option value="slowBlink">Wolne miganie</option>
                     <option value="rapidBlink">Szybkie miganie</option>
                     <option value="functionalBind">Funkcyjny bind</option>
-                    {pluginMacros.length > 0 && (
-                        <optgroup label="Makra z wtyczek">
-                            {pluginMacros.map(pm => (
-                                <option key={pm.id} value={pm.id}>{pm.label}</option>
-                            ))}
-                        </optgroup>
-                    )}
+                    {(() => {
+                        // Group macros by plugin
+                        const byPlugin = new Map<string, typeof pluginMacros>();
+                        for (const pm of pluginMacros) {
+                            const key = pm.pluginName || pm.pluginId;
+                            if (!byPlugin.has(key)) byPlugin.set(key, []);
+                            byPlugin.get(key)!.push(pm);
+                        }
+                        return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                            <optgroup key={pluginName} label={pluginName}>
+                                {macros.map(pm => (
+                                    <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                ))}
+                            </optgroup>
+                        ));
+                    })()}
                     {macro.type.startsWith('plugin:') && !isTriggerMacroAvailable(macro.type) && (
                         <option value={macro.type} disabled>
                             {macro.type} (wtyczka niedostepna)
