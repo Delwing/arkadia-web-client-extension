@@ -470,6 +470,7 @@ export default class DesktopButtons {
                     btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
                 }
                 btn.classList.add('hold-glow');
+                navigator.vibrate?.([50, 30, 50]); // Haptic feedback when hold activates
             }, HOLD_THRESHOLD);
             this.buttonHoldGlowTimers.set(settings.id, glowTimer);
         }
@@ -565,6 +566,10 @@ export default class DesktopButtons {
 
         // Record press start for hold detection
         if (settings.holdEnabled && settings.hold?.macroType) {
+            // Prevent synthetic mouse events from firing after touch events
+            // Without this, tap would execute macro twice (touchend + mouseup)
+            e.preventDefault();
+
             this.buttonPressStart.set(settings.id, {
                 time: Date.now(),
                 x: touch.clientX,
@@ -588,6 +593,7 @@ export default class DesktopButtons {
                     btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
                 }
                 btn.classList.add('hold-glow');
+                navigator.vibrate?.([50, 30, 50]); // Haptic feedback when hold activates
             }, HOLD_THRESHOLD);
             this.buttonHoldGlowTimers.set(settings.id, glowTimer);
         }
