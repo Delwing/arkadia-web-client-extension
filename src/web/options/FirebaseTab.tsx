@@ -27,6 +27,7 @@ import {
     signInWithGoogle,
     registerWithEmail,
     signOut,
+    sendPasswordReset,
 } from "@modules/firebase";
 import {
     uploadCategories,
@@ -65,11 +66,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
     // Auth state
     const [authState, setAuthState] = useState<FirebaseAuthState>(INITIAL_AUTH_STATE);
-    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    const [authMode, setAuthMode] = useState<'login' | 'register' | 'reset'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAuthBusy, setIsAuthBusy] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
+    const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
     // Sync state
     const [syncOptions, setSyncOptions] = useState<SyncOptions>(() => loadFirebaseSettings().syncOptions);
@@ -233,6 +235,27 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             } else {
                 setEmail('');
                 setPassword('');
+            }
+        } catch {
+            setAuthError(FIREBASE_ERRORS.AUTH_FAILED);
+        } finally {
+            setIsAuthBusy(false);
+        }
+    };
+
+    const handlePasswordReset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAuthError(null);
+        setResetSuccess(null);
+        setIsAuthBusy(true);
+
+        try {
+            const result = await sendPasswordReset(email);
+            if (result.success) {
+                setResetSuccess('Link do resetowania hasla zostal wyslany na podany adres email.');
+                setEmail('');
+            } else {
+                setAuthError(result.error ?? FIREBASE_ERRORS.AUTH_FAILED);
             }
         } catch {
             setAuthError(FIREBASE_ERRORS.AUTH_FAILED);
@@ -514,83 +537,139 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <Button
                                 variant={authMode === 'login' ? 'primary' : 'outline-primary'}
                                 size="sm"
-                                onClick={() => setAuthMode('login')}
+                                onClick={() => { setAuthMode('login'); setAuthError(null); setResetSuccess(null); }}
                             >
                                 Logowanie
                             </Button>
                             <Button
                                 variant={authMode === 'register' ? 'primary' : 'outline-primary'}
                                 size="sm"
-                                onClick={() => setAuthMode('register')}
+                                onClick={() => { setAuthMode('register'); setAuthError(null); setResetSuccess(null); }}
                             >
                                 Rejestracja
                             </Button>
                         </div>
 
-                        <Form onSubmit={handleEmailAuth}>
-                            <Form.Group className="mb-2">
-                                <Form.Label className="small">Email</Form.Label>
-                                <Form.Control
-                                    type="email"
-                                    size="sm"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    disabled={isAuthBusy}
-                                    required
-                                />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label className="small">Haslo</Form.Label>
-                                <Form.Control
-                                    type="password"
-                                    size="sm"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    disabled={isAuthBusy}
-                                    required
-                                    minLength={6}
-                                />
-                            </Form.Group>
-                            <div className="d-flex flex-wrap gap-2">
-                                <Button type="submit" disabled={isAuthBusy}>
-                                    {isAuthBusy ? (
-                                        <span className="d-inline-flex align-items-center gap-2">
+                        {authMode === 'reset' ? (
+                            <Form onSubmit={handlePasswordReset}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small">Email</Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        size="sm"
+                                        value={email}
+                                        onChange={e => setEmail(e.target.value)}
+                                        disabled={isAuthBusy}
+                                        required
+                                    />
+                                    <Form.Text className="text-muted">
+                                        Podaj adres email powiazany z kontem.
+                                    </Form.Text>
+                                </Form.Group>
+                                <div className="d-flex flex-wrap gap-2 align-items-center">
+                                    <Button type="submit" disabled={isAuthBusy}>
+                                        {isAuthBusy ? (
+                                            <span className="d-inline-flex align-items-center gap-2">
+                                                <Spinner animation="border" size="sm" />
+                                                <span>Wysylanie...</span>
+                                            </span>
+                                        ) : (
+                                            'Wyslij link resetujacy'
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="link"
+                                        size="sm"
+                                        onClick={() => { setAuthMode('login'); setAuthError(null); setResetSuccess(null); }}
+                                    >
+                                        Powrot do logowania
+                                    </Button>
+                                </div>
+                            </Form>
+                        ) : (
+                            <Form onSubmit={handleEmailAuth}>
+                                <Form.Group className="mb-2">
+                                    <Form.Label className="small">Email</Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        size="sm"
+                                        value={email}
+                                        onChange={e => setEmail(e.target.value)}
+                                        disabled={isAuthBusy}
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-2">
+                                    <Form.Label className="small">Haslo</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        size="sm"
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        disabled={isAuthBusy}
+                                        required
+                                        minLength={6}
+                                    />
+                                </Form.Group>
+                                {authMode === 'login' && (
+                                    <div className="mb-3">
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            className="p-0"
+                                            onClick={() => { setAuthMode('reset'); setAuthError(null); }}
+                                        >
+                                            Nie pamietam hasla
+                                        </Button>
+                                    </div>
+                                )}
+                                <div className="d-flex flex-wrap gap-2">
+                                    <Button type="submit" disabled={isAuthBusy}>
+                                        {isAuthBusy ? (
+                                            <span className="d-inline-flex align-items-center gap-2">
+                                                <Spinner animation="border" size="sm" />
+                                                <span>{authMode === 'login' ? 'Logowanie...' : 'Rejestracja...'}</span>
+                                            </span>
+                                        ) : (
+                                            authMode === 'login' ? 'Zaloguj sie' : 'Zarejestruj sie'
+                                        )}
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={handleGoogleSignIn}
+                                        disabled={isAuthBusy}
+                                        className="d-inline-flex align-items-center gap-2"
+                                        style={{
+                                            backgroundColor: '#fff',
+                                            color: '#3c4043',
+                                            border: '1px solid #dadce0',
+                                            borderRadius: '4px',
+                                            padding: '8px 16px',
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            cursor: isAuthBusy ? 'not-allowed' : 'pointer',
+                                            opacity: isAuthBusy ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {isAuthBusy ? (
                                             <Spinner animation="border" size="sm" />
-                                            <span>{authMode === 'login' ? 'Logowanie...' : 'Rejestracja...'}</span>
-                                        </span>
-                                    ) : (
-                                        authMode === 'login' ? 'Zaloguj sie' : 'Zarejestruj sie'
-                                    )}
-                                </Button>
-                                <button
-                                    type="button"
-                                    onClick={handleGoogleSignIn}
-                                    disabled={isAuthBusy}
-                                    className="d-inline-flex align-items-center gap-2"
-                                    style={{
-                                        backgroundColor: '#fff',
-                                        color: '#3c4043',
-                                        border: '1px solid #dadce0',
-                                        borderRadius: '4px',
-                                        padding: '8px 16px',
-                                        fontSize: '14px',
-                                        fontWeight: 500,
-                                        cursor: isAuthBusy ? 'not-allowed' : 'pointer',
-                                        opacity: isAuthBusy ? 0.7 : 1,
-                                    }}
-                                >
-                                    {isAuthBusy ? (
-                                        <Spinner animation="border" size="sm" />
-                                    ) : (
-                                        <>
-                                            <FcGoogle size={18} />
-                                            <span>Zaloguj przez Google</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </Form>
+                                        ) : (
+                                            <>
+                                                <FcGoogle size={18} />
+                                                <span>Zaloguj przez Google</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </Form>
+                        )}
                     </>
+                )}
+
+                {resetSuccess && (
+                    <Alert variant="success" className="mb-0">
+                        {resetSuccess}
+                    </Alert>
                 )}
 
                 {authError && (
