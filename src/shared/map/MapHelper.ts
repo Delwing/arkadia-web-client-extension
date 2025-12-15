@@ -77,8 +77,12 @@ export default class MapHelper {
     private colors?: any;
     private mapReady = false;
     public isBlockable = false;
-    private destinations: number[] = [];
+    private _destinations: number[] = [];
     private highlights: number[] = [];
+
+    get destinations(): number[] {
+        return this._destinations;
+    }
 
     constructor(client: MapHelperClient, options: MapHelperOptions = {}) {
         this.client = client;
@@ -479,12 +483,12 @@ export default class MapHelper {
     }
 
     leadTo(id: number) {
-        this.destinations = [id];
+        this._destinations = [id];
         this.emitDrawData();
     }
 
     clearLeadTo() {
-        this.destinations = [];
+        this._destinations = [];
         this.emitDrawData();
     }
 
@@ -494,9 +498,9 @@ export default class MapHelper {
     }
 
     checkDestinationReached(roomId: number) {
-        const index = this.destinations.indexOf(roomId);
+        const index = this._destinations.indexOf(roomId);
         if (index > -1) {
-            this.destinations.splice(index, 1);
+            this._destinations.splice(index, 1);
             this.emitDrawData();
         }
     }
@@ -509,8 +513,8 @@ export default class MapHelper {
 
     emitPath() {
         const currentId = this.currentRoom?.id;
-        if (this.destinations.length > 0 && currentId) {
-            const destId = this.destinations[0];
+        if (this._destinations.length > 0 && currentId) {
+            const destId = this._destinations[0];
             const path = this.pathFinder?.findPath(currentId, destId) ?? null;
             if (path) {
                 this.client.sendEvent("mapPath", {path, color: "#66E64D"});
@@ -545,8 +549,8 @@ export default class MapHelper {
         const showRoomName = roomName && roomName !== String(currentId);
         let text = showRoomName ? `#${currentId} ${roomName} (${areaName})` : `#${currentId} ${areaName}`;
 
-        if (this.destinations.length > 0) {
-            const destId = this.destinations[0];
+        if (this._destinations.length > 0) {
+            const destId = this._destinations[0];
             const path = this.pathFinder?.findPath(currentId, destId) ?? null;
             const distance = path ? path.length - 1 : 0;
             const destRoom = this.mapReader?.getRoom(destId);

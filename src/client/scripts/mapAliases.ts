@@ -59,10 +59,10 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/go$/,
             callback: () => {
-                const embedded: any = (globalThis as any).embedded;
                 const room = client.Map.currentRoom as SearchableRoom | undefined;
-                if (!embedded?.destinations?.length || !room) return;
-                const target = parseInt(embedded.destinations[0]);
+                const destinations = client.Map.destinations;
+                if (!destinations?.length || !room) return;
+                const target = destinations[0];
                 const path = client.Map.findPath(room.id, target);
                 if (!path || path.length < 2) return;
                 const next = path[1];
