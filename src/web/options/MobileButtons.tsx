@@ -1,5 +1,5 @@
 import {RefObject, useEffect, useRef, useState} from "react";
-import {Button, Form} from "react-bootstrap";
+import {Alert, Button, Form} from "react-bootstrap";
 import {
     applySettings,
     ButtonSetting,
@@ -797,6 +797,157 @@ function MobileButtons() {
                                     ))}
                                 </div>
                             </div>
+                        );
+                    })()}
+                    {/* Hold action configuration */}
+                    {activeCfg.macro !== 'empty' && (() => {
+                        const holdCfg = activeCfg.hold || { macro: 'command' };
+                        const updateHold = (field: string, value: any) => {
+                            update(active!.set, active!.id, 'hold', { ...holdCfg, [field]: value });
+                        };
+                        return (
+                            <>
+                                <hr className="my-2" />
+                                <Form.Group className="form-label mb-2">
+                                    <Form.Check
+                                        type="checkbox"
+                                        label="Przytrzymanie (hold)"
+                                        checked={activeCfg.holdEnabled || false}
+                                        onChange={e => update(active!.set, active!.id, 'holdEnabled', e.target.checked)}
+                                    />
+                                </Form.Group>
+                                {activeCfg.holdEnabled && !settings.locked && (
+                                    <Alert variant="warning" className="py-1 px-2 mb-2 small">
+                                        Odblokowane przyciski moga kolidowac z przytrzymaniem (przeciaganie po 1s).
+                                    </Alert>
+                                )}
+                                {activeCfg.holdEnabled && (
+                                    <>
+                                        <Form.Group className="form-label mb-2">
+                                            <Form.Label>Makro (hold)</Form.Label>
+                                            <Form.Select
+                                                size="sm"
+                                                className={`mobile-button-macro ${holdCfg.macro && !isButtonMacroAvailable(holdCfg.macro) ? 'border-warning' : ''}`}
+                                                value={holdCfg.macro || 'command'}
+                                                onChange={e => updateHold('macro', e.target.value)}
+                                            >
+                                                {macroOptions.filter(o => o.value !== 'empty').map(o => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                ))}
+                                                {(() => {
+                                                    const byPlugin = new Map<string, typeof pluginMacros>();
+                                                    for (const pm of pluginMacros) {
+                                                        const key = pm.pluginName || pm.pluginId;
+                                                        if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                                        byPlugin.get(key)!.push(pm);
+                                                    }
+                                                    return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                                        <optgroup key={pluginName} label={pluginName}>
+                                                            {macros.map(pm => (
+                                                                <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                    ));
+                                                })()}
+                                            </Form.Select>
+                                        </Form.Group>
+                                        {holdCfg.macro === 'command' && (
+                                            <Form.Group className="form-label mb-2">
+                                                <Form.Label>Komenda (hold)</Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    size="sm"
+                                                    value={holdCfg.command || ''}
+                                                    onChange={e => updateHold('command', e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        )}
+                                        {holdCfg.macro === 'kierunek' && (
+                                            <Form.Group className="form-label mb-2">
+                                                <Form.Label>Kierunek (hold)</Form.Label>
+                                                <Form.Select
+                                                    size="sm"
+                                                    value={holdCfg.direction || ''}
+                                                    onChange={e => updateHold('direction', e.target.value)}
+                                                >
+                                                    {directionOptions.map(d => (
+                                                        <option key={d} value={d}>{d}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+                                        )}
+                                        {(holdCfg.macro === 'attackEnemy' || holdCfg.macro === 'blockEnemy') && (
+                                            <Form.Group className="form-label mb-2">
+                                                <Form.Label>Slot wroga (hold)</Form.Label>
+                                                <Form.Select
+                                                    size="sm"
+                                                    value={holdCfg.enemySlot ?? 0}
+                                                    onChange={e => updateHold('enemySlot', parseInt(e.target.value))}
+                                                >
+                                                    <option value={0}>Slot 1</option>
+                                                    <option value={1}>Slot 2</option>
+                                                    <option value={2}>Slot 3</option>
+                                                </Form.Select>
+                                            </Form.Group>
+                                        )}
+                                        {/* Hold plugin macro config fields */}
+                                        {holdCfg.macro?.startsWith('plugin:') && (() => {
+                                            const pluginMacro = pluginMacros.find(pm => pm.id === holdCfg.macro);
+                                            if (!pluginMacro?.configFields?.length) return null;
+                                            const pluginConfig = holdCfg.pluginConfig || {};
+                                            return pluginMacro.configFields.map(field => (
+                                                <Form.Group key={`hold-${field.name}`} className="form-label mb-2">
+                                                    <Form.Label>{field.label} (hold)</Form.Label>
+                                                    {field.type === 'text' && (
+                                                        <Form.Control
+                                                            size="sm"
+                                                            type="text"
+                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                        />
+                                                    )}
+                                                    {field.type === 'textarea' && (
+                                                        <Form.Control
+                                                            as="textarea"
+                                                            size="sm"
+                                                            rows={2}
+                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                        />
+                                                    )}
+                                                    {field.type === 'number' && (
+                                                        <Form.Control
+                                                            size="sm"
+                                                            type="number"
+                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? 0}
+                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: Number(e.target.value) })}
+                                                        />
+                                                    )}
+                                                    {field.type === 'select' && field.options && (
+                                                        <Form.Select
+                                                            size="sm"
+                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                        >
+                                                            {field.options.map(opt => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </Form.Select>
+                                                    )}
+                                                    {field.type === 'checkbox' && (
+                                                        <Form.Check
+                                                            id={`hold-plugin-config-mobile-${active!.id}-${field.name}`}
+                                                            type="checkbox"
+                                                            checked={pluginConfig[field.name] ?? field.defaultValue ?? false}
+                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.checked })}
+                                                        />
+                                                    )}
+                                                </Form.Group>
+                                            ));
+                                        })()}
+                                    </>
+                                )}
+                            </>
                         );
                     })()}
                 </div>

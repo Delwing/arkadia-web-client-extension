@@ -3332,6 +3332,13 @@ body.mobile-command-radial-active {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
 
+/* Hold glow effect for buttons - uses --hold-glow-color CSS variable set by JS */
+.mobile-button.hold-glow,
+.desktop-button.hold-glow {
+  box-shadow: 0 0 8px 3px var(--hold-glow-color, rgba(255, 255, 255, 0.6)), 0 0 16px 6px var(--hold-glow-color, rgba(255, 255, 255, 0.3));
+  filter: brightness(1.15);
+}
+
 /* Desktop Button List */
 .desktop-button-list {
   position: fixed;

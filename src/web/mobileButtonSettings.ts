@@ -18,17 +18,23 @@ export type MacroType =
     | 'blockEnemy'
     | 'empty';
 
-export interface ButtonSetting {
+export interface ButtonMacroConfig {
     macro: MacroType | string;  // string allows plugin macros like "plugin:..."
+    command?: string;
+    direction?: string;
+    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
+    pluginConfig?: Record<string, any>;
+}
+
+export interface ButtonSetting extends ButtonMacroConfig {
     label: string;
     color: string;
     activeColor?: string;
     fontColor?: string;
-    command?: string;
-    direction?: string;
     syncWithDirections?: boolean;
-    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
-    pluginConfig?: Record<string, any>;
+    // Hold (tap and hold) action
+    holdEnabled?: boolean;
+    hold?: ButtonMacroConfig;
 }
 
 export interface RadialCommandSetting {

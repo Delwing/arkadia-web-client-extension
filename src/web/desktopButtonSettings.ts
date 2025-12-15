@@ -5,11 +5,18 @@ import { MacroType } from "./mobileButtonSettings";
 export type ListPosition = 'top' | 'bottom' | 'left' | 'right';
 export type ListGrowDirection = 'horizontal' | 'vertical';
 
-export interface DesktopButtonSetting {
+export interface DesktopButtonMacroConfig {
+    macroType: MacroType | string;  // string allows plugin macros like "plugin:..."
+    command?: string;
+    direction?: string;
+    enemySlot?: number;
+    pluginConfig?: Record<string, any>;
+}
+
+export interface DesktopButtonSetting extends DesktopButtonMacroConfig {
     id: string;
     label: string;
-    macroType: MacroType | string;  // string allows plugin macros like "plugin:..."
-    command: string;
+    command: string; // Override to make required for main action
     color: string;
     fontColor: string;
     fontSize: number;
@@ -18,12 +25,12 @@ export interface DesktopButtonSetting {
     x: number;
     y: number;
     backgroundOpacity: number;
-    enemySlot?: number;
-    direction?: string;
     listPosition?: ListPosition;
     listGrowDirection?: ListGrowDirection;
     listCloseOnlyByButton?: boolean;
-    pluginConfig?: Record<string, any>;
+    // Hold (tap and hold) action
+    holdEnabled?: boolean;
+    hold?: DesktopButtonMacroConfig;
 }
 
 export interface DesktopButtonsSettings {
@@ -68,6 +75,40 @@ const validMacroTypes: MacroType[] = [
     'toggleButtons', 'attackEnemy', 'blockEnemy', 'empty'
 ];
 
+function parseHoldConfig(candidate: Record<string, unknown>): DesktopButtonMacroConfig | undefined {
+    // Support both new nested format and old flat format for migration
+    const holdObj = candidate.hold as Record<string, unknown> | undefined;
+
+    // Try new format first
+    if (holdObj && typeof holdObj === 'object') {
+        const rawMacroType = typeof holdObj.macroType === 'string' ? holdObj.macroType : undefined;
+        if (!rawMacroType) return undefined;
+        const macroType = validMacroTypes.includes(rawMacroType as MacroType) || rawMacroType.startsWith('plugin:')
+            ? rawMacroType : 'command';
+        return {
+            macroType,
+            command: typeof holdObj.command === 'string' ? holdObj.command : undefined,
+            direction: typeof holdObj.direction === 'string' ? holdObj.direction : undefined,
+            enemySlot: typeof holdObj.enemySlot === 'number' ? holdObj.enemySlot : undefined,
+            pluginConfig: holdObj.pluginConfig && typeof holdObj.pluginConfig === 'object' ? holdObj.pluginConfig as Record<string, any> : undefined,
+        };
+    }
+
+    // Fall back to old flat format for migration
+    const rawMacroType = typeof candidate.holdMacroType === 'string' ? candidate.holdMacroType : undefined;
+    if (!rawMacroType) return undefined;
+    const macroType = validMacroTypes.includes(rawMacroType as MacroType) || rawMacroType.startsWith('plugin:')
+        ? rawMacroType : undefined;
+    if (!macroType) return undefined;
+    return {
+        macroType,
+        command: typeof candidate.holdCommand === 'string' ? candidate.holdCommand : undefined,
+        direction: typeof candidate.holdDirection === 'string' ? candidate.holdDirection : undefined,
+        enemySlot: typeof candidate.holdEnemySlot === 'number' ? candidate.holdEnemySlot : undefined,
+        pluginConfig: candidate.holdPluginConfig && typeof candidate.holdPluginConfig === 'object' ? candidate.holdPluginConfig as Record<string, any> : undefined,
+    };
+}
+
 function parseButton(raw: unknown): DesktopButtonSetting | null {
     if (!raw || typeof raw !== 'object') return null;
     const candidate = raw as Record<string, unknown>;
@@ -102,7 +143,10 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
         : undefined;
     const listCloseOnlyByButton = typeof candidate.listCloseOnlyByButton === 'boolean' ? candidate.listCloseOnlyByButton : undefined;
     const pluginConfig = candidate.pluginConfig && typeof candidate.pluginConfig === 'object' ? candidate.pluginConfig as Record<string, any> : undefined;
-    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig };
+    // Hold action
+    const holdEnabled = typeof candidate.holdEnabled === 'boolean' ? candidate.holdEnabled : undefined;
+    const hold = parseHoldConfig(candidate);
+    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold };
 }
 
 export async function loadSettings(): Promise<DesktopButtonsSettings> {

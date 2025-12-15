@@ -64,6 +64,13 @@ export default class MobileDirectionButtons {
     private isScrolling = false;
     private lastScrollTop = 0;
     private collapsed = false;
+    // Hold action tracking
+    private buttonPressStart = new Map<string, { time: number; x: number; y: number }>();
+    private buttonDragged = new Set<string>();
+    private buttonHoldGlowTimers = new Map<string, number>();
+    private static readonly HOLD_DURATION = 500;
+    private static readonly DRAG_ACTIVATION_DURATION = 1000;
+    private static readonly DRAG_MOVE_THRESHOLD = 10;
     private directionButtons: Record<string, HTMLButtonElement | null> = {};
     private allSettings: Settings = {
         solo: {buttons: {}, order: [], cols: 0, background: defaultBackground},
@@ -614,7 +621,7 @@ export default class MobileDirectionButtons {
             buttons.forEach(button => {
                 button.classList.add('no-click');
             });
-        }, 500);
+        }, MobileDirectionButtons.DRAG_ACTIVATION_DURATION);
     }
 
     private dragMove(x: number, y: number) {
@@ -943,122 +950,125 @@ export default class MobileDirectionButtons {
             newBtn.removeAttribute('data-direction');
         }
 
-        const handler = () => {
-            if (this.hapticEnabled) navigator.vibrate?.(20);
-            switch (cfg.macro) {
-                case 'empty':
-                    break;
-                case 'functional':
-                    const event = new KeyboardEvent('keydown', {
-                        code: this.boundKey,
-                        key: this.boundKey,
-                        ctrlKey: this.boundCtrl,
-                        altKey: this.boundAlt,
-                        shiftKey: this.boundShift,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    document.dispatchEvent(event);
-                    break;
-                case 'zList':
-                    if (this.zList && this.zList.style.display === 'grid') {
-                        this.hideLists();
-                    } else {
-                        this.hideLists();
-                        this.renderZList();
-                        if (this.zList) this.zList.style.display = 'grid';
-                        newBtn.classList.add('active');
+        // Hold action support - macro executes on release, duration determines tap vs hold
+        if (cfg.holdEnabled && cfg.hold?.macro) {
+            const hold = cfg.hold;
+
+            const onPointerDown = (e: PointerEvent) => {
+                if (this.isDragging) return;
+                // Record press start time and position
+                this.buttonPressStart.set(id, { time: Date.now(), x: e.clientX, y: e.clientY });
+                this.buttonDragged.delete(id);
+
+                // Clear any existing glow timer
+                const existingGlowTimer = this.buttonHoldGlowTimers.get(id);
+                if (existingGlowTimer) clearTimeout(existingGlowTimer);
+
+                // Start glow timer - add glow class when hold threshold is reached
+                const glowTimer = window.setTimeout(() => {
+                    // Set glow color based on button's background color
+                    const bgColor = window.getComputedStyle(newBtn).backgroundColor;
+                    const rgbaMatch = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (rgbaMatch) {
+                        const [, r, g, b] = rgbaMatch;
+                        newBtn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
                     }
-                    break;
-                case 'zaList':
-                    if (this.zasList && this.zasList.style.display === 'grid') {
-                        this.hideLists();
-                    } else {
-                        this.hideLists();
-                        this.renderZasList();
-                        if (this.zasList) this.zasList.style.display = 'grid';
-                        newBtn.classList.add('active');
+                    newBtn.classList.add('hold-glow');
+                    if (this.hapticEnabled) navigator.vibrate?.([50, 30, 50]); // Haptic feedback when hold activates
+                }, MobileDirectionButtons.HOLD_DURATION);
+                this.buttonHoldGlowTimers.set(id, glowTimer);
+            };
+
+            const onPointerMove = (e: PointerEvent) => {
+                const pressStart = this.buttonPressStart.get(id);
+                if (!pressStart) return;
+
+                const elapsed = Date.now() - pressStart.time;
+                const dx = Math.abs(e.clientX - pressStart.x);
+                const dy = Math.abs(e.clientY - pressStart.y);
+                const moved = dx > MobileDirectionButtons.DRAG_MOVE_THRESHOLD || dy > MobileDirectionButtons.DRAG_MOVE_THRESHOLD;
+
+                // Only mark as dragged if moved significantly AND after drag activation duration AND buttons unlocked
+                if (moved && elapsed > MobileDirectionButtons.DRAG_ACTIVATION_DURATION && !this.dragLocked) {
+                    this.buttonDragged.add(id);
+                    // Cancel glow when dragging
+                    const glowTimer = this.buttonHoldGlowTimers.get(id);
+                    if (glowTimer) {
+                        clearTimeout(glowTimer);
+                        this.buttonHoldGlowTimers.delete(id);
                     }
-                    break;
-                case 'wList':
-                    if (this.wList && this.wList.style.display === 'grid') {
-                        this.hideLists();
-                    } else {
-                        this.hideLists();
-                        this.renderWList();
-                        if (this.wList) this.wList.style.display = 'grid';
-                        newBtn.classList.add('active');
-                    }
-                    break;
-                case 'przeList':
-                    if (this.przeList && this.przeList.style.display === 'grid') {
-                        this.hideLists();
-                    } else {
-                        this.hideLists();
-                        this.renderPrzeList();
-                        if (this.przeList) this.przeList.style.display = 'grid';
-                        newBtn.classList.add('active');
-                    }
-                    break;
-                case 'idzList':
-                    if (this.idzList && this.idzList.style.display === 'grid') {
-                        this.hideLists();
-                    } else {
-                        this.hideLists();
-                        this.renderIdzList();
-                        if (this.idzList) this.idzList.style.display = 'grid';
-                        newBtn.classList.add('active');
-                    }
-                    break;
-                case 'toggleButtons':
-                    this.toggleVisibility();
-                    break;
-                case 'command':
-                    if (cfg.command) this.client.sendCommand(cfg.command);
-                    break;
-                case 'kierunek':
-                    if (cfg.command) {
-                        this.client.sendCommand(cfg.command);
-                    } else if (cfg.direction) {
-                        this.client.sendCommand(cfg.direction);
-                    }
-                    break;
-                case 'wesprzyj':
-                    this.client.support();
-                    break;
-                case 'moveMode':
-                    if (this.client.carriageMode) break;
-                    const options = this.getMoveModeOptionsCount() || 1;
-                    this.client.moveMode = (this.client.moveMode + 1) % options;
-                    this.updateMoveModeButton(newBtn);
-                    this.client.sendEvent('moveModeChanged', this.client.moveMode);
-                    break;
-                case 'specialExit':
-                    const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
-                    const firstExit = Object.keys(specialExits)[0];
-                    if (firstExit) {
-                        this.client.sendCommand(firstExit);
-                    }
-                    break;
-                case 'attackEnemy':
-                    if (typeof cfg.enemySlot === 'number') {
-                        this.client.attackEnemySlot(cfg.enemySlot);
-                    }
-                    break;
-                case 'blockEnemy':
-                    if (typeof cfg.enemySlot === 'number') {
-                        this.client.blockEnemySlot(cfg.enemySlot);
-                    }
-                    break;
-                default:
-                    // Handle plugin macros
-                    if (cfg.macro.startsWith('plugin:')) {
-                        executeButtonMacro(cfg.macro, cfg, this.client, cfg.pluginConfig || {});
-                    }
-                    break;
-            }
-        };
-        newBtn.addEventListener('click', handler);
+                    newBtn.classList.remove('hold-glow');
+                    newBtn.style.removeProperty('--hold-glow-color');
+                }
+            };
+
+            const onPointerUp = () => {
+                // Clear glow timer and remove glow class
+                const glowTimer = this.buttonHoldGlowTimers.get(id);
+                if (glowTimer) {
+                    clearTimeout(glowTimer);
+                    this.buttonHoldGlowTimers.delete(id);
+                }
+                newBtn.classList.remove('hold-glow');
+                newBtn.style.removeProperty('--hold-glow-color');
+
+                const pressStart = this.buttonPressStart.get(id);
+                this.buttonPressStart.delete(id);
+
+                // If dragged, don't execute any macro
+                if (this.buttonDragged.has(id)) {
+                    this.buttonDragged.delete(id);
+                    return;
+                }
+
+                if (!pressStart) return;
+
+                const elapsed = Date.now() - pressStart.time;
+
+                if (elapsed >= MobileDirectionButtons.HOLD_DURATION) {
+                    // Execute hold action (haptic already done when glow activated)
+                    const holdCfg: ButtonSetting = {
+                        ...cfg,
+                        macro: hold.macro,
+                        command: hold.command,
+                        direction: hold.direction,
+                        enemySlot: hold.enemySlot,
+                        pluginConfig: hold.pluginConfig
+                    };
+                    this.executeMacro(hold.macro, hold.command, hold.direction, hold.enemySlot, hold.pluginConfig, newBtn, holdCfg);
+                } else {
+                    // Execute tap action
+                    if (this.hapticEnabled) navigator.vibrate?.(20);
+                    this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+                }
+            };
+
+            const onPointerCancel = () => {
+                // Clear glow timer and remove glow class
+                const glowTimer = this.buttonHoldGlowTimers.get(id);
+                if (glowTimer) {
+                    clearTimeout(glowTimer);
+                    this.buttonHoldGlowTimers.delete(id);
+                }
+                newBtn.classList.remove('hold-glow');
+                newBtn.style.removeProperty('--hold-glow-color');
+                this.buttonPressStart.delete(id);
+                this.buttonDragged.delete(id);
+            };
+
+            newBtn.addEventListener('pointerdown', onPointerDown);
+            newBtn.addEventListener('pointermove', onPointerMove);
+            newBtn.addEventListener('pointerup', onPointerUp);
+            newBtn.addEventListener('pointercancel', onPointerCancel);
+            newBtn.addEventListener('pointerleave', onPointerCancel);
+        } else {
+            // Standard click handler (no hold)
+            const handler = () => {
+                if (this.hapticEnabled) navigator.vibrate?.(20);
+                this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+            };
+            newBtn.addEventListener('click', handler);
+        }
 
         if (cfg.macro === 'moveMode') {
             this.client.moveModeButton = newBtn;
@@ -1111,6 +1121,129 @@ export default class MobileDirectionButtons {
         const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
         button.textContent = label;
         button.title = title;
+    }
+
+    private executeMacro(
+        macro: string,
+        command?: string,
+        direction?: string,
+        enemySlot?: number,
+        pluginConfig?: Record<string, any>,
+        btn?: HTMLButtonElement,
+        cfg?: ButtonSetting
+    ) {
+        switch (macro) {
+            case 'empty':
+                break;
+            case 'functional':
+                const event = new KeyboardEvent('keydown', {
+                    code: this.boundKey,
+                    key: this.boundKey,
+                    ctrlKey: this.boundCtrl,
+                    altKey: this.boundAlt,
+                    shiftKey: this.boundShift,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(event);
+                break;
+            case 'zList':
+                if (this.zList && this.zList.style.display === 'grid') {
+                    this.hideLists();
+                } else {
+                    this.hideLists();
+                    this.renderZList();
+                    if (this.zList) this.zList.style.display = 'grid';
+                    btn?.classList.add('active');
+                }
+                break;
+            case 'zaList':
+                if (this.zasList && this.zasList.style.display === 'grid') {
+                    this.hideLists();
+                } else {
+                    this.hideLists();
+                    this.renderZasList();
+                    if (this.zasList) this.zasList.style.display = 'grid';
+                    btn?.classList.add('active');
+                }
+                break;
+            case 'wList':
+                if (this.wList && this.wList.style.display === 'grid') {
+                    this.hideLists();
+                } else {
+                    this.hideLists();
+                    this.renderWList();
+                    if (this.wList) this.wList.style.display = 'grid';
+                    btn?.classList.add('active');
+                }
+                break;
+            case 'przeList':
+                if (this.przeList && this.przeList.style.display === 'grid') {
+                    this.hideLists();
+                } else {
+                    this.hideLists();
+                    this.renderPrzeList();
+                    if (this.przeList) this.przeList.style.display = 'grid';
+                    btn?.classList.add('active');
+                }
+                break;
+            case 'idzList':
+                if (this.idzList && this.idzList.style.display === 'grid') {
+                    this.hideLists();
+                } else {
+                    this.hideLists();
+                    this.renderIdzList();
+                    if (this.idzList) this.idzList.style.display = 'grid';
+                    btn?.classList.add('active');
+                }
+                break;
+            case 'toggleButtons':
+                this.toggleVisibility();
+                break;
+            case 'command':
+                if (command) this.client.sendCommand(command);
+                break;
+            case 'kierunek':
+                if (command) {
+                    this.client.sendCommand(command);
+                } else if (direction) {
+                    this.client.sendCommand(direction);
+                }
+                break;
+            case 'wesprzyj':
+                this.client.support();
+                break;
+            case 'moveMode':
+                if (this.client.carriageMode || !btn) break;
+                const options = this.getMoveModeOptionsCount() || 1;
+                this.client.moveMode = (this.client.moveMode + 1) % options;
+                this.updateMoveModeButton(btn);
+                this.client.sendEvent('moveModeChanged', this.client.moveMode);
+                break;
+            case 'specialExit':
+                const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
+                const firstExit = Object.keys(specialExits)[0];
+                if (firstExit) {
+                    this.client.sendCommand(firstExit);
+                }
+                break;
+            case 'attackEnemy':
+                if (typeof enemySlot === 'number') {
+                    this.client.attackEnemySlot(enemySlot);
+                }
+                break;
+            case 'blockEnemy':
+                if (typeof enemySlot === 'number') {
+                    this.client.blockEnemySlot(enemySlot);
+                }
+                break;
+            default:
+                // Handle plugin macros
+                if (macro.startsWith('plugin:') && cfg) {
+                    executeButtonMacro(macro, cfg, this.client, pluginConfig || {});
+                }
+                break;
+        }
     }
 
 }

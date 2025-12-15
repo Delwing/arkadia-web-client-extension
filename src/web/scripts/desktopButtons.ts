@@ -15,7 +15,9 @@ import {
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 
-const LONG_PRESS_DURATION = 500;
+const LONG_PRESS_DURATION = 1000;  // 1s for drag activation
+const HOLD_THRESHOLD = 500;  // 500ms determines tap vs hold
+const DRAG_MOVE_THRESHOLD = 10;  // pixels to consider as movement
 
 export default class DesktopButtons {
     private client: Client;
@@ -36,6 +38,11 @@ export default class DesktopButtons {
     private initialY = 0;
     private offsetX = 0;
     private offsetY = 0;
+
+    // Hold action state - tracks press start for release-based execution
+    private buttonPressStart: Map<string, { time: number; x: number; y: number; settings: DesktopButtonSetting; btn: HTMLButtonElement }> = new Map();
+    private buttonDragged: Set<string> = new Set();
+    private buttonHoldGlowTimers: Map<string, number> = new Map();
 
     constructor(client: Client) {
         this.client = client;
@@ -345,25 +352,25 @@ export default class DesktopButtons {
         });
     }
 
-    private handleClick(e: MouseEvent, settings: DesktopButtonSetting) {
-        // Don't trigger click if we just finished dragging
-        if (this.isDragging) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-        }
-
+    private executeMacro(
+        macroType: string,
+        command?: string,
+        enemySlot?: number,
+        pluginConfig?: Record<string, any>,
+        settings?: DesktopButtonSetting,
+        e?: MouseEvent
+    ) {
         // Handle plugin macros (state is managed globally by the registry)
-        if (settings.macroType.startsWith('plugin:')) {
-            executeButtonMacro(settings.macroType, settings, this.client, settings.pluginConfig || {});
+        if (macroType.startsWith('plugin:') && settings) {
+            executeButtonMacro(macroType, settings, this.client, pluginConfig || {});
             return;
         }
 
         // Execute macro based on type
-        switch (settings.macroType) {
+        switch (macroType) {
             case 'command':
-                if (settings.command) {
-                    const commands = settings.command.split('\n').filter(cmd => cmd.trim());
+                if (command) {
+                    const commands = command.split('\n').filter(cmd => cmd.trim());
                     for (const cmd of commands) {
                         this.client.sendCommand(cmd.trim());
                     }
@@ -374,8 +381,10 @@ export default class DesktopButtons {
             case 'wList':
             case 'przeList':
             case 'idzList':
-                e.stopPropagation();
-                this.toggleList(settings.id, settings);
+                if (e && settings) {
+                    e.stopPropagation();
+                    this.toggleList(settings.id, settings);
+                }
                 break;
             case 'wesprzyj':
                 this.client.support();
@@ -388,16 +397,42 @@ export default class DesktopButtons {
                 }
                 break;
             case 'attackEnemy': {
-                const slot = settings.enemySlot ?? 0;
+                const slot = enemySlot ?? 0;
                 this.client.attackEnemySlot(slot);
                 break;
             }
             case 'blockEnemy': {
-                const slot = settings.enemySlot ?? 0;
+                const slot = enemySlot ?? 0;
                 this.client.blockEnemySlot(slot);
                 break;
             }
         }
+    }
+
+    private handleClick(e: MouseEvent, settings: DesktopButtonSetting) {
+        // Don't trigger click if we just finished dragging
+        if (this.isDragging) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
+        // If button has hold enabled, click is handled in mouseup/touchend
+        if (settings.holdEnabled && settings.hold?.macroType) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
+        // Don't trigger if button was dragged
+        if (this.buttonDragged.has(settings.id)) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.buttonDragged.delete(settings.id);
+            return;
+        }
+
+        this.executeMacro(settings.macroType, settings.command, settings.enemySlot, settings.pluginConfig, settings, e);
     }
 
     private getMoveModeOptionsCount(): number {
@@ -406,40 +441,238 @@ export default class DesktopButtons {
     }
 
     private handleMouseDown(e: MouseEvent, settings: DesktopButtonSetting) {
-        if (this.settings.locked) return;
         if (e.button !== 0) return;
 
         const btn = e.currentTarget as HTMLButtonElement;
+
+        // Record press start for hold detection
+        if (settings.holdEnabled && settings.hold?.macroType) {
+            this.buttonPressStart.set(settings.id, {
+                time: Date.now(),
+                x: e.clientX,
+                y: e.clientY,
+                settings,
+                btn
+            });
+            this.buttonDragged.delete(settings.id);
+
+            // Clear any existing glow timer
+            const existingGlowTimer = this.buttonHoldGlowTimers.get(settings.id);
+            if (existingGlowTimer) clearTimeout(existingGlowTimer);
+
+            // Start glow timer - add glow class when hold threshold is reached
+            const glowTimer = window.setTimeout(() => {
+                // Set glow color based on button's background color
+                const bgColor = window.getComputedStyle(btn).backgroundColor;
+                const rgbaMatch = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (rgbaMatch) {
+                    const [, r, g, b] = rgbaMatch;
+                    btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
+                }
+                btn.classList.add('hold-glow');
+            }, HOLD_THRESHOLD);
+            this.buttonHoldGlowTimers.set(settings.id, glowTimer);
+        }
+
+        if (this.settings.locked) return;
+
         this.startLongPress(e.clientX, e.clientY, btn, settings.id);
     }
 
     private handleMouseMove(e: MouseEvent) {
+        // Check for button press movement (for hold detection)
+        this.buttonPressStart.forEach((pressStart, buttonId) => {
+            const elapsed = Date.now() - pressStart.time;
+            const dx = Math.abs(e.clientX - pressStart.x);
+            const dy = Math.abs(e.clientY - pressStart.y);
+            const moved = dx > DRAG_MOVE_THRESHOLD || dy > DRAG_MOVE_THRESHOLD;
+
+            // Mark as dragged if moved significantly AND after drag activation time AND buttons unlocked
+            if (moved && elapsed > LONG_PRESS_DURATION && !this.settings.locked) {
+                this.buttonDragged.add(buttonId);
+                // Cancel glow when dragging
+                const glowTimer = this.buttonHoldGlowTimers.get(buttonId);
+                if (glowTimer) {
+                    clearTimeout(glowTimer);
+                    this.buttonHoldGlowTimers.delete(buttonId);
+                }
+                pressStart.btn.classList.remove('hold-glow');
+                pressStart.btn.style.removeProperty('--hold-glow-color');
+            }
+        });
+
         if (!this.isDragging || !this.dragButton) return;
         e.preventDefault();
         this.updateDragPosition(e.clientX, e.clientY);
     }
 
-    private handleMouseUp(_e: MouseEvent) {
+    private handleMouseUp(e: MouseEvent) {
+        // Handle hold button release
+        this.buttonPressStart.forEach((pressStart, buttonId) => {
+            const settings = pressStart.settings;
+            const btn = pressStart.btn;
+
+            // Clear glow timer and remove glow class
+            const glowTimer = this.buttonHoldGlowTimers.get(buttonId);
+            if (glowTimer) {
+                clearTimeout(glowTimer);
+                this.buttonHoldGlowTimers.delete(buttonId);
+            }
+            btn.classList.remove('hold-glow');
+            btn.style.removeProperty('--hold-glow-color');
+
+            // If dragged, don't execute macro
+            if (this.buttonDragged.has(buttonId)) {
+                this.buttonDragged.delete(buttonId);
+                this.buttonPressStart.delete(buttonId);
+                return;
+            }
+
+            const elapsed = Date.now() - pressStart.time;
+            this.buttonPressStart.delete(buttonId);
+
+            if (elapsed >= HOLD_THRESHOLD) {
+                // Execute hold action
+                const hold = settings.hold!;
+                this.executeMacro(
+                    hold.macroType,
+                    hold.command,
+                    hold.enemySlot,
+                    hold.pluginConfig,
+                    settings
+                );
+            } else {
+                // Execute tap action
+                this.executeMacro(
+                    settings.macroType,
+                    settings.command,
+                    settings.enemySlot,
+                    settings.pluginConfig,
+                    settings,
+                    e
+                );
+            }
+        });
+
         this.endDrag();
     }
 
     private handleTouchStart(e: TouchEvent, settings: DesktopButtonSetting) {
-        if (this.settings.locked) return;
         if (e.touches.length !== 1) return;
 
         const touch = e.touches[0];
         const btn = e.currentTarget as HTMLButtonElement;
+
+        // Record press start for hold detection
+        if (settings.holdEnabled && settings.hold?.macroType) {
+            this.buttonPressStart.set(settings.id, {
+                time: Date.now(),
+                x: touch.clientX,
+                y: touch.clientY,
+                settings,
+                btn
+            });
+            this.buttonDragged.delete(settings.id);
+
+            // Clear any existing glow timer
+            const existingGlowTimer = this.buttonHoldGlowTimers.get(settings.id);
+            if (existingGlowTimer) clearTimeout(existingGlowTimer);
+
+            // Start glow timer - add glow class when hold threshold is reached
+            const glowTimer = window.setTimeout(() => {
+                // Set glow color based on button's background color
+                const bgColor = window.getComputedStyle(btn).backgroundColor;
+                const rgbaMatch = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (rgbaMatch) {
+                    const [, r, g, b] = rgbaMatch;
+                    btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
+                }
+                btn.classList.add('hold-glow');
+            }, HOLD_THRESHOLD);
+            this.buttonHoldGlowTimers.set(settings.id, glowTimer);
+        }
+
+        if (this.settings.locked) return;
+
         this.startLongPress(touch.clientX, touch.clientY, btn, settings.id);
     }
 
     private handleTouchMove(e: TouchEvent) {
+        const touch = e.touches[0];
+
+        // Check for button press movement (for hold detection)
+        this.buttonPressStart.forEach((pressStart, buttonId) => {
+            const elapsed = Date.now() - pressStart.time;
+            const dx = Math.abs(touch.clientX - pressStart.x);
+            const dy = Math.abs(touch.clientY - pressStart.y);
+            const moved = dx > DRAG_MOVE_THRESHOLD || dy > DRAG_MOVE_THRESHOLD;
+
+            // Mark as dragged if moved significantly AND after drag activation time AND buttons unlocked
+            if (moved && elapsed > LONG_PRESS_DURATION && !this.settings.locked) {
+                this.buttonDragged.add(buttonId);
+                // Cancel glow when dragging
+                const glowTimer = this.buttonHoldGlowTimers.get(buttonId);
+                if (glowTimer) {
+                    clearTimeout(glowTimer);
+                    this.buttonHoldGlowTimers.delete(buttonId);
+                }
+                pressStart.btn.classList.remove('hold-glow');
+                pressStart.btn.style.removeProperty('--hold-glow-color');
+            }
+        });
+
         if (!this.isDragging || !this.dragButton) return;
         e.preventDefault();
-        const touch = e.touches[0];
         this.updateDragPosition(touch.clientX, touch.clientY);
     }
 
     private handleTouchEnd(_e: TouchEvent) {
+        // Handle hold button release
+        this.buttonPressStart.forEach((pressStart, buttonId) => {
+            const settings = pressStart.settings;
+            const btn = pressStart.btn;
+
+            // Clear glow timer and remove glow class
+            const glowTimer = this.buttonHoldGlowTimers.get(buttonId);
+            if (glowTimer) {
+                clearTimeout(glowTimer);
+                this.buttonHoldGlowTimers.delete(buttonId);
+            }
+            btn.classList.remove('hold-glow');
+            btn.style.removeProperty('--hold-glow-color');
+
+            // If dragged, don't execute macro
+            if (this.buttonDragged.has(buttonId)) {
+                this.buttonDragged.delete(buttonId);
+                this.buttonPressStart.delete(buttonId);
+                return;
+            }
+
+            const elapsed = Date.now() - pressStart.time;
+            this.buttonPressStart.delete(buttonId);
+
+            if (elapsed >= HOLD_THRESHOLD) {
+                // Execute hold action
+                const hold = settings.hold!;
+                this.executeMacro(
+                    hold.macroType,
+                    hold.command,
+                    hold.enemySlot,
+                    hold.pluginConfig,
+                    settings
+                );
+            } else {
+                // Execute tap action
+                this.executeMacro(
+                    settings.macroType,
+                    settings.command,
+                    settings.enemySlot,
+                    settings.pluginConfig,
+                    settings
+                );
+            }
+        });
+
         this.endDrag();
     }
 
@@ -496,6 +729,12 @@ export default class DesktopButtons {
 
     private endDrag() {
         this.cancelLongPress();
+
+        // Clear button press state if we were dragging
+        if (this.dragButtonId) {
+            this.buttonPressStart.delete(this.dragButtonId);
+            this.buttonDragged.delete(this.dragButtonId);
+        }
 
         if (this.isDragging && this.dragButton && this.dragButtonId) {
             const newX = parseInt(this.dragButton.style.left, 10) || 0;
