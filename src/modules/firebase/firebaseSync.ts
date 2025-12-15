@@ -64,7 +64,7 @@ export async function uploadCategory(
     }
 }
 
-// Upload multiple categories to Firestore
+// Upload multiple categories to Firestore using batch write (single network request)
 export async function uploadCategories(
     categoryData: Partial<Record<SyncCategory, string>>,
     options: {
@@ -75,21 +75,73 @@ export async function uploadCategories(
     const errors: Partial<Record<SyncCategory, string>> = {};
     const timestamps: CategorySyncTimes = {};
 
-    const categories = Object.keys(categoryData) as SyncCategory[];
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED }, timestamps };
+        }
 
-    await Promise.all(
-        categories.map(async (category) => {
+        const { db } = await ensureFirebaseInitialized();
+        const { doc, writeBatch, serverTimestamp } = await import('firebase/firestore');
+
+        const batch = writeBatch(db);
+        const categories = Object.keys(categoryData) as SyncCategory[];
+        const now = Date.now();
+        const deviceId = getDeviceId();
+
+        // Prepare all payloads
+        for (const category of categories) {
             const data = categoryData[category];
-            if (!data) return;
+            if (!data) continue;
 
-            const result = await uploadCategory(category, data, options);
-            if (result.success && result.timestamp) {
-                timestamps[category] = result.timestamp;
-            } else if (result.error) {
-                errors[category] = result.error;
+            try {
+                // Calculate checksum of original data
+                const checksum = await calculateChecksum(data);
+
+                // Encrypt if needed
+                let finalData: string;
+                if (options.encrypted && options.passphrase) {
+                    const encryptedData = await encrypt(data, options.passphrase);
+                    finalData = JSON.stringify(encryptedData);
+                } else {
+                    finalData = data;
+                }
+
+                const payload: CategoryPayload = {
+                    version: 1,
+                    syncedAt: new Date().toISOString(),
+                    deviceId,
+                    checksum,
+                    encrypted: options.encrypted,
+                    data: finalData,
+                };
+
+                const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+                batch.set(docRef, {
+                    ...payload,
+                    updatedAt: serverTimestamp(),
+                });
+
+                timestamps[category] = now;
+            } catch (err) {
+                console.error(`Failed to prepare category ${category}`, err);
+                errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
             }
-        })
-    );
+        }
+
+        // Commit batch in single network request
+        await batch.commit();
+
+        // Update local sync times
+        const settings = loadFirebaseSettings();
+        const updatedTimes: CategorySyncTimes = { ...settings.categorySyncTimes, ...timestamps };
+        saveFirebaseSettings({ categorySyncTimes: updatedTimes });
+
+    } catch (err) {
+        console.error('Failed to upload categories batch', err);
+        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps };
+    }
 
     const success = Object.keys(errors).length === 0;
     return { success, errors, timestamps };
@@ -151,7 +203,7 @@ export async function downloadCategory(
     }
 }
 
-// Download multiple categories from Firestore
+// Download multiple categories from Firestore using single collection read
 export async function downloadCategories(
     categories: SyncCategory[],
     passphrase?: string
@@ -163,16 +215,76 @@ export async function downloadCategories(
     const data: Partial<Record<SyncCategory, string>> = {};
     const errors: Partial<Record<SyncCategory, string>> = {};
 
-    await Promise.all(
-        categories.map(async (category) => {
-            const result = await downloadCategory(category, passphrase);
-            if (result.success && result.data !== undefined) {
-                data[category] = result.data;
-            } else if (result.error) {
-                errors[category] = result.error;
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, data, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED } };
+        }
+
+        const { db } = await ensureFirebaseInitialized();
+        const { collection, getDocs } = await import('firebase/firestore');
+
+        // Single query to get all documents in the sync subcollection
+        const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        const snapshot = await getDocs(collRef);
+
+        // Build a map of all cloud data
+        const cloudData = new Map<SyncCategory, CategoryPayload>();
+        snapshot.forEach((docSnap) => {
+            const category = docSnap.id as SyncCategory;
+            if (categories.includes(category)) {
+                cloudData.set(category, docSnap.data() as CategoryPayload);
             }
-        })
-    );
+        });
+
+        // Process requested categories
+        for (const category of categories) {
+            const payload = cloudData.get(category);
+            if (!payload) {
+                // No data for this category - not an error
+                continue;
+            }
+
+            try {
+                // Decrypt if needed
+                let categoryData: string;
+                if (payload.encrypted) {
+                    if (!passphrase) {
+                        errors[category] = FIREBASE_ERRORS.WRONG_PASSPHRASE;
+                        continue;
+                    }
+                    try {
+                        const encryptedData = JSON.parse(payload.data);
+                        if (!isEncryptedData(encryptedData)) {
+                            errors[category] = FIREBASE_ERRORS.DECRYPTION_FAILED;
+                            continue;
+                        }
+                        categoryData = await decrypt(encryptedData as EncryptedData, passphrase);
+                    } catch {
+                        errors[category] = FIREBASE_ERRORS.DECRYPTION_FAILED;
+                        continue;
+                    }
+                } else {
+                    categoryData = payload.data;
+                }
+
+                // Verify checksum
+                const checksum = await calculateChecksum(categoryData);
+                if (checksum !== payload.checksum) {
+                    console.warn(`Checksum mismatch for category ${category} - data may be corrupted`);
+                }
+
+                data[category] = categoryData;
+            } catch (err) {
+                console.error(`Failed to process category ${category}`, err);
+                errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to download categories', err);
+        return { success: false, data, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
+    }
 
     const success = Object.keys(errors).length === 0;
     return { success, data, errors };
@@ -233,7 +345,7 @@ export async function checkCategoryConflict(
     }
 }
 
-// Check for conflicts on multiple categories
+// Check for conflicts on multiple categories using single collection read
 export async function checkCategoriesConflicts(
     categoryData: Partial<Record<SyncCategory, string>>,
     passphrase?: string
@@ -244,21 +356,75 @@ export async function checkCategoriesConflicts(
     const conflicts: CategoryConflictInfo[] = [];
     const errors: Partial<Record<SyncCategory, string>> = {};
 
-    const categories = Object.keys(categoryData) as SyncCategory[];
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { conflicts, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED } };
+        }
 
-    await Promise.all(
-        categories.map(async (category) => {
-            const data = categoryData[category];
-            if (!data) return;
+        const { db } = await ensureFirebaseInitialized();
+        const { collection, getDocs } = await import('firebase/firestore');
 
-            const result = await checkCategoryConflict(category, data, passphrase);
-            if (result.hasConflict && result.conflictInfo) {
-                conflicts.push(result.conflictInfo);
-            } else if (result.error) {
-                errors[category] = result.error;
+        // Single query to get all documents
+        const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        const snapshot = await getDocs(collRef);
+
+        // Build map of cloud payloads
+        const cloudPayloads = new Map<SyncCategory, CategoryPayload>();
+        snapshot.forEach((docSnap) => {
+            const category = docSnap.id as SyncCategory;
+            cloudPayloads.set(category, docSnap.data() as CategoryPayload);
+        });
+
+        const categories = Object.keys(categoryData) as SyncCategory[];
+        const settings = loadFirebaseSettings();
+        const deviceId = getDeviceId();
+
+        for (const category of categories) {
+            const localData = categoryData[category];
+            if (!localData) continue;
+
+            const cloudPayload = cloudPayloads.get(category);
+            if (!cloudPayload) {
+                // No cloud data - no conflict
+                continue;
             }
-        })
-    );
+
+            try {
+                const localChecksum = await calculateChecksum(localData);
+
+                // Same checksum - no conflict
+                if (localChecksum === cloudPayload.checksum) {
+                    continue;
+                }
+
+                // Different device made the last change - potential conflict
+                if (cloudPayload.deviceId !== deviceId) {
+                    const cloudTimestamp = new Date(cloudPayload.syncedAt).getTime();
+                    const localTimestamp = settings.categorySyncTimes[category] ?? 0;
+
+                    // Cloud is newer than our last sync - conflict
+                    if (cloudTimestamp > localTimestamp) {
+                        conflicts.push({
+                            category,
+                            localTimestamp,
+                            cloudTimestamp,
+                            localChecksum,
+                            cloudChecksum: cloudPayload.checksum,
+                            cloudData: cloudPayload,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error(`Failed to check conflict for category ${category}`, err);
+                errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to check conflicts', err);
+        return { conflicts, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
+    }
 
     return { conflicts, errors };
 }
@@ -379,29 +545,55 @@ export async function deleteCategory(category: SyncCategory): Promise<{ success:
     }
 }
 
-// Delete all categories from cloud
+// Delete all categories from cloud using batch delete (single network request)
 export async function deleteAllCategories(): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>> }> {
     const errors: Partial<Record<SyncCategory, string>> = {};
 
-    // Get all existing categories first
-    const metadata = await getAllCategoriesMetadata();
-    if (metadata.error) {
-        return { success: false, errors: { uiSettings: metadata.error } };
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED } };
+        }
+
+        const { db } = await ensureFirebaseInitialized();
+        const { collection, getDocs, writeBatch, doc } = await import('firebase/firestore');
+
+        // Get all documents to delete
+        const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        const snapshot = await getDocs(collRef);
+
+        if (snapshot.empty) {
+            return { success: true, errors };
+        }
+
+        // Batch delete all documents
+        const batch = writeBatch(db);
+        const deletedCategories: SyncCategory[] = [];
+
+        snapshot.forEach((docSnap) => {
+            const category = docSnap.id as SyncCategory;
+            const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+            batch.delete(docRef);
+            deletedCategories.push(category);
+        });
+
+        await batch.commit();
+
+        // Clear local sync times for deleted categories
+        const settings = loadFirebaseSettings();
+        const updatedTimes = { ...settings.categorySyncTimes };
+        for (const category of deletedCategories) {
+            delete updatedTimes[category];
+        }
+        saveFirebaseSettings({ categorySyncTimes: updatedTimes });
+
+    } catch (err) {
+        console.error('Failed to delete all categories', err);
+        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
     }
 
-    const existingCategories = Object.keys(metadata.categories) as SyncCategory[];
-
-    await Promise.all(
-        existingCategories.map(async (category) => {
-            const result = await deleteCategory(category);
-            if (!result.success && result.error) {
-                errors[category] = result.error;
-            }
-        })
-    );
-
-    const success = Object.keys(errors).length === 0;
-    return { success, errors };
+    return { success: true, errors };
 }
 
 // Update sync time for a category (without uploading)

@@ -35,6 +35,7 @@ import {
     checkCategoriesConflicts,
     getAllCategoriesMetadata,
     updateCategorySyncTime,
+    deleteAllCategories,
 } from "@modules/firebase";
 import {
     collectCharacters,
@@ -94,6 +95,10 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const [conflicts, setConflicts] = useState<CategoryConflictInfo[]>([]);
     const [showConflictModal, setShowConflictModal] = useState(false);
 
+    // Delete state
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     // Auto-sync
     const autoSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef(false);
@@ -115,6 +120,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
     // Initialize Firebase on mount
     const initFirebase = useCallback(async () => {
+        // Skip Firebase initialization in test environment
+        if ((window as { __DISABLE_FIREBASE__?: boolean }).__DISABLE_FIREBASE__) {
+            setIsInitializing(false);
+            setInitError('Firebase disabled in test environment');
+            return;
+        }
+
         setIsInitializing(true);
         setInitError(null);
         try {
@@ -485,6 +497,33 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         setConflicts([]);
     }, [handleDownload, encryptionEnabled, passphrase]);
+
+    const handleDeleteCloudData = useCallback(async () => {
+        if (!authState.isAuthenticated) return;
+
+        setIsDeleting(true);
+        setSyncError(null);
+        setSyncStatus(null);
+
+        try {
+            const result = await deleteAllCategories();
+
+            if (!result.success) {
+                const firstError = Object.values(result.errors)[0];
+                setSyncError(firstError ?? FIREBASE_ERRORS.SYNC_FAILED);
+                return;
+            }
+
+            setSyncStatus('Dane zostaly usuniete z chmury.');
+            setCloudMetadata({});
+        } catch (err) {
+            console.error('Delete failed', err);
+            setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    }, [authState.isAuthenticated]);
 
     // Render loading state
     if (isInitializing) {
@@ -915,6 +954,57 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </p>
                     </div>
+
+                    {/* Delete cloud data */}
+                    {Object.values(cloudMetadata).some(m => m?.exists) && (
+                        <div className="border rounded p-3 border-danger">
+                            <div className="fw-semibold mb-2 text-danger">Usuwanie danych z chmury</div>
+                            {!showDeleteConfirm ? (
+                                <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={isSyncing || isDeleting}
+                                >
+                                    Usun wszystkie dane z chmury
+                                </Button>
+                            ) : (
+                                <div>
+                                    <p className="text-danger small mb-2">
+                                        Czy na pewno chcesz usunac wszystkie dane z chmury? Tej operacji nie mozna cofnac.
+                                    </p>
+                                    <div className="d-flex gap-2">
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            onClick={handleDeleteCloudData}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? (
+                                                <span className="d-inline-flex align-items-center gap-2">
+                                                    <Spinner animation="border" size="sm" />
+                                                    <span>Usuwanie...</span>
+                                                </span>
+                                            ) : (
+                                                'Tak, usun'
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            disabled={isDeleting}
+                                        >
+                                            Anuluj
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            <p className="text-muted small mb-0 mt-2">
+                                Usuwa wszystkie zsynchronizowane dane z chmury (niezaleznie od szyfrowania). Dane lokalne pozostana nienaruszone.
+                            </p>
+                        </div>
+                    )}
                     </div>
                 </div>
             </div>

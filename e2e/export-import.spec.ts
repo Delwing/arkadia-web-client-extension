@@ -16,8 +16,8 @@ async function openExportImportModal(page: Page) {
     await page.click(EXPORT_IMPORT_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);
     await expect(modal, 'should display export/import modal').toBeVisible();
-    // Switch to "Lokalnie" tab (Firebase tab is now default)
-    await modal.getByRole('button', {name: 'Lokalnie'}).click();
+    // Switch to "Plik" tab (Firebase tab is now default)
+    await modal.getByRole('button', {name: 'Plik'}).click();
     // Wait for Local tab content to load
     await expect(modal.getByRole('button', {name: 'Eksportuj dane'})).toBeVisible();
     return modal;

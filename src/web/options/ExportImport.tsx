@@ -38,7 +38,7 @@ function ExportImport() {
                     variant={activeTab === 'local' ? 'primary' : 'outline-secondary'}
                     onClick={() => setActiveTab('local')}
                 >
-                    Lokalnie
+                    Plik
                 </Button>
                 <Button
                     size="sm"

@@ -14,10 +14,12 @@ import {
 
 const test = base.extend({
     context: async ({context}, use) => {
-        // Disable Google Analytics in tests
+        // Disable Google Analytics and Firebase in tests
         await context.addInitScript(() => {
             // @ts-expect-error for disabling GA
             window.__DISABLE_GA__ = true;
+            // @ts-expect-error for disabling Firebase
+            window.__DISABLE_FIREBASE__ = true;
         });
 
         await mockMapDownloads(context);
