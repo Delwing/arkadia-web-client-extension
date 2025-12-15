@@ -513,6 +513,19 @@ interface ObjectListFiltersApi {
 }
 
 /**
+ * Handle returned by buttonMacros.register() for controlling macro state
+ */
+interface ButtonMacroHandle {
+  getState(): string | undefined;
+
+  setState(stateId: string): boolean;
+
+  cycleState(): void;
+
+  onStateChange(listener: (newState: string, oldState: string | undefined) => void): () => void;
+}
+
+/**
  * Button Macros API - Register custom button macros
  *
  * Allows plugins to define custom macros that can be assigned to mobile and desktop buttons.
@@ -526,7 +539,7 @@ interface ButtonMacrosApi {
     configFields?: MacroConfigField[];
     states?: MacroState[];
     initialState?: string;
-  }): void;
+  }): ButtonMacroHandle;
 
   unregister(id: string): void;
 

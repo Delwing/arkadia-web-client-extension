@@ -51,6 +51,7 @@ import {
 import {
   registerButtonMacro,
   unregisterButtonMacro,
+  getButtonMacroById,
   getButtonMacroState,
   setButtonMacroState,
   onButtonMacroStateChange,
@@ -1052,6 +1053,27 @@ export interface ObjectListFiltersApi {
 }
 
 /**
+ * Handle returned by buttonMacros.register() for controlling macro state
+ */
+export interface ButtonMacroHandle {
+  /** Get current state ID (for stateful macros) */
+  getState(): string | undefined;
+
+  /** Set state by ID (for stateful macros) */
+  setState(stateId: string): boolean;
+
+  /** Cycle to next state, wraps around (for stateful macros) */
+  cycleState(): void;
+
+  /**
+   * Subscribe to state changes
+   * @param listener - Callback when state changes
+   * @returns Unsubscribe function
+   */
+  onStateChange(listener: (newState: string, oldState: string | undefined) => void): () => void;
+}
+
+/**
  * Button Macros API - Register custom button macros
  *
  * Allows plugins to define custom macros that can be assigned to mobile and desktop buttons.
@@ -1131,7 +1153,7 @@ export interface ButtonMacrosApi {
     configFields?: MacroConfigField[];
     states?: MacroState[];
     initialState?: string;
-  }): void;
+  }): ButtonMacroHandle;
 
   /**
    * Unregister a previously registered button macro
@@ -1782,7 +1804,7 @@ export class PluginApiImpl implements PluginApi {
 
   private createButtonMacrosApi(): ButtonMacrosApi {
     return {
-      register: (options) => {
+      register: (options): ButtonMacroHandle => {
         const fullId = `plugin:${this.pluginId}:${options.id}`;
         const macro: PluginButtonMacro = {
           id: fullId,
@@ -1795,6 +1817,28 @@ export class PluginApiImpl implements PluginApi {
         };
         registerButtonMacro(macro);
         this.buttonMacroIds.add(fullId);
+
+        // Return handle for controlling macro state
+        const handle: ButtonMacroHandle = {
+          getState: () => getButtonMacroState(fullId),
+          setState: (stateId) => setButtonMacroState(fullId, stateId),
+          cycleState: () => {
+            const m = getButtonMacroById(fullId);
+            if (!m?.states?.length) return;
+            const currentState = getButtonMacroState(fullId);
+            const currentIndex = m.states.findIndex(s => s.id === currentState);
+            const nextIndex = (currentIndex + 1) % m.states.length;
+            setButtonMacroState(fullId, m.states[nextIndex].id);
+          },
+          onStateChange: (listener) => {
+            const unsubscribe = onButtonMacroStateChange(fullId, (_, newState, oldState) => {
+              listener(newState, oldState);
+            });
+            this.stateChangeUnsubscribers.push(unsubscribe);
+            return unsubscribe;
+          }
+        };
+        return handle;
       },
 
       unregister: (id) => {
