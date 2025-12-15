@@ -235,7 +235,7 @@ function Scripts() {
                 </Button>
             </div>
 
-            <ul className="list-unstyled ms-3">
+            <div className="d-flex flex-column gap-2">
                 {allScripts.map(identifier => {
                     const plugin = pluginInfo.get(identifier);
                     const hasPluginInfo = plugin?.info;
@@ -250,7 +250,7 @@ function Scripts() {
                     const displayInfo = hasPluginInfo ? plugin.info : storedMetadata;
 
                     return (
-                        <li key={identifier} className="d-flex flex-column gap-1 mb-3">
+                        <section key={identifier} className="character-settings-section" style={{ marginBottom: 0 }}>
                             <div className="d-flex align-items-center gap-2">
                                 {isLoading && <Spinner animation="border" size="sm" />}
 
@@ -310,10 +310,10 @@ function Scripts() {
                                     </Button>
                                 </div>
                             </div>
-                        </li>
+                        </section>
                     );
                 })}
-            </ul>
+            </div>
         </div>
     );
 }

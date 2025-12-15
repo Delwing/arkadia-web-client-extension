@@ -3721,7 +3721,8 @@ body.mobile-command-radial-active {
     /* No special handling needed with columns */
   }
 
-  #ui-settings-modal .modal-dialog {
+  #ui-settings-modal .modal-dialog,
+  #options-modal .modal-dialog {
     width: min(960px, 90vw);
     max-width: none;
   }

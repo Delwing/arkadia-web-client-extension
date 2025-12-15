@@ -599,14 +599,16 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                 )}
             </div>
             {driveToken && (
-                <div className="d-flex flex-column gap-2">
+                <section className="character-settings-section">
+                    <h5 className="character-settings-section-title">Kopie zapasowe</h5>
                     {isDriveLoading ? (
                         <div className="d-inline-flex align-items-center gap-2 text-muted">
                             <Spinner animation="border" size="sm" role="status" />
                             <span>Ladowanie listy plikow...</span>
                         </div>
                     ) : driveFiles.length > 0 ? (
-                        driveFiles.map(file => {
+                        <div className="d-flex flex-column gap-2">
+                        {driveFiles.map(file => {
                             const sizeText = formatDriveSize(file.size);
                             const displayName = file.name.replace("arkadia-backup-", "").replace(".json", "");
                             return (
@@ -657,11 +659,12 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                                     </div>
                                 </div>
                             );
-                        })
+                        })}
+                        </div>
                     ) : (
                         <p className="text-muted mb-0">Brak kopii zapisanych przez Arkadie na Google Drive.</p>
                     )}
-                </div>
+                </section>
             )}
             {driveStatus && (
                 <Alert variant="success" className="mb-0">

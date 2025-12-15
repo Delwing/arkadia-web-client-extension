@@ -28,21 +28,21 @@ function ExportImport() {
             <div className="d-flex gap-2 mb-3 flex-wrap flex-shrink-0">
                 <Button
                     size="sm"
-                    variant={activeTab === 'firebase' ? 'primary' : 'outline-secondary'}
+                    variant={activeTab === 'firebase' ? 'primary' : 'secondary'}
                     onClick={() => setActiveTab('firebase')}
                 >
                     Synchronizacja konfiguracji
                 </Button>
                 <Button
                     size="sm"
-                    variant={activeTab === 'local' ? 'primary' : 'outline-secondary'}
+                    variant={activeTab === 'local' ? 'primary' : 'secondary'}
                     onClick={() => setActiveTab('local')}
                 >
                     Plik
                 </Button>
                 <Button
                     size="sm"
-                    variant={activeTab === 'google-drive' ? 'primary' : 'outline-secondary'}
+                    variant={activeTab === 'google-drive' ? 'primary' : 'secondary'}
                     onClick={() => setActiveTab('google-drive')}
                 >
                     Google Drive

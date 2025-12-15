@@ -142,9 +142,9 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                 Wybierz postacie, ktore chcesz uwzglednic w eksporcie. Dane pobierane z internetu (mapy, ziola, magiki
                 itp.) nie sa dolaczane.
             </p>
-            <div className="border rounded p-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <span className="fw-semibold">Postacie</span>
+            <section className="character-settings-section">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="character-settings-section-title">Postacie</h5>
                     {characters.length > 0 && (
                         <div className="d-flex gap-2">
                             <Button
@@ -184,10 +184,10 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                 ) : (
                     <p className="text-muted mb-0">Brak zapisanych postaci.</p>
                 )}
-            </div>
-            <div className="border rounded p-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <span className="fw-semibold">Dane do eksportu</span>
+            </section>
+            <section className="character-settings-section">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="character-settings-section-title">Dane do eksportu</h5>
                     <div className="d-flex gap-2">
                         <Button
                             size="sm"
@@ -328,7 +328,7 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                         />
                     </div>
                 </div>
-            </div>
+            </section>
             <div className="d-flex flex-wrap gap-2 align-items-center">
                 <Button onClick={handleExport} disabled={isProcessing}>
                     {isProcessing ? (

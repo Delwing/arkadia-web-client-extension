@@ -766,7 +766,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <span className="fw-semibold">{authState.email ?? authState.displayName ?? 'Nieznany'}</span>
                         </div>
                         <Button
-                            variant="outline-secondary"
+                            variant="secondary"
                             size="sm"
                             onClick={handleSignOut}
                             disabled={isAuthBusy || isSyncing}
@@ -776,8 +776,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     </div>
 
                     {/* Sync options */}
-                    <div className="border rounded p-3">
-                        <div className="fw-semibold mb-2">Dane do synchronizacji</div>
+                    <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Dane do synchronizacji</h5>
                         <div className="row g-2">
                             <div className="col-6">
                                 {(['uiSettings', 'binds', 'shortcuts', 'characterSettings', 'triggers', 'aliases', 'killCounts', 'improveCounts'] as SyncCategory[]).map(cat => (
@@ -822,10 +822,10 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </section>
 
                     {/* Encryption */}
-                    <div className="border rounded p-3">
+                    <section className="character-settings-section">
                         <Form.Check
                             type="switch"
                             id="encryption-toggle"
@@ -927,10 +927,10 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </p>
                             </div>
                         )}
-                    </div>
+                    </section>
 
                     {/* Auto-sync */}
-                    <div className="border rounded p-3">
+                    <section className="character-settings-section">
                         <div className="d-flex justify-content-between align-items-center">
                             <Form.Check
                                 type="switch"
@@ -953,12 +953,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </span>
                             )}
                         </p>
-                    </div>
+                    </section>
 
                     {/* Delete cloud data */}
                     {Object.values(cloudMetadata).some(m => m?.exists) && (
-                        <div className="border rounded p-3 border-danger">
-                            <div className="fw-semibold mb-2 text-danger">Usuwanie danych z chmury</div>
+                        <section className="character-settings-section">
+                            <h5 className="character-settings-section-title text-danger">Usuwanie danych z chmury</h5>
                             {!showDeleteConfirm ? (
                                 <Button
                                     variant="outline-danger"
@@ -1003,7 +1003,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <p className="text-muted small mb-0 mt-2">
                                 Usuwa wszystkie zsynchronizowane dane z chmury (niezaleznie od szyfrowania). Dane lokalne pozostana nienaruszone.
                             </p>
-                        </div>
+                        </section>
                     )}
                     </div>
                 </div>
