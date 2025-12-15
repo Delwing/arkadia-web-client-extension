@@ -9,6 +9,7 @@
  */
 
 import type Client from "./Client";
+import type { CommandHookCallback } from "./Client";
 import type { ClientEvents } from "@shared/events";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import type { FormatStateSnapshot } from "@client/ansi/FormatState";
@@ -90,6 +91,9 @@ export type {
   TriggerMacroContext,
   ButtonSetting
 };
+
+// Re-export command hook type for plugin developers
+export type { CommandHookCallback } from "./Client";
 
 // Event system types
 /**
@@ -713,6 +717,55 @@ export interface CommandApi {
    * ```
    */
   send(command: string, echo?: boolean, options?: any): Promise<void>;
+}
+
+/**
+ * Command Hooks API - Intercept and modify commands before processing
+ */
+export interface CommandHooksApi {
+  /**
+   * Register a command hook that can alter or suppress commands.
+   * Hooks are called early in sendCommand, before any processing
+   * (before Polish character stripping, map parsing, alias matching, etc).
+   *
+   * @param callback - Hook callback function that receives the command and can:
+   *   - Return a modified command string to alter the command
+   *   - Return null to suppress/cancel the command
+   *   - Return undefined to keep the original command unchanged
+   * @param priority - Hook priority (higher runs first, default: 0)
+   * @returns Hook ID for later removal
+   *
+   * @example
+   * ```typescript
+   * // Modify a command
+   * const hookId = api.commandHooks.register((command, echo, options) => {
+   *   if (command === "atakuj") {
+   *     return "atakuj ob_12345"; // Replace with specific target
+   *   }
+   *   return undefined; // Keep original for other commands
+   * });
+   *
+   * // Suppress a command
+   * api.commandHooks.register((command) => {
+   *   if (command.startsWith("niebezpieczne")) {
+   *     api.output.print("Command blocked!");
+   *     return null; // Suppress the command
+   *   }
+   *   return undefined;
+   * });
+   *
+   * // Later: remove the hook
+   * api.commandHooks.unregister(hookId);
+   * ```
+   */
+  register(callback: CommandHookCallback, priority?: number): string;
+
+  /**
+   * Unregister a previously registered command hook
+   * @param hookId - Hook ID returned from register
+   * @returns true if hook was found and removed
+   */
+  unregister(hookId: string): boolean;
 }
 
 /**
@@ -1354,6 +1407,8 @@ export interface PluginApi {
   objects: ObjectsApi;
   /** Command sending */
   command: CommandApi;
+  /** Command hooks - intercept and modify commands before processing */
+  commandHooks: CommandHooksApi;
   /** Pretty containers - container formatting and filtering */
   prettyContainers: PrettyContainersApi;
   /** Magics - magic item patterns */
@@ -1397,6 +1452,7 @@ export class PluginApiImpl implements PluginApi {
   private contextMenuEntryIds: Set<string> = new Set();
   private buttonMacroIds: Set<string> = new Set();
   private triggerMacroIds: Set<string> = new Set();
+  private commandHookIds: Set<string> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
 
   public triggers: TriggersApi;
@@ -1412,6 +1468,7 @@ export class PluginApiImpl implements PluginApi {
   public attackQueue: AttackQueueApi;
   public objects: ObjectsApi;
   public command: CommandApi;
+  public commandHooks: CommandHooksApi;
   public prettyContainers: PrettyContainersApi;
   public magics: MagicsApi;
   public magicKeys: MagicKeysApi;
@@ -1439,6 +1496,7 @@ export class PluginApiImpl implements PluginApi {
     this.attackQueue = this.createAttackQueueApi();
     this.objects = this.createObjectsApi();
     this.command = this.createCommandApi();
+    this.commandHooks = this.createCommandHooksApi();
     this.prettyContainers = this.createPrettyContainersApi();
     this.magics = this.createMagicsApi();
     this.magicKeys = this.createMagicKeysApi();
@@ -1715,6 +1773,29 @@ export class PluginApiImpl implements PluginApi {
   }
 
   // ============================================================================
+  // Command Hooks API
+  // ============================================================================
+
+  private createCommandHooksApi(): CommandHooksApi {
+    return {
+      register: (callback: CommandHookCallback, priority?: number): string => {
+        const hookId = `plugin:${this.pluginId}:${this.generateId('hook')}`;
+        this.client.registerCommandHook(hookId, callback, priority);
+        this.commandHookIds.add(hookId);
+        return hookId;
+      },
+
+      unregister: (hookId: string): boolean => {
+        const removed = this.client.unregisterCommandHook(hookId);
+        if (removed) {
+          this.commandHookIds.delete(hookId);
+        }
+        return removed;
+      }
+    };
+  }
+
+  // ============================================================================
   // Pretty Containers API
   // ============================================================================
 
@@ -1957,6 +2038,12 @@ export class PluginApiImpl implements PluginApi {
       unregisterTriggerMacro(id);
     }
     this.triggerMacroIds.clear();
+
+    // Remove all command hooks registered by this plugin
+    for (const id of Array.from(this.commandHookIds)) {
+      this.client.unregisterCommandHook(id);
+    }
+    this.commandHookIds.clear();
 
     // Unsubscribe from all state change listeners
     for (const unsubscribe of this.stateChangeUnsubscribers) {

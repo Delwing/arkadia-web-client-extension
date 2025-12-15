@@ -13,6 +13,29 @@ import type {ClientEvents} from "@shared/events";
 import {openMapContextMenu} from "@modules/core/contextMenus";
 import type {HerbManagerApi} from "./types/herbs";
 import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
+
+/**
+ * Command hook callback type.
+ * Hooks are called early in sendCommand before any processing.
+ * @param command - The original command string
+ * @param echo - Whether command should be echoed
+ * @param options - Command options
+ * @returns Modified command string, null to suppress, or undefined to keep original
+ */
+export type CommandHookCallback = (
+    command: string,
+    echo: boolean,
+    options?: CommandOptions
+) => string | null | undefined;
+
+/**
+ * Registered command hook with metadata
+ */
+export interface CommandHook {
+    id: string;
+    callback: CommandHookCallback;
+    priority: number;
+}
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import SoundManager from "./SoundManager";
@@ -101,6 +124,7 @@ export default class Client {
     carriageMode = false;
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
     herbManager?: HerbManagerApi;
+    private commandHooks: CommandHook[] = [];
 
 
     constructor(clientAdapter: ClientAdapter, port: any) {
@@ -363,6 +387,19 @@ export default class Client {
     }
 
     async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false): Promise<void> {
+        // Run command hooks early - before any processing
+        for (const hook of this.commandHooks) {
+            const result = hook.callback(command, echo, options);
+            if (result === null) {
+                // Hook suppressed the command
+                return;
+            }
+            if (result !== undefined) {
+                // Hook modified the command
+                command = result;
+            }
+        }
+
         if (command) {
             command = stripPolishCharacters(command)
         }
@@ -410,6 +447,35 @@ export default class Client {
 
     sendGMCP(type: string, payload?: any) {
         this.clientAdapter.sendGmcp(type, payload)
+    }
+
+    /**
+     * Register a command hook that can alter or suppress commands before processing.
+     * Hooks are called in priority order (higher priority first).
+     * @param id - Unique identifier for the hook
+     * @param callback - Hook callback function
+     * @param priority - Hook priority (default 0, higher runs first)
+     */
+    registerCommandHook(id: string, callback: CommandHookCallback, priority: number = 0): void {
+        // Remove existing hook with same id
+        this.unregisterCommandHook(id);
+        this.commandHooks.push({ id, callback, priority });
+        // Sort by priority (descending)
+        this.commandHooks.sort((a, b) => b.priority - a.priority);
+    }
+
+    /**
+     * Unregister a command hook by id
+     * @param id - Hook identifier to remove
+     * @returns true if hook was found and removed
+     */
+    unregisterCommandHook(id: string): boolean {
+        const index = this.commandHooks.findIndex(h => h.id === id);
+        if (index !== -1) {
+            this.commandHooks.splice(index, 1);
+            return true;
+        }
+        return false;
     }
 
     private expandObjectShortcuts(command: string): string {

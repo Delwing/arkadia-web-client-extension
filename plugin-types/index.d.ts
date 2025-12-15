@@ -1503,6 +1503,55 @@ export interface CommandApi {
 }
 
 /**
+ * Command Hooks API - Intercept and modify commands before processing
+ */
+
+export interface CommandHooksApi {
+    /**
+     * Register a command hook that can alter or suppress commands.
+     * Hooks are called early in sendCommand, before any processing
+     * (before Polish character stripping, map parsing, alias matching, etc).
+     *
+     * @param callback - Hook callback function that receives the command and can:
+     *   - Return a modified command string to alter the command
+     *   - Return null to suppress/cancel the command
+     *   - Return undefined to keep the original command unchanged
+     * @param priority - Hook priority (higher runs first, default: 0)
+     * @returns Hook ID for later removal
+     *
+     * @example
+     * ```typescript
+     * // Modify a command
+     * const hookId = api.commandHooks.register((command, echo, options) => {
+     *   if (command === "atakuj") {
+     *     return "atakuj ob_12345"; // Replace with specific target
+     *   }
+     *   return undefined; // Keep original for other commands
+     * });
+     *
+     * // Suppress a command
+     * api.commandHooks.register((command) => {
+     *   if (command.startsWith("niebezpieczne")) {
+     *     api.output.print("Command blocked!");
+     *     return null; // Suppress the command
+     *   }
+     *   return undefined;
+     * });
+     *
+     * // Later: remove the hook
+     * api.commandHooks.unregister(hookId);
+     * ```
+     */
+    register(callback: CommandHookCallback, priority?: number): string;
+    /**
+     * Unregister a previously registered command hook
+     * @param hookId - Hook ID returned from register
+     * @returns true if hook was found and removed
+     */
+    unregister(hookId: string): boolean;
+}
+
+/**
  * Group definition for categorizing container items
  */
 
@@ -2141,6 +2190,8 @@ export interface PluginApi {
     objects: ObjectsApi;
     /** Command sending */
     command: CommandApi;
+    /** Command hooks - intercept and modify commands before processing */
+    commandHooks: CommandHooksApi;
     /** Pretty containers - container formatting and filtering */
     prettyContainers: PrettyContainersApi;
     /** Magics - magic item patterns */

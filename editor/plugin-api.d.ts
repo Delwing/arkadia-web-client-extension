@@ -415,6 +415,15 @@ interface CommandApi {
 }
 
 /**
+ * Command Hooks API - Intercept and modify commands before processing
+ */
+interface CommandHooksApi {
+  register(callback: CommandHookCallback, priority?: number): string;
+
+  unregister(hookId: string): boolean;
+}
+
+/**
  * Group definition for categorizing container items
  */
 interface GroupDefinition {
@@ -647,6 +656,7 @@ interface PluginApi {
   attackQueue: AttackQueueApi;
   objects: ObjectsApi;
   command: CommandApi;
+  commandHooks: CommandHooksApi;
   prettyContainers: PrettyContainersApi;
   magics: MagicsApi;
   magicKeys: MagicKeysApi;
