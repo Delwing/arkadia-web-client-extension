@@ -208,6 +208,7 @@ export interface KnownEvents {
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };
     "pluginButtonMacrosChanged": void;
+    "pluginButtonMacroStateChanged": { macroType: string; newState: string; oldState: string | undefined };
     "pluginTriggerMacrosChanged": void;
 }
 

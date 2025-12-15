@@ -22,6 +22,7 @@ import { MacroType } from "../mobileButtonSettings";
 import {
     getRegisteredButtonMacros,
     isButtonMacroAvailable,
+    getMacroStates,
     type PluginButtonMacro,
     type MacroConfigField
 } from "@modules/core/pluginButtonMacroRegistry";
@@ -159,6 +160,35 @@ function DesktopButtons() {
     }
 
     function renderPreview(btn: DesktopButtonSetting) {
+        // For stateful plugin macros, show all states
+        const states = btn.macroType.startsWith('plugin:') ? getMacroStates(btn.macroType) : null;
+        if (states && states.length > 0) {
+            const config = btn.pluginConfig || {};
+            const stateLabels = (config.stateLabels || {}) as Record<string, string>;
+            const stateColors = (config.stateColors || {}) as Record<string, string>;
+            return (
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {states.map(state => {
+                        const label = stateLabels[state.id] || state.label;
+                        const color = stateColors[state.id] || state.color || btn.color;
+                        const displayLabel = btn.label ? `${btn.label} ${label}` : label;
+                        return (
+                            <button
+                                key={state.id}
+                                type="button"
+                                style={{
+                                    ...getButtonStyle(btn),
+                                    backgroundColor: hexToRgba(color, btn.backgroundOpacity),
+                                }}
+                            >
+                                {displayLabel}
+                            </button>
+                        );
+                    })}
+                </div>
+            );
+        }
+
         const buttonEl = (
             <button type="button" style={getButtonStyle(btn)}>
                 {btn.label || '(pusty)'}
@@ -447,6 +477,72 @@ function DesktopButtons() {
                                 )}
                             </Form.Group>
                         ));
+                    })()}
+
+                    {/* State labels and colors for stateful plugin macros */}
+                    {selectedBtn.macroType.startsWith('plugin:') && (() => {
+                        const states = getMacroStates(selectedBtn.macroType);
+                        if (!states?.length) return null;
+                        const config = selectedBtn.pluginConfig || {};
+                        const stateLabels = (config.stateLabels || {}) as Record<string, string>;
+                        const stateColors = (config.stateColors || {}) as Record<string, string>;
+                        return (
+                            <div className="mb-2">
+                                <Form.Label>Stany przycisku</Form.Label>
+                                <div className="ps-2 border-start">
+                                    {states.map(state => (
+                                        <div key={state.id} className="mb-2">
+                                            <div className="small text-muted mb-1">{state.id}</div>
+                                            <div className="d-flex gap-2 align-items-center">
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="text"
+                                                    placeholder={state.label}
+                                                    value={stateLabels[state.id] ?? ''}
+                                                    onChange={e => {
+                                                        const newStateLabels = { ...stateLabels };
+                                                        if (e.target.value) {
+                                                            newStateLabels[state.id] = e.target.value;
+                                                        } else {
+                                                            delete newStateLabels[state.id];
+                                                        }
+                                                        updateButton(selectedBtn.id, {
+                                                            pluginConfig: { ...config, stateLabels: newStateLabels }
+                                                        });
+                                                    }}
+                                                />
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="color"
+                                                    style={{ width: '40px', flexShrink: 0 }}
+                                                    value={stateColors[state.id] || state.color || selectedBtn.color}
+                                                    onChange={e => {
+                                                        const newStateColors = { ...stateColors };
+                                                        newStateColors[state.id] = e.target.value;
+                                                        updateButton(selectedBtn.id, {
+                                                            pluginConfig: { ...config, stateColors: newStateColors }
+                                                        });
+                                                    }}
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => {
+                                                        const newStateColors = { ...stateColors };
+                                                        delete newStateColors[state.id];
+                                                        updateButton(selectedBtn.id, {
+                                                            pluginConfig: { ...config, stateColors: newStateColors }
+                                                        });
+                                                    }}
+                                                >
+                                                    ↺
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
                     })()}
 
                     <div className="row g-2 mb-2">

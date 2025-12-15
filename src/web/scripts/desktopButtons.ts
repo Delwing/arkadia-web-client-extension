@@ -13,6 +13,7 @@ import {
     getButtonMacroDisplayInfo,
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
+import eventBus from "@modules/core/eventBus";
 
 const LONG_PRESS_DURATION = 500;
 
@@ -54,6 +55,16 @@ export default class DesktopButtons {
         // Listen for settings changes from the options panel
         this.client.on('desktopButtonsSettings', (newSettings) => {
             this.settings = newSettings as DesktopButtonsSettings;
+            this.render();
+        });
+
+        // Listen for plugin macro state changes to update button display
+        eventBus.on('pluginButtonMacroStateChanged', () => {
+            this.render();
+        });
+
+        // Listen for plugin macro registration to show initial state
+        eventBus.on('pluginButtonMacrosChanged', () => {
             this.render();
         });
 
@@ -118,9 +129,19 @@ export default class DesktopButtons {
         let displayColor = settings.color;
 
         if (settings.macroType.startsWith('plugin:') && isStatefulMacro(settings.macroType)) {
-            const displayInfo = getButtonMacroDisplayInfo(settings.macroType, settings.pluginConfig || {});
+            // Pass custom state overrides from pluginConfig if user customized them
+            const customOverrides = {
+                labels: settings.pluginConfig?.stateLabels as Record<string, string> | undefined,
+                colors: settings.pluginConfig?.stateColors as Record<string, string> | undefined
+            };
+            const displayInfo = getButtonMacroDisplayInfo(settings.macroType, customOverrides);
             if (displayInfo) {
-                if (displayInfo.label) displayLabel = displayInfo.label;
+                // Combine user label with state label: "userLabel stateLabel"
+                if (displayInfo.stateLabel) {
+                    displayLabel = settings.label
+                        ? `${settings.label} ${displayInfo.stateLabel}`
+                        : displayInfo.stateLabel;
+                }
                 if (displayInfo.color) displayColor = displayInfo.color;
             }
         }
@@ -332,28 +353,9 @@ export default class DesktopButtons {
             return;
         }
 
-        // Handle plugin macros
+        // Handle plugin macros (state is managed globally by the registry)
         if (settings.macroType.startsWith('plugin:')) {
-            const onStateChange = (newState: string) => {
-                // Update the button's pluginConfig with the new state
-                const updatedConfig = { ...(settings.pluginConfig || {}), __state: newState };
-
-                // Update settings
-                this.settings.buttons = this.settings.buttons.map(btn =>
-                    btn.id === settings.id ? { ...btn, pluginConfig: updatedConfig } : btn
-                );
-
-                // Also update the local settings reference
-                settings.pluginConfig = updatedConfig;
-
-                // Save settings
-                saveSettings(this.settings);
-
-                // Re-render to update the button display
-                this.render();
-            };
-
-            executeButtonMacro(settings.macroType, settings, this.client, settings.pluginConfig || {}, onStateChange);
+            executeButtonMacro(settings.macroType, settings, this.client, settings.pluginConfig || {});
             return;
         }
 

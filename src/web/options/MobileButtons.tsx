@@ -18,6 +18,7 @@ import {getClientInstance} from "@shared/runtime";
 import {
     getRegisteredButtonMacros,
     isButtonMacroAvailable,
+    getMacroStates,
     type PluginButtonMacro,
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
@@ -729,6 +730,65 @@ function MobileButtons() {
                                 )}
                             </Form.Group>
                         ));
+                    })()}
+                    {/* State labels and colors for stateful plugin macros */}
+                    {activeCfg.macro.startsWith('plugin:') && (() => {
+                        const states = getMacroStates(activeCfg.macro);
+                        if (!states?.length) return null;
+                        const config = activeCfg.pluginConfig || {};
+                        const stateLabels = (config.stateLabels || {}) as Record<string, string>;
+                        const stateColors = (config.stateColors || {}) as Record<string, string>;
+                        return (
+                            <div className="form-label mb-2">
+                                <Form.Label>Stany przycisku</Form.Label>
+                                <div className="ps-2 border-start">
+                                    {states.map(state => (
+                                        <div key={state.id} className="mb-2">
+                                            <div className="small text-muted mb-1">{state.id}</div>
+                                            <div className="d-flex gap-1 align-items-center">
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="text"
+                                                    placeholder={state.label}
+                                                    value={stateLabels[state.id] ?? ''}
+                                                    onChange={e => {
+                                                        const newStateLabels = { ...stateLabels };
+                                                        if (e.target.value) {
+                                                            newStateLabels[state.id] = e.target.value;
+                                                        } else {
+                                                            delete newStateLabels[state.id];
+                                                        }
+                                                        update(active!.set, active!.id, 'pluginConfig', { ...config, stateLabels: newStateLabels });
+                                                    }}
+                                                />
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="color"
+                                                    style={{ width: '40px', flexShrink: 0 }}
+                                                    value={stateColors[state.id] || state.color || activeCfg.color}
+                                                    onChange={e => {
+                                                        const newStateColors = { ...stateColors };
+                                                        newStateColors[state.id] = e.target.value;
+                                                        update(active!.set, active!.id, 'pluginConfig', { ...config, stateColors: newStateColors });
+                                                    }}
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => {
+                                                        const newStateColors = { ...stateColors };
+                                                        delete newStateColors[state.id];
+                                                        update(active!.set, active!.id, 'pluginConfig', { ...config, stateColors: newStateColors });
+                                                    }}
+                                                >
+                                                    ↺
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
                     })()}
                 </div>
             )}

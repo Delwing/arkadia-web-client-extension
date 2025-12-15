@@ -68,6 +68,13 @@ export interface PluginButtonMacro {
 
 const registeredMacros = new Map<string, PluginButtonMacro>();
 
+// Global state storage - state is shared across all buttons with the same macro type
+const globalMacroState = new Map<string, string>();
+
+// State change listeners
+type StateChangeListener = (macroType: string, newState: string, oldState: string | undefined) => void;
+const stateChangeListeners = new Map<string, Set<StateChangeListener>>();
+
 export function registerButtonMacro(macro: PluginButtonMacro): void {
     if (registeredMacros.has(macro.id)) {
         unregisterButtonMacro(macro.id);
@@ -111,19 +118,15 @@ export function isButtonMacroAvailable(macroType: string): boolean {
 }
 
 /**
- * Get the current state for a stateful macro button
- * State is stored in pluginConfig.__state
+ * Get the current state for a stateful macro (shared across all buttons with same macro type)
  */
-export function getButtonMacroState(
-    macroType: string,
-    config: Record<string, any>
-): string | undefined {
+export function getButtonMacroState(macroType: string): string | undefined {
     const macro = registeredMacros.get(macroType);
     if (!macro?.states || macro.states.length === 0) {
         return undefined;
     }
 
-    const currentState = config.__state as string | undefined;
+    const currentState = globalMacroState.get(macroType);
     // Validate the state exists, fallback to initial or first state
     if (currentState && macro.states.some(s => s.id === currentState)) {
         return currentState;
@@ -132,24 +135,102 @@ export function getButtonMacroState(
 }
 
 /**
- * Get display info (label, color) for a stateful macro based on current state
+ * Set the state for a stateful macro (affects all buttons with this macro type)
+ * Emits state change event so all buttons can update
+ */
+export function setButtonMacroState(macroType: string, newStateId: string): boolean {
+    const macro = registeredMacros.get(macroType);
+    if (!macro?.states || macro.states.length === 0) {
+        return false;
+    }
+
+    if (!macro.states.some(s => s.id === newStateId)) {
+        console.warn(`Invalid state ${newStateId} for macro ${macroType}`);
+        return false;
+    }
+
+    const oldState = globalMacroState.get(macroType);
+    if (oldState === newStateId) {
+        return true; // No change needed
+    }
+
+    globalMacroState.set(macroType, newStateId);
+
+    // Notify listeners
+    const listeners = stateChangeListeners.get(macroType);
+    if (listeners) {
+        for (const listener of listeners) {
+            try {
+                listener(macroType, newStateId, oldState);
+            } catch (e) {
+                console.error(`Error in state change listener for ${macroType}:`, e);
+            }
+        }
+    }
+
+    // Emit global event for UI updates
+    eventBus.emit('pluginButtonMacroStateChanged', { macroType, newState: newStateId, oldState });
+
+    return true;
+}
+
+/**
+ * Subscribe to state changes for a specific macro type
+ * Returns unsubscribe function
+ */
+export function onButtonMacroStateChange(
+    macroType: string,
+    listener: (macroType: string, newState: string, oldState: string | undefined) => void
+): () => void {
+    if (!stateChangeListeners.has(macroType)) {
+        stateChangeListeners.set(macroType, new Set());
+    }
+    stateChangeListeners.get(macroType)!.add(listener);
+
+    return () => {
+        const listeners = stateChangeListeners.get(macroType);
+        if (listeners) {
+            listeners.delete(listener);
+            if (listeners.size === 0) {
+                stateChangeListeners.delete(macroType);
+            }
+        }
+    };
+}
+
+/**
+ * Custom state overrides from user config
+ */
+export interface CustomStateOverrides {
+    labels?: Record<string, string>;
+    colors?: Record<string, string>;
+}
+
+/**
+ * Get display info (stateLabel, color) for a stateful macro based on current state
+ * Returns stateLabel separately so it can be combined with user label: "userLabel stateLabel"
+ * @param macroType - The macro type ID
+ * @param customOverrides - Optional custom labels/colors from user config
  */
 export function getButtonMacroDisplayInfo(
     macroType: string,
-    config: Record<string, any>
-): { label?: string; color?: string } | undefined {
+    customOverrides?: CustomStateOverrides
+): { stateLabel?: string; color?: string } | undefined {
     const macro = registeredMacros.get(macroType);
     if (!macro?.states || macro.states.length === 0) {
         return undefined;
     }
 
-    const currentStateId = getButtonMacroState(macroType, config);
+    const currentStateId = getButtonMacroState(macroType);
     const currentState = macro.states.find(s => s.id === currentStateId);
 
     if (currentState) {
+        // Use custom label/color if provided, otherwise use default from macro registration
+        const customLabel = customOverrides?.labels?.[currentStateId];
+        const customColor = customOverrides?.colors?.[currentStateId];
         return {
-            label: currentState.label,
-            color: currentState.color
+            stateLabel: customLabel || currentState.label,
+            color: customColor || currentState.color
         };
     }
     return undefined;
@@ -175,8 +256,7 @@ export function executeButtonMacro(
     macroType: string,
     button: ButtonSetting,
     client: Client,
-    config: Record<string, any> = {},
-    onStateChange?: (newState: string) => void
+    config: Record<string, any> = {}
 ): boolean {
     const macro = registeredMacros.get(macroType);
     if (!macro) {
@@ -185,21 +265,17 @@ export function executeButtonMacro(
     try {
         // Check if this is a stateful macro
         if (macro.states && macro.states.length > 0) {
-            const currentStateId = getButtonMacroState(macroType, config) || macro.states[0].id;
+            const currentStateId = getButtonMacroState(macroType) || macro.states[0].id;
             const currentStateIndex = macro.states.findIndex(s => s.id === currentStateId);
 
             const setState = (newStateId: string) => {
-                if (macro.states!.some(s => s.id === newStateId)) {
-                    onStateChange?.(newStateId);
-                } else {
-                    console.warn(`Invalid state ${newStateId} for macro ${macroType}`);
-                }
+                setButtonMacroState(macroType, newStateId);
             };
 
             const cycleState = () => {
                 const nextIndex = (currentStateIndex + 1) % macro.states!.length;
                 const nextStateId = macro.states![nextIndex].id;
-                onStateChange?.(nextStateId);
+                setButtonMacroState(macroType, nextStateId);
             };
 
             const stateCtx: MacroStateContext = {

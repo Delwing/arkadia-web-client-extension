@@ -6,7 +6,6 @@ import {
     Settings,
     defaultFontColor,
     defaultBackground,
-    saveSettings as saveMobileButtonSettings,
 } from "../mobileButtonSettings";
 import {getItemSync, setItemSync} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
@@ -15,6 +14,7 @@ import {
     getButtonMacroDisplayInfo,
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
+import eventBus from "@modules/core/eventBus";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];
@@ -186,6 +186,30 @@ export default class MobileDirectionButtons {
             }
             this.clampToView(true);
             this.scrollToBottom();
+        });
+
+        // Listen for plugin button macro state changes to update all buttons
+        eventBus.on('pluginButtonMacroStateChanged', () => {
+            // Re-apply settings to update all stateful plugin buttons
+            Object.keys(this.buttonSettings).forEach(id => {
+                const btn = document.getElementById(id) as HTMLButtonElement | null;
+                const cfg = this.buttonSettings[id];
+                if (btn && cfg && cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+                    this.applyConfigToButton(id, btn);
+                }
+            });
+        });
+
+        // Listen for plugin macro registration to show initial state
+        eventBus.on('pluginButtonMacrosChanged', () => {
+            // Re-apply settings to update all plugin buttons (in case macro was just registered)
+            Object.keys(this.buttonSettings).forEach(id => {
+                const btn = document.getElementById(id) as HTMLButtonElement | null;
+                const cfg = this.buttonSettings[id];
+                if (btn && cfg && cfg.macro.startsWith('plugin:')) {
+                    this.applyConfigToButton(id, btn);
+                }
+            });
         });
 
         // Listen for UI settings changes
@@ -841,9 +865,19 @@ export default class MobileDirectionButtons {
 
         // Handle stateful plugin macros
         if (cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
-            const displayInfo = getButtonMacroDisplayInfo(cfg.macro, cfg.pluginConfig || {});
+            // Pass custom state overrides from pluginConfig if user customized them
+            const customOverrides = {
+                labels: cfg.pluginConfig?.stateLabels as Record<string, string> | undefined,
+                colors: cfg.pluginConfig?.stateColors as Record<string, string> | undefined
+            };
+            const displayInfo = getButtonMacroDisplayInfo(cfg.macro, customOverrides);
             if (displayInfo) {
-                if (displayInfo.label) effectiveLabel = displayInfo.label;
+                // Combine user label with state label: "userLabel stateLabel"
+                if (displayInfo.stateLabel) {
+                    effectiveLabel = cfg.label
+                        ? `${cfg.label} ${displayInfo.stateLabel}`
+                        : displayInfo.stateLabel;
+                }
                 if (displayInfo.color) effectiveColor = displayInfo.color;
             }
         }
@@ -1019,19 +1053,7 @@ export default class MobileDirectionButtons {
                 default:
                     // Handle plugin macros
                     if (cfg.macro.startsWith('plugin:')) {
-                        const onStateChange = (newState: string) => {
-                            // Update the button's pluginConfig with the new state
-                            const updatedConfig = { ...(cfg.pluginConfig || {}), __state: newState };
-                            cfg.pluginConfig = updatedConfig;
-
-                            // Save settings
-                            saveMobileButtonSettings({ buttons: this.buttonSettings });
-
-                            // Re-apply config to update display
-                            this.applyConfigToButton(id, newBtn);
-                        };
-
-                        executeButtonMacro(cfg.macro, cfg, this.client, cfg.pluginConfig || {}, onStateChange);
+                        executeButtonMacro(cfg.macro, cfg, this.client, cfg.pluginConfig || {});
                     }
                     break;
             }
