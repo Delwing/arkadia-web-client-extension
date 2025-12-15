@@ -470,6 +470,7 @@ export default class DesktopButtons {
                     btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
                 }
                 btn.classList.add('hold-glow');
+                navigator.vibrate?.([50, 30, 50]); // Haptic feedback when hold activates
             }, HOLD_THRESHOLD);
             this.buttonHoldGlowTimers.set(settings.id, glowTimer);
         }
@@ -592,6 +593,7 @@ export default class DesktopButtons {
                     btn.style.setProperty('--hold-glow-color', `rgba(${r}, ${g}, ${b}, 0.7)`);
                 }
                 btn.classList.add('hold-glow');
+                navigator.vibrate?.([50, 30, 50]); // Haptic feedback when hold activates
             }, HOLD_THRESHOLD);
             this.buttonHoldGlowTimers.set(settings.id, glowTimer);
         }
