@@ -7,6 +7,7 @@ export const LocationLabel = () => {
     const [label, setLabel] = useState("");
     const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
     const [note, setNote] = useState<LocationNote | null>(null);
+    const [mapNote, setMapNote] = useState<string | null>(null);
     const [showPopup, setShowPopup] = useState(false);
     const popupRef = useRef<HTMLDivElement>(null);
     const iconRef = useRef<HTMLSpanElement>(null);
@@ -15,8 +16,9 @@ export const LocationLabel = () => {
         setLabel(text);
     });
 
-    useClientEvent("enterLocation", (data: { id: number }) => {
+    useClientEvent("enterLocation", (data: { id: number; room?: MapData.Room }) => {
         setCurrentRoomId(data.id);
+        setMapNote(data.room?.userData?.note ?? null);
         setShowPopup(false);
     });
 
@@ -75,10 +77,12 @@ export const LocationLabel = () => {
         };
     }, [showPopup]);
 
+    const hasAnyNote = note || mapNote;
+
     return (
         <>
             {label}
-            {note && (
+            {hasAnyNote && (
                 <span
                     ref={iconRef}
                     className="location-note-icon"
@@ -89,9 +93,11 @@ export const LocationLabel = () => {
                     &#128221;
                 </span>
             )}
-            {showPopup && note && (
+            {showPopup && hasAnyNote && (
                 <div ref={popupRef} className="location-note-popup">
-                    {note.note}
+                    {mapNote && <div>{mapNote}</div>}
+                    {mapNote && note && <hr style={{ margin: '0.5rem 0', borderColor: 'rgba(255,255,255,0.3)' }} />}
+                    {note && <div>{note.note}</div>}
                 </div>
             )}
         </>
