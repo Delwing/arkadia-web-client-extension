@@ -622,8 +622,15 @@ function DesktopButtons() {
                                         type="number"
                                         min={20}
                                         max={300}
-                                        value={selectedBtn.width}
-                                        onChange={e => updateButton(selectedBtn.id, {
+                                        defaultValue={selectedBtn.width}
+                                        key={`width-${selectedBtn.id}`}
+                                        onChange={e => {
+                                            const v = Number(e.target.value);
+                                            if (e.target.value !== '' && !isNaN(v) && v > 0) {
+                                                updateButton(selectedBtn.id, { width: v });
+                                            }
+                                        }}
+                                        onBlur={e => updateButton(selectedBtn.id, {
                                             width: Math.max(20, Math.min(300, Number(e.target.value) || defaultWidth))
                                         })}
                                     />
@@ -646,8 +653,15 @@ function DesktopButtons() {
                                         type="number"
                                         min={20}
                                         max={200}
-                                        value={selectedBtn.height}
-                                        onChange={e => updateButton(selectedBtn.id, {
+                                        defaultValue={selectedBtn.height}
+                                        key={`height-${selectedBtn.id}`}
+                                        onChange={e => {
+                                            const v = Number(e.target.value);
+                                            if (e.target.value !== '' && !isNaN(v) && v > 0) {
+                                                updateButton(selectedBtn.id, { height: v });
+                                            }
+                                        }}
+                                        onBlur={e => updateButton(selectedBtn.id, {
                                             height: Math.max(20, Math.min(200, Number(e.target.value) || defaultHeight))
                                         })}
                                     />
@@ -670,8 +684,15 @@ function DesktopButtons() {
                                         type="number"
                                         min={6}
                                         max={100}
-                                        value={selectedBtn.fontSize}
-                                        onChange={e => updateButton(selectedBtn.id, {
+                                        defaultValue={selectedBtn.fontSize}
+                                        key={`fontSize-${selectedBtn.id}`}
+                                        onChange={e => {
+                                            const v = Number(e.target.value);
+                                            if (e.target.value !== '' && !isNaN(v) && v > 0) {
+                                                updateButton(selectedBtn.id, { fontSize: v });
+                                            }
+                                        }}
+                                        onBlur={e => updateButton(selectedBtn.id, {
                                             fontSize: Math.max(6, Math.min(100, Number(e.target.value) || defaultFontSize))
                                         })}
                                     />
@@ -695,8 +716,15 @@ function DesktopButtons() {
                                     size="sm"
                                     type="number"
                                     min={0}
-                                    value={Math.round(selectedBtn.x)}
-                                    onChange={e => updateButton(selectedBtn.id, {
+                                    defaultValue={Math.round(selectedBtn.x)}
+                                    key={`x-${selectedBtn.id}`}
+                                    onChange={e => {
+                                        const v = Number(e.target.value);
+                                        if (e.target.value !== '' && !isNaN(v) && v >= 0) {
+                                            updateButton(selectedBtn.id, { x: v });
+                                        }
+                                    }}
+                                    onBlur={e => updateButton(selectedBtn.id, {
                                         x: Math.max(0, Number(e.target.value) || 0)
                                     })}
                                 />
@@ -709,8 +737,15 @@ function DesktopButtons() {
                                     size="sm"
                                     type="number"
                                     min={0}
-                                    value={Math.round(selectedBtn.y)}
-                                    onChange={e => updateButton(selectedBtn.id, {
+                                    defaultValue={Math.round(selectedBtn.y)}
+                                    key={`y-${selectedBtn.id}`}
+                                    onChange={e => {
+                                        const v = Number(e.target.value);
+                                        if (e.target.value !== '' && !isNaN(v) && v >= 0) {
+                                            updateButton(selectedBtn.id, { y: v });
+                                        }
+                                    }}
+                                    onBlur={e => updateButton(selectedBtn.id, {
                                         y: Math.max(0, Number(e.target.value) || 0)
                                     })}
                                 />
