@@ -211,10 +211,12 @@ test.describe('Objects list clicking', () => {
         await expect(objectsList, 'should show wounded enemy').toContainText('Wounded Troll');
         await expect(objectsList, 'should show dying enemy').toContainText('Dying Orc');
 
-        // Verify health bars are rendered (they use # characters)
-        // Note: Includes player's health bar, so there are 4 total (1 player + 3 enemies)
-        const healthBars = objectsList.locator('span').filter({hasText: /#/});
-        await expect(healthBars, 'should display health bars for all objects').toHaveCount(4);
+        // Verify health bars are rendered
+        // Count .object-hp-bar spans (enemy health bars - clickable) - 3 enemies in this test
+        const enemyHealthBars = objectsList.locator('.object-hp-bar');
+        await expect(enemyHealthBars, 'should display health bars for enemies').toHaveCount(3);
+        // Verify player's health bar is visible in content (rendered inline, not clickable)
+        await expect(objectsList, 'should display player health bar').toContainText('[#');
     });
 
     test('clicking teammate number does not attack them', async ({page}) => {

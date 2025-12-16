@@ -104,7 +104,9 @@ describe('compare all alias', () => {
       stats: { sil: -1, zre: -1, wyt: -2 },
       buffer: new AnsiAwareBuffer(longName)
     });
-    const table = formatComparisonTable(results);
+    const targets = new Map();
+    targets.set('1', { id: '1', desc: longName });
+    const table = formatComparisonTable(results, targets);
     const [header, underline, row] = table.text.split('\n');
     expect(row).toContain(longName);
     expect(underline.length).toBe(header.length);

@@ -103,7 +103,7 @@ export default class ObjectList {
             pointerType === "mouse" || (pointerType === "" && !this.isMobile);
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar")
         ) {
             return;
         }
@@ -228,6 +228,17 @@ export default class ObjectList {
             if (num) {
                 const isActive = defenseDotEl.classList.contains("target-dot-active");
                 this.client.sendCommand(isActive ? "/rz" : `/wz ${num}`);
+            }
+            return;
+        }
+        // Handle HP bar click - send /prze command
+        const hpBarEl = target.closest(
+            ".object-hp-bar[data-object-num]"
+        ) as HTMLElement | null;
+        if (hpBarEl) {
+            const num = hpBarEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/prze ${num}`);
             }
             return;
         }
@@ -452,7 +463,13 @@ export default class ObjectList {
 
                 const filled = "#".repeat(hp);
                 const empty = "-".repeat(7 - hp);
-                bar = `[<span style="color:${color}">${filled}${empty}</span>]`;
+                const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
+                // Make HP bar clickable for enemies (not player or teammates)
+                if (!isPlayer && !isTeammate) {
+                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}">${hpBarContent}</span>`;
+                } else {
+                    bar = hpBarContent;
+                }
             }
 
             const attackers = objects
@@ -707,7 +724,8 @@ html, body {
     display: block;
 }
 #objects-list-pip .object-num,
-#objects-list-pip .object-desc {
+#objects-list-pip .object-desc,
+#objects-list-pip .object-hp-bar {
     cursor: pointer;
 }
 #objects-list-pip .target-dot {

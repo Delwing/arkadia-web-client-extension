@@ -179,7 +179,7 @@ test.describe('Export/Import', () => {
             const modal = await openExportImportModal(page);
 
             // Locate export options section - it has "Dane do eksportu" label
-            const optionsSection = modal.locator('.border.rounded.p-3').filter({hasText: 'Dane do eksportu'});
+            const optionsSection = modal.locator('.character-settings-section').filter({hasText: 'Dane do eksportu'});
 
             // Click "Nic" (select none)
             await optionsSection.getByRole('button', {name: 'Nic'}).click();

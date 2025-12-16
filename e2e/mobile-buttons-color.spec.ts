@@ -70,12 +70,14 @@ test.describe('Mobile buttons color and command configuration', () => {
         const labelInput = configPanel.locator('.mobile-button-label');
         await expect(labelInput, 'label input should be visible').toBeVisible();
 
-        // Check that color input is visible
-        const colorInput = configPanel.locator('.mobile-button-color');
-        await expect(colorInput.first(), 'color input should be visible').toBeVisible();
+        // Check that color input is visible (in the "Wyglad" section)
+        const colorRow = configPanel.locator('.mobile-button-color-row').first();
+        await expect(colorRow, 'color row should be visible').toBeVisible();
+        const colorInput = colorRow.locator('input[type="color"]');
+        await expect(colorInput, 'color input should be visible').toBeVisible();
 
         // Change the button color
-        await colorInput.first().fill('#ff0000');
+        await colorInput.fill('#ff0000');
 
         // Verify the button color changed in the preview
         const buttonStyle = await button2.evaluate((el) => {
@@ -100,6 +102,11 @@ test.describe('Mobile buttons color and command configuration', () => {
         // Verify the label changed in the preview
         const buttonText = await button2.textContent();
         expect(buttonText, 'button label should be updated in preview').toBe('Test Button');
+
+        // Close the config panel first
+        const closeConfigButton = configPanel.locator('.btn-close');
+        await closeConfigButton.click();
+        await expect(configPanel, 'config panel should close').not.toBeVisible();
 
         // Save the configuration
         const saveButton = page.locator(MOBILE_BUTTONS_SAVE);
@@ -179,8 +186,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(labelValue, 'label should still be Test Button after reload').toBe('Test Button');
 
         // Verify the color is still set
-        const colorInputAfterReload = configPanelAfterReload.locator('.mobile-button-color');
-        const colorValue = await colorInputAfterReload.first().inputValue();
+        const colorRowAfterReload = configPanelAfterReload.locator('.mobile-button-color-row').first();
+        const colorInputAfterReload = colorRowAfterReload.locator('input[type="color"]');
+        const colorValue = await colorInputAfterReload.inputValue();
         expect(colorValue, 'color should still be #ff0000 after reload').toBe('#ff0000');
     });
 
@@ -243,9 +251,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(modal).toBeVisible();
 
         // Check that mode toggle buttons exist
-        const soloButton = page.getByRole('button', { name: 'Bez drużyny' });
-        const teamButton = page.getByRole('button', { name: 'W drużynie' });
-        const leaderButton = page.getByRole('button', { name: 'Prowadzący' });
+        const soloButton = page.getByRole('button', { name: 'Bez druzyny' });
+        const teamButton = page.getByRole('button', { name: 'W druzynie' });
+        const leaderButton = page.getByRole('button', { name: 'Prowadzacy' });
 
         await expect(soloButton, 'solo mode button should be visible').toBeVisible();
         await expect(teamButton, 'team mode button should be visible').toBeVisible();
@@ -299,6 +307,11 @@ test.describe('Mobile buttons color and command configuration', () => {
 
         const labelInput = configPanel.locator('.mobile-button-label');
         await labelInput.fill('Zerknij');
+
+        // Close the config panel first
+        const closeButton = configPanel.locator('.btn-close');
+        await closeButton.click();
+        await expect(configPanel, 'config panel should close').not.toBeVisible();
 
         // Save and close modal
         await page.locator(MOBILE_BUTTONS_SAVE).click();

@@ -47,7 +47,7 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     await addButton.click();
 
     await expect(
-        scriptsModal.locator('li', {hasText: primaryUrl}),
+        scriptsModal.locator('section', {hasText: primaryUrl}),
         'should display script added with button',
     ).toBeVisible();
     await expect(scriptsModal.getByText('Test Plugin'), 'should render loaded plugin name').toBeVisible();
@@ -58,7 +58,7 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     await scriptInput.press('Enter');
 
     await expect(
-        scriptsModal.locator('li', {hasText: secondaryUrl}),
+        scriptsModal.locator('section', {hasText: secondaryUrl}),
         'should display script added with Enter key',
     ).toBeVisible();
 
@@ -77,8 +77,8 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     await waitForCommandInput(page);
     scriptsModal = await openScriptsModal(page);
 
-    const primaryItem = scriptsModal.locator('li', {hasText: primaryUrl});
-    const secondaryItem = scriptsModal.locator('li', {hasText: secondaryUrl});
+    const primaryItem = scriptsModal.locator('section', {hasText: primaryUrl});
+    const secondaryItem = scriptsModal.locator('section', {hasText: secondaryUrl});
 
     await expect(primaryItem, 'should persist primary script after reload').toBeVisible();
     await expect(secondaryItem, 'should persist secondary script after reload').toBeVisible();
@@ -97,7 +97,7 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
 
     await secondaryItem.getByRole('button').click();
     await expect(secondaryItem, 'should remove secondary script entry').toHaveCount(0);
-    await expect(scriptsModal.locator('li'), 'should clear scripts list after removals').toHaveCount(0);
+    await expect(scriptsModal.locator('section.character-settings-section'), 'should clear scripts list after removals').toHaveCount(0);
 
     await page.waitForFunction(() => {
         const stored = localStorage.getItem('scripts');

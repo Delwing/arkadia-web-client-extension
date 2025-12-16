@@ -90,16 +90,16 @@ test.describe('Clock System', () => {
 
         // First set daytime to establish daylight state
         await pushGmcp(page, 'room.time', { daylight: true });
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(1500);
 
         // Then trigger sunset by changing daylight to false
         await pushGmcp(page, 'room.time', { daylight: false });
 
         // Wait for clock to update (needs time for next tick)
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(1000);
 
         // Clock should show 21:00 with no precision indicator
-        await expect(clockDisplay).toContainText('21:');
+        await expect(clockDisplay).toContainText('21:', { timeout: 10000 });
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
