@@ -11,9 +11,10 @@ interface Props {
     emptySetting: ButtonSetting;
     openConfig: (setName: Mode, id: string, ev: MouseEvent<HTMLButtonElement>) => void;
     gridRef: RefObject<HTMLDivElement>;
+    activeButtonId?: string | null;
 }
 
-export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef }: Props) {
+export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef, activeButtonId }: Props) {
     const set = settings[mode];
     const bgColor = set.background || defaultBackground;
     return (
@@ -37,6 +38,8 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 }
                 const isEmpty = cfg.macro === 'empty' || !cfg.label;
                 if (isEmpty) classes += ' empty';
+                const isActive = activeButtonId === id;
+                if (isActive) classes += ' editing';
                 const handle = notEditable.includes(id)
                     ? undefined
                     : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);

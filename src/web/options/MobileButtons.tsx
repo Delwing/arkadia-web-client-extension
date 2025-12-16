@@ -107,6 +107,8 @@ function MobileButtons() {
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
     const [view, setView] = useState<Mode>('solo');
+    const [isMobile, setIsMobile] = useState(false);
+    const [configOpen, setConfigOpen] = useState(false);
     const soloRef = useRef<HTMLDivElement>(null);
     const teamRef = useRef<HTMLDivElement>(null);
     const leaderRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,14 @@ function MobileButtons() {
             eventBus.off('pluginButtonMacrosChanged', handleMacrosChanged);
         };
     }, []);
-    const notEditable = ['buttons-toggle'];
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+    const notEditable: string[] = [];
 
     function nextId(ids: string[]) {
         let current = ids.reduce((m, id) => {
@@ -217,11 +226,10 @@ function MobileButtons() {
 
     function openConfig(setName: Mode, id: string, ev: React.MouseEvent<HTMLButtonElement>) {
         const rect = ev.currentTarget.getBoundingClientRect();
-        const parent = refs[setName].current?.getBoundingClientRect();
-        if (parent) {
-            setPos({ left: rect.left - parent.left, top: rect.bottom - parent.top + 4 });
-        }
+        // Use viewport coordinates for fixed positioning
+        setPos({ left: rect.left, top: rect.bottom + 4 });
         setActive({ set: setName, id });
+        setConfigOpen(true);
         const cfg = settings[setName].buttons[id] || defaultSettings[id] || emptySetting;
         if (cfg.macro === 'kierunek') {
             setSyncDirs(true);
@@ -232,10 +240,17 @@ function MobileButtons() {
     function changeView(v: Mode) {
         setView(v);
         setActive(null);
+        setConfigOpen(false);
     }
 
     function close() {
-        setActive(null);
+        if (isMobile) {
+            setConfigOpen(false);
+            setTimeout(() => setActive(null), 300);
+        } else {
+            setActive(null);
+            setConfigOpen(false);
+        }
     }
 
     function update(setName: Mode, id: string, field: keyof ButtonSetting, value: any) {
@@ -338,59 +353,49 @@ function MobileButtons() {
 
     return (
         <div onClick={close} className="w-100 position-relative">
-            <div className="d-flex flex-column flex-sm-row flex-sm-wrap align-items-stretch align-items-sm-center gap-2 mb-2 w-100">
+            <div className="mobile-buttons-top-row">
                 <div className="mobile-buttons-mode-toggle">
                     <Button
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
-                        className="text-nowrap"
                         onClick={() => changeView('solo')}
                     >
-                        Bez drużyny
+                        Bez druzyny
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
-                        className="text-nowrap"
                         onClick={() => changeView('team')}
                     >
-                        W drużynie
+                        W druzynie
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
-                        className="text-nowrap"
                         onClick={() => changeView('leader')}
                     >
-                        Prowadzący
+                        Prowadzacy
                     </Button>
                 </div>
-                <Button
-                    size="sm"
-                    variant="secondary"
-                    className="w-100 w-sm-auto"
-                    onClick={() => restoreDefaults(view)}
-                >
-                    Domyślne
-                </Button>
                 <Form.Check
                     id="mobile-buttons-lock"
-                    type="checkbox"
-                    className="user-select-none ms-sm-auto text-nowrap"
-                    label="Zablokuj przyciski"
+                    type="switch"
+                    className="user-select-none"
+                    label="Zablokuj"
                     checked={settings.locked}
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
                 />
             </div>
-            <div className="d-flex flex-column align-items-center mb-2 w-100">
+            {/* Button grid with spatial controls */}
+            <div className="d-flex flex-column align-items-center mb-3">
                 <div className="d-flex gap-1 mb-2">
-                    <Button size="sm" variant="secondary" onClick={() => addRow('top')}>+R↑</Button>
-                    <Button size="sm" variant="secondary" onClick={() => removeRow('top')}>-R↑</Button>
+                    <Button size="sm" variant="outline-secondary" onClick={() => addRow('top')} title="Dodaj wiersz">+</Button>
+                    <Button size="sm" variant="outline-secondary" onClick={() => removeRow('top')} title="Usun wiersz">-</Button>
                 </div>
-                <div className="d-flex flex-column flex-lg-row align-items-center gap-2">
-                    <div className="d-flex flex-column gap-1 me-lg-2">
-                        <Button size="sm" variant="secondary" onClick={() => addCol('left')}>+C←</Button>
-                        <Button size="sm" variant="secondary" onClick={() => removeCol('left')}>-C←</Button>
+                <div className="d-flex align-items-center gap-2">
+                    <div className="d-flex flex-column gap-1">
+                        <Button size="sm" variant="outline-secondary" onClick={() => addCol('left')} title="Dodaj kolumne">+</Button>
+                        <Button size="sm" variant="outline-secondary" onClick={() => removeCol('left')} title="Usun kolumne">-</Button>
                     </div>
                     <div>
                         {modes.map(mode => (
@@ -403,30 +408,33 @@ function MobileButtons() {
                                 emptySetting={emptySetting}
                                 openConfig={openConfig}
                                 gridRef={refs[mode]}
+                                activeButtonId={active?.id}
                             />
                         ))}
                     </div>
-                    <div className="d-flex flex-column gap-1 ms-lg-2">
-                        <Button size="sm" variant="secondary" onClick={() => addCol('right')}>+C→</Button>
-                        <Button size="sm" variant="secondary" onClick={() => removeCol('right')}>-C→</Button>
+                    <div className="d-flex flex-column gap-1">
+                        <Button size="sm" variant="outline-secondary" onClick={() => addCol('right')} title="Dodaj kolumne">+</Button>
+                        <Button size="sm" variant="outline-secondary" onClick={() => removeCol('right')} title="Usun kolumne">-</Button>
                     </div>
                 </div>
                 <div className="d-flex gap-1 mt-2">
-                    <Button size="sm" variant="secondary" onClick={() => addRow('bottom')}>+R↓</Button>
-                    <Button size="sm" variant="secondary" onClick={() => removeRow('bottom')}>-R↓</Button>
+                    <Button size="sm" variant="outline-secondary" onClick={() => addRow('bottom')} title="Dodaj wiersz">+</Button>
+                    <Button size="sm" variant="outline-secondary" onClick={() => removeRow('bottom')} title="Usun wiersz">-</Button>
                 </div>
             </div>
-            <Form.Group
-                className="form-label mb-3"
+
+            {/* Background picker section */}
+            <div
+                className="mobile-buttons-background-section"
                 onClick={ev => ev.stopPropagation()}
                 onMouseDown={ev => ev.stopPropagation()}
                 onTouchStart={ev => ev.stopPropagation()}
             >
-                <Form.Label>Tło przycisków</Form.Label>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
+                <Form.Label>Kolor tla</Form.Label>
+                <div className="mobile-buttons-background-controls">
                     <Form.Control
-                        size="sm"
                         type="color"
+                        className="mobile-buttons-background-color"
                         value={backgroundHex}
                         onChange={e => {
                             const hex = e.target.value;
@@ -443,7 +451,7 @@ function MobileButtons() {
                             });
                         }}
                     />
-                    <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
+                    <div className="mobile-buttons-background-alpha">
                         <Form.Range
                             className="flex-grow-1"
                             min={0}
@@ -464,11 +472,11 @@ function MobileButtons() {
                                 });
                             }}
                         />
-                        <span className="small text-nowrap">{Math.round(backgroundAlpha * 100)}%</span>
+                        <span className="mobile-buttons-background-alpha-value">{Math.round(backgroundAlpha * 100)}%</span>
                     </div>
                     <Button
                         size="sm"
-                        variant="secondary"
+                        variant="outline-secondary"
                         onClick={() => {
                             setSettings(prev => ({
                                 ...prev,
@@ -479,147 +487,161 @@ function MobileButtons() {
                         ↺
                     </Button>
                 </div>
-            </Form.Group>
+            </div>
+            {/* Mobile backdrop */}
+            {active && (
+                <div
+                    className={`mobile-button-config-backdrop ${configOpen ? 'open' : ''}`}
+                    onClick={close}
+                />
+            )}
             {active && activeCfg && (
                 <div
-                    className="mobile-button-config"
-                    style={{ left: pos.left, top: pos.top }}
+                    className={`mobile-button-config ${configOpen ? 'open' : ''}`}
+                    style={isMobile ? undefined : { left: pos.left, top: pos.top }}
                     onClick={ev => ev.stopPropagation()}
                 >
-                    <button
-                        type="button"
-                        className="btn-close position-absolute end-0"
-                        onClick={close}
-                    />
-                    <Form.Group className="form-label mb-2">
-                        <Form.Label>Makro</Form.Label>
-                        <Form.Select
-                            size="sm"
-                            className={`mobile-button-macro ${!isButtonMacroAvailable(activeCfg.macro) ? 'border-warning' : ''}`}
-                            value={activeCfg.macro}
-                            onChange={e => {
-                                const val = e.target.value;
-                                if (val === 'empty') {
-                                    makeBlank(active!.set, active!.id);
-                                } else {
-                                    update(active!.set, active!.id, 'macro', val);
-                                }
-                            }}
-                        >
-                            {macroOptions.map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                            {(() => {
-                                // Group macros by plugin
-                                const byPlugin = new Map<string, typeof pluginMacros>();
-                                for (const pm of pluginMacros) {
-                                    const key = pm.pluginName || pm.pluginId;
-                                    if (!byPlugin.has(key)) byPlugin.set(key, []);
-                                    byPlugin.get(key)!.push(pm);
-                                }
-                                return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
-                                    <optgroup key={pluginName} label={pluginName}>
-                                        {macros.map(pm => (
-                                            <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                        ))}
-                                    </optgroup>
-                                ));
-                            })()}
-                            {activeCfg.macro.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macro) && (
-                                <option value={activeCfg.macro} disabled>
-                                    {activeCfg.macro} (wtyczka niedostepna)
-                                </option>
+                    {/* Header */}
+                    <div className="mobile-button-config-header">
+                        <h6 className="mobile-button-config-header-title">Konfiguracja przycisku</h6>
+                        <button type="button" className="btn-close" onClick={close} />
+                    </div>
+
+                    {/* Body */}
+                    <div className="mobile-button-config-body">
+                        {/* Basic settings section */}
+                        <div className="mobile-button-config-section">
+                            <div className="mobile-button-config-section-title">Podstawowe</div>
+                            <div className="mobile-button-config-row">
+                                <Form.Label>Makro</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    className={`mobile-button-macro ${!isButtonMacroAvailable(activeCfg.macro) ? 'border-warning' : ''}`}
+                                    value={activeCfg.macro}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        if (val === 'empty') {
+                                            makeBlank(active!.set, active!.id);
+                                        } else {
+                                            update(active!.set, active!.id, 'macro', val);
+                                        }
+                                    }}
+                                >
+                                    {macroOptions.map(o => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                    {(() => {
+                                        const byPlugin = new Map<string, typeof pluginMacros>();
+                                        for (const pm of pluginMacros) {
+                                            const key = pm.pluginName || pm.pluginId;
+                                            if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                            byPlugin.get(key)!.push(pm);
+                                        }
+                                        return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                            <optgroup key={pluginName} label={pluginName}>
+                                                {macros.map(pm => (
+                                                    <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                                ))}
+                                            </optgroup>
+                                        ));
+                                    })()}
+                                    {activeCfg.macro.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macro) && (
+                                        <option value={activeCfg.macro} disabled>
+                                            {activeCfg.macro} (wtyczka niedostepna)
+                                        </option>
+                                    )}
+                                </Form.Select>
+                            </div>
+                            {!isButtonMacroAvailable(activeCfg.macro) && (
+                                <Form.Text className="text-warning">
+                                    Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                                </Form.Text>
                             )}
-                        </Form.Select>
-                        {!isButtonMacroAvailable(activeCfg.macro) && (
-                            <Form.Text className="text-warning">
-                                Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                            </Form.Text>
+                            {activeCfg.macro !== 'empty' && (
+                                <div className="mobile-button-config-row">
+                                    <Form.Label>Etykieta</Form.Label>
+                                    <Form.Control
+                                        size="sm"
+                                        className="mobile-button-label"
+                                        type="text"
+                                        value={activeCfg.label}
+                                        onChange={e => update(active!.set, active!.id, 'label', e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Appearance section */}
+                        {activeCfg.macro !== 'empty' && (
+                            <div className="mobile-button-config-section">
+                                <div className="mobile-button-config-section-title">Wyglad</div>
+                                <div className="mobile-button-color-row">
+                                    <Form.Label>Kolor</Form.Label>
+                                    <Form.Control
+                                        size="sm"
+                                        type="color"
+                                        value={activeCfg.color}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (syncDirs && activeCfg.macro === 'kierunek') {
+                                                updateAllDirections('color', val);
+                                            } else {
+                                                update(active!.set, active!.id, 'color', val);
+                                            }
+                                        }}
+                                    />
+                                    <Button size="sm" variant="outline-secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
+                                </div>
+                                <div className="mobile-button-color-row">
+                                    <Form.Label>Kolor czcionki</Form.Label>
+                                    <Form.Control
+                                        size="sm"
+                                        type="color"
+                                        value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (syncDirs && activeCfg.macro === 'kierunek') {
+                                                updateAllDirections('fontColor', val);
+                                            } else {
+                                                update(active!.set, active!.id, 'fontColor', val);
+                                            }
+                                        }}
+                                    />
+                                    <Button size="sm" variant="outline-secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
+                                </div>
+                                {activeCfg.macro === 'kierunek' && (
+                                    <div className="mobile-button-color-row">
+                                        <Form.Label>Kolor aktywny</Form.Label>
+                                        <Form.Control
+                                            size="sm"
+                                            type="color"
+                                            value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (syncDirs) {
+                                                    updateAllDirections('activeColor', val);
+                                                } else {
+                                                    update(active!.set, active!.id, 'activeColor', val);
+                                                }
+                                            }}
+                                        />
+                                        <Button size="sm" variant="outline-secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
+                                    </div>
+                                )}
+                                {activeCfg.macro === 'kierunek' && (
+                                    <Form.Check
+                                        type="checkbox"
+                                        label="Synchronizuj kolory kierunkow"
+                                        checked={syncDirs}
+                                        onChange={e => setSyncDirs(e.target.checked)}
+                                    />
+                                )}
+                            </div>
                         )}
-                    </Form.Group>
-                    {activeCfg.macro !== 'empty' && (
-                        <Form.Group className="form-label mb-2">
-                            <Form.Label>Etykieta</Form.Label>
-                            <Form.Control
-                                size="sm"
-                                className="mobile-button-label"
-                                type="text"
-                                value={activeCfg.label}
-                                onChange={e => update(active!.set, active!.id, 'label', e.target.value)}
-                            />
-                        </Form.Group>
-                    )}
-                    {activeCfg.macro !== 'empty' && (
-                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
-                            <Form.Label>Kolor</Form.Label>
-                            <Form.Control
-                                size="sm"
-                                type="color"
-                                className="mobile-button-color flex-grow-1"
-                                value={activeCfg.color}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    if (syncDirs && activeCfg.macro === 'kierunek') {
-                                        updateAllDirections('color', val);
-                                    } else {
-                                        update(active!.set, active!.id, 'color', val);
-                                    }
-                                }}
-                            />
-                            <Button size="sm" variant="secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
-                        </Form.Group>
-                    )}
-                    {activeCfg.macro !== 'empty' && (
-                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
-                            <Form.Label>Kolor czcionki</Form.Label>
-                            <Form.Control
-                                size="sm"
-                                type="color"
-                                className="mobile-button-color flex-grow-1"
-                                value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    if (syncDirs && activeCfg.macro === 'kierunek') {
-                                        updateAllDirections('fontColor', val);
-                                    } else {
-                                        update(active!.set, active!.id, 'fontColor', val);
-                                    }
-                                }}
-                            />
-                            <Button size="sm" variant="secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
-                        </Form.Group>
-                    )}
-                    {activeCfg.macro === 'kierunek' && (
-                        <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
-                            <Form.Label>Kolor aktywny</Form.Label>
-                            <Form.Control
-                                size="sm"
-                                type="color"
-                                className="mobile-button-color flex-grow-1"
-                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    if (syncDirs) {
-                                        updateAllDirections('activeColor', val);
-                                    } else {
-                                        update(active!.set, active!.id, 'activeColor', val);
-                                    }
-                                }}
-                            />
-                            <Button size="sm" variant="secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
-                        </Form.Group>
-                    )}
-                    {activeCfg.macro === "kierunek" && (
-                        <>
-                            <Form.Group className="form-label mb-2">
-                                <Form.Check
-                                    type="checkbox"
-                                    label="Synchronizuj kolory"
-                                    checked={syncDirs}
-                                    onChange={e => setSyncDirs(e.target.checked)}
-                                />
-                            </Form.Group>
-                            <Form.Group className="form-label mb-2">
+
+                        {/* Macro-specific options */}
+                        {activeCfg.macro === "kierunek" && (
+                            <div className="mobile-button-config-row">
                                 <Form.Label>Kierunek</Form.Label>
                                 <Form.Select
                                     size="sm"
@@ -631,126 +653,127 @@ function MobileButtons() {
                                         <option key={d} value={d}>{d}</option>
                                     ))}
                                 </Form.Select>
-                            </Form.Group>
-                        </>
-                    )}
-                    {activeCfg.macro === "command" && (
-                        <Form.Group className="form-label mb-2">
-                            <Form.Label>Komenda</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                size="sm"
-                                className="mobile-button-command"
-                                value={activeCfg.command || ""}
-                                onChange={e => update(active!.set, active!.id, "command", e.target.value)}
-                            />
-                        </Form.Group>
-                    )}
-                    {activeCfg.macro === "specialExit" && (
-                        <>
-                            <Form.Group className="form-label mb-2">
+                            </div>
+                        )}
+                        {activeCfg.macro === "command" && (
+                            <div className="mobile-button-config-row">
+                                <Form.Label>Komenda</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    size="sm"
+                                    className="mobile-button-command"
+                                    value={activeCfg.command || ""}
+                                    onChange={e => update(active!.set, active!.id, "command", e.target.value)}
+                                />
+                            </div>
+                        )}
+                        {activeCfg.macro === "specialExit" && (
+                            <div className="mobile-button-config-section">
+                                <div className="mobile-button-config-section-title">Opcje</div>
                                 <Form.Check
                                     type="checkbox"
                                     label="Synchronizuj z kierunkami"
                                     checked={activeCfg.syncWithDirections || false}
                                     onChange={e => update(active!.set, active!.id, "syncWithDirections", e.target.checked)}
                                 />
-                            </Form.Group>
-                            {!activeCfg.syncWithDirections && (
-                                <Form.Group className="form-label mb-2 d-flex align-items-center gap-1">
-                                    <Form.Label>Kolor aktywny</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        type="color"
-                                        className="mobile-button-color flex-grow-1"
-                                        value={activeCfg.activeColor || '#2fa7c5'}
-                                        onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
-                                    />
-                                    <Button size="sm" variant="secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
-                                </Form.Group>
-                            )}
-                        </>
-                    )}
-                    {(activeCfg.macro === "attackEnemy" || activeCfg.macro === "blockEnemy") && (
-                        <Form.Group className="form-label mb-2">
-                            <Form.Label>Slot wroga</Form.Label>
-                            <Form.Select
-                                size="sm"
-                                value={activeCfg.enemySlot ?? 0}
-                                onChange={e => update(active!.set, active!.id, "enemySlot", parseInt(e.target.value))}
-                            >
-                                <option value={0}>Slot 1</option>
-                                <option value={1}>Slot 2</option>
-                                <option value={2}>Slot 3</option>
-                            </Form.Select>
-                        </Form.Group>
-                    )}
-                    {/* Plugin macro config fields */}
-                    {activeCfg.macro.startsWith('plugin:') && (() => {
-                        const pluginMacro = pluginMacros.find(pm => pm.id === activeCfg.macro);
-                        if (!pluginMacro?.configFields?.length) return null;
-                        const config = activeCfg.pluginConfig || {};
-                        return pluginMacro.configFields.map(field => (
-                            <Form.Group key={field.name} className="form-label mb-2">
-                                <Form.Label>{field.label}</Form.Label>
-                                {field.type === 'text' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="text"
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
-                                    />
+                                {!activeCfg.syncWithDirections && (
+                                    <div className="mobile-button-color-row">
+                                        <Form.Label>Kolor aktywny</Form.Label>
+                                        <Form.Control
+                                            size="sm"
+                                            type="color"
+                                            value={activeCfg.activeColor || '#2fa7c5'}
+                                            onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
+                                        />
+                                        <Button size="sm" variant="outline-secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
+                                    </div>
                                 )}
-                                {field.type === 'textarea' && (
-                                    <Form.Control
-                                        as="textarea"
-                                        size="sm"
-                                        rows={2}
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
-                                    />
-                                )}
-                                {field.type === 'number' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        value={config[field.name] ?? field.defaultValue ?? 0}
-                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: Number(e.target.value) })}
-                                    />
-                                )}
-                                {field.type === 'select' && field.options && (
-                                    <Form.Select
-                                        size="sm"
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
-                                    >
-                                        {field.options.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </Form.Select>
-                                )}
-                                {field.type === 'checkbox' && (
-                                    <Form.Check
-                                        id={`plugin-config-mobile-${active!.id}-${field.name}`}
-                                        type="checkbox"
-                                        checked={config[field.name] ?? field.defaultValue ?? false}
-                                        onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.checked })}
-                                    />
-                                )}
-                            </Form.Group>
-                        ));
-                    })()}
-                    {/* State labels and colors for stateful plugin macros */}
-                    {activeCfg.macro.startsWith('plugin:') && (() => {
-                        const states = getMacroStates(activeCfg.macro);
-                        if (!states?.length) return null;
-                        const config = activeCfg.pluginConfig || {};
-                        const stateLabels = (config.stateLabels || {}) as Record<string, string>;
-                        const stateColors = (config.stateColors || {}) as Record<string, string>;
-                        return (
-                            <div className="form-label mb-2">
-                                <Form.Label>Stany przycisku</Form.Label>
-                                <div className="ps-2 border-start">
+                            </div>
+                        )}
+                        {(activeCfg.macro === "attackEnemy" || activeCfg.macro === "blockEnemy") && (
+                            <div className="mobile-button-config-row">
+                                <Form.Label>Slot wroga</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    value={activeCfg.enemySlot ?? 0}
+                                    onChange={e => update(active!.set, active!.id, "enemySlot", parseInt(e.target.value))}
+                                >
+                                    <option value={0}>Slot 1</option>
+                                    <option value={1}>Slot 2</option>
+                                    <option value={2}>Slot 3</option>
+                                </Form.Select>
+                            </div>
+                        )}
+                        {/* Plugin macro config fields */}
+                        {activeCfg.macro.startsWith('plugin:') && (() => {
+                            const pluginMacro = pluginMacros.find(pm => pm.id === activeCfg.macro);
+                            if (!pluginMacro?.configFields?.length) return null;
+                            const config = activeCfg.pluginConfig || {};
+                            return (
+                                <div className="mobile-button-config-section">
+                                    <div className="mobile-button-config-section-title">Konfiguracja wtyczki</div>
+                                    {pluginMacro.configFields.map(field => (
+                                        <div key={field.name} className={field.type === 'textarea' ? '' : 'mobile-button-config-row'}>
+                                            <Form.Label>{field.label}</Form.Label>
+                                            {field.type === 'text' && (
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="text"
+                                                    value={config[field.name] ?? field.defaultValue ?? ''}
+                                                    onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                                />
+                                            )}
+                                            {field.type === 'textarea' && (
+                                                <Form.Control
+                                                    as="textarea"
+                                                    size="sm"
+                                                    rows={2}
+                                                    value={config[field.name] ?? field.defaultValue ?? ''}
+                                                    onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                                />
+                                            )}
+                                            {field.type === 'number' && (
+                                                <Form.Control
+                                                    size="sm"
+                                                    type="number"
+                                                    value={config[field.name] ?? field.defaultValue ?? 0}
+                                                    onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: Number(e.target.value) })}
+                                                />
+                                            )}
+                                            {field.type === 'select' && field.options && (
+                                                <Form.Select
+                                                    size="sm"
+                                                    value={config[field.name] ?? field.defaultValue ?? ''}
+                                                    onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.value })}
+                                                >
+                                                    {field.options.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            )}
+                                            {field.type === 'checkbox' && (
+                                                <Form.Check
+                                                    id={`plugin-config-mobile-${active!.id}-${field.name}`}
+                                                    type="checkbox"
+                                                    checked={config[field.name] ?? field.defaultValue ?? false}
+                                                    onChange={e => update(active!.set, active!.id, 'pluginConfig', { ...config, [field.name]: e.target.checked })}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                        {/* State labels and colors for stateful plugin macros */}
+                        {activeCfg.macro.startsWith('plugin:') && (() => {
+                            const states = getMacroStates(activeCfg.macro);
+                            if (!states?.length) return null;
+                            const config = activeCfg.pluginConfig || {};
+                            const stateLabels = (config.stateLabels || {}) as Record<string, string>;
+                            const stateColors = (config.stateColors || {}) as Record<string, string>;
+                            return (
+                                <div className="mobile-button-config-section">
+                                    <div className="mobile-button-config-section-title">Stany przycisku</div>
                                     {states.map(state => (
                                         <div key={state.id} className="mb-2">
                                             <div className="small text-muted mb-1">{state.id}</div>
@@ -783,7 +806,7 @@ function MobileButtons() {
                                                 />
                                                 <Button
                                                     size="sm"
-                                                    variant="secondary"
+                                                    variant="outline-secondary"
                                                     onClick={() => {
                                                         const newStateColors = { ...stateColors };
                                                         delete newStateColors[state.id];
@@ -796,180 +819,181 @@ function MobileButtons() {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        );
-                    })()}
-                    {/* Hold action configuration */}
-                    {activeCfg.macro !== 'empty' && (() => {
-                        const holdCfg = activeCfg.hold || { macro: 'command' };
-                        const updateHold = (field: string, value: any) => {
-                            update(active!.set, active!.id, 'hold', { ...holdCfg, [field]: value });
-                        };
-                        return (
-                            <>
-                                <hr className="my-2" />
-                                <Form.Group className="form-label mb-2">
+                            );
+                        })()}
+
+                        {/* Hold action configuration */}
+                        {activeCfg.macro !== 'empty' && (() => {
+                            const holdCfg = activeCfg.hold || { macro: 'command' };
+                            const updateHold = (field: string, value: any) => {
+                                update(active!.set, active!.id, 'hold', { ...holdCfg, [field]: value });
+                            };
+                            return (
+                                <div className="mobile-button-config-hold-section">
                                     <Form.Check
+                                        id={`hold-toggle-${active!.id}`}
+                                        className="mobile-button-config-hold-toggle"
                                         type="checkbox"
                                         label="Przytrzymanie (hold)"
                                         checked={activeCfg.holdEnabled || false}
                                         onChange={e => update(active!.set, active!.id, 'holdEnabled', e.target.checked)}
                                     />
-                                </Form.Group>
-                                {activeCfg.holdEnabled && !settings.locked && (
-                                    <Alert variant="warning" className="py-1 px-2 mb-2 small">
-                                        Odblokowane przyciski moga kolidowac z przytrzymaniem (przeciaganie po 1s).
-                                    </Alert>
-                                )}
-                                {activeCfg.holdEnabled && (
-                                    <>
-                                        <Form.Group className="form-label mb-2">
-                                            <Form.Label>Makro (hold)</Form.Label>
-                                            <Form.Select
-                                                size="sm"
-                                                className={`mobile-button-macro ${holdCfg.macro && !isButtonMacroAvailable(holdCfg.macro) ? 'border-warning' : ''}`}
-                                                value={holdCfg.macro || 'command'}
-                                                onChange={e => updateHold('macro', e.target.value)}
-                                            >
-                                                {macroOptions.filter(o => o.value !== 'empty').map(o => (
-                                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                                ))}
-                                                {(() => {
-                                                    const byPlugin = new Map<string, typeof pluginMacros>();
-                                                    for (const pm of pluginMacros) {
-                                                        const key = pm.pluginName || pm.pluginId;
-                                                        if (!byPlugin.has(key)) byPlugin.set(key, []);
-                                                        byPlugin.get(key)!.push(pm);
-                                                    }
-                                                    return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
-                                                        <optgroup key={pluginName} label={pluginName}>
-                                                            {macros.map(pm => (
-                                                                <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                                            ))}
-                                                        </optgroup>
-                                                    ));
-                                                })()}
-                                            </Form.Select>
-                                        </Form.Group>
-                                        {holdCfg.macro === 'command' && (
-                                            <Form.Group className="form-label mb-2">
-                                                <Form.Label>Komenda (hold)</Form.Label>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    size="sm"
-                                                    value={holdCfg.command || ''}
-                                                    onChange={e => updateHold('command', e.target.value)}
-                                                />
-                                            </Form.Group>
-                                        )}
-                                        {holdCfg.macro === 'kierunek' && (
-                                            <Form.Group className="form-label mb-2">
-                                                <Form.Label>Kierunek (hold)</Form.Label>
+                                    {activeCfg.holdEnabled && !settings.locked && (
+                                        <Alert variant="warning" className="py-1 px-2 mb-2 small">
+                                            Odblokowane przyciski moga kolidowac z przytrzymaniem (przeciaganie po 1s).
+                                        </Alert>
+                                    )}
+                                    {activeCfg.holdEnabled && (
+                                        <div className="mobile-button-config-section">
+                                            <div className="mobile-button-config-section-title">Opcje hold</div>
+                                            <Form.Group className="mb-2">
+                                                <Form.Label className="small mb-1">Makro (hold)</Form.Label>
                                                 <Form.Select
                                                     size="sm"
-                                                    value={holdCfg.direction || ''}
-                                                    onChange={e => updateHold('direction', e.target.value)}
+                                                    className={`mobile-button-macro ${holdCfg.macro && !isButtonMacroAvailable(holdCfg.macro) ? 'border-warning' : ''}`}
+                                                    value={holdCfg.macro || 'command'}
+                                                    onChange={e => updateHold('macro', e.target.value)}
                                                 >
-                                                    {directionOptions.map(d => (
-                                                        <option key={d} value={d}>{d}</option>
+                                                    {macroOptions.filter(o => o.value !== 'empty').map(o => (
+                                                        <option key={o.value} value={o.value}>{o.label}</option>
                                                     ))}
+                                                    {(() => {
+                                                        const byPlugin = new Map<string, typeof pluginMacros>();
+                                                        for (const pm of pluginMacros) {
+                                                            const key = pm.pluginName || pm.pluginId;
+                                                            if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                                            byPlugin.get(key)!.push(pm);
+                                                        }
+                                                        return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                                            <optgroup key={pluginName} label={pluginName}>
+                                                                {macros.map(pm => (
+                                                                    <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                                                ))}
+                                                            </optgroup>
+                                                        ));
+                                                    })()}
                                                 </Form.Select>
                                             </Form.Group>
-                                        )}
-                                        {(holdCfg.macro === 'attackEnemy' || holdCfg.macro === 'blockEnemy') && (
-                                            <Form.Group className="form-label mb-2">
-                                                <Form.Label>Slot wroga (hold)</Form.Label>
-                                                <Form.Select
-                                                    size="sm"
-                                                    value={holdCfg.enemySlot ?? 0}
-                                                    onChange={e => updateHold('enemySlot', parseInt(e.target.value))}
-                                                >
-                                                    <option value={0}>Slot 1</option>
-                                                    <option value={1}>Slot 2</option>
-                                                    <option value={2}>Slot 3</option>
-                                                </Form.Select>
-                                            </Form.Group>
-                                        )}
-                                        {/* Hold plugin macro config fields */}
-                                        {holdCfg.macro?.startsWith('plugin:') && (() => {
-                                            const pluginMacro = pluginMacros.find(pm => pm.id === holdCfg.macro);
-                                            if (!pluginMacro?.configFields?.length) return null;
-                                            const pluginConfig = holdCfg.pluginConfig || {};
-                                            return pluginMacro.configFields.map(field => (
-                                                <Form.Group key={`hold-${field.name}`} className="form-label mb-2">
-                                                    <Form.Label>{field.label} (hold)</Form.Label>
-                                                    {field.type === 'text' && (
-                                                        <Form.Control
-                                                            size="sm"
-                                                            type="text"
-                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
-                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
-                                                        />
-                                                    )}
-                                                    {field.type === 'textarea' && (
-                                                        <Form.Control
-                                                            as="textarea"
-                                                            size="sm"
-                                                            rows={2}
-                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
-                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
-                                                        />
-                                                    )}
-                                                    {field.type === 'number' && (
-                                                        <Form.Control
-                                                            size="sm"
-                                                            type="number"
-                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? 0}
-                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: Number(e.target.value) })}
-                                                        />
-                                                    )}
-                                                    {field.type === 'select' && field.options && (
-                                                        <Form.Select
-                                                            size="sm"
-                                                            value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
-                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
-                                                        >
-                                                            {field.options.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </Form.Select>
-                                                    )}
-                                                    {field.type === 'checkbox' && (
-                                                        <Form.Check
-                                                            id={`hold-plugin-config-mobile-${active!.id}-${field.name}`}
-                                                            type="checkbox"
-                                                            checked={pluginConfig[field.name] ?? field.defaultValue ?? false}
-                                                            onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.checked })}
-                                                        />
-                                                    )}
+                                            {holdCfg.macro === 'command' && (
+                                                <Form.Group className="mb-2">
+                                                    <Form.Label className="small mb-1">Komenda (hold)</Form.Label>
+                                                    <Form.Control
+                                                        as="textarea"
+                                                        size="sm"
+                                                        value={holdCfg.command || ''}
+                                                        onChange={e => updateHold('command', e.target.value)}
+                                                    />
                                                 </Form.Group>
-                                            ));
-                                        })()}
-                                    </>
-                                )}
-                            </>
-                        );
-                    })()}
+                                            )}
+                                            {holdCfg.macro === 'kierunek' && (
+                                                <Form.Group className="mb-2">
+                                                    <Form.Label className="small mb-1">Kierunek (hold)</Form.Label>
+                                                    <Form.Select
+                                                        size="sm"
+                                                        value={holdCfg.direction || ''}
+                                                        onChange={e => updateHold('direction', e.target.value)}
+                                                    >
+                                                        {directionOptions.map(d => (
+                                                            <option key={d} value={d}>{d}</option>
+                                                        ))}
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            )}
+                                            {(holdCfg.macro === 'attackEnemy' || holdCfg.macro === 'blockEnemy') && (
+                                                <Form.Group className="mb-2">
+                                                    <Form.Label className="small mb-1">Slot wroga (hold)</Form.Label>
+                                                    <Form.Select
+                                                        size="sm"
+                                                        value={holdCfg.enemySlot ?? 0}
+                                                        onChange={e => updateHold('enemySlot', parseInt(e.target.value))}
+                                                    >
+                                                        <option value={0}>Slot 1</option>
+                                                        <option value={1}>Slot 2</option>
+                                                        <option value={2}>Slot 3</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            )}
+                                            {/* Hold plugin macro config fields */}
+                                            {holdCfg.macro?.startsWith('plugin:') && (() => {
+                                                const pluginMacro = pluginMacros.find(pm => pm.id === holdCfg.macro);
+                                                if (!pluginMacro?.configFields?.length) return null;
+                                                const pluginConfig = holdCfg.pluginConfig || {};
+                                                return pluginMacro.configFields.map(field => (
+                                                    <Form.Group key={`hold-${field.name}`} className="mb-2">
+                                                        <Form.Label className="small mb-1">{field.label} (hold)</Form.Label>
+                                                        {field.type === 'text' && (
+                                                            <Form.Control
+                                                                size="sm"
+                                                                type="text"
+                                                                value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                                onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                            />
+                                                        )}
+                                                        {field.type === 'textarea' && (
+                                                            <Form.Control
+                                                                as="textarea"
+                                                                size="sm"
+                                                                rows={2}
+                                                                value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                                onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                            />
+                                                        )}
+                                                        {field.type === 'number' && (
+                                                            <Form.Control
+                                                                size="sm"
+                                                                type="number"
+                                                                value={pluginConfig[field.name] ?? field.defaultValue ?? 0}
+                                                                onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: Number(e.target.value) })}
+                                                            />
+                                                        )}
+                                                        {field.type === 'select' && field.options && (
+                                                            <Form.Select
+                                                                size="sm"
+                                                                value={pluginConfig[field.name] ?? field.defaultValue ?? ''}
+                                                                onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.value })}
+                                                            >
+                                                                {field.options.map(opt => (
+                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                ))}
+                                                            </Form.Select>
+                                                        )}
+                                                        {field.type === 'checkbox' && (
+                                                            <Form.Check
+                                                                id={`hold-plugin-config-mobile-${active!.id}-${field.name}`}
+                                                                type="checkbox"
+                                                                checked={pluginConfig[field.name] ?? field.defaultValue ?? false}
+                                                                onChange={e => updateHold('pluginConfig', { ...pluginConfig, [field.name]: e.target.checked })}
+                                                            />
+                                                        )}
+                                                    </Form.Group>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
             )}
-            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 mt-2">
-                <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 flex-grow-1">
-                    <Form.Select
-                        size="sm"
-                        value={copyFrom}
-                        onChange={e => setCopyFrom(e.target.value as Mode)}
-                        className="flex-grow-1"
-                        style={{ minWidth: 0 }}
-                    >
-                        <option value="solo">Bez drużyny</option>
-                        <option value="team">W drużynie</option>
-                        <option value="leader">Prowadzący</option>
-                    </Form.Select>
-                    <Button size="sm" variant="secondary" className="w-100 w-sm-auto" onClick={() => copyLayout(copyFrom)}>
-                        Kopiuj
-                    </Button>
-                </div>
-                <Button id="mobile-buttons-save" className="w-100 w-md-auto text-nowrap" onClick={save}>Zapisz</Button>
+            <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
+                <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
+                    Domyslne
+                </Button>
+                <Form.Select
+                    size="sm"
+                    value={copyFrom}
+                    onChange={e => setCopyFrom(e.target.value as Mode)}
+                    style={{ width: 'auto', minWidth: '120px' }}
+                >
+                    <option value="solo">Bez druzyny</option>
+                    <option value="team">W druzynie</option>
+                    <option value="leader">Prowadzacy</option>
+                </Form.Select>
+                <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                    Kopiuj
+                </Button>
+                <Button id="mobile-buttons-save" size="sm" variant="primary" className="ms-auto" onClick={save}>Zapisz</Button>
             </div>
         </div>
     );
