@@ -207,27 +207,31 @@ export default class ObjectList {
         if (target.closest(".objects-list-controls")) {
             return;
         }
-        // Handle attack target dot click (leader only, /wa to mark or /ra to order attack)
+        // Handle attack target dot click (leader only, /wa to mark, /ra to order attack if active)
         const attackDotEl = target.closest(
             ".target-dot-attack[data-object-num]"
         ) as HTMLElement | null;
         if (attackDotEl) {
             const num = attackDotEl.getAttribute("data-object-num");
             if (num) {
-                const isActive = attackDotEl.classList.contains("target-dot-active");
-                this.client.sendCommand(isActive ? "/ra" : `/wa ${num}`);
+                this.client.sendCommand(`/wa ${num}`);
+                if (attackDotEl.classList.contains("target-dot-active")) {
+                    this.client.sendCommand(`/ra ${num}`);
+                }
             }
             return;
         }
-        // Handle defense target dot click (leader only, /wz to mark or /rz to order shield)
+        // Handle defense target dot click (leader only, /wz to mark, /rz to order shield if active)
         const defenseDotEl = target.closest(
             ".target-dot-defense[data-object-num]"
         ) as HTMLElement | null;
         if (defenseDotEl) {
             const num = defenseDotEl.getAttribute("data-object-num");
             if (num) {
-                const isActive = defenseDotEl.classList.contains("target-dot-active");
-                this.client.sendCommand(isActive ? "/rz" : `/wz ${num}`);
+                this.client.sendCommand(`/wz ${num}`);
+                if (defenseDotEl.classList.contains("target-dot-active")) {
+                    this.client.sendCommand(`/rz ${num}`);
+                }
             }
             return;
         }

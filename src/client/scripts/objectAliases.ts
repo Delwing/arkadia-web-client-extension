@@ -211,8 +211,8 @@ export default function initObjectAliases(
             pattern: /\/rz ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
                 if (m[1] === '@') {
-                    client.sendCommand(`rozkaz druzynie zaslonic ciebie`);
-                    return
+                    client.sendCommand(`rozkaz druzynie zaslonic siebie`);
+                    return;
                 }
                 const obj = findByShortcut(m[1]);
                 if (obj) {
@@ -225,7 +225,12 @@ export default function initObjectAliases(
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();
                 if (id !== undefined) {
-                    client.sendCommand(`rozkaz druzynie zaslonic ob_${id}`);
+                    const selfNum = client.ObjectManager.getObjectsOnLocation().find(o => o.shortcut === '@')?.num;
+                    if (selfNum !== undefined && id === selfNum) {
+                        client.sendCommand(`rozkaz druzynie zaslonic siebie`);
+                    } else {
+                        client.sendCommand(`rozkaz druzynie zaslonic ob_${id}`);
+                    }
                 }
             }
         });
@@ -243,6 +248,7 @@ export default function initObjectAliases(
             callback: (m: RegExpMatchArray) => {
                 if (m[1] === '@') {
                     client.sendCommand(`wskaz siebie jako cel obrony`);
+                    return;
                 }
                 const obj = findByShortcut(m[1]);
                 if (obj) {
