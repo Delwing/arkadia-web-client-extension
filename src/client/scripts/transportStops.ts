@@ -60,6 +60,10 @@ const EXIT_FAILURE_PATTERNS: RegExp[] = [
     /^Wolisz nie probowac wysiasc z jadacego .*\.$/,
 ];
 
+const ABORT_PATTERNS: RegExp[] = [
+    /^Jednym susem przesadzasz burte .* i wskakujesz do wody\. Po chwili udaje ci sie doplynac z powrotem do brzegu\.$/,
+];
+
 const EXIT_TIMEOUT_MS = 30_000;
 
 const LOG_PREFIX = "[Transport]";
@@ -288,6 +292,7 @@ class TransportTracker {
         );
         this.registerTriggers();
         this.registerExitFailureTriggers();
+        this.registerAbortTriggers();
         this.registerListeners();
         this.emitTimer(null);
         void this.loadSegmentDurationOverrides();
@@ -420,6 +425,23 @@ class TransportTracker {
                 return triggerLine;
             }, "transport-tracker");
         });
+    }
+
+    private registerAbortTriggers() {
+        ABORT_PATTERNS.forEach(pattern => {
+            this.client.Triggers.registerTrigger(pattern, () => {
+                this.handleAbort();
+                return undefined;
+            }, "transport-tracker");
+        });
+    }
+
+    private handleAbort() {
+        if (!this.currentJourney) {
+            return;
+        }
+        this.log(`Trip aborted on ${this.currentJourney.definition.name}.`);
+        this.clearJourney();
     }
 
     private handleCommand(command: string) {

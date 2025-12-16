@@ -251,6 +251,43 @@ test.describe('Transport timer', () => {
         expect(timerTextAfterWait, 'should show countdown').toMatch(/\d+:\d{2}/);
     });
 
+    test('clears timer when jumping overboard (abort)', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const transportTimer = page.locator('#transport-timer');
+
+        // Send location update
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: {
+                x: 0,
+                y: 0,
+                name: 'Transport Docks',
+            },
+        });
+
+        // Start journey
+        await submitCommand(page, 'wejdz na statek');
+        await page.waitForTimeout(50);
+        await pushText(page, 'Wchodzisz na wielka galere.');
+        await pushText(page, 'Galera odbija od brzegu.');
+
+        // Verify timer is active
+        await expect(transportTimer, 'should have timer running').toContainText('Tr:');
+
+        // Jump overboard - abort the journey
+        await pushText(page, 'Jednym susem przesadzasz burte statku i wskakujesz do wody. Po chwili udaje ci sie doplynac z powrotem do brzegu.');
+
+        // Timer should be empty after aborting
+        await expect(transportTimer, 'should clear timer after jumping overboard').toBeEmpty();
+    });
+
     test('uses learned shorter duration on subsequent journeys', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
