@@ -6,6 +6,21 @@ import { encrypt, decrypt, calculateChecksum, isEncryptedData } from './firebase
 const SYNC_COLLECTION = 'users';
 const SYNC_SUBCOLLECTION = 'sync';
 
+// Rate limiting: max 1 sync check per 10 minutes
+export const SYNC_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+// Check if enough time has passed since last sync check
+export function canPerformSyncCheck(): boolean {
+    const settings = loadFirebaseSettings();
+    const now = Date.now();
+    return now - (settings.lastSyncCheckTime || 0) >= SYNC_CHECK_INTERVAL_MS;
+}
+
+// Update last sync check time
+export function updateLastSyncCheckTime(): void {
+    saveFirebaseSettings({ lastSyncCheckTime: Date.now() });
+}
+
 // Upload a single category to Firestore
 export async function uploadCategory(
     category: SyncCategory,

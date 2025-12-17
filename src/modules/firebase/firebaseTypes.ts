@@ -144,6 +144,7 @@ export interface FirebaseSettings {
     autoSyncEnabled: boolean;
     categorySyncTimes: CategorySyncTimes;
     deviceId: string;
+    lastSyncCheckTime: number;  // timestamp of last sync check (rate limiting)
 }
 
 // Auth state
@@ -219,6 +220,7 @@ export function loadFirebaseSettings(): FirebaseSettings {
         autoSyncEnabled: false,
         categorySyncTimes: {},
         deviceId: getDeviceId(),
+        lastSyncCheckTime: 0,
     };
 
     try {
@@ -233,6 +235,7 @@ export function loadFirebaseSettings(): FirebaseSettings {
                 ? parsed.categorySyncTimes
                 : {},
             deviceId: defaults.deviceId,
+            lastSyncCheckTime: typeof parsed.lastSyncCheckTime === 'number' ? parsed.lastSyncCheckTime : 0,
         };
     } catch {
         return defaults;

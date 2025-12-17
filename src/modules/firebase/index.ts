@@ -69,6 +69,9 @@ export {
     deleteCategory,
     deleteAllCategories,
     updateCategorySyncTime,
+    canPerformSyncCheck,
+    updateLastSyncCheckTime,
+    SYNC_CHECK_INTERVAL_MS,
 } from './firebaseSync';
 
 // Crypto

@@ -36,6 +36,8 @@ import {
     getAllCategoriesMetadata,
     updateCategorySyncTime,
     deleteAllCategories,
+    canPerformSyncCheck,
+    updateLastSyncCheckTime,
 } from "@modules/firebase";
 import {
     collectCharacters,
@@ -57,9 +59,10 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 interface FirebaseTabProps {
     onImportComplete?: () => void;
+    isVisible?: boolean;  // Whether the tab is currently visible (for lazy loading)
 }
 
-function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
+function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
     // Config state
     const [isConfigured, setIsConfigured] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
@@ -102,6 +105,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     // Auto-sync
     const autoSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef(false);
+    const initialSyncAttemptedRef = useRef(false);
 
     // Auto-dismiss status/error messages
     useEffect(() => {
@@ -170,19 +174,131 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         return () => unsubscribe();
     }, [isConfigured]);
 
-    // Load cloud metadata when authenticated
+    // Helper to check if running on localhost
+    const isLocalhost = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    // Perform initial sync check - downloads all data and auto-applies if cloud is fresher
+    const performInitialSyncCheck = useCallback(async () => {
+        if (!authState.isAuthenticated || isLocalhost) return;
+        if (!canPerformSyncCheck()) return;
+        if (isSyncingRef.current) return;
+
+        // For encryption, we need passphrase - skip auto-apply but still load metadata
+        const canAutoApply = !encryptionEnabled || (encryptionEnabled && passphrase);
+
+        isSyncingRef.current = true;
+        try {
+            // Get enabled categories
+            const enabledCategories = SYNC_CATEGORIES.filter(cat => syncOptions[cat]);
+            if (enabledCategories.length === 0) return;
+
+            // Download all categories in one read
+            const result = await downloadCategories(
+                enabledCategories,
+                encryptionEnabled ? passphrase : undefined
+            );
+
+            // Update last sync check time
+            updateLastSyncCheckTime();
+
+            // Build metadata from downloaded data
+            const metadata: Partial<Record<SyncCategory, {
+                exists: boolean;
+                syncedAt?: string;
+                deviceId?: string;
+                encrypted?: boolean;
+            }>> = {};
+
+            // If download had errors requiring passphrase, fall back to metadata-only
+            if (!result.success && Object.values(result.errors).some(e => e === 'Nieprawidlowe haslo szyfrowania.')) {
+                const metadataResult = await getAllCategoriesMetadata();
+                if (!metadataResult.error) {
+                    setCloudMetadata(metadataResult.categories);
+                }
+                return;
+            }
+
+            // Process downloaded data
+            for (const category of enabledCategories) {
+                if (result.data[category]) {
+                    metadata[category] = { exists: true, encrypted: encryptionEnabled };
+                }
+            }
+            setCloudMetadata(metadata);
+
+            // If auto-sync is enabled and we can auto-apply, check for fresher cloud data
+            if (autoSyncEnabled && canAutoApply && Object.keys(result.data).length > 0) {
+                const allCharacters = collectCharacters();
+                const localData = await exportCategories(enabledCategories, allCharacters);
+
+                // Check for conflicts
+                const conflictResult = await checkCategoriesConflicts(
+                    localData,
+                    encryptionEnabled ? passphrase : undefined
+                );
+
+                if (conflictResult.conflicts.length > 0) {
+                    // Show conflict modal for conflicting categories
+                    setConflicts(conflictResult.conflicts);
+                    setShowConflictModal(true);
+                } else {
+                    // No conflicts - auto-apply cloud data if we have any
+                    const categoriesToImport = Object.keys(result.data) as SyncCategory[];
+                    if (categoriesToImport.length > 0) {
+                        const importResult = await importCategories(result.data);
+                        if (importResult.success) {
+                            // Update local sync times
+                            const now = Date.now();
+                            categoriesToImport.forEach(cat => {
+                                updateCategorySyncTime(cat, now);
+                            });
+                            onImportComplete?.();
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Initial sync check failed', err);
+        } finally {
+            isSyncingRef.current = false;
+        }
+    }, [authState.isAuthenticated, autoSyncEnabled, encryptionEnabled, passphrase, syncOptions, onImportComplete, isLocalhost]);
+
+    // Initial sync on auth (only if auto-sync enabled)
     useEffect(() => {
         if (!authState.isAuthenticated) return;
+        if (isLocalhost) return;
+        if (initialSyncAttemptedRef.current) return;
 
-        const loadMetadata = async () => {
+        // Only perform initial sync if auto-sync is enabled
+        if (!autoSyncEnabled) return;
+
+        initialSyncAttemptedRef.current = true;
+        performInitialSyncCheck();
+    }, [authState.isAuthenticated, autoSyncEnabled, performInitialSyncCheck, isLocalhost]);
+
+    // Load data when tab becomes visible (for non-auto-sync case)
+    useEffect(() => {
+        if (!authState.isAuthenticated) return;
+        if (isLocalhost) return;
+        if (!isVisible) return;
+        if (autoSyncEnabled) return; // Already handled by initial sync
+
+        // Only load if rate limit allows
+        if (!canPerformSyncCheck()) return;
+
+        // Load metadata only (not auto-apply) when tab opens without auto-sync
+        const loadMetadataOnly = async () => {
             const result = await getAllCategoriesMetadata();
+            updateLastSyncCheckTime();
             if (!result.error) {
                 setCloudMetadata(result.categories);
             }
         };
 
-        loadMetadata();
-    }, [authState.isAuthenticated]);
+        loadMetadataOnly();
+    }, [authState.isAuthenticated, isVisible, autoSyncEnabled, isLocalhost]);
 
     // Save sync options when they change
     useEffect(() => {
