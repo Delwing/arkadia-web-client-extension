@@ -676,11 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Activate tab sleep prevention for mobile devices
-    if (window.innerWidth < 768) {
-        preventTabSleep();
-        console.log('Tab sleep prevention activated for mobile device');
-    }
+    // Activate tab sleep prevention for all devices
+    preventTabSleep();
+    console.log('Tab sleep prevention activated');
 
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
@@ -2002,13 +2000,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Add resize event listener to check if device becomes mobile-sized
-window.addEventListener('resize', () => {
-    // Check if device is mobile-sized and tab sleep prevention is not active
-    if (window.innerWidth < 768 && !tabSleepPreventionActive) {
-        preventTabSleep();
-        console.log('Tab sleep prevention activated on resize for mobile device');
-    }
-});
 
 window.client = arkadiaClient
