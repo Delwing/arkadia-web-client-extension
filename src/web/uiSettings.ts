@@ -69,6 +69,7 @@ export interface UiSettings {
     mapPlayerMarkerStrokeWidth: number;
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
+    objectContextMenuCommands: string[];
 }
 
 const defaultSettings: UiSettings = {
@@ -108,6 +109,7 @@ const defaultSettings: UiSettings = {
     mapPlayerMarkerStrokeWidth: 0.1,
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
+    objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
 };
 
 const MIN_MAP_SCALE = 0.01;
@@ -463,6 +465,9 @@ async function load(): Promise<UiSettings> {
             const mapPlayerMarkerDashEnabled = typeof parsed.mapPlayerMarkerDashEnabled === 'boolean'
                 ? parsed.mapPlayerMarkerDashEnabled
                 : defaultSettings.mapPlayerMarkerDashEnabled;
+            const objectContextMenuCommands = Array.isArray(parsed.objectContextMenuCommands)
+                ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
+                : defaultSettings.objectContextMenuCommands;
             return {
                 ...defaultSettings,
                 ...parsed,
@@ -497,6 +502,7 @@ async function load(): Promise<UiSettings> {
                 mapPlayerMarkerStrokeWidth,
                 mapPlayerMarkerSizeFactor,
                 mapPlayerMarkerDashEnabled,
+                objectContextMenuCommands,
             };
         }
     } catch {
@@ -562,11 +568,165 @@ export default async function initUiSettings() {
     const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
     const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
+    const objectContextMenuContainer = modalEl.querySelector('#ui-object-context-menu-container') as HTMLDivElement;
+    const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
     let current = await load();
     let customSounds: CustomSound[] = [];
     const customSoundsRef = { current: customSounds };
+    let objectContextMenuCommands: string[] = [...current.objectContextMenuCommands];
+
+    // Create wrapper and close button for input to look like a badge when typing
+    let inputWrapper: HTMLSpanElement | null = null;
+    let inputCloseBtn: HTMLSpanElement | null = null;
+
+    if (objectContextMenuInput && objectContextMenuContainer) {
+        inputWrapper = document.createElement('span');
+        inputWrapper.className = 'context-menu-input-wrapper';
+        inputCloseBtn = document.createElement('span');
+        inputCloseBtn.textContent = '\u00d7';
+        inputCloseBtn.style.cssText = 'cursor: pointer; margin-left: 0.25rem; line-height: 1; opacity: 0.7; display: none;';
+
+        // Wrap the input
+        objectContextMenuContainer.insertBefore(inputWrapper, objectContextMenuInput);
+        inputWrapper.appendChild(objectContextMenuInput);
+        inputWrapper.appendChild(inputCloseBtn);
+    }
+
+    const renderObjectContextMenuCommands = () => {
+        if (!objectContextMenuContainer) return;
+        // Remove existing badges (keep input wrapper)
+        objectContextMenuContainer.querySelectorAll('.context-menu-badge').forEach(el => el.remove());
+        // Insert badges before input wrapper (or at end if no wrapper)
+        const insertBeforeEl = inputWrapper || null;
+        objectContextMenuCommands.forEach(cmd => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-secondary d-inline-flex align-items-center context-menu-badge';
+            badge.style.cssText = 'font-size: 0.7rem; padding: 0.15rem 0.35rem; font-weight: normal; line-height: 1; box-sizing: border-box; cursor: pointer;';
+            // Wrap text in span for proper flex alignment
+            const textSpan = document.createElement('span');
+            textSpan.textContent = cmd;
+            textSpan.style.cssText = 'line-height: 1;';
+            badge.appendChild(textSpan);
+            const closeBtn = document.createElement('span');
+            closeBtn.textContent = '\u00d7';
+            closeBtn.style.cssText = 'margin-left: 0.25rem; line-height: 1; opacity: 0.7;';
+            badge.appendChild(closeBtn);
+            // Click anywhere on badge to remove
+            badge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                objectContextMenuCommands = objectContextMenuCommands.filter(c => c !== cmd);
+                renderObjectContextMenuCommands();
+            });
+            badge.addEventListener('mouseenter', () => { closeBtn.style.opacity = '1'; });
+            badge.addEventListener('mouseleave', () => { closeBtn.style.opacity = '0.7'; });
+            objectContextMenuContainer.insertBefore(badge, insertBeforeEl);
+        });
+    };
+
+    // Flag to prevent blur from committing when X button is clicked
+    let cancellingInput = false;
+
+    if (objectContextMenuInput && objectContextMenuContainer && inputCloseBtn) {
+        objectContextMenuContainer.addEventListener('click', () => {
+            objectContextMenuInput?.focus();
+        });
+
+        // Use mousedown to set flag before blur fires
+        inputCloseBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Prevent blur
+            e.stopPropagation();
+            cancellingInput = true;
+            if (objectContextMenuInput) {
+                objectContextMenuInput.value = '';
+                resizeInput();
+                objectContextMenuInput.focus();
+            }
+            cancellingInput = false;
+        });
+        inputCloseBtn.addEventListener('mouseenter', () => { if (inputCloseBtn) inputCloseBtn.style.opacity = '1'; });
+        inputCloseBtn.addEventListener('mouseleave', () => { if (inputCloseBtn) inputCloseBtn.style.opacity = '0.7'; });
+    }
+
+    const resizeInput = () => {
+        if (!objectContextMenuInput || !inputWrapper || !inputCloseBtn) return;
+        const len = objectContextMenuInput.value.length;
+        if (len > 0) {
+            // Style wrapper as badge (exact same as badges)
+            inputWrapper.className = 'badge bg-secondary d-inline-flex align-items-center context-menu-input-wrapper';
+            inputWrapper.style.cssText = 'font-size: 0.7rem; padding: 0.15rem 0.35rem; font-weight: normal; line-height: 1; box-sizing: border-box;';
+            // Input minimal styling inside badge - no extra margin/padding
+            objectContextMenuInput.style.cssText = 'outline: none; width: ' + len + 'ch; max-width: ' + len + 'ch; background: transparent; color: white; border: none; padding: 0; margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; box-sizing: border-box;';
+            inputCloseBtn.style.display = 'inline';
+        } else {
+            // Wrapper unstyled but same height as badges (add vertical padding to match badge height)
+            inputWrapper.className = 'context-menu-input-wrapper d-inline-flex align-items-center';
+            inputWrapper.style.cssText = 'font-size: 0.7rem; line-height: 1; padding: 0.15rem 0; box-sizing: border-box;';
+            // Input minimal - same font-size and line-height as badges to match height
+            objectContextMenuInput.style.cssText = 'outline: none; width: 1ch; min-width: 1ch; background: transparent; font-size: inherit; padding: 0; margin: 0; border: none; line-height: inherit;';
+            inputCloseBtn.style.display = 'none';
+        }
+    };
+
+    const commitInput = () => {
+        if (!objectContextMenuInput) return false;
+        const val = objectContextMenuInput.value.trim();
+        if (val && !objectContextMenuCommands.includes(val)) {
+            objectContextMenuCommands.push(val);
+            objectContextMenuInput.value = '';
+            renderObjectContextMenuCommands();
+            resizeInput();
+            return true;
+        }
+        return false;
+    };
+
+    const flashDuplicateBadge = (cmd: string) => {
+        if (!objectContextMenuContainer) return;
+        const badges = objectContextMenuContainer.querySelectorAll('.context-menu-badge');
+        for (const badge of badges) {
+            const textSpan = badge.querySelector('span');
+            if (textSpan && textSpan.textContent === cmd) {
+                badge.classList.add('duplicate-flash');
+                setTimeout(() => badge.classList.remove('duplicate-flash'), 300);
+                break;
+            }
+        }
+    };
+
+    if (objectContextMenuInput) {
+        objectContextMenuInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const val = objectContextMenuInput.value.trim();
+                if (val && !objectContextMenuCommands.includes(val)) {
+                    objectContextMenuCommands.push(val);
+                    objectContextMenuInput.value = '';
+                    renderObjectContextMenuCommands();
+                    resizeInput();
+                } else if (val) {
+                    // Value exists - flash the existing badge and clear input
+                    flashDuplicateBadge(val);
+                    objectContextMenuInput.value = '';
+                    resizeInput();
+                }
+            } else if (e.key === 'Backspace' && objectContextMenuInput.value === '' && objectContextMenuCommands.length > 0) {
+                objectContextMenuCommands.pop();
+                renderObjectContextMenuCommands();
+            }
+        });
+        objectContextMenuInput.addEventListener('input', resizeInput);
+        objectContextMenuInput.addEventListener('blur', () => {
+            if (!cancellingInput) {
+                commitInput();
+            }
+        });
+    }
+
+    renderObjectContextMenuCommands();
+    resizeInput(); // Initialize input wrapper state
 
     const loadCustomSounds = async () => {
         try {
@@ -703,6 +863,8 @@ export default async function initUiSettings() {
         mapPlayerMarkerSizeFactorInput.value = String(settings.mapPlayerMarkerSizeFactor);
         mapPlayerMarkerSizeFactorValue.textContent = String(settings.mapPlayerMarkerSizeFactor);
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
+        objectContextMenuCommands = [...settings.objectContextMenuCommands];
+        renderObjectContextMenuCommands();
     };
 
     populateFormInputs(current);
@@ -1059,6 +1221,7 @@ export default async function initUiSettings() {
             mapPlayerMarkerStrokeWidth: parseFloat(mapPlayerMarkerStrokeWidthInput.value) || defaultSettings.mapPlayerMarkerStrokeWidth,
             mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultSettings.mapPlayerMarkerSizeFactor,
             mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
+            objectContextMenuCommands: [...objectContextMenuCommands],
         };
     }
 

@@ -1,8 +1,11 @@
 import Client from "@client/Client";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import storage, { getItemSync, setItemSync } from "@modules/core/storage";
 import { createAttackController } from "@client/utils/attackController";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
+import { showContextMenu } from "@shared/dom/contextMenu";
+
+const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
 export default class ObjectList {
     private client: Client;
@@ -29,6 +32,7 @@ export default class ObjectList {
     private pipLastOutputHtml = "";
     private cachedPipHtml = "";
     private attackController: ReturnType<typeof createAttackController>;
+    private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
 
     constructor(client: Client) {
         this.client = client;
@@ -39,6 +43,7 @@ export default class ObjectList {
         this.setupDraggable();
         if (!this.isMobile) {
             this.container?.addEventListener("click", this.onClick);
+            this.container?.addEventListener("contextmenu", this.onContextMenu);
         }
         window.addEventListener("resize", this.clampToViewport);
         this.client.on("attackQueueChange", () => this.render());
@@ -51,7 +56,23 @@ export default class ObjectList {
         this.client.on("output-sent", () => this.handleOutputUpdate());
         this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();
+        this.loadContextMenuCommands();
+        storage.onChanged?.addListener((changes) => {
+            if (changes.uiSettings) {
+                this.loadContextMenuCommands();
+            }
+        });
         this.render();
+    }
+
+    private loadContextMenuCommands() {
+        const data = getItemSync("uiSettings");
+        const commands = data?.uiSettings?.objectContextMenuCommands;
+        if (Array.isArray(commands) && commands.length > 0) {
+            this.contextMenuCommands = commands.filter((c: unknown) => typeof c === 'string');
+        } else {
+            this.contextMenuCommands = DEFAULT_CONTEXT_MENU_COMMANDS;
+        }
     }
 
     private setupContainer() {
@@ -280,6 +301,34 @@ export default class ObjectList {
                 this.client.sendCommand(`/za ${num}`);
             }
         }
+    };
+
+    private onContextMenu = (e: MouseEvent) => {
+        if (this.isMobile) return;
+        const target = this.getEventTargetElement(e.target);
+        if (!target) return;
+
+        // Find the closest element with object data
+        const objectEl = target.closest(
+            "[data-object-id]"
+        ) as HTMLElement | null;
+        if (!objectEl) return;
+
+        const objectId = objectEl.getAttribute("data-object-id");
+        if (!objectId) return;
+
+        if (this.contextMenuCommands.length === 0) return;
+
+        e.preventDefault();
+
+        const items = this.contextMenuCommands.map((command) => ({
+            label: command,
+            action: () => {
+                this.client.sendCommand(`${command} ob_${objectId}`);
+            },
+        }));
+
+        showContextMenu(items, e.clientX, e.clientY);
     };
 
     private render() {
@@ -548,6 +597,7 @@ export default class ObjectList {
             this.pipContent = pipContent;
             if (!this.isMobile) {
                 this.pipContent.addEventListener("click", this.onClick);
+                this.pipContent.addEventListener("contextmenu", this.onContextMenu);
             }
             this.injectPictureInPictureStyles();
             this.pipContent.innerHTML = this.cachedPipHtml;
@@ -581,6 +631,7 @@ export default class ObjectList {
         }
         if (this.pipContent && !this.isMobile) {
             this.pipContent.removeEventListener("click", this.onClick);
+            this.pipContent.removeEventListener("contextmenu", this.onContextMenu);
         }
         this.pipStyleObserver?.disconnect();
         this.pipStyleObserver = null;
