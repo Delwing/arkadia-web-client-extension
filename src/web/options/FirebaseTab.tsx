@@ -219,6 +219,14 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                 return;
             }
 
+            // If download had other errors, display them
+            if (!result.success && Object.keys(result.errors).length > 0) {
+                const firstError = Object.values(result.errors)[0];
+                if (firstError) {
+                    setSyncError(firstError);
+                }
+            }
+
             // Process downloaded data
             for (const category of enabledCategories) {
                 if (result.data[category]) {
@@ -238,6 +246,15 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                     encryptionEnabled ? passphrase : undefined
                 );
 
+                // Display conflict check errors
+                if (Object.keys(conflictResult.errors).length > 0) {
+                    const firstError = Object.values(conflictResult.errors)[0];
+                    if (firstError) {
+                        setSyncError(firstError);
+                    }
+                    return;
+                }
+
                 if (conflictResult.conflicts.length > 0) {
                     // Show conflict modal for conflicting categories
                     setConflicts(conflictResult.conflicts);
@@ -254,12 +271,19 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                                 updateCategorySyncTime(cat, now);
                             });
                             onImportComplete?.();
+                        } else {
+                            // Display import errors
+                            const firstError = Object.values(importResult.errors)[0];
+                            if (firstError) {
+                                setSyncError(firstError);
+                            }
                         }
                     }
                 }
             }
         } catch (err) {
             console.error('Initial sync check failed', err);
+            setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
         } finally {
             isSyncingRef.current = false;
         }
