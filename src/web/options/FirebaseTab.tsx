@@ -340,7 +340,11 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
             return;
         }
 
-        const handleStorageChange = () => {
+        // Keys that should NOT trigger auto-sync (internal sync metadata)
+        // This prevents sync loops when multiple windows are open
+        const IGNORED_STORAGE_KEYS = ['arkadia.firebaseSettings', 'arkadia.firebaseConfig'];
+
+        const triggerAutoSync = () => {
             // Debounce sync
             if (autoSyncTimeoutRef.current) {
                 clearTimeout(autoSyncTimeoutRef.current);
@@ -360,12 +364,25 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
             }, 5000);
         };
 
-        storage.onChanged?.addListener(handleStorageChange);
-        window.addEventListener("storage", handleStorageChange);
+        // Handler for local storage changes (from storage module)
+        const handleLocalStorageChange = () => {
+            triggerAutoSync();
+        };
+
+        // Handler for cross-window storage events - filter out firebase internal keys
+        const handleWindowStorage = (event: StorageEvent) => {
+            if (event.key && IGNORED_STORAGE_KEYS.includes(event.key)) {
+                return;
+            }
+            triggerAutoSync();
+        };
+
+        storage.onChanged?.addListener(handleLocalStorageChange);
+        window.addEventListener("storage", handleWindowStorage);
 
         return () => {
-            storage.onChanged?.removeListener?.(handleStorageChange);
-            window.removeEventListener("storage", handleStorageChange);
+            storage.onChanged?.removeListener?.(handleLocalStorageChange);
+            window.removeEventListener("storage", handleWindowStorage);
             if (autoSyncTimeoutRef.current) {
                 clearTimeout(autoSyncTimeoutRef.current);
                 setPendingAutoSync(false);
