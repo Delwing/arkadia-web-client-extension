@@ -1092,6 +1092,18 @@ export interface MapApi {
      */
     getRoom(): MapData.Room | undefined;
     /**
+     * Get all areas with their rooms
+     * @returns Array of area information objects
+     *
+     * @example
+     * const areas = api.map.getAreas();
+     * areas.forEach(area => {
+     *   console.log(`Area: ${area.areaName} (${area.areaId})`);
+     *   console.log(`Rooms: ${area.rooms.length}`);
+     * });
+     */
+    getAreas(): AreaInfo[];
+    /**
      * Set map location programmatically
      * @param roomId - Room ID to navigate to
      *

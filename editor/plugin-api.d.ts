@@ -258,10 +258,21 @@ interface EventsApi {
 }
 
 /**
+ * Area information exposed via Map API
+ */
+interface AreaInfo {
+  areaId: number;
+  areaName: string;
+  rooms: MapData.Room[];
+}
+
+/**
  * Map API - Access and modify map location
  */
 interface MapApi {
   getRoom(): MapData.Room | undefined;
+
+  getAreas(): AreaInfo[];
 
   setLocation(roomId: number): void;
 
@@ -509,7 +520,8 @@ interface HerbsApi {
  *
  * Types are available for import:
  * ```typescript
- *  * ```
+ * import type { ObjectListEntryFilter, EntryContext, FilterResult } from "@web/objectListFilters";
+ * ```
  */
 interface ObjectListFiltersApi {
   register(name: string, filter: ObjectListEntryFilter, priority?: number): void;

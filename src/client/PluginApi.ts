@@ -283,6 +283,18 @@ export interface EventsApi {
 }
 
 /**
+ * Area information exposed via Map API
+ */
+export interface AreaInfo {
+  /** Numeric area ID */
+  areaId: number;
+  /** Area display name */
+  areaName: string;
+  /** Array of rooms in this area */
+  rooms: MapData.Room[];
+}
+
+/**
  * Map API - Access and modify map location
  */
 export interface MapApi {
@@ -299,6 +311,19 @@ export interface MapApi {
    * }
    */
   getRoom(): MapData.Room | undefined;
+
+  /**
+   * Get all areas with their rooms
+   * @returns Array of area information objects
+   *
+   * @example
+   * const areas = api.map.getAreas();
+   * areas.forEach(area => {
+   *   console.log(`Area: ${area.areaName} (${area.areaId})`);
+   *   console.log(`Rooms: ${area.rooms.length}`);
+   * });
+   */
+  getAreas(): AreaInfo[];
 
   /**
    * Set map location programmatically
@@ -1616,6 +1641,18 @@ export class PluginApiImpl implements PluginApi {
     return {
       getRoom: () => {
         return this.client.Map.currentRoom;
+      },
+
+      getAreas: (): AreaInfo[] => {
+        const mapReader = this.client.Map.tryGetMapReader();
+        if (!mapReader) {
+          return [];
+        }
+        return mapReader.getAreas().map(area => ({
+          areaId: area.getAreaId(),
+          areaName: area.getAreaName(),
+          rooms: area.getRooms()
+        }));
       },
 
       setLocation: (roomId: number) => {
