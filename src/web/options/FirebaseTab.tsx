@@ -962,7 +962,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                                 ))}
                             </div>
                             <div className="col-6">
-                                {(['multibinds', 'scripts', 'buttons', 'radial', 'recordings', 'visitedRooms', 'locationNotes', 'deposits', 'containers'] as SyncCategory[]).map(cat => (
+                                {(['multibinds', 'buttons', 'radial', 'visitedRooms', 'locationNotes', 'deposits', 'containers'] as SyncCategory[]).map(cat => (
                                     <div key={cat} className="d-flex align-items-center gap-1">
                                         <Form.Check
                                             type="checkbox"
