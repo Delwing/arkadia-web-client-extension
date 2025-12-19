@@ -18,10 +18,8 @@ export interface SyncOptions {
     triggers: boolean;
     aliases: boolean;
     multibinds: boolean;
-    scripts: boolean;
     buttons: boolean;
     radial: boolean;
-    recordings: boolean;
     visitedRooms: boolean;
     locationNotes: boolean;    // Location notes
     killCounts: boolean;       // Lifetime kill counts per character
@@ -38,10 +36,8 @@ export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
     triggers: true,
     aliases: true,
     multibinds: true,
-    scripts: true,
     buttons: true,
     radial: true,
-    recordings: true,
     visitedRooms: true,
     locationNotes: true,
     killCounts: true,
@@ -69,10 +65,8 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     'triggers',
     'aliases',
     'multibinds',
-    'scripts',
     'buttons',
     'radial',
-    'recordings',
     'visitedRooms',
     'locationNotes',
     'killCounts',
@@ -90,10 +84,8 @@ export const SYNC_CATEGORY_NAMES: Record<SyncCategory, string> = {
     triggers: 'Triggery',
     aliases: 'Aliasy',
     multibinds: 'Multibindy',
-    scripts: 'Skrypty',
     buttons: 'Przyciski',
     radial: 'Menu radialne',
-    recordings: 'Nagrania',
     visitedRooms: 'Odwiedzone lokacje',
     locationNotes: 'Notatki lokacji',
     killCounts: 'Licznik zabitych',

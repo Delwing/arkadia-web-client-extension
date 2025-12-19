@@ -459,4 +459,123 @@ describe('transport stop triggers', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  test('set pattern corrects direction when re-boarding at same location', () => {
+    initTransportStops(client as unknown as any);
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    const lastEvent = () => events[events.length - 1];
+
+    // First journey: board at 'Pod piegowata elfka' going to Kreutzhofen
+    client.dispatchEvent('enterLocation', { id: 4985 });
+    parseLine('Woznica wola: Nastepny postoj - Kreutzhofen!');
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    expect(lastEvent()).toMatchObject({ label: "'Pod piegowata elfka' → Kreutzhofen" });
+
+    // Arrive at Kreutzhofen - next candidate should be Nuln
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w centrum miasteczka Kreutzhofen.');
+    expect(lastEvent()).toMatchObject({ label: 'Kreutzhofen → Nuln' });
+
+    // Exit the transport at Kreutzhofen
+    emitCommand('wyjscie');
+    client.dispatchEvent('enterLocation', { id: 5200 });
+
+    // Re-board at Kreutzhofen - system has old candidate (Nuln)
+    // Dispatch enterLocation again to properly set previousLocationId = currentLocationId = 5200
+    client.dispatchEvent('enterLocation', { id: 5200 });
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+
+    // But the driver announces 'Pod piegowata elfka' - should correct the direction!
+    parseLine("Woznica wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    expect(lastEvent()).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'" });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('set pattern corrects direction when only 1 candidate from intersection', () => {
+    // This tests the specific bug where:
+    // 1. User arrives at Kreutzhofen, next candidate is Nuln only
+    // 2. User re-boards, intersection results in only Nuln
+    // 3. Driver announces 'Pod piegowata elfka' - should correct direction
+    initTransportStops(client as unknown as any);
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    const lastEvent = () => events[events.length - 1];
+
+    // Set up at location 5200 (Kreutzhofen)
+    client.dispatchEvent('enterLocation', { id: 5200 });
+
+    // Board going to 'Pod piegowata elfka'
+    parseLine("Woznica wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+
+    expect(lastEvent()).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'" });
+
+    // Arrive at 'Pod piegowata elfka' - next candidate is Salignac La Rouge
+    parseLine("Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem 'Pod piegowata elfka'.");
+
+    // Continue to Salignac La Rouge
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, rynek miejski Salignac La Rouge.');
+
+    // Continue back to 'Pod piegowata elfka'
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine("Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec przed zajazdem 'Pod piegowata elfka'.");
+
+    // Continue to Kreutzhofen - next candidate should be Nuln
+    parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+    parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w centrum miasteczka Kreutzhofen.');
+
+    expect(lastEvent()).toMatchObject({ label: 'Kreutzhofen → Nuln' });
+
+    // Exit and stay at same location (5200) - journey won't be cleared
+    emitCommand('wyjscie');
+
+    // Re-board at same location - intersection keeps old candidate (Nuln only)
+    emitCommand('wsiadz do dylizansu');
+    parseLine('Oplacasz podroz u woznicy i wsiadasz do zielonego stojacego dylizansu.');
+
+    // At this point, the system thinks we're going to Nuln
+    // But the driver announces 'Pod piegowata elfka' - should correct the direction!
+    parseLine("Woznica wola: Nastepny postoj - Karczma 'Pod piegowata elfka'!");
+    expect(lastEvent()).toMatchObject({ label: "Kreutzhofen → 'Pod piegowata elfka'" });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });

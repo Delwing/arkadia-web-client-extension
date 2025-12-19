@@ -652,16 +652,36 @@ class TransportTracker {
         // We're on board - ensure we have the journey
         const journey = this.ensureJourney(definition);
 
-        if (journey.candidateIndexes.size <= 1) {
+        if (!journey.candidateIndexes.has(index)) {
+            // Check if this set_pattern is for a segment starting from the same location as current candidate
+            // This handles the case where user re-boards and wants to go in a different direction
+            const currentCandidateIndex = journey.candidateIndexes.values().next().value;
+            if (currentCandidateIndex !== undefined) {
+                const currentStop = definition.stops[currentCandidateIndex];
+                if (currentStop && currentStop.start === stop.start) {
+                    // Same starting location, different destination - correct the candidate
+                    const oldStartedAt = journey.startTimes.get(currentCandidateIndex);
+                    this.applyCandidateIndexes(journey, [index], false);
+                    journey.activeIndex = index;
+                    this.pendingCandidates.delete(definition);
+                    if (typeof oldStartedAt === "number") {
+                        journey.startTimes.set(index, oldStartedAt);
+                        this.startCountdown(journey, index, oldStartedAt);
+                    }
+                    this.log(`Set pattern corrected direction on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
+                    this.refreshTimer(journey);
+                    return;
+                }
+            }
             this.log(
-                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – only ${journey.candidateIndexes.size} candidate(s) while on board.`
+                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not among current candidates (${this.describeCandidates(journey)}).`
             );
             return;
         }
 
-        if (!journey.candidateIndexes.has(index)) {
+        if (journey.candidateIndexes.size <= 1) {
             this.log(
-                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not among current candidates (${this.describeCandidates(journey)}).`
+                `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – only ${journey.candidateIndexes.size} candidate(s) while on board.`
             );
             return;
         }
