@@ -42,6 +42,7 @@ const characterScopedKeys = new Set([
     'object_num',
     'clock_active_domain',
     'language_max_levels',
+    'profession',
     LUA_GAGS_STORAGE_KEY,
     LUA_GAGS_COLORS_STORAGE_KEY,
 ]);

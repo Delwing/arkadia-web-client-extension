@@ -107,6 +107,7 @@ import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
 import initLanguageTeacher from './scripts/languageTeacher'
+import initProfession from './scripts/profession'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -302,5 +303,6 @@ export function registerScripts(client: Client) {
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initLanguageTeacher(client)
+    initProfession(client, aliases)
 
 }

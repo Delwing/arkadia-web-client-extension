@@ -29,6 +29,8 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/zaznaczaj** - włącza zaznaczanie odwiedzanych lokacji na mapie i oznacza bieżącą.
 - **/zaznaczaj-** - wyłącza zaznaczanie lokacji i usuwa dotychczasowe zaznaczenia.
 - **/odloz_magie [_pojemnik_]** - skanuje inwentarz w poszukiwaniu magicznych przedmiotów i ustawia binda odkładania ich do podanego pojemnika (domyślnie do skrzyni).
+- **/staz** - wyświetla aktualny postęp treningu zawodu (procent ukończenia).
+- **/staz _liczba_** - rozpoczyna zliczanie stażu zawodowego od podanej wartości punktów (240 = pełny staż, 10 punktów tygodniowo, 3 punkty za +staż).
 
 ## Umiejętności
 - **um** - wyświetla zestawienie umiejętności w czytelnej tabeli z kolorowymi poziomami.
