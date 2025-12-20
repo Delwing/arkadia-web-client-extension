@@ -301,6 +301,8 @@ export default class ObjectList {
                 this.client.sendCommand(`/za ${num}`);
             }
         }
+        // Restore focus to input line
+        (document.getElementById('message-input') as HTMLInputElement | null)?.focus();
     };
 
     private onContextMenu = (e: MouseEvent) => {
