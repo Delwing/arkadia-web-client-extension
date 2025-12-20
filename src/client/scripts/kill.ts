@@ -200,6 +200,8 @@ function formatSessionTable(counts: KillCounts, teamKills: TeamMemberKills = {})
         }
 
         const playerTotal = Object.values(mobs).reduce((s, c) => s + c, 0);
+        output.appendBuffer(pad());
+        output.append("\n", {});
         output.appendBuffer(summaryLine("LACZNIE:", playerTotal, TOTAL_COLOR));
         output.append("\n", {});
     }
