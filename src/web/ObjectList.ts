@@ -240,6 +240,7 @@ export default class ObjectList {
                     this.client.sendCommand(`/ra ${num}`);
                 }
             }
+            this.focusInput();
             return;
         }
         // Handle defense target dot click (leader only, /wz to mark, /rz to order shield if active)
@@ -254,6 +255,7 @@ export default class ObjectList {
                     this.client.sendCommand(`/rz ${num}`);
                 }
             }
+            this.focusInput();
             return;
         }
         // Handle HP bar click - send /prze command
@@ -265,6 +267,7 @@ export default class ObjectList {
             if (num) {
                 this.client.sendCommand(`/prze ${num}`);
             }
+            this.focusInput();
             return;
         }
         const numEl = target.closest(
@@ -290,6 +293,7 @@ export default class ObjectList {
                     this.client.sendCommand(`/z ${num}`);
                 }
             }
+            this.focusInput();
             return;
         }
         const descEl = target.closest(
@@ -301,9 +305,12 @@ export default class ObjectList {
                 this.client.sendCommand(`/za ${num}`);
             }
         }
-        // Restore focus to input line
-        (document.getElementById('message-input') as HTMLInputElement | null)?.focus();
+        this.focusInput();
     };
+
+    private focusInput() {
+        (document.getElementById('message-input') as HTMLInputElement | null)?.focus();
+    }
 
     private onContextMenu = (e: MouseEvent) => {
         if (this.isMobile) return;
