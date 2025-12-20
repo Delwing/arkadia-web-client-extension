@@ -228,6 +228,7 @@ export default class ObjectList {
         if (target.closest(".objects-list-controls")) {
             return;
         }
+        e.stopPropagation?.();
         // Handle attack target dot click (leader only, /wa to mark, /ra to order attack if active)
         const attackDotEl = target.closest(
             ".target-dot-attack[data-object-num]"
@@ -357,20 +358,10 @@ export default class ObjectList {
         const tm = this.client.TeamManager;
         const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
 
-        // Debug logging
-        if (nextQueuedId !== undefined) {
-            console.log('[ObjectList] Queue has next ID:', nextQueuedId);
-            console.log('[ObjectList] Current object IDs:', objects.map((o: any) => o.num));
-        }
-
         // Verify the queued enemy actually exists in the current object list
         const queuedEnemyExists = nextQueuedId !== undefined &&
             objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
         const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        if (nextQueuedId !== undefined && !queuedEnemyExists) {
-            console.warn('[ObjectList] Queued enemy', nextQueuedId, 'not found in current object list');
-        }
 
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
