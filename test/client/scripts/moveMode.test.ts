@@ -1,4 +1,6 @@
 import initMoveMode from '@client/scripts/moveMode';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 import { EventEmitter } from 'events';
 
@@ -16,6 +18,20 @@ class FakeClient {
   TeamManager = {
     isLeader: () => this.leader,
   };
+  Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean };
+  Triggers: Triggers;
+
+  constructor() {
+    const self = this;
+    this.Map = {
+      moveBack: jest.fn(),
+      setBlockable: jest.fn((value: boolean) => {
+        self.Map.isBlockable = value;
+      }),
+      isBlockable: false,
+    };
+    this.Triggers = new Triggers(({} as unknown) as any);
+  }
   on(event: string, cb: (payload: any) => void) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
@@ -180,5 +196,108 @@ describe('move mode default bind', () => {
     expect(client.moveMode).toBe(0);
     expect(mobileButton.textContent).toBe('Tryb ruchu zwykly');
     expect(mobileButton.title).toBe('Tryb ruchu zwykly');
+  });
+});
+
+describe('przemknij cooldown step back', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    client = new FakeClient();
+    initMoveMode((client as unknown) as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+  });
+
+  const cooldownLine = 'Ochlon chociaz chwile od walki...';
+
+  test('does not move back when in normal move mode', () => {
+    client.moveMode = 0;
+    client.Map.isBlockable = true;
+
+    parse(cooldownLine);
+
+    expect(client.Map.moveBack).not.toHaveBeenCalled();
+  });
+
+  test('does not move back when movement is not blockable', () => {
+    client.moveMode = 1;
+    client.Map.isBlockable = false;
+
+    parse(cooldownLine);
+
+    expect(client.Map.moveBack).not.toHaveBeenCalled();
+  });
+
+  test('moves back when in przemknij mode and blockable', () => {
+    client.moveMode = 1;
+    client.Map.isBlockable = true;
+
+    parse(cooldownLine);
+
+    expect(client.Map.moveBack).toHaveBeenCalled();
+    expect(client.Map.setBlockable).toHaveBeenCalledWith(false);
+  });
+
+  test('moves back when in przemknij z druzyna mode and blockable', () => {
+    client.moveMode = 2;
+    client.Map.isBlockable = true;
+
+    parse(cooldownLine);
+
+    expect(client.Map.moveBack).toHaveBeenCalled();
+    expect(client.Map.setBlockable).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('przemknij z druzyna no team step back', () => {
+  let client: FakeClient;
+  let parse: (line: string) => AnsiAwareBuffer | null;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    client = new FakeClient();
+    initMoveMode((client as unknown) as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+  });
+
+  const noTeamLine = 'Nie ma przy tobie nikogo z twojej druzyny.';
+
+  test('does not move back when in normal move mode', () => {
+    client.moveMode = 0;
+    client.Map.isBlockable = true;
+
+    parse(noTeamLine);
+
+    expect(client.Map.moveBack).not.toHaveBeenCalled();
+  });
+
+  test('does not move back when in przemknij mode', () => {
+    client.moveMode = 1;
+    client.Map.isBlockable = true;
+
+    parse(noTeamLine);
+
+    expect(client.Map.moveBack).not.toHaveBeenCalled();
+  });
+
+  test('does not move back when movement is not blockable', () => {
+    client.moveMode = 2;
+    client.Map.isBlockable = false;
+
+    parse(noTeamLine);
+
+    expect(client.Map.moveBack).not.toHaveBeenCalled();
+  });
+
+  test('moves back when in przemknij z druzyna mode and blockable', () => {
+    client.moveMode = 2;
+    client.Map.isBlockable = true;
+
+    parse(noTeamLine);
+
+    expect(client.Map.moveBack).toHaveBeenCalled();
+    expect(client.Map.setBlockable).toHaveBeenCalledWith(false);
   });
 });

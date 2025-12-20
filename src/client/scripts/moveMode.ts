@@ -112,6 +112,38 @@ export default function initMoveMode(client: Client) {
         }
     });
 
+    client.Triggers.registerTrigger(
+        /^Ochlon chociaz chwile od walki\.\.\.$/,
+        (line) => {
+            if (client.moveMode !== 1 && client.moveMode !== 2) {
+                return line;
+            }
+            if (!client.Map.isBlockable) {
+                return line;
+            }
+            client.Map.moveBack();
+            client.Map.setBlockable(false);
+            return line;
+        },
+        'przemknij-cooldown'
+    );
+
+    client.Triggers.registerTrigger(
+        /^Nie ma przy tobie nikogo z twojej druzyny\.$/,
+        (line) => {
+            if (client.moveMode !== 2) {
+                return line;
+            }
+            if (!client.Map.isBlockable) {
+                return line;
+            }
+            client.Map.moveBack();
+            client.Map.setBlockable(false);
+            return line;
+        },
+        'przemknij-no-team'
+    );
+
     update();
     emitChange();
 }

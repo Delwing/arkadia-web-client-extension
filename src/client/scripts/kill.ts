@@ -10,8 +10,11 @@ type KillEntry = {
 
 type KillCounts = Record<string, KillEntry>;
 
+type TeamMemberKills = Record<string, Record<string, number>>; // player -> mob -> count
+
 const STORAGE_KEY = "kill_counter";
 const SESSION_STORAGE_KEY = "kill_counter_session";
+const TEAM_KILLS_STORAGE_KEY = "kill_counter_team";
 
 const KILL_HEADER_COLOR = createColorFormat("#7cfc00");
 const KILL_MY_COLOR = createColorFormat("#ffff00");
@@ -20,6 +23,7 @@ const KILL_UPPER_COLOR = createColorFormat("#ffa500");
 const KILL_LOWER_COLOR = createColorFormat("#7cfc00");
 const KILL_PINK_COLOR = createColorFormat("#ffc0cb");
 const KILL_PREFIX_COLOR = createColorFormat("#ff6347");
+const KILL_TEAM_MEMBER_COLOR = createColorFormat("#87ceeb");
 
 const twoWordNames = [
     "czarnego orka",
@@ -105,7 +109,7 @@ function createHeader(
     };
 }
 
-function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
+function formatSessionTable(counts: KillCounts, teamKills: TeamMemberKills = {}): AnsiAwareBuffer {
     const WIDTH = width - 2;
     const LEFT_PADDING = 2;
     const RIGHT_PADDING = 5;
@@ -114,6 +118,7 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
     const HEADER_COLOR = KILL_HEADER_COLOR;
     const MY_COLOR = KILL_MY_COLOR;
     const TOTAL_COLOR = KILL_TOTAL_COLOR;
+    const TEAM_MEMBER_COLOR = KILL_TEAM_MEMBER_COLOR;
 
     const pad = createPad(WIDTH, LEFT_PADDING, RIGHT_PADDING);
     const header = createHeader(WIDTH, 2, HEADER_COLOR);
@@ -145,9 +150,9 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
         }
         buffer.append(" ", {});
         const num = String(value);
-        const dots = CONTENT_WIDTH - label.length - 1 - num.length;
+        const dots = CONTENT_WIDTH - label.length - 1 - num.length - 1;
         buffer.append(".".repeat(Math.max(0, dots)), {});
-        buffer.append(num, {});
+        buffer.append(` ${num}`, {});
         return pad(buffer);
     };
 
@@ -170,6 +175,35 @@ function formatSessionTable(counts: KillCounts): AnsiAwareBuffer {
     output.append("\n", {});
     output.appendBuffer(summaryLine("LACZNIE:", totalMy, TOTAL_COLOR));
     output.append("\n", {});
+
+    // Display team member kills
+    const teamMemberEntries = Object.entries(teamKills)
+        .filter(([_, mobs]) => Object.values(mobs).reduce((s, c) => s + c, 0) > 0)
+        .sort(([a], [b]) => a.localeCompare(b));
+
+    for (const [player, mobs] of teamMemberEntries) {
+        output.appendBuffer(pad());
+        output.append("\n", {});
+
+        const playerLine = new AnsiAwareBuffer();
+        playerLine.append(player, TEAM_MEMBER_COLOR);
+        output.appendBuffer(pad(playerLine));
+        output.append("\n", {});
+
+        const mobEntries = Object.entries(mobs)
+            .filter(([_, count]) => count > 0)
+            .sort(([a], [b]) => a.localeCompare(b));
+
+        for (const [mobName, count] of mobEntries) {
+            output.appendBuffer(mobLine(mobName, count));
+            output.append("\n", {});
+        }
+
+        const playerTotal = Object.values(mobs).reduce((s, c) => s + c, 0);
+        output.appendBuffer(summaryLine("LACZNIE:", playerTotal, TOTAL_COLOR));
+        output.append("\n", {});
+    }
+
     output.appendBuffer(pad());
     output.append("\n", {});
     output.appendBuffer(pad());
@@ -282,9 +316,22 @@ function isSessionRecord(value: unknown): value is Record<string, SessionRecord>
     });
 }
 
+function isTeamMemberKills(value: unknown): value is TeamMemberKills {
+    if (!value || typeof value !== "object") {
+        return false;
+    }
+    return Object.values(value as Record<string, unknown>).every(entry => {
+        if (!entry || typeof entry !== "object") {
+            return false;
+        }
+        return Object.values(entry as Record<string, unknown>).every(v => typeof v === "number");
+    });
+}
+
 class KillCounter {
     private client: Client;
     private kills: KillCounts = {};
+    private teamKills: TeamMemberKills = {};
 
     constructor(client: Client) {
         this.client = client;
@@ -296,12 +343,16 @@ class KillCounter {
             if (key === SESSION_STORAGE_KEY) {
                 this.loadSession(isSessionRecord(value) ? value : {});
             }
+            if (key === TEAM_KILLS_STORAGE_KEY) {
+                this.loadTeamKills(isTeamMemberKills(value) ? value : {});
+            }
         });
 
         this.client.on("reset", () => this.resetSession());
 
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
+        window.addEventListener("beforeunload", this.persistTeamKills);
 
         const myKillRegex = /^[ >]*(Zabil(?<variant>es|as) (?<name>[A-Za-z ()!,]+))\.$/;
         const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?<variant>a?) (?<name>[a-zA-Z (),!]+)\.$/;
@@ -328,7 +379,7 @@ class KillCounter {
                 const variant = matches.groups?.variant ?? "";
                 const prefix = variant === "a" ? "[   ZABILA   ]" : "[   ZABIL   ]";
                 if (this.client.TeamManager.isInTeam(player)) {
-                    const entry = this.recordKill(mob, false);
+                    const entry = this.recordKill(mob, false, player);
                     this.client.emit("kill", { killer: "TEAM" });
                     return this.formatPrefix(line, entry, prefix, false);
                 } else {
@@ -340,6 +391,7 @@ class KillCounter {
 
         this.client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY});
         this.client.port?.postMessage({type: "GET_STORAGE", key: SESSION_STORAGE_KEY});
+        this.client.port?.postMessage({type: "GET_STORAGE", key: TEAM_KILLS_STORAGE_KEY});
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -391,6 +443,25 @@ class KillCounter {
         });
     };
 
+    private loadTeamKills(teamKills: TeamMemberKills = {}): void {
+        this.teamKills = teamKills;
+    }
+
+    private persistTeamKills = () => {
+        const filtered: TeamMemberKills = {};
+        Object.entries(this.teamKills).forEach(([player, mobs]) => {
+            const hasKills = Object.values(mobs).some(count => count > 0);
+            if (hasKills) {
+                filtered[player] = mobs;
+            }
+        });
+        this.client.port?.postMessage({
+            type: "SET_STORAGE",
+            key: TEAM_KILLS_STORAGE_KEY,
+            value: filtered,
+        });
+    };
+
     private ensureEntry(name: string): KillEntry {
         if (!this.kills[name]) {
             this.kills[name] = {mySession: 0, myTotal: 0, teamSession: 0};
@@ -398,7 +469,7 @@ class KillCounter {
         return this.kills[name];
     }
 
-    private recordKill(mob: string, self: boolean): KillEntry {
+    private recordKill(mob: string, self: boolean, player?: string): KillEntry {
         const entry = this.ensureEntry(mob);
         if (self) {
             entry.mySession += 1;
@@ -406,6 +477,13 @@ class KillCounter {
             this.persistTotals();
         } else {
             entry.teamSession += 1;
+            if (player) {
+                if (!this.teamKills[player]) {
+                    this.teamKills[player] = {};
+                }
+                this.teamKills[player][mob] = (this.teamKills[player][mob] ?? 0) + 1;
+                this.persistTeamKills();
+            }
         }
         this.persistSessions();
         return entry;
@@ -425,7 +503,9 @@ class KillCounter {
             e.mySession = 0;
             e.teamSession = 0;
         });
+        this.teamKills = {};
         this.persistSessions();
+        this.persistTeamKills();
     }
 
     private formatPrefix(
@@ -459,7 +539,7 @@ class KillCounter {
     showSession() {
         const output = new AnsiAwareBuffer();
         output.append("\n", {});
-        output.appendBuffer(formatSessionTable(this.kills));
+        output.appendBuffer(formatSessionTable(this.kills, this.teamKills));
         output.append("\n", {});
         this.client.print(output);
     }
