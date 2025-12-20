@@ -55,6 +55,7 @@ import {
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
 import {getItemSync} from "@modules/core/storage"
+import {runAllSettingsMigrations} from "@modules/core/settingsMigrations"
 import {
     areOutputTimestampsVisible,
     setOutputTimestampVisibility,
@@ -63,6 +64,9 @@ import {
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
+
+// Run settings migrations before initializing the client
+runAllSettingsMigrations();
 
 let mobileRadial: MobileCommandRadial | null = null;
 

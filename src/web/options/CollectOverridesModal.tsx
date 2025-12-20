@@ -91,7 +91,7 @@ export function CollectOverridesModal({ show, overrides, onClose, onSave }: Coll
                     </div>
                     <div className="modal-body">
                         <p className="text-muted small mb-3">
-                            Dodaj nazwy wrogów (np. "trolla", "bykocentaura") i wybierz co zbierać z ich ciał.
+                            Dodaj nazwy wrogów (np. "troll", "bykocentaur") i wybierz co zbierać z ich ciał.
                         </p>
                         <Table bordered size="sm" hover className="table-modern table-zebra mb-3">
                             <thead>

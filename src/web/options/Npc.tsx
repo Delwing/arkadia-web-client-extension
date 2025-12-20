@@ -2,6 +2,7 @@ import '../style.css'
 import {ChangeEvent, useEffect, useState} from "react";
 import {Button, Form, Table} from 'react-bootstrap';
 import {TiDelete} from "react-icons/ti";
+import eventBus from "@modules/core/eventBus";
 import {
     NpcListEntry,
     clearLocal,
@@ -60,6 +61,11 @@ function Npc() {
         removeLocalNpc({name: npc.name, loc: npc.loc}).catch(e => console.error('Failed to remove NPC:', e))
     }
 
+    function handleNavigate(loc: number) {
+        eventBus.emit('leadTo', loc);
+        window.dispatchEvent(new Event('close-options'));
+    }
+
     return (
         <div className="m-2">
             <div className="mb-2 d-flex align-items-center gap-2">
@@ -92,15 +98,25 @@ function Npc() {
                                 <span className="npc-location__value">{item.loc}</span>
                             </td>
                             <td className="npc-actions text-end">
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => deleteNpc(item)}
-                                    disabled={item.source !== 'local'}
-                                    className="npc-delete-button"
-                                >
-                                    <TiDelete/>
-                                </Button>
+                                <div className="d-flex gap-1 justify-content-end">
+                                    <Button
+                                        size="sm"
+                                        variant="outline-primary"
+                                        onClick={() => handleNavigate(item.loc)}
+                                        title="Prowadz do lokacji"
+                                    >
+                                        Idz
+                                    </Button>
+                                    <Button
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => deleteNpc(item)}
+                                        disabled={item.source !== 'local'}
+                                        className="npc-delete-button"
+                                    >
+                                        <TiDelete/>
+                                    </Button>
+                                </div>
                             </td>
                         </tr>
                     ))}
