@@ -1,17 +1,19 @@
-import { ReactNode, useCallback, useMemo, useRef } from 'react';
-import { DockPosition, PanelId, PanelState, PANEL_CONFIGS } from '../types';
-import { useLayoutManager } from '../hooks/useLayoutManager';
-import { ResizeHandle, PanelResizeHandle } from './ResizeHandle';
-import { DockedPanel } from './DockedPanel';
+import {ReactNode, useCallback, useMemo, useRef} from 'react';
+import {DockPosition, PANEL_CONFIGS, PanelId} from '../types';
+import {useLayoutManager} from '@web/layout';
+import {PanelResizeHandle, ResizeHandle} from './ResizeHandle';
+import {DockedPanel} from './DockedPanel';
+import type {RegisteredPopup} from '../popupRegistry';
 
 interface DockZoneProps {
   position: DockPosition;
   renderPanel: (panelId: string) => ReactNode;
   isPanelEnabled: (panelId: PanelId) => boolean;
+  getPopupInfo?: (panelId: string) => RegisteredPopup | null;
 }
 
-export function DockZone({ position, renderPanel, isPanelEnabled }: DockZoneProps) {
-  const { layoutState, resizeDock, resizePanel, dragState } = useLayoutManager();
+export function DockZone({ position, renderPanel, isPanelEnabled, getPopupInfo }: DockZoneProps) {
+  const { layoutState, resizeDock, resizePanel, dragState, getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
   const dockKey = position.toLowerCase() as 'left' | 'top' | 'right';
   const dock = layoutState.docks[dockKey];
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,6 +140,19 @@ export function DockZone({ position, renderPanel, isPanelEnabled }: DockZoneProp
         }
 
         // Render actual panel
+        const popupInfo = getPopupInfo?.(item.id);
+        const isPopup = !!popupInfo;
+        const isBuiltIn = item.id === 'map' || item.id === 'objectList';
+        const builtInState = isBuiltIn ? getBuiltInPanelState(item.id) : undefined;
+
+        // Determine lock state and handler
+        const isLocked = isPopup ? popupInfo?.isLocked : builtInState?.isLocked;
+        const onLock = isPopup
+          ? () => popupInfo?.setIsLocked(!popupInfo.isLocked)
+          : isBuiltIn
+            ? () => updateBuiltInPanelState(item.id, { isLocked: !builtInState?.isLocked })
+            : undefined;
+
         return (
           <div
             key={item.id}
@@ -146,7 +161,19 @@ export function DockZone({ position, renderPanel, isPanelEnabled }: DockZoneProp
               [isHorizontal ? 'width' : 'height']: `${item.size}%`,
             }}
           >
-            <DockedPanel panelId={item.id} style={{ flex: 1 }}>
+            <DockedPanel
+              panelId={item.id}
+              style={{ flex: 1 }}
+              title={popupInfo?.config.title}
+              onClose={popupInfo?.onClose}
+              onPin={popupInfo ? () => popupInfo.setIsPinned(!popupInfo.isPinned) : undefined}
+              isPinned={popupInfo?.isPinned}
+              onLock={onLock}
+              isLocked={isLocked}
+              onReset={popupInfo?.onReset}
+              headerActions={popupInfo?.headerActions}
+              isPopup={isPopup}
+            >
               {renderPanel(item.id)}
             </DockedPanel>
             {index < displayItems.length - 1 && !displayItems[index + 1]?.isPreview && !item.isPreview && (

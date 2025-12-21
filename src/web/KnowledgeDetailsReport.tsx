@@ -7,7 +7,10 @@ import React, {
 } from 'react';
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import eventBus from '@modules/core/eventBus';
-import { useDraggablePopup } from './hooks/useDraggablePopup';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { usePopup } from './hooks/usePopup';
+
+const POPUP_ID = 'popup:knowledgeDetails';
 
 const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
   { key: 'fight', label: 'Z walki', showDetails: false },
@@ -65,38 +68,24 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
 }
 
 const KnowledgeDetailsReport: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
-  const [isPinned, setIsPinned] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
-  const togglePinned = useCallback(() => {
-    setIsPinned((prev) => !prev);
-  }, []);
-
-  const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-    isOpen,
-    isPinned,
-    onClose: close,
-    minWidth: 500,
-    minHeight: 350,
-  });
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
     if (!detail || !detail.categories?.length) {
       setData(null);
-      setIsOpen(false);
+      // Don't close if pinned (popup should stay open with empty state)
+      if (!isPinned) {
+        setIsOpen(false);
+      }
       return;
     }
     setData(detail);
     setIsOpen(true);
     setHideCompleted(false);
-  }, []);
+  }, [isPinned, setIsOpen]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeDetailsReport', (payload) => {
@@ -107,6 +96,12 @@ const KnowledgeDetailsReport: React.FC = () => {
     };
   }, [handleReport]);
 
+  // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
+  useEffect(() => {
+    if (isOpen && !data) {
+      eventBus.emit('requestKnowledgeDetailsReport');
+    }
+  }, [isOpen, data]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -319,96 +314,64 @@ const KnowledgeDetailsReport: React.FC = () => {
     return { ...totals, percentage };
   }, [data]);
 
-  if (!isOpen || !data) {
-    return null;
-  }
+  const titleWithProgress = overallProgress
+    ? `Raport wiedzy ${overallProgress.known}/${overallProgress.total} (${overallProgress.percentage}%)`
+    : 'Raport wiedzy';
 
   return (
-    <div className="knowledge-window-container">
-      <div
-        ref={panelRef}
-        className={`knowledge-window ${
-          position ? 'knowledge-window--floating' : 'knowledge-window--center'
-        }`}
-        style={{
-          ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-          ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-        }}
-        tabIndex={-1}
-      >
-        <div className="knowledge-window-inner">
-          <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
-            <h5 className="knowledge-window-title">
-              Raport wiedzy
-              {overallProgress && (
-                <span className="knowledge-window-progress">
-                  {overallProgress.known}/{overallProgress.total} ({
-                    overallProgress.percentage
-                  }
-                  %)
-                </span>
-              )}
-            </h5>
-            <div
-              className="window-header-actions"
-              onPointerDownCapture={(event) => event.stopPropagation()}
-            >
+    <DockablePopupWrapper
+      {...wrapperProps}
+      popupType="knowledgeDetails"
+      title={titleWithProgress}
+      minWidth={500}
+      minHeight={350}
+      initialWidth={960}
+      initialHeight={Math.min(window.innerHeight * 0.75, window.innerHeight - 32)}
+      className="knowledge-window"
+      bodyClassName="knowledge-window-body knowledge-details-body"
+    >
+      {!data ? (
+        <div className="knowledge-empty">Brak danych. Użyj komendy /list.</div>
+      ) : (
+        <div className="knowledge-details-content" ref={scrollContainerRef}>
+          <div className="knowledge-details-sticky">
+            <div className="knowledge-details-toolbar">
               <button
                 type="button"
-                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                onClick={togglePinned}
-                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-              />
-              <button type="button" className="btn-close" onClick={close} />
+                className={`knowledge-details-toggle-button${
+                  hideCompleted ? ' knowledge-details-toggle-button--active' : ''
+                }`}
+                onClick={() => setHideCompleted((prev) => !prev)}
+              >
+                {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+              </button>
+              <button
+                type="button"
+                className="knowledge-details-build-button"
+                onClick={handleBuildKnowledge}
+              >
+                Odbuduj raport
+              </button>
             </div>
-          </div>
-          <div className="knowledge-window-body knowledge-details-body">
-            <div className="knowledge-details-content" ref={scrollContainerRef}>
-              <div className="knowledge-details-sticky">
-                <div className="knowledge-details-toolbar">
+            {navItems.length > 0 && (
+              <div className="knowledge-details-nav">
+                {navItems.map((item) => (
                   <button
+                    key={item.id}
                     type="button"
-                    className={`knowledge-details-toggle-button${
-                      hideCompleted ? ' knowledge-details-toggle-button--active' : ''
-                    }`}
-                    onClick={() => setHideCompleted((prev) => !prev)}
+                    className="knowledge-details-nav-button"
+                    onClick={() => handleNavigate(item.id)}
                   >
-                    {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+                    {item.label}
                   </button>
-                  <button
-                    type="button"
-                    className="knowledge-details-build-button"
-                    onClick={handleBuildKnowledge}
-                  >
-                    Odbuduj raport
-                  </button>
-                </div>
-                {navItems.length > 0 && (
-                  <div className="knowledge-details-nav">
-                    {navItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="knowledge-details-nav-button"
-                        onClick={() => handleNavigate(item.id)}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-              <div className="knowledge-details-categories">{categoriesContent}</div>
-            </div>
+            )}
           </div>
-          <div
-            className="herb-window-resize-handle"
-            onPointerDown={handleResizePointerDown}
-            title="Drag to resize"
-          />
+          <div className="knowledge-details-categories">{categoriesContent}</div>
         </div>
-      </div>
-    </div>
+      )}
+    </DockablePopupWrapper>
   );
 };
 

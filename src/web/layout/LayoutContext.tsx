@@ -6,8 +6,9 @@ import {
   LayoutState,
   PanelId,
   PanelState,
+  PopupPanelDockState,
+  BuiltInPanelState,
   PANEL_CONFIGS,
-  DEFAULT_LAYOUT,
   MIN_DOCK_SIZE,
   MAX_DOCK_SIZE_RATIO,
 } from './types';
@@ -31,6 +32,18 @@ export interface LayoutContextValue {
   resetLayout: () => void;
   findPanelDock: (panelId: PanelId) => DockPosition | null;
   findFloatingPanel: (panelId: PanelId) => FloatingPanelState | null;
+  // Popup panel methods
+  getPopupDockState: (popupId: string) => PopupPanelDockState | undefined;
+  updatePopupDockState: (popupId: string, updates: Partial<PopupPanelDockState>) => void;
+  dockPopup: (popupId: string, targetDock: DockPosition, insertIndex?: number) => void;
+  undockPopup: (popupId: string) => void;
+  removePopupFromDock: (popupId: string) => void;
+  // Popup floating management
+  addPopupFloating: (popupId: string, state: FloatingPanelState) => void;
+  removePopupFloating: (popupId: string) => void;
+  // Built-in panel methods
+  getBuiltInPanelState: (panelId: string) => BuiltInPanelState | undefined;
+  updateBuiltInPanelState: (panelId: string, updates: Partial<BuiltInPanelState>) => void;
 }
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null);
@@ -102,6 +115,72 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     }
     onLayoutModeChange?.(isLayoutMode);
   }, [isLayoutMode, layoutState.enabledPanels, onLayoutModeChange]);
+
+  // Handle window resize - clamp floating panels to fit within viewport
+  useEffect(() => {
+    if (!isLayoutMode) return;
+
+    const handleResize = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const margin = 16;
+
+      setLayoutState((prev) => {
+        let anyChanged = false;
+        const newFloatingPanels = prev.floatingPanels.map((panel) => {
+          let { x, y, width, height } = panel;
+          let panelChanged = false;
+
+          // Ensure panel fits within viewport width
+          if (width > viewportWidth - margin * 2) {
+            width = viewportWidth - margin * 2;
+            panelChanged = true;
+          }
+
+          // Ensure panel fits within viewport height
+          if (height !== undefined && height > viewportHeight - margin * 2) {
+            height = viewportHeight - margin * 2;
+            panelChanged = true;
+          }
+
+          // Clamp position to keep panel visible
+          const maxX = viewportWidth - width - margin;
+          const maxY = viewportHeight - (height ?? 100) - margin;
+
+          if (x > maxX) {
+            x = Math.max(margin, maxX);
+            panelChanged = true;
+          }
+          if (x < margin) {
+            x = margin;
+            panelChanged = true;
+          }
+          if (y > maxY) {
+            y = Math.max(margin, maxY);
+            panelChanged = true;
+          }
+          if (y < margin) {
+            y = margin;
+            panelChanged = true;
+          }
+
+          if (panelChanged) {
+            anyChanged = true;
+            return { ...panel, x, y, width, ...(height !== undefined && { height }) };
+          }
+          return panel;
+        });
+
+        if (anyChanged) {
+          return { ...prev, floatingPanels: newFloatingPanels };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isLayoutMode]);
 
   const enableLayoutMode = useCallback(() => {
     setLayoutState((prev) => ({ ...prev, enabled: true }));
@@ -261,6 +340,23 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
         const newFloatingPanels = prev.floatingPanels.map((p) =>
           p.id === panelId ? { ...p, ...updates } : p
         );
+
+        // If this is a popup panel, mark it as user-modified
+        const isPopup = panelId.startsWith('popup:');
+        if (isPopup) {
+          return {
+            ...prev,
+            floatingPanels: newFloatingPanels,
+            popupPanels: {
+              ...prev.popupPanels,
+              [panelId]: {
+                ...prev.popupPanels[panelId],
+                userModifiedPosition: true,
+              },
+            },
+          };
+        }
+
         return { ...prev, floatingPanels: newFloatingPanels };
       });
     },
@@ -365,6 +461,248 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     setLayoutState(newState);
   }, []);
 
+  // Popup panel management methods
+  const getPopupDockState = useCallback(
+    (popupId: string): PopupPanelDockState | undefined => {
+      return layoutState.popupPanels[popupId];
+    },
+    [layoutState.popupPanels]
+  );
+
+  const updatePopupDockState = useCallback(
+    (popupId: string, updates: Partial<PopupPanelDockState>) => {
+      setLayoutState((prev) => ({
+        ...prev,
+        popupPanels: {
+          ...prev.popupPanels,
+          [popupId]: {
+            ...prev.popupPanels[popupId],
+            ...updates,
+          },
+        },
+      }));
+    },
+    []
+  );
+
+  const dockPopup = useCallback(
+    (popupId: string, targetDock: DockPosition, insertIndex = 0) => {
+      setLayoutState((prev) => {
+        const newDocks = { ...prev.docks };
+        const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
+        const targetDockState = newDocks[targetKey];
+
+        // Check if popup is already in any dock and remove it
+        for (const key of ['left', 'top', 'right'] as const) {
+          const dock = newDocks[key];
+          const idx = dock.panels.findIndex((p) => p.id === popupId);
+          if (idx !== -1) {
+            newDocks[key] = {
+              ...dock,
+              panels: dock.panels.filter((p) => p.id !== popupId),
+            };
+          }
+        }
+
+        // Add panel to target dock
+        const newPanels = [...newDocks[targetKey].panels];
+        newPanels.splice(insertIndex, 0, { id: popupId, order: insertIndex, size: 100 });
+
+        // Recalculate sizes evenly
+        const panelCount = newPanels.length;
+        const evenSize = 100 / panelCount;
+        newPanels.forEach((p, i) => {
+          p.order = i;
+          p.size = evenSize;
+        });
+
+        newDocks[targetKey] = { ...targetDockState, panels: newPanels };
+
+        // Remove from floating panels if present
+        const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== popupId);
+
+        // Update popup state
+        const popupState = prev.popupPanels[popupId] || { isDocked: false };
+
+        return {
+          ...prev,
+          docks: newDocks,
+          floatingPanels: newFloatingPanels,
+          popupPanels: {
+            ...prev.popupPanels,
+            [popupId]: {
+              ...popupState,
+              isDocked: true,
+              dockPosition: targetDock,
+              dockOrder: insertIndex,
+              dockSize: evenSize,
+            },
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const undockPopup = useCallback((popupId: string) => {
+    setLayoutState((prev) => {
+      const newDocks = { ...prev.docks };
+      let sourceDockKey: 'left' | 'top' | 'right' | null = null;
+      let sourceDockSize = 0;
+      let panelSizePercent = 100;
+
+      // Remove panel from all docks and capture source dock info
+      for (const key of ['left', 'top', 'right'] as const) {
+        const dock = newDocks[key];
+        const idx = dock.panels.findIndex((p) => p.id === popupId);
+        if (idx !== -1) {
+          sourceDockKey = key;
+          sourceDockSize = dock.size;
+          panelSizePercent = dock.panels[idx].size;
+
+          const remainingPanels = dock.panels.filter((p) => p.id !== popupId);
+          // Recalculate sizes for remaining panels
+          if (remainingPanels.length > 0) {
+            const evenSize = 100 / remainingPanels.length;
+            remainingPanels.forEach((p, i) => {
+              p.order = i;
+              p.size = evenSize;
+            });
+          }
+          newDocks[key] = { ...dock, panels: remainingPanels };
+        }
+      }
+
+      // Get previous floating state or calculate new one
+      const popupState = prev.popupPanels[popupId];
+      const lastFloating = popupState?.floatingState;
+
+      let floatingState: { x: number; y: number; width: number; height: number };
+
+      if (lastFloating) {
+        floatingState = lastFloating;
+      } else {
+        // Calculate based on source dock
+        const contentArea = document.getElementById('content-area');
+        let width: number;
+        let height: number;
+
+        if (sourceDockKey === 'top') {
+          const contentWidth = contentArea?.offsetWidth ?? 800;
+          width = Math.max(300, (contentWidth * panelSizePercent) / 100);
+          height = Math.max(200, sourceDockSize);
+        } else if (sourceDockKey) {
+          const topDockHeight = prev.docks.top.panels.length > 0 ? prev.docks.top.size : 0;
+          const availableHeight = (contentArea?.offsetHeight ?? 600) - topDockHeight;
+          width = Math.max(300, sourceDockSize);
+          height = Math.max(200, (availableHeight * panelSizePercent) / 100);
+        } else {
+          width = 350;
+          height = 300;
+        }
+
+        // Center on screen
+        floatingState = {
+          x: Math.max(16, (window.innerWidth - width) / 2),
+          y: Math.max(16, (window.innerHeight - height) / 2),
+          width,
+          height,
+        };
+      }
+
+      return {
+        ...prev,
+        docks: newDocks,
+        popupPanels: {
+          ...prev.popupPanels,
+          [popupId]: {
+            ...popupState,
+            isDocked: false,
+            floatingState,
+            userModifiedPosition: true,
+          },
+        },
+      };
+    });
+  }, []);
+
+  const removePopupFromDock = useCallback((popupId: string) => {
+    setLayoutState((prev) => {
+      const newDocks = { ...prev.docks };
+
+      // Remove panel from all docks
+      for (const key of ['left', 'top', 'right'] as const) {
+        const dock = newDocks[key];
+        const idx = dock.panels.findIndex((p) => p.id === popupId);
+        if (idx !== -1) {
+          const remainingPanels = dock.panels.filter((p) => p.id !== popupId);
+          // Recalculate sizes for remaining panels
+          if (remainingPanels.length > 0) {
+            const evenSize = 100 / remainingPanels.length;
+            remainingPanels.forEach((p, i) => {
+              p.order = i;
+              p.size = evenSize;
+            });
+          }
+          newDocks[key] = { ...dock, panels: remainingPanels };
+        }
+      }
+
+      // Remove from floating panels
+      const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== popupId);
+
+      return {
+        ...prev,
+        docks: newDocks,
+        floatingPanels: newFloatingPanels,
+      };
+    });
+  }, []);
+
+  const addPopupFloating = useCallback((popupId: string, state: FloatingPanelState) => {
+    setLayoutState((prev) => {
+      // Don't add if already exists
+      if (prev.floatingPanels.some((p) => p.id === popupId)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        floatingPanels: [...prev.floatingPanels, state],
+      };
+    });
+  }, []);
+
+  const removePopupFloating = useCallback((popupId: string) => {
+    setLayoutState((prev) => ({
+      ...prev,
+      floatingPanels: prev.floatingPanels.filter((p) => p.id !== popupId),
+    }));
+  }, []);
+
+  // Built-in panel methods
+  const getBuiltInPanelState = useCallback(
+    (panelId: string): BuiltInPanelState | undefined => {
+      return layoutState.builtInPanels?.[panelId];
+    },
+    [layoutState.builtInPanels]
+  );
+
+  const updateBuiltInPanelState = useCallback(
+    (panelId: string, updates: Partial<BuiltInPanelState>) => {
+      setLayoutState((prev) => ({
+        ...prev,
+        builtInPanels: {
+          ...prev.builtInPanels,
+          [panelId]: {
+            ...prev.builtInPanels?.[panelId],
+            ...updates,
+          },
+        },
+      }));
+    },
+    []
+  );
+
   const value = useMemo<LayoutContextValue>(
     () => ({
       layoutState,
@@ -384,6 +722,18 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       resetLayout,
       findPanelDock,
       findFloatingPanel,
+      // Popup panel methods
+      getPopupDockState,
+      updatePopupDockState,
+      dockPopup,
+      undockPopup,
+      removePopupFromDock,
+      // Popup floating management
+      addPopupFloating,
+      removePopupFloating,
+      // Built-in panel methods
+      getBuiltInPanelState,
+      updateBuiltInPanelState,
     }),
     [
       layoutState,
@@ -403,6 +753,18 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       resetLayout,
       findPanelDock,
       findFloatingPanel,
+      // Popup panel methods
+      getPopupDockState,
+      updatePopupDockState,
+      dockPopup,
+      undockPopup,
+      removePopupFromDock,
+      // Popup floating management
+      addPopupFloating,
+      removePopupFloating,
+      // Built-in panel methods
+      getBuiltInPanelState,
+      updateBuiltInPanelState,
     ]
   );
 

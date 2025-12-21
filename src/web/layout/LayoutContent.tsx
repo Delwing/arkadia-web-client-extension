@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DockZone } from './components/DockZone';
 import { DockDropIndicator } from './components/DockDropIndicator';
 import { FloatingPanel } from './components/FloatingPanel';
@@ -6,6 +6,7 @@ import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
 import { PanelId } from './types';
+import { getRegisteredPopups, subscribeToRegistry, RegisteredPopup } from './popupRegistry';
 
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
@@ -14,6 +15,23 @@ interface LayoutContentProps {
 
 export function LayoutContent({ mapElement, objectListElement }: LayoutContentProps) {
   const { layoutState, isLayoutMode, dragState } = useLayoutManager();
+  const [registeredPopups, setRegisteredPopups] = useState<RegisteredPopup[]>(() => getRegisteredPopups());
+
+  // Subscribe to popup registry changes
+  useEffect(() => {
+    return subscribeToRegistry(() => {
+      setRegisteredPopups(getRegisteredPopups());
+    });
+  }, []);
+
+  // Create a map of popup ID to popup for quick lookup
+  const popupMap = useMemo(() => {
+    const map = new Map<string, RegisteredPopup>();
+    for (const popup of registeredPopups) {
+      map.set(popup.id, popup);
+    }
+    return map;
+  }, [registeredPopups]);
 
   // Check if a panel is enabled for layout management
   const isPanelEnabled = useCallback(
@@ -21,9 +39,13 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
       // Map is always enabled when layout manager is on
       if (panelId === 'map') return true;
       if (panelId === 'objectList') return layoutState.enabledPanels.objectList;
-      return true; // Future panels default to enabled
+      // Popup panels are only enabled if they're registered
+      if (panelId.startsWith('popup:')) {
+        return popupMap.has(panelId);
+      }
+      return true; // Future non-popup panels default to enabled
     },
-    [layoutState.enabledPanels]
+    [layoutState.enabledPanels, popupMap]
   );
 
   const renderPanel = useCallback(
@@ -34,10 +56,28 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
         case 'objectList':
           return <ObjectListPanel objectListElement={objectListElement} />;
         default:
+          // Check if this is a popup panel
+          const popup = popupMap.get(panelId);
+          if (popup) {
+            const bodyClass = popup.config.bodyClassName;
+            return bodyClass ? (
+              <div className={bodyClass}>{popup.renderContent()}</div>
+            ) : (
+              popup.renderContent()
+            );
+          }
           return <div>Unknown panel: {panelId}</div>;
       }
     },
-    [mapElement, objectListElement]
+    [mapElement, objectListElement, popupMap]
+  );
+
+  // Get popup info for a panel (used by DockZone to pass popup-specific props)
+  const getPopupInfo = useCallback(
+    (panelId: string) => {
+      return popupMap.get(panelId) || null;
+    },
+    [popupMap]
   );
 
   // Filter floating panels to only show enabled ones
@@ -83,10 +123,10 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
 
   return (
     <div className="layout-manager">
-      <DockZone position="TOP" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} />
-      <DockZone position="LEFT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} />
+      <DockZone position="TOP" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
+      <DockZone position="LEFT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
       <div className="dock-zone dock-zone--main" id="layout-main-content" />
-      <DockZone position="RIGHT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} />
+      <DockZone position="RIGHT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
       {/* Floating panels */}
       {enabledFloatingPanels.map((panel) => (
         <FloatingPanel key={panel.id} panel={panel}>

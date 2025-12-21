@@ -2,6 +2,21 @@ export type DockPosition = 'LEFT' | 'TOP' | 'RIGHT';
 
 export type PanelId = 'map' | 'objectList' | string;
 
+// Built-in popup types
+export type BuiltInPopupType =
+  | 'clock'
+  | 'contracts'
+  | 'letter'
+  | 'herb'
+  | 'knowledgeReport'
+  | 'knowledgeDetails'
+  | 'chat';
+
+// Plugin popup type pattern: plugin:{pluginId}:{instanceId}
+export type PluginPopupType = `plugin:${string}`;
+
+export type PopupType = BuiltInPopupType | PluginPopupType;
+
 export interface PanelState {
   id: PanelId;
   /** Position in dock (0 = first, 1 = second, etc.) */
@@ -17,13 +32,19 @@ export interface FloatingPanelState {
   y: number;
   /** Size in pixels */
   width: number;
-  height: number;
+  /** Height in pixels. When undefined, panel auto-sizes to content */
+  height?: number;
 }
 
 export interface DockState {
   /** Size of the dock zone (LEFT/RIGHT: width in px, TOP: height in px) */
   size: number;
   panels: PanelState[];
+}
+
+/** State for built-in panels (map, objectList) */
+export interface BuiltInPanelState {
+  isLocked?: boolean;
 }
 
 export interface LayoutState {
@@ -41,6 +62,10 @@ export interface LayoutState {
   };
   /** Floating (undocked) panels */
   floatingPanels: FloatingPanelState[];
+  /** Popup panel dock preferences - remembers last state per popup */
+  popupPanels: Record<string, PopupPanelDockState>;
+  /** Built-in panel states (map, objectList) */
+  builtInPanels: Record<string, BuiltInPanelState>;
 }
 
 export interface DragState {
@@ -59,6 +84,35 @@ export interface PanelConfig {
   closable: boolean;
   minWidth?: number;
   minHeight?: number;
+}
+
+// Popup-specific panel configuration
+export interface PopupPanelConfig extends PanelConfig {
+  type: 'popup';
+  popupType: PopupType;
+  initialWidth: number;
+  initialHeight?: number;
+  bodyClassName?: string;
+}
+
+// State for a popup panel (used in storage)
+export interface PopupPanelDockState {
+  isDocked: boolean;
+  dockPosition?: DockPosition;
+  dockOrder?: number;
+  dockSize?: number; // percentage
+  floatingState?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  /** If true, popup should auto-open on page load */
+  persistOpen?: boolean;
+  /** If true, user has explicitly moved/resized the popup */
+  userModifiedPosition?: boolean;
+  /** If true, popup is locked (prevents dragging and resizing) */
+  isLocked?: boolean;
 }
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {
@@ -89,6 +143,8 @@ export const DEFAULT_LAYOUT: LayoutState = {
     right: { size: 360, panels: [{ id: 'map', order: 0, size: 50 }, { id: 'objectList', order: 1, size: 50 }] },
   },
   floatingPanels: [],
+  popupPanels: {},
+  builtInPanels: {},
 };
 
 export const MIN_DOCK_SIZE = 100;

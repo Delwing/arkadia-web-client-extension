@@ -7,7 +7,8 @@ import React, {
 import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledgeStore';
 import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
-import { useDraggablePopup } from './hooks/useDraggablePopup';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { usePopup } from './hooks/usePopup';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -44,6 +45,8 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+const POPUP_ID = 'popup:knowledgeReport';
+
 const LIBRARY_STATUS_CONFIG: {
   key: KnowledgeCategoryStatus;
   label: string;
@@ -71,34 +74,20 @@ function groupLibraryCategories(
 }
 
 const KnowledgeReport: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
   const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
-  const [isPinned, setIsPinned] = useState(false);
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
 
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
-  const togglePinned = useCallback(() => {
-    setIsPinned((prev) => !prev);
-  }, []);
-
-  const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-    isOpen,
-    isPinned,
-    onClose: close,
-    minWidth: 600,
-    minHeight: 400,
-  });
-
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
       setData(null);
-      setIsOpen(false);
+      // Don't close if pinned (popup should stay open with empty state)
+      if (!isPinned) {
+        setIsOpen(false);
+      }
       return;
     }
 
@@ -110,7 +99,7 @@ const KnowledgeReport: React.FC = () => {
     } else {
       setActiveTab('categories');
     }
-  }, []);
+  }, [isPinned, setIsOpen]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeReport', (payload) => {
@@ -121,6 +110,12 @@ const KnowledgeReport: React.FC = () => {
     };
   }, [handleReport]);
 
+  // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
+  useEffect(() => {
+    if (isOpen && !data) {
+      eventBus.emit('requestKnowledgeReport');
+    }
+  }, [isOpen, data]);
 
   const handleStartCategory = useCallback((dative: string) => {
     eventBus.emit('sendCommand', {
@@ -338,75 +333,51 @@ const KnowledgeReport: React.FC = () => {
     );
   }, [data, handleStartCategory]);
 
-  if (!isOpen || !data) {
-    return null;
-  }
-
-  const hasLibraries = data.libraries.length > 0;
+  const hasLibraries = data?.libraries && data.libraries.length > 0;
 
   return (
-    <div className="knowledge-window-container">
-      <div
-        ref={panelRef}
-        className={`knowledge-window ${
-          position ? 'knowledge-window--floating' : 'knowledge-window--center'
-        }`}
-        style={{
-          ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-          ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-        }}
-        tabIndex={-1}
-      >
-        <div className="knowledge-window-inner">
-          <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
-            <h5 className="knowledge-window-title">Raport wiedzy</h5>
-            <div
-              className="window-header-actions"
-              onPointerDownCapture={(event) => event.stopPropagation()}
-            >
-              <button
-                type="button"
-                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                onClick={togglePinned}
-                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-              />
-              <button type="button" className="btn-close" onClick={close} />
-            </div>
-          </div>
-          <div className="knowledge-window-body">
-            <div className="knowledge-tabs">
-              <button
-                type="button"
-                className={`knowledge-tab-button ${
-                  activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
-                }`}
-                onClick={() => setActiveTab('libraries')}
-                disabled={!hasLibraries}
-              >
-                Biblioteki
-              </button>
-              <button
-                type="button"
-                className={`knowledge-tab-button ${
-                  activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
-                }`}
-                onClick={() => setActiveTab('categories')}
-              >
-                Kategorie
-              </button>
-            </div>
-            <div className="knowledge-content">
-              {activeTab === 'libraries' ? libraryContent : categoriesContent}
-            </div>
-          </div>
-          <div
-            className="herb-window-resize-handle"
-            onPointerDown={handleResizePointerDown}
-            title="Drag to resize"
-          />
-        </div>
+    <DockablePopupWrapper
+      {...wrapperProps}
+      popupType="knowledgeReport"
+      title="Biblioteki"
+      minWidth={500}
+      minHeight={350}
+      initialWidth={960}
+      initialHeight={Math.min(window.innerHeight * 0.75, window.innerHeight - 32)}
+      className="knowledge-window"
+      bodyClassName="knowledge-window-body"
+    >
+      {!data ? (
+        <div className="knowledge-empty">Brak danych. Użyj komendy /wiedza lub /biblioteki.</div>
+      ) : (
+        <>
+      <div className="knowledge-tabs">
+        <button
+          type="button"
+          className={`knowledge-tab-button ${
+            activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
+          }`}
+          onClick={() => setActiveTab('libraries')}
+          disabled={!hasLibraries}
+        >
+          Biblioteki
+        </button>
+        <button
+          type="button"
+          className={`knowledge-tab-button ${
+            activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
+          }`}
+          onClick={() => setActiveTab('categories')}
+        >
+          Kategorie
+        </button>
       </div>
-    </div>
+      <div className="knowledge-content">
+        {activeTab === 'libraries' ? libraryContent : categoriesContent}
+      </div>
+        </>
+      )}
+    </DockablePopupWrapper>
   );
 };
 

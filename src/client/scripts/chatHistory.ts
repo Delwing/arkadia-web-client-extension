@@ -1,18 +1,26 @@
 import Client from "../Client";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { createColorFormat } from "@modules/core/Colors";
+import eventBus from "@modules/core/eventBus";
 
-const HISTORY_LIMIT = 20;
+const HISTORY_LIMIT = 100;
+const PRINT_LIMIT = 20;
 const TIMESTAMP_COLOR = createColorFormat("#ffffff");
 
-type ChatEntry = {
+export type ChatEntry = {
     timestamp: string;
     buffer: AnsiAwareBuffer;
+    isTeamMember: boolean;
 };
 
-export default function initChatHistory(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    const history: ChatEntry[] = [];
+// Exported history for use by ChatPopup
+let chatHistory: ChatEntry[] = [];
 
+export function getChatHistory(): ChatEntry[] {
+    return chatHistory;
+}
+
+export default function initChatHistory(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     function formatTimestamp(date: Date) {
         return date.toLocaleTimeString("pl-PL", {
             hour: "2-digit",
@@ -21,24 +29,49 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         });
     }
 
+    function checkIfTeamMember(text: string): boolean {
+        const teamManager = client.TeamManager;
+        if (!teamManager) return false;
+
+        const members = teamManager.getTeamMembers();
+        if (members.length === 0) return false;
+
+        // Check if message starts with a team member's name
+        // Messages from team members typically start with their name
+        const trimmedText = text.trim();
+        for (const member of members) {
+            if (trimmedText.startsWith(member)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function addEntry(buffer: AnsiAwareBuffer) {
+        const isTeamMember = checkIfTeamMember(buffer.text);
         const entry: ChatEntry = {
             timestamp: formatTimestamp(new Date()),
             buffer: buffer.clone(),
+            isTeamMember,
         };
-        history.push(entry);
-        if (history.length > HISTORY_LIMIT) {
-            history.shift();
+        chatHistory.push(entry);
+        if (chatHistory.length > HISTORY_LIMIT) {
+            chatHistory.shift();
         }
+        // Notify popup of new message
+        eventBus.emit("chat.newMessage", entry);
     }
 
     function printHistory() {
-        if (!history.length) {
+        if (!chatHistory.length) {
             client.print("Brak zapisanych wiadomosci czatu.");
             return;
         }
         const output = new AnsiAwareBuffer();
-        history.forEach((entry, index) => {
+        // Only print last PRINT_LIMIT entries for /chat command
+        const startIndex = Math.max(0, chatHistory.length - PRINT_LIMIT);
+        const entries = chatHistory.slice(startIndex);
+        entries.forEach((entry, index) => {
             if (index > 0) {
                 output.append("\n");
             }
@@ -61,10 +94,17 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     });
 
     client.on("client.disconnect", () => {
-        history.length = 0;
+        chatHistory = [];
+        eventBus.emit("chat.cleared");
     });
+
+    function openPopup() {
+        eventBus.emit("chat.popup.open");
+    }
 
     if (aliases) {
         aliases.push({ pattern: /^\/chat$/, callback: printHistory });
+        aliases.push({ pattern: /^\/chat okno$/, callback: openPopup });
+        aliases.push({ pattern: /^\/chatw$/, callback: openPopup });
     }
 }
