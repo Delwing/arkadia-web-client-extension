@@ -8,6 +8,9 @@ export interface RegisteredPopup {
   onClose: () => void;
   isPinned: boolean;
   setIsPinned: (pinned: boolean) => void;
+  isLocked: boolean;
+  setIsLocked: (locked: boolean) => void;
+  onReset: () => void;
   headerActions?: ReactNode;
 }
 
@@ -60,12 +63,15 @@ export function subscribeToRegistry(listener: () => void): () => void {
   };
 }
 
-export function updatePopup(id: string, updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'headerActions'>>): void {
+export function updatePopup(id: string, updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'isLocked' | 'headerActions'>>): void {
   const popup = popupRegistry.get(id);
   if (popup) {
     // Check if anything actually changed
     let hasChanges = false;
     if ('isPinned' in updates && popup.isPinned !== updates.isPinned) {
+      hasChanges = true;
+    }
+    if ('isLocked' in updates && popup.isLocked !== updates.isLocked) {
       hasChanges = true;
     }
     if ('headerActions' in updates && popup.headerActions !== updates.headerActions) {

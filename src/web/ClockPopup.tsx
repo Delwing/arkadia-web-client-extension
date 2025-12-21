@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { usePopup } from './hooks/usePopup';
 
 type ClockData = {
     domain: "Empire" | "Ishtar";
@@ -46,21 +46,10 @@ function formatSunTime(value: number | string | "?"): string {
 const POPUP_ID = 'popup:clock';
 
 const ClockPopup: React.FC = () => {
-    // Check if popup should auto-open on page load (was pinned before reload)
-    const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
+    const { wrapperProps, setIsOpen } = usePopup(POPUP_ID);
     const [empireData, setEmpireData] = useState<ClockData | null>(null);
     const [ishtarData, setIshtarData] = useState<ClockData | null>(null);
     const [activeTab, setActiveTab] = useState<"Empire" | "Ishtar">("Empire");
-    // If auto-opening, start pinned since that's why we're persisting
-    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
-
-    const close = useCallback(() => {
-        setIsOpen(false);
-    }, []);
-
-    const handlePinnedChange = useCallback((pinned: boolean) => {
-        setIsPinned(pinned);
-    }, []);
 
     useEffect(() => {
         const handleClockUpdate = (data: ClockData) => {
@@ -95,19 +84,15 @@ const ClockPopup: React.FC = () => {
         return () => {
             eventBus.off("clock.popup.open", handleOpen);
         };
-    }, [empireData, ishtarData]);
+    }, [empireData, ishtarData, setIsOpen]);
 
     const currentData = activeTab === "Empire" ? empireData : ishtarData;
 
     return (
         <DockablePopupWrapper
-            popupId={POPUP_ID}
+            {...wrapperProps}
             popupType="clock"
             title="Zegar"
-            isOpen={isOpen}
-            isPinned={isPinned}
-            onClose={close}
-            onPinnedChange={handlePinnedChange}
             minWidth={300}
             minHeight={200}
             initialWidth={480}

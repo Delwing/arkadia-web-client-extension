@@ -203,6 +203,76 @@ body {
   --pin-button-hover-shadow: var(--floating-pin-active-hover-shadow);
 }
 
+/* Lock button for plugin windows */
+.window-lock-button {
+  width: var(--pin-button-size, var(--floating-pin-size));
+  height: var(--pin-button-size, var(--floating-pin-size));
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background-color: var(--lock-button-background, var(--floating-pin-background));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23888' d='M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4h-1V3a2 2 0 0 0-2-2zM3 8a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H3z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--pin-button-icon-size, var(--floating-pin-icon-size));
+  cursor: pointer;
+  opacity: var(--pin-button-opacity, 0.92);
+  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.window-lock-button:hover,
+.window-lock-button:focus-visible {
+  outline: none;
+  opacity: 1;
+  background-color: var(--lock-button-hover-background, var(--floating-pin-hover-background));
+  box-shadow: var(--lock-button-hover-shadow, var(--floating-pin-hover-shadow));
+}
+
+.window-lock-button--active {
+  background-color: var(--floating-pin-active-background);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2388cc88' d='M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z'/%3E%3C/svg%3E");
+}
+
+.window-lock-button--active:hover,
+.window-lock-button--active:focus-visible {
+  background-color: var(--floating-pin-active-hover-background);
+  box-shadow: var(--floating-pin-active-hover-shadow);
+}
+
+/* Reset button for plugin windows */
+.window-reset-button {
+  width: var(--pin-button-size, var(--floating-pin-size));
+  height: var(--pin-button-size, var(--floating-pin-size));
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background-color: var(--reset-button-background, var(--floating-pin-background));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23888' d='M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z'/%3E%3Cpath fill='%23888' fill-rule='evenodd' d='M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--pin-button-icon-size, var(--floating-pin-icon-size));
+  cursor: pointer;
+  opacity: var(--pin-button-opacity, 0.92);
+  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.window-reset-button:hover,
+.window-reset-button:focus-visible {
+  outline: none;
+  opacity: 1;
+  background-color: var(--reset-button-hover-background, var(--floating-pin-hover-background));
+  box-shadow: var(--reset-button-hover-shadow, var(--floating-pin-hover-shadow));
+}
+
+/* Locked state styling for plugin windows */
+.plugin-window--locked .plugin-window-header {
+  cursor: default;
+}
+
+.plugin-window-header--locked {
+  cursor: default;
+}
+
 .modal .form-text,
 .modal .form-label,
 .modal .form-check-label {

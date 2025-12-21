@@ -103,6 +103,8 @@ export interface PopupPanelDockState {
   persistOpen?: boolean;
   /** If true, user has explicitly moved/resized the popup */
   userModifiedPosition?: boolean;
+  /** If true, popup is locked (prevents dragging and resizing) */
+  isLocked?: boolean;
 }
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {

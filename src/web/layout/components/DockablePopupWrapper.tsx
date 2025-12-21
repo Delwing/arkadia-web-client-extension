@@ -9,8 +9,13 @@ export interface DockablePopupWrapperProps {
   title: string;
   isOpen: boolean;
   isPinned: boolean;
+  isLocked?: boolean;
   onClose: () => void;
   onPinnedChange: (pinned: boolean) => void;
+  onLockedChange?: (locked: boolean) => void;
+  onReset?: () => void;
+  /** Counter that triggers reset when incremented */
+  resetCounter?: number;
   children: ReactNode;
   headerActions?: ReactNode;
   minWidth?: number;
@@ -49,8 +54,12 @@ export function DockablePopupWrapper({
   title,
   isOpen,
   isPinned,
+  isLocked = false,
   onClose,
   onPinnedChange,
+  onLockedChange,
+  onReset,
+  resetCounter = 0,
   children,
   headerActions,
   minWidth = 300,
@@ -75,8 +84,11 @@ export function DockablePopupWrapper({
     title,
     isOpen,
     isPinned,
+    isLocked,
     onClose,
     onPinnedChange,
+    onLockedChange,
+    onReset,
     minWidth,
     minHeight,
     initialWidth,
@@ -121,12 +133,31 @@ export function DockablePopupWrapper({
     startHeight: number;
   } | null>(null);
 
+  // Track the last reset counter to detect resets
+  const lastResetCounterRef = useRef(resetCounter);
+
   // Reset initialization flag when popup closes
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
     }
   }, [isOpen]);
+
+  // Handle reset - restore initial position and size
+  useEffect(() => {
+    if (resetCounter === lastResetCounterRef.current) return;
+    lastResetCounterRef.current = resetCounter;
+
+    if (!isOpen || isManagedByLayout) return;
+
+    // Restore to initial centered position
+    const left = Math.max(16, (window.innerWidth - initialWidth) / 2);
+    const top = initialHeight !== undefined
+      ? Math.max(16, (window.innerHeight - initialHeight) / 2)
+      : Math.max(16, window.innerHeight * 0.1);
+    setPosition({ left, top });
+    setSize({ width: initialWidth, height: initialHeight });
+  }, [resetCounter, isOpen, isManagedByLayout, initialWidth, initialHeight]);
 
   // Initialize position when popup opens (non-layout mode)
   useEffect(() => {
@@ -172,6 +203,8 @@ export function DockablePopupWrapper({
   // Drag handler for header
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Don't allow dragging when locked
+      if (isLocked) return;
       if (event.button !== 0) return;
       if (!panelRef.current) return;
 
@@ -215,7 +248,7 @@ export function DockablePopupWrapper({
       document.addEventListener('pointerup', handleEnd);
       document.addEventListener('pointercancel', handleEnd);
     },
-    []
+    [isLocked]
   );
 
   // Resize handlers
@@ -254,6 +287,8 @@ export function DockablePopupWrapper({
 
   const handleResizePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Don't allow resizing when locked
+      if (isLocked) return;
       if (event.button !== 0) return;
       if (!panelRef.current) return;
 
@@ -275,7 +310,7 @@ export function DockablePopupWrapper({
       event.preventDefault();
       event.stopPropagation();
     },
-    [endResizePointerDrag, handleResizePointerMove]
+    [isLocked, endResizePointerDrag, handleResizePointerMove]
   );
 
   // Cleanup resize listeners
@@ -302,6 +337,14 @@ export function DockablePopupWrapper({
     onPinnedChange(!isPinned);
   };
 
+  const toggleLocked = () => {
+    onLockedChange?.(!isLocked);
+  };
+
+  const handleResetClick = () => {
+    onReset?.();
+  };
+
   const isAutoHeight = size?.height === undefined;
   const positionStyle: React.CSSProperties = {
     ...(position ? {
@@ -323,18 +366,33 @@ export function DockablePopupWrapper({
     <div className="plugin-window-container">
       <div
         ref={panelRef}
-        className={`plugin-window ${positionClassName}${isAutoHeight ? ' plugin-window--auto-height' : ''} ${className}`}
+        className={`plugin-window ${positionClassName}${isAutoHeight ? ' plugin-window--auto-height' : ''}${isLocked ? ' plugin-window--locked' : ''} ${className}`}
         style={positionStyle}
         tabIndex={-1}
       >
         <div className="plugin-window-inner">
-          <div className="plugin-window-header" onPointerDown={handlePointerDown}>
+          <div
+            className={`plugin-window-header${isLocked ? ' plugin-window-header--locked' : ''}`}
+            onPointerDown={handlePointerDown}
+          >
             <h5 className="plugin-window-title">{title}</h5>
             <div
               className="window-header-actions"
               onPointerDown={(e) => e.stopPropagation()}
             >
               {headerActions}
+              <button
+                type="button"
+                className="window-reset-button"
+                onClick={handleResetClick}
+                title="Przywroc domyslna pozycje i rozmiar"
+              />
+              <button
+                type="button"
+                className={`window-lock-button${isLocked ? ' window-lock-button--active' : ''}`}
+                onClick={toggleLocked}
+                title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
+              />
               <button
                 type="button"
                 className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
@@ -347,11 +405,13 @@ export function DockablePopupWrapper({
           <div className={`plugin-window-body ${bodyClassName}`}>
             {children}
           </div>
-          <div
-            className="plugin-window-resize-handle"
-            onPointerDown={handleResizePointerDown}
-            title="Drag to resize"
-          />
+          {!isLocked && (
+            <div
+              className="plugin-window-resize-handle"
+              onPointerDown={handleResizePointerDown}
+              title="Drag to resize"
+            />
+          )}
         </div>
       </div>
     </div>

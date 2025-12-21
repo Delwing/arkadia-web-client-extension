@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useCallback } from 'react';
 import { PanelId, PANEL_CONFIGS } from '../types';
 import { useDockablePanel } from '../hooks/useDockablePanel';
 
@@ -11,6 +11,9 @@ interface DockedPanelProps {
   onClose?: () => void;
   onPin?: () => void;
   isPinned?: boolean;
+  onLock?: () => void;
+  isLocked?: boolean;
+  onReset?: () => void;
   headerActions?: ReactNode;
   isPopup?: boolean;
 }
@@ -23,6 +26,9 @@ export function DockedPanel({
   onClose,
   onPin,
   isPinned,
+  onLock,
+  isLocked,
+  onReset,
   headerActions,
   isPopup,
 }: DockedPanelProps) {
@@ -31,20 +37,48 @@ export function DockedPanel({
   const title = titleProp ?? config?.title ?? panelId;
   const closable = isPopup || config?.closable !== false;
 
+  // Wrap drag start to check for locked state
+  const handleDragStartWrapper = useCallback(
+    (e: React.PointerEvent) => {
+      if (isLocked) return;
+      handleDragStart(e);
+    },
+    [handleDragStart, isLocked]
+  );
+
   const panelClassName = isPopup
-    ? `docked-panel docked-panel--${panelId} docked-panel--popup`
-    : `docked-panel docked-panel--${panelId}`;
+    ? `docked-panel docked-panel--${panelId} docked-panel--popup${isLocked ? ' docked-panel--locked' : ''}`
+    : `docked-panel docked-panel--${panelId}${isLocked ? ' docked-panel--locked' : ''}`;
 
   return (
     <div className={panelClassName} style={style}>
-      <div className="docked-panel__header" onPointerDown={handleDragStart}>
+      <div
+        className={`docked-panel__header${isLocked ? ' docked-panel__header--locked' : ''}`}
+        onPointerDown={handleDragStartWrapper}
+      >
         <span className="docked-panel__title">{title}</span>
-        {(headerActions || onPin || (closable && onClose)) && (
+        {(headerActions || onReset || onLock || onPin || (closable && onClose)) && (
           <div
             className="docked-panel__header-actions"
             onPointerDown={(e) => e.stopPropagation()}
           >
             {headerActions}
+            {onReset && (
+              <button
+                type="button"
+                className="docked-panel__reset-btn"
+                onClick={onReset}
+                title="Przywroc domyslna pozycje i rozmiar"
+              />
+            )}
+            {onLock && (
+              <button
+                type="button"
+                className={`docked-panel__lock-btn${isLocked ? ' docked-panel__lock-btn--active' : ''}`}
+                onClick={onLock}
+                title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
+              />
+            )}
             {onPin && (
               <button
                 type="button"

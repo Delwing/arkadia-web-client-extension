@@ -10,8 +10,11 @@ interface UseDockablePopupOptions {
   title: string;
   isOpen: boolean;
   isPinned: boolean;
+  isLocked?: boolean;
   onClose: () => void;
   onPinnedChange: (pinned: boolean) => void;
+  onLockedChange?: (locked: boolean) => void;
+  onReset?: () => void;
   minWidth?: number;
   minHeight?: number;
   initialWidth?: number;
@@ -34,8 +37,11 @@ export function useDockablePopup({
   title,
   isOpen,
   isPinned,
+  isLocked = false,
   onClose,
   onPinnedChange,
+  onLockedChange,
+  onReset,
   minWidth = 300,
   minHeight = 200,
   initialWidth = 350,
@@ -66,14 +72,20 @@ export function useDockablePopup({
   const headerActionsRef = useRef(headerActions);
   const onCloseRef = useRef(onClose);
   const onPinnedChangeRef = useRef(onPinnedChange);
+  const onLockedChangeRef = useRef(onLockedChange);
+  const onResetRef = useRef(onReset);
   const isPinnedRef = useRef(isPinned);
+  const isLockedRef = useRef(isLocked);
 
   // Update refs on each render
   renderContentRef.current = renderContent;
   headerActionsRef.current = headerActions;
   onCloseRef.current = onClose;
   onPinnedChangeRef.current = onPinnedChange;
+  onLockedChangeRef.current = onLockedChange;
+  onResetRef.current = onReset;
   isPinnedRef.current = isPinned;
+  isLockedRef.current = isLocked;
 
   // In layout mode, popup is managed by FloatingPanel (unless disabled)
   const isManagedByLayout = isLayoutMode && layoutContext !== null && !disableLayoutManagement;
@@ -105,6 +117,9 @@ export function useDockablePopup({
       onClose: () => onCloseRef.current(),
       isPinned: isPinnedRef.current,
       setIsPinned: (pinned: boolean) => onPinnedChangeRef.current(pinned),
+      isLocked: isLockedRef.current,
+      setIsLocked: (locked: boolean) => onLockedChangeRef.current?.(locked),
+      onReset: () => onResetRef.current?.(),
       headerActions: headerActionsRef.current,
     });
 
@@ -119,6 +134,13 @@ export function useDockablePopup({
       updatePopup(popupId, { isPinned });
     }
   }, [isOpen, popupId, isPinned]);
+
+  // Update isLocked in registry when it changes
+  useEffect(() => {
+    if (isOpen) {
+      updatePopup(popupId, { isLocked });
+    }
+  }, [isOpen, popupId, isLocked]);
 
   // Update headerActions in registry when it changes
   useEffect(() => {
@@ -137,6 +159,14 @@ export function useDockablePopup({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isPinned, isManagedByLayout, popupId]);
+
+  // Persist isLocked state when it changes in layout mode
+  useEffect(() => {
+    if (!isManagedByLayout || !isOpen) return;
+
+    updatePopupDockState?.(popupId, { isLocked });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isLocked, isManagedByLayout, popupId]);
 
   // Clear persistOpen when popup closes while not pinned
   useEffect(() => {

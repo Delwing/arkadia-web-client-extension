@@ -158,6 +158,9 @@ export function DockZone({ position, renderPanel, isPanelEnabled, getPopupInfo }
               onClose={popupInfo?.onClose}
               onPin={popupInfo ? () => popupInfo.setIsPinned(!popupInfo.isPinned) : undefined}
               isPinned={popupInfo?.isPinned}
+              onLock={popupInfo ? () => popupInfo.setIsLocked(!popupInfo.isLocked) : undefined}
+              isLocked={popupInfo?.isLocked}
+              onReset={popupInfo?.onReset}
               headerActions={popupInfo?.headerActions}
               isPopup={isPopup}
             >

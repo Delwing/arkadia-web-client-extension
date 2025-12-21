@@ -8,7 +8,7 @@ import React, {
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { usePopup } from './hooks/usePopup';
 
 const POPUP_ID = 'popup:knowledgeDetails';
 
@@ -68,21 +68,10 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
 }
 
 const KnowledgeDetailsReport: React.FC = () => {
-  // Check if popup should auto-open on page load (was pinned before reload)
-  const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
+  const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
-  // If auto-opening, start pinned since that's why we're persisting
-  const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
-  const handlePinnedChange = useCallback((pinned: boolean) => {
-    setIsPinned(pinned);
-  }, []);
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
     if (!detail || !detail.categories?.length) {
@@ -96,7 +85,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     setData(detail);
     setIsOpen(true);
     setHideCompleted(false);
-  }, [isPinned]);
+  }, [isPinned, setIsOpen]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeDetailsReport', (payload) => {
@@ -331,13 +320,9 @@ const KnowledgeDetailsReport: React.FC = () => {
 
   return (
     <DockablePopupWrapper
-      popupId={POPUP_ID}
+      {...wrapperProps}
       popupType="knowledgeDetails"
       title={titleWithProgress}
-      isOpen={isOpen}
-      isPinned={isPinned}
-      onClose={close}
-      onPinnedChange={handlePinnedChange}
       minWidth={500}
       minHeight={350}
       initialWidth={960}

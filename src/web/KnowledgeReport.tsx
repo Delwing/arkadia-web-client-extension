@@ -8,7 +8,7 @@ import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledge
 import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { usePopup } from './hooks/usePopup';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -74,23 +74,12 @@ function groupLibraryCategories(
 }
 
 const KnowledgeReport: React.FC = () => {
-  // Check if popup should auto-open on page load (was pinned before reload)
-  const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
+  const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
   const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
-  // If auto-opening, start pinned since that's why we're persisting
-  const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
-
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
-  const handlePinnedChange = useCallback((pinned: boolean) => {
-    setIsPinned(pinned);
-  }, []);
 
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
@@ -110,7 +99,7 @@ const KnowledgeReport: React.FC = () => {
     } else {
       setActiveTab('categories');
     }
-  }, [isPinned]);
+  }, [isPinned, setIsOpen]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeReport', (payload) => {
@@ -348,13 +337,9 @@ const KnowledgeReport: React.FC = () => {
 
   return (
     <DockablePopupWrapper
-      popupId={POPUP_ID}
+      {...wrapperProps}
       popupType="knowledgeReport"
       title="Raport wiedzy"
-      isOpen={isOpen}
-      isPinned={isPinned}
-      onClose={close}
-      onPinnedChange={handlePinnedChange}
       minWidth={500}
       minHeight={350}
       initialWidth={960}

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { usePopup } from './hooks/usePopup';
 import { getItemSync, setItemSync } from '@modules/core/storage';
 import type { Contract } from '@client/scripts/contracts';
 
@@ -67,35 +67,19 @@ function saveSortMode(mode: SortMode): void {
 const POPUP_ID = 'popup:contracts';
 
 const ContractsPopup: React.FC = () => {
-    // Check if popup should auto-open on page load (was pinned before reload)
-    const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
-    // If auto-opening, start pinned since that's why we're persisting
-    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const [sortMode, setSortMode] = useState<SortMode>(loadSortMode);
 
-    const close = useCallback(() => {
-        setIsOpen(false);
+    const handleOpen = useCallback((data: ContractsPopupPayload) => {
+        setContracts(data.contracts);
+        setCurrentLocationId(data.currentLocationId);
     }, []);
 
-    const handlePinnedChange = useCallback((pinned: boolean) => {
-        setIsPinned(pinned);
-    }, []);
-
-    useEffect(() => {
-        const handleOpen = (data: ContractsPopupPayload) => {
-            setContracts(data.contracts);
-            setCurrentLocationId(data.currentLocationId);
-            setIsOpen(true);
-        };
-
-        eventBus.on("contracts.popup.open", handleOpen);
-
-        return () => {
-            eventBus.off("contracts.popup.open", handleOpen);
-        };
-    }, []);
+    const { wrapperProps } = usePopup<ContractsPopupPayload>(POPUP_ID, {
+        openEvent: 'contracts.popup.open',
+        onOpen: handleOpen,
+    });
 
     useEffect(() => {
         const handleUpdate = (data: { contracts: Contract[] }) => {
@@ -164,13 +148,9 @@ const ContractsPopup: React.FC = () => {
 
     return (
         <DockablePopupWrapper
-            popupId={POPUP_ID}
+            {...wrapperProps}
             popupType="contracts"
             title={`Zlecenia (${contracts.length})`}
-            isOpen={isOpen}
-            isPinned={isPinned}
-            onClose={close}
-            onPinnedChange={handlePinnedChange}
             minWidth={350}
             minHeight={200}
             initialWidth={400}

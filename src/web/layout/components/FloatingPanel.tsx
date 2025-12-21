@@ -21,6 +21,7 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   const popupInfo = isPopup ? getPopup(panel.id) : null;
 
   const title = popupInfo?.config.title ?? config?.title ?? panel.id;
+  const isLocked = popupInfo?.isLocked ?? false;
 
   const resizeDir = useRef<ResizeDirection>(null);
   const startPos = useRef({ x: 0, y: 0 });
@@ -102,6 +103,8 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
 
   const handleResizeStart = useCallback(
     (direction: ResizeDirection) => (e: React.PointerEvent) => {
+      // Don't allow resizing when locked
+      if (isLocked) return;
       resizeDir.current = direction;
       startPos.current = { x: e.clientX, y: e.clientY };
       startBounds.current = { x: panel.x, y: panel.y, width: panel.width, height: panel.height };
@@ -109,7 +112,16 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
       e.preventDefault();
       e.stopPropagation();
     },
-    [panel.x, panel.y, panel.width, panel.height]
+    [panel.x, panel.y, panel.width, panel.height, isLocked]
+  );
+
+  // Wrap drag start to check for locked state
+  const handleDragStartWrapper = useCallback(
+    (e: React.PointerEvent) => {
+      if (isLocked) return;
+      handleDragStart(e);
+    },
+    [handleDragStart, isLocked]
   );
 
   const handleClose = useCallback(() => {
@@ -120,11 +132,36 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
     popupInfo?.setIsPinned(!popupInfo.isPinned);
   }, [popupInfo]);
 
+  const handleToggleLock = useCallback(() => {
+    popupInfo?.setIsLocked(!popupInfo.isLocked);
+  }, [popupInfo]);
+
+  const handleReset = useCallback(() => {
+    if (!popupInfo) return;
+
+    // Reset to initial centered position and size
+    const initialWidth = popupInfo.config.initialWidth ?? 350;
+    const initialHeight = popupInfo.config.initialHeight;
+    const initialY = initialHeight !== undefined
+      ? Math.max(16, (window.innerHeight - initialHeight) / 2)
+      : Math.max(16, window.innerHeight * 0.1);
+
+    updateFloatingPanel(panel.id, {
+      x: Math.max(16, (window.innerWidth - initialWidth) / 2),
+      y: initialY,
+      width: initialWidth,
+      height: initialHeight,
+    });
+
+    // Also call the popup's onReset to notify the component
+    popupInfo.onReset();
+  }, [popupInfo, panel.id, updateFloatingPanel]);
+
   const isAutoHeight = panel.height === undefined;
 
   return (
     <div
-      className={`floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}`}
+      className={`floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}${isLocked ? ' floating-panel--locked' : ''}`}
       style={{
         left: panel.x,
         top: panel.y,
@@ -132,7 +169,10 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
         ...(panel.height !== undefined && { height: panel.height }),
       }}
     >
-      <div className="floating-panel__header" onPointerDown={handleDragStart}>
+      <div
+        className={`floating-panel__header${isLocked ? ' floating-panel__header--locked' : ''}`}
+        onPointerDown={handleDragStartWrapper}
+      >
         <span className="floating-panel__title">{title}</span>
         <span
           className={`floating-panel__drag-hint${isCtrlHeld ? ' floating-panel__drag-hint--active' : ''}${!isBeingDragged ? ' floating-panel__drag-hint--hidden' : ''}`}
@@ -144,6 +184,18 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
           {popupInfo?.headerActions}
           {isPopup && popupInfo && (
             <>
+              <button
+                type="button"
+                className="floating-panel__reset-button"
+                onClick={handleReset}
+                title="Przywroc domyslna pozycje i rozmiar"
+              />
+              <button
+                type="button"
+                className={`floating-panel__lock-button${popupInfo.isLocked ? ' floating-panel__lock-button--active' : ''}`}
+                onClick={handleToggleLock}
+                title={popupInfo.isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
+              />
               <button
                 type="button"
                 className={`floating-panel__pin-button${popupInfo.isPinned ? ' floating-panel__pin-button--active' : ''}`}
@@ -162,17 +214,21 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
       </div>
       <div className="floating-panel__content">{children}</div>
 
-      {/* Edge resize handles */}
-      <div className="floating-panel__edge floating-panel__edge--n" onPointerDown={handleResizeStart('n')} />
-      <div className="floating-panel__edge floating-panel__edge--s" onPointerDown={handleResizeStart('s')} />
-      <div className="floating-panel__edge floating-panel__edge--e" onPointerDown={handleResizeStart('e')} />
-      <div className="floating-panel__edge floating-panel__edge--w" onPointerDown={handleResizeStart('w')} />
+      {/* Edge resize handles - hidden when locked */}
+      {!isLocked && (
+        <>
+          <div className="floating-panel__edge floating-panel__edge--n" onPointerDown={handleResizeStart('n')} />
+          <div className="floating-panel__edge floating-panel__edge--s" onPointerDown={handleResizeStart('s')} />
+          <div className="floating-panel__edge floating-panel__edge--e" onPointerDown={handleResizeStart('e')} />
+          <div className="floating-panel__edge floating-panel__edge--w" onPointerDown={handleResizeStart('w')} />
 
-      {/* Corner resize handles */}
-      <div className="floating-panel__corner floating-panel__corner--ne" onPointerDown={handleResizeStart('ne')} />
-      <div className="floating-panel__corner floating-panel__corner--nw" onPointerDown={handleResizeStart('nw')} />
-      <div className="floating-panel__corner floating-panel__corner--se" onPointerDown={handleResizeStart('se')} />
-      <div className="floating-panel__corner floating-panel__corner--sw" onPointerDown={handleResizeStart('sw')} />
+          {/* Corner resize handles */}
+          <div className="floating-panel__corner floating-panel__corner--ne" onPointerDown={handleResizeStart('ne')} />
+          <div className="floating-panel__corner floating-panel__corner--nw" onPointerDown={handleResizeStart('nw')} />
+          <div className="floating-panel__corner floating-panel__corner--se" onPointerDown={handleResizeStart('se')} />
+          <div className="floating-panel__corner floating-panel__corner--sw" onPointerDown={handleResizeStart('sw')} />
+        </>
+      )}
     </div>
   );
 }

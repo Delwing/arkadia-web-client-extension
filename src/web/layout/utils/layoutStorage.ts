@@ -63,6 +63,20 @@ export function resetLayoutState(): LayoutState {
   return resetState;
 }
 
+// Cached parsed layout state for efficient repeated access during initialization
+let cachedLayoutState: ReturnType<typeof loadLayoutState> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 100; // Cache valid for 100ms (covers component initialization)
+
+function getCachedLayoutState(): ReturnType<typeof loadLayoutState> {
+  const now = Date.now();
+  if (!cachedLayoutState || now - cacheTimestamp > CACHE_TTL) {
+    cachedLayoutState = loadLayoutState();
+    cacheTimestamp = now;
+  }
+  return cachedLayoutState;
+}
+
 /**
  * Check if a popup should auto-open on page load.
  * This is used by popup components to restore their open state after reload.
@@ -70,27 +84,38 @@ export function resetLayoutState(): LayoutState {
  */
 export function shouldPopupAutoOpen(popupId: string): boolean {
   try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (raw) {
-      const stored = JSON.parse(raw);
-      if (!stored?.enabled) return false;
+    const stored = getCachedLayoutState();
+    if (!stored?.enabled) return false;
 
-      // Check if popup was explicitly marked as persistOpen (pinned)
-      if (stored?.popupPanels?.[popupId]?.persistOpen) {
-        return true;
-      }
+    // Check if popup was explicitly marked as persistOpen (pinned)
+    if (stored?.popupPanels?.[popupId]?.persistOpen) {
+      return true;
+    }
 
-      // Check if popup is docked in any dock zone
-      const docks = stored?.docks;
-      if (docks) {
-        for (const dockKey of ['left', 'top', 'right']) {
-          const dock = docks[dockKey];
-          if (dock?.panels?.some((p: { id: string }) => p.id === popupId)) {
-            return true;
-          }
+    // Check if popup is docked in any dock zone
+    const docks = stored?.docks;
+    if (docks) {
+      for (const dockKey of ['left', 'top', 'right'] as const) {
+        const dock = docks[dockKey];
+        if (dock?.panels?.some((p: { id: string }) => p.id === popupId)) {
+          return true;
         }
       }
     }
+  } catch (e) {
+    // Ignore errors
+  }
+  return false;
+}
+
+/**
+ * Get the persisted lock state for a popup.
+ * Returns the stored isLocked value, or false if not set.
+ */
+export function getPopupLockedState(popupId: string): boolean {
+  try {
+    const stored = getCachedLayoutState();
+    return stored?.popupPanels?.[popupId]?.isLocked ?? false;
   } catch (e) {
     // Ignore errors
   }

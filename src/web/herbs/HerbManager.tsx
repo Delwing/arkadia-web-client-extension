@@ -10,7 +10,7 @@ import { hideContextMenu } from "@shared/dom/contextMenu";
 import { getClientInstance } from "@shared/runtime";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
-import { shouldPopupAutoOpen } from "../layout/utils/layoutStorage";
+import { usePopup } from "../hooks/usePopup";
 
 const POPUP_ID = 'popup:herb';
 
@@ -226,15 +226,28 @@ const HerbManager = () => {
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // Check if popup should auto-open on page load (was pinned before reload)
-    const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
-    // If auto-opening, start pinned since that's why we're persisting
-    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
     const initialSettings = getItemSync("settings")?.settings as Record<string, unknown> | undefined;
     const preUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPreUseCommand));
     const postUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPostUseCommand));
+
+    const closeContextMenu = useCallback(() => {
+        hideContextMenu();
+    }, []);
+
+    // Custom close that also hides context menu
+    const handleClose = useCallback(() => {
+        closeContextMenu();
+    }, [closeContextMenu]);
+
+    const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
+
+    // Wrap close to also hide context menu
+    const wrappedOnClose = useCallback(() => {
+        closeContextMenu();
+        wrapperProps.onClose();
+    }, [closeContextMenu, wrapperProps]);
 
     const ensureHerbsData = useCallback(async (): Promise<HerbsData | null> => {
         if (herbsDataRef.current) {
@@ -251,19 +264,6 @@ const HerbManager = () => {
                 });
         }
         return herbsDataPromiseRef.current;
-    }, []);
-
-    const closeContextMenu = useCallback(() => {
-        hideContextMenu();
-    }, []);
-
-    const handleClose = useCallback(() => {
-        closeContextMenu();
-        setIsOpen(false);
-    }, [closeContextMenu]);
-
-    const handlePinnedChange = useCallback((pinned: boolean) => {
-        setIsPinned(pinned);
     }, []);
 
     // Check if popup is managed by layout to determine overlay visibility
@@ -309,12 +309,13 @@ const HerbManager = () => {
         });
         const unsubscribeClose = eventBus.on("herbManagerClose", () => {
             handleClose();
+            setIsOpen(false);
         });
         return () => {
             unsubscribeOpen();
             unsubscribeClose();
         };
-    }, [handleClose]);
+    }, [handleClose, setIsOpen]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -479,6 +480,7 @@ const HerbManager = () => {
             return;
         }
         handleClose();
+        setIsOpen(false);
     };
 
     // Render overlay only when NOT in layout managed mode and open
@@ -494,13 +496,10 @@ const HerbManager = () => {
                 />
             )}
             <DockablePopupWrapper
-                popupId={POPUP_ID}
+                {...wrapperProps}
+                onClose={wrappedOnClose}
                 popupType="herb"
                 title="Woreczki ziół"
-                isOpen={isOpen}
-                isPinned={isPinned}
-                onClose={handleClose}
-                onPinnedChange={handlePinnedChange}
                 minWidth={300}
                 minHeight={200}
                 initialWidth={1000}
