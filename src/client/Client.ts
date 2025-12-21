@@ -195,6 +195,9 @@ export default class Client {
         })
 
         const applyBinds = (b: any) => {
+            if (!b) {
+                return
+            }
             const bind = b?.main
             if (bind) {
                 this.FunctionalBind.updateOptions({
@@ -261,7 +264,8 @@ export default class Client {
 
         this.on('settings', (settings) => {
             const detail = (settings ?? {}) as Record<string, any>;
-            applyBinds(detail?.binds);
+            // Note: binds are stored separately under 'binds' key, not inside 'settings'
+            // The 'binds' event handler applies binds changes
             this.attackCommand = normalizeAttackCommand(detail?.attackCommand);
             this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
         });

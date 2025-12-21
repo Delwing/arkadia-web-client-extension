@@ -588,6 +588,39 @@ h1 {
   background-color: rgba(13, 110, 253, 0.08);
 }
 
+.logs-search-input-wrapper {
+  position: relative;
+}
+
+.logs-search-input-wrapper input {
+  padding-right: 2rem;
+}
+
+.logs-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--bs-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.logs-search-clear:hover {
+  opacity: 1;
+  color: var(--bs-danger);
+}
+
 .logs-search-controls {
   display: flex;
   gap: 0.5rem;

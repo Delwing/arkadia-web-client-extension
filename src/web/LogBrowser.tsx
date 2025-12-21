@@ -770,14 +770,25 @@ export function LogBrowser() {
         <div className="d-flex gap-2 align-items-end flex-wrap">
           <div className="flex-grow-1">
             <label htmlFor="logs-search-input" className="form-label mb-1">Szukaj w logach</label>
-            <input
-              id="logs-search-input"
-              className="form-control"
-              placeholder="Fraza lub /wzorzec/"
-              value={searchQuery}
-              onChange={(e) => handleSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-            />
+            <div className="logs-search-input-wrapper">
+              <input
+                id="logs-search-input"
+                className="form-control"
+                placeholder="Fraza lub /wzorzec/"
+                value={searchQuery}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="logs-search-clear"
+                  onClick={() => handleSearchInput("")}
+                >
+                  &times;
+                </button>
+              )}
+            </div>
           </div>
           <button
             id="logs-search-button"
