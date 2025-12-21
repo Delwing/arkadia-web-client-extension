@@ -28,6 +28,10 @@ export function loadLayoutState(): LayoutState {
           popupPanels: stored.popupPanels && typeof stored.popupPanels === 'object'
             ? stored.popupPanels
             : DEFAULT_LAYOUT.popupPanels,
+          // Ensure builtInPanels is always an object (for backwards compatibility)
+          builtInPanels: stored.builtInPanels && typeof stored.builtInPanels === 'object'
+            ? stored.builtInPanels
+            : DEFAULT_LAYOUT.builtInPanels,
         };
       }
     }
@@ -102,7 +106,7 @@ export function shouldPopupAutoOpen(popupId: string): boolean {
         }
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore errors
   }
   return false;
@@ -116,7 +120,7 @@ export function getPopupLockedState(popupId: string): boolean {
   try {
     const stored = getCachedLayoutState();
     return stored?.popupPanels?.[popupId]?.isLocked ?? false;
-  } catch (e) {
+  } catch {
     // Ignore errors
   }
   return false;

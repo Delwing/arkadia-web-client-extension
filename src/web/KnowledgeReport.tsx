@@ -339,7 +339,7 @@ const KnowledgeReport: React.FC = () => {
     <DockablePopupWrapper
       {...wrapperProps}
       popupType="knowledgeReport"
-      title="Raport wiedzy"
+      title="Biblioteki"
       minWidth={500}
       minHeight={350}
       initialWidth={960}

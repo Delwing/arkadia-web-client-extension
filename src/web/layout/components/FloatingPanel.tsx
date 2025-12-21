@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useRef, useEffect, useState } from 'react';
 import { FloatingPanelState, PANEL_CONFIGS } from '../types';
-import { useLayoutManager } from '../hooks/useLayoutManager';
-import { useDockablePanel } from '../hooks/useDockablePanel';
+import { useLayoutManager } from '@web/layout';
+import { useDockablePanel } from '@web/layout';
 import { getPopup } from '../popupRegistry';
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
@@ -12,16 +12,18 @@ interface FloatingPanelProps {
 }
 
 export function FloatingPanel({ panel, children }: FloatingPanelProps) {
-  const { updateFloatingPanel, dragState } = useLayoutManager();
+  const { updateFloatingPanel, dragState, getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
   const { handleDragStart } = useDockablePanel({ panelId: panel.id });
   const config = PANEL_CONFIGS[panel.id];
 
-  // Check if this is a popup panel
+  // Check if this is a popup panel or built-in panel
   const isPopup = panel.id.startsWith('popup:');
+  const isBuiltIn = panel.id === 'map' || panel.id === 'objectList';
   const popupInfo = isPopup ? getPopup(panel.id) : null;
+  const builtInState = isBuiltIn ? getBuiltInPanelState(panel.id) : undefined;
 
   const title = popupInfo?.config.title ?? config?.title ?? panel.id;
-  const isLocked = popupInfo?.isLocked ?? false;
+  const isLocked = isPopup ? (popupInfo?.isLocked ?? false) : (builtInState?.isLocked ?? false);
 
   const resizeDir = useRef<ResizeDirection>(null);
   const startPos = useRef({ x: 0, y: 0 });
@@ -133,8 +135,12 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   }, [popupInfo]);
 
   const handleToggleLock = useCallback(() => {
-    popupInfo?.setIsLocked(!popupInfo.isLocked);
-  }, [popupInfo]);
+    if (isPopup) {
+      popupInfo?.setIsLocked(!popupInfo.isLocked);
+    } else if (isBuiltIn) {
+      updateBuiltInPanelState(panel.id, { isLocked: !builtInState?.isLocked });
+    }
+  }, [isPopup, isBuiltIn, popupInfo, builtInState, panel.id, updateBuiltInPanelState]);
 
   const handleReset = useCallback(() => {
     if (!popupInfo) return;
@@ -209,6 +215,15 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
                 title="Zamknij"
               />
             </>
+          )}
+          {/* Built-in panel lock button */}
+          {isBuiltIn && (
+            <button
+              type="button"
+              className={`floating-panel__lock-button${isLocked ? ' floating-panel__lock-button--active' : ''}`}
+              onClick={handleToggleLock}
+              title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
+            />
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
   PanelId,
   PanelState,
   PopupPanelDockState,
+  BuiltInPanelState,
   PANEL_CONFIGS,
   MIN_DOCK_SIZE,
   MAX_DOCK_SIZE_RATIO,
@@ -40,6 +41,9 @@ export interface LayoutContextValue {
   // Popup floating management
   addPopupFloating: (popupId: string, state: FloatingPanelState) => void;
   removePopupFloating: (popupId: string) => void;
+  // Built-in panel methods
+  getBuiltInPanelState: (panelId: string) => BuiltInPanelState | undefined;
+  updateBuiltInPanelState: (panelId: string, updates: Partial<BuiltInPanelState>) => void;
 }
 
 export const LayoutContext = createContext<LayoutContextValue | null>(null);
@@ -675,6 +679,30 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     }));
   }, []);
 
+  // Built-in panel methods
+  const getBuiltInPanelState = useCallback(
+    (panelId: string): BuiltInPanelState | undefined => {
+      return layoutState.builtInPanels?.[panelId];
+    },
+    [layoutState.builtInPanels]
+  );
+
+  const updateBuiltInPanelState = useCallback(
+    (panelId: string, updates: Partial<BuiltInPanelState>) => {
+      setLayoutState((prev) => ({
+        ...prev,
+        builtInPanels: {
+          ...prev.builtInPanels,
+          [panelId]: {
+            ...prev.builtInPanels?.[panelId],
+            ...updates,
+          },
+        },
+      }));
+    },
+    []
+  );
+
   const value = useMemo<LayoutContextValue>(
     () => ({
       layoutState,
@@ -703,6 +731,9 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       // Popup floating management
       addPopupFloating,
       removePopupFloating,
+      // Built-in panel methods
+      getBuiltInPanelState,
+      updateBuiltInPanelState,
     }),
     [
       layoutState,
@@ -731,6 +762,9 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       // Popup floating management
       addPopupFloating,
       removePopupFloating,
+      // Built-in panel methods
+      getBuiltInPanelState,
+      updateBuiltInPanelState,
     ]
   );
 

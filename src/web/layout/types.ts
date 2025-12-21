@@ -9,7 +9,8 @@ export type BuiltInPopupType =
   | 'letter'
   | 'herb'
   | 'knowledgeReport'
-  | 'knowledgeDetails';
+  | 'knowledgeDetails'
+  | 'chat';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;
@@ -41,6 +42,11 @@ export interface DockState {
   panels: PanelState[];
 }
 
+/** State for built-in panels (map, objectList) */
+export interface BuiltInPanelState {
+  isLocked?: boolean;
+}
+
 export interface LayoutState {
   /** Whether layout manager mode is enabled */
   enabled: boolean;
@@ -58,6 +64,8 @@ export interface LayoutState {
   floatingPanels: FloatingPanelState[];
   /** Popup panel dock preferences - remembers last state per popup */
   popupPanels: Record<string, PopupPanelDockState>;
+  /** Built-in panel states (map, objectList) */
+  builtInPanels: Record<string, BuiltInPanelState>;
 }
 
 export interface DragState {
@@ -136,6 +144,7 @@ export const DEFAULT_LAYOUT: LayoutState = {
   },
   floatingPanels: [],
   popupPanels: {},
+  builtInPanels: {},
 };
 
 export const MIN_DOCK_SIZE = 100;

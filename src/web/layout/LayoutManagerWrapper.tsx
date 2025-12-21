@@ -6,6 +6,7 @@ import LetterComposer from '../LetterComposer';
 import HerbManager from '../herbs/HerbManager';
 import KnowledgeReport from '../KnowledgeReport';
 import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
+import ChatPopup from '../ChatPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -31,6 +32,7 @@ export function LayoutManagerWrapper({
       <HerbManager />
       <KnowledgeReport />
       <KnowledgeDetailsReport />
+      <ChatPopup />
     </LayoutProvider>
   );
 }

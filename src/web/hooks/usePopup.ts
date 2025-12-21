@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-import eventBus from '@modules/core/eventBus';
-import { shouldPopupAutoOpen, getPopupLockedState } from '../layout/utils/layoutStorage';
+import {useCallback, useEffect, useState} from 'react';
+import eventBus, {type ClientEvents} from '@modules/core/eventBus';
+import {getPopupLockedState, shouldPopupAutoOpen} from '../layout/utils/layoutStorage';
 
-export interface UsePopupOptions<T = unknown> {
+export interface UsePopupOptions<K extends keyof ClientEvents = keyof ClientEvents> {
     /** Event name that triggers opening the popup */
-    openEvent?: string;
+    openEvent?: K;
     /** Callback when open event is received, before popup opens */
-    onOpen?: (data: T) => void;
+    onOpen?: (data: ClientEvents[K]) => void;
 }
 
 export interface UsePopupResult {
@@ -70,9 +70,9 @@ export interface UsePopupResult {
  * });
  * ```
  */
-export function usePopup<T = unknown>(
+export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
     popupId: string,
-    options?: UsePopupOptions<T>,
+    options?: UsePopupOptions<K>,
 ): UsePopupResult {
     const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(popupId));
     const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
@@ -80,7 +80,11 @@ export function usePopup<T = unknown>(
     // Track reset trigger - increments on each reset request
     const [resetCounter, setResetCounter] = useState(0);
 
-    const close = useCallback(() => setIsOpen(false), []);
+    const close = useCallback(() => {
+        // Unpin first so the popup won't be restored on page reload
+        setIsPinned(false);
+        setIsOpen(false);
+    }, []);
     const open = useCallback(() => setIsOpen(true), []);
 
     const handlePinnedChange = useCallback((pinned: boolean) => {
@@ -101,12 +105,10 @@ export function usePopup<T = unknown>(
             return;
         }
 
-        const unsubscribe = eventBus.on(options.openEvent, (data) => {
-            options.onOpen?.(data as T);
+        return eventBus.on(options.openEvent, (data) => {
+            options.onOpen?.(data);
             setIsOpen(true);
         });
-
-        return unsubscribe;
     }, [options?.openEvent, options?.onOpen]);
 
     const wrapperProps = {
