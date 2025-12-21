@@ -248,6 +248,11 @@ function apply(settings: UiSettings) {
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
+    // Set CSS custom properties for font settings (used by chat popup and other components)
+    if (document.body) {
+        document.body.style.setProperty('--output-font-family', resolvedFontFamily || 'monospace');
+        document.body.style.setProperty('--output-font-size', settings.contentFontSize + 'rem');
+    }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
         if (resolvedFontFamily) {

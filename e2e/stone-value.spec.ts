@@ -30,11 +30,11 @@ test.describe('Stone value counter', () => {
         // Check that the total is displayed
         await expect(output, 'should display total stone value message').toContainText('Laczna wartosc kamieni:');
 
-        // Verify the total calculation: 240 + 480 + 720 = 1440 miedziaków = 1 zl
-        await expect(output, 'should display correct total (1 zl)').toContainText('1 zl');
+        // Verify the total calculation: 240 + 480 + 720 = 1440 miedziaków = 6 zl
+        await expect(output, 'should display correct total (6 zl)').toContainText('6 zl');
 
         // Verify that the currency values are colored (check for span elements with color)
-        const goldValue = output.locator('span').filter({hasText: '1 zl'}).last();
+        const goldValue = output.locator('span').filter({hasText: '6 zl'}).last();
         await expect(goldValue, 'should display gold value with gold color').toHaveCSS(
             'color',
             'rgb(255, 215, 0)' // GOLD_COLOR

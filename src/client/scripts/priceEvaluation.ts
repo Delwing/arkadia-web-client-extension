@@ -33,7 +33,7 @@ export function processItemValue(line: AnsiAwareBuffer, value: number): AnsiAwar
 }
 
 export default function initPriceEvaluation(client: Client) {
-    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|Sa tu \d+ sztuki warte) (([0-9]+) mied[a-z]+\.)$/;
+    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|Sa tu \d+ sztuki warte|Jest tu \d+ sztuk wartych) (([0-9]+) mied\S+\.)$/;
     client.Triggers.registerTrigger(pattern, (line, matches) => {
         if (!matches || !matches[2]) return line;
         const amount = parseInt(matches[2], 10);

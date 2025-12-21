@@ -5046,8 +5046,8 @@ body.mobile-command-radial-active {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
-  font-family: monospace;
-  font-size: 0.875rem;
+  font-family: var(--output-font-family, monospace);
+  font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
 }
 
@@ -5080,7 +5080,8 @@ body.mobile-command-radial-active {
 .chat-popup__timestamp {
   color: rgba(241, 245, 249, 0.5);
   margin-right: 0.5rem;
-  font-size: 0.8rem;
+  font-family: var(--output-font-family, monospace);
+  font-size: var(--output-font-size, 0.8rem);
 }
 
 .chat-popup__text {

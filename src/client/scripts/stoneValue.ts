@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {convertCurrency, processItemValue} from "./priceEvaluation";
+import {convertCurrency} from "./priceEvaluation";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
 export default function initStoneValue(
@@ -17,7 +17,7 @@ export default function initStoneValue(
             if (!matches || !matches[1]) return line;
             const amount = parseInt(matches[1], 10);
             sum += amount;
-            return processItemValue(line, amount);
+            return line;
         }, tag);
         client.sendCommand("ocen kamienie");
         setTimeout(() => {
