@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
-import { useDraggablePopup } from './hooks/useDraggablePopup';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import {
     LETTER_TEMPLATE_CHOICES,
     LETTER_TEMPLATE_DEFINITIONS,
@@ -56,26 +56,18 @@ const LetterComposer: React.FC = () => {
         setIsOpen(false);
     }, []);
 
-    const togglePinned = useCallback(() => {
-        setIsPinned((prev) => !prev);
+    const handlePinnedChange = useCallback((pinned: boolean) => {
+        setIsPinned(pinned);
     }, []);
-
-    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-        isOpen,
-        isPinned,
-        onClose: close,
-        minWidth: 400,
-        minHeight: 300,
-    });
 
     // Check container width and update wide screen state
     useEffect(() => {
         if (!isOpen) return;
 
         const checkWidth = () => {
-            const container = panelRef.current;
+            const container = containerRef.current;
             if (container) {
-                const width = size?.width ?? container.offsetWidth;
+                const width = container.offsetWidth;
                 setIsWideScreen(width >= WIDE_SCREEN_THRESHOLD);
             }
         };
@@ -83,14 +75,14 @@ const LetterComposer: React.FC = () => {
         checkWidth();
 
         const resizeObserver = new ResizeObserver(checkWidth);
-        if (panelRef.current) {
-            resizeObserver.observe(panelRef.current);
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
         }
 
         return () => {
             resizeObserver.disconnect();
         };
-    }, [isOpen, size, panelRef]);
+    }, [isOpen]);
 
     const getPayload = useCallback(() => {
         const template = templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value)
@@ -187,133 +179,112 @@ const LetterComposer: React.FC = () => {
 
     const templateLabel = LETTER_TEMPLATE_PREVIEW_LABELS[templateSelection] ?? templateSelection;
 
-    if (!isOpen) {
-        return null;
-    }
-
     return (
-        <div
-            ref={panelRef}
-            className={`letter-composer ${
-                position ? 'letter-composer--floating' : 'letter-composer--center'
-            } ${isWideScreen ? 'letter-composer--wide' : ''}`}
-            style={{
-                ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-                ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-            }}
+        <DockablePopupWrapper
+            popupId="popup:letter"
+            popupType="letter"
+            title="Nowy list"
+            isOpen={isOpen}
+            isPinned={isPinned}
+            onClose={close}
+            onPinnedChange={handlePinnedChange}
+            minWidth={400}
+            minHeight={300}
+            initialWidth={600}
+            initialHeight={450}
+            className={`letter-composer ${isWideScreen ? 'letter-composer--wide' : ''}`}
+            bodyClassName="letter-composer-body"
         >
-            <div className="letter-composer-inner" ref={containerRef}>
-                <div className="letter-composer-header" onPointerDown={handlePointerDown}>
-                    <span>Nowy list</span>
-                    <div
-                        className="window-header-actions"
-                        onPointerDownCapture={(event) => event.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                            onClick={togglePinned}
-                            title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+            <div ref={containerRef} className="letter-composer-content">
+                <form className="letter-composer-form" onSubmit={handleSubmit}>
+                    <div className="letter-composer-field">
+                        <label htmlFor="letter-to" className="form-label">Do:</label>
+                        <input
+                            ref={toInputRef}
+                            id="letter-to"
+                            name="letter-to"
+                            className="form-control form-control-sm"
+                            type="text"
+                            autoComplete="off"
                         />
-                        <button type="button" className="btn-close btn-close-white" onClick={close} />
                     </div>
-                </div>
-                <div className="letter-composer-body">
-                    <form className="letter-composer-form" onSubmit={handleSubmit}>
-                        <div className="letter-composer-field">
-                            <label htmlFor="letter-to" className="form-label">Do:</label>
-                            <input
-                                ref={toInputRef}
-                                id="letter-to"
-                                name="letter-to"
-                                className="form-control form-control-sm"
-                                type="text"
-                                autoComplete="off"
-                            />
+                    <div className="letter-composer-field">
+                        <label htmlFor="letter-cc" className="form-label">CC:</label>
+                        <input
+                            ref={ccInputRef}
+                            id="letter-cc"
+                            name="letter-cc"
+                            className="form-control form-control-sm"
+                            type="text"
+                            autoComplete="off"
+                        />
+                    </div>
+                    <div className="letter-composer-field">
+                        <label htmlFor="letter-subject" className="form-label">Temat:</label>
+                        <input
+                            ref={subjectInputRef}
+                            id="letter-subject"
+                            name="letter-subject"
+                            className="form-control form-control-sm"
+                            type="text"
+                            autoComplete="off"
+                        />
+                    </div>
+                    <div className="letter-composer-field letter-composer-field--grow">
+                        <label htmlFor="letter-content" className="form-label">Tresc:</label>
+                        <textarea
+                            ref={contentInputRef}
+                            id="letter-content"
+                            name="letter-content"
+                            className="form-control"
+                            onChange={handleContentChange}
+                            onKeyDown={handleKeyDown}
+                        />
+                    </div>
+                    <div className="letter-composer-actions">
+                        <div className="letter-template-group">
+                            <label htmlFor="letter-template" className="form-label mb-0">Szablon:</label>
+                            <select
+                                ref={templateSelectRef}
+                                id="letter-template"
+                                name="letter-template"
+                                className="form-select form-select-sm letter-template-select"
+                                defaultValue={templateSelection}
+                                onChange={handleTemplateChange}
+                            >
+                                {LETTER_TEMPLATE_CHOICES.map((choice) => (
+                                    <option key={choice.value} value={choice.value}>
+                                        {choice.displayLabel}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="letter-composer-field">
-                            <label htmlFor="letter-cc" className="form-label">CC:</label>
-                            <input
-                                ref={ccInputRef}
-                                id="letter-cc"
-                                name="letter-cc"
-                                className="form-control form-control-sm"
-                                type="text"
-                                autoComplete="off"
-                            />
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreview}>
+                            Podglad
+                        </button>
+                        <button type="submit" className="btn btn-primary btn-sm">Wyslij</button>
+                    </div>
+                </form>
+                {isWideScreen && (
+                    <div className="letter-composer-preview">
+                        <div className="letter-composer-preview-header">
+                            Podglad ({templateLabel})
                         </div>
-                        <div className="letter-composer-field">
-                            <label htmlFor="letter-subject" className="form-label">Temat:</label>
-                            <input
-                                ref={subjectInputRef}
-                                id="letter-subject"
-                                name="letter-subject"
-                                className="form-control form-control-sm"
-                                type="text"
-                                autoComplete="off"
-                            />
+                        <div className="letter-composer-preview-content">
+                            {previewLines ? (
+                                <pre className="letter-composer-preview-text">
+                                    {previewLines.join('\n')}
+                                </pre>
+                            ) : (
+                                <div className="letter-composer-preview-empty">
+                                    Wpisz tresc listu, aby zobaczyc podglad
+                                </div>
+                            )}
                         </div>
-                        <div className="letter-composer-field letter-composer-field--grow">
-                            <label htmlFor="letter-content" className="form-label">Tresc:</label>
-                            <textarea
-                                ref={contentInputRef}
-                                id="letter-content"
-                                name="letter-content"
-                                className="form-control"
-                                onChange={handleContentChange}
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-                        <div className="letter-composer-actions">
-                            <div className="letter-template-group">
-                                <label htmlFor="letter-template" className="form-label mb-0">Szablon:</label>
-                                <select
-                                    ref={templateSelectRef}
-                                    id="letter-template"
-                                    name="letter-template"
-                                    className="form-select form-select-sm letter-template-select"
-                                    defaultValue={templateSelection}
-                                    onChange={handleTemplateChange}
-                                >
-                                    {LETTER_TEMPLATE_CHOICES.map((choice) => (
-                                        <option key={choice.value} value={choice.value}>
-                                            {choice.displayLabel}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreview}>
-                                Podglad
-                            </button>
-                            <button type="submit" className="btn btn-primary btn-sm">Wyslij</button>
-                        </div>
-                    </form>
-                    {isWideScreen && (
-                        <div className="letter-composer-preview">
-                            <div className="letter-composer-preview-header">
-                                Podglad ({templateLabel})
-                            </div>
-                            <div className="letter-composer-preview-content">
-                                {previewLines ? (
-                                    <pre className="letter-composer-preview-text">
-                                        {previewLines.join('\n')}
-                                    </pre>
-                                ) : (
-                                    <div className="letter-composer-preview-empty">
-                                        Wpisz tresc listu, aby zobaczyc podglad
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <div
-                    className="letter-composer-resize-handle"
-                    onPointerDown={handleResizePointerDown}
-                    title="Drag to resize"
-                />
+                    </div>
+                )}
             </div>
-        </div>
+        </DockablePopupWrapper>
     );
 };
 

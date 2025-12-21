@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import eventBus from '@modules/core/eventBus';
-import { useDraggablePopup } from './hooks/useDraggablePopup';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 import { getItemSync, setItemSync } from '@modules/core/storage';
 import type { Contract } from '@client/scripts/contracts';
 
@@ -63,28 +64,24 @@ function saveSortMode(mode: SortMode): void {
     setItemSync(SORT_STORAGE_KEY, mode);
 }
 
+const POPUP_ID = 'popup:contracts';
+
 const ContractsPopup: React.FC = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    // Check if popup should auto-open on page load (was pinned before reload)
+    const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
-    const [isPinned, setIsPinned] = useState(false);
+    // If auto-opening, start pinned since that's why we're persisting
+    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const [sortMode, setSortMode] = useState<SortMode>(loadSortMode);
 
     const close = useCallback(() => {
         setIsOpen(false);
     }, []);
 
-    const togglePinned = useCallback(() => {
-        setIsPinned((prev) => !prev);
+    const handlePinnedChange = useCallback((pinned: boolean) => {
+        setIsPinned(pinned);
     }, []);
-
-    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-        isOpen,
-        isPinned,
-        onClose: close,
-        minWidth: 350,
-        minHeight: 200,
-    });
 
     useEffect(() => {
         const handleOpen = (data: ContractsPopupPayload) => {
@@ -144,118 +141,96 @@ const ContractsPopup: React.FC = () => {
         });
     }, [contractsWithDistance, sortMode]);
 
-    if (!isOpen) {
-        return null;
-    }
+    const headerActions = (
+        <div className="contracts-sort-buttons">
+            <button
+                type="button"
+                className={`contracts-sort-btn${sortMode === 'distance' ? ' contracts-sort-btn--active' : ''}`}
+                onClick={() => handleSortChange('distance')}
+                title="Sortuj po odleglosci"
+            >
+                Odleglosc
+            </button>
+            <button
+                type="button"
+                className={`contracts-sort-btn${sortMode === 'time' ? ' contracts-sort-btn--active' : ''}`}
+                onClick={() => handleSortChange('time')}
+                title="Sortuj po czasie"
+            >
+                Czas
+            </button>
+        </div>
+    );
 
     return (
-        <div className="contracts-window-container">
-            <div
-                ref={panelRef}
-                className={`contracts-window ${
-                    position ? 'contracts-window--floating' : 'contracts-window--center'
-                }`}
-                style={{
-                    ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-                    ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-                }}
-                tabIndex={-1}
-            >
-                <div className="herb-window-inner">
-                    <div className="contracts-window-header" onPointerDown={handlePointerDown}>
-                        <h5 className="contracts-window-title">Zlecenia ({contracts.length})</h5>
-                        <div
-                            className="window-header-actions"
-                            onPointerDownCapture={(event) => event.stopPropagation()}
-                        >
-                            <div className="contracts-sort-buttons">
-                                <button
-                                    type="button"
-                                    className={`contracts-sort-btn${sortMode === 'distance' ? ' contracts-sort-btn--active' : ''}`}
-                                    onClick={() => handleSortChange('distance')}
-                                    title="Sortuj po odleglosci"
-                                >
-                                    Odleglosc
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`contracts-sort-btn${sortMode === 'time' ? ' contracts-sort-btn--active' : ''}`}
-                                    onClick={() => handleSortChange('time')}
-                                    title="Sortuj po czasie"
-                                >
-                                    Czas
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                                onClick={togglePinned}
-                                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-                            />
-                            <button type="button" className="btn-close" onClick={close} />
-                        </div>
-                    </div>
-                    <div className="contracts-window-body">
-                        {sortedContracts.length === 0 ? (
-                            <div className="contracts-empty">Brak aktywnych zlecen.</div>
-                        ) : (
-                            <div className="contracts-list">
-                                {sortedContracts.map(({ contract, distance }) => {
-                                    const daysRemaining = getDaysRemaining(contract);
-                                    const isUrgent = daysRemaining <= 2;
+        <DockablePopupWrapper
+            popupId={POPUP_ID}
+            popupType="contracts"
+            title={`Zlecenia (${contracts.length})`}
+            isOpen={isOpen}
+            isPinned={isPinned}
+            onClose={close}
+            onPinnedChange={handlePinnedChange}
+            minWidth={350}
+            minHeight={200}
+            initialWidth={400}
+            initialHeight={350}
+            className="contracts-window"
+            bodyClassName="contracts-window-body"
+            headerActions={headerActions}
+        >
+            {sortedContracts.length === 0 ? (
+                <div className="contracts-empty">Brak aktywnych zlecen.</div>
+            ) : (
+                <div className="contracts-list">
+                    {sortedContracts.map(({ contract, distance }) => {
+                        const daysRemaining = getDaysRemaining(contract);
+                        const isUrgent = daysRemaining <= 2;
 
-                                    return (
-                                        <div
-                                            key={contract.id}
-                                            className={`contract-item ${isUrgent ? 'contract-item--urgent' : ''}`}
+                        return (
+                            <div
+                                key={contract.id}
+                                className={`contract-item ${isUrgent ? 'contract-item--urgent' : ''}`}
+                            >
+                                <div className="contract-header">
+                                    <span className="contract-location">{contract.location}</span>
+                                    <button
+                                        type="button"
+                                        className="contract-remove-btn"
+                                        onClick={() => handleRemove(contract.id)}
+                                        title="Usun zlecenie"
+                                    >
+                                        X
+                                    </button>
+                                </div>
+                                <div className="contract-details">
+                                    <span className="contract-type">{contract.type}</span>
+                                    <span className="contract-count">
+                                        {contract.count} x {contract.item}
+                                        {contract.quality && ` (${contract.quality} jakosci)`}
+                                    </span>
+                                </div>
+                                <div className="contract-footer">
+                                    {contract.locationId && (
+                                        <button
+                                            type="button"
+                                            className="contract-prowadz-btn"
+                                            onClick={() => handleProwadz(contract.locationId!)}
+                                            title="Prowadz do lokacji"
                                         >
-                                            <div className="contract-header">
-                                                <span className="contract-location">{contract.location}</span>
-                                                <button
-                                                    type="button"
-                                                    className="contract-remove-btn"
-                                                    onClick={() => handleRemove(contract.id)}
-                                                    title="Usun zlecenie"
-                                                >
-                                                    X
-                                                </button>
-                                            </div>
-                                            <div className="contract-details">
-                                                <span className="contract-type">{contract.type}</span>
-                                                <span className="contract-count">
-                                                    {contract.count} x {contract.item}
-                                                    {contract.quality && ` (${contract.quality} jakosci)`}
-                                                </span>
-                                            </div>
-                                            <div className="contract-footer">
-                                                {contract.locationId && (
-                                                    <button
-                                                        type="button"
-                                                        className="contract-prowadz-btn"
-                                                        onClick={() => handleProwadz(contract.locationId!)}
-                                                        title="Prowadz do lokacji"
-                                                    >
-                                                        Prowadz{distance !== null && ` (${distance})`}
-                                                    </button>
-                                                )}
-                                                <div className={`contract-deadline ${isUrgent ? 'contract-deadline--urgent' : ''}`}>
-                                                    {formatDaysRemaining(daysRemaining)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                            Prowadz{distance !== null && ` (${distance})`}
+                                        </button>
+                                    )}
+                                    <div className={`contract-deadline ${isUrgent ? 'contract-deadline--urgent' : ''}`}>
+                                        {formatDaysRemaining(daysRemaining)}
+                                    </div>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                    <div
-                        className="herb-window-resize-handle"
-                        onPointerDown={handleResizePointerDown}
-                        title="Drag to resize"
-                    />
+                        );
+                    })}
                 </div>
-            </div>
-        </div>
+            )}
+        </DockablePopupWrapper>
     );
 };
 

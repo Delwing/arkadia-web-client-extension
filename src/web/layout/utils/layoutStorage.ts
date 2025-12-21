@@ -24,6 +24,10 @@ export function loadLayoutState(): LayoutState {
           floatingPanels: Array.isArray(stored.floatingPanels)
             ? stored.floatingPanels
             : DEFAULT_LAYOUT.floatingPanels,
+          // Ensure popupPanels is always an object (for backwards compatibility)
+          popupPanels: stored.popupPanels && typeof stored.popupPanels === 'object'
+            ? stored.popupPanels
+            : DEFAULT_LAYOUT.popupPanels,
         };
       }
     }
@@ -57,4 +61,38 @@ export function resetLayoutState(): LayoutState {
   const resetState = { ...DEFAULT_LAYOUT, enabled: true };
   saveLayoutState(resetState);
   return resetState;
+}
+
+/**
+ * Check if a popup should auto-open on page load.
+ * This is used by popup components to restore their open state after reload.
+ * Returns true if the popup was pinned OR docked.
+ */
+export function shouldPopupAutoOpen(popupId: string): boolean {
+  try {
+    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (raw) {
+      const stored = JSON.parse(raw);
+      if (!stored?.enabled) return false;
+
+      // Check if popup was explicitly marked as persistOpen (pinned)
+      if (stored?.popupPanels?.[popupId]?.persistOpen) {
+        return true;
+      }
+
+      // Check if popup is docked in any dock zone
+      const docks = stored?.docks;
+      if (docks) {
+        for (const dockKey of ['left', 'top', 'right']) {
+          const dock = docks[dockKey];
+          if (dock?.panels?.some((p: { id: string }) => p.id === popupId)) {
+            return true;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+  return false;
 }

@@ -1473,6 +1473,7 @@ export class PluginApiImpl implements PluginApi {
   private _pluginName?: string;
   private aliasMap: Map<string, PluginAlias> = new Map();
   private popupHandles: Set<PopupHandle> = new Set();
+  private popupCounter = 0;
   private popupMenuEntryIds: Set<string> = new Set();
   private contextMenuEntryIds: Set<string> = new Set();
   private buttonMacroIds: Set<string> = new Set();
@@ -2091,6 +2092,11 @@ export class PluginApiImpl implements PluginApi {
 
   private createPopup(title: string, body: PopupContent): Promise<PopupHandle> {
     return new Promise((resolve) => {
+      // Generate unique popup ID and type for this plugin
+      const instanceId = ++this.popupCounter;
+      const popupType = `plugin:${this.pluginId}:${instanceId}` as const;
+      const popupId = `popup:${popupType}`;
+
       // Create container for React root
       const container = document.createElement("div");
       document.body.appendChild(container);
@@ -2123,6 +2129,8 @@ export class PluginApiImpl implements PluginApi {
       const renderPopup = (isOpen: boolean) => {
         root.render(
           React.createElement(PluginPopup, {
+            popupId,
+            popupType,
             title,
             body,
             isOpen,

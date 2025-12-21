@@ -8,7 +8,8 @@ import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import eventBus from "@modules/core/eventBus";
 import { hideContextMenu } from "@shared/dom/contextMenu";
 import { getClientInstance } from "@shared/runtime";
-import { useDraggablePopup } from "../hooks/useDraggablePopup";
+import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
+import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -256,17 +257,14 @@ const HerbManager = () => {
         setIsOpen(false);
     }, [closeContextMenu]);
 
-    const togglePinned = useCallback(() => {
-        setIsPinned(prev => !prev);
+    const handlePinnedChange = useCallback((pinned: boolean) => {
+        setIsPinned(pinned);
     }, []);
 
-    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-        isOpen,
-        isPinned,
-        onClose: handleClose,
-        minWidth: 400,
-        minHeight: 300,
-    });
+    // Check if popup is docked to determine overlay visibility
+    const layoutContext = useLayoutManagerOptional();
+    const popupDockState = layoutContext?.getPopupDockState?.("popup:herb");
+    const isDocked = layoutContext?.isLayoutMode && popupDockState?.isDocked === true;
 
     useEffect(() => {
         const handleSettings = (settings: unknown) => {
@@ -473,130 +471,111 @@ const HerbManager = () => {
     const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
     const handleBackdropClick = () => {
-        if (isPinned) {
+        if (isPinned || isDocked) {
             return;
         }
         handleClose();
     };
 
-    if (!isOpen) {
-        return null;
-    }
-
-    const containerStyle: React.CSSProperties = {
-        ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-        ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-    };
+    // Render overlay only when floating (not docked) and open
+    const showOverlay = isOpen && !isDocked;
 
     return (
         <>
-            <div
-                className={`herb-overlay${isPinned ? " herb-overlay--pinned" : ""}`}
-                role="presentation"
-                onClick={handleBackdropClick}
-            />
-            <div
-                ref={panelRef}
-                className={`herb-window${position ? " herb-window--floating" : " herb-window--center"}`}
-                style={containerStyle}
-                role="dialog"
-                tabIndex={-1}
-                onClick={event => event.stopPropagation()}
-                onPointerDownCapture={closeContextMenu}
+            {showOverlay && (
+                <div
+                    className={`herb-overlay${isPinned ? " herb-overlay--pinned" : ""}`}
+                    role="presentation"
+                    onClick={handleBackdropClick}
+                />
+            )}
+            <DockablePopupWrapper
+                popupId="popup:herb"
+                popupType="herb"
+                title="Woreczki ziół"
+                isOpen={isOpen}
+                isPinned={isPinned}
+                onClose={handleClose}
+                onPinnedChange={handlePinnedChange}
+                minWidth={400}
+                minHeight={300}
+                initialWidth={500}
+                initialHeight={400}
+                className="herb-window"
+                bodyClassName="herb-window-body"
             >
-                <div className="herb-window-inner">
-                    <div className="herb-window-header" onPointerDown={handlePointerDown}>
-                        <h5 className="herb-window-title">Woreczki ziół</h5>
-                        <div
-                            className="window-header-actions"
-                            onPointerDownCapture={event => event.stopPropagation()}
-                        >
-                            <button
-                                type="button"
-                                className={`window-pin-button${isPinned ? " window-pin-button--active" : ""}`}
-                                onClick={togglePinned}
-                                title={isPinned ? "Odepnij okno" : "Przypnij okno"}
-                            />
-                            <button type="button" className="btn-close" onClick={handleClose} />
+                <div
+                    className={`herb-manager${busy ? " herb-manager--busy" : ""}`}
+                    onPointerDownCapture={closeContextMenu}
+                >
+                    {error && (
+                        <div className="alert alert-danger herb-manager-status" role="alert">
+                            {error}
                         </div>
-                    </div>
-                    <div className="herb-window-body">
-                        <div className={`herb-manager${busy ? " herb-manager--busy" : ""}`}>
-                            {error && (
-                                <div className="alert alert-danger herb-manager-status" role="alert">
-                                    {error}
-                                </div>
-                            )}
-                            {emptyState ? (
-                                <div className="alert alert-info herb-manager-status" role="alert">
-                                    Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
-                                </div>
-                            ) : (
-                                <div className="herb-grid">
-                                    {bags.map(bag => {
-                                        const totalCount = bag.items.reduce((sum, item) => sum + item.count, 0);
-                                        const conditionValue =
-                                            typeof bag.condition === "number"
-                                                ? Math.min(5, Math.max(1, Math.round(bag.condition)))
-                                                : null;
-                                        return (
-                                            <div
-                                                key={bag.bagNumber}
-                                                className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
-                                                onDragOver={handleDragOver(bag.bagNumber)}
-                                                onDrop={handleDrop(bag.bagNumber)}
-                                                onDragLeave={handleDragLeave(bag.bagNumber)}
-                                            >
-                                                <div className="herb-bag-header">
-                                                    <span>Woreczek {bag.bagNumber}</span>
-                                                    <div className="herb-bag-meta">
-                                                        {conditionValue !== null && (
-                                                            <span
-                                                                className={`herb-bag-condition herb-bag-condition--${getConditionVariant(conditionValue)}`}
-                                                                title={`Stan woreczka: ${conditionValue}/5`}
-                                                            >
-                                                                {conditionValue}/5
-                                                            </span>
-                                                        )}
-                                                        <span className="herb-bag-count">{totalCount} szt.</span>
-                                                    </div>
-                                                </div>
-                                                <div className="herb-bag-content">
-                                                    {bag.items.length === 0 ? (
-                                                        <div className="herb-bag-empty">Pusty woreczek</div>
-                                                    ) : (
-                                                        bag.items.map(stack => (
-                                                            <button
-                                                                key={stack.instanceId}
-                                                                type="button"
-                                                                className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
-                                                                style={getHerbStyle(stack.herbId)}
-                                                                draggable={!busy}
-                                                                onDragStart={handleDragStart(bag.bagNumber, stack)}
-                                                                onDragEnd={handleDragEnd}
-                                                                onClick={handleSplit(bag.bagNumber, stack)}
-                                                                onContextMenu={handleContextMenu(stack)}
-                                                            >
-                                                                <span className="herb-pill-count">{stack.count} ×</span>
-                                                                <span className="herb-pill-label">{stack.herbId}</span>
-                                                            </button>
-                                                        ))
-                                                    )}
-                                                </div>
+                    )}
+                    {emptyState ? (
+                        <div className="alert alert-info herb-manager-status" role="alert">
+                            Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
+                        </div>
+                    ) : (
+                        <div className="herb-grid">
+                            {bags.map(bag => {
+                                const totalCount = bag.items.reduce((sum, item) => sum + item.count, 0);
+                                const conditionValue =
+                                    typeof bag.condition === "number"
+                                        ? Math.min(5, Math.max(1, Math.round(bag.condition)))
+                                        : null;
+                                return (
+                                    <div
+                                        key={bag.bagNumber}
+                                        className={`herb-bag${activeBag === bag.bagNumber ? " herb-bag-drop-target" : ""}`}
+                                        onDragOver={handleDragOver(bag.bagNumber)}
+                                        onDrop={handleDrop(bag.bagNumber)}
+                                        onDragLeave={handleDragLeave(bag.bagNumber)}
+                                    >
+                                        <div className="herb-bag-header">
+                                            <span>Woreczek {bag.bagNumber}</span>
+                                            <div className="herb-bag-meta">
+                                                {conditionValue !== null && (
+                                                    <span
+                                                        className={`herb-bag-condition herb-bag-condition--${getConditionVariant(conditionValue)}`}
+                                                        title={`Stan woreczka: ${conditionValue}/5`}
+                                                    >
+                                                        {conditionValue}/5
+                                                    </span>
+                                                )}
+                                                <span className="herb-bag-count">{totalCount} szt.</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                        </div>
+                                        <div className="herb-bag-content">
+                                            {bag.items.length === 0 ? (
+                                                <div className="herb-bag-empty">Pusty woreczek</div>
+                                            ) : (
+                                                bag.items.map(stack => (
+                                                    <button
+                                                        key={stack.instanceId}
+                                                        type="button"
+                                                        className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
+                                                        style={getHerbStyle(stack.herbId)}
+                                                        draggable={!busy}
+                                                        onDragStart={handleDragStart(bag.bagNumber, stack)}
+                                                        onDragEnd={handleDragEnd}
+                                                        onClick={handleSplit(bag.bagNumber, stack)}
+                                                        onContextMenu={handleContextMenu(stack)}
+                                                    >
+                                                        <span className="herb-pill-count">{stack.count} ×</span>
+                                                        <span className="herb-pill-label">{stack.herbId}</span>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
-                    <div
-                        className="herb-window-resize-handle"
-                        onPointerDown={handleResizePointerDown}
-                        title="Drag to resize"
-                    />
+                    )}
                 </div>
-            </div>
+            </DockablePopupWrapper>
         </>
     );
 };

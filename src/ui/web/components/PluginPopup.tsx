@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useDraggablePopup } from '@web/hooks/useDraggablePopup';
+import { useEffect, useRef, useState } from 'react';
+import { DockablePopupWrapper } from '@web/layout/components/DockablePopupWrapper';
+import type { PluginPopupType } from '@web/layout/types';
 
 export interface PluginPopupProps {
+    popupId: string;
+    popupType: PluginPopupType;
     title: string;
     body: string | Node;
     isOpen: boolean;
@@ -18,9 +21,11 @@ export interface PluginPopupProps {
 
 /**
  * PluginPopup component - draggable popup window for plugins
- * Uses useDraggablePopup hook for consistent drag behavior
+ * Uses DockablePopupWrapper for consistent drag behavior and docking support
  */
 export function PluginPopup({
+    popupId,
+    popupType,
     title: initialTitle,
     body: initialBody,
     isOpen,
@@ -35,20 +40,12 @@ export function PluginPopup({
     const [title, setTitle] = useState(initialTitle);
     const [body, setBody] = useState<string | Node>(initialBody);
     const [isPinned, setIsPinned] = useState(initialPinned);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const togglePinned = () => {
-        const newPinned = !isPinned;
-        setIsPinned(newPinned);
-        onPinToggle?.(newPinned);
+    const handlePinnedChange = (pinned: boolean) => {
+        setIsPinned(pinned);
+        onPinToggle?.(pinned);
     };
-
-    const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-        isOpen,
-        isPinned,
-        onClose,
-        minWidth: 300,
-        minHeight: 200
-    });
 
     // Register callbacks for external updates
     useEffect(() => {
@@ -63,68 +60,41 @@ export function PluginPopup({
         }
     }, [onTitleChange, onBodyChange, onPinChange]);
 
-    // Expose panel ref to parent
+    // Expose container ref to parent for panel access
     useEffect(() => {
-        if (onPanelRef && panelRef.current) {
-            onPanelRef(panelRef.current);
+        if (onPanelRef && containerRef.current) {
+            onPanelRef(containerRef.current);
         }
-    }, [onPanelRef, panelRef]);
-
-    if (!isOpen) {
-        return null;
-    }
-
-    const positionStyle: React.CSSProperties = {
-        ...(position ? {
-            position: 'fixed' as const,
-            left: `${position.left}px`,
-            top: `${position.top}px`,
-        } : {}),
-        ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-    };
-
-    const className = position
-        ? 'plugin-window plugin-window--floating'
-        : 'plugin-window plugin-window--center';
+    }, [onPanelRef, isOpen]);
 
     return (
-        <>
-            <div ref={panelRef} className={className} style={positionStyle} tabIndex={-1}>
-                <div className="plugin-window-inner">
-                    <div className="plugin-window-header" onPointerDown={handlePointerDown}>
-                        <h5 className="plugin-window-title">{title}</h5>
-                        <div
-                            className="window-header-actions"
-                            onPointerDown={(e) => e.stopPropagation()}
-                        >
-                            <button
-                                type="button"
-                                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                                onClick={togglePinned}
-                                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-                            />
-                            <button type="button" className="btn-close" onClick={onClose} />
-                        </div>
-                    </div>
-                    <div className="plugin-window-body">
-                        {typeof body === 'string' ? (
-                            <div dangerouslySetInnerHTML={{ __html: body }} />
-                        ) : (
-                            <div ref={(el) => {
-                                if (el && body instanceof Node) {
-                                    el.innerHTML = '';
-                                    el.appendChild(body);
-                                }
-                            }} />
-                        )}
-                    </div>
-                    <div
-                        className="plugin-window-resize-handle"
-                        onPointerDown={handleResizePointerDown}
-                        title="Drag to resize"
-                    />
-                </div>
+        <DockablePopupWrapper
+            popupId={popupId}
+            popupType={popupType}
+            title={title}
+            isOpen={isOpen}
+            isPinned={isPinned}
+            onClose={onClose}
+            onPinnedChange={handlePinnedChange}
+            minWidth={300}
+            minHeight={200}
+            initialWidth={400}
+            initialHeight={300}
+            className="plugin-window"
+            bodyClassName="plugin-window-body"
+        >
+            <div ref={containerRef}>
+                {typeof body === 'string' ? (
+                    <div dangerouslySetInnerHTML={{ __html: body }} />
+                ) : (
+                    <div ref={(el) => {
+                        if (el && body instanceof Node) {
+                            el.innerHTML = '';
+                            el.appendChild(body);
+                        }
+                    }} />
+                )}
             </div>
-        </>
+        </DockablePopupWrapper>
     );
 }

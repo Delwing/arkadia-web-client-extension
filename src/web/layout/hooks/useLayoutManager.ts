@@ -8,3 +8,11 @@ export function useLayoutManager(): LayoutContextValue {
   }
   return context;
 }
+
+/**
+ * Optional version of useLayoutManager that returns null if not inside LayoutProvider.
+ * Used by components that may be rendered outside the layout manager context.
+ */
+export function useLayoutManagerOptional(): LayoutContextValue | null {
+  return useContext(LayoutContext);
+}

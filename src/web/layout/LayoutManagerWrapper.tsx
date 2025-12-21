@@ -1,5 +1,11 @@
 import { LayoutProvider } from './LayoutContext';
 import { LayoutContent } from './LayoutContent';
+import ClockPopup from '../ClockPopup';
+import ContractsPopup from '../ContractsPopup';
+import LetterComposer from '../LetterComposer';
+import HerbManager from '../herbs/HerbManager';
+import KnowledgeReport from '../KnowledgeReport';
+import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -18,6 +24,13 @@ export function LayoutManagerWrapper({
         mapElement={mapElement}
         objectListElement={objectListElement}
       />
+      {/* Popup components - rendered inside LayoutProvider for docking support */}
+      <ClockPopup />
+      <ContractsPopup />
+      <LetterComposer />
+      <HerbManager />
+      <KnowledgeReport />
+      <KnowledgeDetailsReport />
     </LayoutProvider>
   );
 }

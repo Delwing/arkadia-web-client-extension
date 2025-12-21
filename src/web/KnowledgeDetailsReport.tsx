@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import eventBus from '@modules/core/eventBus';
-import { useDraggablePopup } from './hooks/useDraggablePopup';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 
 const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
   { key: 'fight', label: 'Z walki', showDetails: false },
@@ -75,17 +75,9 @@ const KnowledgeDetailsReport: React.FC = () => {
     setIsOpen(false);
   }, []);
 
-  const togglePinned = useCallback(() => {
-    setIsPinned((prev) => !prev);
+  const handlePinnedChange = useCallback((pinned: boolean) => {
+    setIsPinned(pinned);
   }, []);
-
-  const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
-    isOpen,
-    isPinned,
-    onClose: close,
-    minWidth: 500,
-    minHeight: 350,
-  });
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
     if (!detail || !detail.categories?.length) {
@@ -319,96 +311,64 @@ const KnowledgeDetailsReport: React.FC = () => {
     return { ...totals, percentage };
   }, [data]);
 
-  if (!isOpen || !data) {
-    return null;
-  }
+  const titleWithProgress = overallProgress
+    ? `Raport wiedzy ${overallProgress.known}/${overallProgress.total} (${overallProgress.percentage}%)`
+    : 'Raport wiedzy';
 
   return (
-    <div className="knowledge-window-container">
-      <div
-        ref={panelRef}
-        className={`knowledge-window ${
-          position ? 'knowledge-window--floating' : 'knowledge-window--center'
-        }`}
-        style={{
-          ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
-          ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
-        }}
-        tabIndex={-1}
-      >
-        <div className="knowledge-window-inner">
-          <div className="knowledge-window-header" onPointerDown={handlePointerDown}>
-            <h5 className="knowledge-window-title">
-              Raport wiedzy
-              {overallProgress && (
-                <span className="knowledge-window-progress">
-                  {overallProgress.known}/{overallProgress.total} ({
-                    overallProgress.percentage
-                  }
-                  %)
-                </span>
-              )}
-            </h5>
-            <div
-              className="window-header-actions"
-              onPointerDownCapture={(event) => event.stopPropagation()}
+    <DockablePopupWrapper
+      popupId="popup:knowledgeDetails"
+      popupType="knowledgeDetails"
+      title={titleWithProgress}
+      isOpen={isOpen && !!data}
+      isPinned={isPinned}
+      onClose={close}
+      onPinnedChange={handlePinnedChange}
+      minWidth={500}
+      minHeight={350}
+      initialWidth={650}
+      initialHeight={500}
+      className="knowledge-window"
+      bodyClassName="knowledge-window-body knowledge-details-body"
+    >
+      <div className="knowledge-details-content" ref={scrollContainerRef}>
+        <div className="knowledge-details-sticky">
+          <div className="knowledge-details-toolbar">
+            <button
+              type="button"
+              className={`knowledge-details-toggle-button${
+                hideCompleted ? ' knowledge-details-toggle-button--active' : ''
+              }`}
+              onClick={() => setHideCompleted((prev) => !prev)}
             >
-              <button
-                type="button"
-                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
-                onClick={togglePinned}
-                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-              />
-              <button type="button" className="btn-close" onClick={close} />
-            </div>
+              {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+            </button>
+            <button
+              type="button"
+              className="knowledge-details-build-button"
+              onClick={handleBuildKnowledge}
+            >
+              Odbuduj raport
+            </button>
           </div>
-          <div className="knowledge-window-body knowledge-details-body">
-            <div className="knowledge-details-content" ref={scrollContainerRef}>
-              <div className="knowledge-details-sticky">
-                <div className="knowledge-details-toolbar">
-                  <button
-                    type="button"
-                    className={`knowledge-details-toggle-button${
-                      hideCompleted ? ' knowledge-details-toggle-button--active' : ''
-                    }`}
-                    onClick={() => setHideCompleted((prev) => !prev)}
-                  >
-                    {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
-                  </button>
-                  <button
-                    type="button"
-                    className="knowledge-details-build-button"
-                    onClick={handleBuildKnowledge}
-                  >
-                    Odbuduj raport
-                  </button>
-                </div>
-                {navItems.length > 0 && (
-                  <div className="knowledge-details-nav">
-                    {navItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="knowledge-details-nav-button"
-                        onClick={() => handleNavigate(item.id)}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="knowledge-details-categories">{categoriesContent}</div>
+          {navItems.length > 0 && (
+            <div className="knowledge-details-nav">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="knowledge-details-nav-button"
+                  onClick={() => handleNavigate(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          </div>
-          <div
-            className="herb-window-resize-handle"
-            onPointerDown={handleResizePointerDown}
-            title="Drag to resize"
-          />
+          )}
         </div>
+        <div className="knowledge-details-categories">{categoriesContent}</div>
       </div>
-    </div>
+    </DockablePopupWrapper>
   );
 };
 

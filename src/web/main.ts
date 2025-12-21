@@ -16,11 +16,6 @@ import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
-import LetterComposer from "./LetterComposer";
-import KnowledgeReport from "./KnowledgeReport";
-import KnowledgeDetailsReport from "./KnowledgeDetailsReport";
-import ClockPopup from "./ClockPopup";
-import ContractsPopup from "./ContractsPopup";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
@@ -50,7 +45,6 @@ import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import { LayoutManagerWrapper } from "./layout/LayoutManagerWrapper"
-import HerbManager from "./herbs/HerbManager";
 import {copyOutputAsImage} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
@@ -1975,37 +1969,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoot(mobileRadialRoot).render(createElement(MobileRadialCommands));
     }
 
-    const herbRoot = document.getElementById('herb-ui-root');
-    if (herbRoot) {
-        createRoot(herbRoot).render(createElement(HerbManager));
-    }
-
-    const knowledgeRoot = document.getElementById('knowledge-root');
-    if (knowledgeRoot) {
-        createRoot(knowledgeRoot).render(createElement(KnowledgeReport));
-    }
-
-    const knowledgeDetailsRoot = document.getElementById('knowledge-details-root');
-    if (knowledgeDetailsRoot) {
-        createRoot(knowledgeDetailsRoot).render(createElement(KnowledgeDetailsReport));
-    }
-
-    const clockRoot = document.getElementById('clock-root');
-    if (clockRoot) {
-        createRoot(clockRoot).render(createElement(ClockPopup));
-    }
-
-    const contractsRoot = document.getElementById('contracts-root');
-    if (contractsRoot) {
-        createRoot(contractsRoot).render(createElement(ContractsPopup));
-    }
-
-    const letterComposerRoot = document.getElementById('letter-composer-root');
-    if (letterComposerRoot) {
-        createRoot(letterComposerRoot).render(createElement(LetterComposer));
-    }
-
-    // Mount Layout Manager
+    // Mount Layout Manager (includes all dockable popups)
     const layoutManagerRoot = document.getElementById('layout-manager-root');
     if (layoutManagerRoot) {
         const mapElement = document.getElementById('map');

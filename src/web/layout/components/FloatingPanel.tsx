@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useRef, useEffect, useState } from 'react';
 import { FloatingPanelState, PANEL_CONFIGS } from '../types';
 import { useLayoutManager } from '../hooks/useLayoutManager';
 import { useDockablePanel } from '../hooks/useDockablePanel';
+import { getPopup } from '../popupRegistry';
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
 
@@ -14,7 +15,12 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   const { updateFloatingPanel, dragState } = useLayoutManager();
   const { handleDragStart } = useDockablePanel({ panelId: panel.id });
   const config = PANEL_CONFIGS[panel.id];
-  const title = config?.title ?? panel.id;
+
+  // Check if this is a popup panel
+  const isPopup = panel.id.startsWith('popup:');
+  const popupInfo = isPopup ? getPopup(panel.id) : null;
+
+  const title = popupInfo?.config.title ?? config?.title ?? panel.id;
 
   const resizeDir = useRef<ResizeDirection>(null);
   const startPos = useRef({ x: 0, y: 0 });
@@ -50,8 +56,8 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
 
       const dx = e.clientX - startPos.current.x;
       const dy = e.clientY - startPos.current.y;
-      const minWidth = config?.minWidth ?? 150;
-      const minHeight = config?.minHeight ?? 100;
+      const minWidth = popupInfo?.config.minWidth ?? config?.minWidth ?? 150;
+      const minHeight = popupInfo?.config.minHeight ?? config?.minHeight ?? 100;
       const dir = resizeDir.current;
 
       const updates: Partial<FloatingPanelState> = {};
@@ -92,7 +98,7 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleEnd);
     };
-  }, [panel.id, updateFloatingPanel, config]);
+  }, [panel.id, updateFloatingPanel, config, popupInfo]);
 
   const handleResizeStart = useCallback(
     (direction: ResizeDirection) => (e: React.PointerEvent) => {
@@ -106,14 +112,24 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
     [panel.x, panel.y, panel.width, panel.height]
   );
 
+  const handleClose = useCallback(() => {
+    popupInfo?.onClose();
+  }, [popupInfo]);
+
+  const handleTogglePin = useCallback(() => {
+    popupInfo?.setIsPinned(!popupInfo.isPinned);
+  }, [popupInfo]);
+
+  const isAutoHeight = panel.height === undefined;
+
   return (
     <div
-      className={`floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}`}
+      className={`floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}`}
       style={{
         left: panel.x,
         top: panel.y,
         width: panel.width,
-        height: panel.height,
+        ...(panel.height !== undefined && { height: panel.height }),
       }}
     >
       <div className="floating-panel__header" onPointerDown={handleDragStart}>
@@ -123,6 +139,26 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
         >
           {isCtrlHeld ? 'Docking disabled' : 'Ctrl = prevent dock'}
         </span>
+        <div className="floating-panel__header-actions" onPointerDown={(e) => e.stopPropagation()}>
+          {/* Popup-specific header actions */}
+          {popupInfo?.headerActions}
+          {isPopup && popupInfo && (
+            <>
+              <button
+                type="button"
+                className={`floating-panel__pin-button${popupInfo.isPinned ? ' floating-panel__pin-button--active' : ''}`}
+                onClick={handleTogglePin}
+                title={popupInfo.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+              />
+              <button
+                type="button"
+                className="floating-panel__close-button"
+                onClick={handleClose}
+                title="Zamknij"
+              />
+            </>
+          )}
+        </div>
       </div>
       <div className="floating-panel__content">{children}</div>
 
