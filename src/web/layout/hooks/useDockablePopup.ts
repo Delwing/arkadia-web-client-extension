@@ -19,6 +19,8 @@ interface UseDockablePopupOptions {
   renderContent: () => ReactNode;
   headerActions?: ReactNode;
   bodyClassName?: string;
+  /** If true, popup will never be managed by layout manager */
+  disableLayoutManagement?: boolean;
 }
 
 export interface UseDockablePopupReturn {
@@ -41,6 +43,7 @@ export function useDockablePopup({
   renderContent,
   headerActions,
   bodyClassName,
+  disableLayoutManagement = false,
 }: UseDockablePopupOptions): UseDockablePopupReturn {
   // Use optional context - may be null if not inside LayoutProvider
   const layoutContext = useLayoutManagerOptional();
@@ -51,6 +54,7 @@ export function useDockablePopup({
   const updatePopupDockState = layoutContext?.updatePopupDockState;
   const addPopupFloating = layoutContext?.addPopupFloating;
   const removePopupFloating = layoutContext?.removePopupFloating;
+  const removePopupFromDock = layoutContext?.removePopupFromDock;
   const findFloatingPanel = layoutContext?.findFloatingPanel;
   const findPanelDock = layoutContext?.findPanelDock;
 
@@ -71,8 +75,8 @@ export function useDockablePopup({
   onPinnedChangeRef.current = onPinnedChange;
   isPinnedRef.current = isPinned;
 
-  // In layout mode, popup is managed by FloatingPanel
-  const isManagedByLayout = isLayoutMode && layoutContext !== null;
+  // In layout mode, popup is managed by FloatingPanel (unless disabled)
+  const isManagedByLayout = isLayoutMode && layoutContext !== null && !disableLayoutManagement;
 
   // Register/unregister popup when open state changes
   useEffect(() => {
@@ -159,8 +163,9 @@ export function useDockablePopup({
     const existing = findFloatingPanel?.(popupId);
     if (existing) return;
 
-    // Get saved floating state or calculate initial position
-    const savedFloating = getPopupDockState?.(popupId)?.floatingState;
+    // Get saved floating state - only use if user has explicitly modified position/size
+    const savedState = getPopupDockState?.(popupId);
+    const savedFloating = savedState?.userModifiedPosition ? savedState.floatingState : null;
     // For auto-height popups, position near top of screen
     const initialY = initialHeight !== undefined
       ? Math.max(16, (window.innerHeight - initialHeight) / 2)
@@ -185,7 +190,7 @@ export function useDockablePopup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isManagedByLayout, popupId]);
 
-  // Remove from floating panels when popup closes
+  // Remove from floating panels and docks when popup closes
   useEffect(() => {
     if (isOpen) return;
 
@@ -205,6 +210,8 @@ export function useDockablePopup({
         });
       }
       removePopupFloating?.(popupId);
+      // Also remove from dock if it was docked
+      removePopupFromDock?.(popupId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, popupId]);
@@ -231,9 +238,13 @@ export function useDockablePopup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isManagedByLayout, popupId]);
 
-  // Handle outside click to close (when layout mode is ON)
+  // Handle outside click to close (when layout mode is ON and floating)
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
+
+    // Check if popup is docked - docked popups shouldn't close on outside click
+    const dockedIn = findPanelDock?.(popupId);
+    if (dockedIn) return;
 
     const handlePointerDown = (event: PointerEvent) => {
       // Don't close if pinned
@@ -242,9 +253,10 @@ export function useDockablePopup({
       const target = event.target as Element | null;
       if (!target) return;
 
-      // Check if click is inside any floating-panel--popup
-      const popupPanel = target.closest('.floating-panel--popup');
-      if (popupPanel) return;
+      // Check if click is inside any popup panel (floating or docked)
+      const floatingPopup = target.closest('.floating-panel--popup');
+      const dockedPopup = target.closest('.docked-panel--popup');
+      if (floatingPopup || dockedPopup) return;
 
       // Click was outside all popup panels, close this popup
       onCloseRef.current();
@@ -252,11 +264,15 @@ export function useDockablePopup({
 
     window.addEventListener('pointerdown', handlePointerDown);
     return () => window.removeEventListener('pointerdown', handlePointerDown);
-  }, [isOpen, isManagedByLayout]);
+  }, [isOpen, isManagedByLayout, popupId, findPanelDock]);
 
-  // Handle Escape key to close (when layout mode is ON)
+  // Handle Escape key to close (when layout mode is ON and floating)
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
+
+    // Check if popup is docked - docked popups shouldn't close on Escape
+    const dockedIn = findPanelDock?.(popupId);
+    if (dockedIn) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isPinnedRef.current) {
@@ -267,7 +283,7 @@ export function useDockablePopup({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isManagedByLayout]);
+  }, [isOpen, isManagedByLayout, popupId, findPanelDock]);
 
   return {
     isLayoutMode,

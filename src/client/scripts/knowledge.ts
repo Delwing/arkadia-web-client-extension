@@ -1452,6 +1452,45 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     });
 
+    // Handle request events for popups that auto-open after reload
+    client.on('requestKnowledgeReport', () => {
+        if (!currentSnapshot) {
+            return;
+        }
+        const libraryEntries = Object.entries(currentSnapshot.data.libraries);
+        if (libraryEntries.length === 0) {
+            return;
+        }
+        const characterKey = getCharacterProgressKey();
+        const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+        const report = buildKnowledgeReport(libraryEntries, characterProgress);
+        if (report) {
+            client.sendEvent('knowledgeReport', report);
+        }
+    });
+
+    client.on('requestKnowledgeDetailsReport', () => {
+        if (!knowledgeDetailsSnapshot) {
+            return;
+        }
+        const characterKey = getCharacterProgressKey();
+        const payload = buildKnowledgeDetailsReportPayload(
+            knowledgeDetailsSnapshot,
+            characterKey,
+            currentCharacterGender,
+        );
+        if (payload) {
+            client.sendEvent('knowledgeDetailsReport', payload);
+        } else {
+            const emptyPayload = buildKnowledgeDetailsReportPayloadWithoutProgress(
+                knowledgeDetailsSnapshot,
+            );
+            if (emptyPayload) {
+                client.sendEvent('knowledgeDetailsReport', emptyPayload);
+            }
+        }
+    });
+
     aliasList.push({pattern: /\/zglebiaj$/, callback: showLibraryCategories});
     aliasList.push({pattern: /\/biblioteki$/, callback: showLibrariesReport});
     aliasList.push({pattern: /\/wiedza$/, callback: openKnowledgeDetailsReport});

@@ -148,6 +148,8 @@ export interface KnownEvents {
     "knowledgeReport": unknown | null;
     "knowledgeDetailsReport": unknown | null;
     "knowledgeReportAction": KnowledgeReportAction;
+    "requestKnowledgeReport": void;
+    "requestKnowledgeDetailsReport": void;
     "sendCommand": SendCommandEvent;
     "requestHerbCounts": void;
     "herbManagerClose": void;

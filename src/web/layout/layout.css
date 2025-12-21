@@ -542,6 +542,14 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
 /* Popup panel content - preserve inner padding */
 .docked-panel--popup .docked-panel__content {
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make body wrapper fill the content area in docked popups */
+.docked-panel--popup .docked-panel__content > div {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Dockable popup body wrapper - ensures popup body styling is applied when docked */

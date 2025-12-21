@@ -8,6 +8,9 @@ import React, {
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+
+const POPUP_ID = 'popup:knowledgeDetails';
 
 const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: boolean }[] = [
   { key: 'fight', label: 'Z walki', showDetails: false },
@@ -65,10 +68,12 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
 }
 
 const KnowledgeDetailsReport: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  // Check if popup should auto-open on page load (was pinned before reload)
+  const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = useState(false);
-  const [isPinned, setIsPinned] = useState(false);
+  // If auto-opening, start pinned since that's why we're persisting
+  const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => {
@@ -82,13 +87,16 @@ const KnowledgeDetailsReport: React.FC = () => {
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
     if (!detail || !detail.categories?.length) {
       setData(null);
-      setIsOpen(false);
+      // Don't close if pinned (popup should stay open with empty state)
+      if (!isPinned) {
+        setIsOpen(false);
+      }
       return;
     }
     setData(detail);
     setIsOpen(true);
     setHideCompleted(false);
-  }, []);
+  }, [isPinned]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeDetailsReport', (payload) => {
@@ -99,6 +107,12 @@ const KnowledgeDetailsReport: React.FC = () => {
     };
   }, [handleReport]);
 
+  // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
+  useEffect(() => {
+    if (isOpen && !data) {
+      eventBus.emit('requestKnowledgeDetailsReport');
+    }
+  }, [isOpen, data]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -317,57 +331,61 @@ const KnowledgeDetailsReport: React.FC = () => {
 
   return (
     <DockablePopupWrapper
-      popupId="popup:knowledgeDetails"
+      popupId={POPUP_ID}
       popupType="knowledgeDetails"
       title={titleWithProgress}
-      isOpen={isOpen && !!data}
+      isOpen={isOpen}
       isPinned={isPinned}
       onClose={close}
       onPinnedChange={handlePinnedChange}
       minWidth={500}
       minHeight={350}
-      initialWidth={650}
-      initialHeight={500}
+      initialWidth={960}
+      initialHeight={Math.min(window.innerHeight * 0.75, window.innerHeight - 32)}
       className="knowledge-window"
       bodyClassName="knowledge-window-body knowledge-details-body"
     >
-      <div className="knowledge-details-content" ref={scrollContainerRef}>
-        <div className="knowledge-details-sticky">
-          <div className="knowledge-details-toolbar">
-            <button
-              type="button"
-              className={`knowledge-details-toggle-button${
-                hideCompleted ? ' knowledge-details-toggle-button--active' : ''
-              }`}
-              onClick={() => setHideCompleted((prev) => !prev)}
-            >
-              {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
-            </button>
-            <button
-              type="button"
-              className="knowledge-details-build-button"
-              onClick={handleBuildKnowledge}
-            >
-              Odbuduj raport
-            </button>
-          </div>
-          {navItems.length > 0 && (
-            <div className="knowledge-details-nav">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="knowledge-details-nav-button"
-                  onClick={() => handleNavigate(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
+      {!data ? (
+        <div className="knowledge-empty">Brak danych. Użyj komendy /list.</div>
+      ) : (
+        <div className="knowledge-details-content" ref={scrollContainerRef}>
+          <div className="knowledge-details-sticky">
+            <div className="knowledge-details-toolbar">
+              <button
+                type="button"
+                className={`knowledge-details-toggle-button${
+                  hideCompleted ? ' knowledge-details-toggle-button--active' : ''
+                }`}
+                onClick={() => setHideCompleted((prev) => !prev)}
+              >
+                {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
+              </button>
+              <button
+                type="button"
+                className="knowledge-details-build-button"
+                onClick={handleBuildKnowledge}
+              >
+                Odbuduj raport
+              </button>
             </div>
-          )}
+            {navItems.length > 0 && (
+              <div className="knowledge-details-nav">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="knowledge-details-nav-button"
+                    onClick={() => handleNavigate(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="knowledge-details-categories">{categoriesContent}</div>
         </div>
-        <div className="knowledge-details-categories">{categoriesContent}</div>
-      </div>
+      )}
     </DockablePopupWrapper>
   );
 };

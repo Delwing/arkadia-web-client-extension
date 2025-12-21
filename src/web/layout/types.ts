@@ -101,6 +101,8 @@ export interface PopupPanelDockState {
   };
   /** If true, popup should auto-open on page load */
   persistOpen?: boolean;
+  /** If true, user has explicitly moved/resized the popup */
+  userModifiedPosition?: boolean;
 }
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {

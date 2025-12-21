@@ -8,7 +8,6 @@ import {
   PanelState,
   PopupPanelDockState,
   PANEL_CONFIGS,
-  DEFAULT_LAYOUT,
   MIN_DOCK_SIZE,
   MAX_DOCK_SIZE_RATIO,
 } from './types';
@@ -112,6 +111,72 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     }
     onLayoutModeChange?.(isLayoutMode);
   }, [isLayoutMode, layoutState.enabledPanels, onLayoutModeChange]);
+
+  // Handle window resize - clamp floating panels to fit within viewport
+  useEffect(() => {
+    if (!isLayoutMode) return;
+
+    const handleResize = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const margin = 16;
+
+      setLayoutState((prev) => {
+        let anyChanged = false;
+        const newFloatingPanels = prev.floatingPanels.map((panel) => {
+          let { x, y, width, height } = panel;
+          let panelChanged = false;
+
+          // Ensure panel fits within viewport width
+          if (width > viewportWidth - margin * 2) {
+            width = viewportWidth - margin * 2;
+            panelChanged = true;
+          }
+
+          // Ensure panel fits within viewport height
+          if (height !== undefined && height > viewportHeight - margin * 2) {
+            height = viewportHeight - margin * 2;
+            panelChanged = true;
+          }
+
+          // Clamp position to keep panel visible
+          const maxX = viewportWidth - width - margin;
+          const maxY = viewportHeight - (height ?? 100) - margin;
+
+          if (x > maxX) {
+            x = Math.max(margin, maxX);
+            panelChanged = true;
+          }
+          if (x < margin) {
+            x = margin;
+            panelChanged = true;
+          }
+          if (y > maxY) {
+            y = Math.max(margin, maxY);
+            panelChanged = true;
+          }
+          if (y < margin) {
+            y = margin;
+            panelChanged = true;
+          }
+
+          if (panelChanged) {
+            anyChanged = true;
+            return { ...panel, x, y, width, ...(height !== undefined && { height }) };
+          }
+          return panel;
+        });
+
+        if (anyChanged) {
+          return { ...prev, floatingPanels: newFloatingPanels };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isLayoutMode]);
 
   const enableLayoutMode = useCallback(() => {
     setLayoutState((prev) => ({ ...prev, enabled: true }));
@@ -271,6 +336,23 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
         const newFloatingPanels = prev.floatingPanels.map((p) =>
           p.id === panelId ? { ...p, ...updates } : p
         );
+
+        // If this is a popup panel, mark it as user-modified
+        const isPopup = panelId.startsWith('popup:');
+        if (isPopup) {
+          return {
+            ...prev,
+            floatingPanels: newFloatingPanels,
+            popupPanels: {
+              ...prev.popupPanels,
+              [panelId]: {
+                ...prev.popupPanels[panelId],
+                userModifiedPosition: true,
+              },
+            },
+          };
+        }
+
         return { ...prev, floatingPanels: newFloatingPanels };
       });
     },
@@ -533,6 +615,7 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
             ...popupState,
             isDocked: false,
             floatingState,
+            userModifiedPosition: true,
           },
         },
       };

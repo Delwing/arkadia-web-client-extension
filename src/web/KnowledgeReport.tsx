@@ -8,6 +8,7 @@ import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledge
 import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -44,6 +45,8 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+const POPUP_ID = 'popup:knowledgeReport';
+
 const LIBRARY_STATUS_CONFIG: {
   key: KnowledgeCategoryStatus;
   label: string;
@@ -71,10 +74,12 @@ function groupLibraryCategories(
 }
 
 const KnowledgeReport: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  // Check if popup should auto-open on page load (was pinned before reload)
+  const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
   const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
-  const [isPinned, setIsPinned] = useState(false);
+  // If auto-opening, start pinned since that's why we're persisting
+  const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
@@ -90,7 +95,10 @@ const KnowledgeReport: React.FC = () => {
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
       setData(null);
-      setIsOpen(false);
+      // Don't close if pinned (popup should stay open with empty state)
+      if (!isPinned) {
+        setIsOpen(false);
+      }
       return;
     }
 
@@ -102,7 +110,7 @@ const KnowledgeReport: React.FC = () => {
     } else {
       setActiveTab('categories');
     }
-  }, []);
+  }, [isPinned]);
 
   useEffect(() => {
     const unsubscribe = eventBus.on('knowledgeReport', (payload) => {
@@ -113,6 +121,12 @@ const KnowledgeReport: React.FC = () => {
     };
   }, [handleReport]);
 
+  // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
+  useEffect(() => {
+    if (isOpen && !data) {
+      eventBus.emit('requestKnowledgeReport');
+    }
+  }, [isOpen, data]);
 
   const handleStartCategory = useCallback((dative: string) => {
     eventBus.emit('sendCommand', {
@@ -334,20 +348,24 @@ const KnowledgeReport: React.FC = () => {
 
   return (
     <DockablePopupWrapper
-      popupId="popup:knowledgeReport"
+      popupId={POPUP_ID}
       popupType="knowledgeReport"
       title="Raport wiedzy"
-      isOpen={isOpen && !!data}
+      isOpen={isOpen}
       isPinned={isPinned}
       onClose={close}
       onPinnedChange={handlePinnedChange}
-      minWidth={600}
-      minHeight={400}
-      initialWidth={700}
-      initialHeight={500}
+      minWidth={500}
+      minHeight={350}
+      initialWidth={960}
+      initialHeight={Math.min(window.innerHeight * 0.75, window.innerHeight - 32)}
       className="knowledge-window"
       bodyClassName="knowledge-window-body"
     >
+      {!data ? (
+        <div className="knowledge-empty">Brak danych. Użyj komendy /wiedza lub /biblioteki.</div>
+      ) : (
+        <>
       <div className="knowledge-tabs">
         <button
           type="button"
@@ -372,6 +390,8 @@ const KnowledgeReport: React.FC = () => {
       <div className="knowledge-content">
         {activeTab === 'libraries' ? libraryContent : categoriesContent}
       </div>
+        </>
+      )}
     </DockablePopupWrapper>
   );
 };

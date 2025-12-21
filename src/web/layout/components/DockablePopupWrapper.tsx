@@ -19,6 +19,8 @@ export interface DockablePopupWrapperProps {
   initialHeight?: number;
   className?: string;
   bodyClassName?: string;
+  /** If true, popup will never be managed by layout manager */
+  disableLayoutManagement?: boolean;
 }
 
 interface Position {
@@ -57,6 +59,7 @@ export function DockablePopupWrapper({
   initialHeight,
   className = '',
   bodyClassName = '',
+  disableLayoutManagement = false,
 }: DockablePopupWrapperProps) {
   // Use ref to avoid re-registering popup on every children change
   const childrenRef = useRef(children);
@@ -81,6 +84,7 @@ export function DockablePopupWrapper({
     renderContent,
     headerActions,
     bodyClassName,
+    disableLayoutManagement,
   });
 
   // Notify registry when children change so LayoutContent re-renders with fresh content

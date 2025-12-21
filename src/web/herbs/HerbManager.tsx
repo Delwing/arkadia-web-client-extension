@@ -10,6 +10,9 @@ import { hideContextMenu } from "@shared/dom/contextMenu";
 import { getClientInstance } from "@shared/runtime";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
+import { shouldPopupAutoOpen } from "../layout/utils/layoutStorage";
+
+const POPUP_ID = 'popup:herb';
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -223,8 +226,10 @@ const HerbManager = () => {
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isOpen, setIsOpen] = useState(false);
-    const [isPinned, setIsPinned] = useState(false);
+    // Check if popup should auto-open on page load (was pinned before reload)
+    const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(POPUP_ID));
+    // If auto-opening, start pinned since that's why we're persisting
+    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(POPUP_ID));
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
     const initialSettings = getItemSync("settings")?.settings as Record<string, unknown> | undefined;
@@ -261,10 +266,9 @@ const HerbManager = () => {
         setIsPinned(pinned);
     }, []);
 
-    // Check if popup is docked to determine overlay visibility
+    // Check if popup is managed by layout to determine overlay visibility
     const layoutContext = useLayoutManagerOptional();
-    const popupDockState = layoutContext?.getPopupDockState?.("popup:herb");
-    const isDocked = layoutContext?.isLayoutMode && popupDockState?.isDocked === true;
+    const isLayoutManaged = layoutContext?.isLayoutMode === true;
 
     useEffect(() => {
         const handleSettings = (settings: unknown) => {
@@ -471,14 +475,14 @@ const HerbManager = () => {
     const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
     const handleBackdropClick = () => {
-        if (isPinned || isDocked) {
+        if (isPinned) {
             return;
         }
         handleClose();
     };
 
-    // Render overlay only when floating (not docked) and open
-    const showOverlay = isOpen && !isDocked;
+    // Render overlay only when NOT in layout managed mode and open
+    const showOverlay = isOpen && !isLayoutManaged;
 
     return (
         <>
@@ -490,17 +494,17 @@ const HerbManager = () => {
                 />
             )}
             <DockablePopupWrapper
-                popupId="popup:herb"
+                popupId={POPUP_ID}
                 popupType="herb"
                 title="Woreczki ziół"
                 isOpen={isOpen}
                 isPinned={isPinned}
                 onClose={handleClose}
                 onPinnedChange={handlePinnedChange}
-                minWidth={400}
-                minHeight={300}
-                initialWidth={500}
-                initialHeight={400}
+                minWidth={300}
+                minHeight={200}
+                initialWidth={1000}
+                initialHeight={500}
                 className="herb-window"
                 bodyClassName="herb-window-body"
             >
