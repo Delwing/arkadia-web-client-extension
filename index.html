@@ -35,6 +35,7 @@
 <body data-map-position="top-overlay">
 <div id="main-container">
     <div id="content-area">
+        <div id="layout-manager-root"></div>
         <div id="iframe-container">
             <div id="map"></div>
             <div id="location-wrapper">
@@ -605,6 +606,20 @@
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-warning align-self-start" id="ui-enable-notifications">Włącz powiadomienia</button>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Menedżer Okien</h6>
+                            <div class="ui-settings-stack">
+                                <div class="form-check">
+                                    <input id="ui-layout-manager-enabled" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-layout-manager-enabled">Włącz menedżer okien</label>
+                                </div>
+                                <div class="form-check ms-3">
+                                    <input id="ui-layout-manager-object-list" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-layout-manager-object-list">Kondycje</label>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm align-self-start" id="ui-layout-manager-reset">Przywróć domyślny układ</button>
                             </div>
                         </section>
                     </div>

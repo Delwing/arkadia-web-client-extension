@@ -1,0 +1,453 @@
+/* Layout Manager Styles */
+
+/* When layout manager is enabled, use CSS Grid for content area */
+body.layout-manager-enabled #content-area {
+  display: grid;
+  grid-template-areas:
+    "top    top   top"
+    "left   main  right";
+  grid-template-columns: var(--dock-left-size, 0px) 1fr var(--dock-right-size, 0px);
+  grid-template-rows: var(--dock-top-size, 0px) 1fr;
+}
+
+/* Hide original map and object list when their layout panels are enabled */
+body.layout-map-enabled #iframe-container {
+  display: none !important;
+}
+
+body.layout-objectlist-enabled #objects-list {
+  display: none !important;
+}
+
+/* Layout Manager Root - must use display:contents to not interfere with grid */
+#layout-manager-root {
+  display: contents;
+}
+
+/* Layout Manager Container */
+.layout-manager {
+  display: contents;
+}
+
+/* Dock Zones */
+.dock-zone {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--surface-ground, #1a1a1a);
+}
+
+.dock-zone--top {
+  grid-area: top;
+  flex-direction: row;
+  border-bottom: 1px solid var(--surface-border, #333);
+}
+
+.dock-zone--left {
+  grid-area: left;
+  flex-direction: column;
+  border-right: 1px solid var(--surface-border, #333);
+}
+
+.dock-zone--right {
+  grid-area: right;
+  flex-direction: column;
+  border-left: 1px solid var(--surface-border, #333);
+}
+
+.dock-zone--main {
+  grid-area: main;
+  overflow: auto;
+}
+
+/* Panel wrapper within dock */
+.dock-zone__panel-wrapper {
+  display: flex;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dock-zone--top .dock-zone__panel-wrapper {
+  flex-direction: row;
+}
+
+.dock-zone--left .dock-zone__panel-wrapper,
+.dock-zone--right .dock-zone__panel-wrapper {
+  flex-direction: column;
+}
+
+/* Docked Panel */
+.docked-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface-ground, #1a1a1a);
+  /* Remove shadows for docked elements */
+  box-shadow: none !important;
+}
+
+.docked-panel__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-raised, #252525);
+  border-bottom: 1px solid var(--surface-border, #333);
+  cursor: grab;
+  user-select: none;
+}
+
+.docked-panel__header:active {
+  cursor: grabbing;
+}
+
+.docked-panel__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.docked-panel__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Panel-specific containers */
+.map-panel-container {
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.map-panel-container #map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.object-list-panel-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+body.layout-manager-enabled .object-list-panel-container #objects-list {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  border: none !important;
+}
+
+/* Resize Handles */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+  transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover,
+.resize-handle--active {
+  background: var(--bs-primary, #589aff);
+  opacity: 0.5;
+}
+
+/* Horizontal resize handle (for LEFT/RIGHT dock zone edges) */
+.resize-handle--horizontal {
+  width: 4px;
+  height: 100%;
+  top: 0;
+  cursor: ew-resize;
+}
+
+.resize-handle--horizontal.resize-handle--right {
+  right: 0;
+}
+
+.resize-handle--horizontal.resize-handle--left {
+  left: 0;
+}
+
+/* Vertical resize handle (for TOP dock zone edge) */
+.resize-handle--vertical {
+  height: 4px;
+  width: 100%;
+  left: 0;
+  cursor: ns-resize;
+}
+
+.resize-handle--vertical.resize-handle--bottom {
+  bottom: 0;
+}
+
+.resize-handle--vertical.resize-handle--top {
+  top: 0;
+}
+
+/* Panel Resize Handles (between panels in same dock) */
+.panel-resize-handle {
+  flex-shrink: 0;
+  background: var(--surface-border, #333);
+  transition: background-color 0.15s ease;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle--active {
+  background: var(--bs-primary, #589aff);
+}
+
+.panel-resize-handle--horizontal {
+  width: 4px;
+  cursor: ew-resize;
+  align-self: stretch;
+}
+
+.panel-resize-handle--vertical {
+  height: 4px;
+  cursor: ns-resize;
+  align-self: stretch;
+}
+
+/* Dragging state - cursor feedback */
+body.layout-dragging {
+  cursor: grabbing !important;
+}
+
+body.layout-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+/* Dock preview container */
+.dock-preview-container {
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Panel preview in dock */
+.dock-panel-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid;
+  box-sizing: border-box;
+}
+
+/* Inline preview placeholder in dock zone */
+.dock-zone__panel-preview {
+  pointer-events: none;
+}
+
+.dock-panel-preview-inline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(88, 154, 255, 0.25);
+  border: 2px dashed var(--bs-primary, #589aff);
+  box-sizing: border-box;
+  animation: dock-inline-preview-pulse 1s ease-in-out infinite;
+}
+
+@keyframes dock-inline-preview-pulse {
+  0%, 100% {
+    background: rgba(88, 154, 255, 0.2);
+  }
+  50% {
+    background: rgba(88, 154, 255, 0.35);
+  }
+}
+
+.dock-panel-preview-inline__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+}
+
+/* Overlay preview for empty dock zones */
+.dock-panel-preview-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(88, 154, 255, 0.25);
+  border: 2px dashed var(--bs-primary, #589aff);
+  box-sizing: border-box;
+  pointer-events: none;
+  animation: dock-inline-preview-pulse 1s ease-in-out infinite;
+}
+
+.dock-panel-preview-overlay__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+}
+
+/* Floating Panels */
+.floating-panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-ground, #1a1a1a);
+  border: 1px solid var(--surface-border, #444);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.floating-panel__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: var(--surface-raised, #252525);
+  border-bottom: 1px solid var(--surface-border, #333);
+  cursor: move;
+  user-select: none;
+  min-height: 24px;
+}
+
+.floating-panel__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.floating-panel__drag-hint {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-tertiary, #666);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: center;
+}
+
+.floating-panel__drag-hint--active {
+  color: var(--bs-warning, #ffc107);
+  background: rgba(255, 193, 7, 0.15);
+}
+
+.floating-panel__drag-hint--hidden {
+  visibility: hidden;
+}
+
+.floating-panel__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Edge resize handles */
+.floating-panel__edge {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+}
+
+.floating-panel__edge--n {
+  top: -2px;
+  left: 12px;
+  right: 12px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.floating-panel__edge--s {
+  bottom: -2px;
+  left: 12px;
+  right: 12px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.floating-panel__edge--e {
+  right: -2px;
+  top: 12px;
+  bottom: 12px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.floating-panel__edge--w {
+  left: -2px;
+  top: 12px;
+  bottom: 12px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+/* Corner resize handles */
+.floating-panel__corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  z-index: 11;
+}
+
+.floating-panel__corner--nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.floating-panel__corner--ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.floating-panel__corner--sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.floating-panel__corner--se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+
+/* Floating panel content containers */
+.floating-panel .map-panel-container,
+.floating-panel .object-list-panel-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Adjust main output when layout manager is enabled */
+body.layout-manager-enabled #main_text_output_msg_wrapper {
+  grid-area: main;
+}
