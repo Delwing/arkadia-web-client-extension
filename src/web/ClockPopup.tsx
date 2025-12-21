@@ -86,6 +86,19 @@ const ClockPopup: React.FC = () => {
         };
     }, [empireData, ishtarData, setIsOpen]);
 
+    // Listen for active domain changes to auto-switch tabs
+    useEffect(() => {
+        const handleDomainChange = (data: { domain: "Empire" | "Ishtar" }) => {
+            setActiveTab(data.domain);
+        };
+
+        eventBus.on("clock.domain.active", handleDomainChange);
+
+        return () => {
+            eventBus.off("clock.domain.active", handleDomainChange);
+        };
+    }, []);
+
     const currentData = activeTab === "Empire" ? empireData : ishtarData;
 
     return (
