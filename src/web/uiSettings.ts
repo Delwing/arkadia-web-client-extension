@@ -4,6 +4,7 @@ import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader
 import eventBus from "@modules/core/eventBus";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
+import { loadLayoutState, saveLayoutState, resetLayoutState } from "./layout/utils/layoutStorage";
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -1235,12 +1236,57 @@ export default async function initUiSettings() {
         modal.hide();
     });
 
+    // Layout Manager controls
+    const layoutManagerEnabledInput = modalEl.querySelector('#ui-layout-manager-enabled') as HTMLInputElement | null;
+    const layoutManagerObjectListInput = modalEl.querySelector('#ui-layout-manager-object-list') as HTMLInputElement | null;
+    const layoutManagerResetBtn = modalEl.querySelector('#ui-layout-manager-reset') as HTMLButtonElement | null;
+
+    const updateLayoutPanelInputsState = () => {
+        const enabled = layoutManagerEnabledInput?.checked ?? false;
+        if (layoutManagerObjectListInput) layoutManagerObjectListInput.disabled = !enabled;
+    };
+
+    if (layoutManagerEnabledInput) {
+        layoutManagerEnabledInput.addEventListener('change', () => {
+            const layoutState = loadLayoutState();
+            layoutState.enabled = layoutManagerEnabledInput.checked;
+            saveLayoutState(layoutState);
+            updateLayoutPanelInputsState();
+            // Dispatch custom event for React context to pick up the change
+            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+        });
+    }
+
+    if (layoutManagerObjectListInput) {
+        layoutManagerObjectListInput.addEventListener('change', () => {
+            const layoutState = loadLayoutState();
+            layoutState.enabledPanels.objectList = layoutManagerObjectListInput.checked;
+            saveLayoutState(layoutState);
+            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+        });
+    }
+
+    if (layoutManagerResetBtn) {
+        layoutManagerResetBtn.addEventListener('click', () => {
+            resetLayoutState();
+            // Dispatch custom event for React context to pick up the change
+            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+        });
+    }
+
     button.addEventListener('click', async () => {
         current = await load();
         populateFormInputs(current);
         updateLabelRenderModeState();
         updateCustomFontState();
         refreshExplorationStats();
+        // Populate layout manager state
+        if (layoutManagerEnabledInput) {
+            const layoutState = loadLayoutState();
+            layoutManagerEnabledInput.checked = layoutState.enabled;
+            if (layoutManagerObjectListInput) layoutManagerObjectListInput.checked = layoutState.enabledPanels.objectList;
+            updateLayoutPanelInputsState();
+        }
         modal.show();
     });
 

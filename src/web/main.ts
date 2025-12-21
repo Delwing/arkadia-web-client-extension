@@ -1,5 +1,6 @@
 import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
+import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
@@ -48,6 +49,7 @@ import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
+import { LayoutManagerWrapper } from "./layout/LayoutManagerWrapper"
 import HerbManager from "./herbs/HerbManager";
 import {copyOutputAsImage} from "./copyOutputAsImage";
 import {
@@ -2001,6 +2003,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const letterComposerRoot = document.getElementById('letter-composer-root');
     if (letterComposerRoot) {
         createRoot(letterComposerRoot).render(createElement(LetterComposer));
+    }
+
+    // Mount Layout Manager
+    const layoutManagerRoot = document.getElementById('layout-manager-root');
+    if (layoutManagerRoot) {
+        const mapElement = document.getElementById('map');
+        const objectListElement = document.getElementById('objects-list');
+        createRoot(layoutManagerRoot).render(
+            createElement(LayoutManagerWrapper, {
+                mapElement,
+                objectListElement,
+            })
+        );
     }
 });
 
