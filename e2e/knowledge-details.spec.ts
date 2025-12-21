@@ -49,7 +49,7 @@ test.describe('Knowledge details', () => {
 
         await submitCommand(page, '/wiedza');
 
-        const knowledgeWindow = page.locator('#knowledge-details-root .knowledge-window');
+        const knowledgeWindow = page.locator('.knowledge-window');
         await expect(knowledgeWindow, 'should show knowledge details window').toBeVisible();
 
         for (const entryName of [CHAOS_PRIMARY_ENTRY, CHAOS_SECONDARY_ENTRY, GOBLINS_ENTRY]) {
@@ -140,7 +140,7 @@ test.describe('Knowledge details', () => {
             {known: 0, total: 0},
         );
 
-        const overallProgress = knowledgeWindow.locator('.knowledge-window-progress');
+        const overallProgress = knowledgeWindow.locator('.plugin-window-title');
         await expect(
             overallProgress,
             'should render aggregate knowledge totals in the header',
