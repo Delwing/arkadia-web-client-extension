@@ -140,11 +140,24 @@ function preventTabSleep() {
         noSleepInstance = new NoSleep();
     }
 
-    const enableNoSleep = () => {
-        noSleepInstance!.enable();
-        wakeLockEnabled = true;
+    const enableNoSleep = async () => {
+        try {
+            await noSleepInstance!.enable();
+            wakeLockEnabled = noSleepInstance!.isEnabled;
+            console.log('NoSleep enabled:', wakeLockEnabled);
+        } catch (err) {
+            wakeLockEnabled = false;
+            console.warn('NoSleep failed to enable:', err);
+        }
         updateWakeLockButton();
     };
+
+    // Re-enable on visibility change (Android releases wake lock when tab hidden)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && tabSleepPreventionActive && noSleepInstance) {
+            enableNoSleep();
+        }
+    });
 
     document.addEventListener('touchstart', enableNoSleep, {once: true});
     document.addEventListener('click', enableNoSleep, {once: true});
