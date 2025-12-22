@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
@@ -48,9 +48,18 @@ const ChatPopup: React.FC = () => {
     }, []);
 
     // Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
+    // useLayoutEffect runs synchronously after DOM mutations
+    // We scroll twice: once immediately and once after rAF to handle managed layout mode
+    // where the container height may not be fully calculated until the next frame
+    useLayoutEffect(() => {
         if (autoScroll && containerRef.current) {
-            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+            const container = containerRef.current;
+            // Immediate scroll for regular popup mode
+            container.scrollTop = container.scrollHeight;
+            // Deferred scroll for managed layout mode where height calc may be delayed
+            requestAnimationFrame(() => {
+                container.scrollTop = container.scrollHeight;
+            });
         }
     }, [messages, autoScroll, showTeamOnly]);
 
