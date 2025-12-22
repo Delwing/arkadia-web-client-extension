@@ -23,7 +23,9 @@ export default function initIntroduced(
     // Load from storage
     client.on("storage", ({key, value}) => {
         if (key === STORAGE_KEY_REMEMBERED) {
-            previousRemembered = Array.isArray(value) ? value : [];
+            const stored = Array.isArray(value) ? value : [];
+            previousRemembered = stored;
+            remembered = [...stored]; // Also restore remembered for use in processIntroduced
             loaded.remembered = true;
         }
         if (key === STORAGE_KEY_INTRODUCED) {
