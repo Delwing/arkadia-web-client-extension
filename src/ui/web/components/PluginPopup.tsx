@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DockablePopupWrapper } from '@web/layout/components/DockablePopupWrapper';
 import type { PluginPopupType } from '@web/layout/types';
+import { getPopupLockedState } from '@web/layout/utils/layoutStorage';
 
 export interface PluginPopupProps {
     popupId: string;
@@ -40,11 +41,16 @@ export function PluginPopup({
     const [title, setTitle] = useState(initialTitle);
     const [body, setBody] = useState<string | Node>(initialBody);
     const [isPinned, setIsPinned] = useState(initialPinned);
+    const [isLocked, setIsLocked] = useState(() => getPopupLockedState(popupId));
     const containerRef = useRef<HTMLDivElement>(null);
 
     const handlePinnedChange = (pinned: boolean) => {
         setIsPinned(pinned);
         onPinToggle?.(pinned);
+    };
+
+    const handleLockedChange = (locked: boolean) => {
+        setIsLocked(locked);
     };
 
     // Register callbacks for external updates
@@ -74,8 +80,10 @@ export function PluginPopup({
             title={title}
             isOpen={isOpen}
             isPinned={isPinned}
+            isLocked={isLocked}
             onClose={onClose}
             onPinnedChange={handlePinnedChange}
+            onLockedChange={handleLockedChange}
             minWidth={300}
             minHeight={200}
             className="plugin-window"

@@ -172,3 +172,45 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
     console.error('Failed to save popup setting:', e);
   }
 }
+
+/**
+ * Save popup floating state (position, size, isLocked) for non-layout mode.
+ * This is used by popups when layout manager is disabled.
+ */
+export function savePopupFloatingState(
+  popupId: string,
+  updates: {
+    isLocked?: boolean;
+    floatingState?: { x: number; y: number; width: number; height?: number };
+  }
+): void {
+  try {
+    cachedLayoutState = null;
+    const state = loadLayoutState();
+    if (!state.popupPanels[popupId]) {
+      state.popupPanels[popupId] = { isDocked: false };
+    }
+    if (updates.isLocked !== undefined) {
+      state.popupPanels[popupId].isLocked = updates.isLocked;
+    }
+    if (updates.floatingState !== undefined) {
+      state.popupPanels[popupId].floatingState = updates.floatingState;
+    }
+    saveLayoutState(state);
+  } catch (e) {
+    console.error('Failed to save popup floating state:', e);
+  }
+}
+
+/**
+ * Get popup floating state (position, size) for non-layout mode.
+ */
+export function getPopupFloatingState(popupId: string): { x: number; y: number; width: number; height?: number } | undefined {
+  try {
+    const stored = getCachedLayoutState();
+    return stored?.popupPanels?.[popupId]?.floatingState;
+  } catch {
+    // Ignore errors
+  }
+  return undefined;
+}

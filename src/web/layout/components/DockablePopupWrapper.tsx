@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, React
 import { useDockablePopup } from '../hooks/useDockablePopup';
 import { PopupType } from '../types';
 import { refreshPopupContent } from '../popupRegistry';
+import { savePopupFloatingState, getPopupFloatingState } from '../utils/layoutStorage';
 
 export interface DockablePopupWrapperProps {
   popupId: string;
@@ -120,8 +121,18 @@ export function DockablePopupWrapper({
 
   // State for non-layout-mode rendering
   const panelRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<Position | null>(null);
-  const [size, setSize] = useState<Size | null>(initialWidth !== undefined ? { width: initialWidth, height: initialHeight } : null);
+  // Initialize position/size from persisted state if available
+  const [position, setPosition] = useState<Position | null>(() => {
+    const saved = getPopupFloatingState(popupId);
+    if (saved) return { left: saved.x, top: saved.y };
+    return null;
+  });
+  const [size, setSize] = useState<Size | null>(() => {
+    const saved = getPopupFloatingState(popupId);
+    if (saved) return { width: saved.width, height: saved.height };
+    if (initialWidth !== undefined) return { width: initialWidth, height: initialHeight };
+    return null;
+  });
   const hasInitializedRef = useRef(false);
   const isDragging = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -175,6 +186,11 @@ export function DockablePopupWrapper({
     if (!isOpen || isManagedByLayout || hasInitializedRef.current) return;
     hasInitializedRef.current = true;
 
+    // If we already have position/size from storage, don't override
+    if (position !== null && size !== null) {
+      return;
+    }
+
     // If no explicit initial size, let CSS handle sizing (centered via CSS transform)
     if (initialWidth === undefined) {
       // Position and size remain null, CSS handles centering
@@ -192,7 +208,33 @@ export function DockablePopupWrapper({
       : Math.max(16, window.innerHeight * 0.1);
     setPosition({ left, top });
     setSize({ width: effectiveWidth, height: initialHeight });
-  }, [isOpen, isManagedByLayout, initialWidth, initialHeight]);
+  }, [isOpen, isManagedByLayout, initialWidth, initialHeight, position, size]);
+
+  // Persist position/size changes to storage (non-layout mode only)
+  useEffect(() => {
+    if (!isOpen || isManagedByLayout) return;
+    if (!position && !size) return;
+
+    // Debounce to avoid excessive writes during drag/resize
+    const timeout = setTimeout(() => {
+      savePopupFloatingState(popupId, {
+        floatingState: position && size ? {
+          x: position.left,
+          y: position.top,
+          width: size.width,
+          height: size.height,
+        } : undefined,
+      });
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [isOpen, isManagedByLayout, popupId, position, size]);
+
+  // Persist isLocked changes to storage (non-layout mode only)
+  useEffect(() => {
+    if (!isOpen || isManagedByLayout) return;
+    savePopupFloatingState(popupId, { isLocked });
+  }, [isOpen, isManagedByLayout, popupId, isLocked]);
 
   // Handle Escape key to close (unless pinned)
   useEffect(() => {
