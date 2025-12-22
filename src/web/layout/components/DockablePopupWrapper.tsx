@@ -64,7 +64,7 @@ export function DockablePopupWrapper({
   headerActions,
   minWidth = 300,
   minHeight = 200,
-  initialWidth = 350,
+  initialWidth,
   initialHeight,
   className = '',
   bodyClassName = '',
@@ -121,7 +121,7 @@ export function DockablePopupWrapper({
   // State for non-layout-mode rendering
   const panelRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<Position | null>(null);
-  const [size, setSize] = useState<Size | null>({ width: initialWidth, height: initialHeight });
+  const [size, setSize] = useState<Size | null>(initialWidth !== undefined ? { width: initialWidth, height: initialHeight } : null);
   const hasInitializedRef = useRef(false);
   const isDragging = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -150,6 +150,13 @@ export function DockablePopupWrapper({
 
     if (!isOpen || isManagedByLayout) return;
 
+    // If no explicit initial size, reset to CSS-based sizing (centered)
+    if (initialWidth === undefined) {
+      setPosition(null);
+      setSize(null);
+      return;
+    }
+
     // Clamp width to fit viewport on small screens
     const margin = 32;
     const effectiveWidth = Math.min(initialWidth, window.innerWidth - margin);
@@ -167,6 +174,12 @@ export function DockablePopupWrapper({
   useEffect(() => {
     if (!isOpen || isManagedByLayout || hasInitializedRef.current) return;
     hasInitializedRef.current = true;
+
+    // If no explicit initial size, let CSS handle sizing (centered via CSS transform)
+    if (initialWidth === undefined) {
+      // Position and size remain null, CSS handles centering
+      return;
+    }
 
     // Clamp width to fit viewport on small screens
     const margin = 32;

@@ -78,8 +78,6 @@ export function PluginPopup({
             onPinnedChange={handlePinnedChange}
             minWidth={300}
             minHeight={200}
-            initialWidth={400}
-            initialHeight={300}
             className="plugin-window"
             bodyClassName="plugin-window-body"
         >

@@ -884,7 +884,7 @@ h1 {
   height: auto;
   min-width: min(300px, calc(100vw - 2rem));
   min-height: 200px;
-  max-height: calc(100vh - 2rem);
+  max-height: calc(100vh - 20rem);
   border-radius: 0.5rem;
   background-color: var(--surface-elevated);
   border: 1px solid var(--surface-border);
