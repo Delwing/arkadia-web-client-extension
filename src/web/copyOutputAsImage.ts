@@ -291,6 +291,16 @@ export async function copyOutputAsImage(): Promise<void> {
                         fitChars = 1;
                     }
 
+                    // Try to break at word boundary (last space within fitting chars)
+                    // This matches CSS white-space: pre-wrap behavior
+                    const fittingText = remainingText.substring(0, fitChars);
+                    const lastSpaceIndex = fittingText.lastIndexOf(' ');
+                    if (lastSpaceIndex > 0) {
+                        // Break at the space - include the space at end of this line
+                        fitChars = lastSpaceIndex + 1;
+                    }
+                    // If no space found, we break mid-word (fallback for very long words)
+
                     // Add the fitting part to current line
                     const fittingPart = remainingText.substring(0, fitChars);
                     if (fittingPart.length > 0) {
