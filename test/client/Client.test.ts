@@ -230,6 +230,23 @@ test('sendCommand splits commands returned by parseCommand', async () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'bar', true, undefined);
 });
 
+test('sendCommand does not split # in direct user input', async () => {
+  parseCommand.mockImplementationOnce((cmd: string) => cmd);
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  await client.sendCommand('foo#bar', true, undefined, false, true);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledTimes(1);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('foo#bar', true, undefined);
+});
+
+test('sendCommand splits # when user input is transformed by parseCommand', async () => {
+  parseCommand.mockImplementationOnce(() => 'cmd1#cmd2');
+  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  await client.sendCommand('s', true, undefined, false, true);
+  expect(parseCommand).toHaveBeenCalledWith('s');
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'cmd1', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'cmd2', true, undefined);
+});
+
 test('sendCommand prints echo commands locally', async () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
   const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);

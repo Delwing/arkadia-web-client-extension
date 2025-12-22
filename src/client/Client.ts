@@ -425,7 +425,7 @@ export default class Client {
             this.print(mudletColorLine(command.substring(5)))
             return
         }
-        const split = command.split(fromUserInput ? /;/ : /[#;]/)
+        const split = command.split((fromUserInput && !commandChanged) ? /;/ : /[#;]/)
         if (split.length > 1) {
             for (const part of split) {
                 await this.sendCommand(part, echo, options, skipMapParse || commandChanged)
