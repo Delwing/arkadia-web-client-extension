@@ -182,18 +182,22 @@ export async function copyOutputAsImage(): Promise<void> {
     const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
     const bgColor = outputWrapper?.style.backgroundColor || '#242424';
 
-    const fontSize = 14;
+    // Get computed styles from the actual content area to match rendering
+    const computedStyle = outputWrapper ? window.getComputedStyle(outputWrapper) : null;
+    const fontSize = computedStyle ? parseFloat(computedStyle.fontSize) : 14;
+    const fontFamily = computedStyle?.fontFamily || 'monospace';
     const lineHeight = 1.4;
     const padding = 16;
-    const font = `${fontSize}px monospace`;
-    const boldFont = `bold ${fontSize}px monospace`;
+    const font = `${fontSize}px ${fontFamily}`;
+    const boldFont = `bold ${fontSize}px ${fontFamily}`;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
 
     // Get container width for wrapping (matching the display in content area)
-    // Account for scrollbar and some margin
-    const containerWidth = outputWrapper ? outputWrapper.clientWidth - padding * 2 : 800;
+    // Use scrollWidth to get the actual content width (excluding scrollbar)
+    const wrapperPadding = computedStyle ? parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) : 16;
+    const containerWidth = outputWrapper ? outputWrapper.clientWidth - wrapperPadding : 800;
 
     // Split spans into lines (by newlines only first, then wrap)
     const logicalLines: StyledSpan[][] = [];
