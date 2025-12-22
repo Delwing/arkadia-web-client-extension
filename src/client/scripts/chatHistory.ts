@@ -36,9 +36,15 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         const members = teamManager.getTeamMembers();
         if (members.length === 0) return false;
 
+        const trimmedText = text.trim();
+
+        // Own speech counts as team when in a team
+        if (trimmedText.startsWith("Mowisz") || trimmedText.startsWith("Krzyczysz") || trimmedText.startsWith("Szepczesz")) {
+            return true;
+        }
+
         // Check if message starts with a team member's name
         // Messages from team members typically start with their name
-        const trimmedText = text.trim();
         for (const member of members) {
             if (trimmedText.startsWith(member)) {
                 return true;

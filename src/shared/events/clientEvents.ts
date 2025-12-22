@@ -6,6 +6,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
+import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -216,6 +217,9 @@ export interface KnownEvents {
     "locationNote.edit": { roomId: number; roomName?: string; areaName?: string };
     "locationNote.open": { roomId: number };
     "locationNote.changed": { roomId: number };
+    "chat.newMessage": ChatEntry;
+    "chat.cleared": void;
+    "chat.popup.open": void;
 }
 
 export interface ObjectData {
