@@ -196,6 +196,8 @@ export function useDockablePopup({
     // Get saved floating state - only use if user has explicitly modified position/size
     const savedState = getPopupDockState?.(popupId);
     const savedFloating = savedState?.userModifiedPosition ? savedState.floatingState : null;
+    // Use a default width if not specified (for auto-sizing popups)
+    const effectiveInitialWidth = initialWidth ?? 500;
     // For auto-height popups, position near top of screen
     const initialY = initialHeight !== undefined
       ? Math.max(16, (window.innerHeight - initialHeight) / 2)
@@ -210,9 +212,9 @@ export function useDockablePopup({
         }
       : {
           id: popupId,
-          x: Math.max(16, (window.innerWidth - initialWidth) / 2),
+          x: Math.max(16, (window.innerWidth - effectiveInitialWidth) / 2),
           y: initialY,
-          width: initialWidth,
+          width: effectiveInitialWidth,
           height: initialHeight,
         };
 

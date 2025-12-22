@@ -217,14 +217,17 @@ export function DockablePopupWrapper({
 
     // Debounce to avoid excessive writes during drag/resize
     const timeout = setTimeout(() => {
-      savePopupFloatingState(popupId, {
-        floatingState: position && size ? {
-          x: position.left,
-          y: position.top,
-          width: size.width,
-          height: size.height,
-        } : undefined,
-      });
+      // Only persist if we have position and size with explicit height
+      if (position && size && size.height !== undefined) {
+        savePopupFloatingState(popupId, {
+          floatingState: {
+            x: position.left,
+            y: position.top,
+            width: size.width,
+            height: size.height,
+          },
+        });
+      }
     }, 300);
 
     return () => clearTimeout(timeout);

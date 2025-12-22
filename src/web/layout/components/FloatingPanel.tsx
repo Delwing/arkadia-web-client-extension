@@ -146,7 +146,7 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
     if (!popupInfo) return;
 
     // Reset to initial centered position and size
-    const initialWidth = popupInfo.config.initialWidth ?? 350;
+    const initialWidth = popupInfo.config.initialWidth ?? 500;
     const initialHeight = popupInfo.config.initialHeight;
     const initialY = initialHeight !== undefined
       ? Math.max(16, (window.innerHeight - initialHeight) / 2)
