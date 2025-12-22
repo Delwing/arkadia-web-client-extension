@@ -9,6 +9,7 @@ import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDet
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { usePopupSetting } from './hooks/usePopupSetting';
 
 const POPUP_ID = 'popup:knowledgeDetails';
 
@@ -70,7 +71,7 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
 const KnowledgeDetailsReport: React.FC = () => {
   const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
-  const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideCompleted, setHideCompleted] = usePopupSetting(POPUP_ID, 'hideCompleted', false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
@@ -84,7 +85,6 @@ const KnowledgeDetailsReport: React.FC = () => {
     }
     setData(detail);
     setIsOpen(true);
-    setHideCompleted(false);
   }, [isPinned, setIsOpen]);
 
   useEffect(() => {
@@ -341,7 +341,7 @@ const KnowledgeDetailsReport: React.FC = () => {
                 className={`knowledge-details-toggle-button${
                   hideCompleted ? ' knowledge-details-toggle-button--active' : ''
                 }`}
-                onClick={() => setHideCompleted((prev) => !prev)}
+                onClick={() => setHideCompleted(!hideCompleted)}
               >
                 {hideCompleted ? 'Pokaż ukończone wpisy' : 'Ukryj ukończone wpisy'}
               </button>

@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { usePopupSetting } from './hooks/usePopupSetting';
 import { getChatHistory, ChatEntry } from '../client/scripts/chatHistory';
 
 const POPUP_ID = 'popup:chat';
@@ -10,7 +11,7 @@ const DISPLAY_LIMIT = 100;
 const ChatPopup: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
     const [messages, setMessages] = useState<ChatEntry[]>([]);
-    const [showTeamOnly, setShowTeamOnly] = useState(false);
+    const [showTeamOnly, setShowTeamOnly] = usePopupSetting(POPUP_ID, 'showTeamOnly', false);
     const containerRef = useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = useState(true);
 

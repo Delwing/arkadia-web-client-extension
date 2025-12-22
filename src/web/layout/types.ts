@@ -113,6 +113,8 @@ export interface PopupPanelDockState {
   userModifiedPosition?: boolean;
   /** If true, popup is locked (prevents dragging and resizing) */
   isLocked?: boolean;
+  /** Popup-specific settings (e.g., filters, sort modes) */
+  settings?: Record<string, unknown>;
 }
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {

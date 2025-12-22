@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { getItemSync, setItemSync } from '@modules/core/storage';
+import { usePopupSetting } from './hooks/usePopupSetting';
 import type { Contract } from '@client/scripts/contracts';
 
 interface ContractsPopupPayload {
@@ -11,8 +11,6 @@ interface ContractsPopupPayload {
 }
 
 type SortMode = 'distance' | 'time';
-
-const SORT_STORAGE_KEY = 'contractsSortMode';
 
 const ONE_INGAME_DAY_MS = 48 * 60 * 1000; // 48 real minutes = 1 in-game day
 
@@ -47,29 +45,12 @@ function formatDaysRemaining(days: number): string {
     return `${days} dni`;
 }
 
-function loadSortMode(): SortMode {
-    try {
-        const stored = getItemSync(SORT_STORAGE_KEY);
-        const mode = stored?.[SORT_STORAGE_KEY];
-        if (mode === 'distance' || mode === 'time') {
-            return mode;
-        }
-    } catch {
-        // ignore
-    }
-    return 'distance';
-}
-
-function saveSortMode(mode: SortMode): void {
-    setItemSync(SORT_STORAGE_KEY, mode);
-}
-
 const POPUP_ID = 'popup:contracts';
 
 const ContractsPopup: React.FC = () => {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
-    const [sortMode, setSortMode] = useState<SortMode>(loadSortMode);
+    const [sortMode, setSortMode] = usePopupSetting<SortMode>(POPUP_ID, 'sortMode', 'distance');
 
     const handleOpen = useCallback((data: ContractsPopupPayload) => {
         setContracts(data.contracts);
@@ -101,11 +82,6 @@ const ContractsPopup: React.FC = () => {
         eventBus.emit('sendCommand', { command: `/prowadz ${locationId}` });
     }, []);
 
-    const handleSortChange = useCallback((mode: SortMode) => {
-        setSortMode(mode);
-        saveSortMode(mode);
-    }, []);
-
     const contractsWithDistance = useMemo(() => {
         return contracts.map(contract => ({
             contract,
@@ -130,7 +106,7 @@ const ContractsPopup: React.FC = () => {
             <button
                 type="button"
                 className={`contracts-sort-btn${sortMode === 'distance' ? ' contracts-sort-btn--active' : ''}`}
-                onClick={() => handleSortChange('distance')}
+                onClick={() => setSortMode('distance')}
                 title="Sortuj po odleglosci"
             >
                 Odleglosc
@@ -138,7 +114,7 @@ const ContractsPopup: React.FC = () => {
             <button
                 type="button"
                 className={`contracts-sort-btn${sortMode === 'time' ? ' contracts-sort-btn--active' : ''}`}
-                onClick={() => handleSortChange('time')}
+                onClick={() => setSortMode('time')}
                 title="Sortuj po czasie"
             >
                 Czas

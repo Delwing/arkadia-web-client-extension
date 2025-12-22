@@ -125,3 +125,50 @@ export function getPopupLockedState(popupId: string): boolean {
   }
   return false;
 }
+
+/**
+ * Get a specific setting value for a popup.
+ * @param popupId The popup identifier
+ * @param key The setting key
+ * @param defaultValue Default value if setting is not found
+ */
+export function getPopupSetting<T>(popupId: string, key: string, defaultValue: T): T {
+  try {
+    const stored = getCachedLayoutState();
+    const settings = stored?.popupPanels?.[popupId]?.settings;
+    if (settings && key in settings) {
+      return settings[key] as T;
+    }
+  } catch {
+    // Ignore errors
+  }
+  return defaultValue;
+}
+
+/**
+ * Set a specific setting value for a popup.
+ * Saves immediately (not debounced) to avoid race conditions with LayoutContext.
+ * @param popupId The popup identifier
+ * @param key The setting key
+ * @param value The value to store
+ */
+export function setPopupSetting<T>(popupId: string, key: string, value: T): void {
+  try {
+    // Clear cache to ensure we get the latest state
+    cachedLayoutState = null;
+    const state = loadLayoutState();
+    if (!state.popupPanels[popupId]) {
+      state.popupPanels[popupId] = { isDocked: false };
+    }
+    if (!state.popupPanels[popupId].settings) {
+      state.popupPanels[popupId].settings = {};
+    }
+    state.popupPanels[popupId].settings![key] = value;
+    // Save immediately to avoid race condition with LayoutContext's debounced save
+    saveLayoutState(state);
+    // Notify LayoutContext to sync its state
+    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+  } catch (e) {
+    console.error('Failed to save popup setting:', e);
+  }
+}
