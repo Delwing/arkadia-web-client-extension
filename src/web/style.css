@@ -3805,6 +3805,7 @@ body.mobile-command-radial-active {
   word-break: break-word;
   line-height: 1.2;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
+  opacity: 1;
 }
 
 .desktop-button:hover {
@@ -3850,6 +3851,7 @@ body.mobile-command-radial-active {
 
 .desktop-button-list-item {
   transition: filter 0.15s ease;
+  opacity: 1;
 }
 
 .desktop-button-list-item:hover {
