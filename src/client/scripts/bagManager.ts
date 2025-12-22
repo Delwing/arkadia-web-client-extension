@@ -253,7 +253,8 @@ function configure(client: Client) {
             showInterface(client, found);
         } else {
             Object.entries(bagInBiernik).forEach(([name, biernik]) => {
-                if (rawLine.includes(biernik) && !found.includes(name)) {
+                const regex = new RegExp(`\\b${biernik}\\b`);
+                if (regex.test(rawLine) && !found.includes(name)) {
                     found.push(name);
                 }
             });
