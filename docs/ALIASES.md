@@ -83,6 +83,10 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/opoz _sekundy_** - ustawia domyslne opoznienie kroków.
 - **/szybciej** - zmniejsza opoznienie o 0.5 s.
 - **/wolniej** - zwieksza opoznienie o 0.5 s.
+- **/pre_walk _komendy_** - ustawia komendy wykonywane przed każdym krokiem (rozdzielone znakiem `#`).
+- **/pre_walk-** - czyści komendy pre-walk.
+- **/post_walk _komendy_** - ustawia komendy wykonywane po każdym kroku (rozdzielone znakiem `#`).
+- **/post_walk-** - czyści komendy post-walk.
 
 ## Notatki lokacji
 - **/note** - otwiera edytor notatki dla bieżącej lokacji (tworzy nową, jeśli nie istnieje).
@@ -101,8 +105,8 @@ Możliwe jest także tworzenie własnych aliasów w ustawieniach klienta. Wzorze
 - **/dodaj_skrot _klawisz nazwa [komenda]_** - dodaje skrót klawiaturowy.
 - **/usun_skrot _nazwa_** - usuwa wskazany skrót.
 - **/usun_skroty** - usuwa wszystkie skróty.
-- **/tbind1 [_komenda_]** - ustawia (lub czyści, gdy bez parametru) pierwszy tymczasowy bind na podaną komendę.
-- **/tbind2 [_komenda_]** - ustawia (lub czyści) drugi tymczasowy bind na podaną komendę.
+- **/tbind1 [_komenda_]** - ustawia (lub czyści, gdy bez parametru) pierwszy tymczasowy bind na podaną komendę. Komendy można rozdzielać znakiem `#`.
+- **/tbind2 [_komenda_]** - ustawia (lub czyści) drugi tymczasowy bind na podaną komendę. Komendy można rozdzielać znakiem `#`.
 
 ## Wiedza
 - **/zglebiaj** - wyświetla listę kategorii wiedzy dostępnych w aktualnej bibliotece, jeśli dane są dostępne.

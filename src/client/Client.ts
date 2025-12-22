@@ -123,6 +123,8 @@ export default class Client {
     moveMode = 0;
     carriageMode = false;
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
+    preWalkCommands: string[] = [];
+    postWalkCommands: string[] = [];
     herbManager?: HerbManagerApi;
     private commandHooks: CommandHook[] = [];
 
@@ -390,7 +392,7 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
-    async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false): Promise<void> {
+    async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false, fromUserInput: boolean = false): Promise<void> {
         // Run command hooks early - before any processing
         for (const hook of this.commandHooks) {
             const result = hook.callback(command, echo, options);
@@ -423,7 +425,7 @@ export default class Client {
             this.print(mudletColorLine(command.substring(5)))
             return
         }
-        const split = command.split(/[#;]/)
+        const split = command.split(fromUserInput ? /;/ : /[#;]/)
         if (split.length > 1) {
             for (const part of split) {
                 await this.sendCommand(part, echo, options, skipMapParse || commandChanged)
@@ -492,17 +494,20 @@ export default class Client {
     private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
         // Check if command is already prefixed with przemknij/jedz - extract direction and move map
         let direction: string
-        let alreadyPrefixed = false
+        let movePrefix = ''
 
         if (command.startsWith('przemknij z druzyna ')) {
             direction = command.substring(20)
-            alreadyPrefixed = true
+            movePrefix = 'przemknij z druzyna '
         } else if (command.startsWith('przemknij ')) {
             direction = command.substring(10)
-            alreadyPrefixed = true
+            movePrefix = 'przemknij '
         } else {
             direction = command
         }
+
+        // Check if original direction is a direction command (for pre/post walk)
+        const isOriginalDirection = isDirection(direction)
 
         const moveRes = this.Map.move(direction)
         if (moveRes.suppress) {
@@ -512,13 +517,41 @@ export default class Client {
             this.Map.setBlockable(true)
         }
 
-        // If command was already prefixed, send it as-is; otherwise apply move mode
-        const commandToSend = alreadyPrefixed ? command : this.applyMoveMode(moveRes.direction)
+        // Execute pre-walk commands if original command was a direction or map moved
+        if (isOriginalDirection || moveRes.moved) {
+            for (const cmd of this.preWalkCommands) {
+                this.sendCommand(cmd, echo, options)
+            }
+        }
+
+        // Determine command to send:
+        // - If already prefixed, apply same prefix to resolved direction
+        // - If map moved, apply move mode to resolved direction
+        // - Otherwise send resolved direction as-is
+        let commandToSend: string
+        if (movePrefix) {
+            commandToSend = movePrefix + moveRes.direction
+        } else if (moveRes.moved) {
+            commandToSend = this.applyMoveModePrefix(moveRes.direction)
+        } else {
+            commandToSend = this.applyMoveMode(moveRes.direction)
+        }
         this.clientAdapter.send(commandToSend, echo, options)
+
+        // Execute post-walk commands if original command was a direction or map moved
+        if (isOriginalDirection || moveRes.moved) {
+            for (const cmd of this.postWalkCommands) {
+                this.sendCommand(cmd, echo, options)
+            }
+        }
     }
 
     private applyMoveMode(cmd: string): string {
         if (!isDirection(cmd)) return cmd
+        return this.applyMoveModePrefix(cmd)
+    }
+
+    private applyMoveModePrefix(cmd: string): string {
         if (this.carriageMode) return `jedz na ${cmd}`
         if (this.moveMode === 1) return `przemknij ${cmd}`
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`

@@ -11,7 +11,6 @@ const ChatPopup: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
     const [messages, setMessages] = useState<ChatEntry[]>([]);
     const [showTeamOnly, setShowTeamOnly] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = useState(true);
 
@@ -50,8 +49,8 @@ const ChatPopup: React.FC = () => {
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        if (autoScroll && messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (autoScroll && containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
     }, [messages, autoScroll, showTeamOnly]);
 
@@ -132,7 +131,6 @@ const ChatPopup: React.FC = () => {
                         </div>
                     ))
                 )}
-                <div ref={messagesEndRef} />
             </div>
         </DockablePopupWrapper>
     );

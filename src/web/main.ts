@@ -44,7 +44,7 @@ import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
-import { LayoutManagerWrapper } from "./layout/LayoutManagerWrapper"
+import { LayoutManagerWrapper } from "@web/layout"
 import {copyOutputAsImage} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
@@ -1745,7 +1745,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentInput = '';
                 resetTabState();
 
-                client.sendCommand(message);
+                client.sendCommand(message, true, undefined, false, true);
                 if (clearInputOnSend) {
                     messageInput.value = '';
                     if (focus) messageInput.focus();
@@ -1754,7 +1754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
-                client.sendCommand(message);
+                client.sendCommand(message, true, undefined, false, true);
                 messageInput.value = '';
                 if (focus) messageInput.focus();
             }
