@@ -880,8 +880,9 @@ h1 {
   position: fixed;
   z-index: 1050;
   width: min(1140px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
   height: auto;
-  min-width: 300px;
+  min-width: min(300px, calc(100vw - 2rem));
   min-height: 200px;
   max-height: calc(100vh - 2rem);
   border-radius: 0.5rem;
@@ -1014,8 +1015,9 @@ h1 {
   position: fixed;
   z-index: 1050;
   width: min(1140px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
   height: auto;
-  min-width: 300px;
+  min-width: min(300px, calc(100vw - 2rem));
   min-height: 200px;
   max-height: calc(100vh - 2rem);
   border-radius: 0.5rem;

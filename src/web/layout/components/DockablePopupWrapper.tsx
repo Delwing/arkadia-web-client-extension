@@ -150,13 +150,17 @@ export function DockablePopupWrapper({
 
     if (!isOpen || isManagedByLayout) return;
 
+    // Clamp width to fit viewport on small screens
+    const margin = 32;
+    const effectiveWidth = Math.min(initialWidth, window.innerWidth - margin);
+
     // Restore to initial centered position
-    const left = Math.max(16, (window.innerWidth - initialWidth) / 2);
+    const left = Math.max(16, (window.innerWidth - effectiveWidth) / 2);
     const top = initialHeight !== undefined
       ? Math.max(16, (window.innerHeight - initialHeight) / 2)
       : Math.max(16, window.innerHeight * 0.1);
     setPosition({ left, top });
-    setSize({ width: initialWidth, height: initialHeight });
+    setSize({ width: effectiveWidth, height: initialHeight });
   }, [resetCounter, isOpen, isManagedByLayout, initialWidth, initialHeight]);
 
   // Initialize position when popup opens (non-layout mode)
@@ -164,13 +168,17 @@ export function DockablePopupWrapper({
     if (!isOpen || isManagedByLayout || hasInitializedRef.current) return;
     hasInitializedRef.current = true;
 
+    // Clamp width to fit viewport on small screens
+    const margin = 32;
+    const effectiveWidth = Math.min(initialWidth, window.innerWidth - margin);
+
     // Center horizontally, and vertically if height is known, otherwise position near top
-    const left = Math.max(16, (window.innerWidth - initialWidth) / 2);
+    const left = Math.max(16, (window.innerWidth - effectiveWidth) / 2);
     const top = initialHeight !== undefined
       ? Math.max(16, (window.innerHeight - initialHeight) / 2)
       : Math.max(16, window.innerHeight * 0.1);
     setPosition({ left, top });
-    setSize({ width: initialWidth, height: initialHeight });
+    setSize({ width: effectiveWidth, height: initialHeight });
   }, [isOpen, isManagedByLayout, initialWidth, initialHeight]);
 
   // Handle Escape key to close (unless pinned)
