@@ -195,9 +195,9 @@ export async function copyOutputAsImage(): Promise<void> {
     const ctx = canvas.getContext('2d')!;
 
     // Get container width for wrapping (matching the display in content area)
-    // Use scrollWidth to get the actual content width (excluding scrollbar)
+    // Subtract padding and a small buffer for measurement differences between canvas and browser
     const wrapperPadding = computedStyle ? parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) : 16;
-    const containerWidth = outputWrapper ? outputWrapper.clientWidth - wrapperPadding : 800;
+    const containerWidth = outputWrapper ? outputWrapper.clientWidth - wrapperPadding - 1 : 800;
 
     // Split spans into lines (by newlines only first, then wrap)
     const logicalLines: StyledSpan[][] = [];
