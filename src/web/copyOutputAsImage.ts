@@ -179,8 +179,8 @@ export async function copyOutputAsImage(): Promise<void> {
         throw new Error('Brak zaznaczenia');
     }
 
-    const bodyStyle = window.getComputedStyle(document.body);
-    const bgColor = bodyStyle.backgroundColor || '#1a1a2e';
+    const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
+    const bgColor = outputWrapper?.style.backgroundColor || '#242424';
 
     const fontSize = 14;
     const lineHeight = 1.4;
