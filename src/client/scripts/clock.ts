@@ -418,6 +418,8 @@ export class ArkadiaTime {
     }
 
     private load(): void {
+        // Temporarily disabled - clock state restoration from storage
+        return;
         try {
             const raw = localStorage.getItem(`${this.domain}.time`);
             if (!raw) {
