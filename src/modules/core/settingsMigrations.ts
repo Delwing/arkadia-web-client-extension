@@ -13,38 +13,45 @@ interface Migration {
  * Each migration has a version number and transforms settings from the previous version.
  * Migrations are applied in order, starting from the stored version.
  */
+// Map of accusative -> nominative forms for enemy names
+const accusativeToNominative: Record<string, string> = {
+    'trolla': 'troll',
+    'bykocentaura': 'bykocentaur',
+    'ghoula': 'ghoul',
+    'grzyboczleka': 'grzyboczlek',
+    'bagiennika': 'bagiennik',
+    'zjawe': 'zjawa',
+    'wyverne': 'wywerna',
+    'harpie': 'harpia',
+};
+
+function migrateAccusativeToNominative(settings: Partial<Settings>): Partial<Settings> {
+    if (!settings.collectOverrides) {
+        return settings;
+    }
+
+    const migratedOverrides: CollectOverride[] = settings.collectOverrides.map(override => {
+        const lowerEnemy = override.enemy.toLowerCase();
+        const nominative = accusativeToNominative[lowerEnemy];
+        if (nominative) {
+            return { ...override, enemy: nominative };
+        }
+        return override;
+    });
+
+    return { ...settings, collectOverrides: migratedOverrides };
+}
+
 const migrations: Migration[] = [
     {
         version: 1,
         description: 'Convert collectOverrides enemy names from accusative to nominative Polish forms',
-        migrate: (settings) => {
-            if (!settings.collectOverrides) {
-                return settings;
-            }
-
-            // Map of accusative -> nominative forms
-            const accusativeToNominative: Record<string, string> = {
-                'trolla': 'troll',
-                'bykocentaura': 'bykocentaur',
-                'ghoula': 'ghoul',
-                'grzyboczleka': 'grzyboczlek',
-                'bagiennika': 'bagiennik',
-                'zjawe': 'zjawa',
-                'wyverne': 'wywerna',
-                'harpie': 'harpia',
-            };
-
-            const migratedOverrides: CollectOverride[] = settings.collectOverrides.map(override => {
-                const lowerEnemy = override.enemy.toLowerCase();
-                const nominative = accusativeToNominative[lowerEnemy];
-                if (nominative) {
-                    return { ...override, enemy: nominative };
-                }
-                return override;
-            });
-
-            return { ...settings, collectOverrides: migratedOverrides };
-        },
+        migrate: migrateAccusativeToNominative,
+    },
+    {
+        version: 2,
+        description: 'Re-run accusative to nominative conversion (fix for multi-character migration bug)',
+        migrate: migrateAccusativeToNominative,
     },
 ];
 
@@ -77,9 +84,10 @@ export function getLatestMigrationVersion(): number {
 /**
  * Apply pending migrations to settings.
  * Returns the migrated settings and whether any migrations were applied.
+ * Note: This function does NOT update the stored migration version - callers must do that.
  */
-export function migrateSettings(settings: Partial<Settings>): { settings: Partial<Settings>; migrated: boolean } {
-    const currentVersion = getMigrationsVersion();
+export function migrateSettings(settings: Partial<Settings>, fromVersion?: number): { settings: Partial<Settings>; migrated: boolean } {
+    const currentVersion = fromVersion ?? getMigrationsVersion();
     const latestVersion = getLatestMigrationVersion();
 
     if (currentVersion >= latestVersion) {
@@ -98,8 +106,7 @@ export function migrateSettings(settings: Partial<Settings>): { settings: Partia
     }
 
     if (appliedCount > 0) {
-        setMigrationsVersion(latestVersion);
-        console.log(`[SettingsMigrations] Applied ${appliedCount} migration(s), now at version ${latestVersion}`);
+        console.log(`[SettingsMigrations] Applied ${appliedCount} migration(s)`);
     }
 
     return { settings: migratedSettings, migrated: appliedCount > 0 };
@@ -110,23 +117,31 @@ export function migrateSettings(settings: Partial<Settings>): { settings: Partia
  * Call this when loading settings from storage.
  */
 export function runSettingsMigrations(characterKey: string | null): void {
+    const currentVersion = getMigrationsVersion();
+    const latestVersion = getLatestMigrationVersion();
+
+    if (currentVersion >= latestVersion) {
+        return;
+    }
+
     const settingsKey = characterKey ? `${characterKey}:settings` : 'settings';
     const raw = localStorage.getItem(settingsKey);
 
     if (!raw) {
         // No settings stored, nothing to migrate
         // But still update version so new users don't get migration logs
-        setMigrationsVersion(getLatestMigrationVersion());
+        setMigrationsVersion(latestVersion);
         return;
     }
 
     try {
         const settings = JSON.parse(raw) as Partial<Settings>;
-        const { settings: migrated, migrated: didMigrate } = migrateSettings(settings);
+        const { settings: migrated, migrated: didMigrate } = migrateSettings(settings, currentVersion);
 
         if (didMigrate) {
             localStorage.setItem(settingsKey, JSON.stringify(migrated));
         }
+        setMigrationsVersion(latestVersion);
     } catch (e) {
         console.error('[SettingsMigrations] Failed to parse settings for migration:', e);
     }
@@ -158,7 +173,7 @@ export function runAllSettingsMigrations(): void {
 
         try {
             const settings = JSON.parse(raw) as Partial<Settings>;
-            const { settings: migrated, migrated: didMigrate } = migrateSettings(settings);
+            const { settings: migrated, migrated: didMigrate } = migrateSettings(settings, currentVersion);
 
             if (didMigrate) {
                 localStorage.setItem(settingsKey, JSON.stringify(migrated));

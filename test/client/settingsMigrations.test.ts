@@ -113,5 +113,36 @@ describe('settingsMigrations', () => {
             const parsed = JSON.parse(raw!);
             expect(parsed.collectOverrides[0].enemy).toBe('trolla');
         });
+
+        it('migrates multiple character settings in one pass', () => {
+            const globalSettings = {
+                collectOverrides: [
+                    { enemy: 'trolla', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                ],
+            };
+            const char1Settings = {
+                collectOverrides: [
+                    { enemy: 'bykocentaura', collectCopper: true, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                ],
+            };
+            const char2Settings = {
+                collectOverrides: [
+                    { enemy: 'ghoula', collectCopper: false, collectSilver: true, collectGold: false, collectGems: true, collectExtra: [] },
+                ],
+            };
+            localStorage.setItem('settings', JSON.stringify(globalSettings));
+            localStorage.setItem('Hero:settings', JSON.stringify(char1Settings));
+            localStorage.setItem('Wizard:settings', JSON.stringify(char2Settings));
+
+            runAllSettingsMigrations();
+
+            const migratedGlobal = JSON.parse(localStorage.getItem('settings')!);
+            const migratedChar1 = JSON.parse(localStorage.getItem('Hero:settings')!);
+            const migratedChar2 = JSON.parse(localStorage.getItem('Wizard:settings')!);
+
+            expect(migratedGlobal.collectOverrides[0].enemy).toBe('troll');
+            expect(migratedChar1.collectOverrides[0].enemy).toBe('bykocentaur');
+            expect(migratedChar2.collectOverrides[0].enemy).toBe('ghoul');
+        });
     });
 });
