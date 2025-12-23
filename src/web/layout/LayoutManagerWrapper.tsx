@@ -9,6 +9,8 @@ import KnowledgeReport from '../KnowledgeReport';
 import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
 import ChatPopup from '../ChatPopup';
 import CombatPopup from '../CombatPopup';
+import PostepyPopup from '../PostepyPopup';
+import ZabiciPopup from '../ZabiciPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -37,6 +39,8 @@ export function LayoutManagerWrapper({
       <KnowledgeDetailsReport />
       <ChatPopup />
       <CombatPopup />
+      <PostepyPopup />
+      <ZabiciPopup />
     </LayoutProvider>
   );
 }

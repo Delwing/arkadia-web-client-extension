@@ -1,16 +1,23 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
 
-type KillEntry = {
+export type KillEntry = {
     mySession: number;
     myTotal: number;
     teamSession: number;
 };
 
-type KillCounts = Record<string, KillEntry>;
+export type KillCounts = Record<string, KillEntry>;
 
-type TeamMemberKills = Record<string, Record<string, number>>; // player -> mob -> count
+export type TeamMemberKills = Record<string, Record<string, number>>; // player -> mob -> count
+
+export type KillData = {
+    kills: KillCounts;
+    teamKills: TeamMemberKills;
+    totals: { my: number; team: number };
+};
 
 const STORAGE_KEY = "kill_counter";
 const SESSION_STORAGE_KEY = "kill_counter_session";
@@ -330,6 +337,12 @@ function isTeamMemberKills(value: unknown): value is TeamMemberKills {
     });
 }
 
+let killCounterInstance: KillCounter | null = null;
+
+export function getKillData(): KillData | null {
+    return killCounterInstance?.getData() ?? null;
+}
+
 class KillCounter {
     private client: Client;
     private kills: KillCounts = {};
@@ -337,6 +350,7 @@ class KillCounter {
 
     constructor(client: Client) {
         this.client = client;
+        killCounterInstance = this;
 
         this.client.on("storage", ({ key, value }) => {
             if (key === STORAGE_KEY) {
@@ -429,6 +443,7 @@ class KillCounter {
             entry.teamSession = typeof data.teamSession === "number" ? data.teamSession : 0;
             this.kills[name] = entry;
         });
+        this.emitUpdate();
     }
 
     private persistSessions = () => {
@@ -488,6 +503,7 @@ class KillCounter {
             }
         }
         this.persistSessions();
+        this.emitUpdate();
         return entry;
     }
 
@@ -500,6 +516,26 @@ class KillCounter {
         return totals;
     }
 
+    getData(): KillData {
+        const kills: KillCounts = {};
+        Object.entries(this.kills).forEach(([name, entry]) => {
+            kills[name] = {...entry};
+        });
+        const teamKills: TeamMemberKills = {};
+        Object.entries(this.teamKills).forEach(([player, mobs]) => {
+            teamKills[player] = {...mobs};
+        });
+        return {
+            kills,
+            teamKills,
+            totals: this.getSessionTotals(),
+        };
+    }
+
+    private emitUpdate() {
+        eventBus.emit("zabici.updated", this.getData());
+    }
+
     resetSession() {
         Object.values(this.kills).forEach((e) => {
             e.mySession = 0;
@@ -508,6 +544,7 @@ class KillCounter {
         this.teamKills = {};
         this.persistSessions();
         this.persistTeamKills();
+        this.emitUpdate();
     }
 
     private formatPrefix(
@@ -562,6 +599,7 @@ export function initKillCounter(
     const counter = new KillCounter(client);
     if (aliases) {
         aliases.push({pattern: /\/zabici$/, callback: () => counter.showSession()});
+        aliases.push({pattern: /\/zabici_popup$/, callback: () => eventBus.emit("zabici.popup.open")});
         aliases.push({pattern: /\/zabici2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/zabici_reset$/, callback: () => counter.resetSession()});
     }

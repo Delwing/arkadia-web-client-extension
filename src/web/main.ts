@@ -410,6 +410,18 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
         },
         {
+            label: 'Postepy',
+            action: () => {
+                eventBus.emit('postepy.popup.open');
+            },
+        },
+        {
+            label: 'Zabici',
+            action: () => {
+                eventBus.emit('zabici.popup.open');
+            },
+        },
+        {
             label: 'Pokaż radial',
             action: () => {
                 mobileRadial?.showAt(event.clientX, event.clientY);

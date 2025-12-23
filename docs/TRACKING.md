@@ -7,6 +7,7 @@ Liczniki zabitych, postepow, stazu i zlecen.
 | Komenda | Opis |
 |---------|------|
 | `/zabici` | Pokaz tabele z liczba zabitych istot w biezacej sesji |
+| `/zabici_popup` | Otworz okno z liczba zabitych istot |
 | `/zabici2` | Wyswietl podsumowanie liczby zabitych istot |
 | `/zabici_reset` | Zeruj licznik zabitych istot |
 
@@ -16,6 +17,7 @@ Liczniki zabitych, postepow, stazu i zlecen.
 |---------|------|
 | `/cechy` | Uruchom licznik poziomowania i wyswietl postepy |
 | `/postepy` | Wyswietl postepy ulepszen |
+| `/postepy_popup` | Otworz okno z postepami ulepszen |
 | `/postepy_reset` | Zeruj licznik postepow |
 
 ## Globalny licznik postepow

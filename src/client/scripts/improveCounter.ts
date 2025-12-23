@@ -2,6 +2,7 @@ import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {getCurrentCharacter, getItemSync} from "@modules/core/storage";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");
@@ -13,7 +14,7 @@ const NAME_COLOR = createColorFormat("#ffff00");
 const DATE_COLOR = createColorFormat("#ffd700");
 const TOTAL_LABEL_COLOR = createColorFormat("#ffb6c1");
 
-const STATES = [
+export const IMPROVE_STATES = [
     "minimalne",
     "nieznaczne",
     "bardzo male",
@@ -31,6 +32,8 @@ const STATES = [
     "gigantyczne",
     "niebotyczne",
 ];
+
+const STATES = IMPROVE_STATES;
 
 function titleCase(str: string): string {
     return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -61,7 +64,7 @@ function formatDate(date: Date): string {
     return `${d}/${m} ${h}:${mi}:${s}`;
 }
 
-function formatDuration(ms: number): string {
+export function formatDuration(ms: number): string {
     const sec = Math.floor(ms / 1000);
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -121,7 +124,7 @@ function createHeader(width: number, offset: number, color: FormatStateSnapshot)
     };
 }
 
-type Entry = {
+export type ImproveEntry = {
     state: string;
     time: number;
     delta: number;
@@ -129,10 +132,23 @@ type Entry = {
     killsTeam: number;
 };
 
+export type ImproveData = {
+    entries: ImproveEntry[];
+    lastTime: number;
+    lastKills: { my: number; team: number };
+    currentKills: { my: number; team: number };
+};
+
+let improveCounterInstance: ImproveCounter | null = null;
+
+export function getImproveData(): ImproveData | null {
+    return improveCounterInstance?.getData() ?? null;
+}
+
 export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
-    private entries: Entry[] = [];
+    private entries: ImproveEntry[] = [];
     private lifetime: { date: string; count: number }[] = [];
     private lifetimeEnabled = true;
     private lifetimeLoaded = false;
@@ -150,6 +166,7 @@ export default class ImproveCounter {
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
+        improveCounterInstance = this;
 
         this.client.on("storage", ({key, value}) => {
             if (key === ImproveCounter.STORAGE_KEY) {
@@ -201,11 +218,25 @@ export default class ImproveCounter {
         return {my: 0, team: 0};
     }
 
+    getData(): ImproveData {
+        return {
+            entries: [...this.entries],
+            lastTime: this.lastTime,
+            lastKills: {...this.lastKills},
+            currentKills: this.getKills(),
+        };
+    }
+
+    private emitUpdate() {
+        eventBus.emit("postepy.updated", this.getData());
+    }
+
     reset() {
         this.entries = [];
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.persist();
+        this.emitUpdate();
     }
 
     private handleLevel(level: number) {
@@ -294,7 +325,7 @@ export default class ImproveCounter {
     private record(state: string) {
         const now = Date.now();
         const kills = this.getKills();
-        const entry: Entry = {
+        const entry: ImproveEntry = {
             state,
             time: now,
             delta: now - this.lastTime,
@@ -306,6 +337,7 @@ export default class ImproveCounter {
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
+        this.emitUpdate();
         const msg = colorString(
             `\tWlasnie wbiles postepy: ${state} (czas: ${formatDuration(
                 entry.delta,
@@ -329,6 +361,7 @@ export default class ImproveCounter {
         this.lastKills = data.lastKills || this.getKills();
         this.level = typeof data.level === "number" ? data.level : -1;
         this.lastObjNum = typeof data.lastObjNum === "number" ? data.lastObjNum : undefined;
+        this.emitUpdate();
     }
 
     private loadLifetime(data: any = {}) {
@@ -591,6 +624,7 @@ export function initImproveCounter(
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
         aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
+        aliases.push({pattern: /\/postepy_popup$/, callback: () => eventBus.emit("postepy.popup.open")});
         aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
         aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});

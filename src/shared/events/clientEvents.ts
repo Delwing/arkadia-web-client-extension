@@ -227,6 +227,10 @@ export interface KnownEvents {
     "combat.cleared": void;
     "combat.popup.open": void;
     "combat.settingsChanged": Record<CombatMessageType, boolean>;
+    "postepy.updated": unknown;
+    "postepy.popup.open": void;
+    "zabici.updated": unknown;
+    "zabici.popup.open": void;
 }
 
 export interface ObjectData {

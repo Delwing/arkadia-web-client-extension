@@ -1,9 +1,8 @@
 import type { HerbBagsState } from "../types/herbs";
 import type { HerbsData, HerbUse } from "./herbsLoader";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
-import { colorString, createColorFormat, mudletColorLine } from "@modules/core/Colors";
+import { createColorFormat, mudletColorLine } from "@modules/core/Colors";
 
-const headerColor = createColorFormat('#8470ff');
 const WHITE = createColorFormat('#ffffff');
 
 export interface HerbTextRow {
@@ -93,48 +92,6 @@ export function buildHerbTextBuffer(
 
     const countWidth = 5;
     const nameWidth = Math.max(summary.maxNameLength, 5);
-    const actionsWidth = Math.max(summary.maxActionsLength, 9);
-
-    // Build separator line
-    const sepCount = '-'.repeat(countWidth + 1);
-    const sepName = '-'.repeat(nameWidth + 2);
-    const sepActions = '-'.repeat(actionsWidth + 2);
-    const separator = `${sepCount}+${sepName}+${sepActions}`;
-
-    // Header separator
-    output.append(separator, {});
-    output.color([0, output.length], WHITE);
-    output.append('\n');
-
-    // Build header with colors
-    const headerLine = new AnsiAwareBuffer();
-    headerLine.append('  ');
-    headerLine.appendBuffer(colorString('ile', headerColor));
-    headerLine.append(' | ');
-
-    // Center "nazwa" in the name column
-    const namePadLeft = Math.floor((nameWidth - 5) / 2);
-    const namePadRight = nameWidth - 5 - namePadLeft;
-    headerLine.append(' '.repeat(namePadLeft));
-    headerLine.appendBuffer(colorString('nazwa', headerColor));
-    headerLine.append(' '.repeat(namePadRight));
-
-    headerLine.append(' | ');
-
-    // Center "dzialanie" in the actions column
-    const actionsPadLeft = Math.floor((actionsWidth - 9) / 2);
-    headerLine.append(' '.repeat(actionsPadLeft));
-    headerLine.appendBuffer(colorString('dzialanie', headerColor));
-
-    headerLine.color([0, headerLine.length], WHITE);
-    output.appendBuffer(headerLine);
-    output.append('\n');
-
-    // Header separator
-    const sepStart = output.length;
-    output.append(separator, {});
-    output.color([sepStart, output.length], WHITE);
-    output.append('\n');
 
     // Build rows with colors and links
     summary.rows.forEach(row => {
@@ -174,11 +131,6 @@ export function buildHerbTextBuffer(
         output.appendBuffer(line);
         output.append('\n');
     });
-
-    // Footer separator
-    const footerStart = output.length;
-    output.append(separator, {});
-    output.color([footerStart, output.length], WHITE);
 
     return output;
 }
