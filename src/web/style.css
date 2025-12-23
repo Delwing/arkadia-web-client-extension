@@ -2715,7 +2715,8 @@ h1 {
 }
 
 #message-input {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 0.75vh 1.25vh;
   border: 0.1vh solid rgba(255, 255, 255, 0.2);
   border-radius: 1vmin;
@@ -2734,6 +2735,7 @@ h1 {
 }
 
 #input-area button {
+  flex-shrink: 0;
   padding: 0 2vh;
   background: #3e3f3a;
   border-color: rgba(255, 255, 255, 0.2);
@@ -2744,6 +2746,7 @@ h1 {
 }
 
 #history-buttons {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -2765,6 +2768,10 @@ h1 {
     font-size: 1.25rem;
     height: auto;
   }
+}
+
+#input-area .dropdown {
+  flex-shrink: 0;
 }
 
 #input-area .dropdown-menu {
