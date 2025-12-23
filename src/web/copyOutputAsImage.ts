@@ -182,24 +182,32 @@ export async function copyOutputAsImage(): Promise<void> {
     const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
     const bgColor = outputWrapper?.style.backgroundColor || '#242424';
 
-    const fontSize = 14;
+    // Get computed styles from the actual content area to match rendering
+    const computedStyle = outputWrapper ? window.getComputedStyle(outputWrapper) : null;
+    const fontSize = computedStyle ? parseFloat(computedStyle.fontSize) : 14;
+    const fontFamily = computedStyle?.fontFamily || 'monospace';
     const lineHeight = 1.4;
     const padding = 16;
-    const font = `${fontSize}px monospace`;
-    const boldFont = `bold ${fontSize}px monospace`;
+    const font = `${fontSize}px ${fontFamily}`;
+    const boldFont = `bold ${fontSize}px ${fontFamily}`;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
 
-    // Split spans into lines (by newlines only, no wrapping)
-    const lines: StyledSpan[][] = [];
+    // Get container width for wrapping (matching the display in content area)
+    // Subtract padding and a small buffer for measurement differences between canvas and browser
+    const wrapperPadding = computedStyle ? parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) : 16;
+    const containerWidth = outputWrapper ? outputWrapper.clientWidth - wrapperPadding - 1 : 800;
+
+    // Split spans into lines (by newlines only first, then wrap)
+    const logicalLines: StyledSpan[][] = [];
     let currentLine: StyledSpan[] = [];
 
     for (const span of spans) {
         const parts = span.text.split('\n');
         for (let i = 0; i < parts.length; i++) {
             if (i > 0) {
-                lines.push(currentLine);
+                logicalLines.push(currentLine);
                 currentLine = [];
             }
             if (parts[i]) {
@@ -208,40 +216,124 @@ export async function copyOutputAsImage(): Promise<void> {
         }
     }
     if (currentLine.length > 0) {
-        lines.push(currentLine);
+        logicalLines.push(currentLine);
     }
 
     // Calculate first line pixel offset (only if multiple lines and first line has prepended timestamp)
     ctx.font = font;
     // Only apply offset if we prepended a timestamp (meaning selection started mid-content)
-    const firstLinePixelOffset = (lines.length > 1 && firstLineHasPrependedTimestamp)
+    const firstLinePixelOffset = (logicalLines.length > 1 && firstLineHasPrependedTimestamp)
         ? ctx.measureText(' '.repeat(firstLineCharOffset)).width
         : 0;
 
     // Check if we have any timestamps - if so, lines without timestamps need to be indented
-    const hasAnyTimestamp = lines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
+    const hasAnyTimestamp = logicalLines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
     // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
     const timestampIndent = hasAnyTimestamp ? ctx.measureText(' '.repeat(13)).width : 0;
 
-    // Measure actual width of each line (including offsets)
-    let maxLineWidth = 0;
-    for (let i = 0; i < lines.length; i++) {
-        const lineHasTimestamp = lines[i].length > 0 && lines[i][0].color === TIMESTAMP_COLOR;
-        let lineWidth: number;
-        if (i === 0 && firstLineHasPrependedTimestamp) {
-            // First line with prepended timestamp: timestamp width + offset + content
-            lineWidth = firstLinePixelOffset;
+    // Wrap lines to fit container width
+    const lines: StyledSpan[][] = [];
+
+    for (let logicalLineIndex = 0; logicalLineIndex < logicalLines.length; logicalLineIndex++) {
+        const logicalLine = logicalLines[logicalLineIndex];
+        const lineHasTimestamp = logicalLine.length > 0 && logicalLine[0].color === TIMESTAMP_COLOR;
+
+        // Calculate initial offset for this logical line
+        let initialOffset: number;
+        if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp) {
+            initialOffset = 0; // Timestamp will be rendered first, offset applied after
         } else if (!lineHasTimestamp && hasAnyTimestamp) {
-            lineWidth = timestampIndent;
+            initialOffset = timestampIndent;
         } else {
-            lineWidth = 0;
+            initialOffset = 0;
         }
-        for (const span of lines[i]) {
+
+        // For first line with prepended timestamp, add timestamp width + firstLinePixelOffset
+        let currentX = initialOffset;
+        if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && logicalLine.length > 0 && logicalLine[0].color === TIMESTAMP_COLOR) {
+            ctx.font = font;
+            currentX += ctx.measureText(logicalLine[0].text).width + firstLinePixelOffset;
+        }
+
+        let wrappedLine: StyledSpan[] = [];
+
+        for (let spanIndex = 0; spanIndex < logicalLine.length; spanIndex++) {
+            const span = logicalLine[spanIndex];
             ctx.font = span.bold ? boldFont : font;
-            lineWidth += ctx.measureText(span.text).width;
+
+            // Skip timestamp processing for first span if it's already accounted for
+            if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && spanIndex === 0 && span.color === TIMESTAMP_COLOR) {
+                wrappedLine.push(span);
+                continue;
+            }
+
+            let remainingText = span.text;
+
+            while (remainingText.length > 0) {
+                const textWidth = ctx.measureText(remainingText).width;
+
+                if (currentX + textWidth <= containerWidth) {
+                    // Text fits on current line
+                    if (remainingText.length > 0) {
+                        wrappedLine.push({ text: remainingText, color: span.color, bold: span.bold });
+                    }
+                    currentX += textWidth;
+                    remainingText = '';
+                } else {
+                    // Need to wrap - find how many characters fit
+                    let fitChars = 0;
+                    for (let i = 1; i <= remainingText.length; i++) {
+                        const partWidth = ctx.measureText(remainingText.substring(0, i)).width;
+                        if (currentX + partWidth > containerWidth) {
+                            break;
+                        }
+                        fitChars = i;
+                    }
+
+                    if (fitChars === 0) {
+                        // Can't fit even one character, force at least one to avoid infinite loop
+                        fitChars = 1;
+                    }
+
+                    // Try to break at word boundary (last space within fitting chars)
+                    // This matches CSS white-space: pre-wrap behavior
+                    const fittingText = remainingText.substring(0, fitChars);
+                    const lastSpaceIndex = fittingText.lastIndexOf(' ');
+                    if (lastSpaceIndex > 0) {
+                        // Break at the space - include the space at end of this line
+                        fitChars = lastSpaceIndex + 1;
+                    }
+                    // If no space found, we break mid-word (fallback for very long words)
+
+                    // Add the fitting part to current line
+                    const fittingPart = remainingText.substring(0, fitChars);
+                    if (fittingPart.length > 0) {
+                        wrappedLine.push({ text: fittingPart, color: span.color, bold: span.bold });
+                    }
+                    remainingText = remainingText.substring(fitChars);
+
+                    // Push current line and start a new one
+                    if (wrappedLine.length > 0) {
+                        lines.push(wrappedLine);
+                    }
+                    wrappedLine = [];
+                    // Continuation lines get timestamp indent if there are timestamps
+                    currentX = hasAnyTimestamp ? timestampIndent : 0;
+                }
+            }
         }
-        maxLineWidth = Math.max(maxLineWidth, lineWidth);
+
+        // Push the last wrapped line of this logical line
+        if (wrappedLine.length > 0) {
+            lines.push(wrappedLine);
+        } else if (logicalLine.length === 0) {
+            // Empty logical line (just a newline)
+            lines.push([]);
+        }
     }
+
+    // Measure actual width of each line (including offsets)
+    let maxLineWidth = containerWidth; // Use container width as the max width
 
     const scale = 2;
     const lineHeightPx = fontSize * lineHeight;
