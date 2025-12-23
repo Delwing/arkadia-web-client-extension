@@ -5474,11 +5474,11 @@ body.mobile-command-radial-active {
 
 .postepy-popup__since-last {
   margin-top: 0.5rem;
-  padding: 0.375rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   background-color: rgba(106, 90, 205, 0.15);
   border-radius: 0.25rem;
   color: #6a5acd;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   text-align: center;
 }
 

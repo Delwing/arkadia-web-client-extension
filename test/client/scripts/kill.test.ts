@@ -112,8 +112,8 @@ describe('kill counter scenario', () => {
     printSessionTable();
     let printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).toMatch(/smoka chaosu/);
-    // alias[2] corresponds to /zabici_reset
-    aliases[2].callback();
+    // alias[3] corresponds to /zabici_reset (after /zabici, /zabici_popup, /zabici2)
+    aliases[3].callback();
     printSessionTable();
     printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).not.toMatch(/smoka chaosu/);
