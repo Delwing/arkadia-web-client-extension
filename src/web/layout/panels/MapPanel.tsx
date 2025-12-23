@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { MapReturnButton } from '../components/MapReturnButton';
 
 interface MapPanelProps {
   mapElement: HTMLElement | null;
@@ -62,5 +63,9 @@ export function MapPanel({ mapElement }: MapPanelProps) {
     };
   }, []);
 
-  return <div ref={containerRef} className="map-panel-container" />;
+  return (
+    <div ref={containerRef} className="map-panel-container">
+      <MapReturnButton />
+    </div>
+  );
 }

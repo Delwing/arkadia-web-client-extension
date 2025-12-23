@@ -77,6 +77,8 @@ export class EmbeddedMap {
     private readonly totalRooms: number;
     private currentPath: { path: number[]; color: string } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
+    private _isViewingPlayerPosition = true;
+    private viewChangeListeners: Set<(isViewing: boolean) => void> = new Set();
 
     constructor(reader: MapReader, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
@@ -353,6 +355,7 @@ export class EmbeddedMap {
             // Player is in this area/level, render normally
             this.renderer.drawArea(areaId, z);
             this.renderRoom(this.currentRoom);
+            this.setViewingPlayerPosition(true);
         } else {
             // Draw the area at the specified level
             this.renderer.drawArea(areaId, z);
@@ -386,8 +389,45 @@ export class EmbeddedMap {
                 this.renderer.setZoom(this.zoom);
                 this.renderer.centerOn(closestRoom.id);
             }
+            this.setViewingPlayerPosition(false);
         }
 
         this.renderCurrentPathAndHighlights()
+    }
+
+    /**
+     * Check if currently viewing the player's position
+     */
+    get isViewingPlayerPosition(): boolean {
+        return this._isViewingPlayerPosition;
+    }
+
+    private setViewingPlayerPosition(value: boolean) {
+        if (this._isViewingPlayerPosition !== value) {
+            this._isViewingPlayerPosition = value;
+            this.viewChangeListeners.forEach(listener => listener(value));
+        }
+    }
+
+    /**
+     * Subscribe to view position changes
+     */
+    onViewChange(listener: (isViewingPlayer: boolean) => void): () => void {
+        this.viewChangeListeners.add(listener);
+        return () => this.viewChangeListeners.delete(listener);
+    }
+
+    /**
+     * Return to the player's current position
+     */
+    returnToPlayer() {
+        if (typeof this.currentRoom !== 'number') return;
+        const room = this.reader.getRoom(this.currentRoom);
+        if (!room) return;
+
+        this.renderer.clearPosition();
+        this.renderer.drawArea(room.area, room.z);
+        this.renderRoom(this.currentRoom);
+        this.setViewingPlayerPosition(true);
     }
 }
