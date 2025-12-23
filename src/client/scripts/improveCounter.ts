@@ -145,6 +145,10 @@ export function getImproveData(): ImproveData | null {
     return improveCounterInstance?.getData() ?? null;
 }
 
+export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
+    return improveCounterInstance?.getFormattedTable() ?? null;
+}
+
 export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
@@ -483,7 +487,7 @@ export default class ImproveCounter {
         this.client.println(colorString(msg, SECTION_COLOR));
     }
 
-    private formatTable(): AnsiAwareBuffer {
+    getFormattedTable(): AnsiAwareBuffer {
         const WIDTH = 74;
         const INNER = WIDTH - 2;
         const pad = createPad(INNER, 1, 1);
@@ -551,7 +555,7 @@ export default class ImproveCounter {
 
     show() {
         const output = new AnsiAwareBuffer("\n\n");
-        output.appendBuffer(this.formatTable());
+        output.appendBuffer(this.getFormattedTable());
         output.append("\n\n");
         this.client.print(output);
     }

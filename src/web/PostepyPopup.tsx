@@ -4,21 +4,13 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import {
     getImproveData,
+    getFormattedPostepyTable,
     ImproveData,
-    ImproveEntry,
     formatDuration,
 } from '../client/scripts/improveCounter';
+import { copyBufferAsImage } from './bufferToImage';
 
 const POPUP_ID = 'popup:postepy';
-
-function formatTime(timestamp: number): string {
-    const date = new Date(timestamp);
-    const h = String(date.getHours()).padStart(2, '0');
-    const m = String(date.getMinutes()).padStart(2, '0');
-    const s = String(date.getSeconds()).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-}
-
 const PostepyPopup: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
     const [data, setData] = useState<ImproveData | null>(null);
@@ -91,12 +83,35 @@ const PostepyPopup: React.FC = () => {
     const killsSinceLast = currentKills.my - lastKills.my;
     const teamKillsSinceLast = currentKills.team - lastKills.team;
 
-    // Header with mean time
-    const headerActions = meanTime > 0 ? (
-        <span className="postepy-popup__mean-time">
-            {formatDuration(meanTime)}
-        </span>
-    ) : null;
+    const handleCopyAsImage = useCallback(async () => {
+        const buffer = getFormattedPostepyTable();
+        if (buffer) {
+            await copyBufferAsImage(buffer);
+        }
+    }, []);
+
+    // Header with mean time and image button
+    const headerActions = (
+        <>
+            {meanTime > 0 && (
+                <span className="postepy-popup__mean-time">
+                    {formatDuration(meanTime)}
+                </span>
+            )}
+            <button
+                type="button"
+                className="postepy-popup__image-btn"
+                onClick={handleCopyAsImage}
+                title="Kopiuj jako obraz"
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+            </button>
+        </>
+    );
 
     return (
         <DockablePopupWrapper

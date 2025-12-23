@@ -5497,6 +5497,29 @@ body.mobile-command-radial-active {
   border-radius: 0.25rem;
 }
 
+.postepy-popup__image-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.5);
+  border-radius: 0.25rem;
+  padding: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 0.25rem;
+}
+
+.postepy-popup__image-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.8);
+}
+
+.postepy-popup__image-btn:active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
 /* Zabici Popup */
 .zabici-popup-body {
   display: flex;

@@ -11,7 +11,9 @@ export type BuiltInPopupType =
   | 'knowledgeReport'
   | 'knowledgeDetails'
   | 'chat'
-  | 'combat';
+  | 'combat'
+  | 'postepy'
+  | 'zabici';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;
