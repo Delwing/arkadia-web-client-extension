@@ -239,7 +239,11 @@ export class EmbeddedMap {
         const room = ev.detail.roomId
         if (room) {
             const client = getClientInstance();
-            client?.openMapContextMenu?.(room, ev.detail.position.x, ev.detail.position.y);
+            // Transform canvas-relative coordinates to viewport coordinates
+            const mapRect = this.map.getBoundingClientRect();
+            const viewportX = ev.detail.position.x + mapRect.left;
+            const viewportY = ev.detail.position.y + mapRect.top;
+            client?.openMapContextMenu?.(room, viewportX, viewportY);
         }
     }
 
@@ -425,7 +429,7 @@ export class EmbeddedMap {
             return undefined;
         }
         const area = this.reader.getArea?.(this._viewedAreaId);
-        return area?.getAreaName?.() ?? area?.areaName ?? area?.name;
+        return area?.getAreaName() ?? area?.getAreaId().toString()
     }
 
     /**

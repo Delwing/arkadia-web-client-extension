@@ -7,6 +7,7 @@ import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
+import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -220,6 +221,10 @@ export interface KnownEvents {
     "chat.newMessage": ChatEntry;
     "chat.cleared": void;
     "chat.popup.open": void;
+    "combat.newMessage": CombatEntry;
+    "combat.cleared": void;
+    "combat.popup.open": void;
+    "combat.settingsChanged": Record<CombatMessageType, boolean>;
 }
 
 export interface ObjectData {

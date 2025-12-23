@@ -10,7 +10,8 @@ export type BuiltInPopupType =
   | 'herb'
   | 'knowledgeReport'
   | 'knowledgeDetails'
-  | 'chat';
+  | 'chat'
+  | 'combat';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;
