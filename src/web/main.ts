@@ -459,13 +459,19 @@ outputWrapper.addEventListener('mousedown', (event) => {
 
 function updateProgress(p: number, loaded?: number, total?: number) {
     progressContainer.style.display = 'block';
-    progressBar.style.width = `${p}%`;
-    if (loaded !== undefined && total !== undefined && total > 0) {
-        const loadedKb = Math.floor(loaded / 1024);
-        const totalKb = Math.ceil(total / 1024);
-        progressBar.textContent = `${loadedKb} / ${totalKb} KB`;
+    if (p < 0) {
+        // Indeterminate progress (version check in progress)
+        progressBar.style.width = '100%';
+        progressBar.textContent = '';
     } else {
-        progressBar.textContent = `${Math.floor(p)}%`;
+        progressBar.style.width = `${p}%`;
+        if (loaded !== undefined && total !== undefined && total > 0) {
+            const loadedKb = Math.floor(loaded / 1024);
+            const totalKb = Math.ceil(total / 1024);
+            progressBar.textContent = `${loadedKb} / ${totalKb} KB`;
+        } else {
+            progressBar.textContent = `${Math.floor(p)}%`;
+        }
     }
 }
 

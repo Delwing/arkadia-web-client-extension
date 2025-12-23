@@ -29,6 +29,9 @@ export class VersionCheckingLoader<TSnapshot, TMeta extends RefreshMetadata = Re
   }
 
   async load(context: LoaderContext<TSnapshot, TMeta>): Promise<LoaderResult<TSnapshot, TMeta>> {
+    // Signal indeterminate progress during version check (-1 indicates unknown progress)
+    context.onProgress?.(-1);
+
     const latestVersion = await this.fetchLatestVersion();
 
     // Version check succeeded - use version-based comparison
@@ -75,12 +78,23 @@ export class VersionCheckingLoader<TSnapshot, TMeta extends RefreshMetadata = Re
 
   private async fetchLatestVersion(): Promise<string | undefined> {
     try {
-      const response = await this.fetchImpl(this.versionUrl);
-      if (!response.ok) {
-        return undefined;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      try {
+        const response = await this.fetchImpl(this.versionUrl, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          return undefined;
+        }
+        const data = await response.json();
+        return this.extractVersion(data);
+      } finally {
+        clearTimeout(timeoutId);
       }
-      const data = await response.json();
-      return this.extractVersion(data);
     } catch {
       return undefined;
     }
