@@ -9,6 +9,8 @@ export type CombatMessageType = "combat.avatar" | "combat.team" | "combat.others
 export type CombatEntry = {
     buffer: AnsiAwareBuffer;
     type: CombatMessageType;
+} | {
+    type: "separator";
 };
 
 // Exported history for use by CombatPopup
@@ -78,6 +80,21 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
     client.on("client.disconnect", () => {
         combatHistory = [];
         eventBus.emit("combat.cleared");
+    });
+
+    // Add separator on location change, but only if there are combat messages since last separator
+    client.on("gmcp.room.info", () => {
+        // Only add separator if:
+        // 1. There are entries in history
+        // 2. The last entry is not already a separator
+        if (combatHistory.length > 0 && combatHistory[combatHistory.length - 1].type !== "separator") {
+            const separator: CombatEntry = { type: "separator" };
+            combatHistory.push(separator);
+            if (combatHistory.length > HISTORY_LIMIT) {
+                combatHistory.shift();
+            }
+            eventBus.emit("combat.newMessage", separator);
+        }
     });
 
     function openPopup() {

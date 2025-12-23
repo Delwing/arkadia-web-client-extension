@@ -5,7 +5,6 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import {
     getCombatHistory,
-    getCombatRedirectSettings,
     setCombatRedirectSetting,
     CombatEntry,
     CombatMessageType
@@ -127,8 +126,22 @@ const CombatPopup: React.FC = () => {
         "combat.others": setShowOthers,
     };
 
-    // Filter messages based on active toggles
-    const displayedMessages = messages.filter(m => toggleStates[m.type]);
+    // Filter messages based on active toggles, then clean up separators
+    const filteredMessages = messages.filter(m =>
+        m.type === "separator" || toggleStates[m.type]
+    );
+
+    // Remove separators that don't actually separate visible messages
+    const displayedMessages = filteredMessages.filter((entry, index, arr) => {
+        if (entry.type !== "separator") return true;
+
+        // Check if there's a non-separator message before this separator
+        const hasMsgBefore = arr.slice(0, index).some(e => e.type !== "separator");
+        // Check if there's a non-separator message after this separator
+        const hasMsgAfter = arr.slice(index + 1).some(e => e.type !== "separator");
+
+        return hasMsgBefore && hasMsgAfter;
+    });
 
     // Toggle buttons in header
     const headerActions = (
@@ -137,7 +150,7 @@ const CombatPopup: React.FC = () => {
                 <button
                     key={toggle.type}
                     type="button"
-                    className={`combat-popup__toggle${toggleStates[toggle.type] ? ' combat-popup__toggle--active' : ''}`}
+                    className={`combat-popup__toggle combat-popup__toggle--${toggle.type.replace('combat.', '')}${toggleStates[toggle.type] ? ' combat-popup__toggle--active' : ''}`}
                     onClick={() => toggleSetters[toggle.type](!toggleStates[toggle.type])}
                     title={toggleStates[toggle.type] ? `Ukryj: ${toggle.label}` : `Pokaz: ${toggle.label}`}
                 >
@@ -170,17 +183,24 @@ const CombatPopup: React.FC = () => {
                         Brak wiadomosci walki.
                     </div>
                 ) : (
-                    displayedMessages.map((entry, index) => (
-                        <div
-                            key={`${index}`}
-                            className={`combat-popup__message combat-popup__message--${entry.type.replace('combat.', '')}`}
-                        >
-                            <span
-                                className="combat-popup__text"
-                                dangerouslySetInnerHTML={{ __html: entry.buffer.toHtml() }}
+                    displayedMessages.map((entry, index) =>
+                        entry.type === "separator" ? (
+                            <div
+                                key={`sep-${index}`}
+                                className="combat-popup__separator"
                             />
-                        </div>
-                    ))
+                        ) : (
+                            <div
+                                key={`${index}`}
+                                className={`combat-popup__message combat-popup__message--${entry.type.replace('combat.', '')}`}
+                            >
+                                <span
+                                    className="combat-popup__text"
+                                    dangerouslySetInnerHTML={{ __html: entry.buffer.toHtml() }}
+                                />
+                            </div>
+                        )
+                    )
                 )}
             </div>
         </DockablePopupWrapper>

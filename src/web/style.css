@@ -5231,6 +5231,12 @@ body.mobile-command-radial-active {
   border-left: 2px solid #fb923c;
 }
 
+.combat-popup__separator {
+  height: 1px;
+  margin: 0.5rem 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
 .combat-popup__text {
   color: var(--text-primary);
 }
@@ -5253,12 +5259,32 @@ body.mobile-command-radial-active {
   color: rgba(241, 245, 249, 0.8);
 }
 
-.combat-popup__toggle--active {
+.combat-popup__toggle--active.combat-popup__toggle--avatar {
   background-color: rgba(34, 197, 94, 0.2);
   border-color: rgba(34, 197, 94, 0.4);
   color: #22c55e;
 }
 
-.combat-popup__toggle--active:hover {
+.combat-popup__toggle--active.combat-popup__toggle--avatar:hover {
   background-color: rgba(34, 197, 94, 0.3);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--team {
+  background-color: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--team:hover {
+  background-color: rgba(96, 165, 250, 0.3);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--others {
+  background-color: rgba(251, 146, 60, 0.2);
+  border-color: rgba(251, 146, 60, 0.4);
+  color: #fb923c;
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--others:hover {
+  background-color: rgba(251, 146, 60, 0.3);
 }
