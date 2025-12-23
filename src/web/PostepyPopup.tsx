@@ -30,10 +30,17 @@ const PostepyPopup: React.FC = () => {
             setData(newData);
         };
 
+        // Refresh data when kills are updated
+        const handleKillsUpdate = () => {
+            setData(getImproveData());
+        };
+
         eventBus.on('postepy.updated', handleUpdate);
+        eventBus.on('zabici.updated', handleKillsUpdate);
 
         return () => {
             eventBus.off('postepy.updated', handleUpdate);
+            eventBus.off('zabici.updated', handleKillsUpdate);
         };
     }, []);
 
