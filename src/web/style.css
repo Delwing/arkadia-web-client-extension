@@ -2817,7 +2817,7 @@ h1 {
   width: 100%;
 }
 
-#connect-button-inline {
+#input-area #connect-button-inline {
   display: none;
   white-space: nowrap;
   padding: 0 0.75rem;

@@ -149,6 +149,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   right: auto !important;
   bottom: auto !important;
   border: none !important;
+  cursor: default;
 }
 
 /* Resize Handles */

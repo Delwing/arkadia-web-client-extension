@@ -381,19 +381,19 @@ export default class ObjectList {
                     // Self or teammate - defense target (greenyellow), command /wz
                     if (obj.defense_target) {
                         // Active - show >> that can be clicked to remove
-                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">>></span>`;
+                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Rozkazanie obrony celu">>></span>`;
                     } else {
                         // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow">&#8226; </span>`;
+                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Wyznacz cel obrony">&#8226; </span>`;
                     }
                 } else {
                     // Enemy - attack target (orangered), command /wa
                     if (obj.attack_target) {
                         // Active - show >> that can be clicked to remove
-                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">>></span>`;
+                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Rozkazanie ataku celu">>></span>`;
                     } else {
                         // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered">&#8226; </span>`;
+                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Wyznacz cel ataku">&#8226; </span>`;
                     }
                 }
             } else {
@@ -416,7 +416,7 @@ export default class ObjectList {
             const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
             let numLabel = isPlayer
                 ? `${prefix}${num}`
-                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle}>${num}</span>`;
+                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="Zaatakuj">${num}</span>`;
             const rawDesc = obj.desc || "";
             const isTeammate = tm?.isInTeam?.(rawDesc);
             const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
@@ -498,7 +498,7 @@ export default class ObjectList {
             const isTeammateStr = isTeammate ? "true" : "false";
             const desc = isPlayer
                 ? `${displayDesc}${padding}`
-                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}">${coloredDesc}</span>${padding}`;
+                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zaslon">${coloredDesc}</span>${padding}`;
 
             // Build HP bar with filter override
             let bar = "";
@@ -519,7 +519,7 @@ export default class ObjectList {
                 const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
                 // Make HP bar clickable for enemies (not player or teammates)
                 if (!isPlayer && !isTeammate) {
-                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}">${hpBarContent}</span>`;
+                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
                 } else {
                     bar = hpBarContent;
                 }
