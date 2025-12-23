@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { MapReturnButton } from '../components/MapReturnButton';
+import { useMapViewingState } from '@web/layout';
+import { useLayoutManager } from '@web/layout';
+import { PANEL_CONFIGS } from '../types';
 
 interface MapPanelProps {
   mapElement: HTMLElement | null;
@@ -9,6 +12,17 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const originalParentRef = useRef<HTMLElement | null>(null);
   const locationWrapperRef = useRef<HTMLElement | null>(null);
+  const { updateBuiltInPanelState } = useLayoutManager();
+  const mapViewingState = useMapViewingState();
+
+  // Update panel title when viewing state changes
+  useEffect(() => {
+    const baseTitle = PANEL_CONFIGS.map?.title ?? 'Mapa';
+    const title = mapViewingState.isViewingDifferentArea && mapViewingState.viewedAreaName
+      ? `${baseTitle} (${mapViewingState.viewedAreaName})`
+      : baseTitle;
+    updateBuiltInPanelState('map', { title });
+  }, [mapViewingState.isViewingDifferentArea, mapViewingState.viewedAreaName, updateBuiltInPanelState]);
 
   useEffect(() => {
     if (!containerRef.current || !mapElement) return;

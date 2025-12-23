@@ -1,6 +1,7 @@
 import { ReactNode, useCallback } from 'react';
 import { PanelId, PANEL_CONFIGS } from '../types';
-import { useDockablePanel } from '../hooks/useDockablePanel';
+import { useDockablePanel } from '@web/layout';
+import { useLayoutManager } from '@web/layout';
 
 interface DockedPanelProps {
   panelId: PanelId;
@@ -33,8 +34,13 @@ export function DockedPanel({
   isPopup,
 }: DockedPanelProps) {
   const { handleDragStart } = useDockablePanel({ panelId });
+  const { getBuiltInPanelState } = useLayoutManager();
   const config = PANEL_CONFIGS[panelId];
-  const title = titleProp ?? config?.title ?? panelId;
+  const isBuiltIn = panelId === 'map' || panelId === 'objectList';
+  const builtInState = isBuiltIn ? getBuiltInPanelState(panelId) : undefined;
+
+  // Get title - built-in panels can have dynamic title via builtInState
+  const title = builtInState?.title ?? titleProp ?? config?.title ?? panelId;
   const closable = isPopup || config?.closable !== false;
 
   // Wrap drag start to check for locked state

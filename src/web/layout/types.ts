@@ -45,6 +45,8 @@ export interface DockState {
 /** State for built-in panels (map, objectList) */
 export interface BuiltInPanelState {
   isLocked?: boolean;
+  /** Dynamic title override (e.g., "Mapa (Area Name)" when viewing different area) */
+  title?: string;
 }
 
 export interface LayoutState {

@@ -78,7 +78,8 @@ export class EmbeddedMap {
     private currentPath: { path: number[]; color: string } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
     private _isViewingPlayerPosition = true;
-    private viewChangeListeners: Set<(isViewing: boolean) => void> = new Set();
+    private _viewedAreaId: number | null = null;
+    private viewChangeListeners: Set<(isViewing: boolean, areaName?: string) => void> = new Set();
 
     constructor(reader: MapReader, startId?: number) {
         this.map = document.querySelector<HTMLDivElement>("#map")!;
@@ -389,7 +390,7 @@ export class EmbeddedMap {
                 this.renderer.setZoom(this.zoom);
                 this.renderer.centerOn(closestRoom.id);
             }
-            this.setViewingPlayerPosition(false);
+            this.setViewingPlayerPosition(false, areaId);
         }
 
         this.renderCurrentPathAndHighlights()
@@ -402,17 +403,36 @@ export class EmbeddedMap {
         return this._isViewingPlayerPosition;
     }
 
-    private setViewingPlayerPosition(value: boolean) {
-        if (this._isViewingPlayerPosition !== value) {
-            this._isViewingPlayerPosition = value;
-            this.viewChangeListeners.forEach(listener => listener(value));
+    private setViewingPlayerPosition(value: boolean, areaId?: number) {
+        const viewingChanged = this._isViewingPlayerPosition !== value;
+        const newAreaId = value ? null : (areaId ?? null);
+        const areaChanged = this._viewedAreaId !== newAreaId;
+
+        this._isViewingPlayerPosition = value;
+        this._viewedAreaId = newAreaId;
+
+        if (viewingChanged || areaChanged) {
+            const areaName = this.getViewedAreaName();
+            this.viewChangeListeners.forEach(listener => listener(value, areaName));
         }
     }
 
     /**
-     * Subscribe to view position changes
+     * Get the name of the currently viewed area (when viewing a different area)
      */
-    onViewChange(listener: (isViewingPlayer: boolean) => void): () => void {
+    getViewedAreaName(): string | undefined {
+        if (this._isViewingPlayerPosition || this._viewedAreaId === null) {
+            return undefined;
+        }
+        const area = this.reader.getArea?.(this._viewedAreaId);
+        return area?.getAreaName?.() ?? area?.areaName ?? area?.name;
+    }
+
+    /**
+     * Subscribe to view position changes
+     * @param listener - Called with (isViewingPlayer, areaName) when view changes
+     */
+    onViewChange(listener: (isViewingPlayer: boolean, areaName?: string) => void): () => void {
         this.viewChangeListeners.add(listener);
         return () => this.viewChangeListeners.delete(listener);
     }

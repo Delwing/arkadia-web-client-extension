@@ -23,7 +23,8 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   const popupInfo = isPopup ? getPopup(panel.id) : null;
   const builtInState = isBuiltIn ? getBuiltInPanelState(panel.id) : undefined;
 
-  const title = popupInfo?.config.title ?? config?.title ?? panel.id;
+  // Get title - built-in panels can have dynamic title via builtInState
+  const title = builtInState?.title ?? popupInfo?.config.title ?? config?.title ?? panel.id;
   const isLocked = isPopup ? (popupInfo?.isLocked ?? false) : (builtInState?.isLocked ?? false);
 
   const resizeDir = useRef<ResizeDirection>(null);
