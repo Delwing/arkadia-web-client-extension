@@ -6,17 +6,17 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 
 | Komenda | Opis |
 |---------|------|
-| `/z skrot` | Zabij obiekt o podanym skrocie |
+| `/z id` | Zabij obiekt o podanym id |
 | `/z` | Atakuj cel oznaczony jako cel ataku |
-| `/x skrot` | Zaskocz obiekt o podanym skrocie |
+| `/x id` | Zaskocz obiekt o podanym id |
 | `/x` | Zaskocz cel oznaczony jako cel ataku |
-| `/prze [skrot]` | Przelamuje obrone celu lub wskazanego obiektu |
+| `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |
 
 ## Kolejka ataku
 
 | Komenda | Opis |
 |---------|------|
-| `/q skrot` | Dodaj przeciwnika do kolejki ataku (przyjmuje skroty lub `ob_id`) |
+| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |
 | `/cq` | Wyczysc kolejke ataku |
 | `/nn` | Atakuj nastepny cel z kolejki |
 
@@ -24,22 +24,27 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 
 | Komenda | Opis |
 |---------|------|
-| `/zas skrot` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |
-| `/za skrot` | Alias do `/zas` |
+| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |
+| `/za id` | Alias do `/zas` |
 | `/zas` | Zaslon cel oznaczony jako cel obrony |
 | `/za` | Alias do `/zas` |
-| `/za2 skrot` | Zaslon z poziomem krycia 2 |
-| `/za3 skrot` | Zaslon z poziomem krycia 3 |
-| `/za4 skrot` | Zaslon z poziomem krycia 4 |
-| `/w skrot` | Wycofaj postac za wskazany obiekt |
+| `/w id` | Wycofaj postac za wskazany obiekt |
 | `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |
+
+## Zaslona grupowa
+
+| Komenda | Opis |
+|---------|------|
+| `/za2 id` | Zaslon z poziomem krycia 2 |
+| `/za3 id` | Zaslon z poziomem krycia 3 |
+| `/za4 id` | Zaslon z poziomem krycia 4 |
 
 ## Oznaczanie celow
 
 | Komenda | Opis |
 |---------|------|
 | `/wa id` | Oznacz obiekt jako cel ataku |
-| `/wz skrot` | Oznacz obiekt z druzyny jako cel obrony |
+| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |
 
 ## Rozkazy druzyny
 
@@ -47,10 +52,10 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 |---------|------|
 | `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |
 | `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |
-| `/rz skrot` | Rozkaz druzynie zaslonic obiekt |
+| `/rz id` | Rozkaz druzynie zaslonic obiekt |
 | `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |
 | `/zap numer` | Zapros do druzyny obiekt o podanym numerze |
-| `/pro skrot` | Przekaz prowadzenie obiektowi |
+| `/pro id` | Przekaz prowadzenie obiektowi |
 
 ## Wrogowie na bindach
 
@@ -58,3 +63,9 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 |---------|------|
 | `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |
 | `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |
+
+## Okno walki
+
+| Komenda | Opis |
+|---------|------|
+| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |

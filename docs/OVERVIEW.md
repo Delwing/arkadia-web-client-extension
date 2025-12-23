@@ -1,6 +1,6 @@
 # Rozszerzenie Arkadia
 
-Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, skroty klawiaturowe, zarzadzanie pojemnikami i automatyzacje.
+Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarzadzanie pojemnikami i automatyzacje.
 
 ## Kategorie dokumentacji
 
@@ -11,7 +11,7 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 | **Ekwipunek** | Pojemniki, zbieranie lupow, depozyty |
 | **Postepy** | Postepy, zabici, zlecenia, staz |
 | **Ziola** | Licznik i zarzadzanie ziolami |
-| **Bindowanie** | Skroty klawiaturowe |
+| **Bindowanie** | Bindy |
 | **Skroty** | Zapisane lokacje na mapie |
 | **Inne** | Pozostale aliasy i funkcje |
 

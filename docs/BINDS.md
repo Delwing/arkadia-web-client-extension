@@ -1,8 +1,8 @@
 # Bindowanie
 
-Rozszerzenie umozliwia ustawienie skrotow klawiaturowych do szybkiego wykonywania akcji.
+Rozszerzenie umozliwia ustawienie bindow do szybkiego wykonywania akcji.
 
-## Domyslne skroty
+## Domyslne bindy
 
 | Klawisz | Nazwa | Akcja |
 |---------|-------|-------|
@@ -14,17 +14,13 @@ Rozszerzenie umozliwia ustawienie skrotow klawiaturowych do szybkiego wykonywani
 
 ## Konfiguracja
 
-Bindy mozna modyfikowac w zakladce **Bindowanie** na stronie opcji rozszerzenia. Mozesz tez dodac wlasne skroty wysylajace dowolne komendy.
+Bindy mozna modyfikowac w zakladce **Bindowanie** na stronie opcji rozszerzenia. Mozesz tez dodac wlasne bindy wysylajace dowolne komendy.
 
 ## Komendy
 
 | Komenda | Opis |
 |---------|------|
-| `/binds` | Wyswietl aktualnie ustawione skroty klawiaturowe |
-| `/pokaz_skroty` | Wyswietl liste ustawionych skrotow |
-| `/dodaj_skrot klawisz nazwa [komenda]` | Dodaj skrot klawiaturowy |
-| `/usun_skrot nazwa` | Usun wskazany skrot |
-| `/usun_skroty` | Usun wszystkie skroty |
+| `/binds` | Wyswietl aktualnie ustawione bindy |
 
 ## Tymczasowe bindy
 

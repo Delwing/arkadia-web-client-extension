@@ -386,6 +386,24 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
         },
         {
+            label: 'Zegar',
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/czas'});
+            },
+        },
+        {
+            label: 'Chat',
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/chatw'});
+            },
+        },
+        {
+            label: 'Walka',
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/walkaw'});
+            },
+        },
+        {
             label: 'Pokaż radial',
             action: () => {
                 mobileRadial?.showAt(event.clientX, event.clientY);
