@@ -123,6 +123,7 @@ const PostepyPopup: React.FC = () => {
                                 <span className="postepy-popup__entry-num">{index + 1}.</span>
                                 <span className="postepy-popup__entry-state">{entry.state}</span>
                                 <span className="postepy-popup__entry-time">{formatDuration(entry.delta)}</span>
+                                <span className="postepy-popup__entry-kills">{entry.killsMy ?? 0}/{(entry.killsMy ?? 0) + (entry.killsTeam ?? 0)}</span>
                             </div>
                         ))}
                     </div>

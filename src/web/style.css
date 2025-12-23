@@ -5472,6 +5472,12 @@ body.mobile-command-radial-active {
   text-align: right;
 }
 
+.postepy-popup__entry-kills {
+  color: #90ee90;
+  min-width: 3rem;
+  text-align: right;
+}
+
 .postepy-popup__since-last {
   margin-top: 0.5rem;
   padding: 0.25rem 0.5rem;
