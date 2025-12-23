@@ -5632,3 +5632,96 @@ body.mobile-command-radial-active {
 .zabici-popup__team-toggle--active:hover {
   background-color: rgba(135, 206, 235, 0.3);
 }
+
+/* Skroty Popup */
+.skroty-window-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  overflow: auto;
+  background-color: var(--surface-elevated);
+}
+
+.skroty-empty {
+  color: rgba(241, 245, 249, 0.5);
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
+}
+
+.skroty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.skroty-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 0.25rem;
+}
+
+.skroty-item:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.skroty-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skroty-item-key {
+  color: #7cfc00;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.skroty-item-id {
+  color: rgba(241, 245, 249, 0.4);
+  font-size: 0.75rem;
+}
+
+.skroty-item-label {
+  color: rgba(255, 165, 0, 0.7);
+  font-size: 0.7rem;
+  padding-left: 0.1rem;
+}
+
+.skroty-item-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.skroty-btn {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.6);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skroty-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.skroty-btn--primary {
+  background-color: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+.skroty-btn--primary:hover {
+  background-color: rgba(96, 165, 250, 0.3);
+  border-color: #60a5fa;
+}

@@ -79,6 +79,7 @@ export class EmbeddedMap {
     private currentHighlights: { roomId: number; color: string }[] = [];
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
+    private _viewedZ: number | null = null;
     private viewChangeListeners: Set<(isViewing: boolean, areaName?: string) => void> = new Set();
 
     constructor(reader: MapReader, startId?: number) {
@@ -198,6 +199,42 @@ export class EmbeddedMap {
         eventBus.on('mapHighlights', (data: { roomId: number; color: string }[]) => {
             this.currentHighlights = data;
             this.refresh();
+        });
+
+        eventBus.on('map.centerOn', (data: { roomId: number }) => {
+            const targetRoom = this.reader.getRoom(data.roomId);
+            const playerRoom = this.reader.getRoom(this.currentRoom);
+
+            if (targetRoom && playerRoom) {
+                const isPlayerArea = targetRoom.area === playerRoom.area && targetRoom.z === playerRoom.z;
+                if (isPlayerArea) {
+                    this.setViewingPlayerPosition(true);
+                } else {
+                    this.setViewingPlayerPosition(false, targetRoom.area, targetRoom.z);
+                }
+            }
+            this.renderer.centerOn(data.roomId);
+            this.updatePlayerMarker();
+        });
+
+        eventBus.on('map.setLocation', (data: { roomId: number }) => {
+            getClientInstance()?.Map?.setMapRoomById(data.roomId);
+        });
+
+        eventBus.on('map.showPath', (data: { toRoomId: number }) => {
+            const currentRoom = this.currentRoom;
+            const pathFinder = (this as any).pathFinder ?? (globalThis as any).embedded?.pathFinder;
+            if (currentRoom && pathFinder) {
+                const path = pathFinder.findPath(currentRoom, data.toRoomId);
+                if (path) {
+                    this.currentPath = { path, color: '#66E64D' };
+                    this.refresh();
+                } else {
+                    eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
+                }
+            } else {
+                eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
+            }
         });
 
         this.initVisitedRooms(initialRoom);
@@ -394,10 +431,32 @@ export class EmbeddedMap {
                 this.renderer.setZoom(this.zoom);
                 this.renderer.centerOn(closestRoom.id);
             }
-            this.setViewingPlayerPosition(false, areaId);
+            this.setViewingPlayerPosition(false, areaId, z);
         }
 
         this.renderCurrentPathAndHighlights()
+    }
+
+    /**
+     * Update the player position marker if the player is in the currently viewed area/level.
+     * Call this after changing the viewed area/level to check if player marker should be shown.
+     */
+    updatePlayerMarker() {
+        if (this._viewedAreaId === null || this._viewedZ === null) {
+            // Currently viewing player position, marker is already shown
+            return;
+        }
+
+        const playerRoom = this.reader.getRoom(this.currentRoom);
+        if (!playerRoom) return;
+
+        const isPlayerVisible = playerRoom.area === this._viewedAreaId && playerRoom.z === this._viewedZ;
+
+        if (isPlayerVisible) {
+            this.renderer.setPosition(this.currentRoom);
+        } else {
+            this.renderer.clearPosition();
+        }
     }
 
     /**
@@ -407,13 +466,15 @@ export class EmbeddedMap {
         return this._isViewingPlayerPosition;
     }
 
-    private setViewingPlayerPosition(value: boolean, areaId?: number) {
+    private setViewingPlayerPosition(value: boolean, areaId?: number, z?: number) {
         const viewingChanged = this._isViewingPlayerPosition !== value;
         const newAreaId = value ? null : (areaId ?? null);
+        const newZ = value ? null : (z ?? null);
         const areaChanged = this._viewedAreaId !== newAreaId;
 
         this._isViewingPlayerPosition = value;
         this._viewedAreaId = newAreaId;
+        this._viewedZ = newZ;
 
         if (viewingChanged || areaChanged) {
             const areaName = this.getViewedAreaName();

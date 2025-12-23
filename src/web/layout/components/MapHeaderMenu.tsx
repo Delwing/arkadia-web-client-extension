@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import eventBus from '@modules/core/eventBus';
 
 interface MapHeaderMenuProps {
   className?: string;
@@ -15,6 +16,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [areas, setAreas] = useState<{ id: number | string; name: string }[]>([]);
   const [levels, setLevels] = useState<number[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
+  const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = useCallback(() => {
@@ -109,61 +111,79 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     const embedded = getEmbedded();
     if (!embedded?.reader) return;
 
-    // Find a room in this area to get the z level
     const numericId = typeof areaId === 'string' ? parseInt(areaId, 10) : areaId;
-    const area = embedded.reader.getArea?.(numericId);
-    const rooms = area?.getRooms?.() ?? [];
-    const z = rooms[0]?.z ?? 0;
-
-    embedded.viewAreaLevel(numericId, z);
+    // Always show level 0 when changing area
+    embedded.viewAreaLevel(numericId, 0);
+    setViewedAreaId(numericId);
     closeMenu();
   }, [getEmbedded, closeMenu]);
 
   const handleShowLevels = useCallback(() => {
     const embedded = getEmbedded();
-    if (!embedded?.reader || typeof embedded.currentRoom !== 'number') return;
+    if (!embedded?.reader) return;
 
-    const currentRoomData = embedded.reader.getRoom(embedded.currentRoom);
-    if (!currentRoomData) return;
+    // Use currently viewed area, or fall back to player's current room area
+    let areaId = viewedAreaId;
+    let currentZ = 0;
 
-    const currentAreaId = currentRoomData.area;
+    if (areaId === null && typeof embedded.currentRoom === 'number') {
+      const currentRoomData = embedded.reader.getRoom(embedded.currentRoom);
+      if (currentRoomData) {
+        areaId = currentRoomData.area;
+        currentZ = currentRoomData.z;
+      }
+    }
+
+    if (areaId === null) return;
 
     // Check cache first
-    let sortedLevels = levelsCache.get(currentAreaId);
+    let sortedLevels = levelsCache.get(areaId);
     if (!sortedLevels) {
-      // Get area and its rooms
-      const area = embedded.reader.getArea?.(currentAreaId);
+      const area = embedded.reader.getArea?.(areaId);
       const rooms = area?.getRooms?.() ?? [];
 
-      // Find all unique z levels in the current area
       const levelSet = new Set<number>();
       for (const room of rooms) {
         levelSet.add(room.z);
       }
 
-      sortedLevels = Array.from(levelSet).sort((a, b) => b - a); // descending order
-      levelsCache.set(currentAreaId, sortedLevels);
+      sortedLevels = Array.from(levelSet).sort((a, b) => b - a);
+      levelsCache.set(areaId, sortedLevels);
     }
 
     setLevels(sortedLevels);
-    setCurrentLevel(currentRoomData.z);
+    setCurrentLevel(currentZ);
     setSubmenu('levels');
-  }, [getEmbedded]);
+  }, [getEmbedded, viewedAreaId]);
 
   const handleSelectLevel = useCallback((level: number) => {
     const embedded = getEmbedded();
-    if (!embedded?.reader || typeof embedded.currentRoom !== 'number') return;
+    if (!embedded?.reader) return;
 
-    const currentRoomData = embedded.reader.getRoom(embedded.currentRoom);
-    if (!currentRoomData) return;
+    // Use currently viewed area, or fall back to player's current room area
+    let areaId = viewedAreaId;
+    if (areaId === null && typeof embedded.currentRoom === 'number') {
+      const currentRoomData = embedded.reader.getRoom(embedded.currentRoom);
+      if (currentRoomData) {
+        areaId = currentRoomData.area;
+      }
+    }
 
-    embedded.viewAreaLevel(currentRoomData.area, level);
+    if (areaId === null) return;
+
+    embedded.viewAreaLevel(areaId, level);
+    setCurrentLevel(level);
     closeMenu();
-  }, [getEmbedded, closeMenu]);
+  }, [getEmbedded, closeMenu, viewedAreaId]);
 
   const handleBackToMenu = useCallback(() => {
     setSubmenu('none');
   }, []);
+
+  const handleOpenSkroty = useCallback(() => {
+    eventBus.emit('skroty.popup.open');
+    closeMenu();
+  }, [closeMenu]);
 
   return (
     <div ref={menuRef} className={`map-header-menu ${className}`}>
@@ -251,6 +271,13 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
                 onClick={handleZoomOut}
               >
                 Oddal
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item"
+                onClick={handleOpenSkroty}
+              >
+                Skroty
               </button>
             </>
           )}

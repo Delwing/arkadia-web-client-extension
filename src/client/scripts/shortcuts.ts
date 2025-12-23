@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
 
 export interface ShortcutEntry {
     key: string;
@@ -106,5 +107,6 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) ([a-zA-Z_0-9]+)(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
         aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skroty$/, callback: clear });
+        aliases.push({ pattern: /^\/skroty_popup$/, callback: () => eventBus.emit('skroty.popup.open') });
     }
 }

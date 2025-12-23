@@ -11,6 +11,7 @@ import ChatPopup from '../ChatPopup';
 import CombatPopup from '../CombatPopup';
 import PostepyPopup from '../PostepyPopup';
 import ZabiciPopup from '../ZabiciPopup';
+import SkrotyPopup from '../SkrotyPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -41,6 +42,7 @@ export function LayoutManagerWrapper({
       <CombatPopup />
       <PostepyPopup />
       <ZabiciPopup />
+      <SkrotyPopup />
     </LayoutProvider>
   );
 }

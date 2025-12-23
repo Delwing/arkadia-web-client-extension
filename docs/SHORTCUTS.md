@@ -8,6 +8,7 @@ Modul skrotow pozwala powiazac numery lokacji z mapy z wybrana nazwa, dzieki cze
 |---------|------|
 | `/dodaj_skrot id nazwa [opis]` | Zapisz skrot do lokacji (opis opcjonalny) |
 | `/pokaz_skroty` | Wyswietl liste zapisanych skrotow |
+| `/skroty_popup` | Otworz okno z lista skrotow |
 | `/usun_skrot nazwa` | Usun wskazany skrot |
 | `/usun_skroty` | Usun wszystkie skroty |
 | `/prowadz nazwa` | Przejdz do zapisanej lokacji |

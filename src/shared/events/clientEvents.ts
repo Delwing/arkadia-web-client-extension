@@ -231,6 +231,10 @@ export interface KnownEvents {
     "postepy.popup.open": void;
     "zabici.updated": unknown;
     "zabici.popup.open": void;
+    "skroty.popup.open": void;
+    "map.centerOn": { roomId: number };
+    "map.setLocation": { roomId: number };
+    "map.showPath": { toRoomId: number };
 }
 
 export interface ObjectData {

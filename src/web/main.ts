@@ -388,7 +388,7 @@ outputWrapper.addEventListener('contextmenu', event => {
         {
             label: 'Skróty',
             action: () => {
-                eventBus.emit('sendCommand', {command: '/pokaz_skroty'});
+                eventBus.emit('skroty.popup.open');
             },
         },
         {
