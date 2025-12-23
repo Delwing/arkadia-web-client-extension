@@ -30,6 +30,12 @@ const HerbTextWindow = () => {
 
     const { wrapperProps, isOpen, setIsOpen } = usePopup(POPUP_ID);
 
+    // Refs to access current values in ref callback without dependencies
+    const bagsRef = useRef(bags);
+    bagsRef.current = bags;
+    const isOpenRef = useRef(isOpen);
+    isOpenRef.current = isOpen;
+
     const ensureHerbsData = useCallback(async (): Promise<HerbsData | null> => {
         if (herbsDataRef.current) {
             return herbsDataRef.current;
@@ -74,6 +80,20 @@ const HerbTextWindow = () => {
             contentRef.current.appendChild(fragment);
         }
     }, [ensureHerbsData, handleHerbContextMenu]);
+
+    // Ref callback to detect when DOM element changes (e.g., during dock/undock)
+    // and repopulate content when it does
+    const setContentRef = useCallback((node: HTMLDivElement | null) => {
+        if (node === contentRef.current) return;
+        contentRef.current = node;
+
+        // If we have a new element and window is open, populate it
+        if (node && isOpenRef.current) {
+            requestAnimationFrame(() => {
+                updateContent(bagsRef.current);
+            });
+        }
+    }, [updateContent]);
 
     // Listen for herb counts updates
     useEffect(() => {
@@ -143,7 +163,7 @@ const HerbTextWindow = () => {
                 </div>
             ) : (
                 <div
-                    ref={contentRef}
+                    ref={setContentRef}
                     className="herb-text-content"
                 />
             )}
