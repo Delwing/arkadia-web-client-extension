@@ -53,14 +53,17 @@ jobs:
         include:
           - name: Run unit tests
             command: yarn test
-          - name: Run e2e tests (shard 1/3)
-            command: yarn test:e2e --reporter=line --shard=1/3
+          - name: Run e2e tests (shard 1/4)
+            command: yarn test:e2e --reporter=line --shard=1/4
             install_browsers: true
-          - name: Run e2e tests (shard 2/3)
-            command: yarn test:e2e --reporter=line --shard=2/3
+          - name: Run e2e tests (shard 2/4)
+            command: yarn test:e2e --reporter=line --shard=2/4
             install_browsers: true
-          - name: Run e2e tests (shard 3/3)
-            command: yarn test:e2e --reporter=line --shard=3/3
+          - name: Run e2e tests (shard 3/4)
+            command: yarn test:e2e --reporter=line --shard=3/4
+            install_browsers: true
+          - name: Run e2e tests (shard 4/4)
+            command: yarn test:e2e --reporter=line --shard=4/4
             install_browsers: true
     steps:
       - uses: actions/checkout@v4
