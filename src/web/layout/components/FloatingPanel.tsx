@@ -3,6 +3,7 @@ import { FloatingPanelState, PANEL_CONFIGS } from '../types';
 import { useLayoutManager } from '@web/layout';
 import { useDockablePanel } from '@web/layout';
 import { getPopup } from '../popupRegistry';
+import { MapHeaderMenu } from './MapHeaderMenu';
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
 
@@ -216,6 +217,8 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
               />
             </>
           )}
+          {/* Map panel header menu */}
+          {panel.id === 'map' && <MapHeaderMenu />}
           {/* Built-in panel lock button */}
           {isBuiltIn && (
             <button

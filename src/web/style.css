@@ -2817,17 +2817,13 @@ h1 {
   width: 100%;
 }
 
-#connect-button-float {
-  position: fixed;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 1049;
+#connect-button-inline {
   display: none;
   white-space: nowrap;
-  padding: 0.25rem 0.5rem;
-  font-size: 1.25rem;
+  padding: 0 0.75rem;
   background-color: #f44336;
   color: white;
+  height: 100%;
 }
 
 #connect-button.connected {

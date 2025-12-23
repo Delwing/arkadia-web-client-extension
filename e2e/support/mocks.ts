@@ -489,11 +489,11 @@ const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')
 
 export async function ensureGameSocket(page: Page): Promise<void> {
     const connectButton = page.locator('#connect-button');
-    const connectButtonFloat = page.locator('#connect-button-float');
+    const connectButtonInline = page.locator('#connect-button-inline');
     if (await connectButton.isVisible()) {
         await connectButton.click();
-    } else if (await connectButtonFloat.isVisible()) {
-        await connectButtonFloat.click();
+    } else if (await connectButtonInline.isVisible()) {
+        await connectButtonInline.click();
     }
     await page.waitForFunction(() => {
         const sockets: any[] = (window as any).__mockSockets ?? [];

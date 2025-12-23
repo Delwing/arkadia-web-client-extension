@@ -68,7 +68,7 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
 
 export class EmbeddedMap {
     private readonly map: HTMLDivElement;
-    private readonly reader: MapReader;
+    public readonly reader: MapReader;
     public renderer: Renderer;
     public currentRoom: any;
     private zoom: number;
@@ -249,13 +249,17 @@ export class EmbeddedMap {
         this.renderer.setZoom(this.zoom);
         this.currentRoom = roomId;
 
+        this.renderCurrentPathAndHighlights();
+    }
+
+    private renderCurrentPathAndHighlights() {
         this.renderer.clearPaths()
         if (this.currentPath) {
             this.renderer.renderPath(this.currentPath.path, this.currentPath.color);
         }
 
         this.renderer.clearHighlights()
-        this.currentHighlights.forEach(({ roomId: highlightId, color }) => {
+        this.currentHighlights.forEach(({roomId: highlightId, color}) => {
             this.renderer.renderHighlight(highlightId, color);
         });
     }
@@ -332,5 +336,58 @@ export class EmbeddedMap {
         }
         this.renderer.drawArea(room.area, room.z);
         this.renderRoom(this.currentRoom);
+    }
+
+    /**
+     * View a specific area at a specific z level.
+     * If the player is not in this area/level, centers on the middle of visible rooms
+     * and hides the player marker.
+     */
+    viewAreaLevel(areaId: number, z: number) {
+        const playerRoom = this.reader.getRoom(this.currentRoom);
+        const isPlayerVisible = playerRoom && playerRoom.area === areaId && playerRoom.z === z;
+
+        this.renderer.clearPosition()
+
+        if (isPlayerVisible) {
+            // Player is in this area/level, render normally
+            this.renderer.drawArea(areaId, z);
+            this.renderRoom(this.currentRoom);
+        } else {
+            // Draw the area at the specified level
+            this.renderer.drawArea(areaId, z);
+
+            // Find center of rooms at this level
+            const area = this.reader.getArea?.(areaId);
+            const rooms = area?.getRooms?.() ?? [];
+            const roomsAtLevel = rooms.filter((r: any) => r.z === z);
+
+            if (roomsAtLevel.length > 0) {
+                // Calculate average position
+                let sumX = 0, sumY = 0;
+                for (const room of roomsAtLevel) {
+                    sumX += room.x;
+                    sumY += room.y;
+                }
+                const avgX = sumX / roomsAtLevel.length;
+                const avgY = sumY / roomsAtLevel.length;
+
+                // Find room closest to center
+                let closestRoom = roomsAtLevel[0];
+                let minDist = Infinity;
+                for (const room of roomsAtLevel) {
+                    const dist = Math.abs(room.x - avgX) + Math.abs(room.y - avgY);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestRoom = room;
+                    }
+                }
+
+                this.renderer.setZoom(this.zoom);
+                this.renderer.centerOn(closestRoom.id);
+            }
+        }
+
+        this.renderCurrentPathAndHighlights()
     }
 }

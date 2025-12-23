@@ -4,6 +4,7 @@ import {useLayoutManager} from '@web/layout';
 import {PanelResizeHandle, ResizeHandle} from './ResizeHandle';
 import {DockedPanel} from './DockedPanel';
 import type {RegisteredPopup} from '../popupRegistry';
+import {MapHeaderMenu} from './MapHeaderMenu';
 
 interface DockZoneProps {
   position: DockPosition;
@@ -171,7 +172,7 @@ export function DockZone({ position, renderPanel, isPanelEnabled, getPopupInfo }
               onLock={onLock}
               isLocked={isLocked}
               onReset={popupInfo?.onReset}
-              headerActions={popupInfo?.headerActions}
+              headerActions={item.id === 'map' ? <MapHeaderMenu /> : popupInfo?.headerActions}
               isPopup={isPopup}
             >
               {renderPanel(item.id)}

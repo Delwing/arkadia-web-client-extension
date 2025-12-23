@@ -495,7 +495,7 @@ let authClosed = false;
 // Function to update the connect button state
 function updateConnectButtons() {
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
-    const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
+    const connectButtonInline = document.getElementById('connect-button-inline') as HTMLButtonElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
     const spinner = document.getElementById('connecting-spinner') as HTMLElement | null;
@@ -512,11 +512,11 @@ function updateConnectButtons() {
         }
     }
 
-    if (connectButtonFloat) {
+    if (connectButtonInline) {
         if (!isConnected && !isConnecting && authClosed) {
-            connectButtonFloat.style.display = 'block';
+            connectButtonInline.style.display = 'block';
         } else {
-            connectButtonFloat.style.display = 'none';
+            connectButtonInline.style.display = 'none';
         }
     }
 
@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
     const historyDownButton = document.getElementById('history-down-button') as HTMLButtonElement | null;
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
-    const connectButtonFloat = document.getElementById('connect-button-float') as HTMLButtonElement | null;
+    const connectButtonInline = document.getElementById('connect-button-inline') as HTMLButtonElement | null;
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
     const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
@@ -1865,7 +1865,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     connectButton?.addEventListener('click', handleConnect);
-    connectButtonFloat?.addEventListener('click', handleConnect);
+    connectButtonInline?.addEventListener('click', handleConnect);
 
     if (authClose) {
         authClose.addEventListener('click', () => {
