@@ -1,12 +1,19 @@
-# Skróty
+# Skroty lokacji
 
-Moduł skrótów pozwala powiązać numery lokacji z mapy z wybraną nazwą.
+Modul skrotow pozwala powiazac numery lokacji z mapy z wybrana nazwa, dzieki czemu mozesz szybko wracac do ulubionych miejsc.
 
-- **/dodaj_skrot _id nazwa [opis]_** – zapisuje skrót do lokacji (opis jest opcjonalny).
-- **/pokaz_skroty** – wyświetla listę zapisanych skrótów.
-- **/usun_skrot _nazwa_** – usuwa wskazany skrót.
-- **/usun_skroty** – usuwa wszystkie skróty.
+## Komendy
 
-Do zapisanej lokacji możesz przejść komendą **/prowadz _nazwa_** lub klikając przycisk `Prowadź` na liście skrótów.
+| Komenda | Opis |
+|---------|------|
+| `/dodaj_skrot id nazwa [opis]` | Zapisz skrot do lokacji (opis opcjonalny) |
+| `/pokaz_skroty` | Wyswietl liste zapisanych skrotow |
+| `/usun_skrot nazwa` | Usun wskazany skrot |
+| `/usun_skroty` | Usun wszystkie skroty |
+| `/prowadz nazwa` | Przejdz do zapisanej lokacji |
 
-Dane przechowywane są w pamięci przeglądarki.
+## Interfejs
+
+Na liscie skrotow mozesz kliknac przycisk **Prowadz** aby rozpoczac podroz do wybranej lokacji.
+
+> Dane przechowywane sa w pamieci przegladarki.

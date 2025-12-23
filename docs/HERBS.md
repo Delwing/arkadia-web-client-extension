@@ -1,16 +1,27 @@
-# Licznik ziół
+# Ziola
 
-Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczków z ziołami i zapisać te dane w pamięci przeglądarki. Dzięki temu możesz łatwo sprawdzić posiadane zioła oraz szybko je wyjmować.
+Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z ziolami i zapisac te dane w pamieci przegladarki.
 
-## Użycie
+## Komendy
 
-1. Użyj aliasu `/ziola_buduj`, aby przeglądnąć woreczki i zapisać ich zawartość.
-2. Alias `/ziola_pokaz` wyświetla ostatnie podsumowanie ziół (bez listy woreczków).
-3. Alias `/ziola` otwiera okno pozwalające zarządzać woreczkami zioł.
-4. Za pomocą `/wezz nazwa [ilosc]` wyjmiesz wskazane zioło z woreczków. Jeśli ilość nie zostanie podana, domyślnie wyjmowana jest jedna sztuka.
-5. Polecenie `/zi akcja nazwa` wyjmuje zioło i wykonuje podaną akcję.
-6. Alias `/woreczki_buduj` ocenia stan wszystkich woreczków i aktualizuje podgląd w menedżerze ziół.
+| Komenda | Opis |
+|---------|------|
+| `/ziola_buduj` | Przegladaj woreczki i zapisz ich zawartosc |
+| `/woreczki_buduj` | Ocen stan wszystkich woreczkow i zapisz w liczniku |
+| `/ziola_pokaz` | Wyswietl ostatnie podsumowanie ziol (bez listy woreczkow) |
+| `/ziola` | Otworz okno zarzadzania woreczkami ziol |
 
-W ustawieniach skryptów można zdefiniować komendy wykonywane przed i po użyciu ziół. Wiele komend należy oddzielić średnikiem (`;`).
+## Wyjmowanie ziol
 
-Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki osobno dla każdej postaci i wczytywane po ponownym uruchomieniu klienta.
+| Komenda | Opis |
+|---------|------|
+| `/wezz ziolo` | Wyjmij jedna sztuke ziola z woreczkow |
+| `/wezz ziolo ilosc` | Wyjmij wskazana liczbe ziola |
+| `/zi akcja ziolo` | Wyjmij ziolo i od razu wykonaj akcje |
+| `/zi akcja ziolo ilosc` | Wyjmij wskazana liczbe ziola i wykonaj akcje |
+
+## Ustawienia
+
+W ustawieniach skryptow mozna zdefiniowac komendy wykonywane przed i po uzyciu ziol. Wiele komend nalezy oddzielic srednikiem (`;`).
+
+> Informacje o zliczonych ziolach sa przechowywane w pamieci przegladarki osobno dla kazdej postaci.

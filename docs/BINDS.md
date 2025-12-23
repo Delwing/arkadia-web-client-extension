@@ -1,16 +1,36 @@
 # Bindowanie
 
-Rozszerzenie umożliwia ustawienie kilku skrótów klawiaturowych. Domyślne bindy to:
+Rozszerzenie umozliwia ustawienie skrotow klawiaturowych do szybkiego wykonywania akcji.
 
-- **Domyślny** – klawisz `]` (BracketRight). Używany do wykonywania akcji kontekstowych, np. zbierania łupów z ciała czy powtarzania poleceń pojawiających się w komunikatach.
-- **Atakuj** – `CTRL+1`. Skrót wysyła komendę `zabij ob_ID`, gdzie `ID` to identyfikator celu ataku z GMCP.
-- **Napełnij lampę** – `CTRL+4`. Skrót wysyła komendę `napelnij lampe olejem`.
-- **Wesprzyj** – `CTRL+Q`. Skrót wysyła komendę `wesprzyj`. Jeśli drużyna ma
-  przywódcę, wysyła dodatkowo `wesprzyj ob_ID`, gdzie `ID` to identyfikator
-  przywódcy z GMCP.
-- **Tryb ruchu** – `` ` `` (domyślnie). Skrót zmienia tryb ruchu.
+## Domyslne skroty
 
-Bindy można modyfikować w zakładce **Bindowanie** na stronie opcji rozszerzenia.
-Możesz także dodać własne skróty, które wyślą dowolną komendę.
-Aktualnie ustawione skróty możesz też wypisać w grze komendą `/binds`.
+| Klawisz | Nazwa | Akcja |
+|---------|-------|-------|
+| `]` | Domyslny | Akcje kontekstowe (zbieranie lupow, powtarzanie polecen) |
+| `Ctrl+1` | Atakuj | Wysyla `zabij ob_ID` gdzie ID to cel ataku z GMCP |
+| `Ctrl+4` | Napelnij lampe | Wysyla `napelnij lampe olejem` |
+| `Ctrl+Q` | Wesprzyj | Wysyla `wesprzyj` (+ `wesprzyj ob_ID` przywodcy druzyny) |
+| `` ` `` | Tryb ruchu | Zmienia tryb ruchu |
 
+## Konfiguracja
+
+Bindy mozna modyfikowac w zakladce **Bindowanie** na stronie opcji rozszerzenia. Mozesz tez dodac wlasne skroty wysylajace dowolne komendy.
+
+## Komendy
+
+| Komenda | Opis |
+|---------|------|
+| `/binds` | Wyswietl aktualnie ustawione skroty klawiaturowe |
+| `/pokaz_skroty` | Wyswietl liste ustawionych skrotow |
+| `/dodaj_skrot klawisz nazwa [komenda]` | Dodaj skrot klawiaturowy |
+| `/usun_skrot nazwa` | Usun wskazany skrot |
+| `/usun_skroty` | Usun wszystkie skroty |
+
+## Tymczasowe bindy
+
+| Komenda | Opis |
+|---------|------|
+| `/tbind1 [komenda]` | Ustaw (lub wyczysc) pierwszy tymczasowy bind |
+| `/tbind2 [komenda]` | Ustaw (lub wyczysc) drugi tymczasowy bind |
+
+> **Wskazowka:** Komendy w bindach mozna rozdzielac znakiem `#`.
