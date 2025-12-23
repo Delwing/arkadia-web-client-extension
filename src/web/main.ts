@@ -430,6 +430,15 @@ outputWrapper.addEventListener('click', (event) => {
     lastClickTarget = event.target;
 });
 
+// Middle mouse button opens radial menu
+outputWrapper.addEventListener('mousedown', (event) => {
+    if (event.button !== 1) {
+        return;
+    }
+    event.preventDefault();
+    mobileRadial?.showAt(event.clientX, event.clientY);
+});
+
 function updateProgress(p: number, loaded?: number, total?: number) {
     progressContainer.style.display = 'block';
     progressBar.style.width = `${p}%`;
