@@ -450,9 +450,9 @@ export function LogBrowser() {
     loadSessions();
   }, [isOpen]);
 
-  // Load session data when current session changes
+  // Load session data when current session changes or modal opens
   useEffect(() => {
-    if (!currentSession || !dbRef.current) return;
+    if (!isOpen || !currentSession || !dbRef.current) return;
 
     const loadSession = async () => {
       setIsLoading(true);
@@ -474,7 +474,7 @@ export function LogBrowser() {
     };
 
     loadSession();
-  }, [currentSession, pendingScrollTarget]);
+  }, [isOpen, currentSession, pendingScrollTarget]);
 
   // Handle pending scroll target after session loads
   useEffect(() => {

@@ -1,5 +1,7 @@
 import storage, { getItemSync } from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
+import type { CombatEntry } from "@client/scripts/combatWindow";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
@@ -124,6 +126,19 @@ export default async function initSessionLogger(client: SessionClient) {
         await save(currentDb, htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
         scheduleClose();
       }
+    }
+  });
+
+  // Also log combat messages that are redirected to the combat window
+  // These messages are marked as deleted so they don't appear in main output,
+  // but we still want them in the session logs
+  eventBus.on('combat.newMessage', async (entry: CombatEntry) => {
+    if (!loggingEnabled) return;
+    const htmlText = entry.buffer.toHtml();
+    const currentDb = await ensureDb();
+    if (currentDb) {
+      await save(currentDb, htmlText.replace(CLICK_TAG_REG, ''), entry.type);
+      scheduleClose();
     }
   });
 }
