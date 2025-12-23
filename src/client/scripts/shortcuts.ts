@@ -104,8 +104,12 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
 
     if (aliases) {
         aliases.push({ pattern: /^\/pokaz_skroty$/, callback: printShortcuts });
+        // Support both quoted and unquoted names: /dodaj_skrot 123 "nazwa ze spacjami" opis OR /dodaj_skrot 123 nazwa opis
+        aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) "([^"]+)"(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
         aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) ([a-zA-Z_0-9]+)(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
-        aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
+        // Support both quoted and unquoted names: /usun_skrot "nazwa ze spacjami" OR /usun_skrot nazwa
+        aliases.push({ pattern: /^\/usun_skrot "([^"]+)"$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
+        aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_0-9]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skroty$/, callback: clear });
         aliases.push({ pattern: /^\/skroty_popup$/, callback: () => eventBus.emit('skroty.popup.open') });
     }

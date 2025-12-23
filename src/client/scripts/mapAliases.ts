@@ -34,7 +34,11 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /\/prowadz (.*)$/,
             callback: (matches: RegExpMatchArray) => {
-                const input = matches[1];
+                // Strip quotes if present for names with spaces
+                let input = matches[1];
+                if (input.startsWith('"') && input.endsWith('"')) {
+                    input = input.slice(1, -1);
+                }
                 const shortcutId = getShortcut(input);
                 if (typeof shortcutId === 'number') {
                     client.sendEvent('leadTo', shortcutId);
