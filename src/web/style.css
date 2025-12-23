@@ -3018,7 +3018,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 0.2rem 0.4rem;
-  border: 1px solid;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 7px;
   backdrop-filter: blur(2px);
   opacity: 0.75;
@@ -4084,6 +4084,24 @@ body.mobile-command-radial-active {
   overflow-y: auto;
 }
 
+.docs-content h1 {
+  font-size: 1.4rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.docs-content h2 {
+  font-size: 1.2rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.docs-content h3 {
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
 .debug-content {
   flex: 1;
   overflow-y: auto;
@@ -4323,7 +4341,7 @@ body.mobile-command-radial-active {
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  z-index: 1010;
+  z-index: 1050;
   display: none;
   align-items: center;
   justify-content: center;
