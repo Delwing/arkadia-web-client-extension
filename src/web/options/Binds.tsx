@@ -14,6 +14,9 @@ import {
     type StoredMultibindRecord,
 } from "../dataStores/multibindStore";
 
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const ALT_LABEL = isMac ? '⌥' : 'ALT';
+
 interface Bind {
     key: string;
     ctrl?: boolean;
@@ -158,7 +161,7 @@ function label(bind: Bind) {
     else if (key === 'Backquote') key = '`';
     const parts: string[] = [];
     if (bind.ctrl) parts.push('CTRL');
-    if (bind.alt) parts.push('ALT');
+    if (bind.alt) parts.push(ALT_LABEL);
     if (bind.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');

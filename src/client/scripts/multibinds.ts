@@ -7,6 +7,9 @@ import {
 } from "@web/dataStores/multibindStore";
 import storage from "@modules/core/storage";
 
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const ALT_LABEL = isMac ? '⌥' : 'ALT';
+
 const MAX_BINDS = 4;
 
 interface DisplayMultibind {
@@ -35,7 +38,7 @@ function bindLabel(bind: Bind): string {
     else if (key === 'Backquote') key = '`';
     const parts: string[] = [];
     if (bind.ctrl) parts.push('CTRL');
-    if (bind.alt) parts.push('ALT');
+    if (bind.alt) parts.push(ALT_LABEL);
     if (bind.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');

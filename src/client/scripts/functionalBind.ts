@@ -1,6 +1,9 @@
 import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const ALT_LABEL = isMac ? '⌥' : 'ALT';
+
 export const LINE_START_EVENT = 'line-start';
 
 export interface FunctionalBindOptions {
@@ -26,7 +29,7 @@ export function formatLabel(options: FunctionalBindOptions) {
     }
     const parts = [] as string[];
     if (options.ctrl) parts.push('CTRL');
-    if (options.alt) parts.push('ALT');
+    if (options.alt) parts.push(ALT_LABEL);
     if (options.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');

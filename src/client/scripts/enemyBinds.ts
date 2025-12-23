@@ -6,6 +6,9 @@ import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import storage from '@modules/core/storage';
 
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const ALT_LABEL = isMac ? '⌥' : 'ALT';
+
 const NUM_SLOTS = 3;
 const ORANGE = createColorFormat('#ff8800');
 const RED = createColorFormat('#ff0000');
@@ -121,7 +124,7 @@ export default function initEnemyBinds(
         else if (key === 'Backquote') key = '`';
         const parts: string[] = [];
         if (bind.ctrl) parts.push('CTRL');
-        if (bind.alt) parts.push('ALT');
+        if (bind.alt) parts.push(ALT_LABEL);
         if (bind.shift) parts.push('SHIFT');
         parts.push(key);
         return parts.join('+');

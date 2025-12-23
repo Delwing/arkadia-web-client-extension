@@ -1,3 +1,6 @@
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const ALT_LABEL = isMac ? '⌥' : 'ALT';
+
 export interface MultibindKeyDefinition {
     key: string;
     ctrl?: boolean;
@@ -30,7 +33,7 @@ function formatKey(def?: MultibindKeyDefinition) {
     }
     const parts: string[] = [];
     if (def.ctrl) parts.push('CTRL');
-    if (def.alt) parts.push('ALT');
+    if (def.alt) parts.push(ALT_LABEL);
     if (def.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');
