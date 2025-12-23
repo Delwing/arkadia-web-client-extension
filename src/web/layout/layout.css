@@ -835,7 +835,6 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   min-width: 140px;
   background-color: var(--surface-elevated, #1e2128);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   overflow: hidden;
@@ -846,6 +845,7 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: none;
+  border-radius: 0;
   background: transparent;
   color: rgba(241, 245, 249, 0.8);
   font-size: 0.75rem;
