@@ -4,6 +4,7 @@ import ClockPopup from '../ClockPopup';
 import ContractsPopup from '../ContractsPopup';
 import LetterComposer from '../LetterComposer';
 import HerbManager from '../herbs/HerbManager';
+import HerbTextWindow from '../herbs/HerbTextWindow';
 import KnowledgeReport from '../KnowledgeReport';
 import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
 import ChatPopup from '../ChatPopup';
@@ -31,6 +32,7 @@ export function LayoutManagerWrapper({
       <ContractsPopup />
       <LetterComposer />
       <HerbManager />
+      <HerbTextWindow />
       <KnowledgeReport />
       <KnowledgeDetailsReport />
       <ChatPopup />

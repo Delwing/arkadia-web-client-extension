@@ -157,6 +157,8 @@ export interface KnownEvents {
     "herbManagerClose": void;
     "herbCounts": unknown;
     "herbManagerOpen": void;
+    "herbTextWindowOpen": void;
+    "herbTextWindowClose": void;
     "sound:play": { key: string };
     "playBeep": void;
     "line-start": void;

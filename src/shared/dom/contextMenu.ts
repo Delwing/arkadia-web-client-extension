@@ -6,6 +6,8 @@ export type ContextMenuEntry = {
 export type ContextMenuOptions = {
     header?: string;
     smallHeader?: boolean;
+    columns?: number;
+    compact?: boolean;
 };
 
 let contextMenuElement: HTMLElement | null = null;
@@ -28,6 +30,8 @@ export function hideContextMenu(): void {
         return;
     }
     menu.classList.remove('show');
+    // Remove any columns class
+    menu.className = menu.className.replace(/context-menu--columns-\d+/g, '').trim();
     menu.innerHTML = '';
     menu.style.visibility = '';
 }
@@ -45,6 +49,12 @@ export function showContextMenu(
 
     hideContextMenu();
 
+    // Apply columns class if specified
+    const columns = options?.columns;
+    if (columns && columns > 1) {
+        menu.classList.add(`context-menu--columns-${columns}`);
+    }
+
     const header = options?.header;
     if (header) {
         const headerEl = document.createElement('div');
@@ -54,6 +64,13 @@ export function showContextMenu(
         }
         headerEl.textContent = header;
         menu.appendChild(headerEl);
+    }
+
+    // Create buttons container for grid layout when using columns
+    const buttonsContainer = columns && columns > 1 ? document.createElement('div') : null;
+    if (buttonsContainer) {
+        buttonsContainer.className = 'context-menu-buttons';
+        menu.appendChild(buttonsContainer);
     }
 
     items.forEach((item) => {
@@ -67,7 +84,7 @@ export function showContextMenu(
             hideContextMenu();
             item.action();
         };
-        menu.appendChild(btn);
+        (buttonsContainer || menu).appendChild(btn);
     });
 
     menu.style.left = '0px';

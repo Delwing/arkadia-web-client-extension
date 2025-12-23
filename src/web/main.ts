@@ -374,6 +374,12 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
         },
         {
+            label: 'Zioła (tekst)',
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/ziola2'});
+            },
+        },
+        {
             label: 'Zlecenia',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/zlecenia'});
@@ -413,7 +419,7 @@ outputWrapper.addEventListener('contextmenu', event => {
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);
     });
-    showContextMenu(items, event.clientX, event.clientY);
+    showContextMenu(items, event.clientX, event.clientY, { columns: 2 });
 });
 
 function closeHistoryScrollback() {

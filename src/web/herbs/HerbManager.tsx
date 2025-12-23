@@ -11,6 +11,7 @@ import { getClientInstance } from "@shared/runtime";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 import { usePopup } from "../hooks/usePopup";
+import { usePopupSetting } from "../hooks/usePopupSetting";
 
 const POPUP_ID = 'popup:herb';
 
@@ -242,6 +243,7 @@ const HerbManager = () => {
     }, [closeContextMenu]);
 
     const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
+    const [isCompact, setIsCompact] = usePopupSetting(POPUP_ID, 'isCompact', false);
 
     // Wrap close to also hide context menu
     const wrappedOnClose = useCallback(() => {
@@ -475,6 +477,34 @@ const HerbManager = () => {
 
     const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
 
+    // Calculate optimal grid columns based on bag count
+    const gridStyle = useMemo(() => {
+        const bagCount = bags.length;
+        if (bagCount === 0) return undefined;
+
+        // For small numbers of bags, use exact columns to avoid stretching
+        if (bagCount <= 2) {
+            return { gridTemplateColumns: `repeat(${bagCount}, minmax(200px, 300px))` };
+        }
+        if (bagCount <= 4) {
+            return { gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' };
+        }
+        // For larger counts, use auto-fill with standard minmax
+        return undefined; // Use CSS default
+    }, [bags.length]);
+
+    // Header action toggle for compact mode
+    const headerActions = (
+        <button
+            type="button"
+            className={`herb-window__toggle${isCompact ? ' herb-window__toggle--active' : ''}`}
+            onClick={() => setIsCompact(!isCompact)}
+            title={isCompact ? 'Widok normalny' : 'Widok kompaktowy'}
+        >
+            Kompaktowy
+        </button>
+    );
+
     const handleBackdropClick = () => {
         if (isPinned) {
             return;
@@ -506,9 +536,10 @@ const HerbManager = () => {
                 initialHeight={500}
                 className="herb-window"
                 bodyClassName="herb-window-body"
+                headerActions={headerActions}
             >
                 <div
-                    className={`herb-manager${busy ? " herb-manager--busy" : ""}`}
+                    className={`herb-manager${busy ? " herb-manager--busy" : ""}${isCompact ? " herb-manager--compact" : ""}`}
                     onPointerDownCapture={closeContextMenu}
                 >
                     {error && (
@@ -521,7 +552,7 @@ const HerbManager = () => {
                             Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                         </div>
                     ) : (
-                        <div className="herb-grid">
+                        <div className="herb-grid" style={gridStyle}>
                             {bags.map(bag => {
                                 const totalCount = bag.items.reduce((sum, item) => sum + item.count, 0);
                                 const conditionValue =

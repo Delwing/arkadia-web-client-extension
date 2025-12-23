@@ -4,7 +4,6 @@ import * as path from 'path';
 import {fileURLToPath} from 'url';
 import {execSync} from 'child_process';
 
-// @ts-expect-error - import.meta is available in ES modules but not recognized by tsconfig
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
