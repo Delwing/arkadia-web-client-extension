@@ -806,6 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
     const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
     const locationNotesButton = document.getElementById('location-notes-button') as HTMLButtonElement | null;
+    const peopleBrowserButton = document.getElementById('people-browser-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const mobileRadialButton = document.getElementById('mobile-radial-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
@@ -1123,6 +1124,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (locationNotesButton && locationNotesModal) {
         locationNotesButton.addEventListener('click', () => {
             locationNotesModal.show();
+        });
+    }
+
+    if (peopleBrowserButton) {
+        peopleBrowserButton.addEventListener('click', () => {
+            eventBus.emit('peopleBrowser.popup.open');
         });
     }
 

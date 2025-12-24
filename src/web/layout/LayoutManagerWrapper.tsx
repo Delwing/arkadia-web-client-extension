@@ -12,6 +12,7 @@ import CombatPopup from '../CombatPopup';
 import PostepyPopup from '../PostepyPopup';
 import ZabiciPopup from '../ZabiciPopup';
 import SkrotyPopup from '../SkrotyPopup';
+import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -43,6 +44,7 @@ export function LayoutManagerWrapper({
       <PostepyPopup />
       <ZabiciPopup />
       <SkrotyPopup />
+      <PeopleBrowser />
     </LayoutProvider>
   );
 }
