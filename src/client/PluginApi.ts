@@ -8,69 +8,64 @@
  * - Makes it easier to maintain backward compatibility
  */
 
-import type Client from "./Client";
-import type { CommandHookCallback } from "./Client";
-import type { ClientEvents } from "@shared/events";
-import { AnsiAwareBuffer } from "@client/ansi/FormatState";
-import type { FormatStateSnapshot } from "@client/ansi/FormatState";
-import type {
-  Trigger,
-  TriggerCallback,
-  TriggerPattern,
-  TriggerOptions
-} from "./Triggers";
-import { gmcp } from "./gmcp";
+import type Client, {CommandHookCallback} from "./Client";
+import type {ClientEvents} from "@shared/events";
+import type {FormatStateSnapshot} from "@client/ansi/FormatState";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import type {Trigger, TriggerCallback, TriggerOptions, TriggerPattern} from "./Triggers";
+import {gmcp} from "./gmcp";
 import {
+  registerContextMenuEntry,
   registerPopupMenuEntry,
   setPopupMenuEntryDisabled,
-  unregisterPopupMenuEntry,
-  updatePopupMenuEntryLabel,
-  registerContextMenuEntry,
   unregisterContextMenuEntry,
-  updateContextMenuEntry
+  unregisterPopupMenuEntry,
+  updateContextMenuEntry,
+  updatePopupMenuEntryLabel
 } from "@modules/core/pluginUiRegistry";
 import React from "react";
-import { createRoot } from "react-dom/client";
-import { PluginPopup } from "../ui/web/components/PluginPopup";
+import {createRoot} from "react-dom/client";
+import {PluginPopup} from "../ui/web/components/PluginPopup";
 import {
-  getGroupDefinitions,
-  getTransformDefinitions,
   addGroupDefinition,
-  addTransformDefinition
+  addTransformDefinition,
+  getGroupDefinitions,
+  getTransformDefinitions
 } from "./scripts/prettyContainers";
 import loadMagics from "./scripts/magicsLoader";
 import loadMagicKeys from "./scripts/magicKeyLoader";
 import {
-  objectListFilters,
-  type ObjectListEntryFilter,
-  type EntryContext,
-  type FilterResult,
-  type EntryStyle,
   type EntryContent,
-  type ObjectData
+  type EntryContext,
+  type EntryStyle,
+  type FilterResult,
+  type ObjectData,
+  type ObjectListEntryFilter,
+  objectListFilters
 } from "@web/objectListFilters";
 import {
-  registerButtonMacro,
-  unregisterButtonMacro,
+  type ButtonMacroClickContext,
   getButtonMacroById,
   getButtonMacroState,
-  setButtonMacroState,
-  onButtonMacroStateChange,
-  updateButtonMacroPluginName,
-  type PluginButtonMacro,
   type MacroConfigField,
   type MacroState,
   type MacroStateContext,
-  type ButtonMacroClickContext
+  onButtonMacroStateChange,
+  type PluginButtonMacro,
+  registerButtonMacro,
+  setButtonMacroState,
+  unregisterButtonMacro,
+  updateButtonMacroPluginName
 } from "@modules/core/pluginButtonMacroRegistry";
 import {
-  registerTriggerMacro,
-  unregisterTriggerMacro,
-  updateTriggerMacroPluginName,
   type PluginTriggerMacro,
-  type TriggerMacroContext
+  registerTriggerMacro,
+  type TriggerMacroContext,
+  unregisterTriggerMacro,
+  updateTriggerMacroPluginName
 } from "@modules/core/pluginTriggerMacroRegistry";
-import type { ButtonSetting } from "@web/mobileButtonSettings";
+import type {ButtonSetting} from "@web/mobileButtonSettings";
+import {shouldPopupAutoOpen} from "@web/layout/utils/layoutStorage";
 
 // Re-export filter types for plugin developers
 export type {
@@ -401,6 +396,63 @@ export interface PopupHandle {
 }
 
 /**
+ * Configuration for creating a persistent popup
+ */
+export interface PersistentPopupConfig {
+  /**
+   * Unique identifier for this popup (will be namespaced by plugin).
+   * Use a consistent ID across sessions to enable persistence.
+   */
+  id: string;
+
+  /**
+   * Popup title (can be updated later via handle)
+   */
+  title: string;
+
+  /**
+   * Factory function to create popup content.
+   * Called when popup is created or restored from a previous session.
+   * Can be async to support loading data before rendering.
+   */
+  createContent: () => PopupContent | Promise<PopupContent>;
+
+  /**
+   * Initial pinned state (default: false).
+   * When pinned, popup will be restored on page reload.
+   */
+  pinned?: boolean;
+}
+
+/**
+ * Handle returned when registering a persistent popup.
+ * Extends PopupHandle with additional persistence features.
+ */
+export interface PersistentPopupHandle extends PopupHandle {
+  /**
+   * The stable popup ID (namespaced by plugin)
+   */
+  readonly id: string;
+
+  /**
+   * Whether this popup was restored from a previous session.
+   * True if the popup was docked or pinned when the page was last closed.
+   */
+  readonly wasRestored: boolean;
+
+  /**
+   * Whether the popup is currently open
+   */
+  readonly isOpen: boolean;
+
+  /**
+   * Open the popup (if closed).
+   * Calls createContent() to generate fresh content.
+   */
+  open(): Promise<void>;
+}
+
+/**
  * Handle for popup menu entries
  */
 export interface PopupMenuEntryHandle {
@@ -447,12 +499,51 @@ export interface ContextMenuEntryHandle {
  */
 export interface UiApi {
   /**
-   * Create a draggable popup window
+   * Create a draggable popup window.
+   *
+   * @deprecated Use {@link registerPersistentPopup} instead for popups that need
+   * docking and persistence across page reloads. This method generates popup IDs
+   * from title hashes, which are not stable and prevent proper state restoration.
+   *
    * @param title - Popup title text
    * @param body - Popup body content (string or DOM node)
    * @returns Promise that resolves with handle for controlling the popup once mounted
    */
   createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+
+  /**
+   * Register a persistent popup that can be docked and restored on page reload.
+   *
+   * If the popup was docked or pinned in a previous session, it will be
+   * automatically opened when this method is called. The `wasRestored` property
+   * on the returned handle indicates whether this happened.
+   *
+   * @param config - Popup configuration including ID, title, and content factory
+   * @returns Promise that resolves with handle for controlling the popup
+   *
+   * @example
+   * ```typescript
+   * const popup = await api.ui.registerPersistentPopup({
+   *   id: 'myInventory',
+   *   title: 'My Inventory',
+   *   createContent: async () => {
+   *     const items = await loadInventoryData();
+   *     return createInventoryView(items);
+   *   }
+   * });
+   *
+   * // Check if popup was restored from previous session
+   * if (popup.wasRestored) {
+   *   console.log('Popup was restored');
+   * }
+   *
+   * // Toggle popup with menu entry
+   * api.ui.addPopupMenuEntry('My Inventory', () => {
+   *   popup.isOpen ? popup.close() : popup.open();
+   * });
+   * ```
+   */
+  registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
 
   /**
    * Add an entry to the popup (⋮) menu
@@ -1479,6 +1570,7 @@ export class PluginApiImpl implements PluginApi {
   private triggerMacroIds: Set<string> = new Set();
   private commandHookIds: Set<string> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
+  private persistentPopupHandles: Map<string, PersistentPopupHandle> = new Map();
 
   public triggers: TriggersApi;
   public aliases: AliasesApi;
@@ -1684,6 +1776,7 @@ export class PluginApiImpl implements PluginApi {
   private createUiApi(): UiApi {
     return {
       createPopup: (title, body) => this.createPopup(title, body),
+      registerPersistentPopup: (config) => this.registerPersistentPopup(config),
       addPopupMenuEntry: (label, onSelect) => this.addPopupMenuEntry(label, onSelect),
       addContextMenuEntry: (label, action) => this.addContextMenuEntry(label, action)
     };
@@ -1959,7 +2052,7 @@ export class PluginApiImpl implements PluginApi {
         this.buttonMacroIds.add(fullId);
 
         // Return handle for controlling macro state
-        const handle: ButtonMacroHandle = {
+        return {
           getState: () => getButtonMacroState(fullId),
           setState: (stateId) => setButtonMacroState(fullId, stateId),
           cycleState: () => {
@@ -1978,7 +2071,6 @@ export class PluginApiImpl implements PluginApi {
             return unsubscribe;
           }
         };
-        return handle;
       },
 
       unregister: (id) => {
@@ -2053,6 +2145,14 @@ export class PluginApiImpl implements PluginApi {
       popup.close();
     }
     this.popupHandles.clear();
+
+    // Close all persistent popups registered by this plugin
+    for (const handle of this.persistentPopupHandles.values()) {
+      if (handle.isOpen) {
+        handle.close();
+      }
+    }
+    this.persistentPopupHandles.clear();
 
     for (const id of Array.from(this.popupMenuEntryIds)) {
       unregisterPopupMenuEntry(id);
@@ -2193,6 +2293,162 @@ export class PluginApiImpl implements PluginApi {
 
       this.popupHandles.add(handle);
     });
+  }
+
+  private async registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle> {
+    // Generate stable popup ID from plugin ID and user-provided ID
+    const popupType = `plugin:${this.pluginId}:${config.id}` as const;
+    const popupId = `popup:${popupType}`;
+
+    // Check if popup should be auto-restored (was docked or pinned)
+    const shouldRestore = shouldPopupAutoOpen(popupId);
+
+    // Internal state tracking
+    let isCurrentlyOpen = false;
+    let currentPopupHandle: PopupHandle | null = null;
+    let currentTitle = config.title;
+    let currentBody: PopupContent = '';
+    let currentPinned = config.pinned ?? false;
+    const closeCallbacks = new Set<() => void>();
+
+    // Helper to create the actual popup
+    const createActualPopup = async (): Promise<void> => {
+      if (isCurrentlyOpen) return;
+
+      // Call the factory to get content
+      currentBody = await Promise.resolve(config.createContent());
+
+      // Create popup using similar logic to createPopup but with stable ID
+      return new Promise((resolve) => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const root = createRoot(container);
+
+        let setTitleFn: ((title: string) => void) | null = null;
+        let setBodyFn: ((body: string | Node) => void) | null = null;
+        let setPinnedFn: ((pinned: boolean) => void) | null = null;
+        let panelRef: HTMLDivElement | null = null;
+
+        const closePopup = () => {
+          isCurrentlyOpen = false;
+          closeCallbacks.forEach(callback => {
+            try {
+              callback();
+            } catch (error) {
+              console.error('[PluginApi] Error in popup close callback:', error);
+            }
+          });
+          root.unmount();
+          container.remove();
+          if (currentPopupHandle) {
+            this.popupHandles.delete(currentPopupHandle);
+            currentPopupHandle = null;
+          }
+        };
+
+        const renderPopup = (isOpen: boolean) => {
+          root.render(
+            React.createElement(PluginPopup, {
+              popupId,
+              popupType,
+              title: currentTitle,
+              body: currentBody,
+              isOpen,
+              isPinned: currentPinned,
+              onClose: closePopup,
+              onTitleChange: (callback) => { setTitleFn = callback; },
+              onBodyChange: (callback) => { setBodyFn = callback; },
+              onPinChange: (callback) => {
+                setPinnedFn = (pinned: boolean) => {
+                  currentPinned = pinned;
+                  callback(pinned);
+                };
+              },
+              onPinToggle: (pinned: boolean) => {
+                currentPinned = pinned;
+              },
+              onPanelRef: (element) => {
+                panelRef = element;
+                if (element) {
+                  isCurrentlyOpen = true;
+                  currentPopupHandle = {
+                    get element() { return panelRef!; },
+                    get isPinned() { return currentPinned; },
+                    setTitle: (value) => {
+                      currentTitle = value;
+                      setTitleFn?.(value);
+                    },
+                    setBody: (content) => {
+                      currentBody = content;
+                      setBodyFn?.(content);
+                    },
+                    setPinned: (pinned) => {
+                      currentPinned = pinned;
+                      setPinnedFn?.(pinned);
+                    },
+                    onClose: (callback) => {
+                      closeCallbacks.add(callback);
+                    },
+                    close: closePopup
+                  };
+                  this.popupHandles.add(currentPopupHandle);
+                  resolve();
+                }
+              }
+            })
+          );
+        };
+
+        renderPopup(true);
+      });
+    };
+
+    // Create the persistent handle
+    const persistentHandle: PersistentPopupHandle = {
+      id: popupId,
+      wasRestored: shouldRestore,
+      get element(): HTMLDivElement {
+        if (!currentPopupHandle) {
+          throw new Error('Popup is not open. Call open() first.');
+        }
+        return currentPopupHandle.element;
+      },
+      get isPinned(): boolean {
+        return currentPinned;
+      },
+      get isOpen(): boolean {
+        return isCurrentlyOpen;
+      },
+      setTitle: (value) => {
+        currentTitle = value;
+        currentPopupHandle?.setTitle(value);
+      },
+      setBody: (content) => {
+        currentBody = content;
+        currentPopupHandle?.setBody(content);
+      },
+      setPinned: (pinned) => {
+        currentPinned = pinned;
+        currentPopupHandle?.setPinned(pinned);
+      },
+      onClose: (callback) => {
+        closeCallbacks.add(callback);
+      },
+      close: () => {
+        currentPopupHandle?.close();
+      },
+      open: createActualPopup
+    };
+
+    // Store in our tracking map
+    this.persistentPopupHandles.set(config.id, persistentHandle);
+
+    // Auto-restore if needed
+    if (shouldRestore) {
+      await createActualPopup();
+    }
+
+    return persistentHandle;
   }
 
   private addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle {
