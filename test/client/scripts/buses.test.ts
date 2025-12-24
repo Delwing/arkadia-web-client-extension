@@ -35,7 +35,7 @@ describe('buses triggers', () => {
 
   test('boarding trigger binds commands', () => {
     parse('dylizans powoli zatrzymuje sie.');
-    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', expect.anything());
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
     expect(label).toBe('wem;wsiadz do dylizansu;wlm');
