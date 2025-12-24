@@ -599,7 +599,7 @@ export function initKillCounter(
     const counter = new KillCounter(client);
     if (aliases) {
         aliases.push({pattern: /\/zabici$/, callback: () => counter.showSession()});
-        aliases.push({pattern: /\/zabici_popup$/, callback: () => eventBus.emit("zabici.popup.open")});
+        aliases.push({pattern: /\/zabiciw$/, callback: () => eventBus.emit("zabici.popup.open")});
         aliases.push({pattern: /\/zabici2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/zabici_reset$/, callback: () => counter.resetSession()});
     }

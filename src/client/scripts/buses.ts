@@ -1,7 +1,7 @@
 import Client from "../Client";
 
-const DILIZANS_CMDS = ["wem", "wsiadz do dylizansu", "wlm"];
-const DILIZANS_LABEL = DILIZANS_CMDS.join(";");
+const DYLIZANS_CMDS = ["wem", "wsiadz do dylizansu", "wlm"];
+const DILIZANS_LABEL = DYLIZANS_CMDS.join(";");
 
 const POWOZ_CMDS = ["wem", "wsiadz do wozu", "wsiadz do powozu", "wlm"];
 const POWOZ_LABEL = POWOZ_CMDS.join(";");
@@ -20,7 +20,7 @@ function bindBus(client: Client, commands: string[], label: string, beep: boolea
 
 export default function initBuses(client: Client) {
     const boardDylizans = (line: any) => {
-        bindBus(client, DILIZANS_CMDS, DILIZANS_LABEL, false);
+        bindBus(client, DYLIZANS_CMDS, DILIZANS_LABEL, true);
         return line;
     };
     const exitPowozPatterns: Array<RegExp | string> = [

@@ -111,6 +111,6 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         aliases.push({ pattern: /^\/usun_skrot "([^"]+)"$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_0-9]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skroty$/, callback: clear });
-        aliases.push({ pattern: /^\/skroty_popup$/, callback: () => eventBus.emit('skroty.popup.open') });
+        aliases.push({ pattern: /^\/skrotyw$/, callback: () => eventBus.emit('skroty.popup.open') });
     }
 }

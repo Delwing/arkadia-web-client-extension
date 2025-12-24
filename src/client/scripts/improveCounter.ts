@@ -628,7 +628,7 @@ export function initImproveCounter(
     const counter = new ImproveCounter(client, killCounter);
     if (aliases) {
         aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
-        aliases.push({pattern: /\/postepy_popup$/, callback: () => eventBus.emit("postepy.popup.open")});
+        aliases.push({pattern: /\/postepyw$/, callback: () => eventBus.emit("postepy.popup.open")});
         aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
         aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});
