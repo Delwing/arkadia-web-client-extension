@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 
 interface MapViewingState {
   isViewingDifferentArea: boolean;
@@ -14,28 +14,47 @@ export function useMapViewingState(): MapViewingState {
     isViewingDifferentArea: false,
     viewedAreaName: undefined,
   });
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const getEmbedded = useCallback(() => {
     return (globalThis as any).embedded;
   }, []);
 
   useEffect(() => {
-    const embedded = getEmbedded();
-    if (!embedded?.onViewChange) return;
+    const trySubscribe = () => {
+      const embedded = getEmbedded();
+      if (!embedded?.onViewChange) return false;
 
-    // Set initial state
-    setState({
-      isViewingDifferentArea: !embedded.isViewingPlayerPosition,
-      viewedAreaName: embedded.getViewedAreaName?.(),
-    });
-
-    // Subscribe to changes
-    return embedded.onViewChange((isViewingPlayer: boolean, areaName?: string) => {
+      // Set initial state
       setState({
-        isViewingDifferentArea: !isViewingPlayer,
-        viewedAreaName: areaName,
+        isViewingDifferentArea: !embedded.isViewingPlayerPosition,
+        viewedAreaName: embedded.getViewedAreaName?.(),
       });
-    });
+
+      // Subscribe to changes
+      unsubscribeRef.current = embedded.onViewChange((isViewingPlayer: boolean, areaName?: string) => {
+        setState({
+          isViewingDifferentArea: !isViewingPlayer,
+          viewedAreaName: areaName,
+        });
+      });
+      return true;
+    };
+
+    // Try to subscribe immediately
+    if (trySubscribe()) return;
+
+    // Poll until embedded is available
+    const interval = setInterval(() => {
+      if (trySubscribe()) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribeRef.current?.();
+    };
   }, [getEmbedded]);
 
   return state;

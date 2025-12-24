@@ -89,8 +89,8 @@ const ZabiciPopup: React.FC = () => {
             title="Zabici"
             minWidth={200}
             minHeight={150}
-            initialWidth={260}
-            initialHeight={300}
+            initialWidth={325}
+            initialHeight={375}
             className="zabici-popup"
             bodyClassName="zabici-popup-body"
             headerActions={headerActions}

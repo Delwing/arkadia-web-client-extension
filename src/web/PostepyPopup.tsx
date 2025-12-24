@@ -127,8 +127,8 @@ const PostepyPopup: React.FC = () => {
             title="Postepy"
             minWidth={200}
             minHeight={150}
-            initialWidth={280}
-            initialHeight={250}
+            initialWidth={325}
+            initialHeight={375}
             className="postepy-popup"
             bodyClassName="postepy-popup-body"
             headerActions={headerActions}
