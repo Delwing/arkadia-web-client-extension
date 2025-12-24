@@ -8,7 +8,17 @@
  * - Makes it easier to maintain backward compatibility
  */
 
-import type Client, {CommandHookCallback} from "./Client";
+/**
+ * Plugin API - Bridge between Client and Plugins
+ *
+ * Provides a stable, versioned API surface for external plugins.
+ * This abstraction layer:
+ * - Hides internal Client implementation details
+ * - Provides a controlled interface for plugin capabilities
+ * - Makes it easier to maintain backward compatibility
+ */
+import type Client from "./Client";
+import type { CommandHookCallback } from "./Client";
 import type {ClientEvents} from "@shared/events";
 import type {FormatStateSnapshot} from "@client/ansi/FormatState";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
