@@ -93,22 +93,28 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
 
     if (isLayoutMode) {
       const { docks } = layoutState;
-      // Filter panels by enabled state
-      const leftEnabled = docks.left.panels.filter((p) => isPanelEnabled(p.id));
-      const topEnabled = docks.top.panels.filter((p) => isPanelEnabled(p.id));
-      const rightEnabled = docks.right.panels.filter((p) => isPanelEnabled(p.id));
+      // Filter slots by enabled panels
+      const leftHasEnabled = docks.left.slots.some((slot) =>
+        slot.panels.some((p) => isPanelEnabled(p.id))
+      );
+      const topHasEnabled = docks.top.slots.some((slot) =>
+        slot.panels.some((p) => isPanelEnabled(p.id))
+      );
+      const rightHasEnabled = docks.right.slots.some((slot) =>
+        slot.panels.some((p) => isPanelEnabled(p.id))
+      );
 
       contentArea.style.setProperty(
         '--dock-left-size',
-        leftEnabled.length > 0 ? `${docks.left.size}px` : '0px'
+        leftHasEnabled ? `${docks.left.size}px` : '0px'
       );
       contentArea.style.setProperty(
         '--dock-top-size',
-        topEnabled.length > 0 ? `${docks.top.size}px` : '0px'
+        topHasEnabled ? `${docks.top.size}px` : '0px'
       );
       contentArea.style.setProperty(
         '--dock-right-size',
-        rightEnabled.length > 0 ? `${docks.right.size}px` : '0px'
+        rightHasEnabled ? `${docks.right.size}px` : '0px'
       );
     } else {
       contentArea.style.removeProperty('--dock-left-size');

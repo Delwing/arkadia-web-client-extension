@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import {
   DockPosition,
+  DockSlot,
   DragState,
   FloatingPanelState,
   LayoutState,
@@ -11,6 +12,7 @@ import {
   PANEL_CONFIGS,
   MIN_DOCK_SIZE,
   MAX_DOCK_SIZE_RATIO,
+  generateSlotId,
 } from './types';
 import { loadLayoutState, saveLayoutStateDebounced, resetLayoutState } from './utils/layoutStorage';
 
@@ -21,21 +23,34 @@ export interface LayoutContextValue {
   enableLayoutMode: () => void;
   disableLayoutMode: () => void;
   toggleLayoutMode: () => void;
+  /** Move panel to a new slot in target dock */
   movePanel: (panelId: PanelId, targetDock: DockPosition, insertIndex?: number) => void;
+  /** Move panel into an existing slot (stacking) */
+  movePanelToSlot: (panelId: PanelId, targetDock: DockPosition, slotId: string, insertPositionInSlot?: number) => void;
   undockPanel: (panelId: PanelId, x: number, y: number) => void;
   dockFloatingPanel: (panelId: PanelId, targetDock: DockPosition, insertIndex?: number) => void;
+  /** Dock floating panel into an existing slot (stacking) */
+  dockFloatingPanelToSlot: (panelId: PanelId, targetDock: DockPosition, slotId: string, insertPositionInSlot?: number) => void;
   updateFloatingPanel: (panelId: PanelId, updates: Partial<FloatingPanelState>) => void;
   resizeDock: (dock: DockPosition, newSize: number) => void;
-  resizePanel: (panelId: PanelId, newSize: number) => void;
+  /** Resize a slot within a dock */
+  resizeSlot: (slotId: string, newSize: number) => void;
+  /** Resize a panel within a slot */
+  resizePanelInSlot: (panelId: PanelId, newSize: number) => void;
   reorderPanels: (dock: DockPosition, fromIndex: number, toIndex: number) => void;
   updateDragState: (state: DragState | null) => void;
   resetLayout: () => void;
   findPanelDock: (panelId: PanelId) => DockPosition | null;
+  /** Find which slot a panel is in */
+  findPanelSlot: (panelId: PanelId) => { dock: DockPosition; slot: DockSlot } | null;
   findFloatingPanel: (panelId: PanelId) => FloatingPanelState | null;
   // Popup panel methods
   getPopupDockState: (popupId: string) => PopupPanelDockState | undefined;
   updatePopupDockState: (popupId: string, updates: Partial<PopupPanelDockState>) => void;
+  /** Dock popup to a new slot */
   dockPopup: (popupId: string, targetDock: DockPosition, insertIndex?: number) => void;
+  /** Dock popup into an existing slot (stacking) */
+  dockPopupToSlot: (popupId: string, targetDock: DockPosition, slotId: string, insertPositionInSlot?: number) => void;
   undockPopup: (popupId: string) => void;
   removePopupFromDock: (popupId: string) => void;
   // Popup floating management
@@ -197,91 +212,195 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
   const findPanelDock = useCallback(
     (panelId: PanelId): DockPosition | null => {
       const { docks } = layoutState;
-      if (docks.left.panels.some((p) => p.id === panelId)) return 'LEFT';
-      if (docks.top.panels.some((p) => p.id === panelId)) return 'TOP';
-      if (docks.right.panels.some((p) => p.id === panelId)) return 'RIGHT';
+      for (const slot of docks.left.slots) {
+        if (slot.panels.some((p) => p.id === panelId)) return 'LEFT';
+      }
+      for (const slot of docks.top.slots) {
+        if (slot.panels.some((p) => p.id === panelId)) return 'TOP';
+      }
+      for (const slot of docks.right.slots) {
+        if (slot.panels.some((p) => p.id === panelId)) return 'RIGHT';
+      }
       return null;
     },
     [layoutState]
   );
 
-  const movePanel = useCallback(
-    (panelId: PanelId, targetDock: DockPosition, insertIndex = 0) => {
-      setLayoutState((prev) => {
-        const newDocks = { ...prev.docks };
-        let movedPanel: PanelState | null = null;
+  const findPanelSlot = useCallback(
+    (panelId: PanelId): { dock: DockPosition; slot: DockSlot } | null => {
+      const { docks } = layoutState;
+      const dockKeys: Array<{ key: 'left' | 'top' | 'right'; position: DockPosition }> = [
+        { key: 'left', position: 'LEFT' },
+        { key: 'top', position: 'TOP' },
+        { key: 'right', position: 'RIGHT' },
+      ];
+      for (const { key, position } of dockKeys) {
+        for (const slot of docks[key].slots) {
+          if (slot.panels.some((p) => p.id === panelId)) {
+            return { dock: position, slot };
+          }
+        }
+      }
+      return null;
+    },
+    [layoutState]
+  );
 
-        // Remove panel from all docks
-        for (const key of ['left', 'top', 'right'] as const) {
-          const dock = newDocks[key];
-          const idx = dock.panels.findIndex((p) => p.id === panelId);
-          if (idx !== -1) {
-            movedPanel = dock.panels[idx];
-            newDocks[key] = {
-              ...dock,
-              panels: dock.panels.filter((p) => p.id !== panelId),
-            };
+  /**
+   * Helper to remove a panel from all docks.
+   * Returns the removed panel state and cleans up empty slots.
+   */
+  const removePanelFromDocks = useCallback(
+    (docks: LayoutState['docks'], panelId: PanelId): { docks: LayoutState['docks']; removedPanel: PanelState | null } => {
+      const newDocks = { ...docks };
+      let removedPanel: PanelState | null = null;
+
+      for (const key of ['left', 'top', 'right'] as const) {
+        const dock = newDocks[key];
+        const newSlots: DockSlot[] = [];
+
+        for (const slot of dock.slots) {
+          const panelIdx = slot.panels.findIndex((p) => p.id === panelId);
+          if (panelIdx !== -1) {
+            removedPanel = slot.panels[panelIdx];
+            const remainingPanels = slot.panels.filter((p) => p.id !== panelId);
+            if (remainingPanels.length > 0) {
+              // Recalculate panel sizes within slot
+              const evenSize = 100 / remainingPanels.length;
+              remainingPanels.forEach((p, i) => {
+                p.order = i;
+                p.size = evenSize;
+              });
+              newSlots.push({ ...slot, panels: remainingPanels });
+            }
+            // If slot is empty, don't add it (effectively removing it)
+          } else {
+            newSlots.push(slot);
           }
         }
 
-        // Also remove from floating panels
-        const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== panelId);
-
-        if (!movedPanel) {
-          // Panel not found, create new one
-          movedPanel = { id: panelId, order: insertIndex, size: 100 };
+        // Recalculate slot sizes if any were removed
+        if (newSlots.length !== dock.slots.length && newSlots.length > 0) {
+          const evenSize = 100 / newSlots.length;
+          newSlots.forEach((s) => {
+            s.size = evenSize;
+          });
         }
 
-        // Add panel to target dock
-        const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
-        const targetDockState = newDocks[targetKey];
-        const newPanels = [...targetDockState.panels];
-        newPanels.splice(insertIndex, 0, { ...movedPanel, order: insertIndex });
+        newDocks[key] = { ...dock, slots: newSlots };
+      }
 
-        // Recalculate sizes evenly
-        const panelCount = newPanels.length;
-        const evenSize = 100 / panelCount;
-        newPanels.forEach((p, i) => {
-          p.order = i;
-          p.size = evenSize;
-        });
-
-        newDocks[targetKey] = { ...targetDockState, panels: newPanels };
-
-        return { ...prev, docks: newDocks, floatingPanels: newFloatingPanels };
-      });
+      return { docks: newDocks, removedPanel };
     },
     []
   );
 
-  const undockPanel = useCallback((panelId: PanelId, x: number, y: number) => {
-    setLayoutState((prev) => {
-      const newDocks = { ...prev.docks };
-      let sourceDockKey: 'left' | 'top' | 'right' | null = null;
-      let sourceDockSize = 0;
-      let panelSizePercent = 100;
+  const movePanel = useCallback(
+    (panelId: PanelId, targetDock: DockPosition, insertIndex = 0) => {
+      setLayoutState((prev) => {
+        // Remove panel from all docks
+        const { docks: newDocks, removedPanel } = removePanelFromDocks(prev.docks, panelId);
 
-      // Remove panel from all docks and capture source dock info
-      for (const key of ['left', 'top', 'right'] as const) {
-        const dock = newDocks[key];
-        const idx = dock.panels.findIndex((p) => p.id === panelId);
-        if (idx !== -1) {
-          sourceDockKey = key;
-          sourceDockSize = dock.size;
-          panelSizePercent = dock.panels[idx].size;
+        // Also remove from floating panels
+        const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== panelId);
 
-          const remainingPanels = dock.panels.filter((p) => p.id !== panelId);
-          // Recalculate sizes for remaining panels
-          if (remainingPanels.length > 0) {
-            const evenSize = 100 / remainingPanels.length;
-            remainingPanels.forEach((p, i) => {
+        // Create the panel state
+        const panelState: PanelState = removedPanel || { id: panelId, order: 0, size: 100 };
+
+        // Add panel as a new slot in target dock
+        const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
+        const targetDockState = newDocks[targetKey];
+        const newSlots = [...targetDockState.slots];
+
+        // Create new slot with this panel
+        const newSlot: DockSlot = {
+          id: generateSlotId(),
+          panels: [{ ...panelState, order: 0, size: 100 }],
+          size: 100,
+        };
+
+        newSlots.splice(insertIndex, 0, newSlot);
+
+        // Recalculate slot sizes evenly
+        const slotCount = newSlots.length;
+        const evenSize = 100 / slotCount;
+        newSlots.forEach((s) => {
+          s.size = evenSize;
+        });
+
+        newDocks[targetKey] = { ...targetDockState, slots: newSlots };
+
+        return { ...prev, docks: newDocks, floatingPanels: newFloatingPanels };
+      });
+    },
+    [removePanelFromDocks]
+  );
+
+  const movePanelToSlot = useCallback(
+    (panelId: PanelId, targetDock: DockPosition, slotId: string, insertPositionInSlot = 0) => {
+      setLayoutState((prev) => {
+        // Remove panel from all docks
+        const { docks: newDocks, removedPanel } = removePanelFromDocks(prev.docks, panelId);
+
+        // Also remove from floating panels
+        const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== panelId);
+
+        // Create the panel state
+        const panelState: PanelState = removedPanel || { id: panelId, order: 0, size: 100 };
+
+        // Find and update the target slot
+        const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
+        const targetDockState = newDocks[targetKey];
+        const newSlots = targetDockState.slots.map((slot) => {
+          if (slot.id === slotId) {
+            const newPanels = [...slot.panels];
+            newPanels.splice(insertPositionInSlot, 0, { ...panelState, order: insertPositionInSlot, size: 100 });
+
+            // Recalculate panel sizes within slot
+            const evenSize = 100 / newPanels.length;
+            newPanels.forEach((p, i) => {
               p.order = i;
               p.size = evenSize;
             });
+
+            return { ...slot, panels: newPanels };
           }
-          newDocks[key] = { ...dock, panels: remainingPanels };
+          return slot;
+        });
+
+        newDocks[targetKey] = { ...targetDockState, slots: newSlots };
+
+        return { ...prev, docks: newDocks, floatingPanels: newFloatingPanels };
+      });
+    },
+    [removePanelFromDocks]
+  );
+
+  const undockPanel = useCallback((panelId: PanelId, x: number, y: number) => {
+    setLayoutState((prev) => {
+      let sourceDockKey: 'left' | 'top' | 'right' | null = null;
+      let sourceDockSize = 0;
+      let slotSizePercent = 100;
+      let panelSizePercent = 100;
+
+      // Find source dock and slot info before removing
+      for (const key of ['left', 'top', 'right'] as const) {
+        const dock = prev.docks[key];
+        for (const slot of dock.slots) {
+          const panelIdx = slot.panels.findIndex((p) => p.id === panelId);
+          if (panelIdx !== -1) {
+            sourceDockKey = key;
+            sourceDockSize = dock.size;
+            slotSizePercent = slot.size;
+            panelSizePercent = slot.panels[panelIdx].size;
+            break;
+          }
         }
+        if (sourceDockKey) break;
       }
+
+      // Remove panel from all docks
+      const { docks: newDocks } = removePanelFromDocks(prev.docks, panelId);
 
       // Calculate floating panel size based on source dock
       let width: number;
@@ -291,18 +410,18 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       const minHeight = config?.minHeight ?? 100;
 
       if (sourceDockKey === 'top') {
-        // TOP dock: width is percentage of content area, height is dock size
+        // TOP dock: slot width is percentage of content area, panel height is percentage of dock height
         const contentArea = document.getElementById('content-area');
         const contentWidth = contentArea?.offsetWidth ?? 800;
-        width = Math.max(minWidth, (contentWidth * panelSizePercent) / 100);
-        height = Math.max(minHeight, sourceDockSize);
+        width = Math.max(minWidth, (contentWidth * slotSizePercent) / 100);
+        height = Math.max(minHeight, (sourceDockSize * panelSizePercent) / 100);
       } else if (sourceDockKey) {
-        // LEFT/RIGHT dock: width is dock size, height is percentage of available height
+        // LEFT/RIGHT dock: slot height is percentage of available height, panel width is percentage of dock width
         const contentArea = document.getElementById('content-area');
-        const topDockHeight = prev.docks.top.panels.length > 0 ? prev.docks.top.size : 0;
+        const topDockHeight = prev.docks.top.slots.length > 0 ? prev.docks.top.size : 0;
         const availableHeight = (contentArea?.offsetHeight ?? 600) - topDockHeight;
-        width = Math.max(minWidth, sourceDockSize);
-        height = Math.max(minHeight, (availableHeight * panelSizePercent) / 100);
+        width = Math.max(minWidth, (sourceDockSize * panelSizePercent) / 100);
+        height = Math.max(minHeight, (availableHeight * slotSizePercent) / 100);
       } else {
         // Fallback
         width = Math.max(minWidth, 300);
@@ -324,7 +443,7 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
 
       return { ...prev, docks: newDocks, floatingPanels: newFloatingPanels };
     });
-  }, []);
+  }, [removePanelFromDocks]);
 
   const dockFloatingPanel = useCallback(
     (panelId: PanelId, targetDock: DockPosition, insertIndex = 0) => {
@@ -332,6 +451,14 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       movePanel(panelId, targetDock, insertIndex);
     },
     [movePanel]
+  );
+
+  const dockFloatingPanelToSlot = useCallback(
+    (panelId: PanelId, targetDock: DockPosition, slotId: string, insertPositionInSlot = 0) => {
+      // Just use movePanelToSlot - it handles floating panels too
+      movePanelToSlot(panelId, targetDock, slotId, insertPositionInSlot);
+    },
+    [movePanelToSlot]
   );
 
   const updateFloatingPanel = useCallback(
@@ -389,35 +516,84 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     });
   }, []);
 
-  const resizePanel = useCallback((panelId: PanelId, newSize: number) => {
+  /** Resize a slot within a dock */
+  const resizeSlot = useCallback((slotId: string, newSize: number) => {
     setLayoutState((prev) => {
       const newDocks = { ...prev.docks };
 
       for (const key of ['left', 'top', 'right'] as const) {
         const dock = newDocks[key];
-        const idx = dock.panels.findIndex((p) => p.id === panelId);
-        if (idx !== -1) {
-          const newPanels = [...dock.panels];
+        const slotIdx = dock.slots.findIndex((s) => s.id === slotId);
+        if (slotIdx !== -1) {
+          const newSlots = [...dock.slots];
           const clampedSize = Math.max(10, Math.min(90, newSize));
-          const delta = clampedSize - newPanels[idx].size;
+          const delta = clampedSize - newSlots[slotIdx].size;
 
-          if (idx < newPanels.length - 1) {
-            // Take from next panel
-            newPanels[idx] = { ...newPanels[idx], size: clampedSize };
-            newPanels[idx + 1] = {
-              ...newPanels[idx + 1],
-              size: Math.max(10, newPanels[idx + 1].size - delta),
+          if (slotIdx < newSlots.length - 1) {
+            // Take from next slot
+            newSlots[slotIdx] = { ...newSlots[slotIdx], size: clampedSize };
+            newSlots[slotIdx + 1] = {
+              ...newSlots[slotIdx + 1],
+              size: Math.max(10, newSlots[slotIdx + 1].size - delta),
             };
-          } else if (idx > 0) {
-            // Take from previous panel
-            newPanels[idx] = { ...newPanels[idx], size: clampedSize };
-            newPanels[idx - 1] = {
-              ...newPanels[idx - 1],
-              size: Math.max(10, newPanels[idx - 1].size - delta),
+          } else if (slotIdx > 0) {
+            // Take from previous slot
+            newSlots[slotIdx] = { ...newSlots[slotIdx], size: clampedSize };
+            newSlots[slotIdx - 1] = {
+              ...newSlots[slotIdx - 1],
+              size: Math.max(10, newSlots[slotIdx - 1].size - delta),
             };
           }
 
-          newDocks[key] = { ...dock, panels: newPanels };
+          newDocks[key] = { ...dock, slots: newSlots };
+          break;
+        }
+      }
+
+      return { ...prev, docks: newDocks };
+    });
+  }, []);
+
+  /** Resize a panel within its slot */
+  const resizePanelInSlot = useCallback((panelId: PanelId, newSize: number) => {
+    setLayoutState((prev) => {
+      const newDocks = { ...prev.docks };
+
+      for (const key of ['left', 'top', 'right'] as const) {
+        const dock = newDocks[key];
+        let found = false;
+
+        const newSlots = dock.slots.map((slot) => {
+          const panelIdx = slot.panels.findIndex((p) => p.id === panelId);
+          if (panelIdx !== -1) {
+            found = true;
+            const newPanels = [...slot.panels];
+            const clampedSize = Math.max(10, Math.min(90, newSize));
+            const delta = clampedSize - newPanels[panelIdx].size;
+
+            if (panelIdx < newPanels.length - 1) {
+              // Take from next panel
+              newPanels[panelIdx] = { ...newPanels[panelIdx], size: clampedSize };
+              newPanels[panelIdx + 1] = {
+                ...newPanels[panelIdx + 1],
+                size: Math.max(10, newPanels[panelIdx + 1].size - delta),
+              };
+            } else if (panelIdx > 0) {
+              // Take from previous panel
+              newPanels[panelIdx] = { ...newPanels[panelIdx], size: clampedSize };
+              newPanels[panelIdx - 1] = {
+                ...newPanels[panelIdx - 1],
+                size: Math.max(10, newPanels[panelIdx - 1].size - delta),
+              };
+            }
+
+            return { ...slot, panels: newPanels };
+          }
+          return slot;
+        });
+
+        if (found) {
+          newDocks[key] = { ...dock, slots: newSlots };
           break;
         }
       }
@@ -428,23 +604,20 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
 
   const reorderPanels = useCallback(
     (dock: DockPosition, fromIndex: number, toIndex: number) => {
+      // This reorders slots within a dock
       setLayoutState((prev) => {
         const dockKey = dock.toLowerCase() as 'left' | 'top' | 'right';
         const dockState = prev.docks[dockKey];
-        const newPanels = [...dockState.panels];
+        const newSlots = [...dockState.slots];
 
-        const [moved] = newPanels.splice(fromIndex, 1);
-        newPanels.splice(toIndex, 0, moved);
-
-        newPanels.forEach((p, i) => {
-          p.order = i;
-        });
+        const [moved] = newSlots.splice(fromIndex, 1);
+        newSlots.splice(toIndex, 0, moved);
 
         return {
           ...prev,
           docks: {
             ...prev.docks,
-            [dockKey]: { ...dockState, panels: newPanels },
+            [dockKey]: { ...dockState, slots: newSlots },
           },
         };
       });
@@ -488,35 +661,30 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
   const dockPopup = useCallback(
     (popupId: string, targetDock: DockPosition, insertIndex = 0) => {
       setLayoutState((prev) => {
-        const newDocks = { ...prev.docks };
+        // Remove popup from all docks first
+        const { docks: newDocks } = removePanelFromDocks(prev.docks, popupId);
+
         const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
         const targetDockState = newDocks[targetKey];
 
-        // Check if popup is already in any dock and remove it
-        for (const key of ['left', 'top', 'right'] as const) {
-          const dock = newDocks[key];
-          const idx = dock.panels.findIndex((p) => p.id === popupId);
-          if (idx !== -1) {
-            newDocks[key] = {
-              ...dock,
-              panels: dock.panels.filter((p) => p.id !== popupId),
-            };
-          }
-        }
+        // Create new slot with this popup
+        const newSlot: DockSlot = {
+          id: generateSlotId(),
+          panels: [{ id: popupId, order: 0, size: 100 }],
+          size: 100,
+        };
 
-        // Add panel to target dock
-        const newPanels = [...newDocks[targetKey].panels];
-        newPanels.splice(insertIndex, 0, { id: popupId, order: insertIndex, size: 100 });
+        const newSlots = [...targetDockState.slots];
+        newSlots.splice(insertIndex, 0, newSlot);
 
-        // Recalculate sizes evenly
-        const panelCount = newPanels.length;
-        const evenSize = 100 / panelCount;
-        newPanels.forEach((p, i) => {
-          p.order = i;
-          p.size = evenSize;
+        // Recalculate slot sizes evenly
+        const slotCount = newSlots.length;
+        const evenSize = 100 / slotCount;
+        newSlots.forEach((s) => {
+          s.size = evenSize;
         });
 
-        newDocks[targetKey] = { ...targetDockState, panels: newPanels };
+        newDocks[targetKey] = { ...targetDockState, slots: newSlots };
 
         // Remove from floating panels if present
         const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== popupId);
@@ -541,37 +709,87 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
         };
       });
     },
-    []
+    [removePanelFromDocks]
+  );
+
+  const dockPopupToSlot = useCallback(
+    (popupId: string, targetDock: DockPosition, slotId: string, insertPositionInSlot = 0) => {
+      setLayoutState((prev) => {
+        // Remove popup from all docks first
+        const { docks: newDocks } = removePanelFromDocks(prev.docks, popupId);
+
+        const targetKey = targetDock.toLowerCase() as 'left' | 'top' | 'right';
+        const targetDockState = newDocks[targetKey];
+
+        // Find and update the target slot
+        const newSlots = targetDockState.slots.map((slot) => {
+          if (slot.id === slotId) {
+            const newPanels = [...slot.panels];
+            newPanels.splice(insertPositionInSlot, 0, { id: popupId, order: insertPositionInSlot, size: 100 });
+
+            // Recalculate panel sizes within slot
+            const evenSize = 100 / newPanels.length;
+            newPanels.forEach((p, i) => {
+              p.order = i;
+              p.size = evenSize;
+            });
+
+            return { ...slot, panels: newPanels };
+          }
+          return slot;
+        });
+
+        newDocks[targetKey] = { ...targetDockState, slots: newSlots };
+
+        // Remove from floating panels if present
+        const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== popupId);
+
+        // Update popup state
+        const popupState = prev.popupPanels[popupId] || { isDocked: false };
+
+        return {
+          ...prev,
+          docks: newDocks,
+          floatingPanels: newFloatingPanels,
+          popupPanels: {
+            ...prev.popupPanels,
+            [popupId]: {
+              ...popupState,
+              isDocked: true,
+              dockPosition: targetDock,
+            },
+          },
+        };
+      });
+    },
+    [removePanelFromDocks]
   );
 
   const undockPopup = useCallback((popupId: string) => {
     setLayoutState((prev) => {
-      const newDocks = { ...prev.docks };
       let sourceDockKey: 'left' | 'top' | 'right' | null = null;
       let sourceDockSize = 0;
+      let slotSizePercent = 100;
       let panelSizePercent = 100;
 
-      // Remove panel from all docks and capture source dock info
+      // Find source dock and slot info before removing
       for (const key of ['left', 'top', 'right'] as const) {
-        const dock = newDocks[key];
-        const idx = dock.panels.findIndex((p) => p.id === popupId);
-        if (idx !== -1) {
-          sourceDockKey = key;
-          sourceDockSize = dock.size;
-          panelSizePercent = dock.panels[idx].size;
-
-          const remainingPanels = dock.panels.filter((p) => p.id !== popupId);
-          // Recalculate sizes for remaining panels
-          if (remainingPanels.length > 0) {
-            const evenSize = 100 / remainingPanels.length;
-            remainingPanels.forEach((p, i) => {
-              p.order = i;
-              p.size = evenSize;
-            });
+        const dock = prev.docks[key];
+        for (const slot of dock.slots) {
+          const panelIdx = slot.panels.findIndex((p) => p.id === popupId);
+          if (panelIdx !== -1) {
+            sourceDockKey = key;
+            sourceDockSize = dock.size;
+            slotSizePercent = slot.size;
+            panelSizePercent = slot.panels[panelIdx].size;
+            break;
           }
-          newDocks[key] = { ...dock, panels: remainingPanels };
         }
+        if (sourceDockKey) break;
       }
+
+      // Remove popup from all docks
+      const { docks: newDocks } = removePanelFromDocks(prev.docks, popupId);
 
       // Get previous floating state or calculate new one
       const popupState = prev.popupPanels[popupId];
@@ -589,13 +807,13 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
 
         if (sourceDockKey === 'top') {
           const contentWidth = contentArea?.offsetWidth ?? 800;
-          width = Math.max(300, (contentWidth * panelSizePercent) / 100);
-          height = Math.max(200, sourceDockSize);
+          width = Math.max(300, (contentWidth * slotSizePercent) / 100);
+          height = Math.max(200, (sourceDockSize * panelSizePercent) / 100);
         } else if (sourceDockKey) {
-          const topDockHeight = prev.docks.top.panels.length > 0 ? prev.docks.top.size : 0;
+          const topDockHeight = prev.docks.top.slots.length > 0 ? prev.docks.top.size : 0;
           const availableHeight = (contentArea?.offsetHeight ?? 600) - topDockHeight;
-          width = Math.max(300, sourceDockSize);
-          height = Math.max(200, (availableHeight * panelSizePercent) / 100);
+          width = Math.max(300, (sourceDockSize * panelSizePercent) / 100);
+          height = Math.max(200, (availableHeight * slotSizePercent) / 100);
         } else {
           width = 350;
           height = 300;
@@ -624,29 +842,12 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
         },
       };
     });
-  }, []);
+  }, [removePanelFromDocks]);
 
   const removePopupFromDock = useCallback((popupId: string) => {
     setLayoutState((prev) => {
-      const newDocks = { ...prev.docks };
-
-      // Remove panel from all docks
-      for (const key of ['left', 'top', 'right'] as const) {
-        const dock = newDocks[key];
-        const idx = dock.panels.findIndex((p) => p.id === popupId);
-        if (idx !== -1) {
-          const remainingPanels = dock.panels.filter((p) => p.id !== popupId);
-          // Recalculate sizes for remaining panels
-          if (remainingPanels.length > 0) {
-            const evenSize = 100 / remainingPanels.length;
-            remainingPanels.forEach((p, i) => {
-              p.order = i;
-              p.size = evenSize;
-            });
-          }
-          newDocks[key] = { ...dock, panels: remainingPanels };
-        }
-      }
+      // Remove popup from all docks using helper
+      const { docks: newDocks } = removePanelFromDocks(prev.docks, popupId);
 
       // Remove from floating panels
       const newFloatingPanels = prev.floatingPanels.filter((p) => p.id !== popupId);
@@ -657,7 +858,7 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
         floatingPanels: newFloatingPanels,
       };
     });
-  }, []);
+  }, [removePanelFromDocks]);
 
   const addPopupFloating = useCallback((popupId: string, state: FloatingPanelState) => {
     setLayoutState((prev) => {
@@ -712,20 +913,25 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       disableLayoutMode,
       toggleLayoutMode,
       movePanel,
+      movePanelToSlot,
       undockPanel,
       dockFloatingPanel,
+      dockFloatingPanelToSlot,
       updateFloatingPanel,
       resizeDock,
-      resizePanel,
+      resizeSlot,
+      resizePanelInSlot,
       reorderPanels,
       updateDragState,
       resetLayout,
       findPanelDock,
+      findPanelSlot,
       findFloatingPanel,
       // Popup panel methods
       getPopupDockState,
       updatePopupDockState,
       dockPopup,
+      dockPopupToSlot,
       undockPopup,
       removePopupFromDock,
       // Popup floating management
@@ -743,20 +949,25 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
       disableLayoutMode,
       toggleLayoutMode,
       movePanel,
+      movePanelToSlot,
       undockPanel,
       dockFloatingPanel,
+      dockFloatingPanelToSlot,
       updateFloatingPanel,
       resizeDock,
-      resizePanel,
+      resizeSlot,
+      resizePanelInSlot,
       reorderPanels,
       updateDragState,
       resetLayout,
       findPanelDock,
+      findPanelSlot,
       findFloatingPanel,
       // Popup panel methods
       getPopupDockState,
       updatePopupDockState,
       dockPopup,
+      dockPopupToSlot,
       undockPopup,
       removePopupFromDock,
       // Popup floating management

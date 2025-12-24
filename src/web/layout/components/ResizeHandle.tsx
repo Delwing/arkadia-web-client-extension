@@ -120,3 +120,55 @@ export function PanelResizeHandle({
     />
   );
 }
+
+interface SlotResizeHandleProps {
+  orientation: ResizeOrientation;
+  onResize: (delta: number) => void;
+  onResizeEnd?: () => void;
+}
+
+export function SlotResizeHandle({
+  orientation,
+  onResize,
+  onResizeEnd,
+}: SlotResizeHandleProps) {
+  const [isResizing, setIsResizing] = useState(false);
+  const startPosRef = useRef(0);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsResizing(true);
+      startPosRef.current = orientation === 'horizontal' ? e.clientX : e.clientY;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+
+      const handleMove = (moveEvent: PointerEvent) => {
+        const currentPos =
+          orientation === 'horizontal' ? moveEvent.clientX : moveEvent.clientY;
+        const delta = currentPos - startPosRef.current;
+        onResize(delta);
+        startPosRef.current = currentPos;
+      };
+
+      const handleUp = (upEvent: PointerEvent) => {
+        setIsResizing(false);
+        onResizeEnd?.();
+        window.removeEventListener('pointermove', handleMove);
+        window.removeEventListener('pointerup', handleUp);
+        (upEvent.target as HTMLElement)?.releasePointerCapture?.(upEvent.pointerId);
+      };
+
+      window.addEventListener('pointermove', handleMove);
+      window.addEventListener('pointerup', handleUp);
+    },
+    [orientation, onResize, onResizeEnd]
+  );
+
+  return (
+    <div
+      className={`slot-resize-handle slot-resize-handle--${orientation} ${isResizing ? 'slot-resize-handle--active' : ''}`}
+      onPointerDown={handlePointerDown}
+    />
+  );
+}

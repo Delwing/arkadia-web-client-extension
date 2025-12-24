@@ -62,21 +62,43 @@ body.layout-objectlist-enabled #objects-list {
   overflow: auto;
 }
 
-/* Panel wrapper within dock */
-.dock-zone__panel-wrapper {
+/* Slot wrapper within dock - contains panels stacked in opposite direction */
+.dock-zone__slot-wrapper {
   display: flex;
   position: relative;
   min-width: 0;
   min-height: 0;
 }
 
-.dock-zone--top .dock-zone__panel-wrapper {
+/* TOP dock: slots are horizontal (side by side), panels within stack vertically */
+.dock-zone--top .dock-zone__slot-wrapper {
+  flex-direction: column;
+}
+
+/* LEFT/RIGHT docks: slots are vertical (stacked), panels within are side by side */
+.dock-zone--left .dock-zone__slot-wrapper,
+.dock-zone--right .dock-zone__slot-wrapper {
   flex-direction: row;
 }
 
+/* Panel wrapper within slot */
+.dock-zone__panel-wrapper {
+  display: flex;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* In TOP dock slots: panels stack vertically, so wrapper is column */
+.dock-zone--top .dock-zone__panel-wrapper {
+  flex-direction: column;
+}
+
+/* In LEFT/RIGHT dock slots: panels are side by side, so wrapper is row */
 .dock-zone--left .dock-zone__panel-wrapper,
 .dock-zone--right .dock-zone__panel-wrapper {
-  flex-direction: column;
+  flex-direction: row;
 }
 
 /* Docked Panel */
@@ -95,7 +117,8 @@ body.layout-objectlist-enabled #objects-list {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0.25rem 0.5rem;
+  height: 28px;
+  padding: 0 0.5rem;
   background: var(--surface-raised, #252525);
   border-bottom: 1px solid var(--surface-border, #333);
   cursor: grab;
@@ -198,11 +221,67 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   top: 0;
 }
 
-/* Panel Resize Handles (between panels in same dock) */
+/* Slot Resize Handles (between slots in a dock) */
+.slot-resize-handle {
+  flex-shrink: 0;
+  background: var(--surface-border, #333);
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+/* Extended hit area using ::before */
+.slot-resize-handle::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+}
+
+.slot-resize-handle:hover,
+.slot-resize-handle--active {
+  background: var(--bs-primary, #589aff);
+}
+
+/* TOP dock: slots are side by side, so slot resize handles are vertical */
+.slot-resize-handle--horizontal {
+  width: 1px;
+  cursor: ew-resize;
+  align-self: stretch;
+}
+
+.slot-resize-handle--horizontal::before {
+  left: -2px;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+}
+
+/* LEFT/RIGHT docks: slots are stacked, so slot resize handles are horizontal */
+.slot-resize-handle--vertical {
+  height: 1px;
+  cursor: ns-resize;
+  align-self: stretch;
+}
+
+.slot-resize-handle--vertical::before {
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+}
+
+/* Panel Resize Handles (between panels within a slot) */
 .panel-resize-handle {
   flex-shrink: 0;
   background: var(--surface-border, #333);
+  position: relative;
   transition: background-color 0.15s ease;
+}
+
+/* Extended hit area using ::before */
+.panel-resize-handle::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
 }
 
 .panel-resize-handle:hover,
@@ -210,16 +289,32 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   background: var(--bs-primary, #589aff);
 }
 
+/* In TOP dock slots: panels stack vertically, so panel resize handles are horizontal */
+/* In LEFT/RIGHT dock slots: panels are side by side, so panel resize handles are vertical */
 .panel-resize-handle--horizontal {
-  width: 4px;
+  width: 1px;
   cursor: ew-resize;
   align-self: stretch;
 }
 
+.panel-resize-handle--horizontal::before {
+  left: -2px;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+}
+
 .panel-resize-handle--vertical {
-  height: 4px;
+  height: 1px;
   cursor: ns-resize;
   align-self: stretch;
+}
+
+.panel-resize-handle--vertical::before {
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  right: 0;
 }
 
 /* Dragging state - cursor feedback */
@@ -248,8 +343,15 @@ body.layout-dragging * {
 }
 
 /* Inline preview placeholder in dock zone */
-.dock-zone__panel-preview {
+.dock-zone__panel-preview,
+.dock-zone__slot-preview {
   pointer-events: none;
+}
+
+/* Slot preview (new column/row) should be visible */
+.dock-zone__slot-preview {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .dock-panel-preview-inline {
@@ -475,7 +577,8 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.2rem 0.4rem;
+  height: 28px;
+  padding: 0 0.4rem;
   background: var(--surface-raised, #252830);
 }
 
@@ -489,6 +592,15 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   align-items: center;
   gap: 0.2rem;
   margin-left: auto;
+}
+
+/* Ensure all children in header actions fit within header */
+.docked-panel__header-actions > * {
+  max-height: 22px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Pin button for docked panels */

@@ -1,6 +1,40 @@
-import { LayoutState, DEFAULT_LAYOUT } from '../types';
+import { LayoutState, DockState, DEFAULT_LAYOUT, migrateLegacyDockState } from '../types';
 
 const LAYOUT_STORAGE_KEY = 'layoutManagerState';
+
+/**
+ * Migrate a dock from legacy format (flat panels) to new format (slots).
+ * If the dock already has slots, return as-is.
+ */
+function migrateDock(stored: unknown, defaultDock: DockState): DockState {
+  if (!stored || typeof stored !== 'object') {
+    return defaultDock;
+  }
+
+  const dock = stored as Record<string, unknown>;
+
+  // Check if already in new format (has slots array)
+  if (Array.isArray(dock.slots)) {
+    return {
+      size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
+      slots: dock.slots,
+    };
+  }
+
+  // Legacy format: has panels array, migrate to slots
+  if (Array.isArray(dock.panels) && dock.panels.length > 0) {
+    return migrateLegacyDockState({
+      size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
+      panels: dock.panels,
+    });
+  }
+
+  // Empty dock
+  return {
+    size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
+    slots: [],
+  };
+}
 
 export function loadLayoutState(): LayoutState {
   try {
@@ -16,9 +50,9 @@ export function loadLayoutState(): LayoutState {
             ...stored.enabledPanels,
           },
           docks: {
-            left: { ...DEFAULT_LAYOUT.docks.left, ...stored.docks?.left },
-            top: { ...DEFAULT_LAYOUT.docks.top, ...stored.docks?.top },
-            right: { ...DEFAULT_LAYOUT.docks.right, ...stored.docks?.right },
+            left: migrateDock(stored.docks?.left, DEFAULT_LAYOUT.docks.left),
+            top: migrateDock(stored.docks?.top, DEFAULT_LAYOUT.docks.top),
+            right: migrateDock(stored.docks?.right, DEFAULT_LAYOUT.docks.right),
           },
           // Ensure floatingPanels is always an array (for backwards compatibility)
           floatingPanels: Array.isArray(stored.floatingPanels)
@@ -96,12 +130,15 @@ export function shouldPopupAutoOpen(popupId: string): boolean {
       return true;
     }
 
-    // Check if popup is docked in any dock zone
+    // Check if popup is docked in any dock zone (check slots structure)
     const docks = stored?.docks;
     if (docks) {
       for (const dockKey of ['left', 'top', 'right'] as const) {
         const dock = docks[dockKey];
-        if (dock?.panels?.some((p: { id: string }) => p.id === popupId)) {
+        // Check new slots structure
+        if (dock?.slots?.some((slot: { panels: Array<{ id: string }> }) =>
+          slot.panels?.some((p) => p.id === popupId)
+        )) {
           return true;
         }
       }

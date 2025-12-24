@@ -57,7 +57,7 @@ export function DockedPanel({
     : `docked-panel docked-panel--${panelId}${isLocked ? ' docked-panel--locked' : ''}`;
 
   return (
-    <div className={panelClassName} style={style}>
+    <div className={panelClassName} style={style} data-panel-id={panelId}>
       <div
         className={`docked-panel__header${isLocked ? ' docked-panel__header--locked' : ''}`}
         onPointerDown={handleDragStartWrapper}

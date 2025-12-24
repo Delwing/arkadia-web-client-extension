@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useLayoutManager } from '../hooks/useLayoutManager';
+import { useLayoutManager } from '@web/layout';
 import { PANEL_CONFIGS } from '../types';
 
 export function DockDropIndicator() {
@@ -20,20 +20,21 @@ export function DockDropIndicator() {
   // Only show overlay preview for EMPTY dock zones
   // Populated docks show inline preview via DockZone component
   const emptyDockPreview = useMemo(() => {
-    if (!dragState?.potentialDock || dragState.insertIndex === null) return null;
+    // Need either insertIndex (new slot) or insertIntoSlotId (stacking)
+    if (!dragState?.potentialDock || (dragState.insertIndex === null && dragState.insertIntoSlotId === null)) return null;
 
     const dock = dragState.potentialDock;
     const dockKey = dock.toLowerCase() as 'left' | 'top' | 'right';
     const dockState = layoutState.docks[dockKey];
 
-    // Only show overlay if dock is empty
-    if (dockState.panels.length > 0) return null;
+    // Only show overlay if dock is empty (using slots structure)
+    if (dockState.slots.length > 0) return null;
 
     const contentArea = document.getElementById('content-area');
     if (!contentArea) return null;
 
     const rect = contentArea.getBoundingClientRect();
-    const topOffset = layoutState.docks.top.panels.length > 0 ? layoutState.docks.top.size : 0;
+    const topOffset = layoutState.docks.top.slots.length > 0 ? layoutState.docks.top.size : 0;
     const dockSize = dockState.size || 200;
     const config = PANEL_CONFIGS[dragState.panelId];
 

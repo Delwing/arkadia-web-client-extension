@@ -41,8 +41,28 @@ export interface FloatingPanelState {
   height?: number;
 }
 
+/**
+ * A slot within a dock that can contain multiple stacked panels.
+ * - In TOP dock: slots are columns (side by side), panels within stack vertically
+ * - In LEFT/RIGHT docks: slots are rows (stacked vertically), panels within are side by side
+ */
+export interface DockSlot {
+  id: string;
+  /** Panels within this slot */
+  panels: PanelState[];
+  /** Size as percentage of the dock */
+  size: number;
+}
+
 export interface DockState {
   /** Size of the dock zone (LEFT/RIGHT: width in px, TOP: height in px) */
+  size: number;
+  /** Slots containing panels. For backward compatibility, also check legacy 'panels' field */
+  slots: DockSlot[];
+}
+
+/** Legacy DockState with flat panels array (for migration) */
+export interface LegacyDockState {
   size: number;
   panels: PanelState[];
 }
@@ -80,7 +100,12 @@ export interface DragState {
   sourcePosition: DockPosition | 'floating';
   currentPosition: { x: number; y: number };
   potentialDock: DockPosition | null;
+  /** Index of the slot to insert into or create at */
   insertIndex: number | null;
+  /** If set, insert panel into existing slot at this index instead of creating new slot */
+  insertIntoSlotId: string | null;
+  /** Position within the slot (for stacking) */
+  insertPositionInSlot: number | null;
   /** True when dropping outside dock zones (will create floating panel) */
   willFloat: boolean;
 }
@@ -147,14 +172,48 @@ export const DEFAULT_LAYOUT: LayoutState = {
     objectList: true,
   },
   docks: {
-    left: { size: 200, panels: [] },
-    top: { size: 200, panels: [] },
-    right: { size: 360, panels: [{ id: 'map', order: 0, size: 50 }, { id: 'objectList', order: 1, size: 50 }] },
+    left: { size: 200, slots: [] },
+    top: { size: 200, slots: [] },
+    right: {
+      size: 360,
+      slots: [
+        {
+          id: 'slot-map',
+          panels: [{ id: 'map', order: 0, size: 100 }],
+          size: 50,
+        },
+        {
+          id: 'slot-objectList',
+          panels: [{ id: 'objectList', order: 0, size: 100 }],
+          size: 50,
+        },
+      ],
+    },
   },
   floatingPanels: [],
   popupPanels: {},
   builtInPanels: {},
 };
+
+/** Generate a unique slot ID */
+export function generateSlotId(): string {
+  return `slot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Migrate legacy dock state (flat panels array) to new slots structure.
+ * Each panel becomes its own single-panel slot.
+ */
+export function migrateLegacyDockState(legacy: LegacyDockState): DockState {
+  return {
+    size: legacy.size,
+    slots: legacy.panels.map((panel) => ({
+      id: `slot-${panel.id}`,
+      panels: [{ ...panel, size: 100 }],
+      size: panel.size,
+    })),
+  };
+}
 
 export const MIN_DOCK_SIZE = 100;
 export const MAX_DOCK_SIZE_RATIO = 0.4; // Max 40% of viewport
