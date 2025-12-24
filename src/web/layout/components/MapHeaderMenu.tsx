@@ -17,12 +17,37 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [levels, setLevels] = useState<number[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  const calculateDropdownPosition = useCallback(() => {
+    if (toggleRef.current) {
+      const rect = toggleRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      // Calculate available space below the button with some padding
+      const availableSpace = viewportHeight - rect.bottom - 16;
+      // Ensure at least some minimum height (100px) and cap at 300px
+      const maxHeight = Math.max(100, Math.min(300, availableSpace));
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+        maxHeight,
+      });
+    }
+  }, []);
 
   const toggleMenu = useCallback(() => {
-    setIsOpen((prev) => !prev);
+    setIsOpen((prev) => {
+      if (!prev) {
+        // Calculate position when opening
+        calculateDropdownPosition();
+      }
+      return !prev;
+    });
     setSubmenu('none');
-  }, []);
+  }, [calculateDropdownPosition]);
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
@@ -188,6 +213,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   return (
     <div ref={menuRef} className={`map-header-menu ${className}`}>
       <button
+        ref={toggleRef}
         type="button"
         className="map-header-menu__toggle"
         onClick={toggleMenu}
@@ -197,7 +223,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="map-header-menu__dropdown">
+        <div
+          className="map-header-menu__dropdown"
+          style={dropdownStyle ?? undefined}
+        >
           {submenu === 'areas' ? (
             <>
               <button
@@ -207,7 +236,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 &larr; Powrot
               </button>
-              <div className="map-header-menu__area-list">
+              <div
+                className="map-header-menu__area-list"
+                style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}
+              >
                 {areas.map((area) => (
                   <button
                     key={area.id}
@@ -229,7 +261,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 &larr; Powrot
               </button>
-              <div className="map-header-menu__area-list">
+              <div
+                className="map-header-menu__area-list"
+                style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}
+              >
                 {levels.map((level) => (
                   <button
                     key={level}

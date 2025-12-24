@@ -940,16 +940,14 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
 }
 
 .map-header-menu__dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
+  /* position, top, right set via inline styles for fixed positioning */
   min-width: 140px;
   background-color: var(--surface-elevated, #1e2128);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .map-header-menu__item {
