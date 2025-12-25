@@ -4,7 +4,7 @@ import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader
 import eventBus from "@modules/core/eventBus";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
-import { loadLayoutState, saveLayoutState, resetLayoutState } from "./layout/utils/layoutStorage";
+import { loadLayoutState, saveLayoutState, resetLayoutState } from "@web/layout";
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -73,7 +73,7 @@ export interface UiSettings {
     objectContextMenuCommands: string[];
 }
 
-const defaultSettings: UiSettings = {
+export const defaultUiSettings: UiSettings = {
     contentFontSize: 0.775,
     objectsFontSize: 0.6,
     buttonSize: 1,
@@ -123,7 +123,7 @@ function clampMapScale(value: number): number {
     return normalized >= MIN_MAP_SCALE ? normalized : MIN_MAP_SCALE;
 }
 
-function normalizeMapScale(value: unknown, fallback = defaultSettings.mapScale): number {
+function normalizeMapScale(value: unknown, fallback = defaultUiSettings.mapScale): number {
     const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
     if (!Number.isFinite(numericValue) || numericValue <= 0) {
         return Math.max(fallback, MIN_MAP_SCALE);
@@ -393,89 +393,89 @@ async function load(): Promise<UiSettings> {
             const mapScale = normalizeMapScale(parsed.mapScale);
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
-                : defaultSettings.mapPosition;
+                : defaultUiSettings.mapPosition;
             const transparentLabels = typeof parsed.transparentLabels === 'boolean'
                 ? parsed.transparentLabels
-                : defaultSettings.transparentLabels;
+                : defaultUiSettings.transparentLabels;
             const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
                 ? parsed.labelRenderMode
-                : defaultSettings.labelRenderMode;
+                : defaultUiSettings.labelRenderMode;
             const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
-            const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultSettings.xtermPalette;
-            const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultSettings.footerMode;
+            const xtermPalette = parsed.xtermPalette === 'proper' ? 'proper' : defaultUiSettings.xtermPalette;
+            const footerMode = typeof parsed.footerMode === 'number' ? parsed.footerMode : defaultUiSettings.footerMode;
             const explorationMode = !!parsed.explorationMode;
-            const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultSettings.fightTitleIcon;
-            const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultSettings.hapticFeedback;
-            const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultSettings.instantMove;
+            const fightTitleIcon = typeof parsed.fightTitleIcon === 'boolean' ? parsed.fightTitleIcon : defaultUiSettings.fightTitleIcon;
+            const hapticFeedback = typeof parsed.hapticFeedback === 'boolean' ? parsed.hapticFeedback : defaultUiSettings.hapticFeedback;
+            const instantMove = typeof parsed.instantMove === 'boolean' ? parsed.instantMove : defaultUiSettings.instantMove;
             const highlightCurrentRoom = typeof parsed.highlightCurrentRoom === 'boolean'
                 ? parsed.highlightCurrentRoom
-                : defaultSettings.highlightCurrentRoom;
+                : defaultUiSettings.highlightCurrentRoom;
             const outputBackground = typeof parsed.outputBackground === 'string'
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
-                    : defaultSettings.outputBackground;
+                    : defaultUiSettings.outputBackground;
             const fontFamily = isUiFontSelection(parsed.fontFamily)
                 ? parsed.fontFamily
-                : defaultSettings.fontFamily;
+                : defaultUiSettings.fontFamily;
             const customFontUrl = typeof parsed.customFontUrl === 'string'
                 ? parsed.customFontUrl.trim()
-                : defaultSettings.customFontUrl;
+                : defaultUiSettings.customFontUrl;
             const normalizedCustomFontUrl = /^https?:\/\//i.test(customFontUrl)
                 ? customFontUrl
-                : defaultSettings.customFontUrl;
+                : defaultUiSettings.customFontUrl;
             const customFontFamily = typeof parsed.customFontFamily === 'string'
                 ? parsed.customFontFamily.trim()
-                : defaultSettings.customFontFamily;
+                : defaultUiSettings.customFontFamily;
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
-                : defaultSettings.clearInputOnSend;
+                : defaultUiSettings.clearInputOnSend;
             const showTransportLabel = typeof parsed.showTransportLabel === 'boolean'
                 ? parsed.showTransportLabel
-                : defaultSettings.showTransportLabel;
+                : defaultUiSettings.showTransportLabel;
             const showCombatTimer = typeof parsed.showCombatTimer === 'boolean'
                 ? parsed.showCombatTimer
-                : defaultSettings.showCombatTimer;
+                : defaultUiSettings.showCombatTimer;
             const showClockDisplay = typeof parsed.showClockDisplay === 'boolean'
                 ? parsed.showClockDisplay
-                : defaultSettings.showClockDisplay;
+                : defaultUiSettings.showClockDisplay;
             const autoLowercaseCommands = typeof parsed.autoLowercaseCommands === 'boolean'
                 ? parsed.autoLowercaseCommands
-                : defaultSettings.autoLowercaseCommands;
+                : defaultUiSettings.autoLowercaseCommands;
             const customBeepSoundKey = typeof parsed.customBeepSoundKey === 'string'
                 ? parsed.customBeepSoundKey || undefined
-                : defaultSettings.customBeepSoundKey;
+                : defaultUiSettings.customBeepSoundKey;
             const mapRoomSize = typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0
                 ? parsed.mapRoomSize
-                : defaultSettings.mapRoomSize;
+                : defaultUiSettings.mapRoomSize;
             const mapLineWidth = typeof parsed.mapLineWidth === 'number' && parsed.mapLineWidth > 0
                 ? parsed.mapLineWidth
-                : defaultSettings.mapLineWidth;
+                : defaultUiSettings.mapLineWidth;
             const mapPlayerMarkerStrokeColor = typeof parsed.mapPlayerMarkerStrokeColor === 'string'
                 ? parsed.mapPlayerMarkerStrokeColor
-                : defaultSettings.mapPlayerMarkerStrokeColor;
+                : defaultUiSettings.mapPlayerMarkerStrokeColor;
             const mapPlayerMarkerStrokeAlpha = typeof parsed.mapPlayerMarkerStrokeAlpha === 'number'
                 ? parsed.mapPlayerMarkerStrokeAlpha
-                : defaultSettings.mapPlayerMarkerStrokeAlpha;
+                : defaultUiSettings.mapPlayerMarkerStrokeAlpha;
             const mapPlayerMarkerFillColor = typeof parsed.mapPlayerMarkerFillColor === 'string'
                 ? parsed.mapPlayerMarkerFillColor
-                : defaultSettings.mapPlayerMarkerFillColor;
+                : defaultUiSettings.mapPlayerMarkerFillColor;
             const mapPlayerMarkerFillAlpha = typeof parsed.mapPlayerMarkerFillAlpha === 'number'
                 ? parsed.mapPlayerMarkerFillAlpha
-                : defaultSettings.mapPlayerMarkerFillAlpha;
+                : defaultUiSettings.mapPlayerMarkerFillAlpha;
             const mapPlayerMarkerStrokeWidth = typeof parsed.mapPlayerMarkerStrokeWidth === 'number'
                 ? parsed.mapPlayerMarkerStrokeWidth
-                : defaultSettings.mapPlayerMarkerStrokeWidth;
+                : defaultUiSettings.mapPlayerMarkerStrokeWidth;
             const mapPlayerMarkerSizeFactor = typeof parsed.mapPlayerMarkerSizeFactor === 'number'
                 ? parsed.mapPlayerMarkerSizeFactor
-                : defaultSettings.mapPlayerMarkerSizeFactor;
+                : defaultUiSettings.mapPlayerMarkerSizeFactor;
             const mapPlayerMarkerDashEnabled = typeof parsed.mapPlayerMarkerDashEnabled === 'boolean'
                 ? parsed.mapPlayerMarkerDashEnabled
-                : defaultSettings.mapPlayerMarkerDashEnabled;
+                : defaultUiSettings.mapPlayerMarkerDashEnabled;
             const objectContextMenuCommands = Array.isArray(parsed.objectContextMenuCommands)
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
-                : defaultSettings.objectContextMenuCommands;
+                : defaultUiSettings.objectContextMenuCommands;
             return {
-                ...defaultSettings,
+                ...defaultUiSettings,
                 ...parsed,
                 mapScale,
                 mapPosition,
@@ -514,7 +514,7 @@ async function load(): Promise<UiSettings> {
     } catch {
         // ignore malformed data
     }
-    return { ...defaultSettings };
+    return { ...defaultUiSettings };
 }
 
 function save(settings: UiSettings) {
@@ -971,7 +971,7 @@ export default async function initUiSettings() {
         scheduleFontFamilyGuess();
     }
     outputBackgroundReset?.addEventListener('click', () => {
-        outputBackgroundInput.value = defaultSettings.outputBackground;
+        outputBackgroundInput.value = defaultUiSettings.outputBackground;
     });
     apply(current);
 
@@ -1185,21 +1185,21 @@ export default async function initUiSettings() {
 
         const backgroundValue = /^#[0-9a-f]{6}$/i.test(outputBackgroundInput.value)
             ? outputBackgroundInput.value
-            : defaultSettings.outputBackground;
+            : defaultUiSettings.outputBackground;
 
         return {
-            contentFontSize: parseFloat(contentInput.value) || defaultSettings.contentFontSize,
-            objectsFontSize: parseFloat(objectsInput.value) || defaultSettings.objectsFontSize,
-            buttonSize: parseFloat(buttonInput.value) || defaultSettings.buttonSize,
+            contentFontSize: parseFloat(contentInput.value) || defaultUiSettings.contentFontSize,
+            objectsFontSize: parseFloat(objectsInput.value) || defaultUiSettings.objectsFontSize,
+            buttonSize: parseFloat(buttonInput.value) || defaultUiSettings.buttonSize,
             mapScale,
-            mapHeight: parseFloat(mapHeightInput.value) || defaultSettings.mapHeight,
-            mapPosition: (mapPositionInput.value as MapPosition) || defaultSettings.mapPosition,
+            mapHeight: parseFloat(mapHeightInput.value) || defaultUiSettings.mapHeight,
+            mapPosition: (mapPositionInput.value as MapPosition) || defaultUiSettings.mapPosition,
             showButtons: showButtonsInput.checked,
             hapticFeedback: hapticFeedbackInput.checked,
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
-            xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultSettings.xtermPalette,
-            footerMode: parseInt(footerModeInput.value) || defaultSettings.footerMode,
+            xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultUiSettings.xtermPalette,
+            footerMode: parseInt(footerModeInput.value) || defaultUiSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
             highlightCurrentRoom: highlightCurrentRoomInput.checked,
@@ -1210,7 +1210,7 @@ export default async function initUiSettings() {
             showTransportLabel: showTransportLabelInput.checked,
             showCombatTimer: showCombatTimerInput.checked,
             showClockDisplay: showClockDisplayInput.checked,
-            fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultSettings.fontFamily,
+            fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultUiSettings.fontFamily,
             customFontUrl: (() => {
                 const value = customFontUrlInput.value.trim();
                 return /^https?:\/\//i.test(value) ? value : '';
@@ -1218,14 +1218,14 @@ export default async function initUiSettings() {
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
-            mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultSettings.mapRoomSize,
-            mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultSettings.mapLineWidth,
-            mapPlayerMarkerStrokeColor: mapPlayerMarkerStrokeColorInput.value || defaultSettings.mapPlayerMarkerStrokeColor,
-            mapPlayerMarkerFillColor: mapPlayerMarkerFillColorInput.value || defaultSettings.mapPlayerMarkerFillColor,
-            mapPlayerMarkerStrokeAlpha: parseFloat(mapPlayerMarkerStrokeAlphaInput.value) ?? defaultSettings.mapPlayerMarkerStrokeAlpha,
-            mapPlayerMarkerFillAlpha: parseFloat(mapPlayerMarkerFillAlphaInput.value) ?? defaultSettings.mapPlayerMarkerFillAlpha,
-            mapPlayerMarkerStrokeWidth: parseFloat(mapPlayerMarkerStrokeWidthInput.value) || defaultSettings.mapPlayerMarkerStrokeWidth,
-            mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultSettings.mapPlayerMarkerSizeFactor,
+            mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultUiSettings.mapRoomSize,
+            mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultUiSettings.mapLineWidth,
+            mapPlayerMarkerStrokeColor: mapPlayerMarkerStrokeColorInput.value || defaultUiSettings.mapPlayerMarkerStrokeColor,
+            mapPlayerMarkerFillColor: mapPlayerMarkerFillColorInput.value || defaultUiSettings.mapPlayerMarkerFillColor,
+            mapPlayerMarkerStrokeAlpha: parseFloat(mapPlayerMarkerStrokeAlphaInput.value) ?? defaultUiSettings.mapPlayerMarkerStrokeAlpha,
+            mapPlayerMarkerFillAlpha: parseFloat(mapPlayerMarkerFillAlphaInput.value) ?? defaultUiSettings.mapPlayerMarkerFillAlpha,
+            mapPlayerMarkerStrokeWidth: parseFloat(mapPlayerMarkerStrokeWidthInput.value) || defaultUiSettings.mapPlayerMarkerStrokeWidth,
+            mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultUiSettings.mapPlayerMarkerSizeFactor,
             mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
             objectContextMenuCommands: [...objectContextMenuCommands],
         };

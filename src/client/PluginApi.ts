@@ -24,6 +24,11 @@ import type {FormatStateSnapshot} from "@client/ansi/FormatState";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import type {Trigger, TriggerCallback, TriggerOptions, TriggerPattern} from "./Triggers";
 import {gmcp} from "./gmcp";
+import type {Settings} from "@modules/core/defaultSettings";
+import {defaultSettings} from "@modules/core/defaultSettings";
+import storage from "@modules/core/storage";
+import type {UiSettings} from "@web/uiSettings";
+import {defaultUiSettings} from "@web/uiSettings";
 import {
   registerContextMenuEntry,
   registerPopupMenuEntry,
@@ -1440,6 +1445,66 @@ export interface TriggerMacrosApi {
 }
 
 /**
+ * Settings API - Access character and UI settings
+ *
+ * Provides read-only access to character settings (scoped to current character)
+ * and UI settings (global).
+ */
+export interface SettingsApi {
+  /**
+   * Get all character settings
+   * @returns Current character settings merged with defaults
+   *
+   * @example
+   * ```typescript
+   * const settings = await api.settings.getCharacterSettings();
+   * console.log(`Attack command: ${settings.attackCommand}`);
+   * console.log(`Guilds: ${settings.guilds?.join(", ")}`);
+   * ```
+   */
+  getCharacterSettings(): Promise<Settings>;
+
+  /**
+   * Get a specific character setting
+   * @param key - Setting key (e.g., "attackCommand", "guilds", "collectMode")
+   * @returns The value of the setting
+   *
+   * @example
+   * ```typescript
+   * const guilds = await api.settings.getCharacterSetting("guilds");
+   * const attackCommand = await api.settings.getCharacterSetting("attackCommand");
+   * ```
+   */
+  getCharacterSetting<K extends keyof Settings>(key: K): Promise<Settings[K]>;
+
+  /**
+   * Get all UI settings
+   * @returns Current UI settings merged with defaults
+   *
+   * @example
+   * ```typescript
+   * const uiSettings = await api.settings.getUiSettings();
+   * console.log(`Font size: ${uiSettings.contentFontSize}`);
+   * console.log(`Map position: ${uiSettings.mapPosition}`);
+   * ```
+   */
+  getUiSettings(): Promise<UiSettings>;
+
+  /**
+   * Get a specific UI setting
+   * @param key - Setting key (e.g., "contentFontSize", "mapPosition", "showButtons")
+   * @returns The value of the setting
+   *
+   * @example
+   * ```typescript
+   * const fontSize = await api.settings.getUiSetting("contentFontSize");
+   * const mapPosition = await api.settings.getUiSetting("mapPosition");
+   * ```
+   */
+  getUiSetting<K extends keyof UiSettings>(key: K): Promise<UiSettings[K]>;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -1549,6 +1614,8 @@ export interface PluginApi {
   buttonMacros: ButtonMacrosApi;
   /** Trigger macros - register custom trigger macros */
   triggerMacros: TriggerMacrosApi;
+  /** Settings - access character and UI settings */
+  settings: SettingsApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1603,6 +1670,7 @@ export class PluginApiImpl implements PluginApi {
   public objectListFilters: ObjectListFiltersApi;
   public buttonMacros: ButtonMacrosApi;
   public triggerMacros: TriggerMacrosApi;
+  public settings: SettingsApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -1631,6 +1699,7 @@ export class PluginApiImpl implements PluginApi {
     this.objectListFilters = this.createObjectListFiltersApi();
     this.buttonMacros = this.createButtonMacrosApi();
     this.triggerMacros = this.createTriggerMacrosApi();
+    this.settings = this.createSettingsApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2132,6 +2201,36 @@ export class PluginApiImpl implements PluginApi {
         const fullId = `plugin:${this.pluginId}:${id}`;
         unregisterTriggerMacro(fullId);
         this.triggerMacroIds.delete(fullId);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Settings API
+  // ============================================================================
+
+  private createSettingsApi(): SettingsApi {
+    return {
+      getCharacterSettings: async (): Promise<Settings> => {
+        const res = await storage.getItem("settings");
+        const stored = res?.settings;
+        return { ...defaultSettings, ...stored };
+      },
+
+      getCharacterSetting: async <K extends keyof Settings>(key: K): Promise<Settings[K]> => {
+        const settings = await this.settings.getCharacterSettings();
+        return settings[key];
+      },
+
+      getUiSettings: async (): Promise<UiSettings> => {
+        const res = await storage.getItem("uiSettings");
+        const stored = res?.uiSettings;
+        return { ...defaultUiSettings, ...stored };
+      },
+
+      getUiSetting: async <K extends keyof UiSettings>(key: K): Promise<UiSettings[K]> => {
+        const uiSettings = await this.settings.getUiSettings();
+        return uiSettings[key];
       }
     };
   }
