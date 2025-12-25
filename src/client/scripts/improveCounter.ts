@@ -65,7 +65,6 @@ function formatDate(date: Date): string {
 }
 
 export function formatDuration(ms: number): string {
-    if (ms < 0) ms = 0;
     const sec = Math.floor(ms / 1000);
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -214,8 +213,6 @@ export default class ImproveCounter {
                 this.handleLevel(level);
             }
         });
-
-        eventBus.on("postepy.reset_timer", () => this.resetTimer());
     }
 
     private getKills() {
@@ -240,13 +237,6 @@ export default class ImproveCounter {
 
     reset() {
         this.entries = [];
-        this.lastTime = Date.now();
-        this.lastKills = this.getKills();
-        this.persist();
-        this.emitUpdate();
-    }
-
-    resetTimer() {
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.persist();
@@ -639,7 +629,6 @@ export function initImproveCounter(
     if (aliases) {
         aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
         aliases.push({pattern: /\/postepyw$/, callback: () => eventBus.emit("postepy.popup.open")});
-        aliases.push({pattern: /\/exp_start$/, callback: () => counter.resetTimer()});
         aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
         aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});

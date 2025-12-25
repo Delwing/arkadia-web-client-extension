@@ -5497,8 +5497,7 @@ body.mobile-command-radial-active {
   border-radius: 0.25rem;
 }
 
-.postepy-popup__image-btn,
-.postepy-popup__reset-btn {
+.postepy-popup__image-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5512,14 +5511,12 @@ body.mobile-command-radial-active {
   margin-left: 0.25rem;
 }
 
-.postepy-popup__image-btn:hover,
-.postepy-popup__reset-btn:hover {
+.postepy-popup__image-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: rgba(241, 245, 249, 0.8);
 }
 
-.postepy-popup__image-btn:active,
-.postepy-popup__reset-btn:active {
+.postepy-popup__image-btn:active {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
