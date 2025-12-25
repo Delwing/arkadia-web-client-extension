@@ -1,6 +1,6 @@
 import { DataStore, createDataStoreSingleton } from '@modules/data/dataStore/DataStore';
 import type { RefreshMetadata, SubscriptionOptions } from '@modules/data/dataStore/types';
-import { IndexedDbCollectionStrategy } from '@modules/data/peopleCache';
+import { IndexedDbCollectionStrategy } from '@modules/data/indexedDbCollectionStrategy';
 
 export interface StoredMultibindRecord {
   roomId: number;
