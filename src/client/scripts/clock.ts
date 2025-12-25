@@ -344,7 +344,8 @@ export class ArkadiaTime {
     }
 
     private handleGmcp(daylight: boolean): void {
-        if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
+        // Only process sunrise/sunset if clock has been initialized via trigger
+        if (this.startTime !== null && this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (daylight) {
                 this.markObservedSunrise();
             } else {
