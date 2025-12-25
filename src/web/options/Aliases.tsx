@@ -168,22 +168,28 @@ function Aliases() {
                 <div className="border rounded p-3 mb-3">
                     <h6 className="mb-3">{editIndex === null ? 'Dodaj alias' : 'Edytuj alias'}</h6>
                     <Form.Group className="d-flex flex-column gap-2">
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            placeholder="Pattern"
-                            value={pattern}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                            className="font-monospace"
-                        />
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            placeholder="Komenda"
-                            value={command}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
-                            className="font-monospace"
-                        />
+                        <div>
+                            <Form.Label className="mb-1 small">Wzorzec (pattern)</Form.Label>
+                            <Form.Control
+                                type="text"
+                                size="sm"
+                                placeholder="np. ^zab (.+)$"
+                                value={pattern}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                className="font-monospace"
+                            />
+                        </div>
+                        <div>
+                            <Form.Label className="mb-1 small">Komenda do wykonania</Form.Label>
+                            <Form.Control
+                                type="text"
+                                size="sm"
+                                placeholder="np. zabij $1"
+                                value={command}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                                className="font-monospace"
+                            />
+                        </div>
                         <small className="text-secondary">
                             Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.<br/>
                             Możesz także korzystać ze skrótów obiektów (<code>@1</code>, <code>@A</code>, <code>@@</code>), które zostaną rozwinięte do identyfikatorów obiektów.
@@ -201,22 +207,28 @@ function Aliases() {
                     editIndex === a.idx ? (
                         <li key={a.idx} className="alias-list-item d-flex flex-column gap-2">
                             <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Pattern"
-                                    value={pattern}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                    className="font-monospace"
-                                />
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Komenda"
-                                    value={command}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
-                                    className="font-monospace"
-                                />
+                                <div>
+                                    <Form.Label className="mb-1 small">Wzorzec (pattern)</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="np. ^zab (.+)$"
+                                        value={pattern}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                        className="font-monospace"
+                                    />
+                                </div>
+                                <div>
+                                    <Form.Label className="mb-1 small">Komenda do wykonania</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="np. zabij $1"
+                                        value={command}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
+                                        className="font-monospace"
+                                    />
+                                </div>
                                 <div className="d-flex gap-2">
                                     <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
                                     <Button size="sm" onClick={save}>Zapisz</Button>
