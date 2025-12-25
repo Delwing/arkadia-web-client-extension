@@ -23,7 +23,7 @@ interface SlotDropInfo {
 const EMPTY_DOCK_EDGE_MARGIN = 60;
 
 // Margin from panel edge to detect stacking vs new slot
-const PANEL_EDGE_MARGIN = 0.25; // 25% from edge
+const PANEL_EDGE_MARGIN = 0.15; // 15% from edge
 
 function getDockZoneRects(contentArea: HTMLElement, layoutState: LayoutState): DockZoneRects {
   const contentRect = contentArea.getBoundingClientRect();
@@ -192,11 +192,15 @@ function calculateDropTarget(
           };
         }
         // In center - stack into slot (position based on Y)
-        const panelCount = panels.length;
-        const insertPosition = Math.min(
-          panelCount,
-          Math.max(0, Math.floor(relativeY * (panelCount + 1)))
-        );
+        // Use panel centers to determine insert position for more intuitive drop targets
+        let insertPosition = panels.length; // Default to end
+        for (let i = 0; i < panels.length; i++) {
+          const panelCenterY = (panels[i].rect.top + panels[i].rect.bottom) / 2;
+          if (mouseY < panelCenterY) {
+            insertPosition = i;
+            break;
+          }
+        }
         return {
           dock,
           insertSlotIndex: null,
@@ -224,11 +228,15 @@ function calculateDropTarget(
           };
         }
         // In center - stack into slot (position based on X)
-        const panelCount = panels.length;
-        const insertPosition = Math.min(
-          panelCount,
-          Math.max(0, Math.floor(relativeX * (panelCount + 1)))
-        );
+        // Use panel centers to determine insert position for more intuitive drop targets
+        let insertPosition = panels.length; // Default to end
+        for (let i = 0; i < panels.length; i++) {
+          const panelCenterX = (panels[i].rect.left + panels[i].rect.right) / 2;
+          if (mouseX < panelCenterX) {
+            insertPosition = i;
+            break;
+          }
+        }
         return {
           dock,
           insertSlotIndex: null,
@@ -280,6 +288,8 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
   const panelSizeRef = useRef({ width: 300, height: 200 });
   const layoutStateRef = useRef(layoutState);
   const currentDragState = useRef<DragState | null>(null);
+  const lastDropTarget = useRef<DropTarget | null>(null);
+  const lastDropTargetPos = useRef<{ x: number; y: number } | null>(null);
   layoutStateRef.current = layoutState;
 
   const handleDragStart = useCallback(
@@ -388,6 +398,34 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
           }
         }
 
+        // Hysteresis: prevent rapid switching when preview causes layout shift
+        // Only apply for new-slot mode to prevent jitter; stacking position updates freely
+        const HYSTERESIS_THRESHOLD = 12; // pixels
+        const last = lastDropTarget.current;
+        const lastPos = lastDropTargetPos.current;
+
+        if (dropTarget && last && lastPos) {
+          const dx = moveEvent.clientX - lastPos.x;
+          const dy = moveEvent.clientY - lastPos.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          const lastIsStacking = last.insertIntoSlotId !== null;
+          const newIsStacking = dropTarget.insertIntoSlotId !== null;
+          const sameDock = last.dock === dropTarget.dock;
+
+          // Only apply hysteresis for new-slot mode (where preview shifts other slots)
+          // Stacking mode position (left/right within slot) should update freely
+          if (distance < HYSTERESIS_THRESHOLD && sameDock && !lastIsStacking && !newIsStacking) {
+            dropTarget = last;
+          }
+        }
+
+        // Update last drop target tracking
+        if (dropTarget) {
+          lastDropTarget.current = dropTarget;
+          lastDropTargetPos.current = { x: moveEvent.clientX, y: moveEvent.clientY };
+        }
+
         currentDragState.current = {
           panelId,
           sourcePosition: currentDragState.current?.sourcePosition ?? 'floating',
@@ -422,6 +460,8 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
 
         isDragging.current = false;
         currentDragState.current = null;
+        lastDropTarget.current = null;
+        lastDropTargetPos.current = null;
         updateDragState(null);
 
         document.removeEventListener('pointermove', handleMove);
