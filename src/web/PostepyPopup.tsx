@@ -15,7 +15,7 @@ const PostepyPopup: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
     const [data, setData] = useState<ImproveData | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [now, setNow] = useState(Date.now());
+    const [_now, setNow] = useState(Date.now()); // 'now' triggers re-renders; calculation uses Date.now() directly
 
     // Load initial data when popup opens
     useEffect(() => {
@@ -86,7 +86,8 @@ const PostepyPopup: React.FC = () => {
         : 0;
 
     // Calculate time and kills since last improve
-    const timeSinceLast = now - lastTime;
+    // Use Date.now() directly to avoid stale state issues; 'now' just triggers re-renders
+    const timeSinceLast = Date.now() - lastTime;
     const killsSinceLast = currentKills.my - lastKills.my;
     const teamKillsSinceLast = currentKills.team - lastKills.team;
 
@@ -97,7 +98,11 @@ const PostepyPopup: React.FC = () => {
         }
     }, []);
 
-    // Header with mean time and image button
+    const handleResetTimer = useCallback(() => {
+        eventBus.emit('postepy.reset_timer');
+    }, []);
+
+    // Header with mean time and buttons
     const headerActions = (
         <>
             {meanTime > 0 && (
@@ -105,6 +110,17 @@ const PostepyPopup: React.FC = () => {
                     {formatDuration(meanTime)}
                 </span>
             )}
+            <button
+                type="button"
+                className="postepy-popup__reset-btn"
+                onClick={handleResetTimer}
+                title="Resetuj timer"
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                </svg>
+            </button>
             <button
                 type="button"
                 className="postepy-popup__image-btn"

@@ -229,6 +229,7 @@ export interface KnownEvents {
     "combat.settingsChanged": Record<CombatMessageType, boolean>;
     "postepy.updated": unknown;
     "postepy.popup.open": void;
+    "postepy.reset_timer": void;
     "zabici.updated": unknown;
     "zabici.popup.open": void;
     "skroty.popup.open": void;

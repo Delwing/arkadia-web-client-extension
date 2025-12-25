@@ -52,10 +52,10 @@ describe('improve counter', () => {
     client.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    // aliases: /postepy(0), /postepy_popup(1), /postepy_reset(2), /postepy2(3), ...
-    show = aliases[0].callback;
-    reset = aliases[2].callback;
-    showLifetime = aliases[3].callback;
+    // Find aliases by pattern instead of relying on indices
+    show = aliases.find((a) => a.pattern.source === '\\/postepy$')!.callback;
+    reset = aliases.find((a) => a.pattern.source === '\\/postepy_reset$')!.callback;
+    showLifetime = aliases.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     // reset state using alias
     reset();
   });
