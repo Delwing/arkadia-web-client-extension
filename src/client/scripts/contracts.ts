@@ -229,12 +229,12 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     // "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
     // "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
     // Note: (?!sztuk) prevents capturing "sztuk" as part of the number
-    const contractOfferPattern = /.+? do ciebie: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+(?: (?!sztuk)[a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
+    const contractOfferPattern = /.+? do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje ([a-z]+(?: (?!sztuk)[a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\..*Dobrze zaplace/;
 
     // Pattern for deadline line
     // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
     // "Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego."
-    const deadlinePattern = /.+? do ciebie: Na realizacje zamowienia mam ([a-z ]+) (?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
+    const deadlinePattern = /.+? do [^:]+: Na realizacje zamowienia mam ([a-z ]+) (?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
 
     // Pattern for asking about contract
     // "Pytasz blekitnookiego krotkowlosego mezczyzne o zlecenie."
@@ -285,7 +285,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
 
     // Pattern for no contract available
     // "Nie, w tej chwili niczego mi nie trzeba. Zajrzyj moze za jakis czas."
-    const noContractPattern = /.+? do ciebie: Nie, w tej chwili niczego mi nie trzeba\. Zajrzyj moze za jakis czas\./;
+    const noContractPattern = /.+? do [^:]+: Nie, w tej chwili niczego mi nie trzeba\. Zajrzyj moze za jakis czas\./;
 
     client.Triggers.registerTrigger(noContractPattern, (line) => {
         if (pendingContract && pendingContract.locationId !== null) {
