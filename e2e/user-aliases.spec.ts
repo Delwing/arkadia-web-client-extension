@@ -28,8 +28,8 @@ test.describe('User aliases', () => {
 
         await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
 
-        const patternInput = aliasesModal.getByPlaceholder('Pattern');
-        const commandInput = aliasesModal.getByPlaceholder('Komenda');
+        const patternInput = aliasesModal.getByPlaceholder('np. ^zab (.+)$');
+        const commandInput = aliasesModal.getByPlaceholder('np. zabij $1');
         const aliasPattern = 'fooalias';
         const aliasCommand = 'powiedz czesc';
 

@@ -127,8 +127,8 @@ test.describe('Multibind import', () => {
         const aliasesModal = await openAliasesModal(page);
 
         await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
-        await aliasesModal.getByPlaceholder('Pattern').fill(aliasPattern);
-        await aliasesModal.getByPlaceholder('Komenda').fill(aliasCommand);
+        await aliasesModal.getByPlaceholder('np. ^zab (.+)$').fill(aliasPattern);
+        await aliasesModal.getByPlaceholder('np. zabij $1').fill(aliasCommand);
         await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
         await expect(
             aliasesModal.locator('.alias-list-item').filter({ hasText: aliasPattern }),
