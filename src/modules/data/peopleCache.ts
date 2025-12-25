@@ -99,34 +99,30 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
   }
 
   async writeSnapshot(snapshot: TEntry[] | undefined): Promise<void> {
-    this.inMemorySnapshot = snapshot;
-
+    const db = await openDatabase(this.options);
     try {
-      const db = await openDatabase(this.options);
-      try {
-        const transaction = db.transaction([this.options.entriesStore], 'readwrite');
-        const store = transaction.objectStore(this.options.entriesStore);
-        await runRequest(store.clear());
-        if (snapshot) {
-          snapshot.forEach((entry, index) => {
-            const record: CollectionEntryRecord<TEntry> = {
-              id: this.options.buildEntryId(entry, index),
-              order: index,
-              value: entry,
-            };
-            store.put(record);
-          });
-        }
-        await new Promise<void>((resolve, reject) => {
-          transaction.oncomplete = () => resolve();
-          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection snapshot'));
-          transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection snapshot was aborted'));
+      const transaction = db.transaction([this.options.entriesStore], 'readwrite');
+      const store = transaction.objectStore(this.options.entriesStore);
+      await runRequest(store.clear());
+      if (snapshot) {
+        snapshot.forEach((entry, index) => {
+          const record: CollectionEntryRecord<TEntry> = {
+            id: this.options.buildEntryId(entry, index),
+            order: index,
+            value: entry,
+          };
+          store.put(record);
         });
-      } finally {
-        db.close();
       }
-    } catch (error) {
-      console.warn('Failed to store collection in IndexedDB:', error);
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection snapshot'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection snapshot was aborted'));
+      });
+      // Only update in-memory cache after successful DB write
+      this.inMemorySnapshot = snapshot;
+    } finally {
+      db.close();
     }
   }
 
@@ -155,57 +151,49 @@ export class IndexedDbCollectionStrategy<TEntry, TMeta extends RefreshMetadata>
   }
 
   async writeMetadata(metadata: TMeta | undefined): Promise<void> {
-    this.inMemoryMetadata = metadata;
-
+    const db = await openDatabase(this.options);
     try {
-      const db = await openDatabase(this.options);
-      try {
-        const transaction = db.transaction([this.options.metadataStore], 'readwrite');
-        const store = transaction.objectStore(this.options.metadataStore);
-        if (metadata === undefined) {
-          await runRequest(store.delete(this.metadataKey));
-        } else {
-          const record: MetadataRecord<TMeta> = { id: this.metadataKey, value: metadata };
-          await runRequest(store.put(record));
-        }
-        await new Promise<void>((resolve, reject) => {
-          transaction.oncomplete = () => resolve();
-          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection metadata'));
-          transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection metadata was aborted'));
-        });
-      } finally {
-        db.close();
+      const transaction = db.transaction([this.options.metadataStore], 'readwrite');
+      const store = transaction.objectStore(this.options.metadataStore);
+      if (metadata === undefined) {
+        await runRequest(store.delete(this.metadataKey));
+      } else {
+        const record: MetadataRecord<TMeta> = { id: this.metadataKey, value: metadata };
+        await runRequest(store.put(record));
       }
-    } catch (error) {
-      console.warn('Failed to store collection metadata in IndexedDB:', error);
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Failed to store collection metadata'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Storing collection metadata was aborted'));
+      });
+      // Only update in-memory cache after successful DB write
+      this.inMemoryMetadata = metadata;
+    } finally {
+      db.close();
     }
   }
 
   async clear(): Promise<void> {
-    this.inMemorySnapshot = undefined;
-    this.inMemoryMetadata = undefined;
-
+    const db = await openDatabase(this.options);
     try {
-      const db = await openDatabase(this.options);
-      try {
-        const transaction = db.transaction(
-          [this.options.entriesStore, this.options.metadataStore],
-          'readwrite',
-        );
-        await Promise.all([
-          runRequest(transaction.objectStore(this.options.entriesStore).clear()),
-          runRequest(transaction.objectStore(this.options.metadataStore).clear()),
-        ]);
-        await new Promise<void>((resolve, reject) => {
-          transaction.oncomplete = () => resolve();
-          transaction.onerror = () => reject(transaction.error ?? new Error('Failed to clear collection cache'));
-          transaction.onabort = () => reject(transaction.error ?? new Error('Clearing collection cache was aborted'));
-        });
-      } finally {
-        db.close();
-      }
-    } catch (error) {
-      console.warn('Failed to clear collection cache in IndexedDB:', error);
+      const transaction = db.transaction(
+        [this.options.entriesStore, this.options.metadataStore],
+        'readwrite',
+      );
+      await Promise.all([
+        runRequest(transaction.objectStore(this.options.entriesStore).clear()),
+        runRequest(transaction.objectStore(this.options.metadataStore).clear()),
+      ]);
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Failed to clear collection cache'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Clearing collection cache was aborted'));
+      });
+      // Only clear in-memory cache after successful DB clear
+      this.inMemorySnapshot = undefined;
+      this.inMemoryMetadata = undefined;
+    } finally {
+      db.close();
     }
   }
 

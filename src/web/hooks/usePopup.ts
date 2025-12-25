@@ -105,10 +105,10 @@ export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
             return;
         }
 
-        return eventBus.on(options.openEvent, (data) => {
+        return eventBus.on(options.openEvent, ((data: ClientEvents[K]) => {
             options.onOpen?.(data);
             setIsOpen(true);
-        });
+        }) as any);
     }, [options?.openEvent, options?.onOpen]);
 
     const wrapperProps = {

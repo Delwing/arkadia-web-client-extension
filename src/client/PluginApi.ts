@@ -27,8 +27,8 @@ import {gmcp} from "./gmcp";
 import type {Settings} from "@modules/core/defaultSettings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import storage from "@modules/core/storage";
-import type {UiSettings} from "@web/uiSettings";
-import {defaultUiSettings} from "@web/uiSettings";
+import type {UiSettings} from "@web/defaultUiSettings";
+import {defaultUiSettings} from "@web/defaultUiSettings";
 import {
   registerContextMenuEntry,
   registerPopupMenuEntry,

@@ -57,7 +57,7 @@ const ContractsPopup: React.FC = () => {
         setCurrentLocationId(data.currentLocationId);
     }, []);
 
-    const { wrapperProps } = usePopup<ContractsPopupPayload>(POPUP_ID, {
+    const { wrapperProps } = usePopup<'contracts.popup.open'>(POPUP_ID, {
         openEvent: 'contracts.popup.open',
         onOpen: handleOpen,
     });
