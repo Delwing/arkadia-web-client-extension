@@ -305,10 +305,7 @@ export class ArkadiaTime {
 
     public start(): void {
         this.initTriggers();
-        if (this.startTime && this.startHour !== null && this.startMinutes !== null && this.startDay) {
-            this.update();
-            this.startTimers();
-        }
+        // Clock will only start when triggers fire (checkHour -> init)
     }
 
     private initTriggers(): void {
