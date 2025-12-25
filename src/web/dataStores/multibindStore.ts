@@ -18,7 +18,7 @@ const storage = new IndexedDbCollectionStrategy<StoredMultibindRecord, RefreshMe
   dbName: DB_CONFIG.dbName,
   entriesStore: DB_CONFIG.entriesStore,
   metadataStore: DB_CONFIG.metadataStore,
-  version: 2,
+  version: 3,
   buildEntryId,
 });
 

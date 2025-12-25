@@ -29,7 +29,7 @@ describe('IndexedDbCollectionStrategy', () => {
       entriesStore: 'peopleEntries',
       metadataStore: 'peopleMetadata',
       metadataKey: 'metadata',
-      version: 2,
+      version: 3,
       buildEntryId: (person) =>
         `${person.name.toLowerCase()}|${person.guild.toLowerCase()}|${person.description.toLowerCase()}`,
     });
@@ -47,7 +47,7 @@ describe('IndexedDbCollectionStrategy', () => {
     expect(cachedSnapshot).toEqual(samplePeople);
     expect(cachedMetadata).toEqual(metadata);
 
-    const openRequest = indexedDB.open(DB_NAME, 2);
+    const openRequest = indexedDB.open(DB_NAME, 3);
     const db: IDBDatabase = await new Promise((resolve, reject) => {
       openRequest.onsuccess = () => resolve(openRequest.result);
       openRequest.onerror = () => reject(openRequest.error ?? new Error('Failed to reopen database'));

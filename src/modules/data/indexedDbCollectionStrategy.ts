@@ -30,8 +30,9 @@ async function openDatabase(options: IndexedDbCollectionStrategyOptions<any>): P
 
       // Handle entries store
       if (db.objectStoreNames.contains(options.entriesStore)) {
-        // Delete and recreate if upgrading from version 1 (which had keyPath: 'key')
-        if (oldVersion < 2) {
+        // Delete and recreate if upgrading from version < 3
+        // Version 1 used keyPath: 'key', version 2 migration was incomplete
+        if (oldVersion < 3) {
           db.deleteObjectStore(options.entriesStore);
           db.createObjectStore(options.entriesStore, { keyPath: 'id' });
         }
