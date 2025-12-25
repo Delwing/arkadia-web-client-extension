@@ -1,4 +1,4 @@
-import { IndexedDbCollectionStrategy } from '@modules/data/peopleCache';
+import { IndexedDbCollectionStrategy } from '@modules/data/indexedDbCollectionStrategy';
 import type { PersonEntry } from '@client/types/people';
 
 type TestMetadata = { refreshedAt: number; count: number };

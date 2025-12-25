@@ -1,7 +1,7 @@
 import { DataStore, createDataStoreSingleton } from './dataStore/DataStore';
 import type { ProgressListener, RefreshMetadata, SubscriptionOptions } from './dataStore/types';
 import { WorkerLoader, type WorkerLoaderMetadata } from './dataStore/strategies/WorkerLoader';
-import { IndexedDbCollectionStrategy } from './peopleCache';
+import { IndexedDbCollectionStrategy } from './indexedDbCollectionStrategy';
 import type { PersonEntry } from '@client/types/people';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

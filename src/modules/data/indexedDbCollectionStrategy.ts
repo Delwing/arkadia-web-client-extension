@@ -24,11 +24,22 @@ async function openDatabase(options: IndexedDbCollectionStrategyOptions<any>): P
   return await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(options.dbName, options.version ?? 1);
 
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(options.entriesStore)) {
+      const oldVersion = event.oldVersion;
+
+      // Handle entries store
+      if (db.objectStoreNames.contains(options.entriesStore)) {
+        // Delete and recreate if upgrading from version 1 (which had keyPath: 'key')
+        if (oldVersion < 2) {
+          db.deleteObjectStore(options.entriesStore);
+          db.createObjectStore(options.entriesStore, { keyPath: 'id' });
+        }
+      } else {
         db.createObjectStore(options.entriesStore, { keyPath: 'id' });
       }
+
+      // Handle metadata store
       if (!db.objectStoreNames.contains(options.metadataStore)) {
         db.createObjectStore(options.metadataStore, { keyPath: 'id' });
       }
