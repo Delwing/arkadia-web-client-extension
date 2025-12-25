@@ -1,5 +1,6 @@
 import Client from "@client/Client";
 import { loadSettings, Settings, LayoutSettings, ButtonSetting, RadialCommandSetting } from "../mobileButtonSettings";
+import eventBus from "@modules/core/eventBus";
 
 type ActiveLayoutKey = "solo" | "team" | "leader";
 
@@ -59,18 +60,21 @@ export default class MobileCommandRadial {
         }
 
         if (hasTouchSupport && this.contentArea) {
-            this.registerEventListeners();
+            this.registerTouchEventListeners();
         }
+        this.registerSettingsListeners();
         this.loadInitialSettings();
     }
 
-    private registerEventListeners() {
+    private registerTouchEventListeners() {
         this.contentArea!.addEventListener('touchstart', this.handleTouchStart, { passive: true });
         this.contentArea!.addEventListener('touchmove', this.handleTouchMove, { passive: false });
         this.contentArea!.addEventListener('touchend', this.handleTouchEnd, { passive: false });
         this.contentArea!.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
+    }
 
-        this.client.on('mobileButtonsSettings', () => {
+    private registerSettingsListeners() {
+        eventBus.on('mobileButtonsSettings', () => {
             this.reloadSettings();
         });
         this.client.on('teamChange', () => {

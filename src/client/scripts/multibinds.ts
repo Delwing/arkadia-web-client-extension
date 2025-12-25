@@ -363,12 +363,10 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             return;
         }
 
-        // drinkable
+        // drinkable - always active, but info displayed only on drinkable locations
         if (bindMatches(ev, drinkableBind)) {
-            if (room?.userData?.drinkable) {
-                client.sendCommand("napij sie do syta wody");
-                ev.preventDefault();
-            }
+            client.sendCommand("napij sie do syta wody");
+            ev.preventDefault();
             return;
         }
     });
