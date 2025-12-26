@@ -1,15 +1,23 @@
 import Client from "../Client";
-import { AnsiAwareBuffer } from "../ansi/FormatState";
+import { AnsiAwareBuffer, BufferSegment } from "../ansi/FormatState";
 import { createColorFormat } from "@modules/core/Colors";
+import { getItemSync, setItemSync } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 
 const HISTORY_LIMIT = 100;
 const PRINT_LIMIT = 20;
 const TIMESTAMP_COLOR = createColorFormat("#ffffff");
+const STORAGE_KEY = "chat_history";
 
 export type ChatEntry = {
     timestamp: string;
     buffer: AnsiAwareBuffer;
+    isTeamMember: boolean;
+};
+
+type SerializedChatEntry = {
+    timestamp: string;
+    segments: BufferSegment[];
     isTeamMember: boolean;
 };
 
@@ -68,6 +76,51 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         eventBus.emit("chat.newMessage", entry);
     }
 
+    function serializeHistory(): SerializedChatEntry[] {
+        return chatHistory.map(entry => ({
+            timestamp: entry.timestamp,
+            segments: entry.buffer.getSegments(),
+            isTeamMember: entry.isTeamMember,
+        }));
+    }
+
+    function deserializeHistory(data: SerializedChatEntry[]): ChatEntry[] {
+        return data.map(entry => ({
+            timestamp: entry.timestamp,
+            buffer: new AnsiAwareBuffer(entry.segments),
+            isTeamMember: entry.isTeamMember,
+        }));
+    }
+
+    function loadHistory(data: unknown) {
+        if (!Array.isArray(data)) {
+            chatHistory = [];
+            return;
+        }
+        try {
+            chatHistory = deserializeHistory(data as SerializedChatEntry[]);
+        } catch {
+            chatHistory = [];
+        }
+    }
+
+    function persistHistory() {
+        setItemSync(STORAGE_KEY, serializeHistory());
+    }
+
+    function resetHistory() {
+        chatHistory = [];
+        persistHistory();
+        eventBus.emit("chat.cleared");
+    }
+
+    function loadFromStorage() {
+        const stored = getItemSync(STORAGE_KEY);
+        if (stored?.[STORAGE_KEY]) {
+            loadHistory(stored[STORAGE_KEY]);
+        }
+    }
+
     function printHistory() {
         if (!chatHistory.length) {
             client.print("Brak zapisanych wiadomosci czatu.");
@@ -87,6 +140,19 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         client.print(output);
     }
 
+    // Load from storage when character info is received (character scope is set)
+    client.on("gmcp.char.info", () => {
+        loadFromStorage();
+    });
+
+    // Reset on character change
+    client.on("reset", () => {
+        resetHistory();
+    });
+
+    // Persist on page unload
+    window.addEventListener("beforeunload", persistHistory);
+
     client.on("gmcp_msg.comm", (buffer) => {
         if (!(buffer instanceof AnsiAwareBuffer) || !buffer.text.trim()) return;
 
@@ -97,11 +163,6 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
                 addEntry(line);
             }
         });
-    });
-
-    client.on("client.disconnect", () => {
-        chatHistory = [];
-        eventBus.emit("chat.cleared");
     });
 
     function openPopup() {

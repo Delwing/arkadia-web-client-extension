@@ -43,7 +43,7 @@ export interface FormatStateSnapshot {
 
 export type TextRange = [start: number, end: number];
 
-interface BufferSegment {
+export interface BufferSegment {
     text: string;
     state?: FormatStateSnapshot;
 }

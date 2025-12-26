@@ -31,7 +31,6 @@ const download = async (storage: Storage, url: string, ttl: number) => {
 const characterScopedKeys = new Set([
     'settings',
     'kill_counter',
-    'improve_counter',
     'improve_counter_lifetime',
     'deposits',
     'containers',
