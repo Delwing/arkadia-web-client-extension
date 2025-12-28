@@ -421,12 +421,6 @@ outputWrapper.addEventListener('contextmenu', event => {
                 eventBus.emit('zabici.popup.open');
             },
         },
-        {
-            label: 'Pokaż radial',
-            action: () => {
-                mobileRadial?.showAt(event.clientX, event.clientY);
-            },
-        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

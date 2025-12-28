@@ -54,14 +54,14 @@ Menedzer pojemnikow pozwala przypisac wybrane torby, plecaki i inne pojemniki do
 
 ## Przegladanie i ocena
 
-| Komenda | Opis |
-|---------|------|
-| `/przejrzyj [co]` | Pokaz zawartosc skrzyn z kluczami i magicznymi przedmiotami |
-| `/por [skrot]` | Porownaj sile, zrecznosc i wytrzymalosc z obiektem |
+| Komenda                   | Opis |
+|---------------------------|------|
+| `/przejrzyj [co]`         | Pokaz zawartosc skrzyn z kluczami i magicznymi przedmiotami |
+| `/por [id]`               | Porownaj sile, zrecznosc i wytrzymalosc z obiektem |
 | `/odloz_magie [pojemnik]` | Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotow |
-| `/ocen` | Ocen swoje bronie i zbroje, wypisujac ich stan |
-| `/sprzet` | Alias do `/ocen` |
-| `/ocenkamienie` | Oblicz laczna wartosc kamieni |
+| `/ocen`                   | Ocen swoje bronie i zbroje, wypisujac ich stan |
+| `/sprzet`                 | Alias do `/ocen` |
+| `/ocenkamienie`           | Oblicz laczna wartosc kamieni |
 
 ## Lampa
 

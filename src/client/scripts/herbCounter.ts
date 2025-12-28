@@ -129,6 +129,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const contentRegex1 = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W srodku dostrzegasz (?<content>.*)\.$/;
     const contentRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W srodku dostrzegasz (?<content>[a-zA-Z0-9, -]+)\.$/;
     const emptyRegex = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W jego srodku nic jednak nie ma\.$/;
+    // Detects start of woreczek evaluation (to filter out plecak etc.)
+    const woreczekEvalStartRegex = /^Oceniasz starannie[^.]*woreczek/i;
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
 
     let awaiting = false;
@@ -137,11 +139,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagTotals: Record<number, HerbBagState> = {};
     const pendingConditions: Record<number, number> = {};
     let conditionFlushHandle: ReturnType<typeof setTimeout> | null = null;
+    let evaluatingWoreczkiCondition = false;
+    let lastEvaluatedWasWoreczek = false;
 
     const scheduleConditionFlush = () => {
         if (conditionFlushHandle) return;
         conditionFlushHandle = setTimeout(() => {
             conditionFlushHandle = null;
+            evaluatingWoreczkiCondition = false;
             const entries = Object.entries(pendingConditions as Record<string, number>);
             Object.keys(pendingConditions as Record<string, number>).forEach(key => {
                 delete (pendingConditions as Record<string, number>)[key];
@@ -463,7 +468,18 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return triggerLine;
     });
 
+    // Track when a woreczek evaluation starts (only during /woreczki_buduj)
+    client.Triggers.registerTrigger(woreczekEvalStartRegex, (line) => {
+        if (evaluatingWoreczkiCondition) {
+            lastEvaluatedWasWoreczek = true;
+        }
+        return line;
+    });
+
+    // Only count condition if it follows a woreczek evaluation
     client.Triggers.registerTrigger(bagConditionRegex, (line, matches) => {
+        if (!lastEvaluatedWasWoreczek) return line;
+        lastEvaluatedWasWoreczek = false;
         const desc = matches?.groups?.desc;
         if (!desc) return line;
         const bagNumber = currentBagForEvaluation++
@@ -493,6 +509,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             conditionFlushHandle = null;
         }
         currentBagForEvaluation = 1;
+        evaluatingWoreczkiCondition = true;
         client.sendCommand('ocen wszystkie woreczki');
     }
 

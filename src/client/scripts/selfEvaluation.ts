@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import {getWearValue} from "./wearUsed";
 
 export default function initSelfEvaluation(
     client: Client,
@@ -154,8 +155,98 @@ export default function initSelfEvaluation(
         }, 5000);
     }
 
+    // Clothing evaluation
+    const clothingTag = "clothing-evaluation";
+    let clothingCurrent = "";
+    let clothingSummary: { name: string; state: string }[] = [];
+    let clothingTimer: ReturnType<typeof setTimeout> | undefined;
+    let clothingFallback: ReturnType<typeof setTimeout> | undefined;
+
+    function startClothingTimer() {
+        if (clothingTimer) return;
+        clothingTimer = setTimeout(() => {
+            client.Triggers.removeByTag(clothingTag);
+            if (clothingSummary.length > 0) {
+                const maxName = Math.max(...clothingSummary.map(s => s.name.length));
+                const lines = clothingSummary.map(({name, state}) => {
+                    const dots = ".".repeat(Math.max(1, maxName - name.length + 3));
+                    const buffer = new AnsiAwareBuffer(`${name} ${dots} `);
+                    buffer.appendBuffer(colorState(state));
+                    return buffer;
+                });
+                client.print("\n");
+                lines.forEach((line) => {
+                    client.print(line);
+                });
+                client.print("\n");
+            }
+            clothingSummary = [];
+            clothingCurrent = "";
+            client.suppressItemEvaluation = false;
+            clothingTimer = undefined;
+        }, 250);
+    }
+
+    function runClothing() {
+        clothingSummary = [];
+        clothingCurrent = "";
+        client.suppressItemEvaluation = true;
+
+        const parent = client.Triggers.registerTrigger(
+            /^Oceniasz starannie ([^.]+)\.$/,
+            (_line, matches) => {
+                if (clothingFallback) {
+                    clearTimeout(clothingFallback);
+                    clothingFallback = undefined;
+                }
+                clothingCurrent = matches[1].trim();
+                startClothingTimer();
+                return null;
+            },
+            clothingTag,
+            {stayOpenLines: 50}
+        );
+
+        // Match: "Ubranie to zostalo wykonane z welny i wyglada na w miare nowe."
+        parent.registerChild(
+            /^Ubranie to zostalo wykonane z .+ i wyglada na (.+)\.$/,
+            (line, matches) => {
+                if (clothingCurrent && matches) {
+                    const conditionText = matches[1].trim() + ".";
+                    const wearValue = getWearValue(conditionText);
+                    if (wearValue != null) {
+                        clothingSummary.push({name: clothingCurrent, state: `${wearValue}/5`});
+                    }
+                    clothingCurrent = "";
+                }
+                startClothingTimer();
+                return line.markAsDeleted();
+            },
+            clothingTag
+        );
+
+        parent.registerChild(
+            /^.*$/,
+            () => {
+                startClothingTimer();
+                return null;
+            },
+            clothingTag
+        );
+
+        client.sendCommand("ocen ubrania");
+
+        clothingFallback = setTimeout(() => {
+            client.Triggers.removeByTag(clothingTag);
+            client.suppressItemEvaluation = false;
+            clothingSummary = [];
+            clothingCurrent = "";
+        }, 5000);
+    }
+
     if (aliases) {
         aliases.push({pattern: /^\/ocen$/, callback: run});
         aliases.push({pattern: /^\/sprzet$/, callback: run});
+        aliases.push({pattern: /^\/ubrania$/, callback: runClothing});
     }
 }

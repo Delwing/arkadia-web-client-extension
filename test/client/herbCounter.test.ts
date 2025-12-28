@@ -131,7 +131,11 @@ describe('herb counter', () => {
       client.port.postMessage.mockClear();
       wearEntry?.callback();
       expect(client.sendCommand).toHaveBeenCalledWith('ocen wszystkie woreczki');
+      // Woreczek 1: evaluation start line sets flag, then condition line uses it
+      parse('Oceniasz starannie zamkniety woreczek ze skory kota.');
       parse('Ten element ekwipunku wyglada na troche zuzyty.');
+      // Woreczek 2
+      parse('Oceniasz starannie zamkniety pojemny woreczek z kozlej skory.');
       parse('Ten element ekwipunku wyglada na calkiem nowy.');
       jest.advanceTimersByTime(150);
       await Promise.resolve();
