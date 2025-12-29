@@ -489,8 +489,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
 
             // Check for conflicts
             const conflictResult = await checkCategoriesConflicts(
-                categoryData,
-                encryptionEnabled ? passphrase : undefined
+                categoryData
             );
 
             if (Object.keys(conflictResult.errors).length > 0) {
