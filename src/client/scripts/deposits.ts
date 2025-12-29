@@ -83,7 +83,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
 
     const matchContents = (line: any) => {
         const text = line.text;
-        const match = text.match(/^Twoj depozyt zawiera (?<content>.+)\.$/);
+        const match = text.match(/Twoj depozyt zawiera (?<content>.+)\.$/);
         if (match) {
             match.groups = Object.assign({ container: 'depozyt' }, match.groups);
         }
