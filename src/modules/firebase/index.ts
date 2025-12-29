@@ -103,3 +103,7 @@ export {
 } from './firebaseUnifiedSync';
 
 export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';
+
+// Sync debounce manager (hot/cold sync)
+export { syncDebounceManager } from './syncDebounceManager';
+export type { SyncDebounceCallbacks } from './syncDebounceManager';

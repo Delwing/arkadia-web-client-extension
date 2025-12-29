@@ -39,6 +39,7 @@ import {
     deleteAllCategories,
     canPerformSyncCheck,
     updateLastSyncCheckTime,
+    syncDebounceManager,
 } from "@modules/firebase";
 import {
     collectCharacters,
@@ -104,7 +105,6 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Auto-sync
-    const autoSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef(false);
     const initialSyncAttemptedRef = useRef(false);
 
@@ -321,7 +321,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
         saveFirebaseSettings({ syncOptions, encryptionEnabled, autoSyncEnabled });
     }, [syncOptions, encryptionEnabled, autoSyncEnabled]);
 
-    // Auto-sync on storage changes
+    // Auto-sync on storage changes using SyncDebounceManager
     useEffect(() => {
         // Disable auto-sync on localhost to prevent excessive writes during testing
         const isLocalhost = typeof window !== 'undefined' &&
@@ -329,6 +329,14 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
 
         if (!authState.isAuthenticated || !autoSyncEnabled || isLocalhost) {
             setPendingAutoSync(false);
+            syncDebounceManager.cancelAll();
+            return;
+        }
+
+        // Check if we can auto-sync (encryption needs passphrase)
+        const canSync = !encryptionEnabled || (encryptionEnabled && passphrase);
+        if (!canSync) {
+            syncDebounceManager.cancelAll();
             return;
         }
 
@@ -336,45 +344,38 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
         // This prevents sync loops when multiple windows are open
         const IGNORED_STORAGE_KEYS = ['arkadia.firebaseSettings', 'arkadia.firebaseConfig'];
 
-        const triggerAutoSync = () => {
-            // Debounce sync
-            if (autoSyncTimeoutRef.current) {
-                clearTimeout(autoSyncTimeoutRef.current);
-            }
-
-            // Check if we can auto-sync (encryption needs passphrase)
-            const canSync = !encryptionEnabled || (encryptionEnabled && passphrase);
-            if (!canSync) return;
-
-            setPendingAutoSync(true);
-
-            autoSyncTimeoutRef.current = setTimeout(() => {
+        // Initialize debounce manager with sync callback
+        syncDebounceManager.initialize({
+            onSyncNeeded: () => {
                 setPendingAutoSync(false);
                 if (!isSyncingRef.current) {
                     performSync(true);
                 }
-            }, 30000); // 30 second debounce to reduce sync frequency
-        };
+            }
+        });
 
         // Handler for local storage changes (from storage module)
         // Filter out firebase internal keys to prevent sync loops between tabs
         const handleLocalStorageChange = (changes: { [key: string]: { oldValue: any, newValue: any } }) => {
             const changedKeys = Object.keys(changes);
-            const hasRelevantChanges = changedKeys.some(key => !IGNORED_STORAGE_KEYS.includes(key));
-            if (!hasRelevantChanges) {
+            const relevantKeys = changedKeys.filter(key => !IGNORED_STORAGE_KEYS.includes(key));
+            if (relevantKeys.length === 0) {
                 return;
             }
-            triggerAutoSync();
+
+            // Use debounce manager to handle hot vs cold sync
+            const result = syncDebounceManager.handleStorageChange(relevantKeys);
+            if (result.shouldSync) {
+                setPendingAutoSync(true);
+            }
         };
 
         storage.onChanged?.addListener(handleLocalStorageChange);
 
         return () => {
             storage.onChanged?.removeListener?.(handleLocalStorageChange);
-            if (autoSyncTimeoutRef.current) {
-                clearTimeout(autoSyncTimeoutRef.current);
-                setPendingAutoSync(false);
-            }
+            syncDebounceManager.destroy();
+            setPendingAutoSync(false);
         };
     }, [authState.isAuthenticated, autoSyncEnabled, encryptionEnabled, passphrase]);
 
