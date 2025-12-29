@@ -221,6 +221,14 @@ export async function downloadCategory(
     }
 }
 
+// Metadata returned with downloaded categories (for local conflict checking)
+export interface DownloadedCategoryMeta {
+    checksum: string;
+    deviceId: string;
+    syncedAt: string;
+    encrypted: boolean;
+}
+
 // Download multiple categories from Firestore using single collection read
 export async function downloadCategories(
     categories: SyncCategory[],
@@ -228,16 +236,18 @@ export async function downloadCategories(
 ): Promise<{
     success: boolean;
     data: Partial<Record<SyncCategory, string>>;
+    payloads: Partial<Record<SyncCategory, DownloadedCategoryMeta>>;
     errors: Partial<Record<SyncCategory, string>>;
 }> {
     const data: Partial<Record<SyncCategory, string>> = {};
+    const payloads: Partial<Record<SyncCategory, DownloadedCategoryMeta>> = {};
     const errors: Partial<Record<SyncCategory, string>> = {};
 
     try {
         const auth = getFirebaseAuth();
         const userId = auth?.currentUser?.uid;
         if (!userId) {
-            return { success: false, data, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED } };
+            return { success: false, data, payloads, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED } };
         }
 
         const { db } = await ensureFirebaseInitialized();
@@ -295,6 +305,12 @@ export async function downloadCategories(
                 }
 
                 data[category] = categoryData;
+                payloads[category] = {
+                    checksum: payload.checksum,
+                    deviceId: payload.deviceId,
+                    syncedAt: payload.syncedAt,
+                    encrypted: payload.encrypted,
+                };
             } catch (err) {
                 console.error(`Failed to process category ${category}`, err);
                 errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
@@ -302,11 +318,61 @@ export async function downloadCategories(
         }
     } catch (err) {
         console.error('Failed to download categories', err);
-        return { success: false, data, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
+        return { success: false, data, payloads, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
     }
 
     const success = Object.keys(errors).length === 0;
-    return { success, data, errors };
+    return { success, data, payloads, errors };
+}
+
+// Check for conflicts locally using already-downloaded payload metadata (no Firebase read!)
+export async function checkConflictsLocally(
+    localData: Partial<Record<SyncCategory, string>>,
+    cloudPayloads: Partial<Record<SyncCategory, DownloadedCategoryMeta>>
+): Promise<CategoryConflictInfo[]> {
+    const conflicts: CategoryConflictInfo[] = [];
+    const settings = loadFirebaseSettings();
+    const deviceId = getDeviceId();
+
+    for (const category of Object.keys(localData) as SyncCategory[]) {
+        const cloudMeta = cloudPayloads[category];
+        if (!cloudMeta) continue; // No cloud data for this category
+
+        const localDataStr = localData[category];
+        if (!localDataStr) continue;
+
+        const localChecksum = await calculateChecksum(localDataStr);
+
+        // Same checksum - no conflict
+        if (localChecksum === cloudMeta.checksum) continue;
+
+        // Different device made the last change - potential conflict
+        if (cloudMeta.deviceId !== deviceId) {
+            const cloudTimestamp = new Date(cloudMeta.syncedAt).getTime();
+            const localTimestamp = settings.categorySyncTimes[category] ?? 0;
+
+            // Cloud is newer than our last sync - conflict
+            if (cloudTimestamp > localTimestamp) {
+                conflicts.push({
+                    category,
+                    localTimestamp,
+                    cloudTimestamp,
+                    localChecksum,
+                    cloudChecksum: cloudMeta.checksum,
+                    cloudData: {
+                        version: 1,
+                        syncedAt: cloudMeta.syncedAt,
+                        deviceId: cloudMeta.deviceId,
+                        checksum: cloudMeta.checksum,
+                        encrypted: cloudMeta.encrypted,
+                        data: '', // Not needed for conflict display
+                    },
+                });
+            }
+        }
+    }
+
+    return conflicts;
 }
 
 // Check for conflicts on a single category

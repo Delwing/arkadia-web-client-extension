@@ -33,6 +33,7 @@ import {
     uploadCategories,
     downloadCategories,
     checkCategoriesConflicts,
+    checkConflictsLocally,
     getAllCategoriesMetadata,
     updateCategorySyncTime,
     deleteAllCategories,
@@ -240,24 +241,12 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                 const allCharacters = collectCharacters();
                 const localData = await exportCategories(enabledCategories, allCharacters);
 
-                // Check for conflicts
-                const conflictResult = await checkCategoriesConflicts(
-                    localData,
-                    encryptionEnabled ? passphrase : undefined
-                );
+                // Check for conflicts locally using downloaded payload metadata (no extra Firebase read!)
+                const conflicts = await checkConflictsLocally(localData, result.payloads);
 
-                // Display conflict check errors
-                if (Object.keys(conflictResult.errors).length > 0) {
-                    const firstError = Object.values(conflictResult.errors)[0];
-                    if (firstError) {
-                        setSyncError(firstError);
-                    }
-                    return;
-                }
-
-                if (conflictResult.conflicts.length > 0) {
+                if (conflicts.length > 0) {
                     // Show conflict modal for conflicting categories
-                    setConflicts(conflictResult.conflicts);
+                    setConflicts(conflicts);
                     setShowConflictModal(true);
                 } else {
                     // No conflicts - auto-apply cloud data if we have any
@@ -309,6 +298,9 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
         if (!isVisible) return;
         if (autoSyncEnabled) return; // Already handled by initial sync
 
+        // Skip if we already have metadata cached
+        if (Object.keys(cloudMetadata).length > 0) return;
+
         // Only load if rate limit allows
         if (!canPerformSyncCheck()) return;
 
@@ -322,7 +314,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
         };
 
         loadMetadataOnly();
-    }, [authState.isAuthenticated, isVisible, autoSyncEnabled, isLocalhost]);
+    }, [authState.isAuthenticated, isVisible, autoSyncEnabled, isLocalhost, cloudMetadata]);
 
     // Save sync options when they change
     useEffect(() => {
@@ -361,28 +353,24 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                 if (!isSyncingRef.current) {
                     performSync(true);
                 }
-            }, 5000);
+            }, 30000); // 30 second debounce to reduce sync frequency
         };
 
         // Handler for local storage changes (from storage module)
-        const handleLocalStorageChange = () => {
-            triggerAutoSync();
-        };
-
-        // Handler for cross-window storage events - filter out firebase internal keys
-        const handleWindowStorage = (event: StorageEvent) => {
-            if (event.key && IGNORED_STORAGE_KEYS.includes(event.key)) {
+        // Filter out firebase internal keys to prevent sync loops between tabs
+        const handleLocalStorageChange = (changes: { [key: string]: { oldValue: any, newValue: any } }) => {
+            const changedKeys = Object.keys(changes);
+            const hasRelevantChanges = changedKeys.some(key => !IGNORED_STORAGE_KEYS.includes(key));
+            if (!hasRelevantChanges) {
                 return;
             }
             triggerAutoSync();
         };
 
         storage.onChanged?.addListener(handleLocalStorageChange);
-        window.addEventListener("storage", handleWindowStorage);
 
         return () => {
             storage.onChanged?.removeListener?.(handleLocalStorageChange);
-            window.removeEventListener("storage", handleWindowStorage);
             if (autoSyncTimeoutRef.current) {
                 clearTimeout(autoSyncTimeoutRef.current);
                 setPendingAutoSync(false);
@@ -534,11 +522,14 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                 setSyncStatus('Synchronizacja zakonczona sukcesem.');
             }
 
-            // Refresh metadata
-            const metadata = await getAllCategoriesMetadata();
-            if (!metadata.error) {
-                setCloudMetadata(metadata.categories);
-            }
+            // Update metadata locally based on what we uploaded (avoids extra read)
+            setCloudMetadata(prev => {
+                const updated = { ...prev };
+                enabledCategories.forEach(cat => {
+                    updated[cat] = { exists: true, encrypted: encryptionEnabled };
+                });
+                return updated;
+            });
         } catch (err) {
             console.error('Sync failed', err);
             setSyncError(FIREBASE_ERRORS.SYNC_FAILED);

@@ -64,6 +64,7 @@ export {
     downloadCategories,
     checkCategoryConflict,
     checkCategoriesConflicts,
+    checkConflictsLocally,
     getAllCategoriesMetadata,
     getCategoryMetadata,
     deleteCategory,
@@ -73,6 +74,8 @@ export {
     updateLastSyncCheckTime,
     SYNC_CHECK_INTERVAL_MS,
 } from './firebaseSync';
+
+export type { DownloadedCategoryMeta } from './firebaseSync';
 
 // Crypto
 export {
