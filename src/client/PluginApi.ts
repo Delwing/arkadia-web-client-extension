@@ -38,9 +38,6 @@ import {
   updateContextMenuEntry,
   updatePopupMenuEntryLabel
 } from "@modules/core/pluginUiRegistry";
-import React from "react";
-import {createRoot} from "react-dom/client";
-import {PluginPopup} from "../ui/web/components/PluginPopup";
 import {
   addGroupDefinition,
   addTransformDefinition,
@@ -81,6 +78,12 @@ import {
 } from "@modules/core/pluginTriggerMacroRegistry";
 import type {ButtonSetting} from "@web/mobileButtonSettings";
 import {shouldPopupAutoOpen} from "@web/layout/utils/layoutStorage";
+import {
+  registerPluginPopup,
+  unregisterPluginPopup,
+  updatePluginPopup,
+  type PluginPopupConfig
+} from "@web/layout/pluginPopupRenderer";
 
 // Re-export filter types for plugin developers
 export type {
@@ -2370,18 +2373,10 @@ export class PluginApiImpl implements PluginApi {
       const popupType = `plugin:${this.pluginId}:${titleHash}` as const;
       const popupId = `popup:${popupType}`;
 
-      // Create container for React root
-      const container = document.createElement("div");
-      document.body.appendChild(container);
-
-      // Create React root
-      const root = createRoot(container);
-
-      let setTitleFn: ((title: string) => void) | null = null;
-      let setBodyFn: ((body: string | Node) => void) | null = null;
-      let setPinnedFn: ((pinned: boolean) => void) | null = null;
-      let panelRef: HTMLDivElement | null = null;
+      let currentTitle = title;
+      let currentBody = body;
       let isPinned = false;
+      let panelRef: HTMLDivElement | null = null;
       const closeCallbacks = new Set<() => void>();
 
       const closePopup = () => {
@@ -2394,47 +2389,31 @@ export class PluginApiImpl implements PluginApi {
           }
         });
 
-        root.unmount();
-        container.remove();
+        unregisterPluginPopup(popupId);
         this.popupHandles.delete(handle);
       };
 
-      const renderPopup = (isOpen: boolean) => {
-        root.render(
-          React.createElement(PluginPopup, {
-            popupId,
-            popupType,
-            title,
-            body,
-            isOpen,
-            isPinned,
-            onClose: closePopup,
-            onTitleChange: (callback) => { setTitleFn = callback; },
-            onBodyChange: (callback) => { setBodyFn = callback; },
-            onPinChange: (callback) => {
-              // Wrap the callback to update our local isPinned state
-              setPinnedFn = (pinned: boolean) => {
-                isPinned = pinned;
-                callback(pinned);
-              };
-            },
-            onPinToggle: (pinned: boolean) => {
-              // User toggled pin button - update our local state
-              isPinned = pinned;
-            },
-            onPanelRef: (element) => {
-              panelRef = element;
-              // Resolve the promise once the panel is mounted
-              if (element) {
-                resolve(handle);
-              }
-            }
-          })
-        );
+      // Register popup to be rendered by PluginPopupRenderer inside LayoutProvider
+      const popupConfig: PluginPopupConfig = {
+        popupId,
+        popupType,
+        title: currentTitle,
+        body: currentBody,
+        isPinned,
+        onClose: closePopup,
+        onPinnedChange: (pinned) => {
+          isPinned = pinned;
+        },
+        onPanelRef: (element) => {
+          panelRef = element;
+          // Resolve the promise once the panel is mounted
+          if (element) {
+            resolve(handle);
+          }
+        }
       };
 
-      // Initial render
-      renderPopup(true);
+      registerPluginPopup(popupConfig);
 
       const handle: PopupHandle = {
         get element(): HTMLDivElement {
@@ -2445,16 +2424,16 @@ export class PluginApiImpl implements PluginApi {
           return isPinned;
         },
         setTitle: (value) => {
-          title = value;
-          setTitleFn?.(value);
+          currentTitle = value;
+          updatePluginPopup(popupId, { title: value });
         },
         setBody: (content) => {
-          body = content;
-          setBodyFn?.(content);
+          currentBody = content;
+          updatePluginPopup(popupId, { body: content });
         },
         setPinned: (pinned: boolean) => {
           isPinned = pinned;
-          setPinnedFn?.(pinned);
+          updatePluginPopup(popupId, { isPinned: pinned });
         },
         onClose: (callback: () => void) => {
           closeCallbacks.add(callback);
@@ -2476,11 +2455,23 @@ export class PluginApiImpl implements PluginApi {
 
     // Internal state tracking
     let isCurrentlyOpen = false;
-    let currentPopupHandle: PopupHandle | null = null;
     let currentTitle = config.title;
     let currentBody: PopupContent = '';
     let currentPinned = config.pinned ?? false;
+    let panelRef: HTMLDivElement | null = null;
     const closeCallbacks = new Set<() => void>();
+
+    const closePopup = () => {
+      isCurrentlyOpen = false;
+      closeCallbacks.forEach(callback => {
+        try {
+          callback();
+        } catch (error) {
+          console.error('[PluginApi] Error in popup close callback:', error);
+        }
+      });
+      unregisterPluginPopup(popupId);
+    };
 
     // Helper to create the actual popup
     const createActualPopup = async (): Promise<void> => {
@@ -2489,88 +2480,28 @@ export class PluginApiImpl implements PluginApi {
       // Call the factory to get content
       currentBody = await Promise.resolve(config.createContent());
 
-      // Create popup using similar logic to createPopup but with stable ID
+      // Register popup to be rendered by PluginPopupRenderer inside LayoutProvider
       return new Promise((resolve) => {
-        const container = document.createElement("div");
-        document.body.appendChild(container);
-        const root = createRoot(container);
-
-        let setTitleFn: ((title: string) => void) | null = null;
-        let setBodyFn: ((body: string | Node) => void) | null = null;
-        let setPinnedFn: ((pinned: boolean) => void) | null = null;
-        let panelRef: HTMLDivElement | null = null;
-
-        const closePopup = () => {
-          isCurrentlyOpen = false;
-          closeCallbacks.forEach(callback => {
-            try {
-              callback();
-            } catch (error) {
-              console.error('[PluginApi] Error in popup close callback:', error);
+        const popupConfig: PluginPopupConfig = {
+          popupId,
+          popupType,
+          title: currentTitle,
+          body: currentBody,
+          isPinned: currentPinned,
+          onClose: closePopup,
+          onPinnedChange: (pinned) => {
+            currentPinned = pinned;
+          },
+          onPanelRef: (element) => {
+            panelRef = element;
+            if (element) {
+              isCurrentlyOpen = true;
+              resolve();
             }
-          });
-          root.unmount();
-          container.remove();
-          if (currentPopupHandle) {
-            this.popupHandles.delete(currentPopupHandle);
-            currentPopupHandle = null;
           }
         };
 
-        const renderPopup = (isOpen: boolean) => {
-          root.render(
-            React.createElement(PluginPopup, {
-              popupId,
-              popupType,
-              title: currentTitle,
-              body: currentBody,
-              isOpen,
-              isPinned: currentPinned,
-              onClose: closePopup,
-              onTitleChange: (callback) => { setTitleFn = callback; },
-              onBodyChange: (callback) => { setBodyFn = callback; },
-              onPinChange: (callback) => {
-                setPinnedFn = (pinned: boolean) => {
-                  currentPinned = pinned;
-                  callback(pinned);
-                };
-              },
-              onPinToggle: (pinned: boolean) => {
-                currentPinned = pinned;
-              },
-              onPanelRef: (element) => {
-                panelRef = element;
-                if (element) {
-                  isCurrentlyOpen = true;
-                  currentPopupHandle = {
-                    get element() { return panelRef!; },
-                    get isPinned() { return currentPinned; },
-                    setTitle: (value) => {
-                      currentTitle = value;
-                      setTitleFn?.(value);
-                    },
-                    setBody: (content) => {
-                      currentBody = content;
-                      setBodyFn?.(content);
-                    },
-                    setPinned: (pinned) => {
-                      currentPinned = pinned;
-                      setPinnedFn?.(pinned);
-                    },
-                    onClose: (callback) => {
-                      closeCallbacks.add(callback);
-                    },
-                    close: closePopup
-                  };
-                  this.popupHandles.add(currentPopupHandle);
-                  resolve();
-                }
-              }
-            })
-          );
-        };
-
-        renderPopup(true);
+        registerPluginPopup(popupConfig);
       });
     };
 
@@ -2579,10 +2510,10 @@ export class PluginApiImpl implements PluginApi {
       id: popupId,
       wasRestored: shouldRestore,
       get element(): HTMLDivElement {
-        if (!currentPopupHandle) {
+        if (!panelRef) {
           throw new Error('Popup is not open. Call open() first.');
         }
-        return currentPopupHandle.element;
+        return panelRef;
       },
       get isPinned(): boolean {
         return currentPinned;
@@ -2592,22 +2523,26 @@ export class PluginApiImpl implements PluginApi {
       },
       setTitle: (value) => {
         currentTitle = value;
-        currentPopupHandle?.setTitle(value);
+        if (isCurrentlyOpen) {
+          updatePluginPopup(popupId, { title: value });
+        }
       },
       setBody: (content) => {
         currentBody = content;
-        currentPopupHandle?.setBody(content);
+        if (isCurrentlyOpen) {
+          updatePluginPopup(popupId, { body: content });
+        }
       },
       setPinned: (pinned) => {
         currentPinned = pinned;
-        currentPopupHandle?.setPinned(pinned);
+        if (isCurrentlyOpen) {
+          updatePluginPopup(popupId, { isPinned: pinned });
+        }
       },
       onClose: (callback) => {
         closeCallbacks.add(callback);
       },
-      close: () => {
-        currentPopupHandle?.close();
-      },
+      close: closePopup,
       open: createActualPopup
     };
 
