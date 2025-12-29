@@ -64,6 +64,7 @@ export async function registerWithEmail(email: string, password: string): Promis
     try {
         const { auth } = await ensureFirebaseInitialized();
         const { createUserWithEmailAndPassword } = await import('firebase/auth');
+        console.log(`[Firebase AUTH] createUserWithEmailAndPassword`, { email });
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         return userToAuthState(credential.user);
     } catch (err) {
@@ -81,6 +82,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
     try {
         const { auth } = await ensureFirebaseInitialized();
         const { signInWithEmailAndPassword } = await import('firebase/auth');
+        console.log(`[Firebase AUTH] signInWithEmailAndPassword`, { email });
         const credential = await signInWithEmailAndPassword(auth, email, password);
         return userToAuthState(credential.user);
     } catch (err) {
@@ -101,6 +103,7 @@ export async function signInWithGoogle(): Promise<FirebaseAuthState> {
         const provider = new GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
+        console.log(`[Firebase AUTH] signInWithPopup (Google)`);
         const credential = await signInWithPopup(auth, provider);
         return userToAuthState(credential.user);
     } catch (err) {
@@ -118,6 +121,7 @@ export async function signOut(): Promise<void> {
     const auth = getFirebaseAuth();
     if (auth) {
         const { signOut: firebaseSignOut } = await import('firebase/auth');
+        console.log(`[Firebase AUTH] signOut`);
         await firebaseSignOut(auth);
     }
 }
@@ -150,6 +154,7 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
     try {
         const { auth } = await ensureFirebaseInitialized();
         const { sendPasswordResetEmail } = await import('firebase/auth');
+        console.log(`[Firebase AUTH] sendPasswordResetEmail`, { email });
         await sendPasswordResetEmail(auth, email);
         return { success: true };
     } catch (err) {

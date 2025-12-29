@@ -62,6 +62,7 @@ export async function uploadCategory(
         };
 
         const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+        console.log(`[Firebase WRITE] setDoc: ${category}`, { userId, category });
         await setDoc(docRef, {
             ...payload,
             updatedAt: serverTimestamp(),
@@ -146,6 +147,7 @@ export async function uploadCategories(
         }
 
         // Commit batch in single network request
+        console.log(`[Firebase WRITE] batch.commit: ${categories.length} categories`, { userId, categories });
         await batch.commit();
 
         // Update local sync times
@@ -178,6 +180,7 @@ export async function downloadCategory(
         const { doc, getDoc } = await import('firebase/firestore');
 
         const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+        console.log(`[Firebase READ] getDoc: ${category}`, { userId, category });
         const snapshot = await getDoc(docRef);
 
         if (!snapshot.exists()) {
@@ -242,6 +245,7 @@ export async function downloadCategories(
 
         // Single query to get all documents in the sync subcollection
         const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        console.log(`[Firebase READ] getDocs: downloadCategories`, { userId, categories });
         const snapshot = await getDocs(collRef);
 
         // Build a map of all cloud data
@@ -383,6 +387,7 @@ export async function checkCategoriesConflicts(
 
         // Single query to get all documents
         const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        console.log(`[Firebase READ] getDocs: checkCategoriesConflicts`, { userId });
         const snapshot = await getDocs(collRef);
 
         // Build map of cloud payloads
@@ -465,6 +470,7 @@ export async function getAllCategoriesMetadata(): Promise<{
         const { collection, getDocs } = await import('firebase/firestore');
 
         const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        console.log(`[Firebase READ] getDocs: getAllCategoriesMetadata`, { userId });
         const snapshot = await getDocs(collRef);
 
         const categories: Partial<Record<SyncCategory, {
@@ -513,6 +519,7 @@ export async function getCategoryMetadata(category: SyncCategory): Promise<{
         const { doc, getDoc } = await import('firebase/firestore');
 
         const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+        console.log(`[Firebase READ] getDoc: getCategoryMetadata ${category}`, { userId, category });
         const snapshot = await getDoc(docRef);
 
         if (!snapshot.exists()) {
@@ -545,6 +552,7 @@ export async function deleteCategory(category: SyncCategory): Promise<{ success:
         const { doc, deleteDoc } = await import('firebase/firestore');
 
         const docRef = doc(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION, category);
+        console.log(`[Firebase DELETE] deleteDoc: ${category}`, { userId, category });
         await deleteDoc(docRef);
 
         // Clear local sync time for this category
@@ -576,6 +584,7 @@ export async function deleteAllCategories(): Promise<{ success: boolean; errors:
 
         // Get all documents to delete
         const collRef = collection(db, SYNC_COLLECTION, userId, SYNC_SUBCOLLECTION);
+        console.log(`[Firebase READ] getDocs: deleteAllCategories`, { userId });
         const snapshot = await getDocs(collRef);
 
         if (snapshot.empty) {
@@ -593,6 +602,7 @@ export async function deleteAllCategories(): Promise<{ success: boolean; errors:
             deletedCategories.push(category);
         });
 
+        console.log(`[Firebase DELETE] batch.commit: ${deletedCategories.length} categories`, { userId, deletedCategories });
         await batch.commit();
 
         // Clear local sync times for deleted categories
