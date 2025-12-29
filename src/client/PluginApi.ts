@@ -1505,6 +1505,48 @@ export interface SettingsApi {
 }
 
 /**
+ * Attack Controller API - Execute attacks with proper team coordination
+ *
+ * Provides methods to attack targets by their object ID, respecting
+ * attack mode settings and team coordination (leader commands).
+ */
+export interface AttackControllerApi {
+  /**
+   * Attack a target by its object ID
+   *
+   * When attack mode is "AW" or "AWR" and user is team leader:
+   * - "AW": Also marks target as team attack target
+   * - "AWR": Marks target and orders team to attack
+   *
+   * @param id - Object ID of the target
+   * @param command - Optional attack command override (uses character setting if not provided)
+   *
+   * @example
+   * ```typescript
+   * // Attack object with ID 123
+   * api.attackController.attackById(123);
+   *
+   * // Attack with custom command
+   * api.attackController.attackById(123, "kopnij");
+   * ```
+   */
+  attackById(id: number, command?: string): void;
+
+  /**
+   * Get the current attack command from character settings
+   *
+   * @returns The configured attack command (e.g., "zabij", "zaatakuj")
+   *
+   * @example
+   * ```typescript
+   * const cmd = api.attackController.getAttackCommand();
+   * console.log(`Current attack command: ${cmd}`);
+   * ```
+   */
+  getAttackCommand(): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -1616,6 +1658,8 @@ export interface PluginApi {
   triggerMacros: TriggerMacrosApi;
   /** Settings - access character and UI settings */
   settings: SettingsApi;
+  /** Attack controller - execute attacks with team coordination */
+  attackController: AttackControllerApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1671,6 +1715,7 @@ export class PluginApiImpl implements PluginApi {
   public buttonMacros: ButtonMacrosApi;
   public triggerMacros: TriggerMacrosApi;
   public settings: SettingsApi;
+  public attackController: AttackControllerApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -1700,6 +1745,7 @@ export class PluginApiImpl implements PluginApi {
     this.buttonMacros = this.createButtonMacrosApi();
     this.triggerMacros = this.createTriggerMacrosApi();
     this.settings = this.createSettingsApi();
+    this.attackController = this.createAttackControllerApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2231,6 +2277,22 @@ export class PluginApiImpl implements PluginApi {
       getUiSetting: async <K extends keyof UiSettings>(key: K): Promise<UiSettings[K]> => {
         const uiSettings = await this.settings.getUiSettings();
         return uiSettings[key];
+      }
+    };
+  }
+
+  // ============================================================================
+  // Attack Controller API
+  // ============================================================================
+
+  private createAttackControllerApi(): AttackControllerApi {
+    return {
+      attackById: (id: number, command?: string): void => {
+        this.client.AttackController.attackById(id, command);
+      },
+
+      getAttackCommand: (): string => {
+        return this.client.AttackController.getAttackCommand();
       }
     };
   }

@@ -38,6 +38,7 @@ export interface CommandHook {
 }
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
+import {createAttackController} from "./utils/attackController";
 import SoundManager from "./SoundManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
@@ -80,6 +81,7 @@ export default class Client {
     });
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);
+    public AttackController = createAttackController(this);
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     private soundManager = new SoundManager(this);

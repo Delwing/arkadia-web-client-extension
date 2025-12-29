@@ -91,6 +91,11 @@ interface FormatStateSnapshot {
     hyperlink?: FormatHyperlink;
 }
 
+interface BufferSegment {
+    text: string;
+    state?: FormatStateSnapshot;
+}
+
 // ============================================================================
 // AnsiAwareBuffer Class
 // ============================================================================
@@ -311,6 +316,33 @@ interface PopupHandle {
 }
 
 /**
+ * Configuration for creating a persistent popup
+ */
+interface PersistentPopupConfig {
+  id: string;
+
+  title: string;
+
+  createContent: () => PopupContent | Promise<PopupContent>;
+
+  pinned?: boolean;
+}
+
+/**
+ * Handle returned when registering a persistent popup.
+ * Extends PopupHandle with additional persistence features.
+ */
+interface PersistentPopupHandle extends PopupHandle {
+  readonly id: string;
+
+  readonly wasRestored: boolean;
+
+  readonly isOpen: boolean;
+
+  open(): Promise<void>;
+}
+
+/**
  * Handle for popup menu entries
  */
 interface PopupMenuEntryHandle {
@@ -337,6 +369,8 @@ interface ContextMenuEntryHandle {
  */
 interface UiApi {
   createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+
+  registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
 
   addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle;
 
@@ -588,131 +622,18 @@ interface TriggerMacrosApi {
 }
 
 /**
- * Character settings interface
- */
-interface Settings {
-  packageHelper: boolean;
-  inlineCompassRose: boolean;
-  shortenExits: boolean;
-  prettyContainers: boolean;
-  containerColumns: number;
-  collectMode: number;
-  collectTiming: number;
-  collectCopper: boolean;
-  collectSilver: boolean;
-  collectGold: boolean;
-  collectGems: boolean;
-  collectExtra: string[];
-  collectOverrides: CollectOverride[];
-  language: string;
-  languageAdjective: string;
-  languageAliases: { alias: string; adjective: string; language: string }[];
-  herbPreUseCommand: string;
-  herbPostUseCommand: string;
-  herbWieleCount: number;
-  attackCommand: string;
-  drawWeaponCommand: string;
-  fullHpMessage: boolean;
-  lowHpAlert: number;
-  letterLineWidth: number;
-  guilds?: string[];
-  enemyGuilds?: string[];
-  guildColors?: Record<string, string | undefined>;
-  enemyBindsKeepUnchanged: boolean;
-  enemyBindsShowMode: 'always' | 'whenBound' | 'never';
-  enemyBindsEnabledSlots: [boolean, boolean, boolean];
-  favoriteMagicTypes?: string[];
-  favoriteMagicKeys?: string[];
-  cuttingPreAction?: string;
-  cuttingPostAction?: string;
-}
-
-/**
- * Collect override definition for specific enemies
- */
-interface CollectOverride {
-  enemy: string;
-  collectCopper: boolean;
-  collectSilver: boolean;
-  collectGold: boolean;
-  collectGems: boolean;
-  collectExtra: string[];
-}
-
-/**
- * UI settings interface
- */
-interface UiSettings {
-  contentFontSize: number;
-  objectsFontSize: number;
-  buttonSize: number;
-  mapScale: number;
-  showButtons: boolean;
-  hapticFeedback: boolean;
-  mapHeight: number;
-  mapPosition: 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
-  emojiLabels: boolean;
-  fightTitleIcon: boolean;
-  xtermPalette: 'arkadia' | 'proper';
-  footerMode: number;
-  explorationMode: boolean;
-  instantMove: boolean;
-  highlightCurrentRoom: boolean;
-  labelRenderMode: 'image' | 'data';
-  transparentLabels: boolean;
-  outputBackground: string;
-  clearInputOnSend: boolean;
-  showTransportLabel: boolean;
-  showCombatTimer: boolean;
-  showClockDisplay: boolean;
-  fontFamily: string;
-  customFontUrl: string;
-  customFontFamily: string;
-  autoLowercaseCommands: boolean;
-  customBeepSoundKey?: string;
-  mapRoomSize: number;
-  mapLineWidth: number;
-  mapPlayerMarkerStrokeColor: string;
-  mapPlayerMarkerStrokeAlpha: number;
-  mapPlayerMarkerFillColor: string;
-  mapPlayerMarkerFillAlpha: number;
-  mapPlayerMarkerStrokeWidth: number;
-  mapPlayerMarkerSizeFactor: number;
-  mapPlayerMarkerDashEnabled: boolean;
-  objectContextMenuCommands: string[];
-}
-
-/**
  * Settings API - Access character and UI settings
  *
  * Provides read-only access to character settings (scoped to current character)
  * and UI settings (global).
  */
 interface SettingsApi {
-  /**
-   * Get all character settings
-   * @returns Current character settings merged with defaults
-   */
   getCharacterSettings(): Promise<Settings>;
 
-  /**
-   * Get a specific character setting
-   * @param key - Setting key
-   * @returns The value of the setting
-   */
   getCharacterSetting<K extends keyof Settings>(key: K): Promise<Settings[K]>;
 
-  /**
-   * Get all UI settings
-   * @returns Current UI settings merged with defaults
-   */
   getUiSettings(): Promise<UiSettings>;
 
-  /**
-   * Get a specific UI setting
-   * @param key - Setting key
-   * @returns The value of the setting
-   */
   getUiSetting<K extends keyof UiSettings>(key: K): Promise<UiSettings[K]>;
 }
 

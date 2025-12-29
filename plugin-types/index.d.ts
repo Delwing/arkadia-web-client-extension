@@ -1175,6 +1175,32 @@ export interface PopupHandle {
 }
 
 /**
+ * Handle returned when registering a persistent popup.
+ * Extends PopupHandle with additional persistence features.
+ */
+
+export interface PersistentPopupHandle extends PopupHandle {
+    /**
+     * The stable popup ID (namespaced by plugin)
+     */
+    readonly id: string;
+    /**
+     * Whether this popup was restored from a previous session.
+     * True if the popup was docked or pinned when the page was last closed.
+     */
+    readonly wasRestored: boolean;
+    /**
+     * Whether the popup is currently open
+     */
+    readonly isOpen: boolean;
+    /**
+     * Open the popup (if closed).
+     * Calls createContent() to generate fresh content.
+     */
+    open(): Promise<void>;
+}
+
+/**
  * Handle for popup menu entries
  */
 
@@ -1220,12 +1246,50 @@ export interface ContextMenuEntryHandle {
 
 export interface UiApi {
     /**
-     * Create a draggable popup window
+     * Create a draggable popup window.
+     *
+     * @deprecated Use {@link registerPersistentPopup} instead for popups that need
+     * docking and persistence across page reloads. This method generates popup IDs
+     * from title hashes, which are not stable and prevent proper state restoration.
+     *
      * @param title - Popup title text
      * @param body - Popup body content (string or DOM node)
      * @returns Promise that resolves with handle for controlling the popup once mounted
      */
     createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+    /**
+     * Register a persistent popup that can be docked and restored on page reload.
+     *
+     * If the popup was docked or pinned in a previous session, it will be
+     * automatically opened when this method is called. The `wasRestored` property
+     * on the returned handle indicates whether this happened.
+     *
+     * @param config - Popup configuration including ID, title, and content factory
+     * @returns Promise that resolves with handle for controlling the popup
+     *
+     * @example
+     * ```typescript
+     * const popup = await api.ui.registerPersistentPopup({
+     *   id: 'myInventory',
+     *   title: 'My Inventory',
+     *   createContent: async () => {
+     *     const items = await loadInventoryData();
+     *     return createInventoryView(items);
+     *   }
+     * });
+     *
+     * // Check if popup was restored from previous session
+     * if (popup.wasRestored) {
+     *   console.log('Popup was restored');
+     * }
+     *
+     * // Toggle popup with menu entry
+     * api.ui.addPopupMenuEntry('My Inventory', () => {
+     *   popup.isOpen ? popup.close() : popup.open();
+     * });
+     * ```
+     */
+    registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
     /**
      * Add an entry to the popup (⋮) menu
      * @param label - Entry label (string or DOM node for rich content like SVG icons)
@@ -2108,6 +2172,106 @@ export interface TriggerMacrosApi {
 }
 
 /**
+ * Settings API - Access character and UI settings
+ *
+ * Provides read-only access to character settings (scoped to current character)
+ * and UI settings (global).
+ */
+
+export interface SettingsApi {
+    /**
+     * Get all character settings
+     * @returns Current character settings merged with defaults
+     *
+     * @example
+     * ```typescript
+     * const settings = await api.settings.getCharacterSettings();
+     * console.log(`Attack command: ${settings.attackCommand}`);
+     * console.log(`Guilds: ${settings.guilds?.join(", ")}`);
+     * ```
+     */
+    getCharacterSettings(): Promise<Settings>;
+    /**
+     * Get a specific character setting
+     * @param key - Setting key (e.g., "attackCommand", "guilds", "collectMode")
+     * @returns The value of the setting
+     *
+     * @example
+     * ```typescript
+     * const guilds = await api.settings.getCharacterSetting("guilds");
+     * const attackCommand = await api.settings.getCharacterSetting("attackCommand");
+     * ```
+     */
+    getCharacterSetting<K extends keyof Settings>(key: K): Promise<Settings[K]>;
+    /**
+     * Get all UI settings
+     * @returns Current UI settings merged with defaults
+     *
+     * @example
+     * ```typescript
+     * const uiSettings = await api.settings.getUiSettings();
+     * console.log(`Font size: ${uiSettings.contentFontSize}`);
+     * console.log(`Map position: ${uiSettings.mapPosition}`);
+     * ```
+     */
+    getUiSettings(): Promise<UiSettings>;
+    /**
+     * Get a specific UI setting
+     * @param key - Setting key (e.g., "contentFontSize", "mapPosition", "showButtons")
+     * @returns The value of the setting
+     *
+     * @example
+     * ```typescript
+     * const fontSize = await api.settings.getUiSetting("contentFontSize");
+     * const mapPosition = await api.settings.getUiSetting("mapPosition");
+     * ```
+     */
+    getUiSetting<K extends keyof UiSettings>(key: K): Promise<UiSettings[K]>;
+}
+
+/**
+ * Attack Controller API - Execute attacks with proper team coordination
+ *
+ * Provides methods to attack targets by their object ID, respecting
+ * attack mode settings and team coordination (leader commands).
+ */
+
+export interface AttackControllerApi {
+    /**
+     * Attack a target by its object ID
+     *
+     * When attack mode is "AW" or "AWR" and user is team leader:
+     * - "AW": Also marks target as team attack target
+     * - "AWR": Marks target and orders team to attack
+     *
+     * @param id - Object ID of the target
+     * @param command - Optional attack command override (uses character setting if not provided)
+     *
+     * @example
+     * ```typescript
+     * // Attack object with ID 123
+     * api.attackController.attackById(123);
+     *
+     * // Attack with custom command
+     * api.attackController.attackById(123, "kopnij");
+     * ```
+     */
+    attackById(id: number, command?: string): void;
+    /**
+     * Get the current attack command from character settings
+     *
+     * @returns The configured attack command (e.g., "zabij", "zaatakuj")
+     *
+     * @example
+     * ```typescript
+     * const cmd = api.attackController.getAttackCommand();
+     * console.log(`Current attack command: ${cmd}`);
+     * ```
+     */
+    getAttackCommand(): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -2218,6 +2382,10 @@ export interface PluginApi {
     buttonMacros: ButtonMacrosApi;
     /** Trigger macros - register custom trigger macros */
     triggerMacros: TriggerMacrosApi;
+    /** Settings - access character and UI settings */
+    settings: SettingsApi;
+    /** Attack controller - execute attacks with team coordination */
+    attackController: AttackControllerApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *
