@@ -106,6 +106,17 @@ let cachedLayoutState: ReturnType<typeof loadLayoutState> | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 100; // Cache valid for 100ms (covers component initialization)
 
+/**
+ * Invalidate the layout state cache.
+ * Call this after programmatically updating localStorage to ensure fresh reads.
+ */
+export function invalidateLayoutCache(): void {
+  cachedLayoutState = null;
+  cacheTimestamp = 0;
+  // Dispatch event to notify LayoutContext to reload state
+  window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+}
+
 function getCachedLayoutState(): ReturnType<typeof loadLayoutState> {
   const now = Date.now();
   if (!cachedLayoutState || now - cacheTimestamp > CACHE_TTL) {

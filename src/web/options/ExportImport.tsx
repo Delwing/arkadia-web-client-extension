@@ -3,9 +3,10 @@ import { Button } from "react-bootstrap";
 import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
 import FirebaseTab from "./FirebaseTab";
+import DeviceManagementTab from "./DeviceManagementTab";
 import { collectCharacters, DEFAULT_EXPORT_OPTIONS, type ExportOptions } from "./exportUtils";
 
-type Tab = 'local' | 'google-drive' | 'firebase';
+type Tab = 'local' | 'google-drive' | 'firebase' | 'devices';
 
 function ExportImport() {
     const [activeTab, setActiveTab] = useState<Tab>('firebase');
@@ -47,6 +48,13 @@ function ExportImport() {
                 >
                     Google Drive
                 </Button>
+                <Button
+                    size="sm"
+                    variant={activeTab === 'devices' ? 'primary' : 'secondary'}
+                    onClick={() => setActiveTab('devices')}
+                >
+                    Urzadzenia
+                </Button>
             </div>
 
             {/* Tab content */}
@@ -68,6 +76,11 @@ function ExportImport() {
                             exportOptions={exportOptions}
                             onImportComplete={handleImportComplete}
                         />
+                    </div>
+                )}
+                {activeTab === 'devices' && (
+                    <div className="h-100 overflow-auto" style={{ minHeight: 0 }}>
+                        <DeviceManagementTab />
                     </div>
                 )}
             </div>
