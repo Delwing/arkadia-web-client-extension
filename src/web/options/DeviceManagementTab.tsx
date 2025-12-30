@@ -26,6 +26,7 @@ import {
     getFirebaseAuth,
     getCloudSyncGroup,
     getRegisteredDevices,
+    registerDevice,
 } from "@modules/firebase";
 import SyncConflictModal from "./SyncConflictModal";
 
@@ -77,6 +78,13 @@ function DeviceManagementTab() {
                 setCloudSyncGroup(null);
                 setCloudDevices([]);
                 return;
+            }
+
+            // Register current device to cloud (so other devices can see it)
+            try {
+                await registerDevice();
+            } catch (err) {
+                console.error("Failed to register device", err);
             }
 
             // Load cloud sync group (only if not already in a group)
