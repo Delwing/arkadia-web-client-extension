@@ -56,27 +56,6 @@ export {
     sendPasswordReset,
 } from './firebaseAuth';
 
-// Sync (per-category)
-export {
-    uploadCategory,
-    uploadCategories,
-    downloadCategory,
-    downloadCategories,
-    checkCategoryConflict,
-    checkCategoriesConflicts,
-    checkConflictsLocally,
-    getAllCategoriesMetadata,
-    getCategoryMetadata,
-    deleteCategory,
-    deleteAllCategories,
-    updateCategorySyncTime,
-    canPerformSyncCheck,
-    updateLastSyncCheckTime,
-    SYNC_CHECK_INTERVAL_MS,
-} from './firebaseSync';
-
-export type { DownloadedCategoryMeta } from './firebaseSync';
-
 // Crypto
 export {
     encrypt,
@@ -84,3 +63,47 @@ export {
     calculateChecksum,
     isEncryptedData,
 } from './firebaseCrypto';
+
+// ============================================================================
+// UNIFIED SYNC - Single document for all data (categories + devices + groups)
+// ============================================================================
+
+export {
+    // Core
+    getFullSyncData,
+    invalidateSyncCache,
+    SYNC_CHECK_INTERVAL_MS,
+    canPerformSyncCheck,
+    updateLastSyncCheckTime,
+
+    // Category sync
+    uploadCategories,
+    downloadCategories,
+    checkCategoriesConflicts,
+    checkConflictsLocally,
+    getAllCategoriesMetadata,
+    deleteCategory,
+    deleteAllCategories,
+    updateCategorySyncTime,
+
+    // Device registry
+    registerDevice,
+    getRegisteredDevices,
+    unregisterDevice,
+
+    // Sync groups
+    createSyncGroup,
+    joinSyncGroup,
+    leaveSyncGroupCloud,
+    uploadSyncedSettings,
+    checkForSyncUpdates,
+    resolveSyncConflict,
+    syncNow,
+    getRemoteDeviceName,
+} from './firebaseUnifiedSync';
+
+export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';
+
+// Sync debounce manager (hot/cold sync)
+export { syncDebounceManager } from './syncDebounceManager';
+export type { SyncDebounceCallbacks } from './syncDebounceManager';

@@ -80,6 +80,13 @@ export function subscribeToPluginPopups(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+// Compute viewport-aware initial width for plugin popups
+function getInitialPopupWidth(): number {
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
+  // Use 50% of viewport width, clamped between 350 and 700
+  return Math.min(700, Math.max(350, Math.floor(viewportWidth * 0.5)));
+}
+
 /**
  * Individual plugin popup component that wraps DockablePopupWrapper.
  */
@@ -89,6 +96,8 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   const [isPinned, setIsPinned] = useState(config.isPinned);
   const [isLocked, setIsLocked] = useState(() => getPopupLockedState(config.popupId));
   const onPanelRefCalled = useRef(false);
+  // Compute initial width once on mount
+  const [initialWidth] = useState(getInitialPopupWidth);
 
   // Store callbacks in refs to avoid stale closures and dependency issues
   const onCloseRef = useRef(config.onClose);
@@ -145,7 +154,8 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       onPinnedChange={handlePinnedChange}
       onLockedChange={handleLockedChange}
       minWidth={300}
-      minHeight={200}
+      minHeight={150}
+      initialWidth={initialWidth}
       className="plugin-window"
       bodyClassName="plugin-window-body"
     >

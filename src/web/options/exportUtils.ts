@@ -1,6 +1,15 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
+import {
+    getDeviceInfo,
+    saveImportedDevice,
+    getSyncGroup,
+    triggerSettingsReload,
+    type DeviceInfo,
+    type ImportedDeviceEntry,
+    type SyncGroup,
+} from "@modules/device";
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -77,6 +86,17 @@ const KNOWN_GLOBAL_KEYS = new Set([
     "loggingEnabled",
 ]);
 
+export interface ExportedDeviceInfo {
+    sourceDevice: DeviceInfo;
+    settings: {
+        layoutManagerState?: string;
+        uiSettings?: string;
+        desktopButtonSettings?: string;
+        mobileButtonSettings?: string;
+    };
+    syncGroup?: SyncGroup;
+}
+
 export interface ExportPayload {
     version: 1;
     createdAt: string;
@@ -88,6 +108,8 @@ export interface ExportPayload {
         visitedRooms: ExportedVisitedRoomsEntry[];
         locationNotes?: LocationNote[];
     };
+    /** Device info and settings from the exporting device */
+    device?: ExportedDeviceInfo;
 }
 
 const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
@@ -361,6 +383,20 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
         characters: options.characterSettings ? localStorageData.characters : {},
     };
 
+    // Build device info with settings
+    const deviceInfo = getDeviceInfo();
+    const syncGroup = getSyncGroup();
+    const device: ExportedDeviceInfo = {
+        sourceDevice: deviceInfo,
+        settings: {
+            layoutManagerState: localStorage.getItem('layoutManagerState') || undefined,
+            uiSettings: localStorage.getItem('uiSettings') || undefined,
+            desktopButtonSettings: localStorage.getItem('desktopButtonSettings') || undefined,
+            mobileButtonSettings: localStorage.getItem('mobileButtonSettings') || undefined,
+        },
+        syncGroup: syncGroup || undefined,
+    };
+
     return {
         version: 1,
         createdAt: new Date().toISOString(),
@@ -372,6 +408,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             visitedRooms,
             locationNotes,
         },
+        device,
     };
 }
 
@@ -410,6 +447,39 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     await importRecordings(payload.indexedDB.recordings ?? []);
     await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     await importNotes(payload.indexedDB.locationNotes ?? []);
+
+    // Import device info and settings
+    if (payload.device?.sourceDevice) {
+        const currentDevice = getDeviceInfo();
+        const isSameDevice = payload.device.sourceDevice.id === currentDevice.id;
+
+        if (isSameDevice) {
+            // Same device (restoring own backup) - apply settings immediately
+            const { settings } = payload.device;
+            if (settings.layoutManagerState) {
+                localStorage.setItem('layoutManagerState', settings.layoutManagerState);
+            }
+            if (settings.uiSettings) {
+                localStorage.setItem('uiSettings', settings.uiSettings);
+            }
+            if (settings.desktopButtonSettings) {
+                localStorage.setItem('desktopButtonSettings', settings.desktopButtonSettings);
+            }
+            if (settings.mobileButtonSettings) {
+                localStorage.setItem('mobileButtonSettings', settings.mobileButtonSettings);
+            }
+            await triggerSettingsReload();
+        } else {
+            // Different device - save to imported devices list (user can copy settings later)
+            const importedEntry: ImportedDeviceEntry = {
+                deviceInfo: payload.device.sourceDevice,
+                settings: payload.device.settings,
+                importedAt: new Date().toISOString(),
+                syncGroup: payload.device.syncGroup,
+            };
+            saveImportedDevice(importedEntry);
+        }
+    }
 }
 
 // ============================================================================
@@ -419,7 +489,14 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
 import type { SyncCategory } from '@modules/firebase';
 
 export interface CategoryData {
-    uiSettings?: { uiSettings?: string; loggingEnabled?: string };
+    // uiSettings now includes layout + buttons (device-scoped settings bundle)
+    uiSettings?: {
+        uiSettings?: string;
+        loggingEnabled?: string;
+        layoutManagerState?: string;
+        desktopButtonSettings?: string;
+        mobileButtonSettings?: string;  // includes radial
+    };
     binds?: { binds?: string };
     shortcuts?: { shortcuts?: string };
     characterSettings?: Record<string, Record<string, string>>;
@@ -446,11 +523,18 @@ export async function exportCategory(
     try {
         switch (category) {
             case 'uiSettings': {
+                // Device-scoped settings bundle: uiSettings + layout + buttons
                 const data: CategoryData['uiSettings'] = {};
                 const uiSettings = localStorage.getItem('uiSettings');
                 if (uiSettings) data.uiSettings = uiSettings;
                 const loggingEnabled = localStorage.getItem('loggingEnabled');
                 if (loggingEnabled) data.loggingEnabled = loggingEnabled;
+                const layoutManagerState = localStorage.getItem('layoutManagerState');
+                if (layoutManagerState) data.layoutManagerState = layoutManagerState;
+                const desktopButtonSettings = localStorage.getItem('desktopButtonSettings');
+                if (desktopButtonSettings) data.desktopButtonSettings = desktopButtonSettings;
+                const mobileButtonSettings = localStorage.getItem('mobileButtonSettings');
+                if (mobileButtonSettings) data.mobileButtonSettings = mobileButtonSettings;
                 return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
             }
             case 'binds': {
@@ -490,14 +574,6 @@ export async function exportCategory(
                 const multibinds = await getMultibindsSnapshot().catch(() => []);
                 return multibinds.length > 0 ? JSON.stringify(multibinds) : null;
             }
-            case 'scripts': {
-                const data: CategoryData['scripts'] = {};
-                const scripts = localStorage.getItem('scripts');
-                if (scripts) data.scripts = scripts;
-                const storedScripts = localStorage.getItem('stored_scripts');
-                if (storedScripts) data.stored_scripts = storedScripts;
-                return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
-            }
             case 'buttons': {
                 const data: CategoryData['buttons'] = {};
                 const mobile = localStorage.getItem('mobileButtonSettings');
@@ -528,10 +604,6 @@ export async function exportCategory(
                     // Invalid JSON
                 }
                 return null;
-            }
-            case 'recordings': {
-                const recordings = await exportRecordings();
-                return recordings.length > 0 ? JSON.stringify(recordings) : null;
             }
             case 'visitedRooms': {
                 const visitedRooms = await exportVisitedRooms(selectedCharacters);
@@ -628,8 +700,16 @@ export async function importCategory(
 
         switch (category) {
             case 'uiSettings': {
+                // Device-scoped settings bundle: uiSettings + layout + buttons
                 if (data.uiSettings) localStorage.setItem('uiSettings', data.uiSettings);
                 if (data.loggingEnabled) localStorage.setItem('loggingEnabled', data.loggingEnabled);
+                if (data.layoutManagerState) localStorage.setItem('layoutManagerState', data.layoutManagerState);
+                if (data.desktopButtonSettings) localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
+                if (data.mobileButtonSettings) localStorage.setItem('mobileButtonSettings', data.mobileButtonSettings);
+                // Notify layout system of changes
+                if (data.layoutManagerState && typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged', { detail: { type: 'import' } }));
+                }
                 break;
             }
             case 'binds': {
@@ -664,11 +744,6 @@ export async function importCategory(
             }
             case 'multibinds': {
                 await replaceMultibinds(Array.isArray(data) ? data : []);
-                break;
-            }
-            case 'scripts': {
-                if (data.scripts) localStorage.setItem('scripts', data.scripts);
-                if (data.stored_scripts) localStorage.setItem('stored_scripts', data.stored_scripts);
                 break;
             }
             case 'buttons': {
@@ -710,10 +785,6 @@ export async function importCategory(
                     merged.radial = data.radial;
                     localStorage.setItem('mobileButtonSettings', JSON.stringify(merged));
                 }
-                break;
-            }
-            case 'recordings': {
-                await importRecordings(Array.isArray(data) ? data : []);
                 break;
             }
             case 'visitedRooms': {

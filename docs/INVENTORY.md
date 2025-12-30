@@ -61,6 +61,7 @@ Menedzer pojemnikow pozwala przypisac wybrane torby, plecaki i inne pojemniki do
 | `/odloz_magie [pojemnik]` | Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotow |
 | `/ocen`                   | Ocen swoje bronie i zbroje, wypisujac ich stan |
 | `/sprzet`                 | Alias do `/ocen` |
+| `/ubrania`                | Ocen stan ubran |
 | `/ocenkamienie`           | Oblicz laczna wartosc kamieni |
 
 ## Lampa

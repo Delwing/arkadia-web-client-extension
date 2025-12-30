@@ -10,6 +10,7 @@ Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z z
 | `/woreczki_buduj` | Ocen stan wszystkich woreczkow i zapisz w liczniku |
 | `/ziola_pokaz` | Wyswietl ostatnie podsumowanie ziol (bez listy woreczkow) |
 | `/ziola` | Otworz okno zarzadzania woreczkami ziol |
+| `/ziola2` | Wyswietl alternatywne podsumowanie ziol |
 
 ## Wyjmowanie ziol
 

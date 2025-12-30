@@ -15,7 +15,7 @@ Liczniki zabitych, postepow, stazu i zlecen.
 
 | Komenda | Opis |
 |---------|------|
-| `/cechy` | Uruchom licznik poziomowania i wyswietl postepy |
+| `cechy` | Uruchom licznik poziomowania i wyswietl postepy |
 | `/postepy` | Wyswietl postepy |
 | `/postepyw` | Otworz okno z postepami |
 | `/postepy_reset` | Zeruj licznik postepow |
