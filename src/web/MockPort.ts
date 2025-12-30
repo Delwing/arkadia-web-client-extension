@@ -13,8 +13,17 @@ export default class MockPort {
         storage.onChanged?.addListener(changes => {
             Object.entries(changes).forEach(([key, {newValue}]) => {
                 this.dispatch({storage: {key, value: newValue}});
-                if (key === 'settings' || key === 'uiSettings' || key === 'binds') {
+                if (key === 'settings' || key === 'uiSettings') {
                     this.dispatch({[key]: newValue});
+                }
+                if (key === 'binds') {
+                    this.dispatch({binds: newValue});
+                }
+                if (key === 'bindsKeymapId') {
+                    const binds = getItemSync('binds')?.binds;
+                    if (binds) {
+                        this.dispatch({binds});
+                    }
                 }
             });
         });
@@ -28,8 +37,17 @@ export default class MockPort {
         if (message.type === 'SET_STORAGE') {
             setItemSync(message.key, message.value);
             this.dispatch({storage: {key: message.key, value: message.value}});
-            if (message.key === 'settings' || message.key === 'uiSettings' || message.key === 'binds') {
+            if (message.key === 'settings' || message.key === 'uiSettings') {
                 this.dispatch({[message.key]: message.value});
+            }
+            if (message.key === 'binds') {
+                this.dispatch({binds: message.value});
+            }
+            if (message.key === 'bindsKeymapId') {
+                const binds = getItemSync('binds')?.binds;
+                if (binds) {
+                    this.dispatch({binds});
+                }
             }
             return;
         }
@@ -42,8 +60,11 @@ export default class MockPort {
         const data = getItemSync(key);
         const value = data ? data[key] : {};
         this.dispatch({ storage: { key, value } });
-        if (key === 'settings' || key === 'uiSettings' || key === 'binds') {
+        if (key === 'settings' || key === 'uiSettings') {
             this.dispatch({ [key]: value });
+        }
+        if (key === 'binds') {
+            this.dispatch({ binds: value });
         }
     };
 }

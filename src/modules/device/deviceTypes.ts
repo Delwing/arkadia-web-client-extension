@@ -44,6 +44,8 @@ export interface DeviceSettings {
     desktopButtonSettings?: DesktopButtonsSettings;
     /** Mobile button settings */
     mobileButtonSettings?: MobileButtonsSettings;
+    /** Selected keymap id for binds */
+    bindsKeymapId?: string;
 }
 
 /**
@@ -85,6 +87,7 @@ export interface ImportedDeviceEntry {
         uiSettings?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;
+        bindsKeymapId?: string;
     };
     /** ISO timestamp when imported */
     importedAt: string;
@@ -128,6 +131,7 @@ export interface SyncedDeviceSettings {
         uiSettings?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;
+        bindsKeymapId?: string;
     };
 }
 

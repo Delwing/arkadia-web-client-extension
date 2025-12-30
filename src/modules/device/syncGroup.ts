@@ -179,6 +179,7 @@ export function getRawDeviceSettings(): SyncedDeviceSettings['settings'] {
         uiSettings: localStorage.getItem('uiSettings') || undefined,
         desktopButtonSettings: localStorage.getItem('desktopButtonSettings') || undefined,
         mobileButtonSettings: localStorage.getItem('mobileButtonSettings') || undefined,
+        bindsKeymapId: localStorage.getItem('bindsKeymapId') || undefined,
     };
 }
 
@@ -235,6 +236,9 @@ export function applySyncedSettings(syncedSettings: SyncedDeviceSettings): void 
         }
         if (settings.mobileButtonSettings) {
             localStorage.setItem('mobileButtonSettings', settings.mobileButtonSettings);
+        }
+        if (settings.bindsKeymapId) {
+            localStorage.setItem('bindsKeymapId', settings.bindsKeymapId);
         }
 
         // Update local version to match remote

@@ -43,11 +43,12 @@ function saveUiSettings(settings: UiSettings): void {
 export async function exportDeviceSettings(): Promise<DeviceSettings> {
     const deviceInfo = getDeviceInfo();
 
-    const [layoutManagerState, uiSettings, desktopButtonSettings, mobileButtonSettings] = await Promise.all([
+    const [layoutManagerState, uiSettings, desktopButtonSettings, mobileButtonSettings, bindsKeymapId] = await Promise.all([
         Promise.resolve(loadLayoutState()),
         loadUiSettings(),
         loadDesktopButtonSettings(),
         loadMobileButtonSettings(),
+        storage.getItem('bindsKeymapId').then(res => res?.bindsKeymapId as string | undefined),
     ]);
 
     return {
@@ -58,6 +59,7 @@ export async function exportDeviceSettings(): Promise<DeviceSettings> {
         uiSettings,
         desktopButtonSettings,
         mobileButtonSettings,
+        bindsKeymapId,
     };
 }
 
@@ -87,6 +89,10 @@ export async function importDeviceSettings(settings: DeviceSettings): Promise<vo
     // Apply mobile button settings
     if (settings.mobileButtonSettings) {
         saveMobileButtonSettings(settings.mobileButtonSettings);
+    }
+
+    if (settings.bindsKeymapId) {
+        storage.setItem('bindsKeymapId', settings.bindsKeymapId);
     }
 }
 
@@ -166,6 +172,7 @@ export async function exportPartialDeviceSettings(options: {
     uiSettings?: boolean;
     desktopButtonSettings?: boolean;
     mobileButtonSettings?: boolean;
+    bindsKeymapId?: boolean;
 }): Promise<Partial<DeviceSettings>> {
     const deviceInfo = getDeviceInfo();
     const result: Partial<DeviceSettings> = {
@@ -188,6 +195,13 @@ export async function exportPartialDeviceSettings(options: {
 
     if (options.mobileButtonSettings) {
         result.mobileButtonSettings = await loadMobileButtonSettings();
+    }
+
+    if (options.bindsKeymapId) {
+        const stored = await storage.getItem('bindsKeymapId');
+        if (stored?.bindsKeymapId) {
+            result.bindsKeymapId = stored.bindsKeymapId as string;
+        }
     }
 
     return result;

@@ -93,6 +93,7 @@ export interface ExportedDeviceInfo {
         uiSettings?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;
+        bindsKeymapId?: string;
     };
     syncGroup?: SyncGroup;
 }
@@ -393,6 +394,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             uiSettings: localStorage.getItem('uiSettings') || undefined,
             desktopButtonSettings: localStorage.getItem('desktopButtonSettings') || undefined,
             mobileButtonSettings: localStorage.getItem('mobileButtonSettings') || undefined,
+            bindsKeymapId: localStorage.getItem('bindsKeymapId') || undefined,
         },
         syncGroup: syncGroup || undefined,
     };
@@ -468,6 +470,9 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
             if (settings.mobileButtonSettings) {
                 localStorage.setItem('mobileButtonSettings', settings.mobileButtonSettings);
             }
+            if (settings.bindsKeymapId) {
+                localStorage.setItem('bindsKeymapId', settings.bindsKeymapId);
+            }
             await triggerSettingsReload();
         } else {
             // Different device - save to imported devices list (user can copy settings later)
@@ -496,6 +501,7 @@ export interface CategoryData {
         layoutManagerState?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;  // includes radial
+        bindsKeymapId?: string;
     };
     binds?: { binds?: string };
     shortcuts?: { shortcuts?: string };
@@ -535,6 +541,8 @@ export async function exportCategory(
                 if (desktopButtonSettings) data.desktopButtonSettings = desktopButtonSettings;
                 const mobileButtonSettings = localStorage.getItem('mobileButtonSettings');
                 if (mobileButtonSettings) data.mobileButtonSettings = mobileButtonSettings;
+                const bindsKeymapId = localStorage.getItem('bindsKeymapId');
+                if (bindsKeymapId) data.bindsKeymapId = bindsKeymapId;
                 return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
             }
             case 'binds': {
@@ -706,6 +714,7 @@ export async function importCategory(
                 if (data.layoutManagerState) localStorage.setItem('layoutManagerState', data.layoutManagerState);
                 if (data.desktopButtonSettings) localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
                 if (data.mobileButtonSettings) localStorage.setItem('mobileButtonSettings', data.mobileButtonSettings);
+                if (data.bindsKeymapId) localStorage.setItem('bindsKeymapId', data.bindsKeymapId);
                 // Notify layout system of changes
                 if (data.layoutManagerState && typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('layoutManagerStateChanged', { detail: { type: 'import' } }));

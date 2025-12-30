@@ -58,6 +58,7 @@ import {
     setupOutputMessageHandler,
 } from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
+import { defaultBinds, resolveActiveBinds } from "@shared/binds";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
@@ -191,10 +192,10 @@ arkadiaClient.on('settings', (detail) => {
 });
 
 client.on('binds', (detail) => {
-    const payload = detail as { directions?: unknown } | undefined;
-    const directions = payload?.directions;
-    if (isDirectionMap(directions)) {
-        applyDirectionBinds(directions);
+    const activeKeymapId = getItemSync('bindsKeymapId')?.bindsKeymapId ?? null;
+    const resolved = resolveActiveBinds(detail, activeKeymapId, defaultBinds);
+    if (isDirectionMap(resolved?.directions)) {
+        applyDirectionBinds(resolved.directions);
     }
 });
 

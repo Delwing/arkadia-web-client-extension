@@ -6,6 +6,7 @@ import {
     type StoredMultibindRecord,
 } from "@web/dataStores/multibindStore";
 import storage from "@modules/core/storage";
+import { defaultBinds, resolveActiveBinds } from "@shared/binds";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -59,12 +60,14 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     let roomBind: Bind = { key: 'KeyP', alt: true };
     let drinkableBind: Bind = { key: 'KeyN', alt: true };
 
-    storage.getItem('binds').then(res => {
-        if (res?.binds?.roomBind) {
-            roomBind = res.binds.roomBind;
+    Promise.all([storage.getItem('binds'), storage.getItem('bindsKeymapId')]).then(([bindsRes, keymapRes]) => {
+        const activeKeymapId = typeof keymapRes?.bindsKeymapId === 'string' ? keymapRes.bindsKeymapId : null;
+        const resolved = resolveActiveBinds(bindsRes?.binds, activeKeymapId, defaultBinds);
+        if (resolved?.roomBind) {
+            roomBind = resolved.roomBind;
         }
-        if (res?.binds?.drinkable) {
-            drinkableBind = res.binds.drinkable;
+        if (resolved?.drinkable) {
+            drinkableBind = resolved.drinkable;
         }
     });
 

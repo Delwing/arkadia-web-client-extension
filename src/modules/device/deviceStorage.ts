@@ -323,6 +323,9 @@ export function applyImportedDeviceSettings(deviceId: string): boolean {
         if (entry.settings.mobileButtonSettings) {
             localStorage.setItem('mobileButtonSettings', entry.settings.mobileButtonSettings);
         }
+        if (entry.settings.bindsKeymapId) {
+            localStorage.setItem('bindsKeymapId', entry.settings.bindsKeymapId);
+        }
 
         // Trigger dynamic reload of settings
         triggerSettingsReload();

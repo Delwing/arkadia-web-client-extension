@@ -2,6 +2,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import storage from "@modules/core/storage";
 import {
+    BINDS_KEYMAP_ID_STORAGE_KEY,
+    BINDS_STORAGE_VERSION,
+    type Bind,
+    type BindSettings,
+    type CustomBind,
+    type DirectionBinds,
+    defaultBinds,
+    type KeymapEntry,
+    cloneBindSettings,
+    normalizeBindsStore,
+    resolveActiveKeymapId,
+} from "@shared/binds";
+import {
     type MultibindImportRow,
     type MultibindImportWorkerRequest,
     type MultibindImportWorkerResponse,
@@ -16,84 +29,6 @@ import {
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
-
-interface Bind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
-
-interface CustomBind extends Bind {
-    command: string;
-}
-
-interface DirectionBinds {
-    n: Bind;
-    s: Bind;
-    w: Bind;
-    e: Bind;
-    nw: Bind;
-    ne: Bind;
-    sw: Bind;
-    se: Bind;
-    u: Bind;
-    d: Bind;
-    special: Bind;
-}
-
-interface BindSettings {
-    main: Bind;
-    lamp: Bind;
-    attack: Bind;
-    support: Bind;
-    moveMode: Bind;
-    roomBind: Bind;
-    drinkable: Bind;
-    directions: DirectionBinds;
-    custom: CustomBind[];
-    temp: Bind[];
-    enemy: Bind[];
-    enemyBlock: Bind[];
-}
-
-const defaultBinds: BindSettings = {
-    main: { key: 'BracketRight' },
-    lamp: { key: 'Digit4', ctrl: true },
-    attack: { key: 'Digit1', ctrl: true },
-    support: { key: 'KeyQ', ctrl: true },
-    moveMode: { key: 'Backquote' },
-    roomBind: { key: 'KeyP', alt: true },
-    drinkable: { key: 'KeyN', alt: true },
-    temp: [
-        { key: 'F4' },
-        { key: 'F5' },
-    ],
-    enemy: [
-        { key: 'F1' },
-        { key: 'F2' },
-        { key: 'F3' },
-    ],
-    enemyBlock: [
-        { key: 'F1', ctrl: true },
-        { key: 'F2', ctrl: true },
-        { key: 'F3', ctrl: true },
-    ],
-    directions: {
-        n: { key: 'Numpad8' },
-        s: { key: 'Numpad2' },
-        w: { key: 'Numpad4' },
-        e: { key: 'Numpad6' },
-        nw: { key: 'Numpad7' },
-        ne: { key: 'Numpad9' },
-        sw: { key: 'Numpad1' },
-        se: { key: 'Numpad3' },
-        u: { key: 'NumpadMultiply' },
-        d: { key: 'NumpadSubtract' },
-        special: { key: 'Numpad0' },
-    },
-    custom: [],
-};
 
 type ConflictPolicy = 'keep-last' | 'keep-first' | 'skip-conflicts';
 
@@ -169,6 +104,9 @@ function label(bind: Bind) {
 
 function Binds() {
     const [binds, setBinds] = useState<BindSettings>(defaultBinds);
+    const [keymaps, setKeymaps] = useState<KeymapEntry[]>([]);
+    const [activeKeymapId, setActiveKeymapId] = useState<string>('');
+    const [newKeymapName, setNewKeymapName] = useState('');
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const [importData, setImportData] = useState<ImportData | null>(null);
     const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
@@ -244,37 +182,22 @@ function Binds() {
     }
 
     useEffect(() => {
-        storage.getItem('binds').then(res => {
-            setBinds({
-                ...defaultBinds,
-                main: res?.binds?.main || defaultBinds.main,
-                lamp: res?.binds?.lamp || defaultBinds.lamp,
-                attack: res?.binds?.attack || defaultBinds.attack,
-                support: res?.binds?.support || defaultBinds.support,
-                moveMode: res?.binds?.moveMode || defaultBinds.moveMode,
-                roomBind: res?.binds?.roomBind || defaultBinds.roomBind,
-                drinkable: res?.binds?.drinkable || defaultBinds.drinkable,
-                temp: [
-                    { ...defaultBinds.temp[0], ...(res?.binds?.temp?.[0] || {}) },
-                    { ...defaultBinds.temp[1], ...(res?.binds?.temp?.[1] || {}) },
-                ],
-                enemy: [
-                    { ...defaultBinds.enemy[0], ...(res?.binds?.enemy?.[0] || {}) },
-                    { ...defaultBinds.enemy[1], ...(res?.binds?.enemy?.[1] || {}) },
-                    { ...defaultBinds.enemy[2], ...(res?.binds?.enemy?.[2] || {}) },
-                ],
-                enemyBlock: [
-                    { ...defaultBinds.enemyBlock[0], ...(res?.binds?.enemyBlock?.[0] || {}) },
-                    { ...defaultBinds.enemyBlock[1], ...(res?.binds?.enemyBlock?.[1] || {}) },
-                    { ...defaultBinds.enemyBlock[2], ...(res?.binds?.enemyBlock?.[2] || {}) },
-                ],
-                directions: {
-                    ...defaultBinds.directions,
-                    ...res?.binds?.directions,
-                },
-                custom: res?.binds?.custom || [],
-            });
+        let mounted = true;
+        Promise.all([storage.getItem('binds'), storage.getItem(BINDS_KEYMAP_ID_STORAGE_KEY)]).then(([bindsRes, keymapRes]) => {
+            if (!mounted) return;
+            const store = normalizeBindsStore(bindsRes?.binds, defaultBinds);
+            const preferred = typeof keymapRes?.[BINDS_KEYMAP_ID_STORAGE_KEY] === 'string'
+                ? keymapRes[BINDS_KEYMAP_ID_STORAGE_KEY]
+                : null;
+            const resolvedId = resolveActiveKeymapId(store, preferred);
+            setKeymaps(store.keymaps);
+            setActiveKeymapId(resolvedId);
+            const activeEntry = store.keymaps.find(entry => entry.id === resolvedId) ?? store.keymaps[0];
+            setBinds(activeEntry?.binds ?? defaultBinds);
         });
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     useEffect(() => {
@@ -283,6 +206,13 @@ function Binds() {
             unsubscribe();
         };
     }, []);
+
+    useEffect(() => {
+        if (!activeKeymapId) return;
+        setKeymaps(prev => prev.map(entry => (
+            entry.id === activeKeymapId ? { ...entry, binds } : entry
+        )));
+    }, [activeKeymapId, binds]);
 
     const importPlan = useMemo<ImportPlan | null>(() => {
         if (!importData) {
@@ -524,8 +454,63 @@ function Binds() {
         }));
     }
 
+    function handleActiveKeymapChange(nextId: string) {
+        setActiveKeymapId(nextId);
+        const entry = keymaps.find(item => item.id === nextId);
+        if (entry) {
+            setBinds(entry.binds);
+        }
+    }
+
+    function handleKeymapNameChange(name: string) {
+        setKeymaps(prev => prev.map(entry => (
+            entry.id === activeKeymapId ? { ...entry, name } : entry
+        )));
+    }
+
+    function handleAddKeymap() {
+        const trimmed = newKeymapName.trim();
+        const baseName = trimmed || `Mapa ${keymaps.length + 1}`;
+        const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `keymap-${Date.now()}-${keymaps.length + 1}`;
+        const entry: KeymapEntry = {
+            id,
+            name: baseName,
+            binds: cloneBindSettings(binds),
+        };
+        setKeymaps(prev => [...prev, entry]);
+        setActiveKeymapId(id);
+        setNewKeymapName('');
+    }
+
+    function handleRemoveKeymap() {
+        if (keymaps.length <= 1) {
+            return;
+        }
+        const remaining = keymaps.filter(entry => entry.id !== activeKeymapId);
+        const next = remaining[0];
+        setKeymaps(remaining);
+        if (next) {
+            setActiveKeymapId(next.id);
+            setBinds(next.binds);
+        }
+    }
+
     function save() {
-        storage.setItem('binds', binds).then(() => {
+        const store = {
+            version: BINDS_STORAGE_VERSION,
+            keymaps: keymaps.length > 0 ? keymaps : [{
+                id: 'default',
+                name: 'Domyslna',
+                binds: cloneBindSettings(binds),
+            }],
+        };
+        const resolvedActiveId = activeKeymapId || store.keymaps[0]?.id || 'default';
+        Promise.all([
+            storage.setItem('binds', store),
+            storage.setItem(BINDS_KEYMAP_ID_STORAGE_KEY, resolvedActiveId),
+        ]).then(() => {
             window.dispatchEvent(new Event('close-options'));
         });
     }
@@ -637,6 +622,52 @@ function Binds() {
                 <Alert variant="danger" className="mb-0">{importError}</Alert>
             )}
             <fieldset className="p-0 border-0 m-0">
+                <div className="d-flex flex-column gap-2 mb-2">
+                    <Form.Group>
+                        <Form.Label>Mapa klawiszy</Form.Label>
+                        <div className="d-flex gap-2">
+                            <Form.Select
+                                size="sm"
+                                value={activeKeymapId}
+                                onChange={ev => handleActiveKeymapChange(ev.target.value)}
+                            >
+                                {keymaps.map(entry => (
+                                    <option key={entry.id} value={entry.id}>{entry.name}</option>
+                                ))}
+                            </Form.Select>
+                            <Button
+                                size="sm"
+                                variant="outline-danger"
+                                onClick={handleRemoveKeymap}
+                                disabled={keymaps.length <= 1}
+                            >
+                                Usuń
+                            </Button>
+                        </div>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Nazwa mapy</Form.Label>
+                        <Form.Control
+                            size="sm"
+                            type="text"
+                            value={keymaps.find(entry => entry.id === activeKeymapId)?.name ?? ''}
+                            onChange={ev => handleKeymapNameChange(ev.target.value)}
+                        />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Nowa mapa (kopiuje bieżące bindy)</Form.Label>
+                        <div className="d-flex gap-2">
+                            <Form.Control
+                                size="sm"
+                                type="text"
+                                value={newKeymapName}
+                                onChange={ev => setNewKeymapName(ev.target.value)}
+                                placeholder="Nazwa nowej mapy"
+                            />
+                            <Button size="sm" onClick={handleAddKeymap}>Dodaj</Button>
+                        </div>
+                    </Form.Group>
+                </div>
                 <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">
                         <tr>

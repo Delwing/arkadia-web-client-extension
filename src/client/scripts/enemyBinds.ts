@@ -5,6 +5,7 @@ import type { PersonEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import storage from '@modules/core/storage';
+import { defaultBinds, resolveActiveBinds } from '@shared/binds';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -21,18 +22,6 @@ interface Bind {
     shift?: boolean;
 }
 
-const defaultEnemyBinds: Bind[] = [
-    { key: 'F1' },
-    { key: 'F2' },
-    { key: 'F3' },
-];
-
-const defaultEnemyBlockBinds: Bind[] = [
-    { key: 'F1', ctrl: true },
-    { key: 'F2', ctrl: true },
-    { key: 'F3', ctrl: true },
-];
-
 export default function initEnemyBinds(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
@@ -47,8 +36,8 @@ export default function initEnemyBinds(
     let keepUnchanged = false;
     let showMode: 'always' | 'whenBound' | 'never' = 'always';
     let enabledSlots: [boolean, boolean, boolean] = [true, true, true];
-    let enemyBindKeys: Bind[] = [...defaultEnemyBinds];
-    let enemyBlockBindKeys: Bind[] = [...defaultEnemyBlockBinds];
+    let enemyBindKeys: Bind[] = [...defaultBinds.enemy];
+    let enemyBlockBindKeys: Bind[] = [...defaultBinds.enemyBlock];
 
     subscribeToPeopleStore(snapshot => {
         peopleCache = snapshot ?? [];
@@ -64,17 +53,19 @@ export default function initEnemyBinds(
     ensurePeopleLoaded().catch(() => undefined);
 
     // Load enemy binds keys from storage
-    storage.getItem('binds').then(res => {
-        if (res?.binds?.enemy && Array.isArray(res.binds.enemy) && res.binds.enemy.length === 3) {
-            enemyBindKeys = res.binds.enemy.map((bind: any) => ({
+    Promise.all([storage.getItem('binds'), storage.getItem('bindsKeymapId')]).then(([bindsRes, keymapRes]) => {
+        const activeKeymapId = typeof keymapRes?.bindsKeymapId === 'string' ? keymapRes.bindsKeymapId : null;
+        const resolved = resolveActiveBinds(bindsRes?.binds, activeKeymapId, defaultBinds);
+        if (Array.isArray(resolved.enemy) && resolved.enemy.length === 3) {
+            enemyBindKeys = resolved.enemy.map((bind: any) => ({
                 key: bind.key || 'F1',
                 ctrl: bind.ctrl,
                 alt: bind.alt,
                 shift: bind.shift,
             }));
         }
-        if (res?.binds?.enemyBlock && Array.isArray(res.binds.enemyBlock) && res.binds.enemyBlock.length === 3) {
-            enemyBlockBindKeys = res.binds.enemyBlock.map((bind: any) => ({
+        if (Array.isArray(resolved.enemyBlock) && resolved.enemyBlock.length === 3) {
+            enemyBlockBindKeys = resolved.enemyBlock.map((bind: any) => ({
                 key: bind.key || 'F1',
                 ctrl: bind.ctrl,
                 alt: bind.alt,

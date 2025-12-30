@@ -7,6 +7,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
 import {getItemSync, setCurrentCharacter, setItemSync} from "@modules/core/storage";
+import {defaultBinds, resolveActiveBinds} from "@shared/binds";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -202,7 +203,9 @@ export default class Client {
             if (!b) {
                 return
             }
-            const bind = b?.main
+            const activeKeymapId = getItemSync('bindsKeymapId')?.bindsKeymapId ?? null
+            const resolved = resolveActiveBinds(b, activeKeymapId, defaultBinds)
+            const bind = resolved?.main
             if (bind) {
                 this.FunctionalBind.updateOptions({
                     key: bind.key,
@@ -212,23 +215,23 @@ export default class Client {
                     label: formatLabel(bind)
                 })
             }
-            const lamp = b?.lamp
+            const lamp = resolved?.lamp
             if (lamp) {
                 this.lampBind = { ...lamp }
             }
-            const attack = b?.attack
+            const attack = resolved?.attack
             if (attack) {
                 this.attackBind = { ...attack }
             }
-            const support = b?.support
+            const support = resolved?.support
             if (support) {
                 this.supportBind = { ...support }
             }
-            const moveMode = b?.moveMode
+            const moveMode = resolved?.moveMode
             if (moveMode) {
                 this.moveModeBind = { ...moveMode }
             }
-            const temp = b?.temp
+            const temp = resolved?.temp
             if (Array.isArray(temp)) {
                 temp.forEach((tempBind: any, index: number) => {
                     if (!tempBind || typeof tempBind !== 'object') {
@@ -254,7 +257,7 @@ export default class Client {
                     }
                 })
             }
-            const custom = b?.custom
+            const custom = resolved?.custom
             if (custom) {
                 this.customBinds = [...custom]
             } else {
