@@ -883,6 +883,12 @@ export async function resolveSyncConflict(
             }
             return { success: true };
         } else {
+            // When keeping local, we must bump the version to be higher than remote
+            // so other devices will accept the update
+            const state = getSyncState();
+            if (state) {
+                setSyncState({ ...state, version: conflict.remoteVersion });
+            }
             return uploadSyncedSettings();
         }
     } catch (err) {
