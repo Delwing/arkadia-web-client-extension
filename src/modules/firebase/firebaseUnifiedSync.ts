@@ -186,13 +186,13 @@ export async function uploadCategories(
         }
 
         const { db } = await ensureFirebaseInitialized();
-        const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+        const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
 
         const categories = Object.keys(categoryData) as SyncCategory[];
         const now = Date.now();
         const deviceId = getDeviceId();
 
-        // Build category payloads
+        // Build category payloads - use dot notation for updateDoc
         const categoryUpdates: { [key: string]: CategoryPayload } = {};
 
         for (const category of categories) {
@@ -210,6 +210,7 @@ export async function uploadCategories(
                     finalData = data;
                 }
 
+                // Use dot notation key for updateDoc (will be interpreted as path)
                 categoryUpdates[`categories.${category}`] = {
                     version: 1,
                     syncedAt: new Date().toISOString(),
@@ -226,13 +227,32 @@ export async function uploadCategories(
             }
         }
 
-        // Single write with all category updates
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
-        console.log(`[Firebase WRITE] uploadCategories: ${categories.length} categories`);
-        await setDoc(docRef, {
-            ...categoryUpdates,
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
+
+        // Check if document exists
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+            // Use updateDoc - it interprets dots as paths
+            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${categories.length} categories`);
+            await updateDoc(docRef, {
+                ...categoryUpdates,
+                updatedAt: serverTimestamp(),
+            });
+        } else {
+            // Document doesn't exist - create with proper nested structure
+            const nestedCategories: { [key: string]: CategoryPayload } = {};
+            for (const key of Object.keys(categoryUpdates)) {
+                // Convert 'categories.triggers' to nested { categories: { triggers: ... } }
+                const category = key.replace('categories.', '');
+                nestedCategories[category] = categoryUpdates[key];
+            }
+            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${categories.length} categories`);
+            await setDoc(docRef, {
+                categories: nestedCategories,
+                updatedAt: serverTimestamp(),
+            });
+        }
 
         invalidateCache();
 
@@ -566,17 +586,48 @@ export function updateCategorySyncTime(category: SyncCategory, timestamp?: numbe
 // ============================================================================
 
 /**
- * Register current device (uses merge write)
+ * Register current device (uses updateDoc for proper nested field update)
  */
 export async function registerDevice(): Promise<{ success: boolean; error?: string }> {
     try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
+
         const deviceInfo = getDeviceInfo();
-        return await updateSyncData({
-            [`devices.${deviceInfo.id}` as keyof UnifiedSyncData]: {
-                ...deviceInfo,
-                lastSeen: new Date().toISOString(),
-            } as unknown as UnifiedSyncData[keyof UnifiedSyncData],
-        });
+        const { db } = await ensureFirebaseInitialized();
+        const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
+
+        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+
+        // Check if document exists
+        const snapshot = await getDoc(docRef);
+
+        const deviceData = {
+            ...deviceInfo,
+            lastSeen: new Date().toISOString(),
+        };
+
+        if (snapshot.exists()) {
+            // Use updateDoc with dot notation for nested field update
+            console.log(`[Firebase WRITE] registerDevice (updateDoc): ${deviceInfo.id}`);
+            await updateDoc(docRef, {
+                [`devices.${deviceInfo.id}`]: deviceData,
+                updatedAt: serverTimestamp(),
+            });
+        } else {
+            // Document doesn't exist, create it with setDoc
+            console.log(`[Firebase WRITE] registerDevice (setDoc): ${deviceInfo.id}`);
+            await setDoc(docRef, {
+                devices: { [deviceInfo.id]: deviceData },
+                updatedAt: serverTimestamp(),
+            });
+        }
+
+        invalidateCache();
+        return { success: true };
     } catch (err) {
         console.error('Failed to register device', err);
         return { success: false, error: FIREBASE_ERRORS.SYNC_FAILED };
