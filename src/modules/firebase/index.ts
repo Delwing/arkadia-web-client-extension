@@ -101,6 +101,9 @@ export {
     syncNow,
     getRemoteDeviceName,
     getCloudSyncGroup,
+    getCloudSyncGroups,
+    getCloudGroupSettings,
+    copySettingsFromCloudGroup,
 } from './firebaseUnifiedSync';
 
 export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';

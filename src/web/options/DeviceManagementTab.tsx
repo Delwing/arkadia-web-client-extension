@@ -24,9 +24,10 @@ import {
     checkForSyncUpdates,
     getRemoteDeviceName,
     getFirebaseAuth,
-    getCloudSyncGroup,
+    getCloudSyncGroups,
     getRegisteredDevices,
     registerDevice,
+    copySettingsFromCloudGroup,
 } from "@modules/firebase";
 import SyncConflictModal from "./SyncConflictModal";
 
@@ -49,10 +50,11 @@ function DeviceManagementTab() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
     const [conflictDeviceName, setConflictDeviceName] = useState<string>("");
-    const [cloudSyncGroup, setCloudSyncGroup] = useState<SyncGroup | null>(null);
-    const [isLoadingCloudGroup, setIsLoadingCloudGroup] = useState(false);
+    const [cloudSyncGroups, setCloudSyncGroups] = useState<SyncGroup[]>([]);
+    const [isLoadingCloudGroups, setIsLoadingCloudGroups] = useState(false);
     const [cloudDevices, setCloudDevices] = useState<DeviceInfo[]>([]);
     const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
+    const [copyingFromGroupId, setCopyingFromGroupId] = useState<string | null>(null);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -75,7 +77,7 @@ function DeviceManagementTab() {
     useEffect(() => {
         const loadCloudData = async () => {
             if (!isLoggedIn) {
-                setCloudSyncGroup(null);
+                setCloudSyncGroups([]);
                 setCloudDevices([]);
                 return;
             }
@@ -87,20 +89,20 @@ function DeviceManagementTab() {
                 console.error("Failed to register device", err);
             }
 
-            // Load cloud sync group (only if not already in a group)
-            if (!syncGroup) {
-                setIsLoadingCloudGroup(true);
-                try {
-                    const result = await getCloudSyncGroup();
-                    setCloudSyncGroup(result.group ?? null);
-                } catch (err) {
-                    console.error("Failed to load cloud sync group", err);
-                    setCloudSyncGroup(null);
-                } finally {
-                    setIsLoadingCloudGroup(false);
-                }
-            } else {
-                setCloudSyncGroup(null);
+            // Load cloud sync groups (filter out current group if we're in one)
+            setIsLoadingCloudGroups(true);
+            try {
+                const result = await getCloudSyncGroups();
+                // Filter out the group we're already in
+                const otherGroups = syncGroup
+                    ? result.groups.filter(g => g.id !== syncGroup.id)
+                    : result.groups;
+                setCloudSyncGroups(otherGroups);
+            } catch (err) {
+                console.error("Failed to load cloud sync groups", err);
+                setCloudSyncGroups([]);
+            } finally {
+                setIsLoadingCloudGroups(false);
             }
 
             // Load cloud devices
@@ -327,23 +329,22 @@ function DeviceManagementTab() {
     };
 
     // Handle join cloud sync group (when group exists in cloud but not locally)
-    const handleJoinCloudSyncGroup = async () => {
-        if (!cloudSyncGroup) return;
-
-        const groupName = cloudSyncGroup.name;
+    const handleJoinCloudSyncGroup = async (groupToJoin: SyncGroup) => {
+        const groupName = groupToJoin.name;
         if (!window.confirm(`Czy na pewno chcesz dolaczyc do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostana pobrane.`)) {
             return;
         }
 
-        setJoiningGroupId(cloudSyncGroup.id);
+        setJoiningGroupId(groupToJoin.id);
         setError(null);
         setStatus(null);
 
         try {
-            const result = await joinSyncGroup(cloudSyncGroup.id);
+            const result = await joinSyncGroup(groupToJoin.id);
             if (result.success && result.group) {
                 setSyncGroupState(result.group);
-                setCloudSyncGroup(null);
+                // Remove joined group from cloud groups list
+                setCloudSyncGroups(prev => prev.filter(g => g.id !== result.group!.id));
                 setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}".`);
             } else {
                 setError(result.error || "Nie udalo sie dolaczyc do grupy synchronizacji.");
@@ -353,6 +354,32 @@ function DeviceManagementTab() {
             setError("Wystapil blad podczas dolaczania do grupy synchronizacji.");
         } finally {
             setJoiningGroupId(null);
+        }
+    };
+
+    // Handle copy settings from cloud group
+    const handleCopyFromCloudGroup = async (groupId: string, groupName: string) => {
+        const confirmMessage = syncGroup
+            ? `Czy na pewno chcesz skopiowac ustawienia z grupy "${groupName}"? Ustawienia zostana zastosowane na tym urzadzeniu i zsynchronizowane z Twoja grupa.`
+            : `Czy na pewno chcesz skopiowac ustawienia z grupy "${groupName}"? Aktualne ustawienia tego urzadzenia zostana nadpisane.`;
+        if (!window.confirm(confirmMessage)) return;
+
+        setCopyingFromGroupId(groupId);
+        setError(null);
+        setStatus(null);
+
+        try {
+            const result = await copySettingsFromCloudGroup(groupId);
+            if (result.success) {
+                setStatus(`Ustawienia zostaly skopiowane z grupy "${groupName}".`);
+            } else {
+                setError(result.error || "Nie udalo sie skopiowac ustawien.");
+            }
+        } catch (err) {
+            console.error("Failed to copy settings from cloud group", err);
+            setError("Wystapil blad podczas kopiowania ustawien.");
+        } finally {
+            setCopyingFromGroupId(null);
         }
     };
 
@@ -466,45 +493,62 @@ function DeviceManagementTab() {
                 <h5 className="character-settings-section-title">Synchronizacja urzadzen</h5>
                 {!syncGroup ? (
                     <div className="d-flex flex-column gap-3">
-                        {/* Cloud sync group available to join */}
-                        {isLoggedIn && cloudSyncGroup && (
-                            <Card className="bg-dark border-success">
+                        {/* Cloud sync groups available to join */}
+                        {isLoggedIn && cloudSyncGroups.length > 0 && cloudSyncGroups.map(group => (
+                            <Card key={group.id} className="bg-dark border-success">
                                 <Card.Body>
                                     <div className="d-flex flex-column gap-2">
                                         <div className="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <strong>{cloudSyncGroup.name}</strong>
+                                                <strong>{group.name}</strong>
                                                 <div className="text-muted small">
-                                                    Grupa z chmury ({cloudSyncGroup.devices.length} {cloudSyncGroup.devices.length === 1 ? "urzadzenie" : "urzadzen"})
+                                                    Grupa z chmury ({group.devices.length} {group.devices.length === 1 ? "urzadzenie" : "urzadzen"})
                                                 </div>
                                             </div>
                                             <Badge bg="success">W chmurze</Badge>
                                         </div>
                                         <p className="text-muted small mb-2">
-                                            Znaleziono istniejaca grupe synchronizacji w chmurze. Dolacz, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
+                                            Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
                                         </p>
-                                        <Button
-                                            variant="success"
-                                            size="sm"
-                                            onClick={handleJoinCloudSyncGroup}
-                                            disabled={joiningGroupId === cloudSyncGroup.id}
-                                        >
-                                            {joiningGroupId === cloudSyncGroup.id ? (
-                                                <>
-                                                    <Spinner size="sm" className="me-1" />
-                                                    Dolaczanie...
-                                                </>
-                                            ) : (
-                                                "Dolacz do grupy"
-                                            )}
-                                        </Button>
+                                        <div className="d-flex gap-2">
+                                            <Button
+                                                variant="success"
+                                                size="sm"
+                                                onClick={() => handleJoinCloudSyncGroup(group)}
+                                                disabled={joiningGroupId === group.id}
+                                            >
+                                                {joiningGroupId === group.id ? (
+                                                    <>
+                                                        <Spinner size="sm" className="me-1" />
+                                                        Dolaczanie...
+                                                    </>
+                                                ) : (
+                                                    "Dolacz do grupy"
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={() => handleCopyFromCloudGroup(group.id, group.name)}
+                                                disabled={copyingFromGroupId === group.id}
+                                            >
+                                                {copyingFromGroupId === group.id ? (
+                                                    <>
+                                                        <Spinner size="sm" className="me-1" />
+                                                        Kopiowanie...
+                                                    </>
+                                                ) : (
+                                                    "Kopiuj ustawienia"
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </Card.Body>
                             </Card>
-                        )}
+                        ))}
 
-                        {/* Loading cloud sync group */}
-                        {isLoggedIn && isLoadingCloudGroup && !cloudSyncGroup && (
+                        {/* Loading cloud sync groups */}
+                        {isLoggedIn && isLoadingCloudGroups && cloudSyncGroups.length === 0 && (
                             <Card className="bg-dark">
                                 <Card.Body className="d-flex align-items-center gap-2 text-muted">
                                     <Spinner size="sm" />
@@ -517,7 +561,7 @@ function DeviceManagementTab() {
                         <Card className="bg-dark">
                             <Card.Body>
                                 <p className="text-muted small mb-3">
-                                    {cloudSyncGroup
+                                    {cloudSyncGroups.length > 0
                                         ? "Mozesz tez utworzyc nowa grupe synchronizacji:"
                                         : "Utworz grupe synchronizacji, aby synchronizowac ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami."
                                     }
@@ -657,7 +701,8 @@ function DeviceManagementTab() {
                     ) : (
                         <ListGroup variant="flush" className="bg-dark">
                             {cloudDevices.map(device => {
-                                const isInCloudGroup = cloudSyncGroup?.devices.includes(device.id);
+                                // Find all groups this device is in
+                                const deviceGroups = cloudSyncGroups.filter(g => g.devices.includes(device.id));
                                 const isInCurrentGroup = syncGroup?.devices.includes(device.id);
                                 return (
                                     <ListGroup.Item
@@ -673,11 +718,11 @@ function DeviceManagementTab() {
                                                 {isInCurrentGroup && (
                                                     <Badge bg="success">W Twojej grupie</Badge>
                                                 )}
-                                                {isInCloudGroup && !isInCurrentGroup && cloudSyncGroup && (
-                                                    <Badge bg="warning" text="dark">
-                                                        Grupa: {cloudSyncGroup.name}
+                                                {deviceGroups.map(group => (
+                                                    <Badge key={group.id} bg="warning" text="dark">
+                                                        Grupa: {group.name}
                                                     </Badge>
-                                                )}
+                                                ))}
                                             </div>
                                             <div className="text-muted small">
                                                 <div>ID: {device.id.substring(0, 16)}...</div>
@@ -686,24 +731,47 @@ function DeviceManagementTab() {
                                                 )}
                                                 <div>Utworzono: {formatDate(device.createdAt)}</div>
                                             </div>
-                                            {/* Show join button if device is in a cloud group and we're not in any group */}
-                                            {isInCloudGroup && !syncGroup && cloudSyncGroup && (
+                                            {/* Show action buttons for groups this device is in */}
+                                            {deviceGroups.length > 0 && (
                                                 <div className="d-flex gap-2 flex-wrap">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="success"
-                                                        onClick={handleJoinCloudSyncGroup}
-                                                        disabled={joiningGroupId === cloudSyncGroup.id}
-                                                    >
-                                                        {joiningGroupId === cloudSyncGroup.id ? (
-                                                            <>
-                                                                <Spinner size="sm" className="me-1" />
-                                                                Dolaczanie...
-                                                            </>
-                                                        ) : (
-                                                            `Dolacz do grupy "${cloudSyncGroup.name}"`
-                                                        )}
-                                                    </Button>
+                                                    {deviceGroups.map(group => (
+                                                        <div key={group.id} className="d-flex gap-1">
+                                                            {/* Join button - only show if not in any group */}
+                                                            {!syncGroup && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="success"
+                                                                    onClick={() => handleJoinCloudSyncGroup(group)}
+                                                                    disabled={joiningGroupId === group.id}
+                                                                >
+                                                                    {joiningGroupId === group.id ? (
+                                                                        <>
+                                                                            <Spinner size="sm" className="me-1" />
+                                                                            Dolaczanie...
+                                                                        </>
+                                                                    ) : (
+                                                                        `Dolacz do "${group.name}"`
+                                                                    )}
+                                                                </Button>
+                                                            )}
+                                                            {/* Copy settings button - always show */}
+                                                            <Button
+                                                                size="sm"
+                                                                variant="primary"
+                                                                onClick={() => handleCopyFromCloudGroup(group.id, group.name)}
+                                                                disabled={copyingFromGroupId === group.id}
+                                                            >
+                                                                {copyingFromGroupId === group.id ? (
+                                                                    <>
+                                                                        <Spinner size="sm" className="me-1" />
+                                                                        Kopiowanie...
+                                                                    </>
+                                                                ) : (
+                                                                    `Kopiuj z "${group.name}"`
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
