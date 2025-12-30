@@ -27,7 +27,7 @@ import {
     getCloudSyncGroups,
     getRegisteredDevices,
     registerDevice,
-    copySettingsFromCloudGroup,
+    copySettingsFromCloudDevice,
 } from "@modules/firebase";
 import SyncConflictModal from "./SyncConflictModal";
 
@@ -54,7 +54,7 @@ function DeviceManagementTab() {
     const [isLoadingCloudGroups, setIsLoadingCloudGroups] = useState(false);
     const [cloudDevices, setCloudDevices] = useState<DeviceInfo[]>([]);
     const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
-    const [copyingFromGroupId, setCopyingFromGroupId] = useState<string | null>(null);
+    const [copyingFromDeviceId, setCopyingFromDeviceId] = useState<string | null>(null);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -357,29 +357,29 @@ function DeviceManagementTab() {
         }
     };
 
-    // Handle copy settings from cloud group
-    const handleCopyFromCloudGroup = async (groupId: string, groupName: string) => {
+    // Handle copy settings from cloud device
+    const handleCopyFromCloudDevice = async (deviceId: string, deviceName: string) => {
         const confirmMessage = syncGroup
-            ? `Czy na pewno chcesz skopiowac ustawienia z grupy "${groupName}"? Ustawienia zostana zastosowane na tym urzadzeniu i zsynchronizowane z Twoja grupa.`
-            : `Czy na pewno chcesz skopiowac ustawienia z grupy "${groupName}"? Aktualne ustawienia tego urzadzenia zostana nadpisane.`;
+            ? `Czy na pewno chcesz skopiowac ustawienia z urzadzenia "${deviceName}"? Ustawienia zostana zastosowane na tym urzadzeniu i zsynchronizowane z Twoja grupa.`
+            : `Czy na pewno chcesz skopiowac ustawienia z urzadzenia "${deviceName}"? Aktualne ustawienia tego urzadzenia zostana nadpisane.`;
         if (!window.confirm(confirmMessage)) return;
 
-        setCopyingFromGroupId(groupId);
+        setCopyingFromDeviceId(deviceId);
         setError(null);
         setStatus(null);
 
         try {
-            const result = await copySettingsFromCloudGroup(groupId);
+            const result = await copySettingsFromCloudDevice(deviceId);
             if (result.success) {
-                setStatus(`Ustawienia zostaly skopiowane z grupy "${groupName}".`);
+                setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
             } else {
                 setError(result.error || "Nie udalo sie skopiowac ustawien.");
             }
         } catch (err) {
-            console.error("Failed to copy settings from cloud group", err);
+            console.error("Failed to copy settings from cloud device", err);
             setError("Wystapil blad podczas kopiowania ustawien.");
         } finally {
-            setCopyingFromGroupId(null);
+            setCopyingFromDeviceId(null);
         }
     };
 
@@ -510,38 +510,21 @@ function DeviceManagementTab() {
                                         <p className="text-muted small mb-2">
                                             Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
                                         </p>
-                                        <div className="d-flex gap-2">
-                                            <Button
-                                                variant="success"
-                                                size="sm"
-                                                onClick={() => handleJoinCloudSyncGroup(group)}
-                                                disabled={joiningGroupId === group.id}
-                                            >
-                                                {joiningGroupId === group.id ? (
-                                                    <>
-                                                        <Spinner size="sm" className="me-1" />
-                                                        Dolaczanie...
-                                                    </>
-                                                ) : (
-                                                    "Dolacz do grupy"
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="primary"
-                                                size="sm"
-                                                onClick={() => handleCopyFromCloudGroup(group.id, group.name)}
-                                                disabled={copyingFromGroupId === group.id}
-                                            >
-                                                {copyingFromGroupId === group.id ? (
-                                                    <>
-                                                        <Spinner size="sm" className="me-1" />
-                                                        Kopiowanie...
-                                                    </>
-                                                ) : (
-                                                    "Kopiuj ustawienia"
-                                                )}
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            variant="success"
+                                            size="sm"
+                                            onClick={() => handleJoinCloudSyncGroup(group)}
+                                            disabled={joiningGroupId === group.id}
+                                        >
+                                            {joiningGroupId === group.id ? (
+                                                <>
+                                                    <Spinner size="sm" className="me-1" />
+                                                    Dolaczanie...
+                                                </>
+                                            ) : (
+                                                "Dolacz do grupy"
+                                            )}
+                                        </Button>
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -731,49 +714,52 @@ function DeviceManagementTab() {
                                                 )}
                                                 <div>Utworzono: {formatDate(device.createdAt)}</div>
                                             </div>
-                                            {/* Show action buttons for groups this device is in */}
-                                            {deviceGroups.length > 0 && (
-                                                <div className="d-flex gap-2 flex-wrap">
-                                                    {deviceGroups.map(group => (
-                                                        <div key={group.id} className="d-flex gap-1">
-                                                            {/* Join button - only show if not in any group */}
-                                                            {!syncGroup && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="success"
-                                                                    onClick={() => handleJoinCloudSyncGroup(group)}
-                                                                    disabled={joiningGroupId === group.id}
-                                                                >
-                                                                    {joiningGroupId === group.id ? (
-                                                                        <>
-                                                                            <Spinner size="sm" className="me-1" />
-                                                                            Dolaczanie...
-                                                                        </>
-                                                                    ) : (
-                                                                        `Dolacz do "${group.name}"`
-                                                                    )}
-                                                                </Button>
-                                                            )}
-                                                            {/* Copy settings button - always show */}
+                                            {/* Show action buttons - join group or copy settings */}
+                                            {(() => {
+                                                const deviceDisplayName = device.customName || device.name;
+                                                const isCurrentDevice = device.id === deviceInfo?.id;
+                                                return (
+                                                    <div className="d-flex gap-2 flex-wrap">
+                                                        {/* Join buttons - only show if not in any group */}
+                                                        {!syncGroup && deviceGroups.map(group => (
+                                                            <Button
+                                                                key={group.id}
+                                                                size="sm"
+                                                                variant="success"
+                                                                onClick={() => handleJoinCloudSyncGroup(group)}
+                                                                disabled={joiningGroupId === group.id}
+                                                            >
+                                                                {joiningGroupId === group.id ? (
+                                                                    <>
+                                                                        <Spinner size="sm" className="me-1" />
+                                                                        Dolaczanie...
+                                                                    </>
+                                                                ) : (
+                                                                    `Dolacz do "${group.name}"`
+                                                                )}
+                                                            </Button>
+                                                        ))}
+                                                        {/* Copy settings button - show for all devices except current */}
+                                                        {!isCurrentDevice && (
                                                             <Button
                                                                 size="sm"
                                                                 variant="primary"
-                                                                onClick={() => handleCopyFromCloudGroup(group.id, group.name)}
-                                                                disabled={copyingFromGroupId === group.id}
+                                                                onClick={() => handleCopyFromCloudDevice(device.id, deviceDisplayName)}
+                                                                disabled={copyingFromDeviceId === device.id}
                                                             >
-                                                                {copyingFromGroupId === group.id ? (
+                                                                {copyingFromDeviceId === device.id ? (
                                                                     <>
                                                                         <Spinner size="sm" className="me-1" />
                                                                         Kopiowanie...
                                                                     </>
                                                                 ) : (
-                                                                    `Kopiuj z "${group.name}"`
+                                                                    "Kopiuj ustawienia"
                                                                 )}
                                                             </Button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </ListGroup.Item>
                                 );

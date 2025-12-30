@@ -57,8 +57,10 @@ interface UnifiedSyncData {
     devices?: { [deviceId: string]: DeviceInfo };
     // Multiple sync groups (keyed by groupId)
     groups?: { [groupId: string]: SyncGroup };
-    // Device settings per group (keyed by groupId)
+    // Device settings per group (keyed by groupId) - for sync groups
     deviceSettings?: { [groupId: string]: SyncedDeviceSettings };
+    // Individual device settings (keyed by deviceId) - for per-device copy
+    perDeviceSettings?: { [deviceId: string]: SyncedDeviceSettings };
     // Last update timestamp
     updatedAt?: unknown; // serverTimestamp
 
@@ -558,7 +560,7 @@ export function updateCategorySyncTime(category: SyncCategory, timestamp?: numbe
 // ============================================================================
 
 /**
- * Register current device (uses updateDoc for proper nested field update)
+ * Register current device and upload its settings (uses updateDoc for proper nested field update)
  */
 export async function registerDevice(): Promise<{ success: boolean; error?: string }> {
     try {
@@ -582,11 +584,24 @@ export async function registerDevice(): Promise<{ success: boolean; error?: stri
             lastSeen: new Date().toISOString(),
         };
 
+        // Also upload current device settings for per-device copy
+        const now = new Date().toISOString();
+        const checksum = await calculateSettingsChecksum();
+        const perDeviceSettings: SyncedDeviceSettings = {
+            groupId: '', // Not associated with a group
+            version: 1,
+            updatedAt: now,
+            updatedByDeviceId: deviceInfo.id,
+            checksum,
+            settings: getRawDeviceSettings(),
+        };
+
         if (snapshot.exists()) {
             // Use updateDoc with dot notation for nested field update
             console.log(`[Firebase WRITE] registerDevice (updateDoc): ${deviceInfo.id}`);
             await updateDoc(docRef, {
                 [`devices.${deviceInfo.id}`]: deviceData,
+                [`perDeviceSettings.${deviceInfo.id}`]: perDeviceSettings,
                 updatedAt: serverTimestamp(),
             });
         } else {
@@ -594,6 +609,7 @@ export async function registerDevice(): Promise<{ success: boolean; error?: stri
             console.log(`[Firebase WRITE] registerDevice (setDoc): ${deviceInfo.id}`);
             await setDoc(docRef, {
                 devices: { [deviceInfo.id]: deviceData },
+                perDeviceSettings: { [deviceInfo.id]: perDeviceSettings },
                 updatedAt: serverTimestamp(),
             });
         }
@@ -1107,8 +1123,77 @@ export async function getCloudGroupSettings(groupId: string): Promise<{
 }
 
 /**
+ * Get settings for a specific device from cloud (per-device settings)
+ */
+export async function getCloudDeviceSettings(deviceId: string): Promise<{
+    settings: SyncedDeviceSettings | null;
+    error?: string;
+}> {
+    const { data: syncData, error } = await getFullSyncData();
+    if (error || !syncData) {
+        return { settings: null, error };
+    }
+
+    const deviceSettings = syncData.perDeviceSettings?.[deviceId] ?? null;
+    return { settings: deviceSettings };
+}
+
+/**
+ * Copy settings from a cloud device to this device.
+ * Uses per-device settings, with fallback to group settings if device is in a group.
+ * If the current device is in a sync group, the settings will be uploaded to that group.
+ */
+export async function copySettingsFromCloudDevice(deviceId: string): Promise<{
+    success: boolean;
+    error?: string;
+}> {
+    try {
+        const { data: syncData, error: syncError } = await getFullSyncData();
+        if (syncError || !syncData) {
+            return { success: false, error: syncError || FIREBASE_ERRORS.SYNC_FAILED };
+        }
+
+        // First try per-device settings
+        let settings = syncData.perDeviceSettings?.[deviceId] ?? null;
+
+        // Fallback: if device is in a group, use group settings
+        if (!settings && syncData.groups) {
+            for (const group of Object.values(syncData.groups)) {
+                if (group.devices.includes(deviceId)) {
+                    settings = syncData.deviceSettings?.[group.id] ?? null;
+                    if (settings) break;
+                }
+            }
+        }
+
+        if (!settings) {
+            return { success: false, error: 'Nie znaleziono ustawien dla tego urzadzenia.' };
+        }
+
+        // Apply settings locally
+        applySyncedSettings(settings);
+
+        // If we're in a sync group, upload the new settings to our group
+        const state = getSyncState();
+        if (state) {
+            const uploadResult = await uploadSyncedSettings();
+            if (!uploadResult.success) {
+                // Settings were applied locally but failed to upload
+                console.warn('Settings applied locally but failed to sync to group:', uploadResult.error);
+            }
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to copy settings from cloud device', err);
+        return { success: false, error: FIREBASE_ERRORS.SYNC_FAILED };
+    }
+}
+
+/**
  * Copy settings from a cloud sync group to this device.
  * If the current device is in a sync group, the settings will be uploaded to that group.
+ * @deprecated Use copySettingsFromCloudDevice instead
  */
 export async function copySettingsFromCloudGroup(groupId: string): Promise<{
     success: boolean;
