@@ -25,3 +25,22 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 | Komenda | Opis |
 |---------|------|
 | `/czas` | Otworz okno zegara z aktualnym czasem w grze |
+
+## Jezyk
+
+| Komenda | Opis |
+|---------|------|
+| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |
+| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |
+
+## Przedstawieni
+
+| Komenda | Opis |
+|---------|------|
+| `/przedstawieni` | Wyswietl liste przedstawionych postaci |
+
+## Bindy
+
+| Komenda | Opis |
+|---------|------|
+| `/binds` | Wyswietl liste skonfigurowanych bindow |
