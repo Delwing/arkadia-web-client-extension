@@ -100,6 +100,7 @@ export {
     resolveSyncConflict,
     syncNow,
     getRemoteDeviceName,
+    getCloudSyncGroup,
 } from './firebaseUnifiedSync';
 
 export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';

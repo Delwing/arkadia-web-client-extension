@@ -24,6 +24,8 @@ import {
     checkForSyncUpdates,
     getRemoteDeviceName,
     getFirebaseAuth,
+    getCloudSyncGroup,
+    getRegisteredDevices,
 } from "@modules/firebase";
 import SyncConflictModal from "./SyncConflictModal";
 
@@ -46,6 +48,10 @@ function DeviceManagementTab() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
     const [conflictDeviceName, setConflictDeviceName] = useState<string>("");
+    const [cloudSyncGroup, setCloudSyncGroup] = useState<SyncGroup | null>(null);
+    const [isLoadingCloudGroup, setIsLoadingCloudGroup] = useState(false);
+    const [cloudDevices, setCloudDevices] = useState<DeviceInfo[]>([]);
+    const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -63,6 +69,48 @@ function DeviceManagementTab() {
     useEffect(() => {
         refreshData();
     }, [refreshData]);
+
+    // Load cloud sync group and devices when logged in
+    useEffect(() => {
+        const loadCloudData = async () => {
+            if (!isLoggedIn) {
+                setCloudSyncGroup(null);
+                setCloudDevices([]);
+                return;
+            }
+
+            // Load cloud sync group (only if not already in a group)
+            if (!syncGroup) {
+                setIsLoadingCloudGroup(true);
+                try {
+                    const result = await getCloudSyncGroup();
+                    setCloudSyncGroup(result.group ?? null);
+                } catch (err) {
+                    console.error("Failed to load cloud sync group", err);
+                    setCloudSyncGroup(null);
+                } finally {
+                    setIsLoadingCloudGroup(false);
+                }
+            } else {
+                setCloudSyncGroup(null);
+            }
+
+            // Load cloud devices
+            setIsLoadingCloudDevices(true);
+            try {
+                const result = await getRegisteredDevices();
+                // Filter out current device
+                const otherDevices = result.devices.filter(d => d.id !== deviceInfo?.id);
+                setCloudDevices(otherDevices);
+            } catch (err) {
+                console.error("Failed to load cloud devices", err);
+                setCloudDevices([]);
+            } finally {
+                setIsLoadingCloudDevices(false);
+            }
+        };
+        loadCloudData();
+    }, [isLoggedIn, syncGroup, deviceInfo?.id]);
 
     // Handle custom name save
     const handleSaveName = () => {
@@ -270,6 +318,36 @@ function DeviceManagementTab() {
         }
     };
 
+    // Handle join cloud sync group (when group exists in cloud but not locally)
+    const handleJoinCloudSyncGroup = async () => {
+        if (!cloudSyncGroup) return;
+
+        const groupName = cloudSyncGroup.name;
+        if (!window.confirm(`Czy na pewno chcesz dolaczyc do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostana pobrane.`)) {
+            return;
+        }
+
+        setJoiningGroupId(cloudSyncGroup.id);
+        setError(null);
+        setStatus(null);
+
+        try {
+            const result = await joinSyncGroup(cloudSyncGroup.id);
+            if (result.success && result.group) {
+                setSyncGroupState(result.group);
+                setCloudSyncGroup(null);
+                setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}".`);
+            } else {
+                setError(result.error || "Nie udalo sie dolaczyc do grupy synchronizacji.");
+            }
+        } catch (err) {
+            console.error("Failed to join cloud sync group", err);
+            setError("Wystapil blad podczas dolaczania do grupy synchronizacji.");
+        } finally {
+            setJoiningGroupId(null);
+        }
+    };
+
     // Check for sync updates on mount
     useEffect(() => {
         const checkUpdates = async () => {
@@ -379,40 +457,92 @@ function DeviceManagementTab() {
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title">Synchronizacja urzadzen</h5>
                 {!syncGroup ? (
-                    <Card className="bg-dark">
-                        <Card.Body>
-                            <p className="text-muted small mb-3">
-                                Utworz grupe synchronizacji, aby synchronizowac
-                                ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami.
-                                {!isLoggedIn && " Zaloguj sie, aby synchronizowac automatycznie, lub eksportuj/importuj reczne."}
-                            </p>
-                            <Form onSubmit={e => { e.preventDefault(); handleCreateSyncGroup(); }}>
-                                <InputGroup className="mb-0">
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Nazwa grupy (np. Moje urzadzenia)"
-                                        value={syncGroupName}
-                                        onChange={e => setSyncGroupName(e.target.value)}
-                                        disabled={isCreatingGroup}
-                                    />
-                                    <Button
-                                        variant="primary"
-                                        onClick={handleCreateSyncGroup}
-                                        disabled={isCreatingGroup}
-                                    >
-                                        {isCreatingGroup ? (
-                                            <>
-                                                <Spinner size="sm" className="me-2" />
-                                                Tworzenie...
-                                            </>
-                                        ) : (
-                                            "Utworz grupe"
-                                        )}
-                                    </Button>
-                                </InputGroup>
-                            </Form>
-                        </Card.Body>
-                    </Card>
+                    <div className="d-flex flex-column gap-3">
+                        {/* Cloud sync group available to join */}
+                        {isLoggedIn && cloudSyncGroup && (
+                            <Card className="bg-dark border-success">
+                                <Card.Body>
+                                    <div className="d-flex flex-column gap-2">
+                                        <div className="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{cloudSyncGroup.name}</strong>
+                                                <div className="text-muted small">
+                                                    Grupa z chmury ({cloudSyncGroup.devices.length} {cloudSyncGroup.devices.length === 1 ? "urzadzenie" : "urzadzen"})
+                                                </div>
+                                            </div>
+                                            <Badge bg="success">W chmurze</Badge>
+                                        </div>
+                                        <p className="text-muted small mb-2">
+                                            Znaleziono istniejaca grupe synchronizacji w chmurze. Dolacz, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
+                                        </p>
+                                        <Button
+                                            variant="success"
+                                            size="sm"
+                                            onClick={handleJoinCloudSyncGroup}
+                                            disabled={joiningGroupId === cloudSyncGroup.id}
+                                        >
+                                            {joiningGroupId === cloudSyncGroup.id ? (
+                                                <>
+                                                    <Spinner size="sm" className="me-1" />
+                                                    Dolaczanie...
+                                                </>
+                                            ) : (
+                                                "Dolacz do grupy"
+                                            )}
+                                        </Button>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        )}
+
+                        {/* Loading cloud sync group */}
+                        {isLoggedIn && isLoadingCloudGroup && !cloudSyncGroup && (
+                            <Card className="bg-dark">
+                                <Card.Body className="d-flex align-items-center gap-2 text-muted">
+                                    <Spinner size="sm" />
+                                    <span>Sprawdzanie grup w chmurze...</span>
+                                </Card.Body>
+                            </Card>
+                        )}
+
+                        {/* Create new sync group */}
+                        <Card className="bg-dark">
+                            <Card.Body>
+                                <p className="text-muted small mb-3">
+                                    {cloudSyncGroup
+                                        ? "Mozesz tez utworzyc nowa grupe synchronizacji:"
+                                        : "Utworz grupe synchronizacji, aby synchronizowac ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami."
+                                    }
+                                    {!isLoggedIn && " Zaloguj sie, aby synchronizowac automatycznie, lub eksportuj/importuj reczne."}
+                                </p>
+                                <Form onSubmit={e => { e.preventDefault(); handleCreateSyncGroup(); }}>
+                                    <InputGroup className="mb-0">
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Nazwa grupy (np. Moje urzadzenia)"
+                                            value={syncGroupName}
+                                            onChange={e => setSyncGroupName(e.target.value)}
+                                            disabled={isCreatingGroup}
+                                        />
+                                        <Button
+                                            variant="primary"
+                                            onClick={handleCreateSyncGroup}
+                                            disabled={isCreatingGroup}
+                                        >
+                                            {isCreatingGroup ? (
+                                                <>
+                                                    <Spinner size="sm" className="me-2" />
+                                                    Tworzenie...
+                                                </>
+                                            ) : (
+                                                "Utworz grupe"
+                                            )}
+                                        </Button>
+                                    </InputGroup>
+                                </Form>
+                            </Card.Body>
+                        </Card>
+                    </div>
                 ) : (
                     <Card className="bg-dark">
                         <Card.Body>
@@ -501,6 +631,81 @@ function DeviceManagementTab() {
                     </Card>
                 )}
             </section>
+
+            {/* Cloud Devices Section */}
+            {isLoggedIn && (cloudDevices.length > 0 || isLoadingCloudDevices) && (
+                <section className="character-settings-section">
+                    <h5 className="character-settings-section-title">Urzadzenia w chmurze</h5>
+                    <p className="text-muted small mb-2">
+                        Inne urzadzenia zarejestrowane na tym koncie. Mozesz dolaczyc do ich grupy synchronizacji.
+                    </p>
+                    {isLoadingCloudDevices ? (
+                        <Card className="bg-dark">
+                            <Card.Body className="d-flex align-items-center gap-2 text-muted">
+                                <Spinner size="sm" />
+                                <span>Ladowanie urzadzen z chmury...</span>
+                            </Card.Body>
+                        </Card>
+                    ) : (
+                        <ListGroup variant="flush" className="bg-dark">
+                            {cloudDevices.map(device => {
+                                const isInCloudGroup = cloudSyncGroup?.devices.includes(device.id);
+                                const isInCurrentGroup = syncGroup?.devices.includes(device.id);
+                                return (
+                                    <ListGroup.Item
+                                        key={device.id}
+                                        className="bg-dark border-secondary py-3"
+                                    >
+                                        <div className="d-flex flex-column gap-2">
+                                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                                <strong>
+                                                    {device.customName || device.name}
+                                                </strong>
+                                                <Badge bg="info">Chmura</Badge>
+                                                {isInCurrentGroup && (
+                                                    <Badge bg="success">W Twojej grupie</Badge>
+                                                )}
+                                                {isInCloudGroup && !isInCurrentGroup && cloudSyncGroup && (
+                                                    <Badge bg="warning" text="dark">
+                                                        Grupa: {cloudSyncGroup.name}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <div className="text-muted small">
+                                                <div>ID: {device.id.substring(0, 16)}...</div>
+                                                {device.browserInfo && (
+                                                    <div>{device.browserInfo.browser} na {device.browserInfo.os}</div>
+                                                )}
+                                                <div>Utworzono: {formatDate(device.createdAt)}</div>
+                                            </div>
+                                            {/* Show join button if device is in a cloud group and we're not in any group */}
+                                            {isInCloudGroup && !syncGroup && cloudSyncGroup && (
+                                                <div className="d-flex gap-2 flex-wrap">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="success"
+                                                        onClick={handleJoinCloudSyncGroup}
+                                                        disabled={joiningGroupId === cloudSyncGroup.id}
+                                                    >
+                                                        {joiningGroupId === cloudSyncGroup.id ? (
+                                                            <>
+                                                                <Spinner size="sm" className="me-1" />
+                                                                Dolaczanie...
+                                                            </>
+                                                        ) : (
+                                                            `Dolacz do grupy "${cloudSyncGroup.name}"`
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </ListGroup.Item>
+                                );
+                            })}
+                        </ListGroup>
+                    )}
+                </section>
+            )}
 
             {/* Imported Devices Section */}
             {importedDevices.length > 0 && (

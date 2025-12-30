@@ -941,6 +941,21 @@ export async function getRemoteDeviceName(deviceId: string): Promise<string> {
     return deviceId.slice(0, 8) + '...';
 }
 
+/**
+ * Get sync group from cloud (if any exists)
+ * This is useful to check if user has a sync group on another device
+ */
+export async function getCloudSyncGroup(): Promise<{
+    group: SyncGroup | null;
+    error?: string;
+}> {
+    const { data: syncData, error } = await getFullSyncData();
+    if (error) {
+        return { group: null, error };
+    }
+    return { group: syncData?.group ?? null };
+}
+
 // ============================================================================
 // Cache Management
 // ============================================================================
