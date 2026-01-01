@@ -7,7 +7,7 @@ export default function initStoneValue(
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
     const tag = "stone-value";
-    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|Sa tu \d+ sztuki warte|Jest tu \d+ sztuk wartych) ([0-9]+) mied[a-z]+/;
+    const pattern = /^(?:Wydaje ci sie, ze (?:jest|sa) wart[aye]? okolo|(?:Wydaje ci sie, ze )?[Jj]est tu \d+ sztuk wartych|Sa tu \d+ sztuki warte) ([0-9]+) mied[a-z]+/;
 
     let sum = 0;
 

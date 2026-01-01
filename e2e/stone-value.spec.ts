@@ -129,4 +129,29 @@ test.describe('Stone value counter', () => {
         await expect(output, 'should display correct sum from different patterns').toContainText('Laczna wartosc kamieni:');
         await expect(output, 'should calculate total correctly').toContainText('2 zl');
     });
+
+    test('handles numeric count in "Wydaje ci sie, ze jest tu X sztuk wartych" pattern', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+
+        await submitCommand(page, '/ocenkamienie');
+
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {
+                message: 'should send "ocen kamienie" command',
+            })
+            .toBe('ocen kamienie');
+
+        // Test the pattern with numeric count: "Wydaje ci sie, ze jest tu 340 sztuk wartych 910000 miedziakow."
+        await pushText(page, 'Wydaje ci sie, ze jest tu 340 sztuk wartych 910000 miedziakow.');
+
+        await page.waitForTimeout(800);
+
+        // 910000 miedziaków = 37 mth + 11 zl + 1 sr + 8 mdz
+        await expect(output, 'should display total from numeric count pattern').toContainText('Laczna wartosc kamieni:');
+        await expect(output, 'should display mithril value').toContainText('37 mth');
+    });
 });
