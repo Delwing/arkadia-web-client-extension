@@ -262,3 +262,50 @@ export function getPopupFloatingState(popupId: string): { x: number; y: number; 
   }
   return undefined;
 }
+
+/**
+ * Get a specific setting value for a built-in panel (map, objectList).
+ * @param panelId The panel identifier ('map' or 'objectList')
+ * @param key The setting key
+ * @param defaultValue Default value if setting is not found
+ */
+export function getBuiltInPanelSetting<T>(panelId: string, key: string, defaultValue: T): T {
+  try {
+    const stored = getCachedLayoutState();
+    const settings = stored?.builtInPanels?.[panelId]?.settings;
+    if (settings && key in settings) {
+      return settings[key] as T;
+    }
+  } catch {
+    // Ignore errors
+  }
+  return defaultValue;
+}
+
+/**
+ * Set a specific setting value for a built-in panel (map, objectList).
+ * Saves immediately (not debounced) to avoid race conditions with LayoutContext.
+ * @param panelId The panel identifier ('map' or 'objectList')
+ * @param key The setting key
+ * @param value The value to store
+ */
+export function setBuiltInPanelSetting<T>(panelId: string, key: string, value: T): void {
+  try {
+    // Clear cache to ensure we get the latest state
+    cachedLayoutState = null;
+    const state = loadLayoutState();
+    if (!state.builtInPanels[panelId]) {
+      state.builtInPanels[panelId] = {};
+    }
+    if (!state.builtInPanels[panelId].settings) {
+      state.builtInPanels[panelId].settings = {};
+    }
+    state.builtInPanels[panelId].settings![key] = value;
+    // Save immediately to avoid race condition with LayoutContext's debounced save
+    saveLayoutState(state);
+    // Notify LayoutContext to sync its state
+    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+  } catch (e) {
+    console.error('Failed to save built-in panel setting:', e);
+  }
+}

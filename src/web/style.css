@@ -2397,6 +2397,254 @@ h1 {
   font-style: italic;
 }
 
+/* Object List Card View Toggle */
+.object-list__card-toggle {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.object-list__card-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.8);
+}
+
+.object-list__card-toggle--active {
+  background-color: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+
+.object-list__card-toggle--active:hover {
+  background-color: rgba(96, 165, 250, 0.3);
+}
+
+/* Object List Card View */
+.objects-list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+
+/* Card uses vertical flex layout with 3 rows */
+.object-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 50px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: default;
+}
+
+.object-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Row 1: number, name, icons */
+.object-card__row1 {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px 2px 8px;
+  gap: 6px;
+}
+
+/* Row 2: attackers */
+.object-card__row2 {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  padding: 0 8px 2px 30px;
+  min-height: 16px;
+  margin-top: -2px;
+}
+
+/* Number badge */
+.object-card__number {
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(241, 245, 249, 0.9);
+  padding: 0 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.object-card__number:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.object-card__number--next-target {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+/* Name */
+.object-card__name {
+  flex: 1;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(241, 245, 249, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 18px;
+}
+
+.object-card__name--target {
+  color: #ffaaaa;
+}
+
+.object-card__name--teammate {
+  color: springgreen;
+}
+
+.object-card__name--attacking {
+  color: #b19cd9;
+}
+
+.object-card__name--teammate-not-attacking {
+  font-style: italic;
+}
+
+/* Action icons */
+.object-card__icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.object-card__icon {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 3px;
+}
+
+.object-card__icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Attack icon (sword) */
+.object-card__icon--attack {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23ff6b6b' d='M13.854.854a.5.5 0 0 0-.708 0L10.5 3.5 9.854 2.854a.5.5 0 0 0-.707 0l-.707.707a.5.5 0 0 0 0 .707L9.293 5.12l-5.586 5.586a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L10.707 6.535l.853.854a.5.5 0 0 0 .707 0l.707-.707a.5.5 0 0 0 0-.707L12.12 5.12l2.647-2.647a.5.5 0 0 0 0-.707L14.06.56a.5.5 0 0 0-.207-.06zM2.5 13.5A1.5 1.5 0 0 0 4 15a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 4 12a1.5 1.5 0 0 0-1.5 1.5z'/%3E%3C/svg%3E");
+}
+
+/* Guard/Shield icon */
+.object-card__icon--guard {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2360a5fa' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3C/svg%3E");
+}
+
+/* Przelam/Break defense icon */
+.object-card__icon--przelam {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23fbbf24' d='M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.089z'/%3E%3C/svg%3E");
+}
+
+/* Attackers */
+.object-card__attackers {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.object-card__attacker {
+  min-width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 107, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  border-radius: 50%;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #ff6b6b;
+  padding: 0 2px;
+}
+
+/* HP bar at bottom */
+.object-card__hp-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 5px 5px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.object-card__hp-bar:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.object-card__hp-fill {
+  height: 100%;
+  background-color: #22c55e;
+  transition: width 0.2s ease;
+}
+
+/* Player card styling */
+.object-card--player {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.object-card--player .object-card__number {
+  background: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+/* Teammate card styling */
+.object-card--teammate {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+/* Target card styling */
+.object-card--target {
+  border-color: rgba(255, 170, 170, 0.4);
+  box-shadow: 0 0 8px rgba(255, 170, 170, 0.2);
+}
+
+/* Next queued target */
+.object-card--next-queued {
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Attack target indicator (orangered left border) */
+.object-card--attack-target {
+  border-left: 3px solid orangered;
+}
+
+/* Defense target indicator (greenyellow left border) */
+.object-card--defense-target {
+  border-left: 3px solid greenyellow;
+}
+
 #recording-button {
   position: fixed;
   top: 0.5rem;

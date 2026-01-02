@@ -72,6 +72,8 @@ export interface BuiltInPanelState {
   isLocked?: boolean;
   /** Dynamic title override (e.g., "Mapa (Area Name)" when viewing different area) */
   title?: string;
+  /** Panel-specific settings (e.g., view mode toggles) */
+  settings?: Record<string, unknown>;
 }
 
 export interface LayoutState {

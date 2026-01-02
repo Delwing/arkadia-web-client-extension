@@ -4,6 +4,8 @@ import { createAttackController } from "@client/utils/attackController";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
 import { showContextMenu } from "@shared/dom/contextMenu";
+import eventBus from "@modules/core/eventBus";
+import { getBuiltInPanelSetting } from "./layout/utils/layoutStorage";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -33,6 +35,7 @@ export default class ObjectList {
     private cachedPipHtml = "";
     private attackController: ReturnType<typeof createAttackController>;
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
+    private cardViewMode = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -44,6 +47,11 @@ export default class ObjectList {
         if (!this.isMobile) {
             this.container?.addEventListener("click", this.onClick);
             this.container?.addEventListener("contextmenu", this.onContextMenu);
+            // Also attach to content for better event capture in docked panels
+            this.content?.addEventListener("click", this.onClick);
+            this.content?.addEventListener("contextmenu", this.onContextMenu);
+            // Use capture phase at document level for card view contextmenu
+            document.addEventListener("contextmenu", this.onDocumentContextMenu, true);
         }
         window.addEventListener("resize", this.clampToViewport);
         this.client.on("attackQueueChange", () => this.render());
@@ -57,12 +65,23 @@ export default class ObjectList {
         this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
+        this.initializeCardViewMode();
         storage.onChanged?.addListener((changes) => {
             if (changes.uiSettings) {
                 this.loadContextMenuCommands();
             }
         });
         this.render();
+    }
+
+    private initializeCardViewMode() {
+        // Load initial state from storage
+        this.cardViewMode = getBuiltInPanelSetting('objectList', 'cardViewMode', false);
+        // Subscribe to card view mode changes from the header toggle
+        eventBus.on('objectListCardViewMode', (mode: boolean) => {
+            this.cardViewMode = mode;
+            this.render();
+        });
     }
 
     private loadContextMenuCommands() {
@@ -122,9 +141,15 @@ export default class ObjectList {
         const pointerType = e.pointerType || "";
         const isMousePointer =
             pointerType === "mouse" || (pointerType === "" && !this.isMobile);
+
+        // In card view, don't interfere with clicks on card elements (allows context menu)
+        if (isMousePointer && this.cardViewMode && target?.closest(".object-card")) {
+            return;
+        }
+
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__number")
         ) {
             return;
         }
@@ -259,7 +284,7 @@ export default class ObjectList {
             this.focusInput();
             return;
         }
-        // Handle HP bar click - send /prze command
+        // Handle HP bar click - send /prze command (list view)
         const hpBarEl = target.closest(
             ".object-hp-bar[data-object-num]"
         ) as HTMLElement | null;
@@ -267,6 +292,71 @@ export default class ObjectList {
             const num = hpBarEl.getAttribute("data-object-num");
             if (num) {
                 this.client.sendCommand(`/prze ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
+        // Handle card view HP bar click - send /prze command
+        const cardHpBarEl = target.closest(
+            ".object-card__hp-bar[data-object-num]"
+        ) as HTMLElement | null;
+        if (cardHpBarEl) {
+            const num = cardHpBarEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/prze ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
+        // Handle card view icon clicks
+        const cardIconEl = target.closest(
+            ".object-card__icon[data-action]"
+        ) as HTMLElement | null;
+        if (cardIconEl) {
+            const action = cardIconEl.getAttribute("data-action");
+            const num = cardIconEl.getAttribute("data-object-num");
+            const id = cardIconEl.getAttribute("data-object-id");
+            if (action && num) {
+                switch (action) {
+                    case 'attack':
+                        if (id) {
+                            this.attackController.attackById(parseInt(id, 10));
+                        } else {
+                            this.client.sendCommand(`/z ${num}`);
+                        }
+                        break;
+                    case 'guard':
+                        this.client.sendCommand(`/za ${num}`);
+                        break;
+                    case 'przelam':
+                        this.client.sendCommand(`/prze ${num}`);
+                        break;
+                }
+            }
+            this.focusInput();
+            return;
+        }
+        // Handle card view number click (attack)
+        const cardNumberEl = target.closest(
+            ".object-card__number[data-object-num]"
+        ) as HTMLElement | null;
+        if (cardNumberEl) {
+            const id = cardNumberEl.getAttribute("data-object-id");
+            const num = cardNumberEl.getAttribute("data-object-num");
+            if (id) {
+                // Check if target is a teammate before attacking
+                const manager = this.client.ObjectManager;
+                const objects = manager?.getObjectsOnLocation() || [];
+                const targetObj = objects.find((o: any) => String(o.num) === id);
+                const isTeammate = targetObj && this.client.TeamManager?.isInTeam?.(targetObj.desc);
+
+                if (isTeammate) {
+                    // Don't attack teammates
+                    return;
+                }
+                this.attackController.attackById(parseInt(id, 10));
+            } else if (num) {
+                this.client.sendCommand(`/z ${num}`);
             }
             this.focusInput();
             return;
@@ -315,16 +405,27 @@ export default class ObjectList {
 
     private onContextMenu = (e: MouseEvent) => {
         if (this.isMobile) return;
-        const target = this.getEventTargetElement(e.target);
+        const target = e.target as HTMLElement | null;
         if (!target) return;
 
-        // Find the closest element with object data
-        const objectEl = target.closest(
-            "[data-object-id]"
-        ) as HTMLElement | null;
-        if (!objectEl) return;
+        let objectId: string | null = null;
 
-        const objectId = objectEl.getAttribute("data-object-id");
+        // In card view, find the parent card element
+        if (this.cardViewMode) {
+            const cardEl = target.closest(".object-card") as HTMLElement | null;
+            if (cardEl) {
+                objectId = cardEl.getAttribute("data-object-id");
+            }
+        }
+
+        // Fallback to data-object-id attribute (works for list view and card elements with the attribute)
+        if (!objectId) {
+            const objectEl = target.closest("[data-object-id]") as HTMLElement | null;
+            if (objectEl) {
+                objectId = objectEl.getAttribute("data-object-id");
+            }
+        }
+
         if (!objectId) return;
 
         if (this.contextMenuCommands.length === 0) return;
@@ -350,8 +451,14 @@ export default class ObjectList {
         // Show placeholder if no objects
         if (objects.length === 0) {
             this.objectLines = [];
-            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
+            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektow</span>';
             this.rebuildPictureInPictureHtml();
+            return;
+        }
+
+        // Render card view or list view based on mode
+        if (this.cardViewMode) {
+            this.renderCardView(objects);
             return;
         }
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
@@ -540,6 +647,175 @@ export default class ObjectList {
         this.content.innerHTML = lines.join("<br>");
         this.rebuildPictureInPictureHtml();
     }
+
+    private renderCardView(objects: any[]) {
+        if (!this.content) return;
+
+        const tm = this.client.TeamManager;
+        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+
+        // Verify the queued enemy actually exists in the current object list
+        const queuedEnemyExists = nextQueuedId !== undefined &&
+            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
+        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
+
+        const cards = objects.map((obj: any) => {
+            const num = String(obj.shortcut);
+            const isPlayer = obj.shortcut === '@';
+            const rawDesc = obj.desc || "";
+            const isTeammate = tm?.isInTeam?.(rawDesc);
+            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+            const isNextQueued =
+                !isPlayer &&
+                validNextQueuedId !== undefined &&
+                typeof obj.num !== "undefined" &&
+                validNextQueuedId === obj.num;
+            const isTarget = obj.avatar_target || false;
+
+            // Card classes
+            const cardClasses = ['object-card'];
+            if (isPlayer) cardClasses.push('object-card--player');
+            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
+            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
+            if (isNextQueued) cardClasses.push('object-card--next-queued');
+            if (obj.attack_target) cardClasses.push('object-card--attack-target');
+            if (obj.defense_target) cardClasses.push('object-card--defense-target');
+
+            // Number badge classes
+            const numberClasses = ['object-card__number'];
+            if (isNextQueued) numberClasses.push('object-card__number--next-target');
+
+            // Name classes
+            const nameClasses = ['object-card__name'];
+            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
+            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
+            if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+
+            // Build HP bar with color based on health level (0-6 scale, 7 levels)
+            let hpBarFill = '';
+            if (typeof obj.hp === 'number') {
+                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
+                const hpPercent = (hpLevel / 7) * 100;
+                // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
+                const hpColors: Record<number, string> = {
+                    1: '#dc2626',
+                    2: '#dc2626',
+                    3: '#ef4444',
+                    4: '#f97316',
+                    5: '#eab308',
+                    6: '#84cc16',
+                    7: '#22c55e'
+                };
+                const hpColor = hpColors[hpLevel] || '#22c55e';
+                hpBarFill = `<div class="object-card__hp-fill" style="width: ${hpPercent}%; background-color: ${hpColor}"></div>`;
+            }
+
+            // Build action icons (only for non-player, non-teammate)
+            let iconsHtml = '';
+            if (!isPlayer && !isTeammate) {
+                iconsHtml = `
+                    <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
+                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
+                `;
+            } else if (isTeammate && !isPlayer) {
+                iconsHtml = `
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
+                `;
+            }
+
+            // Build attackers
+            const attackers = objects
+                .filter((o: any) => o.attack_num === obj.num)
+                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
+                .join('');
+
+            // Simplified card structure - single container, no absolute positioning
+            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
+                <div class="object-card__row1">
+                    <span class="${numberClasses.join(' ')}">${num}</span>
+                    <span class="${nameClasses.join(' ')}">${rawDesc}</span>
+                    <span class="object-card__icons">${iconsHtml}</span>
+                </div>
+                <div class="object-card__row2">
+                    <span class="object-card__attackers">${attackers}</span>
+                </div>
+                <div class="object-card__hp-bar">${hpBarFill}</div>
+            </div>`;
+        });
+
+        // Store lines for PiP (use raw text version)
+        this.objectLines = objects.map((obj: any) => {
+            const num = String(obj.shortcut);
+            const rawDesc = obj.desc || "";
+            return `${num} ${rawDesc}`;
+        });
+
+        this.content.innerHTML = `<div class="objects-list-cards">${cards.join('')}</div>`;
+
+        // Attach contextmenu handler directly to the cards container (use capture phase)
+        const cardsContainer = this.content.querySelector('.objects-list-cards');
+        if (cardsContainer && !this.isMobile) {
+            cardsContainer.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
+        }
+
+        this.rebuildPictureInPictureHtml();
+    }
+
+    private onCardContextMenu = (e: MouseEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+
+        const cardEl = target.closest('.object-card') as HTMLElement | null;
+        if (!cardEl) return;
+
+        const objectId = cardEl.getAttribute('data-object-id');
+        if (!objectId) return;
+
+        if (this.contextMenuCommands.length === 0) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const items = this.contextMenuCommands.map((command) => ({
+            label: command,
+            action: () => {
+                this.client.sendCommand(`${command} ob_${objectId}`);
+            },
+        }));
+
+        showContextMenu(items, e.clientX, e.clientY);
+    };
+
+    private onDocumentContextMenu = (e: MouseEvent) => {
+        if (!this.cardViewMode) return;
+
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+
+        // Check if click is inside our container
+        if (!this.container?.contains(target) && !this.content?.contains(target)) return;
+
+        const cardEl = target.closest('.object-card') as HTMLElement | null;
+        if (!cardEl) return;
+
+        const objectId = cardEl.getAttribute('data-object-id');
+        if (!objectId) return;
+
+        if (this.contextMenuCommands.length === 0) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const items = this.contextMenuCommands.map((command) => ({
+            label: command,
+            action: () => {
+                this.client.sendCommand(`${command} ob_${objectId}`);
+            },
+        }));
+
+        showContextMenu(items, e.clientX, e.clientY);
+    };
 
     private setupPictureInPictureControls(content: HTMLElement) {
         if (!this.container) return;

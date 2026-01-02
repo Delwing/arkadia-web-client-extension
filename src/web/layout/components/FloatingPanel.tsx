@@ -4,6 +4,7 @@ import { useLayoutManager } from '@web/layout';
 import { useDockablePanel } from '@web/layout';
 import { getPopup } from '../popupRegistry';
 import { MapHeaderMenu } from './MapHeaderMenu';
+import { ObjectListHeaderActions } from './ObjectListHeaderActions';
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
 
@@ -218,8 +219,9 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
               />
             </>
           )}
-          {/* Map panel header menu */}
+          {/* Built-in panel header actions */}
           {panel.id === 'map' && <MapHeaderMenu />}
+          {panel.id === 'objectList' && <ObjectListHeaderActions />}
           {/* Built-in panel lock button */}
           {isBuiltIn && (
             <button

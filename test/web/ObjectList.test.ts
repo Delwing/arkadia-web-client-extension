@@ -45,7 +45,7 @@ describe('ObjectList', () => {
     client.ObjectManager.getObjectsOnLocation = () => [];
     (objectList as any).render();
     const content = document.querySelector('#objects-list .objects-list-content') as HTMLElement;
-    expect(content.innerHTML).toContain('Brak obiektów');
+    expect(content.innerHTML).toContain('Brak obiektow');
     expect(content.innerHTML).toContain('font-style: italic');
   });
 
