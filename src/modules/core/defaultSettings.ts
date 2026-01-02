@@ -1,5 +1,6 @@
 import { DEFAULT_ATTACK_COMMAND } from "@client/utils/attackCommand";
 import { DEFAULT_DRAW_WEAPON_COMMAND } from "@client/utils/drawWeaponCommand";
+import { DEFAULT_SUPPORT_COMMAND } from "@client/utils/supportCommand";
 
 export interface CollectOverride {
     enemy: string;
@@ -31,6 +32,7 @@ export interface Settings {
     herbPostUseCommand: string;
     herbWieleCount: number;
     attackCommand: string;
+    supportCommand: string;
     drawWeaponCommand: string;
     fullHpMessage: boolean;
     lowHpAlert: number;
@@ -77,6 +79,7 @@ export const defaultSettings: Settings = {
     herbPostUseCommand: '',
     herbWieleCount: 25,
     attackCommand: DEFAULT_ATTACK_COMMAND,
+    supportCommand: DEFAULT_SUPPORT_COMMAND,
     drawWeaponCommand: DEFAULT_DRAW_WEAPON_COMMAND,
     fullHpMessage: false,
     lowHpAlert: 2,

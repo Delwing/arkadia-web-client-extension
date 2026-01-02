@@ -403,6 +403,20 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda wsparcia:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.supportCommand}
+                                    placeholder="wesprzyj"
+                                    onChange={e => onChangeSetting(s => s.supportCommand = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                                <Form.Text className="text-muted">
+                                    Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".
+                                </Form.Text>
+                            </Form.Group>
+                            <Form.Group>
                                 <Form.Label className="me-1 mb-0">Komenda dobycia broni:</Form.Label>
                                 <Form.Control
                                     type="text"

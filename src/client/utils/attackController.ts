@@ -1,15 +1,18 @@
 import Client from "../Client";
 import { getItemSync, setItemSync } from "@modules/core/storage";
 import { normalizeAttackCommand } from "./attackCommand";
+import { normalizeSupportCommand } from "./supportCommand";
 
 export type AttackMode = "A" | "AW" | "AWR";
 
 export function createAttackController(client: Client) {
     const storedSettings = getItemSync("settings")?.settings;
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
+    let supportCommand = normalizeSupportCommand(storedSettings?.supportCommand);
     client.on("settings", (settings) => {
-        const detail = (settings ?? {}) as { attackCommand?: string };
+        const detail = (settings ?? {}) as { attackCommand?: string; supportCommand?: string };
         attackCommand = normalizeAttackCommand(detail?.attackCommand);
+        supportCommand = normalizeSupportCommand(detail?.supportCommand);
     });
 
     let attackMode: AttackMode = getItemSync("attack_mode")?.attack_mode ?? "A";
@@ -29,8 +32,18 @@ export function createAttackController(client: Client) {
         }
     };
 
+    const support = (command: string = supportCommand) => {
+        client.sendCommand(command);
+        const id = client.TeamManager.getLeaderId?.();
+        if (id) {
+            client.sendCommand(`${command} ob_${id}`);
+        }
+    };
+
     return {
         attackById,
+        support,
         getAttackCommand: () => attackCommand,
+        getSupportCommand: () => supportCommand,
     };
 }

@@ -371,11 +371,7 @@ export default class Client {
     }
 
     support() {
-        this.sendCommand('wesprzyj')
-        const id = this.TeamManager.getLeaderId?.()
-        if (id) {
-            this.sendCommand(`wesprzyj ob_${id}`)
-        }
+        this.AttackController.support();
     }
 
     attackEnemySlot(_slotIndex: number) {
