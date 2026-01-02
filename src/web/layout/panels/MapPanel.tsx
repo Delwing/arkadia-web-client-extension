@@ -1,11 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapReturnButton } from '../components/MapReturnButton';
 import { useMapViewingState } from '@web/layout';
 import { useLayoutManager } from '@web/layout';
 import { PANEL_CONFIGS } from '../types';
+import eventBus from '@modules/core/eventBus';
+import { getItemSync } from '@modules/core/storage';
 
 interface MapPanelProps {
   mapElement: HTMLElement | null;
+}
+
+function getInitialLabelVisible(): boolean {
+  try {
+    const data = getItemSync('uiSettings');
+    const parsed = data?.uiSettings as any;
+    if (parsed && typeof parsed.mapLabelVisible === 'boolean') {
+      return parsed.mapLabelVisible;
+    }
+  } catch {
+    // ignore
+  }
+  return true;
 }
 
 export function MapPanel({ mapElement }: MapPanelProps) {
@@ -14,15 +29,76 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   const locationWrapperRef = useRef<HTMLElement | null>(null);
   const { updateBuiltInPanelState } = useLayoutManager();
   const mapViewingState = useMapViewingState();
+  const [labelVisible, setLabelVisible] = useState(getInitialLabelVisible);
+  const [locationLabel, setLocationLabel] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Update panel title when viewing state changes
+  // Listen for label visibility changes
   useEffect(() => {
+    const handleVisibility = (visible: boolean) => {
+      setLabelVisible(visible);
+    };
+    eventBus.on('mapLabelVisibility', handleVisibility);
+    return () => {
+      eventBus.off('mapLabelVisibility', handleVisibility);
+    };
+  }, []);
+
+  // Listen for location label updates (for title when label is hidden)
+  useEffect(() => {
+    const handleLocationLabel = (label: string) => {
+      setLocationLabel(label);
+    };
+    eventBus.on('mapLocationLabel', handleLocationLabel);
+    // Request current label on mount
+    eventBus.emit('requestMapLocationLabel');
+    return () => {
+      eventBus.off('mapLocationLabel', handleLocationLabel);
+    };
+  }, []);
+
+  // Listen for pause state changes
+  useEffect(() => {
+    const handlePauserStart = () => setIsPaused(true);
+    const handlePauserEnd = () => setIsPaused(false);
+    eventBus.on('pauserStart', handlePauserStart);
+    eventBus.on('pauserEnd', handlePauserEnd);
+    return () => {
+      eventBus.off('pauserStart', handlePauserStart);
+      eventBus.off('pauserEnd', handlePauserEnd);
+    };
+  }, []);
+
+  // Update location-wrapper visibility
+  useEffect(() => {
+    if (locationWrapperRef.current) {
+      locationWrapperRef.current.style.display = labelVisible ? '' : 'none';
+    }
+  }, [labelVisible]);
+
+  // Build title with label info when label is hidden
+  const buildTitle = useCallback(() => {
     const baseTitle = PANEL_CONFIGS.map?.title ?? 'Mapa';
-    const title = mapViewingState.isViewingDifferentArea && mapViewingState.viewedAreaName
-      ? `${baseTitle} (${mapViewingState.viewedAreaName})`
-      : baseTitle;
+
+    // If viewing a different area, show that in the title
+    if (mapViewingState.isViewingDifferentArea && mapViewingState.viewedAreaName) {
+      return `${baseTitle} (${mapViewingState.viewedAreaName})`;
+    }
+
+    // If label is hidden, show location info in title
+    if (!labelVisible && locationLabel) {
+      const pauseIndicator = isPaused ? ' ⏸' : '';
+      return `${baseTitle}: ${locationLabel}${pauseIndicator}`;
+    }
+
+    return baseTitle;
+  }, [mapViewingState.isViewingDifferentArea, mapViewingState.viewedAreaName, labelVisible, locationLabel, isPaused]);
+
+  // Update panel title when relevant state changes
+  useEffect(() => {
+    const title = buildTitle();
     updateBuiltInPanelState('map', { title });
-  }, [mapViewingState.isViewingDifferentArea, mapViewingState.viewedAreaName, updateBuiltInPanelState]);
+  }, [buildTitle, updateBuiltInPanelState]);
 
   useEffect(() => {
     if (!containerRef.current || !mapElement) return;
@@ -40,6 +116,9 @@ export function MapPanel({ mapElement }: MapPanelProps) {
     // Move location wrapper into our container (after map)
     if (locationWrapper) {
       containerRef.current.appendChild(locationWrapper);
+      // Apply initial visibility based on saved setting
+      const initialVisible = getInitialLabelVisible();
+      locationWrapper.style.display = initialVisible ? '' : 'none';
     }
 
     // Ensure map fills container

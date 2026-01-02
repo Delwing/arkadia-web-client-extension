@@ -1,11 +1,36 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import eventBus from '@modules/core/eventBus';
+import { getItemSync, setItemSync } from '@modules/core/storage';
 
 interface MapHeaderMenuProps {
   className?: string;
 }
 
 type SubmenuType = 'none' | 'areas' | 'levels';
+
+function getMapLabelVisible(): boolean {
+  try {
+    const data = getItemSync('uiSettings');
+    const parsed = data?.uiSettings as any;
+    if (parsed && typeof parsed.mapLabelVisible === 'boolean') {
+      return parsed.mapLabelVisible;
+    }
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
+function setMapLabelVisible(visible: boolean): void {
+  try {
+    const data = getItemSync('uiSettings');
+    const parsed: any = data?.uiSettings ? { ...data.uiSettings } : {};
+    parsed.mapLabelVisible = visible;
+    setItemSync('uiSettings', parsed);
+  } catch {
+    // ignore
+  }
+}
 
 // Cache for levels per area (areaId -> sorted levels array)
 const levelsCache = new Map<number, number[]>();
@@ -18,8 +43,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
+  const [labelVisible, setLabelVisible] = useState(() => getMapLabelVisible());
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // Emit initial label visibility state on mount
+  useEffect(() => {
+    eventBus.emit('mapLabelVisibility', labelVisible);
+  }, []);
 
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
@@ -210,6 +241,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [closeMenu]);
 
+  const handleToggleLabel = useCallback(() => {
+    const newValue = !labelVisible;
+    setLabelVisible(newValue);
+    setMapLabelVisible(newValue);
+    eventBus.emit('mapLabelVisibility', newValue);
+    closeMenu();
+  }, [labelVisible, closeMenu]);
+
   return (
     <div ref={menuRef} className={`map-header-menu ${className}`}>
       <button
@@ -313,6 +352,13 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
                 onClick={handleOpenSkroty}
               >
                 Skroty
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item"
+                onClick={handleToggleLabel}
+              >
+                {labelVisible ? 'Ukryj etykiete' : 'Pokaz etykiete'}
               </button>
             </>
           )}
