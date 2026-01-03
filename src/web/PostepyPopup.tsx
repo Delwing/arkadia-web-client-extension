@@ -79,6 +79,7 @@ const PostepyPopup: React.FC = () => {
     const lastTime = data?.lastTime ?? Date.now();
     const lastKills = data?.lastKills ?? { my: 0, team: 0 };
     const currentKills = data?.currentKills ?? { my: 0, team: 0 };
+    const waitingForFirstCombat = data?.waitingForFirstCombat ?? false;
 
     // Calculate mean time
     const meanTime = entries.length > 0
@@ -86,9 +87,11 @@ const PostepyPopup: React.FC = () => {
         : 0;
 
     // Calculate time and kills since last improve
-    const timeSinceLast = now - lastTime;
-    const killsSinceLast = currentKills.my - lastKills.my;
-    const teamKillsSinceLast = currentKills.team - lastKills.team;
+    // When waiting for first combat, show 0:00
+    // Use Math.max to prevent negative values from timing race conditions
+    const timeSinceLast = waitingForFirstCombat ? 0 : Math.max(0, now - lastTime);
+    const killsSinceLast = waitingForFirstCombat ? 0 : currentKills.my - lastKills.my;
+    const teamKillsSinceLast = waitingForFirstCombat ? 0 : currentKills.team - lastKills.team;
 
     const handleCopyAsImage = useCallback(async () => {
         const buffer = getFormattedPostepyTable();

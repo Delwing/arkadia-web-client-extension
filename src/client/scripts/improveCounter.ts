@@ -137,6 +137,7 @@ export type ImproveData = {
     lastTime: number;
     lastKills: { my: number; team: number };
     currentKills: { my: number; team: number };
+    waitingForFirstCombat?: boolean;
 };
 
 let improveCounterInstance: ImproveCounter | null = null;
@@ -164,6 +165,7 @@ export default class ImproveCounter {
     private loaded = false;
     private pendingLevel?: number;
     private initialized = false;
+    private waitingForFirstCombat = false;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
@@ -213,6 +215,16 @@ export default class ImproveCounter {
                 this.handleLevel(level);
             }
         });
+
+        this.client.on("combatState", (inCombat: boolean) => {
+            if (inCombat && this.waitingForFirstCombat) {
+                this.waitingForFirstCombat = false;
+                this.lastTime = Date.now();
+                this.lastKills = this.getKills();
+                this.persist();
+                this.emitUpdate();
+            }
+        });
     }
 
     private getKills() {
@@ -228,6 +240,7 @@ export default class ImproveCounter {
             lastTime: this.lastTime,
             lastKills: {...this.lastKills},
             currentKills: this.getKills(),
+            waitingForFirstCombat: this.waitingForFirstCombat,
         };
     }
 
@@ -239,6 +252,7 @@ export default class ImproveCounter {
         this.entries = [];
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
+        this.waitingForFirstCombat = true;
         this.persist();
         this.emitUpdate();
     }
@@ -259,22 +273,34 @@ export default class ImproveCounter {
             objNum !== undefined &&
             this.lastObjNum !== undefined &&
             objNum !== this.lastObjNum;
+        const isFreshLogin = this.lastObjNum === undefined || objNum !== this.lastObjNum;
 
         if (!this.initialized || newObj) {
             if (newObj) {
-                for (let l = 1; l <= level; l++) {
-                    const s = STATES[l] ?? String(l);
-                    this.recordInitial(s);
+                // Respawned character - if level > 0 combat has happened, otherwise wait
+                if (level > 0) {
+                    this.waitingForFirstCombat = false;
+                    for (let l = 1; l <= level; l++) {
+                        const s = STATES[l] ?? String(l);
+                        this.recordInitial(s);
+                    }
+                } else {
+                    this.waitingForFirstCombat = true;
                 }
                 this.level = level;
             } else if (this.level < 0) {
-                for (let l = 1; l < level; l++) {
-                    const s = STATES[l] ?? String(l);
-                    this.recordInitial(s);
-                }
+                // Fresh login - if level > 0 combat has already happened, start timer
                 if (level > 0) {
+                    this.waitingForFirstCombat = false;
+                    for (let l = 1; l < level; l++) {
+                        const s = STATES[l] ?? String(l);
+                        this.recordInitial(s);
+                    }
                     const state = STATES[level] ?? String(level);
                     this.record(state);
+                } else if (isFreshLogin) {
+                    // Level is 0 and fresh login - wait for first combat
+                    this.waitingForFirstCombat = true;
                 }
                 this.level = level;
             } else if (level > this.level) {
@@ -365,6 +391,7 @@ export default class ImproveCounter {
         this.lastKills = data.lastKills || this.getKills();
         this.level = typeof data.level === "number" ? data.level : -1;
         this.lastObjNum = typeof data.lastObjNum === "number" ? data.lastObjNum : undefined;
+        this.waitingForFirstCombat = data.waitingForFirstCombat === true;
         this.emitUpdate();
     }
 
@@ -411,6 +438,7 @@ export default class ImproveCounter {
                 lastKills: this.lastKills,
                 level: this.level,
                 lastObjNum: this.lastObjNum,
+                waitingForFirstCombat: this.waitingForFirstCombat,
             },
         });
     };
@@ -532,9 +560,12 @@ export default class ImproveCounter {
 
         lines.push(pad());
 
-        const since = Date.now() - this.lastTime;
-        const myDelta = totals.my - this.lastKills.my;
-        const teamDelta = totals.team - this.lastKills.team;
+        // When waiting for first combat, show 0:00 instead of time since login
+        const effectiveLastTime = this.waitingForFirstCombat ? Date.now() : this.lastTime;
+        const effectiveLastKills = this.waitingForFirstCombat ? totals : this.lastKills;
+        const since = Date.now() - effectiveLastTime;
+        const myDelta = totals.my - effectiveLastKills.my;
+        const teamDelta = totals.team - effectiveLastKills.team;
         const sinceLine = colorString(
             `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${myDelta + teamDelta}`,
             POSTEP_COLOR
