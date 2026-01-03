@@ -2590,14 +2590,14 @@ h1 {
 /* HP bar at bottom */
 .object-card__hp-bar {
   height: 6px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 0 0 5px 5px;
   overflow: hidden;
   cursor: pointer;
 }
 
 .object-card__hp-bar:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .object-card__hp-fill {
@@ -2625,6 +2625,7 @@ h1 {
 
 /* Target card styling */
 .object-card--target {
+  background: linear-gradient(135deg, rgba(255, 100, 100, 0.15) 0%, rgba(255, 170, 170, 0.05) 100%);
   border-color: rgba(255, 170, 170, 0.4);
   box-shadow: 0 0 8px rgba(255, 170, 170, 0.2);
 }
