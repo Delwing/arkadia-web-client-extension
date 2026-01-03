@@ -31,16 +31,6 @@ test.describe('UI settings', () => {
         await ensureGameSocket(page);
         await resetEmbeddedCalls(page);
 
-        await page.evaluate(() => {
-            if (!document.querySelector('[data-test-mobile-button]')) {
-                const button = document.createElement('button');
-                button.className = 'mobile-button';
-                button.dataset.testMobileButton = '1';
-                button.textContent = 'Test';
-                document.body.appendChild(button);
-            }
-        });
-
         const modal = await openUiSettings(page);
 
         async function ensureChecked(selector: string) {
@@ -67,7 +57,6 @@ test.describe('UI settings', () => {
         await ensureUnchecked('#ui-highlight-current-room');
         await modal.locator('#ui-content-font').fill('1.5');
         await modal.locator('#ui-objects-font').fill('1.25');
-        await modal.locator('#ui-button-size').fill('1.5');
         await modal.locator('#ui-output-background').fill('#123456');
         await modal.locator('#ui-footer-mode').selectOption('2');
         await modal.locator('#ui-xterm-palette').selectOption('proper');
@@ -108,7 +97,6 @@ test.describe('UI settings', () => {
             const combatTimer = document.getElementById('combat-timer')!;
             const splitBottom = document.getElementById('split-bottom')!;
             const contentArea = document.getElementById('content-area')!;
-            const mobileButton = document.querySelector('[data-test-mobile-button="1"]') as HTMLElement;
             return {
                 contentFontSize: getComputedStyle(content).fontSize,
                 objectsFontSize: getComputedStyle(objects).fontSize,
@@ -122,9 +110,6 @@ test.describe('UI settings', () => {
                 bodyMapPosition: document.body.dataset.mapPosition,
                 contentMapPosition: contentArea.getAttribute('data-map-position'),
                 mapSize: contentArea.style.getPropertyValue('--map-size'),
-                mobileButtonWidth: mobileButton?.style.width,
-                mobileButtonHeight: mobileButton?.style.height,
-                mobileButtonFont: mobileButton?.style.fontSize,
             };
         });
 
@@ -140,9 +125,6 @@ test.describe('UI settings', () => {
         expect(styles.bodyMapPosition, 'should update body map position data attribute').toBe('bottom');
         expect(styles.contentMapPosition, 'should update content map position attribute').toBe('bottom');
         expect(styles.mapSize, 'should apply configured map height').toBe('40vh');
-        expect(styles.mobileButtonWidth, 'should scale mobile button width').toBe('54px');
-        expect(styles.mobileButtonHeight, 'should scale mobile button height').toBe('54px');
-        expect(styles.mobileButtonFont, 'should scale mobile button font size').toBe('21px');
 
         const embeddedCalls = await getEmbeddedCalls(page);
         expect(
@@ -185,7 +167,6 @@ test.describe('UI settings', () => {
                 highlightCurrentRoom: false,
                 contentFontSize: 1.5,
                 objectsFontSize: 1.25,
-                buttonSize: 1.5,
                 outputBackground: '#123456',
                 footerMode: 2,
                 xtermPalette: 'proper',

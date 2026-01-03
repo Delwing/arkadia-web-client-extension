@@ -5,6 +5,8 @@ import {
     ButtonSetting,
     createDefaultLayout,
     defaultBackground,
+    defaultButtonGap,
+    defaultButtonSize,
     defaultCols,
     defaultFontColor,
     defaultOrder,
@@ -101,6 +103,8 @@ function MobileButtons() {
         leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
         locked: false,
         radial: { enabled: true, commands: [] },
+        buttonSize: defaultButtonSize,
+        buttonGap: defaultButtonGap,
     });
     const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
@@ -386,6 +390,54 @@ function MobileButtons() {
                     onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
                 />
             </div>
+
+            {/* Button size and gap section */}
+            <div
+                className="mobile-buttons-background-section"
+                onClick={ev => ev.stopPropagation()}
+                onMouseDown={ev => ev.stopPropagation()}
+                onTouchStart={ev => ev.stopPropagation()}
+            >
+                <Form.Label>Rozmiar przycisku</Form.Label>
+                <div className="mobile-buttons-background-controls">
+                    <Form.Range
+                        className="flex-grow-1"
+                        min={20}
+                        max={80}
+                        value={settings.buttonSize ?? defaultButtonSize}
+                        onChange={e => setSettings(prev => ({ ...prev, buttonSize: Number(e.target.value) }))}
+                    />
+                    <span className="mobile-buttons-background-alpha-value">{settings.buttonSize ?? defaultButtonSize}px</span>
+                    <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        data-testid="reset-button-size"
+                        onClick={() => setSettings(prev => ({ ...prev, buttonSize: defaultButtonSize }))}
+                    >
+                        ↺
+                    </Button>
+                </div>
+                <Form.Label className="mt-2">Odstep</Form.Label>
+                <div className="mobile-buttons-background-controls">
+                    <Form.Range
+                        className="flex-grow-1"
+                        min={0}
+                        max={20}
+                        value={settings.buttonGap ?? defaultButtonGap}
+                        onChange={e => setSettings(prev => ({ ...prev, buttonGap: Number(e.target.value) }))}
+                    />
+                    <span className="mobile-buttons-background-alpha-value">{settings.buttonGap ?? defaultButtonGap}px</span>
+                    <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        data-testid="reset-button-gap"
+                        onClick={() => setSettings(prev => ({ ...prev, buttonGap: defaultButtonGap }))}
+                    >
+                        ↺
+                    </Button>
+                </div>
+            </div>
+
             {/* Button grid with spatial controls */}
             <div className="d-flex flex-column align-items-center mb-3">
                 <div className="d-flex gap-1 mb-2">

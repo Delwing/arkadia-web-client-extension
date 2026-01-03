@@ -1,5 +1,5 @@
 import { RefObject, MouseEvent, CSSProperties } from "react";
-import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultFontColor, computeBoxShadow } from "../mobileButtonSettings";
+import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultButtonSize, defaultButtonGap, defaultFontColor, computeBoxShadow } from "../mobileButtonSettings";
 
 export type Mode = 'solo' | 'team' | 'leader';
 
@@ -17,6 +17,8 @@ interface Props {
 export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef, activeButtonId }: Props) {
     const set = settings[mode];
     const bgColor = set.background || defaultBackground;
+    const buttonSize = settings.buttonSize ?? defaultButtonSize;
+    const buttonGap = settings.buttonGap ?? defaultButtonGap;
     return (
         <div
             ref={gridRef}
@@ -26,11 +28,13 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 gridTemplateColumns: `repeat(${set.cols}, auto)`,
                 backgroundColor: bgColor,
                 boxShadow: computeBoxShadow(bgColor),
+                gap: buttonGap + 'px',
             }}
         >
             {set.order.map(id => {
                 const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
                 let classes = 'mobile-button';
+                const isText = cfg.macro !== 'kierunek';
                 if (cfg.macro === 'kierunek') {
                     classes += ' direction-button';
                 } else {
@@ -43,7 +47,13 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 const handle = notEditable.includes(id)
                     ? undefined
                     : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);
-                const style: CSSProperties = {};
+                // Font size scales with button size: direction ~35%, text ~20% to ensure fit
+                const fontSize = isText ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
+                const style: CSSProperties = {
+                    width: buttonSize + 'px',
+                    height: buttonSize + 'px',
+                    fontSize: fontSize + 'px',
+                };
                 if (isEmpty) {
                     style.backgroundColor = 'transparent';
                 } else {

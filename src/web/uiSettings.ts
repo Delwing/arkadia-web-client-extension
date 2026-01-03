@@ -239,26 +239,9 @@ function apply(settings: UiSettings) {
     if (map) {
         map.dispatchEvent(new CustomEvent('resize'));
     }
-    document.querySelectorAll<HTMLButtonElement>('.mobile-button').forEach(btn => {
-        const baseSize = 36; // default width/height in px
-        const baseFont = btn.classList.contains('mobile-button-text') ? 9 : 14;
-        btn.style.width = baseSize * settings.buttonSize + 'px';
-        btn.style.height = baseSize * settings.buttonSize + 'px';
-        btn.style.fontSize = baseFont * settings.buttonSize + 'px';
-    });
-
     if (content) {
         content.scrollTop = content.scrollHeight;
     }
-
-    // Adjust grid row size for dynamically created Z and idz buttons
-    const lists = document.querySelectorAll<HTMLDivElement>(
-        '.mobile-z-buttons, .mobile-idz-buttons'
-    );
-    lists.forEach(div => {
-        const baseRow = 36; // default row height in px
-        div.style.gridAutoRows = baseRow * settings.buttonSize + 'px';
-    });
     const embedded = (globalThis as any).embedded;
     if (embedded?.renderer) {
         embedded.setZoom?.(mapScale);
@@ -453,7 +436,6 @@ export default async function initUiSettings() {
     const modal = new Modal(modalEl);
     const contentInput = modalEl.querySelector('#ui-content-font') as HTMLInputElement;
     const objectsInput = modalEl.querySelector('#ui-objects-font') as HTMLInputElement;
-    const buttonInput = modalEl.querySelector('#ui-button-size') as HTMLInputElement;
     const mapInput = modalEl.querySelector('#ui-map-scale') as HTMLInputElement;
     const mapHeightInput = modalEl.querySelector('#ui-map-height') as HTMLInputElement;
     const mapPositionInput = modalEl.querySelector('#ui-map-position') as HTMLSelectElement;
@@ -751,7 +733,6 @@ export default async function initUiSettings() {
     const populateFormInputs = (settings: UiSettings) => {
         contentInput.value = String(settings.contentFontSize);
         objectsInput.value = String(settings.objectsFontSize);
-        buttonInput.value = String(settings.buttonSize);
         mapInput.value = String(settings.mapScale);
         mapHeightInput.value = String(settings.mapHeight);
         mapPositionInput.value = settings.mapPosition;
@@ -1114,7 +1095,6 @@ export default async function initUiSettings() {
         return {
             contentFontSize: parseFloat(contentInput.value) || defaultUiSettings.contentFontSize,
             objectsFontSize: parseFloat(objectsInput.value) || defaultUiSettings.objectsFontSize,
-            buttonSize: parseFloat(buttonInput.value) || defaultUiSettings.buttonSize,
             mapScale,
             mapHeight: parseFloat(mapHeightInput.value) || defaultUiSettings.mapHeight,
             mapPosition: (mapPositionInput.value as MapPosition) || defaultUiSettings.mapPosition,

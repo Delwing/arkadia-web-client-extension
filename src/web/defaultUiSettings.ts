@@ -5,7 +5,8 @@ type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mo
 export interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
-    buttonSize: number;
+    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
+    buttonSize?: number;
     mapScale: number;
     showButtons: boolean;
     hapticFeedback: boolean;
@@ -45,7 +46,6 @@ export interface UiSettings {
 export const defaultUiSettings: UiSettings = {
     contentFontSize: 0.775,
     objectsFontSize: 0.6,
-    buttonSize: 1,
     mapScale: 0.30,
     showButtons: true,
     hapticFeedback: true,

@@ -1,4 +1,5 @@
 import type { Settings, CollectOverride } from './defaultSettings';
+import storage from './storage';
 
 const MIGRATIONS_VERSION_KEY = 'settingsMigrationsVersion';
 
@@ -52,6 +53,11 @@ const migrations: Migration[] = [
         version: 2,
         description: 'Re-run accusative to nominative conversion (fix for multi-character migration bug)',
         migrate: migrateAccusativeToNominative,
+    },
+    {
+        version: 3,
+        description: 'Migrate buttonSize multiplier from uiSettings to mobileButtonSettings (handled by migrateButtonSizeMultiplier)',
+        migrate: settings => settings, // No-op for core Settings, actual migration is async
     },
 ];
 
@@ -185,4 +191,57 @@ export function runAllSettingsMigrations(): void {
     }
 
     setMigrationsVersion(latestVersion);
+}
+
+/**
+ * Migrate buttonSize multiplier from uiSettings to mobileButtonSettings.
+ * This is migration version 3 that converts the old multiplier (default 1)
+ * to explicit pixel values for buttonSize and buttonGap.
+ */
+export async function migrateButtonSizeMultiplier(): Promise<void> {
+    const currentVersion = getMigrationsVersion();
+
+    // This is migration version 3
+    if (currentVersion >= 3) {
+        return;
+    }
+
+    try {
+        // Load uiSettings to get the multiplier
+        const uiData = await storage.getItem('uiSettings');
+        const multiplier = uiData?.uiSettings?.buttonSize;
+
+        // Only migrate if multiplier exists and is different from default (1)
+        if (typeof multiplier === 'number' && multiplier > 0 && multiplier !== 1) {
+            // Load mobileButtonSettings
+            const mobileData = await storage.getItem('mobileButtonSettings');
+            const mobileSettings = mobileData?.mobileButtonSettings || {};
+
+            // Only migrate if buttonSize/buttonGap not already set
+            if (mobileSettings.buttonSize === undefined || mobileSettings.buttonGap === undefined) {
+                const defaultButtonSize = 36;
+                const defaultButtonGap = 10;
+
+                if (mobileSettings.buttonSize === undefined) {
+                    mobileSettings.buttonSize = Math.round(defaultButtonSize * multiplier);
+                }
+                if (mobileSettings.buttonGap === undefined) {
+                    mobileSettings.buttonGap = Math.round(defaultButtonGap * multiplier);
+                }
+
+                // Save migrated mobileButtonSettings
+                await storage.setItem('mobileButtonSettings', mobileSettings);
+                console.log(`[SettingsMigrations] Migrated buttonSize multiplier ${multiplier} to buttonSize=${mobileSettings.buttonSize}px, buttonGap=${mobileSettings.buttonGap}px`);
+            }
+
+            // Remove buttonSize from uiSettings
+            if (uiData?.uiSettings) {
+                delete uiData.uiSettings.buttonSize;
+                await storage.setItem('uiSettings', uiData.uiSettings);
+                console.log('[SettingsMigrations] Removed buttonSize multiplier from uiSettings');
+            }
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to migrate buttonSize multiplier:', e);
+    }
 }

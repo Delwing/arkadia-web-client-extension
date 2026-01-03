@@ -51,7 +51,7 @@ import {
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
 import {getItemSync} from "@modules/core/storage"
-import {runAllSettingsMigrations} from "@modules/core/settingsMigrations"
+import {runAllSettingsMigrations, migrateButtonSizeMultiplier} from "@modules/core/settingsMigrations"
 import {
     areOutputTimestampsVisible,
     setOutputTimestampVisibility,
@@ -63,6 +63,7 @@ initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed'
 
 // Run settings migrations before initializing the client
 runAllSettingsMigrations();
+migrateButtonSizeMultiplier();
 
 let mobileRadial: MobileCommandRadial | null = null;
 

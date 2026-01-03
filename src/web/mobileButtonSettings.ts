@@ -55,6 +55,10 @@ export const defaultFontColor = '#f1f5f9';
 
 export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
 
+export const defaultButtonSize = 36;
+
+export const defaultButtonGap = 10;
+
 export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
@@ -199,6 +203,8 @@ export interface Settings {
     leader: LayoutSettings;
     locked: boolean;
     radial: RadialSettings;
+    buttonSize?: number;   // Size in pixels (default 36)
+    buttonGap?: number;    // Gap between buttons in pixels (default 2)
 }
 
 export function createDefaultLayout(): LayoutSettings {
@@ -302,6 +308,8 @@ export async function loadSettings(): Promise<Settings> {
         const raw = data?.mobileButtonSettings;
         if (raw) {
             const locked = !!raw.locked;
+            const buttonSize = typeof raw.buttonSize === 'number' && raw.buttonSize > 0 ? raw.buttonSize : defaultButtonSize;
+            const buttonGap = typeof raw.buttonGap === 'number' && raw.buttonGap >= 0 ? raw.buttonGap : defaultButtonGap;
             if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
                 return {
                     solo: parseLayout(raw.solo),
@@ -309,6 +317,8 @@ export async function loadSettings(): Promise<Settings> {
                     leader: parseLayout(raw.leader),
                     locked,
                     radial: parseRadialSettings(raw.radial),
+                    buttonSize,
+                    buttonGap,
                 };
             }
             const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
@@ -349,6 +359,8 @@ export async function loadSettings(): Promise<Settings> {
                 },
                 locked,
                 radial: parseRadialSettings(raw.radial),
+                buttonSize,
+                buttonGap,
             };
         }
     } catch {}
@@ -358,6 +370,8 @@ export async function loadSettings(): Promise<Settings> {
         leader: createDefaultLayout(),
         locked: false,
         radial: { enabled: true, commands: cloneDefaultRadialCommands() },
+        buttonSize: defaultButtonSize,
+        buttonGap: defaultButtonGap,
     };
 }
 
@@ -394,16 +408,10 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
         container.style.backgroundColor = bgColor;
         container.style.boxShadow = computeBoxShadow(bgColor);
 
-        // Preserve current button size
-        const ref = container.querySelector('.mobile-button') as HTMLButtonElement | null;
-        let sizeRatio = 1;
-        if (ref) {
-            const styles = window.getComputedStyle(ref);
-            const width = parseFloat(styles.width);
-            if (!Number.isNaN(width) && width > 0) {
-                sizeRatio = width / 36;
-            }
-        }
+        // Get button size and gap from settings
+        const buttonSize = settings.buttonSize ?? defaultButtonSize;
+        const buttonGap = settings.buttonGap ?? defaultButtonGap;
+        container.style.gap = buttonGap + 'px';
 
         const z = document.getElementById('z-buttons-list');
         const zas = document.getElementById('zas-buttons-list');
@@ -462,20 +470,20 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             container.insertBefore(btn, insertBefore);
         });
 
-        // Apply preserved size to new buttons
+        // Apply button size with dynamic font sizing
         const buttons = container.querySelectorAll<HTMLButtonElement>('.mobile-button');
         buttons.forEach(btn => {
-            const baseSize = 36;
-            const baseFont = btn.classList.contains('mobile-button-text') ? 9 : 14;
-            btn.style.width = baseSize * sizeRatio + 'px';
-            btn.style.height = baseSize * sizeRatio + 'px';
-            btn.style.fontSize = baseFont * sizeRatio + 'px';
+            const isTextButton = btn.classList.contains('mobile-button-text');
+            // Font size scales with button size: direction ~35%, text ~20% to ensure fit
+            const fontSize = isTextButton ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
+            btn.style.width = buttonSize + 'px';
+            btn.style.height = buttonSize + 'px';
+            btn.style.fontSize = fontSize + 'px';
         });
 
         const lists = document.querySelectorAll<HTMLDivElement>('.mobile-z-buttons, .mobile-idz-buttons');
         lists.forEach(div => {
-            const baseRow = 36;
-            div.style.gridAutoRows = baseRow * sizeRatio + 'px';
+            div.style.gridAutoRows = buttonSize + 'px';
         });
     }
     eventBus.emit('mobileButtonsSettings', set.buttons);
