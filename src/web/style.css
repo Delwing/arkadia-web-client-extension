@@ -2708,6 +2708,121 @@ h1 {
   box-shadow: inset 3px 0 0 greenyellow;
 }
 
+/* Compact Card View */
+.objects-list-cards--compact {
+  gap: 2px;
+  padding: 2px;
+}
+
+.object-card--compact {
+  flex-direction: row;
+  min-height: 22px;
+  padding: 0;
+  gap: 0;
+}
+
+.object-card--compact .object-card__compact-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 2px 6px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.object-card--compact .object-card__number {
+  min-width: 16px;
+  height: 16px;
+  font-size: 0.6rem;
+  padding: 0 3px;
+}
+
+.object-card--compact .object-card__name {
+  font-size: 0.65rem;
+  line-height: 16px;
+}
+
+/* Vertical HP bar for compact mode */
+.object-card__hp-bar-vertical {
+  width: 6px;
+  min-width: 6px;
+  display: flex;
+  flex-direction: column-reverse;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 5px 0 0 5px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Horizontal dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar-vertical::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
+}
+
+.object-card__hp-bar-vertical:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.object-card__hp-fill-vertical {
+  width: 100%;
+  background-color: #22c55e;
+  transition: height 0.2s ease;
+}
+
+/* Inline attackers for compact mode */
+.object-card__attackers-inline {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Compact mode border radius adjustments */
+.object-card--compact.object-card--attack-target {
+  box-shadow: inset 0 3px 0 orangered;
+}
+
+.object-card--compact.object-card--defense-target {
+  box-shadow: inset 0 3px 0 greenyellow;
+}
+
 #recording-button {
   position: fixed;
   top: 0.5rem;

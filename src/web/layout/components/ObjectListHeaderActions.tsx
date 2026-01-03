@@ -4,22 +4,46 @@ import { useEffect } from 'react';
 
 const PANEL_ID = 'objectList';
 
-export function ObjectListHeaderActions() {
-    const [cardViewMode, setCardViewMode] = useBuiltInPanelSetting(PANEL_ID, 'cardViewMode', false);
+export type ObjectListViewMode = 'list' | 'card' | 'compact';
 
-    // Emit event when card view mode changes (including initial mount)
+const VIEW_MODE_CYCLE: ObjectListViewMode[] = ['list', 'card', 'compact'];
+
+const VIEW_MODE_LABELS: Record<ObjectListViewMode, string> = {
+    list: 'Lista',
+    card: 'Karty',
+    compact: 'Kompakt'
+};
+
+const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
+    list: 'Widok listy',
+    card: 'Widok kart',
+    compact: 'Widok kompaktowy'
+};
+
+export function ObjectListHeaderActions() {
+    const [viewMode, setViewMode] = useBuiltInPanelSetting<ObjectListViewMode>(PANEL_ID, 'viewMode', 'list');
+
+    // Emit event when view mode changes (including initial mount)
     useEffect(() => {
-        eventBus.emit('objectListCardViewMode', cardViewMode);
-    }, [cardViewMode]);
+        eventBus.emit('objectListViewMode', viewMode);
+    }, [viewMode]);
+
+    const cycleViewMode = () => {
+        const currentIndex = VIEW_MODE_CYCLE.indexOf(viewMode);
+        const nextIndex = (currentIndex + 1) % VIEW_MODE_CYCLE.length;
+        setViewMode(VIEW_MODE_CYCLE[nextIndex]);
+    };
+
+    const nextMode = VIEW_MODE_CYCLE[(VIEW_MODE_CYCLE.indexOf(viewMode) + 1) % VIEW_MODE_CYCLE.length];
 
     return (
         <button
             type="button"
-            className={`object-list__card-toggle${cardViewMode ? ' object-list__card-toggle--active' : ''}`}
-            onClick={() => setCardViewMode(!cardViewMode)}
-            title={cardViewMode ? 'Widok listy' : 'Widok kart'}
+            className={`object-list__card-toggle${viewMode !== 'list' ? ' object-list__card-toggle--active' : ''}`}
+            onClick={cycleViewMode}
+            title={VIEW_MODE_TITLES[nextMode]}
         >
-            Karty
+            {VIEW_MODE_LABELS[viewMode]}
         </button>
     );
 }

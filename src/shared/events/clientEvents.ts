@@ -237,7 +237,7 @@ export interface KnownEvents {
     "map.setLocation": { roomId: number };
     "map.showPath": { toRoomId: number };
     "mapLabelVisibility": boolean;
-    "objectListCardViewMode": boolean;
+    "objectListViewMode": "list" | "card" | "compact";
 }
 
 export interface ObjectData {
