@@ -333,6 +333,12 @@ export default class ObjectList {
                     case 'przelam':
                         this.client.sendCommand(`/prze ${num}`);
                         break;
+                    case 'mark-attack':
+                        this.client.sendCommand(`/wa ${num}`);
+                        break;
+                    case 'mark-defense':
+                        this.client.sendCommand(`/wz ${num}`);
+                        break;
                 }
             }
             this.focusInput();
@@ -713,16 +719,23 @@ export default class ObjectList {
             }
 
             // Build action icons (only for non-player, non-teammate)
+            const isLeader = tm?.isLeader?.();
             let iconsHtml = '';
             if (!isPlayer && !isTeammate) {
+                const markAttackClass = obj.attack_target ? 'object-card__icon--mark-attack--active' : '';
+                const markAttackIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-attack ${markAttackClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>` : '';
                 iconsHtml = `
                     <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
                     <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
                     <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
+                    ${markAttackIcon}
                 `;
             } else if (isTeammate && !isPlayer) {
+                const markDefenseClass = obj.defense_target ? 'object-card__icon--mark-defense--active' : '';
+                const markDefenseIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-defense ${markDefenseClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>` : '';
                 iconsHtml = `
                     <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
+                    ${markDefenseIcon}
                 `;
             }
 
