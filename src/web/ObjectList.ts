@@ -3,7 +3,7 @@ import storage, { getItemSync, setItemSync } from "@modules/core/storage";
 import { createAttackController } from "@client/utils/attackController";
 import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
 import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
-import { showContextMenu } from "@shared/dom/contextMenu";
+import { hideContextMenu, showContextMenu } from "@shared/dom/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import { getBuiltInPanelSetting } from "./layout/utils/layoutStorage";
 
@@ -253,6 +253,8 @@ export default class ObjectList {
         if (target.closest(".objects-list-controls")) {
             return;
         }
+        // Close any open context menu since stopPropagation prevents document-level handler
+        hideContextMenu();
         e.stopPropagation?.();
         // Handle attack target dot click (leader only, /wa to mark, /ra to order attack if active)
         const attackDotEl = target.closest(
