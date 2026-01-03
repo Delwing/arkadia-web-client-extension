@@ -2656,14 +2656,14 @@ h1 {
   box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
-/* Attack target indicator (orangered left border) */
+/* Attack target indicator (orangered left border) - using inset shadow to avoid layout shift */
 .object-card--attack-target {
-  border-left: 3px solid orangered;
+  box-shadow: inset 3px 0 0 orangered;
 }
 
-/* Defense target indicator (greenyellow left border) */
+/* Defense target indicator (greenyellow left border) - using inset shadow to avoid layout shift */
 .object-card--defense-target {
-  border-left: 3px solid greenyellow;
+  box-shadow: inset 3px 0 0 greenyellow;
 }
 
 #recording-button {
