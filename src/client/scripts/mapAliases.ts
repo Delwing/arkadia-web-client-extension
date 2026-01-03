@@ -14,25 +14,25 @@ type SearchableRoom = {
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push(
         {
-            pattern: /\/cofnij$/,
+            pattern: /^\/cofnij$/,
             callback: () => {
                 client.Map.moveBack();
             }
         },
         {
-            pattern: /\/move (.*)$/,
+            pattern: /^\/move (.*)$/,
             callback: (matches: RegExpMatchArray) => {
                 client.Map.move(matches[1]);
             }
         },
         {
-            pattern: /\/ustaw (.*)$/,
+            pattern: /^\/ustaw (.*)$/,
             callback: (matches: RegExpMatchArray) => {
                 client.Map.setMapRoomById(parseInt(matches[1]));
             }
         },
         {
-            pattern: /\/prowadz (.*)$/,
+            pattern: /^\/prowadz (.*)$/,
             callback: (matches: RegExpMatchArray) => {
                 // Strip quotes if present for names with spaces
                 let input = matches[1];
@@ -55,13 +55,13 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             }
         },
         {
-            pattern: /\/prowadz-$/,
+            pattern: /^\/prowadz-$/,
             callback: () => {
                 client.sendEvent('clearLeadTo');
             }
         },
         {
-            pattern: /\/go$/,
+            pattern: /^\/go$/,
             callback: () => {
                 const room = client.Map.currentRoom as SearchableRoom | undefined;
                 const destinations = client.Map.destinations;
