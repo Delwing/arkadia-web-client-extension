@@ -149,7 +149,7 @@ export default class ObjectList {
 
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__number")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__number, .object-card__name")
         ) {
             return;
         }
@@ -365,6 +365,18 @@ export default class ObjectList {
                 this.attackController.attackById(parseInt(id, 10));
             } else if (num) {
                 this.client.sendCommand(`/z ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
+        // Handle card view name click (guard)
+        const cardNameEl = target.closest(
+            ".object-card__name[data-object-num]"
+        ) as HTMLElement | null;
+        if (cardNameEl) {
+            const num = cardNameEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/za ${num}`);
             }
             this.focusInput();
             return;
@@ -812,14 +824,14 @@ export default class ObjectList {
             // Simplified card structure - single container, no absolute positioning
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__row1">
-                    <span class="${numberClasses.join(' ')}">${num}</span>
-                    <span class="${nameClasses.join(' ')}"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
                     <span class="object-card__icons">${iconsHtml}</span>
                 </div>
                 <div class="object-card__row2">
                     <span class="object-card__attackers">${attackers}</span>
                 </div>
-                <div class="object-card__hp-bar">${hpBarFill}</div>
+                <div class="object-card__hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarFill}</div>
             </div>`;
         });
 
