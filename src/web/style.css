@@ -2614,6 +2614,47 @@ h1 {
   border-radius: 0 0 5px 5px;
   overflow: hidden;
   cursor: pointer;
+  position: relative;
+}
+
+/* Vertical dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.4) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
 }
 
 .object-card__hp-bar:hover {

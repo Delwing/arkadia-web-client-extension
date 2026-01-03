@@ -667,6 +667,11 @@ export default class ObjectList {
             objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
         const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
 
+        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
+        const teamAttacking = objects.some((o: any) => {
+            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        });
+
         const cards = objects.map((obj: any) => {
             const num = String(obj.shortcut);
             const isPlayer = obj.shortcut === '@';
@@ -680,6 +685,19 @@ export default class ObjectList {
                 validNextQueuedId === obj.num;
             const isTarget = obj.avatar_target || false;
 
+            // Apply filters before rendering
+            const filterContext: EntryContext = {
+                object: obj,
+                displayNum: parseInt(num, 10),
+                isTarget,
+                isNextTarget: isNextQueued,
+                isTeammate: isTeammate || false,
+                rawDescription: rawDesc,
+                isAttacking,
+                attackCommand: this.attackController.getAttackCommand()
+            };
+            const filterResult = objectListFilters.apply(filterContext);
+
             // Card classes
             const cardClasses = ['object-card'];
             if (isPlayer) cardClasses.push('object-card--player');
@@ -688,6 +706,11 @@ export default class ObjectList {
             if (isNextQueued) cardClasses.push('object-card--next-queued');
             if (obj.attack_target) cardClasses.push('object-card--attack-target');
             if (obj.defense_target) cardClasses.push('object-card--defense-target');
+
+            // Apply filter CSS classes to card
+            if (filterResult.style?.cssClasses) {
+                cardClasses.push(...filterResult.style.cssClasses);
+            }
 
             // Number badge classes
             const numberClasses = ['object-card__number'];
@@ -699,9 +722,41 @@ export default class ObjectList {
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
 
+            // Apply teammate not attacking italic style
+            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
+                nameClasses.push('object-card__name--teammate-not-attacking');
+            }
+
+            // Apply filter italic override
+            if (filterResult.style?.italic) {
+                nameClasses.push('object-card__name--teammate-not-attacking');
+            }
+
+            // Build name style from filter overrides
+            let nameStyle = '';
+            if (filterResult.style?.descriptionColor) {
+                nameStyle += `color:${filterResult.style.descriptionColor};`;
+            }
+            if (filterResult.style?.descriptionBackgroundColor) {
+                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
+            }
+
+            // Use filtered description if provided
+            const displayDesc = filterResult.content?.description !== undefined
+                ? filterResult.content.description
+                : rawDesc;
+
+            // Apply prefix and suffix from filters
+            const customPrefix = filterResult.style?.prefix || "";
+            const customSuffix = filterResult.style?.suffix || "";
+            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
+
             // Build HP bar with color based on health level (0-6 scale, 7 levels)
             let hpBarFill = '';
-            if (typeof obj.hp === 'number') {
+            if (filterResult.content?.hpBar !== undefined) {
+                // Use custom HP bar from filter (raw HTML)
+                hpBarFill = filterResult.content.hpBar;
+            } else if (typeof obj.hp === 'number') {
                 const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
                 const hpPercent = (hpLevel / 7) * 100;
                 // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
@@ -714,7 +769,13 @@ export default class ObjectList {
                     6: '#84cc16',
                     7: '#22c55e'
                 };
-                const hpColor = hpColors[hpLevel] || '#22c55e';
+                let hpColor = hpColors[hpLevel] || '#22c55e';
+
+                // Apply filter HP bar color override
+                if (filterResult.style?.hpBarColor) {
+                    hpColor = filterResult.style.hpBarColor;
+                }
+
                 hpBarFill = `<div class="object-card__hp-fill" style="width: ${hpPercent}%; background-color: ${hpColor}"></div>`;
             }
 
@@ -745,11 +806,14 @@ export default class ObjectList {
                 .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
                 .join('');
 
+            // Build name element with optional style
+            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
+
             // Simplified card structure - single container, no absolute positioning
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__row1">
                     <span class="${numberClasses.join(' ')}">${num}</span>
-                    <span class="${nameClasses.join(' ')}">${rawDesc}</span>
+                    <span class="${nameClasses.join(' ')}"${nameStyleAttr}>${finalDesc}</span>
                     <span class="object-card__icons">${iconsHtml}</span>
                 </div>
                 <div class="object-card__row2">
