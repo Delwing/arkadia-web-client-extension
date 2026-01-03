@@ -3938,13 +3938,13 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .mobile-direction-buttons.preview {
   border: 2px dashed var(--surface-border);
   background-color: var(--surface-raised);
-  padding: 0.75rem;
-  border-radius: 0.75rem;
+  padding: 5px;
+  border-radius: 5px;
 }
 
 .mobile-direction-buttons.preview .mobile-button {
-  min-width: 40px;
-  min-height: 40px;
+  width: 36px;
+  height: 36px;
 }
 
 .mobile-direction-buttons.preview .mobile-button.editing {
