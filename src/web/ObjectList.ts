@@ -5,7 +5,7 @@ import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
 import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
 import {hideContextMenu, showContextMenu} from "@shared/dom/contextMenu";
 import eventBus from "@modules/core/eventBus";
-import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
+import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -36,6 +36,7 @@ export default class ObjectList {
     private attackController: ReturnType<typeof createAttackController>;
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
     private viewMode: 'list' | 'card' | 'compact' = 'list';
+    private isLayoutManagerEnabled = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -66,6 +67,7 @@ export default class ObjectList {
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
+        window.addEventListener('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
         storage.onChanged?.addListener((changes) => {
             if (changes.uiSettings) {
                 this.loadContextMenuCommands();
@@ -75,13 +77,38 @@ export default class ObjectList {
     }
 
     private initializeCardViewMode() {
-        // Load initial state from storage
-        this.viewMode = getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list');
+        const layoutState = loadLayoutState();
+        this.isLayoutManagerEnabled = layoutState.enabled;
+        this.syncViewModeWithLayoutState(this.isLayoutManagerEnabled);
         // Subscribe to view mode changes from the header toggle
         eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact') => {
-            this.viewMode = mode;
-            this.render();
+            if (!this.isLayoutManagerEnabled) {
+                return;
+            }
+            if (this.viewMode !== mode) {
+                this.viewMode = mode;
+                this.render();
+            }
         });
+    }
+
+    private handleLayoutManagerStateChange = () => {
+        const isEnabled = document.body.classList.contains('layout-manager-enabled');
+        if (isEnabled === this.isLayoutManagerEnabled) {
+            return;
+        }
+        this.isLayoutManagerEnabled = isEnabled;
+        this.syncViewModeWithLayoutState(isEnabled);
+    };
+
+    private syncViewModeWithLayoutState(isLayoutEnabled: boolean) {
+        const nextViewMode = isLayoutEnabled
+            ? getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list')
+            : 'list';
+        if (this.viewMode !== nextViewMode) {
+            this.viewMode = nextViewMode;
+            this.render();
+        }
     }
 
     private loadContextMenuCommands() {
