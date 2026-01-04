@@ -5,7 +5,7 @@ import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
 import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
 import {hideContextMenu, showContextMenu} from "@shared/dom/contextMenu";
 import eventBus from "@modules/core/eventBus";
-import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
+import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -66,6 +66,7 @@ export default class ObjectList {
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
+        window.addEventListener('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
         storage.onChanged?.addListener((changes) => {
             if (changes.uiSettings) {
                 this.loadContextMenuCommands();
@@ -75,13 +76,33 @@ export default class ObjectList {
     }
 
     private initializeCardViewMode() {
-        // Load initial state from storage
-        this.viewMode = getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list');
+        this.syncViewModeWithLayoutState();
         // Subscribe to view mode changes from the header toggle
         eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact') => {
-            this.viewMode = mode;
-            this.render();
+            const layoutState = loadLayoutState();
+            if (!layoutState.enabled) {
+                return;
+            }
+            if (this.viewMode !== mode) {
+                this.viewMode = mode;
+                this.render();
+            }
         });
+    }
+
+    private handleLayoutManagerStateChange = () => {
+        this.syncViewModeWithLayoutState();
+    };
+
+    private syncViewModeWithLayoutState() {
+        const layoutState = loadLayoutState();
+        const nextViewMode = layoutState.enabled
+            ? getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list')
+            : 'list';
+        if (this.viewMode !== nextViewMode) {
+            this.viewMode = nextViewMode;
+            this.render();
+        }
     }
 
     private loadContextMenuCommands() {
