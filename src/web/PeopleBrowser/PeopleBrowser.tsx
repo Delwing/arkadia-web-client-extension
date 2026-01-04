@@ -100,6 +100,18 @@ const PeopleBrowser: React.FC = () => {
         handleModalClose();
     }, [selectedPerson, handleModalClose]);
 
+    const handleRestoreOriginal = useCallback(() => {
+        if (selectedPerson?.originalEntry) {
+            // Use the original entry's key to find and remove the replace event
+            const originalKey = makePersonKey(
+                selectedPerson.originalEntry.name,
+                selectedPerson.originalEntry.description
+            );
+            restorePerson(originalKey);
+        }
+        handleModalClose();
+    }, [selectedPerson, handleModalClose]);
+
     useEffect(() => {
         if (isOpen) {
             setPageSize(persistedPageSize);
@@ -336,6 +348,7 @@ const PeopleBrowser: React.FC = () => {
                 onSave={handleModalSave}
                 onIgnore={handleIgnore}
                 onRestore={handleRestore}
+                onRestoreOriginal={handleRestoreOriginal}
                 onDelete={handleDelete}
                 person={selectedPerson}
                 mode={modalMode}
