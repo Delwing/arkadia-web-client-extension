@@ -16,6 +16,7 @@ import PostepyPopup from '../PostepyPopup';
 import ZabiciPopup from '../ZabiciPopup';
 import SkrotyPopup from '../SkrotyPopup';
 import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
+import ObjectListDemoPopup from '../ObjectListDemoPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -67,6 +68,7 @@ export function LayoutManagerWrapper({
       <ZabiciPopup />
       <SkrotyPopup />
       <PeopleBrowser />
+      <ObjectListDemoPopup />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />
       {/* Portal container for plugin popups (legacy fallback) */}

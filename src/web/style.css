@@ -2394,7 +2394,8 @@ h1 {
 }
 
 #objects-list .team-not-attacking {
-  font-style: italic;
+  display: inline-block;
+  transform: skewX(-10deg);
 }
 
 /* Object List Card View Toggle */
@@ -2522,7 +2523,8 @@ h1 {
 }
 
 .object-card__name--teammate-not-attacking {
-  font-style: italic;
+  display: inline-block;
+  transform: skewX(-10deg);
 }
 
 /* Action icons */
@@ -2631,28 +2633,28 @@ h1 {
     to right,
     transparent 0%,
     transparent calc(100% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(100% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(100% / 7),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
     transparent calc(100% / 7),
     transparent calc(200% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(200% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(200% / 7),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
     transparent calc(200% / 7),
     transparent calc(300% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(300% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(300% / 7),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
     transparent calc(300% / 7),
     transparent calc(400% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(400% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(400% / 7),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
     transparent calc(400% / 7),
     transparent calc(500% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(500% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(500% / 7),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
     transparent calc(500% / 7),
     transparent calc(600% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(600% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(600% / 7),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
     transparent calc(600% / 7),
     transparent 100%
   );
@@ -2710,7 +2712,7 @@ h1 {
 
 /* Compact Card View */
 .objects-list-cards--compact {
-  gap: 2px;
+  gap: 3px;
   padding: 2px;
 }
 
@@ -2768,28 +2770,28 @@ h1 {
     to bottom,
     transparent 0%,
     transparent calc(100% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(100% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(100% / 7),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
     transparent calc(100% / 7),
     transparent calc(200% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(200% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(200% / 7),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
     transparent calc(200% / 7),
     transparent calc(300% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(300% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(300% / 7),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
     transparent calc(300% / 7),
     transparent calc(400% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(400% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(400% / 7),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
     transparent calc(400% / 7),
     transparent calc(500% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(500% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(500% / 7),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
     transparent calc(500% / 7),
     transparent calc(600% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(600% / 7 - 1px),
-    rgba(0, 0, 0, 0.4) calc(600% / 7),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
     transparent calc(600% / 7),
     transparent 100%
   );
@@ -2814,13 +2816,190 @@ h1 {
   flex-shrink: 0;
 }
 
-/* Compact mode border radius adjustments */
+/* Compact mode target indicators - top border only, HP bar has priority */
 .object-card--compact.object-card--attack-target {
-  box-shadow: inset 0 3px 0 orangered;
+  box-shadow: none;
+  border-top-color: orangered;
 }
 
 .object-card--compact.object-card--defense-target {
-  box-shadow: inset 0 3px 0 greenyellow;
+  box-shadow: none;
+  border-top-color: greenyellow;
+}
+
+/* Object List Demo Popup */
+.object-list-demo-popup__body {
+  padding: 0;
+  overflow-y: auto;
+}
+
+.demo-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.demo-popup-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.demo-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.demo-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.demo-btn--primary {
+  background: rgba(96, 165, 250, 0.3);
+  border-color: rgba(96, 165, 250, 0.5);
+  color: #60a5fa;
+}
+
+.demo-btn--primary:hover {
+  background: rgba(96, 165, 250, 0.4);
+}
+
+.demo-btn--small {
+  padding: 2px 8px;
+  font-size: 0.65rem;
+}
+
+.demo-btn--danger {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.demo-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.demo-popup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-popup-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.demo-object-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 6px;
+}
+
+.demo-object-card--enemy {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.demo-object-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+}
+
+.demo-object-checkboxes {
+  flex-wrap: wrap;
+}
+
+.demo-object-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+}
+
+.demo-input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.demo-select {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+}
+
+.demo-select:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.demo-hp-value {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.demo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.demo-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.demo-checkbox--small {
+  font-size: 0.65rem;
+}
+
+.demo-checkbox--attack {
+  color: #ff6b6b;
+}
+
+.demo-checkbox--defense {
+  color: greenyellow;
+}
+
+.demo-checkbox--target {
+  color: #ffaaaa;
 }
 
 #recording-button {

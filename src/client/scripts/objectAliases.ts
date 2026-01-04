@@ -2,6 +2,7 @@ import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {gmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
+import eventBus from "@modules/core/eventBus";
 
 export default function initObjectAliases(
     client: Client,
@@ -265,6 +266,10 @@ export default function initObjectAliases(
                     client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
                 }
             }
+        });
+        aliases.push({
+            pattern: /^\/demo_kondycje$/,
+            callback: () => eventBus.emit("objectListDemo.popup.open")
         });
     }
 }

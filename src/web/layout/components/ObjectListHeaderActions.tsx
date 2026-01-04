@@ -37,13 +37,15 @@ export function ObjectListHeaderActions() {
     const nextMode = VIEW_MODE_CYCLE[(VIEW_MODE_CYCLE.indexOf(viewMode) + 1) % VIEW_MODE_CYCLE.length];
 
     return (
-        <button
-            type="button"
-            className={`object-list__card-toggle${viewMode !== 'list' ? ' object-list__card-toggle--active' : ''}`}
-            onClick={cycleViewMode}
-            title={VIEW_MODE_TITLES[nextMode]}
-        >
-            {VIEW_MODE_LABELS[viewMode]}
-        </button>
+        <>
+            <button
+                type="button"
+                className={`object-list__card-toggle${viewMode !== 'list' ? ' object-list__card-toggle--active' : ''}`}
+                onClick={cycleViewMode}
+                title={VIEW_MODE_TITLES[nextMode]}
+            >
+                {VIEW_MODE_LABELS[viewMode]}
+            </button>
+        </>
     );
 }

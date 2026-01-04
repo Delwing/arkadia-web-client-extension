@@ -15,7 +15,8 @@ export type BuiltInPopupType =
   | 'postepy'
   | 'zabici'
   | 'skroty'
-  | 'peopleBrowser';
+  | 'peopleBrowser'
+  | 'objectListDemo';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

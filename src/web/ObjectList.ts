@@ -1,11 +1,11 @@
 import Client from "@client/Client";
-import storage, { getItemSync, setItemSync } from "@modules/core/storage";
-import { createAttackController } from "@client/utils/attackController";
-import { COLOR_OBJECT, getColorLevel } from "./colors.ts";
-import { objectListFilters, type EntryContext } from "./objectListFilters.ts";
-import { hideContextMenu, showContextMenu } from "@shared/dom/contextMenu";
+import storage, {getItemSync, setItemSync} from "@modules/core/storage";
+import {createAttackController} from "@client/utils/attackController";
+import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
+import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
+import {hideContextMenu, showContextMenu} from "@shared/dom/contextMenu";
 import eventBus from "@modules/core/eventBus";
-import { getBuiltInPanelSetting } from "./layout/utils/layoutStorage";
+import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -76,8 +76,7 @@ export default class ObjectList {
 
     private initializeCardViewMode() {
         // Load initial state from storage
-        const savedViewMode = getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list');
-        this.viewMode = savedViewMode;
+        this.viewMode = getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list');
         // Subscribe to view mode changes from the header toggle
         eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact') => {
             this.viewMode = mode;
@@ -869,6 +868,11 @@ export default class ObjectList {
             objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
         const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
 
+        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
+        const teamAttacking = objects.some((o: any) => {
+            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        });
+
         const cards = objects.map((obj: any) => {
             const num = String(obj.shortcut);
             const isPlayer = obj.shortcut === '@';
@@ -918,6 +922,11 @@ export default class ObjectList {
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+
+            // Apply teammate not attacking italic style
+            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
+                nameClasses.push('object-card__name--teammate-not-attacking');
+            }
 
             // Apply filter italic override
             if (filterResult.style?.italic) {
@@ -1318,7 +1327,8 @@ html, body {
     opacity: 1;
 }
 #objects-list-pip .team-not-attacking {
-    font-style: italic;
+    display: inline-block;
+    transform: skewX(-10deg);
 }`;
         this.pipDocument.head.appendChild(styleEl);
     }

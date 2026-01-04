@@ -2,7 +2,7 @@ export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'casc
 
 const fontStylesheets: Record<'fira-code' | 'jetbrains-mono' | 'cascadia-mono', string> = {
     'fira-code': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap',
-    'jetbrains-mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+    'jetbrains-mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap',
     'cascadia-mono': 'https://fonts.googleapis.com/css2?family=Cascadia+Mono:wght@400;500;600;700&display=swap',
 };
 
