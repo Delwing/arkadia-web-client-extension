@@ -44,6 +44,7 @@ const characterScopedKeys = new Set([
     'profession',
     'introduced_remembered',
     'introduced_presented',
+    'peopleLocalEvents',
     LUA_GAGS_STORAGE_KEY,
     LUA_GAGS_COLORS_STORAGE_KEY,
 ]);
@@ -59,9 +60,9 @@ function notifyCharacterChange(prev: string | null) {
         if (oldRaw === newRaw) {
             return;
         }
-        // For settings, always fire event even if newRaw is null (so UI refreshes with defaults)
+        // For settings and peopleLocalEvents, always fire event even if newRaw is null (so data refreshes)
         // For other keys, skip if newRaw is null (avoid side effects like displaying messages)
-        if (newRaw === null && key !== 'settings') {
+        if (newRaw === null && key !== 'settings' && key !== 'peopleLocalEvents') {
             return;
         }
         let oldValue: any = undefined;

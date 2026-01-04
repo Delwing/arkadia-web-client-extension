@@ -119,10 +119,10 @@ export default class People {
 
             this.client.Triggers.registerTokenTrigger(replacement.description, descCallback, this.tag, {caseInsensitive: true})
 
-            if (state.isEnemy || (state.inGuild && state.guildColor !== undefined)) {
+            if (state.isEnemy || state.individualColor || (state.inGuild && state.guildColor !== undefined)) {
                 const key = `${replacement.name}|${replacement.guild}`
                 if (!addedNames.has(key) && replacement.name.length > 2) {
-                    const chosenColor = state.isEnemy ? RED : state.guildColor!
+                    const chosenColor = state.isEnemy ? RED : (state.individualColor ?? state.guildColor!)
                     const nameCallback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
                         const token = matches[0]
                         const indices = this.findTokenIndices(line.text, token, true)
@@ -141,15 +141,19 @@ export default class People {
         })
     }
 
-    private shouldHighlight(replacement: { guild: string }) {
+    private shouldHighlight(replacement: { guild: string; isEnemy?: boolean; color?: string }) {
         const inGuild = this.guildFilter.includes(replacement.guild)
-        const isEnemy = this.enemyGuilds.includes(replacement.guild)
+        const isGuildEnemy = this.enemyGuilds.includes(replacement.guild)
+        const isIndividualEnemy = replacement.isEnemy ?? false
+        const isEnemy = isGuildEnemy || isIndividualEnemy
+        const hasIndividualColor = !!replacement.color
         const guildColorHex = this.guildColors[replacement.guild]
         const guildColor = guildColorHex ? createColorFormat(guildColorHex) : undefined
-        if (!inGuild && !isEnemy) {
+        const individualColor = replacement.color ? createColorFormat(replacement.color) : undefined
+        if (!inGuild && !isEnemy && !hasIndividualColor) {
             return undefined
         }
-        return { inGuild, isEnemy, guildColor }
+        return { inGuild, isEnemy, guildColor, individualColor }
     }
 
     private isWordCharacter(char: string | undefined) {
@@ -193,7 +197,7 @@ export default class People {
         line: AnsiAwareBuffer,
         position: number,
         replacement: { name: string; guild: string },
-        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot; individualColor?: FormatStateSnapshot },
         descriptionToken: string,
         skipSuffix = false
     ): AnsiAwareBuffer {
@@ -205,8 +209,8 @@ export default class People {
         const descEnd = position
         const originalDesc = line.text.substring(descStart, descEnd)
 
-        // Only color description when guild color is set or when it's an enemy
-        const descriptionColor = (state.guildColor !== undefined || state.isEnemy) ? parenthesisColor : line.getStateAt(descStart)
+        // Only color description when guild color is set, individual color is set, or when it's an enemy
+        const descriptionColor = (state.guildColor !== undefined || state.isEnemy || state.individualColor !== undefined) ? parenthesisColor : line.getStateAt(descStart)
 
         if (skipSuffix) {
             // Only color the description, no suffix
@@ -226,7 +230,7 @@ export default class People {
         line: AnsiAwareBuffer,
         position: number,
         replacement: { name: string; guild: string },
-        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot },
+        state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot; individualColor?: FormatStateSnapshot },
         descriptionToken: string,
         skipSuffix = false
     ): AnsiAwareBuffer {
@@ -236,8 +240,8 @@ export default class People {
         const descStart = position - descriptionToken.length
         const descEnd = position
 
-        // Only color description when guild color is set or when it's an enemy
-        const descriptionColor = (state.guildColor !== undefined || state.isEnemy) ? parenthesisColor : line.getStateAt(descStart)
+        // Only color description when guild color is set, individual color is set, or when it's an enemy
+        const descriptionColor = (state.guildColor !== undefined || state.isEnemy || state.individualColor !== undefined) ? parenthesisColor : line.getStateAt(descStart)
 
         // Color the description in place
         if (descriptionColor) {
@@ -310,16 +314,22 @@ export default class People {
         return line
     }
 
-    private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
+    private getGuildColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot; individualColor?: FormatStateSnapshot }) {
         if (state.isEnemy) {
             return RED
+        }
+        if (state.individualColor) {
+            return state.individualColor
         }
         return state.inGuild && state.guildColor !== undefined ? state.guildColor : createColorFormat('#ff875f');
     }
 
-    private getNameColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot }) {
+    private getNameColor(state: { inGuild: boolean; isEnemy: boolean; guildColor?: FormatStateSnapshot; individualColor?: FormatStateSnapshot }) {
         if (state.isEnemy) {
             return RED
+        }
+        if (state.individualColor) {
+            return state.individualColor
         }
         return state.inGuild && state.guildColor !== undefined ? state.guildColor : createColorFormat('#ffff5f');
     }

@@ -89,5 +89,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         setLocalOnly,
         setPageSize,
         setPage,
+        service,
+        dataVersion,
     };
 }

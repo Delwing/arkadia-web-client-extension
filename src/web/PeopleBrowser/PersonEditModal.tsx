@@ -12,6 +12,10 @@ export interface PersonEditModalProps {
     onRestore?: () => void;
     onRestoreOriginal?: () => void;
     onDelete?: () => void;
+    onMarkEnemy?: () => void;
+    onUnmarkEnemy?: () => void;
+    onSetColor?: (color: string) => void;
+    onClearColor?: () => void;
     person?: PersonListEntry;
     mode: 'add' | 'edit';
 }
@@ -24,6 +28,10 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     onRestore,
     onRestoreOriginal,
     onDelete,
+    onMarkEnemy,
+    onUnmarkEnemy,
+    onSetColor,
+    onClearColor,
     person,
     mode,
 }) => {
@@ -61,6 +69,8 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     const isIgnored = person?.ignored ?? false;
     const hasOriginal = person?.originalEntry !== undefined;
     const isLocallyAdded = person?.source === 'local';
+    const isMarkedEnemy = person?.isEnemy ?? false;
+    const currentColor = person?.color;
 
     return (
         <div
@@ -104,7 +114,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                     {onRestoreOriginal && (
                                         <button
                                             type="button"
-                                            className="btn btn-sm btn-outline-secondary"
+                                            className="btn btn-sm btn-light"
                                             onClick={onRestoreOriginal}
                                             title="Przywroc oryginalne wartosci"
                                         >
@@ -151,10 +161,63 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 ))}
                             </select>
                         </div>
+
+                        {mode === 'edit' && !isIgnored && (
+                            <div className="mb-3">
+                                <label className="form-label">Kolor indywidualny</label>
+                                <div className="d-flex gap-2 align-items-center">
+                                    <input
+                                        type="color"
+                                        className="form-control form-control-color"
+                                        value={currentColor || '#ffff5f'}
+                                        onChange={(e) => onSetColor?.(e.target.value)}
+                                        title="Wybierz kolor"
+                                        style={{
+                                            border: '2px solid #555',
+                                            padding: '2px',
+                                            backgroundColor: currentColor || '#ffff5f'
+                                        }}
+                                    />
+                                    {currentColor && onClearColor && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-light"
+                                            onClick={onClearColor}
+                                            title="Usun indywidualny kolor"
+                                        >
+                                            Wyczysc
+                                        </button>
+                                    )}
+                                    {!currentColor && (
+                                        <span className="text-muted small">Brak (uzyje koloru gildii)</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="modal-footer">
                         <div className="d-flex w-100 justify-content-between">
                             <div className="d-flex gap-2">
+                                {mode === 'edit' && !isIgnored && !isMarkedEnemy && onMarkEnemy && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-danger"
+                                        onClick={onMarkEnemy}
+                                        title="Oznacz jako wroga"
+                                    >
+                                        Wrog
+                                    </button>
+                                )}
+                                {mode === 'edit' && !isIgnored && isMarkedEnemy && onUnmarkEnemy && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-danger"
+                                        onClick={onUnmarkEnemy}
+                                        title="Odznacz jako wroga"
+                                    >
+                                        Wrog
+                                    </button>
+                                )}
                                 {mode === 'edit' && !isIgnored && !isLocallyAdded && onIgnore && (
                                     <button
                                         type="button"
@@ -163,16 +226,6 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                         title="Ignoruj ta postac (nie tworz triggerow)"
                                     >
                                         Ignoruj
-                                    </button>
-                                )}
-                                {mode === 'edit' && hasOriginal && onRestoreOriginal && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-info"
-                                        onClick={onRestoreOriginal}
-                                        title="Przywroc oryginalne wartosci z bazy"
-                                    >
-                                        Przywroc oryginal
                                     </button>
                                 )}
                                 {mode === 'edit' && isIgnored && onRestore && (

@@ -1,11 +1,16 @@
 import type { PersonListEntry } from '@client/types/people';
 import type { PeopleBrowserQuery, PeopleBrowserResult } from './PeopleBrowserTypes';
+import { makePersonKey } from '@modules/data/peopleLoader';
 
 export class PeopleBrowserService {
     private people: PersonListEntry[] = [];
 
     setData(people: PersonListEntry[] | undefined): void {
         this.people = people ?? [];
+    }
+
+    findByKey(key: string): PersonListEntry | undefined {
+        return this.people.find(p => makePersonKey(p.name, p.description) === key);
     }
 
     getAvailableGuilds(): string[] {

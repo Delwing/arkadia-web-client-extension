@@ -6547,6 +6547,22 @@ body.mobile-command-radial-active {
   color: #eab308;
 }
 
+.people-browser__badge--enemy {
+  background-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.people-browser__item--enemy .people-browser__item-name {
+  color: #ef4444;
+}
+
+.people-browser__badge--color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
 .people-browser__local-only {
   display: flex;
   align-items: center;

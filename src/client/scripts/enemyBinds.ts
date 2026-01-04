@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
-import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
-import type { PersonEntry } from '../types/people';
+import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
+import type { PersonListEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import storage from '@modules/core/storage';
@@ -43,14 +43,14 @@ export default function initEnemyBinds(
     let bindSlots: (number | null)[] = [null, null, null];
     let enabled = true;
     let enemyGuilds: string[] = [];
-    let peopleCache: PersonEntry[] = [];
+    let peopleCache: PersonListEntry[] = [];
     let keepUnchanged = false;
     let showMode: 'always' | 'whenBound' | 'never' = 'always';
     let enabledSlots: [boolean, boolean, boolean] = [true, true, true];
     let enemyBindKeys: Bind[] = [...defaultEnemyBinds];
     let enemyBlockBindKeys: Bind[] = [...defaultEnemyBlockBinds];
 
-    subscribeToPeopleStore(snapshot => {
+    subscribeMerged(snapshot => {
         peopleCache = snapshot ?? [];
     });
 
@@ -103,16 +103,22 @@ export default function initEnemyBinds(
     });
 
     function isEnemy(desc: string): boolean {
-        if (enemyGuilds.length === 0) {
-            return false;
-        }
-
         const person = peopleCache.find(p =>
             p.description.toLowerCase() === desc.toLowerCase() ||
             p.name.toLowerCase() === desc.toLowerCase()
         );
 
-        return !!person && enemyGuilds.includes(person.guild);
+        if (!person) {
+            return false;
+        }
+
+        // Check individual enemy flag first
+        if (person.isEnemy) {
+            return true;
+        }
+
+        // Then check guild-based enemy status
+        return enemyGuilds.includes(person.guild);
     }
 
     function formatBindLabel(bind: Bind): string {

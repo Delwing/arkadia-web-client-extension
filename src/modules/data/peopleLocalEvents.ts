@@ -4,6 +4,7 @@ import type {
     PersonListEntry,
     PeopleLocalEventsSnapshot,
 } from '@client/types/people';
+import { getItemSync, setItemSync } from '@modules/core/storage';
 
 const STORAGE_KEY = 'peopleLocalEvents';
 
@@ -16,22 +17,16 @@ export function generateEventId(): string {
 }
 
 export function loadLocalEvents(): PeopleLocalEventsSnapshot {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-        try {
-            const parsed = JSON.parse(raw);
-            if (parsed && Array.isArray(parsed.events)) {
-                return parsed as PeopleLocalEventsSnapshot;
-            }
-        } catch {
-            // Invalid data, return empty
-        }
+    const result = getItemSync(STORAGE_KEY);
+    const data = result?.[STORAGE_KEY];
+    if (data && Array.isArray(data.events)) {
+        return data as PeopleLocalEventsSnapshot;
     }
     return { events: [], timestamp: 0 };
 }
 
 export function saveLocalEvents(snapshot: PeopleLocalEventsSnapshot): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    setItemSync(STORAGE_KEY, snapshot);
 }
 
 export function applyLocalEvents(
@@ -47,6 +42,7 @@ export function applyLocalEvents(
             ...entry,
             source: 'remote',
             ignored: false,
+            isEnemy: false,
         });
     }
 
@@ -62,6 +58,7 @@ export function applyLocalEvents(
                     ...event.entry,
                     source: 'local',
                     ignored: false,
+                    isEnemy: false,
                     eventId: event.id,
                 });
                 break;
@@ -76,6 +73,8 @@ export function applyLocalEvents(
                     ...event.entry,
                     source: 'edited',
                     ignored: false,
+                    isEnemy: original?.isEnemy ?? false,
+                    color: original?.color,
                     originalEntry: original
                         ? {
                               name: original.name,
@@ -95,6 +94,32 @@ export function applyLocalEvents(
                     result.set(event.targetKey, {
                         ...existing,
                         ignored: true,
+                        eventId: event.id,
+                    });
+                }
+                break;
+            }
+
+            case 'mark-enemy': {
+                if (!event.targetKey) break;
+                const existing = result.get(event.targetKey);
+                if (existing) {
+                    result.set(event.targetKey, {
+                        ...existing,
+                        isEnemy: true,
+                        eventId: event.id,
+                    });
+                }
+                break;
+            }
+
+            case 'set-color': {
+                if (!event.targetKey) break;
+                const existing = result.get(event.targetKey);
+                if (existing) {
+                    result.set(event.targetKey, {
+                        ...existing,
+                        color: event.color,
                         eventId: event.id,
                     });
                 }
@@ -132,5 +157,24 @@ export function createIgnoreEvent(targetKey: string): PersonEditEvent {
         type: 'ignore',
         timestamp: Date.now(),
         targetKey,
+    };
+}
+
+export function createMarkEnemyEvent(targetKey: string): PersonEditEvent {
+    return {
+        id: generateEventId(),
+        type: 'mark-enemy',
+        timestamp: Date.now(),
+        targetKey,
+    };
+}
+
+export function createSetColorEvent(targetKey: string, color: string | undefined): PersonEditEvent {
+    return {
+        id: generateEventId(),
+        type: 'set-color',
+        timestamp: Date.now(),
+        targetKey,
+        color,
     };
 }

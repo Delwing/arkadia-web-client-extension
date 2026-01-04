@@ -14,6 +14,10 @@ import {
     restorePerson,
     deleteLocalPerson,
     makePersonKey,
+    markAsEnemy,
+    unmarkAsEnemy,
+    setPersonColor,
+    clearPersonColor,
 } from '@modules/data/peopleLoader';
 import PersonEditModal from './PersonEditModal';
 
@@ -43,28 +47,36 @@ const PeopleBrowser: React.FC = () => {
         setLocalOnly,
         setPageSize,
         setPage,
+        service,
+        dataVersion,
     } = usePeopleBrowserData({ isOpen });
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-    const [selectedPerson, setSelectedPerson] = useState<PersonListEntry | undefined>();
+    const [selectedPersonKey, setSelectedPersonKey] = useState<string | undefined>();
+
+    // Derive selectedPerson from current data so it reflects live updates (e.g., color changes)
+    const selectedPerson = React.useMemo(() => {
+        if (!selectedPersonKey) return undefined;
+        return service.findByKey(selectedPersonKey);
+    }, [selectedPersonKey, service, dataVersion]);
 
     const handleAddClick = useCallback(() => {
-        setSelectedPerson(undefined);
+        setSelectedPersonKey(undefined);
         setModalMode('add');
         setShowModal(true);
     }, []);
 
     const handleEditClick = useCallback((person: PersonListEntry) => {
-        setSelectedPerson(person);
+        setSelectedPersonKey(makePersonKey(person.name, person.description));
         setModalMode('edit');
         setShowModal(true);
     }, []);
 
     const handleModalClose = useCallback(() => {
         setShowModal(false);
-        setSelectedPerson(undefined);
+        setSelectedPersonKey(undefined);
     }, []);
 
     const handleModalSave = useCallback((entry: PersonEntry) => {
@@ -111,6 +123,30 @@ const PeopleBrowser: React.FC = () => {
         }
         handleModalClose();
     }, [selectedPerson, handleModalClose]);
+
+    const handleMarkEnemy = useCallback(() => {
+        if (selectedPersonKey) {
+            markAsEnemy(selectedPersonKey);
+        }
+    }, [selectedPersonKey]);
+
+    const handleUnmarkEnemy = useCallback(() => {
+        if (selectedPersonKey) {
+            unmarkAsEnemy(selectedPersonKey);
+        }
+    }, [selectedPersonKey]);
+
+    const handleSetColor = useCallback((color: string) => {
+        if (selectedPersonKey) {
+            setPersonColor(selectedPersonKey, color);
+        }
+    }, [selectedPersonKey]);
+
+    const handleClearColor = useCallback(() => {
+        if (selectedPersonKey) {
+            clearPersonColor(selectedPersonKey);
+        }
+    }, [selectedPersonKey]);
 
     useEffect(() => {
         if (isOpen) {
@@ -252,14 +288,31 @@ const PeopleBrowser: React.FC = () => {
                             const isIgnored = person.ignored;
                             const isLocal = person.source === 'local';
                             const isEdited = person.source === 'edited';
+                            const isMarkedEnemy = person.isEnemy;
+                            const hasColor = !!person.color;
 
                             return (
                                 <div
                                     key={`${person.name}-${person.guild}-${person.description}-${index}`}
-                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''}`}
+                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''} ${isMarkedEnemy ? 'people-browser__item--enemy' : ''}`}
                                 >
-                                    <span className="people-browser__item-name">
+                                    <span className="people-browser__item-name" style={hasColor && !isMarkedEnemy ? { color: person.color } : undefined}>
                                         {person.name}
+                                        {isMarkedEnemy && (
+                                            <span
+                                                className="people-browser__badge people-browser__badge--enemy"
+                                                title="Oznaczony jako wrog"
+                                            >
+                                                !
+                                            </span>
+                                        )}
+                                        {hasColor && !isMarkedEnemy && (
+                                            <span
+                                                className="people-browser__badge people-browser__badge--color"
+                                                style={{ backgroundColor: person.color }}
+                                                title={`Kolor indywidualny: ${person.color}`}
+                                            />
+                                        )}
                                         {isLocal && (
                                             <span
                                                 className="people-browser__badge people-browser__badge--local"
@@ -350,6 +403,10 @@ const PeopleBrowser: React.FC = () => {
                 onRestore={handleRestore}
                 onRestoreOriginal={handleRestoreOriginal}
                 onDelete={handleDelete}
+                onMarkEnemy={handleMarkEnemy}
+                onUnmarkEnemy={handleUnmarkEnemy}
+                onSetColor={handleSetColor}
+                onClearColor={handleClearColor}
                 person={selectedPerson}
                 mode={modalMode}
             />

@@ -18,7 +18,10 @@ import {
     createAddEvent,
     createReplaceEvent,
     createIgnoreEvent,
+    createMarkEnemyEvent,
+    createSetColorEvent,
 } from './peopleLocalEvents';
+import storage from '@modules/core/storage';
 
 type MergedListener = (snapshot: PersonListEntry[] | undefined) => void;
 
@@ -52,10 +55,10 @@ function ensureRemoteSubscription() {
     });
 }
 
-// Listen for localStorage changes from other tabs
-if (typeof window !== 'undefined') {
-    window.addEventListener('storage', (event) => {
-        if (event.key === 'peopleLocalEvents') {
+// Listen for storage changes (including character switches and cross-tab changes)
+if (typeof window !== 'undefined' && storage.onChanged) {
+    storage.onChanged.addListener((changes) => {
+        if ('peopleLocalEvents' in changes) {
             localEventsSnapshot = loadLocalEvents();
             recomputeMerged();
         }
@@ -120,9 +123,9 @@ export function addLocalPerson(entry: PersonEntry): void {
  * Edit an existing person entry (creates a replace event)
  */
 export function editPerson(targetKey: string, newEntry: PersonEntry): void {
-    // Remove any existing events for this target (to allow re-editing)
+    // Remove existing replace/ignore events for this target, but preserve mark-enemy and set-color
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => e.targetKey !== targetKey || e.type === 'add'
+        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'set-color'
     );
     const event = createReplaceEvent(targetKey, newEntry);
     localEventsSnapshot = {
@@ -156,6 +159,76 @@ export function ignorePerson(targetKey: string): void {
 export function restorePerson(targetKey: string): void {
     const filteredEvents = localEventsSnapshot.events.filter(
         (e) => e.targetKey !== targetKey
+    );
+    if (filteredEvents.length === localEventsSnapshot.events.length) {
+        return; // No changes
+    }
+    localEventsSnapshot = {
+        events: filteredEvents,
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Mark a person as enemy (individual enemy flag)
+ */
+export function markAsEnemy(targetKey: string): void {
+    // Remove any existing mark-enemy events for this target
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'mark-enemy')
+    );
+    const event = createMarkEnemyEvent(targetKey);
+    localEventsSnapshot = {
+        events: [...filteredEvents, event],
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Unmark a person as enemy (remove enemy flag)
+ */
+export function unmarkAsEnemy(targetKey: string): void {
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'mark-enemy')
+    );
+    if (filteredEvents.length === localEventsSnapshot.events.length) {
+        return; // No changes
+    }
+    localEventsSnapshot = {
+        events: filteredEvents,
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Set individual color for a person
+ */
+export function setPersonColor(targetKey: string, color: string): void {
+    // Remove any existing set-color events for this target
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'set-color')
+    );
+    const event = createSetColorEvent(targetKey, color);
+    localEventsSnapshot = {
+        events: [...filteredEvents, event],
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Clear individual color for a person (removes set-color event)
+ */
+export function clearPersonColor(targetKey: string): void {
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'set-color')
     );
     if (filteredEvents.length === localEventsSnapshot.events.length) {
         return; // No changes
