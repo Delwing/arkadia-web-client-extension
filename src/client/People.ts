@@ -1,5 +1,5 @@
-import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from '@modules/data/peopleStore';
-import type { PersonEntry } from './types/people';
+import { subscribeMerged, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from '@modules/data/peopleLoader';
+import type { PersonListEntry } from './types/people';
 import Client from "./Client";
 import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
@@ -13,13 +13,13 @@ export default class People {
     guildFilter: string[] = []
     enemyGuilds: string[] = []
     guildColors: Record<string, string | undefined> = {}
-    people: PersonEntry[] = []
+    people: PersonListEntry[] = []
     private loadErrorLogged = false
-    private refreshPromise: Promise<PersonEntry[] | undefined> | null = null
+    private refreshPromise: Promise<unknown> | null = null
 
     constructor(client: Client) {
         this.client = client
-        subscribeToPeopleStore(snapshot => {
+        subscribeMerged(snapshot => {
             if (snapshot) {
                 this.people = snapshot
                 this.loadErrorLogged = false
@@ -78,6 +78,11 @@ export default class People {
         const RED = createColorFormat('#ff0000')
         const addedNames = new Set<string>()
         this.people.forEach(replacement => {
+            // Skip ignored entries - they should not create triggers
+            if (replacement.ignored) {
+                return
+            }
+
             const state = this.shouldHighlight(replacement)
             if (!state) {
                 return

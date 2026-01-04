@@ -26,6 +26,7 @@ export interface SyncOptions {
     improveCounts: boolean;    // Lifetime improve counts per character
     deposits: boolean;         // Deposit tracking per character
     containers: boolean;       // Container configuration per character
+    peopleEdits: boolean;      // Local edits to person database
 }
 
 export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
@@ -44,6 +45,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
     improveCounts: true,
     deposits: true,
     containers: true,
+    peopleEdits: true,
 };
 
 // Encrypted data structure
@@ -73,6 +75,7 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     'improveCounts',
     'deposits',
     'containers',
+    'peopleEdits',
 ];
 
 // Category display names (Polish)
@@ -92,6 +95,7 @@ export const SYNC_CATEGORY_NAMES: Record<SyncCategory, string> = {
     improveCounts: 'Licznik postepow',
     deposits: 'Depozyty',
     containers: 'Pojemniki',
+    peopleEdits: 'Edycje bazy postaci',
 };
 
 // Per-category payload stored in Firestore

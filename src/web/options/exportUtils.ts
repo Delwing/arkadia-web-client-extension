@@ -682,6 +682,10 @@ export async function exportCategory(
                 }
                 return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
             }
+            case 'peopleEdits': {
+                const raw = localStorage.getItem('peopleLocalEvents');
+                return raw ? JSON.stringify({ peopleLocalEvents: raw }) : null;
+            }
             default:
                 return null;
         }
@@ -822,6 +826,12 @@ export async function importCategory(
                     if (typeof raw !== 'string') return;
                     localStorage.setItem(`${charName}:containers`, raw);
                 });
+                break;
+            }
+            case 'peopleEdits': {
+                if (data.peopleLocalEvents && typeof data.peopleLocalEvents === 'string') {
+                    localStorage.setItem('peopleLocalEvents', data.peopleLocalEvents);
+                }
                 break;
             }
             default:

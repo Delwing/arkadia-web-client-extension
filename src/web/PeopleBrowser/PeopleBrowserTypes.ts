@@ -1,14 +1,15 @@
-import type { PersonEntry } from '@client/types/people';
+import type { PersonListEntry } from '@client/types/people';
 
 export interface PeopleBrowserQuery {
     searchTerm: string;
     guildFilter: string;
     pageSize: PageSize;
     page: number;
+    localOnly: boolean;
 }
 
 export interface PeopleBrowserResult {
-    items: PersonEntry[];
+    items: PersonListEntry[];
     totalCount: number;
     totalPages: number;
     currentPage: number;

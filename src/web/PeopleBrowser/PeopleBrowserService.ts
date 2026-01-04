@@ -1,10 +1,10 @@
-import type { PersonEntry } from '@client/types/people';
+import type { PersonListEntry } from '@client/types/people';
 import type { PeopleBrowserQuery, PeopleBrowserResult } from './PeopleBrowserTypes';
 
 export class PeopleBrowserService {
-    private people: PersonEntry[] = [];
+    private people: PersonListEntry[] = [];
 
-    setData(people: PersonEntry[] | undefined): void {
+    setData(people: PersonListEntry[] | undefined): void {
         this.people = people ?? [];
     }
 
@@ -19,10 +19,15 @@ export class PeopleBrowserService {
     }
 
     query(query: PeopleBrowserQuery): PeopleBrowserResult {
-        const { searchTerm, guildFilter, pageSize, page } = query;
+        const { searchTerm, guildFilter, pageSize, page, localOnly } = query;
         const searchLower = searchTerm.toLowerCase().trim();
 
         const filtered = this.people.filter((person) => {
+            // Filter by local edits only
+            if (localOnly && person.source === 'remote' && !person.ignored) {
+                return false;
+            }
+
             if (guildFilter && person.guild !== guildFilter) {
                 return false;
             }
@@ -39,6 +44,10 @@ export class PeopleBrowserService {
         });
 
         filtered.sort((a, b) => {
+            // Sort ignored entries to the end
+            if (a.ignored !== b.ignored) {
+                return a.ignored ? 1 : -1;
+            }
             const nameCompare = a.name.localeCompare(b.name);
             if (nameCompare !== 0) return nameCompare;
             return a.description.localeCompare(b.description);

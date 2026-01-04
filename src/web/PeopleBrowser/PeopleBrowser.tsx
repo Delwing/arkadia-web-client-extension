@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from '../layout/components/DockablePopupWrapper';
 import { usePopup } from '../hooks/usePopup';
@@ -6,6 +6,16 @@ import { usePopupSetting } from '../hooks/usePopupSetting';
 import { usePeopleBrowserData } from './usePeopleBrowserData';
 import { PAGE_SIZE_OPTIONS, type PageSize } from './PeopleBrowserTypes';
 import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
+import type { PersonEntry, PersonListEntry } from '@client/types/people';
+import {
+    addLocalPerson,
+    editPerson,
+    ignorePerson,
+    restorePerson,
+    deleteLocalPerson,
+    makePersonKey,
+} from '@modules/data/peopleLoader';
+import PersonEditModal from './PersonEditModal';
 
 const POPUP_ID = 'popup:peopleBrowser';
 
@@ -25,13 +35,70 @@ const PeopleBrowser: React.FC = () => {
         result,
         searchTerm,
         guildFilter,
+        localOnly,
         pageSize,
         page,
         setSearchTerm,
         setGuildFilter,
+        setLocalOnly,
         setPageSize,
         setPage,
     } = usePeopleBrowserData({ isOpen });
+
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+    const [selectedPerson, setSelectedPerson] = useState<PersonListEntry | undefined>();
+
+    const handleAddClick = useCallback(() => {
+        setSelectedPerson(undefined);
+        setModalMode('add');
+        setShowModal(true);
+    }, []);
+
+    const handleEditClick = useCallback((person: PersonListEntry) => {
+        setSelectedPerson(person);
+        setModalMode('edit');
+        setShowModal(true);
+    }, []);
+
+    const handleModalClose = useCallback(() => {
+        setShowModal(false);
+        setSelectedPerson(undefined);
+    }, []);
+
+    const handleModalSave = useCallback((entry: PersonEntry) => {
+        if (modalMode === 'add') {
+            addLocalPerson(entry);
+        } else if (selectedPerson) {
+            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
+            editPerson(targetKey, entry);
+        }
+        handleModalClose();
+    }, [modalMode, selectedPerson, handleModalClose]);
+
+    const handleIgnore = useCallback(() => {
+        if (selectedPerson) {
+            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
+            ignorePerson(targetKey);
+        }
+        handleModalClose();
+    }, [selectedPerson, handleModalClose]);
+
+    const handleRestore = useCallback(() => {
+        if (selectedPerson) {
+            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
+            restorePerson(targetKey);
+        }
+        handleModalClose();
+    }, [selectedPerson, handleModalClose]);
+
+    const handleDelete = useCallback(() => {
+        if (selectedPerson?.eventId) {
+            deleteLocalPerson(selectedPerson.eventId);
+        }
+        handleModalClose();
+    }, [selectedPerson, handleModalClose]);
 
     useEffect(() => {
         if (isOpen) {
@@ -88,6 +155,15 @@ const PeopleBrowser: React.FC = () => {
             bodyClassName="people-browser-body"
         >
             <div className="people-browser__controls">
+                <button
+                    type="button"
+                    className="btn btn-sm btn-success"
+                    onClick={handleAddClick}
+                    title="Dodaj nowa postac"
+                >
+                    + Dodaj
+                </button>
+
                 <div className="people-browser__search">
                     <input
                         type="text"
@@ -122,6 +198,18 @@ const PeopleBrowser: React.FC = () => {
                     </select>
                 </div>
 
+                <div className="people-browser__local-only">
+                    <label className="form-check-label d-flex align-items-center gap-1">
+                        <input
+                            type="checkbox"
+                            className="form-check-input m-0"
+                            checked={localOnly}
+                            onChange={(e) => setLocalOnly(e.target.checked)}
+                        />
+                        <span className="small">Tylko lokalne</span>
+                    </label>
+                </div>
+
                 <div className="people-browser__page-size">
                     <select
                         className="form-select form-select-sm"
@@ -148,16 +236,52 @@ const PeopleBrowser: React.FC = () => {
                     </div>
                 ) : (
                     <div className="people-browser__list">
-                        {result.items.map((person, index) => (
-                            <div
-                                key={`${person.name}-${person.guild}-${person.description}-${index}`}
-                                className="people-browser__item"
-                            >
-                                <span className="people-browser__item-name">{person.name}</span>
-                                <span className="people-browser__item-guild">{person.guild}</span>
-                                <span className="people-browser__item-desc">{person.description}</span>
-                            </div>
-                        ))}
+                        {result.items.map((person, index) => {
+                            const isIgnored = person.ignored;
+                            const isLocal = person.source === 'local';
+                            const isEdited = person.source === 'edited';
+
+                            return (
+                                <div
+                                    key={`${person.name}-${person.guild}-${person.description}-${index}`}
+                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''}`}
+                                >
+                                    <span className="people-browser__item-name">
+                                        {person.name}
+                                        {isLocal && (
+                                            <span
+                                                className="people-browser__badge people-browser__badge--local"
+                                                title="Dodano lokalnie"
+                                            >
+                                                +
+                                            </span>
+                                        )}
+                                        {isEdited && (
+                                            <span
+                                                className="people-browser__badge people-browser__badge--edited"
+                                                title={person.originalEntry
+                                                    ? `Oryginal: ${person.originalEntry.name} (${person.originalEntry.guild}) - ${person.originalEntry.description}`
+                                                    : 'Edytowano lokalnie'}
+                                            >
+                                                *
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="people-browser__item-guild">{person.guild}</span>
+                                    <span className="people-browser__item-desc">{person.description}</span>
+                                    <span className="people-browser__item-actions">
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-link p-0"
+                                            onClick={() => handleEditClick(person)}
+                                            title={isIgnored ? 'Przywroc/Edytuj' : 'Edytuj'}
+                                        >
+                                            {isIgnored ? '↩' : '✎'}
+                                        </button>
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -205,6 +329,17 @@ const PeopleBrowser: React.FC = () => {
                     </button>
                 </div>
             )}
+
+            <PersonEditModal
+                show={showModal}
+                onClose={handleModalClose}
+                onSave={handleModalSave}
+                onIgnore={handleIgnore}
+                onRestore={handleRestore}
+                onDelete={handleDelete}
+                person={selectedPerson}
+                mode={modalMode}
+            />
         </DockablePopupWrapper>
     );
 };

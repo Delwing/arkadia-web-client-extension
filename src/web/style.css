@@ -6467,7 +6467,7 @@ body.mobile-command-radial-active {
 
 .people-browser__item {
   display: grid;
-  grid-template-columns: minmax(80px, 1fr) 45px minmax(100px, 2fr);
+  grid-template-columns: minmax(80px, 1fr) 45px minmax(100px, 2fr) 28px;
   gap: 0.5rem;
   padding: 0.2rem 0.35rem;
   border-radius: 0.2rem;
@@ -6478,12 +6478,25 @@ body.mobile-command-radial-active {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+.people-browser__item--ignored {
+  opacity: 0.4;
+}
+
+.people-browser__item--ignored .people-browser__item-name,
+.people-browser__item--ignored .people-browser__item-guild,
+.people-browser__item--ignored .people-browser__item-desc {
+  text-decoration: line-through;
+}
+
 .people-browser__item-name {
   color: var(--text-primary);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .people-browser__item-guild {
@@ -6499,6 +6512,44 @@ body.mobile-command-radial-active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.people-browser__item-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.people-browser__item-actions button {
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.people-browser__item-actions button:hover {
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.people-browser__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 0.2rem;
+  border-radius: 0.15rem;
+  flex-shrink: 0;
+}
+
+.people-browser__badge--local {
+  background-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.people-browser__badge--edited {
+  background-color: rgba(234, 179, 8, 0.3);
+  color: #eab308;
+}
+
+.people-browser__local-only {
+  display: flex;
+  align-items: center;
 }
 
 .people-browser__pagination {
