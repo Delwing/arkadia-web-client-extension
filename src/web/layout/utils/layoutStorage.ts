@@ -1,4 +1,5 @@
 import { LayoutState, DockState, DEFAULT_LAYOUT, migrateLegacyDockState } from '../types';
+import eventBus from '@modules/core/eventBus';
 
 const LAYOUT_STORAGE_KEY = 'layoutManagerState';
 
@@ -113,8 +114,8 @@ const CACHE_TTL = 100; // Cache valid for 100ms (covers component initialization
 export function invalidateLayoutCache(): void {
   cachedLayoutState = null;
   cacheTimestamp = 0;
-  // Dispatch event to notify LayoutContext to reload state
-  window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+  // Notify LayoutContext to reload state
+  eventBus.emit('layoutManagerStateChanged');
 }
 
 function getCachedLayoutState(): ReturnType<typeof loadLayoutState> {
@@ -215,7 +216,7 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
     // Save immediately to avoid race condition with LayoutContext's debounced save
     saveLayoutState(state);
     // Notify LayoutContext to sync its state
-    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+    eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }
@@ -304,7 +305,7 @@ export function setBuiltInPanelSetting<T>(panelId: string, key: string, value: T
     // Save immediately to avoid race condition with LayoutContext's debounced save
     saveLayoutState(state);
     // Notify LayoutContext to sync its state
-    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+    eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save built-in panel setting:', e);
   }

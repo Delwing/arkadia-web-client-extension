@@ -67,7 +67,7 @@ export default class ObjectList {
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
-        window.addEventListener('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
+        eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
         storage.onChanged?.addListener((changes) => {
             if (changes.uiSettings) {
                 this.loadContextMenuCommands();
@@ -93,7 +93,8 @@ export default class ObjectList {
     }
 
     private handleLayoutManagerStateChange = () => {
-        const isEnabled = document.body.classList.contains('layout-manager-enabled');
+        const layoutState = loadLayoutState();
+        const isEnabled = layoutState.enabled;
         if (isEnabled === this.isLayoutManagerEnabled) {
             return;
         }

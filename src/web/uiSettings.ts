@@ -1165,8 +1165,8 @@ export default async function initUiSettings() {
             layoutState.enabled = layoutManagerEnabledInput.checked;
             saveLayoutState(layoutState);
             updateLayoutPanelInputsState();
-            // Dispatch custom event for React context to pick up the change
-            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+            // Notify React context to pick up the change
+            eventBus.emit('layoutManagerStateChanged');
         });
     }
 
@@ -1175,15 +1175,15 @@ export default async function initUiSettings() {
             const layoutState = loadLayoutState();
             layoutState.enabledPanels.objectList = layoutManagerObjectListInput.checked;
             saveLayoutState(layoutState);
-            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+            eventBus.emit('layoutManagerStateChanged');
         });
     }
 
     if (layoutManagerResetBtn) {
         layoutManagerResetBtn.addEventListener('click', () => {
             resetLayoutState();
-            // Dispatch custom event for React context to pick up the change
-            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+            // Notify React context to pick up the change
+            eventBus.emit('layoutManagerStateChanged');
         });
     }
 

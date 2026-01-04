@@ -1,4 +1,5 @@
 import storage from '@modules/core/storage';
+import eventBus from '@modules/core/eventBus';
 import { loadLayoutState, saveLayoutState } from '@web/layout/utils/layoutStorage';
 import { defaultUiSettings, type UiSettings } from '@web/defaultUiSettings';
 import {
@@ -69,9 +70,7 @@ export async function importDeviceSettings(settings: DeviceSettings): Promise<vo
     if (settings.layoutManagerState) {
         saveLayoutState(settings.layoutManagerState);
         // Notify React context
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
-        }
+        eventBus.emit('layoutManagerStateChanged');
     }
 
     // Apply UI settings

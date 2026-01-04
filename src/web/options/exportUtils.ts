@@ -1,6 +1,7 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
+import eventBus from '@modules/core/eventBus';
 import {
     getDeviceInfo,
     saveImportedDevice,
@@ -707,8 +708,8 @@ export async function importCategory(
                 if (data.desktopButtonSettings) localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
                 if (data.mobileButtonSettings) localStorage.setItem('mobileButtonSettings', data.mobileButtonSettings);
                 // Notify layout system of changes
-                if (data.layoutManagerState && typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged', { detail: { type: 'import' } }));
+                if (data.layoutManagerState) {
+                    eventBus.emit('layoutManagerStateChanged', { type: 'import' });
                 }
                 break;
             }

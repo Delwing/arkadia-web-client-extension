@@ -244,8 +244,9 @@ export function applySyncedSettings(syncedSettings: SyncedDeviceSettings): void 
         if (typeof window !== 'undefined') {
             import('@web/layout').then(({ invalidateLayoutCache }) => {
                 invalidateLayoutCache();
-            }).catch(() => {
-                window.dispatchEvent(new CustomEvent('layoutManagerStateChanged', { detail: { type: 'import' } }));
+            }).catch(async () => {
+                const eventBus = (await import('@modules/core/eventBus')).default;
+                eventBus.emit('layoutManagerStateChanged', { type: 'import' });
             });
         }
     } catch (err) {

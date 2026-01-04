@@ -239,6 +239,7 @@ export interface KnownEvents {
     "mapLabelVisibility": boolean;
     "objectListViewMode": "list" | "card" | "compact";
     "objectListDemo.popup.open": void;
+    "layoutManagerStateChanged": { type?: 'import' } | void;
 }
 
 export interface ObjectData {

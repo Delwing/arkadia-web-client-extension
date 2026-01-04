@@ -250,7 +250,8 @@ export async function triggerSettingsReload(): Promise<void> {
         const { invalidateLayoutCache } = await import('@web/layout');
         invalidateLayoutCache();
     } catch {
-        window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+        const eventBus = (await import('@modules/core/eventBus')).default;
+        eventBus.emit('layoutManagerStateChanged');
     }
 
     // 2. Reload and emit uiSettings (for mobile buttons visibility, etc.)

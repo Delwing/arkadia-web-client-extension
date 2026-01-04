@@ -15,6 +15,7 @@ import {
   generateSlotId,
 } from './types';
 import { loadLayoutState, saveLayoutStateDebounced, resetLayoutState } from './utils/layoutStorage';
+import eventBus from '@modules/core/eventBus';
 
 export interface LayoutContextValue {
   layoutState: LayoutState;
@@ -95,19 +96,19 @@ export function LayoutProvider({ children, onLayoutModeChange }: LayoutProviderP
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('layoutManagerStateChanged', handleCustomStorageChange);
+    const unsubscribe = eventBus.on('layoutManagerStateChanged', handleCustomStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('layoutManagerStateChanged', handleCustomStorageChange);
+      unsubscribe();
     };
   }, []);
 
   useEffect(() => {
     isInternalUpdate.current = true;
     saveLayoutStateDebounced(layoutState);
-    // Dispatch custom event for same-tab listeners
-    window.dispatchEvent(new CustomEvent('layoutManagerStateChanged'));
+    // Notify same-tab listeners
+    eventBus.emit('layoutManagerStateChanged');
     requestAnimationFrame(() => {
       isInternalUpdate.current = false;
     });
