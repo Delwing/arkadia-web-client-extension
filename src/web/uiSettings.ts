@@ -192,6 +192,10 @@ function apply(settings: UiSettings) {
         charState.style.fontSize = settings.contentFontSize + 'rem';
         charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
+    const objectsList = document.getElementById('objects-list');
+    if (objectsList) {
+        objectsList.style.fontSize = settings.contentFontSize + 'rem';
+    }
     const combatTimer = document.getElementById('combat-timer');
     if (combatTimer) {
         combatTimer.dataset.enabled = settings.showCombatTimer ? '1' : '0';
