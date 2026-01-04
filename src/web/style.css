@@ -2746,8 +2746,8 @@ h1 {
 
 /* Vertical HP bar for compact mode */
 .object-card__hp-bar-vertical {
-  width: 6px;
-  min-width: 6px;
+  width: 8px;
+  min-width: 8px;
   display: flex;
   flex-direction: column-reverse;
   background: rgba(0, 0, 0, 0.15);
@@ -2816,15 +2816,51 @@ h1 {
   flex-shrink: 0;
 }
 
-/* Compact mode target indicators - top border only, HP bar has priority */
+/* Compact mode target indicators - right border */
 .object-card--compact.object-card--attack-target {
   box-shadow: none;
-  border-top-color: orangered;
+  border-right: 2px solid orangered;
 }
 
 .object-card--compact.object-card--defense-target {
   box-shadow: none;
-  border-top-color: greenyellow;
+  border-right: 2px solid greenyellow;
+}
+
+/* Target dots for compact mode (leader functionality) */
+.object-card__target-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.object-card__target-dot:hover {
+  opacity: 1;
+}
+
+.object-card__target-dot--defense {
+  background-color: greenyellow;
+}
+
+.object-card__target-dot--attack {
+  background-color: orangered;
+}
+
+.object-card__target-dot--active {
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.object-card__target-dot--defense.object-card__target-dot--active {
+  box-shadow: 0 0 4px greenyellow;
+}
+
+.object-card__target-dot--attack.object-card__target-dot--active {
+  box-shadow: 0 0 4px orangered;
 }
 
 /* Object List Demo Popup */

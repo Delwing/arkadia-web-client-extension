@@ -989,10 +989,26 @@ export default class ObjectList {
             // Build name element with optional style
             const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
 
-            // Compact card structure - single row with vertical HP bar
+            // Build target dot for leader functionality
+            const isLeader = tm?.isLeader?.();
+            let targetDotHtml = '';
+            if (isLeader) {
+                if (isPlayer || isTeammate) {
+                    // Self or teammate - defense target (greenyellow)
+                    const activeClass = obj.defense_target ? 'object-card__target-dot--active' : '';
+                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--defense ${activeClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>`;
+                } else {
+                    // Enemy - attack target (orangered)
+                    const activeClass = obj.attack_target ? 'object-card__target-dot--active' : '';
+                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--attack ${activeClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>`;
+                }
+            }
+
+            // Compact card structure - HP bar on left, target dot before number
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 ${hpBarHtml}
                 <div class="object-card__compact-content">
+                    ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
                     <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
                     ${attackersHtml}
