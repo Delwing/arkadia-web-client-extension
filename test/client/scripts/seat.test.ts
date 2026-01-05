@@ -51,4 +51,14 @@ describe('seat trigger', () => {
     callback();
     expect(client.sendCommand).toHaveBeenCalledWith('usiadz');
   });
+
+  test('does not split on "czy" inside words like "czystym"', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    parse('Gdzie chcesz usiasc? Przy czystym stole, przy drugim czystym stole czy przy trzecim czystym stole?');
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(label).toBe('usiadz przy czystym stole');
+    callback();
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy czystym stole');
+  });
 });

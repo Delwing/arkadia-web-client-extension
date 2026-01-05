@@ -360,6 +360,7 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
         insertIntoSlotId: null,
         insertPositionInSlot: null,
         willFloat: true,
+        ctrlHeld: e.ctrlKey,
       };
 
       updateDragState(currentDragState.current);
@@ -435,8 +436,22 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
           insertIntoSlotId: dropTarget?.insertIntoSlotId ?? null,
           insertPositionInSlot: dropTarget?.insertPositionInSlot ?? null,
           willFloat: !dock,
+          ctrlHeld: moveEvent.ctrlKey,
         };
         updateDragState(currentDragState.current);
+      };
+
+      // Prevent context menu during drag (macOS Ctrl+click triggers right-click)
+      const preventContextMenu = (e: Event) => {
+        e.preventDefault();
+      };
+
+      const cleanupListeners = () => {
+        document.removeEventListener('pointermove', handleMove);
+        document.removeEventListener('pointerup', handleEnd);
+        document.removeEventListener('pointercancel', handleCancel);
+        document.removeEventListener('contextmenu', preventContextMenu);
+        document.removeEventListener('mouseup', handleMouseUp);
       };
 
       const handleEnd = (endEvent: PointerEvent) => {
@@ -464,12 +479,53 @@ export function useDockablePanel({ panelId }: UseDockablePanelOptions) {
         lastDropTargetPos.current = null;
         updateDragState(null);
 
-        document.removeEventListener('pointermove', handleMove);
-        document.removeEventListener('pointerup', handleEnd);
+        cleanupListeners();
+      };
+
+      const handleCancel = () => {
+        if (!isDragging.current) return;
+
+        isDragging.current = false;
+        currentDragState.current = null;
+        lastDropTarget.current = null;
+        lastDropTargetPos.current = null;
+        updateDragState(null);
+
+        cleanupListeners();
+      };
+
+      // Fallback for mouseup in case pointerup doesn't fire (macOS Ctrl+click)
+      const handleMouseUp = (e: MouseEvent) => {
+        if (!isDragging.current) return;
+
+        const state = currentDragState.current;
+        if (state?.potentialDock && !e.ctrlKey) {
+          if (state.insertIntoSlotId !== null) {
+            movePanelToSlot(
+              panelId,
+              state.potentialDock,
+              state.insertIntoSlotId,
+              state.insertPositionInSlot ?? 0
+            );
+          } else {
+            movePanel(panelId, state.potentialDock, state.insertIndex ?? 0);
+          }
+        }
+
+        isDragging.current = false;
+        currentDragState.current = null;
+        lastDropTarget.current = null;
+        lastDropTargetPos.current = null;
+        updateDragState(null);
+
+        cleanupListeners();
       };
 
       document.addEventListener('pointermove', handleMove);
       document.addEventListener('pointerup', handleEnd);
+      document.addEventListener('pointercancel', handleCancel);
+      document.addEventListener('contextmenu', preventContextMenu);
+      document.addEventListener('mouseup', handleMouseUp);
     },
     [panelId, movePanel, movePanelToSlot, undockPanel, updateFloatingPanel, updateDragState, findPanelDock, findFloatingPanel, findPanelSlot]
   );

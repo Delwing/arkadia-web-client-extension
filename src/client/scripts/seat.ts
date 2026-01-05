@@ -8,7 +8,7 @@ export default function initSeat(client: Client) {
     client.Triggers.registerTrigger(pattern, (line, matches) => {
         if (!matches || !matches[1]) return line;
         const options = matches[1]
-            .split(/,| czy| lub/)
+            .split(/, | czy | lub /)
             .map(o => o.trim())
             .filter(o => o.length > 0);
         if (options.length === 0) return line;

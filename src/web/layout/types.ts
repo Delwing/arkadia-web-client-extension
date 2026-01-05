@@ -111,6 +111,8 @@ export interface DragState {
   insertPositionInSlot: number | null;
   /** True when dropping outside dock zones (will create floating panel) */
   willFloat: boolean;
+  /** True when Ctrl key is held (disables docking) */
+  ctrlHeld: boolean;
 }
 
 export interface PanelConfig {

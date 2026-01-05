@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useRef, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useRef, useEffect } from 'react';
 import { FloatingPanelState, PANEL_CONFIGS } from '../types';
 import { useLayoutManager } from '@web/layout';
 import { useDockablePanel } from '@web/layout';
@@ -32,29 +32,8 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   const startPos = useRef({ x: 0, y: 0 });
   const startBounds = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
-  // Track ctrl key state during drag
-  const [isCtrlHeld, setIsCtrlHeld] = useState(false);
   const isBeingDragged = dragState?.panelId === panel.id;
-
-  // Listen for ctrl key changes while dragging
-  useEffect(() => {
-    if (!isBeingDragged) {
-      setIsCtrlHeld(false);
-      return;
-    }
-
-    const handleKeyChange = (e: KeyboardEvent) => {
-      setIsCtrlHeld(e.ctrlKey);
-    };
-
-    window.addEventListener('keydown', handleKeyChange);
-    window.addEventListener('keyup', handleKeyChange);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyChange);
-      window.removeEventListener('keyup', handleKeyChange);
-    };
-  }, [isBeingDragged]);
+  const isCtrlHeld = isBeingDragged && dragState?.ctrlHeld;
 
   useEffect(() => {
     const handleMove = (e: PointerEvent) => {
