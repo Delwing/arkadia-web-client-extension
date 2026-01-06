@@ -4307,6 +4307,27 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   text-align: right;
 }
 
+/* Mobile button size/gap sliders - stack on mobile for better slider width */
+@media (max-width: 480px) {
+  .mobile-buttons-background-section {
+    flex-wrap: wrap;
+  }
+
+  .mobile-buttons-background-section > .form-label {
+    width: 100%;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-buttons-background-section > .mobile-buttons-background-controls {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-buttons-background-section > .mobile-buttons-background-controls:last-child {
+    margin-bottom: 0;
+  }
+}
+
 /* Enhanced grid preview styling */
 .mobile-direction-buttons.preview {
   border: 2px dashed var(--surface-border);

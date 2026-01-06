@@ -344,6 +344,23 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/rubin/);
     });
 
+    test('does not categorize items with gem-colored adjectives as stones', () => {
+      const input = 'Otwarty skorzany plecak zawiera szmaragdowy okragly flakonik, zielony szmaragd.';
+
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const tableText = getEmittedTable();
+
+      // szmaragdowy flakonik should NOT be in kamienie (it's a flask, not a gemstone)
+      // zielony szmaragd SHOULD be in kamienie (it's an actual emerald)
+      expect(tableText).toMatch(/kamienie/);
+      expect(tableText).toMatch(/szmaragd/);
+      // flakonik should be in "inne" category, not kamienie
+      expect(tableText).toMatch(/inne/);
+      expect(tableText).toMatch(/flakonik/);
+    });
+
     test('categorizes clothing into ubrania group', () => {
       const input = 'Otwarty skorzany plecak zawiera welniany plaszcz, skorzany kaftan.';
 
