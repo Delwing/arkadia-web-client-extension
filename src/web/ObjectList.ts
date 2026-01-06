@@ -13,7 +13,6 @@ export default class ObjectList {
     private client: Client;
     private readonly container: HTMLElement | null;
     private readonly content: HTMLElement | null;
-    private objectLines: string[] = [];
     private isDragging = false;
     private startX = 0;
     private startY = 0;
@@ -498,7 +497,6 @@ export default class ObjectList {
 
         // Show placeholder if no objects
         if (objects.length === 0) {
-            this.objectLines = [];
             this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektow</span>';
             this.rebuildPictureInPictureHtml();
             return;
@@ -695,7 +693,6 @@ export default class ObjectList {
 
             return `${numLabel} ${bar} ${customPrefix}${desc}${customSuffix}${arrow}`.trimEnd();
         });
-        this.objectLines = lines;
         this.content.innerHTML = lines.join("<br>");
         this.rebuildPictureInPictureHtml();
     }
@@ -867,13 +864,6 @@ export default class ObjectList {
             </div>`;
         });
 
-        // Store lines for PiP (use raw text version)
-        this.objectLines = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const rawDesc = obj.desc || "";
-            return `${num} ${rawDesc}`;
-        });
-
         this.content.innerHTML = `<div class="objects-list-cards">${cards.join('')}</div>`;
 
         // Attach contextmenu handler directly to the cards container (use capture phase)
@@ -1042,13 +1032,6 @@ export default class ObjectList {
                     ${attackersHtml}
                 </div>
             </div>`;
-        });
-
-        // Store lines for PiP (use raw text version)
-        this.objectLines = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const rawDesc = obj.desc || "";
-            return `${num} ${rawDesc}`;
         });
 
         this.content.innerHTML = `<div class="objects-list-cards objects-list-cards--compact">${cards.join('')}</div>`;
@@ -1476,7 +1459,8 @@ html, body {
     }
 
     private buildPictureInPictureHtml() {
-        const lines = [...this.objectLines];
+        // Always render list view for PiP regardless of current viewMode
+        const lines = this.buildListViewLinesForPip();
         const header = this.buildPipHeaderHtml();
         const footer = this.buildPipFooterHtml();
         const body = `<div class="objects-list-pip-body">${lines.join("<br>")}</div>`;
@@ -1489,6 +1473,178 @@ html, body {
             parts.push(footer);
         }
         return parts.join("");
+    }
+
+    private buildListViewLinesForPip(): string[] {
+        const manager = this.client.ObjectManager;
+        if (!manager) return [];
+        const objects = manager.getObjectsOnLocation();
+
+        if (objects.length === 0) {
+            return ['<span style="color: #888; font-style: italic;">Brak obiektow</span>'];
+        }
+
+        const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+        const tm = this.client.TeamManager;
+        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+
+        const queuedEnemyExists = nextQueuedId !== undefined &&
+            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
+        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
+
+        const teamAttacking = objects.some((o: any) => {
+            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        });
+
+        return objects.map((obj: any) => {
+            const num = String(obj.shortcut);
+            const isPlayer = obj.shortcut === '@';
+            let prefix = "  ";
+            const isLeader = tm?.isLeader?.();
+            const isTeammateForDot = tm?.isInTeam?.(obj.desc || "");
+
+            if (isLeader) {
+                if (isPlayer || isTeammateForDot) {
+                    if (obj.defense_target) {
+                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Rozkazanie obrony celu">>></span>`;
+                    } else {
+                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Wyznacz cel obrony">&#8226; </span>`;
+                    }
+                } else {
+                    if (obj.attack_target) {
+                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Rozkazanie ataku celu">>></span>`;
+                    } else {
+                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Wyznacz cel ataku">&#8226; </span>`;
+                    }
+                }
+            } else {
+                if (obj.attack_target) {
+                    prefix = `<span style="color:orangered">>></span>`;
+                } else if (obj.defense_target) {
+                    prefix = `<span style="color:greenyellow">>></span>`;
+                }
+            }
+
+            const isNextQueued =
+                !isPlayer &&
+                validNextQueuedId !== undefined &&
+                typeof obj.num !== "undefined" &&
+                validNextQueuedId === obj.num;
+            const numClasses = ["object-num"];
+            if (isNextQueued) {
+                numClasses.push("object-num-next-target");
+            }
+            const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
+            let numLabel = isPlayer
+                ? `${prefix}${num}`
+                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="Zaatakuj">${num}</span>`;
+
+            const rawDesc = obj.desc || "";
+            const isTeammate = tm?.isInTeam?.(rawDesc);
+            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+
+            const filterContext: EntryContext = {
+                object: obj,
+                displayNum: parseInt(num, 10),
+                isTarget: obj.avatar_target || false,
+                isNextTarget: isNextQueued,
+                isTeammate: isTeammate || false,
+                rawDescription: rawDesc,
+                isAttacking,
+                attackCommand: this.attackController.getAttackCommand()
+            };
+            const filterResult = objectListFilters.apply(filterContext);
+
+            if (filterResult.content?.numberLabel !== undefined) {
+                numLabel = filterResult.content.numberLabel;
+            }
+
+            let descriptionColor: string | undefined;
+            const descClasses = [] as string[];
+
+            if (!isPlayer) {
+                if (obj.avatar_target) {
+                    descriptionColor = "#ffaaaa";
+                } else if (isTeammate) {
+                    descriptionColor = "springgreen";
+                    if (teamAttacking && !isAttacking) {
+                        descClasses.push("team-not-attacking");
+                    }
+                } else if (
+                    typeof obj.hp === "number" &&
+                    isAttacking
+                ) {
+                    descriptionColor = "#b19cd9";
+                }
+            }
+
+            if (filterResult.style?.descriptionColor) {
+                descriptionColor = filterResult.style.descriptionColor;
+            }
+
+            if (filterResult.style?.italic) {
+                descClasses.push("team-not-attacking");
+            }
+
+            if (filterResult.style?.cssClasses) {
+                descClasses.push(...filterResult.style.cssClasses);
+            }
+
+            const displayDesc = filterResult.content?.description !== undefined
+                ? filterResult.content.description
+                : rawDesc;
+
+            let coloredDesc = displayDesc;
+            if (!isPlayer && (descriptionColor || filterResult.style?.descriptionBackgroundColor)) {
+                const classAttr = descClasses.length ? ` class="${descClasses.join(" ")}"` : "";
+                let style = "";
+                if (descriptionColor) {
+                    style += `color:${descriptionColor};`;
+                }
+                if (filterResult.style?.descriptionBackgroundColor) {
+                    style += `background-color:${filterResult.style.descriptionBackgroundColor};`;
+                }
+                coloredDesc = `<span${classAttr} style="${style}">${displayDesc}</span>`;
+            }
+
+            const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
+            const isTeammateStr = isTeammate ? "true" : "false";
+            const desc = isPlayer
+                ? `${displayDesc}${padding}`
+                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zaslon">${coloredDesc}</span>${padding}`;
+
+            let bar = "";
+            if (filterResult.content?.hpBar !== undefined) {
+                bar = filterResult.content.hpBar;
+            } else if (typeof obj.hp === "number") {
+                const hp = Math.max(0, Math.min(6, obj.hp)) + 1;
+                const colorLevel = getColorLevel(hp, 7, false, true);
+                let color = COLOR_OBJECT[colorLevel];
+
+                if (filterResult.style?.hpBarColor) {
+                    color = filterResult.style.hpBarColor;
+                }
+
+                const filled = "#".repeat(hp);
+                const empty = "-".repeat(7 - hp);
+                const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
+                if (!isPlayer && !isTeammate) {
+                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
+                } else {
+                    bar = hpBarContent;
+                }
+            }
+
+            const attackers = objects
+                .filter((o: any) => o.attack_num === obj.num)
+                .map((o: any) => o.shortcut);
+            const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
+
+            const customPrefix = filterResult.style?.prefix || "";
+            const customSuffix = filterResult.style?.suffix || "";
+
+            return `${numLabel} ${bar} ${customPrefix}${desc}${customSuffix}${arrow}`.trimEnd();
+        });
     }
 
     private buildPipHeaderHtml() {
