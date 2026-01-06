@@ -4,6 +4,7 @@ import type {KnowledgeReportAction} from '@shared/events';
 import {
     DEFAULT_KNOWLEDGE_CHARACTER_KEY,
     getKnowledgeStore,
+    KnowledgeBookEntry,
     KnowledgeCategoryStatus,
     KnowledgeLibraryEntry,
     KnowledgeLibraryProgress,
@@ -44,6 +45,7 @@ const STATUS_COLORS: Record<KnowledgeCategoryStatus, FormatStateSnapshot> = {
 const HEADER_COLOR = createColorFormat('#7cfc00');
 const KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR = createColorFormat('#ffe066');
 const KNOWLEDGE_ENTRY_TRIGGER_TAG = 'knowledge-entry-triggers';
+const BOOK_TRIGGER_TAG = 'book-triggers';
 
 type KnowledgeEntryTriggerTarget = {
     category: KnowledgeCategoryBaseName;
@@ -916,6 +918,73 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     }
 
+    function registerBookTriggers(books: Record<string, KnowledgeBookEntry> | undefined) {
+        client.Triggers.removeByTag(BOOK_TRIGGER_TAG);
+
+        if (!books) {
+            return;
+        }
+
+        const bookVariants = new Map<string, string[]>();
+
+        for (const [, book] of Object.entries(books)) {
+            const categories = book.categories;
+            if (!categories || categories.length === 0) {
+                continue;
+            }
+
+            const variants = [book.mianownik, book.dopelniacz, book.biernik].filter(
+                (v) => v && v.trim().length > 0,
+            );
+
+            for (const variant of variants) {
+                const trimmed = variant.trim();
+                if (trimmed.length === 0) {
+                    continue;
+                }
+
+                const existing = bookVariants.get(trimmed);
+                if (existing) {
+                    for (const cat of categories) {
+                        if (!existing.includes(cat)) {
+                            existing.push(cat);
+                        }
+                    }
+                } else {
+                    bookVariants.set(trimmed, [...categories]);
+                }
+            }
+        }
+
+        for (const [token, categories] of bookVariants.entries()) {
+            const tooltip = categories.join(', ');
+            client.Triggers.registerTokenTrigger(
+                token,
+                (line, matches) => {
+                    const tokenText = matches[0];
+                    if (!tokenText) {
+                        return line;
+                    }
+
+                    const startIndex =
+                        typeof matches.index === 'number' && matches.index >= 0
+                            ? matches.index
+                            : line.text.indexOf(tokenText);
+
+                    if (startIndex >= 0) {
+                        const endIndex = startIndex + tokenText.length;
+                        line.createLink([startIndex, endIndex], {
+                            title: tooltip,
+                        });
+                    }
+
+                    return line;
+                },
+                BOOK_TRIGGER_TAG,
+            );
+        }
+    }
+
     function getCharacterProgressKey(): string {
         const current = getCurrentCharacter();
         if (!current) {
@@ -931,6 +1000,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     store.subscribe((snapshot) => {
         currentSnapshot = snapshot ?? undefined;
+        registerBookTriggers(snapshot?.data.books);
         if (client.Map.currentRoom) {
             updateCurrentLibrary(client.Map.currentRoom);
         }
