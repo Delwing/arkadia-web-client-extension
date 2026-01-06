@@ -613,6 +613,7 @@ export interface BindApi {
    * @param printable - Command string to execute (or null to just use callback)
    * @param callback - Optional callback function to execute instead of sending command
    * @param clearAfterUse - If true, clear the bind after it's used once
+   * @param locationBound - If true, the bind will be automatically cleared when leaving the current location
    *
    * @example
    * ```typescript
@@ -626,9 +627,12 @@ export interface BindApi {
    *
    * // Bind with auto-clear after use
    * api.bind.set("use potion", undefined, true);
+   *
+   * // Bind that clears when leaving the location
+   * api.bind.set("board ship", undefined, false, true);
    * ```
    */
-  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void;
+  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean, locationBound?: boolean): void;
 
   /**
    * Clear the current function bind
@@ -1932,8 +1936,8 @@ export class PluginApiImpl implements PluginApi {
 
   private createBindApi(): BindApi {
     return {
-      set: (printable, callback, clearAfterUse) => {
-        this.client.FunctionalBind.set(printable, callback, clearAfterUse);
+      set: (printable, callback, clearAfterUse, locationBound) => {
+        this.client.FunctionalBind.set(printable, callback, clearAfterUse, locationBound);
       },
 
       clear: () => {
