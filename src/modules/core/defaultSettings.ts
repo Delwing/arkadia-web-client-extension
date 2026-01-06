@@ -13,6 +13,7 @@ export interface CollectOverride {
 
 export interface Settings {
     packageHelper: boolean;
+    packageInContainer: boolean;
     inlineCompassRose: boolean;
     shortenExits: boolean;
     prettyContainers: boolean;
@@ -51,6 +52,7 @@ export interface Settings {
 
 export const defaultSettings: Settings = {
     packageHelper: true,
+    packageInContainer: false,
     inlineCompassRose: false,
     shortenExits: false,
     prettyContainers: true,

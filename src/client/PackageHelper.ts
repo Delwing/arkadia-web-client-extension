@@ -4,6 +4,7 @@ import Client from "./Client";
 import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {containerAction} from "@client/scripts/bagManager";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -38,6 +39,7 @@ const UNKNOWN_NPC_COLOR = createColorFormat('#aaaaaa');
 export default function initPackageHelper(client: Client) {
     const npc: Record<string, number> = {};
     let enabled = false;
+    let packageInContainer = false;
 
     let packages: { name: string; time?: string; distance?: number }[] = [];
     let listTime = 0;
@@ -59,9 +61,10 @@ export default function initPackageHelper(client: Client) {
     })
 
     client.on('settings', (event) => {
-        const detail = (event ?? {}) as { packageHelper?: boolean };
+        const detail = (event ?? {}) as { packageHelper?: boolean; packageInContainer?: boolean };
         const setting = detail?.packageHelper
         const shouldEnable = setting === undefined ? true : setting
+        packageInContainer = detail?.packageInContainer ?? false;
         if (!enabled && shouldEnable) {
             init()
         } else if (enabled && !shouldEnable) {
@@ -115,6 +118,9 @@ export default function initPackageHelper(client: Client) {
                 failTrigger = undefined
             }
             currentPackage = packages[pick - 1]
+            if (packageInContainer) {
+                containerAction(client, "other", "put", "pocztowa paczke");
+            }
             leadToPackage(currentPackage.name)
             startTimer()
             registerDeliveryTrigger()
@@ -429,7 +435,12 @@ export default function initPackageHelper(client: Client) {
                 locationSubscription?.();
                 locationSubscription = undefined;
                 client.on('gmcp_msg.room.exits', () => {
-                    client.FunctionalBind.set('oddaj paczke', () => client.sendCommand('oddaj paczke'));
+                    client.FunctionalBind.set('oddaj paczke', () => {
+                        if (packageInContainer) {
+                            containerAction(client, "other", "take", "pocztowa paczke");
+                        }
+                        client.sendCommand('oddaj paczke');
+                    });
                 }, {once: true});
             }
         }

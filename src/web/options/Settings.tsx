@@ -163,6 +163,14 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             />
                             <Form.Check
                                 type="checkbox"
+                                id="packageInContainer"
+                                label="Paczka do pojemnika"
+                                checked={settings.packageInContainer}
+                                onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
+                                className="me-2"
+                            />
+                            <Form.Check
+                                type="checkbox"
                                 id="inlineCompassRose"
                                 label="Róża wiatrów"
                                 checked={settings.inlineCompassRose}
