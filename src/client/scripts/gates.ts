@@ -8,7 +8,7 @@ export default function initGates(client: Client) {
     client.FunctionalBind.set(null, knock);
 
     const showMessage = (line: AnsiAwareBuffer) => {
-        client.FunctionalBind.set("zastukaj we wrota", knock);
+        client.FunctionalBind.set("zastukaj we wrota", knock, false, true);
         return line;
     };
 

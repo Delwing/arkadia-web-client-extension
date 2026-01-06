@@ -123,20 +123,20 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     topMatches.forEach((match, idx) => {
                         const paddedId = String(match.id).padStart(maxIdLength, ' ');
                         const roomText = `${match.name} (${match.area})`;
-                        const lineText = `${paddedId} ${roomText}`;
 
-                        const lineStart = output.length;
-                        output.append(lineText);
-
-                        // Create link for the room name and area
-                        const linkStart = lineStart + paddedId.length + 1;
-                        output.createLink([linkStart, linkStart + roomText.length], {
+                        // Build line as separate buffer to ensure correct link positioning
+                        const lineBuffer = new AnsiAwareBuffer();
+                        lineBuffer.append(paddedId + ' ');
+                        const linkStart = lineBuffer.length;
+                        lineBuffer.append(roomText);
+                        lineBuffer.createLink([linkStart, linkStart + roomText.length], {
                             onClick: () => {
                                 client.sendEvent('leadTo', match.id);
                             },
                             title: `Kliknij aby prowadzić do: ${match.name}`
                         });
 
+                        output.appendBuffer(lineBuffer);
                         if (idx < topMatches.length - 1) {
                             output.append('\n');
                         }

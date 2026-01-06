@@ -65,6 +65,7 @@ export class FunctionalBind {
     };
     private currentPrintable: string | null = null;
     private printedInMessage = false;
+    private isLocationBound = false;
     private key: string;
     private label: string;
     private ctrl: boolean;
@@ -91,13 +92,21 @@ export class FunctionalBind {
         })
 
         this.client.on(LINE_START_EVENT, () => this.newMessage());
+        this.client.on('enterLocation', () => this.onLocationChange());
+    }
+
+    private onLocationChange() {
+        if (this.isLocationBound) {
+            this.clear();
+        }
     }
 
     newMessage() {
         this.printedInMessage = false;
     }
 
-    set(printable: string | null, callback?: () => void, clearAfterUse: boolean = false) {
+    set(printable: string | null, callback?: () => void, clearAfterUse: boolean = false, locationBound: boolean = false) {
+        this.isLocationBound = locationBound;
         if (callback) {
             this.functionalBind = () => {
                 callback();
@@ -135,6 +144,7 @@ export class FunctionalBind {
         };
         this.currentPrintable = null;
         this.printedInMessage = false;
+        this.isLocationBound = false;
     }
 
     updateOptions(options: FunctionalBindOptions = {}) {

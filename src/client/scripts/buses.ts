@@ -15,7 +15,7 @@ function bindBus(client: Client, commands: string[], label: string, beep: boolea
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
-    });
+    }, false, true);
 }
 
 export default function initBuses(client: Client) {

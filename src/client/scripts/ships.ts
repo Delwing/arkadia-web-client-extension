@@ -15,7 +15,7 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
-    });
+    }, false, true);
 }
 
 export default function initShips(client: Client) {
