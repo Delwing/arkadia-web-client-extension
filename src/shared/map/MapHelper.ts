@@ -99,6 +99,7 @@ export default class MapHelper {
         }
 
         this.client.on("enterLocation", detail => this.handleNewLocation(detail as { room: any }));
+        this.client.on("stepBack", () => this.pendingBindAbort?.abort());
 
         this.client.on("gmcp.room.info", (eventDetail) => {
             this.setBlockable(false);
@@ -456,7 +457,6 @@ export default class MapHelper {
     }
 
     handleNewLocation({room}: { room: MapData.Room }) {
-        this.pendingBindAbort?.abort();
         const abortController = new AbortController();
         this.pendingBindAbort = abortController;
         const roomId = room?.id;
