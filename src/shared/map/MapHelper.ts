@@ -79,6 +79,7 @@ export default class MapHelper {
     public isBlockable = false;
     private _destinations: number[] = [];
     private highlights: number[] = [];
+    private pendingBindAbort?: AbortController;
 
     get destinations(): number[] {
         return this._destinations;
@@ -455,9 +456,21 @@ export default class MapHelper {
     }
 
     handleNewLocation({room}: { room: MapData.Room }) {
+        this.pendingBindAbort?.abort();
+        const abortController = new AbortController();
+        this.pendingBindAbort = abortController;
+        const roomId = room?.id;
+
         this.client.on(
             "output-sent",
             () => {
+                if (abortController.signal.aborted) {
+                    return;
+                }
+                this.pendingBindAbort = undefined;
+                if (typeof roomId === "number" && this.currentRoom?.id !== roomId) {
+                    return;
+                }
                 if (room?.userData?.bind) {
                     this.client.functionalBind?.set(
                         room.userData?.bind,
@@ -470,7 +483,7 @@ export default class MapHelper {
                     );
                 }
             },
-            {once: true}
+            {once: true, signal: abortController.signal}
         );
     }
 
