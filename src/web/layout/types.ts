@@ -16,7 +16,8 @@ export type BuiltInPopupType =
   | 'zabici'
   | 'skroty'
   | 'peopleBrowser'
-  | 'objectListDemo';
+  | 'objectListDemo'
+  | 'walker';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

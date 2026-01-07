@@ -240,6 +240,22 @@ export interface KnownEvents {
     "objectListViewMode": "list" | "card" | "compact";
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;
+    "walker.popup.open": void;
+    "walker.update": WalkerState;
+    "walker.stop": void;
+    "walker.resume": void;
+    "walker.setDelay": number;
+    "walker.faster": void;
+    "walker.slower": void;
+}
+
+export interface WalkerState {
+    active: boolean;
+    paused: boolean;
+    path: number[];
+    currentIndex: number;
+    target: number | null;
+    delay: number;
 }
 
 export interface ObjectData {

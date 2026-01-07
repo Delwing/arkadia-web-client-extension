@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { longToShort } from "@shared/map/directions";
 import { getShortcut } from "./shortcuts";
+import type { WalkerState } from "@shared/events/clientEvents";
 
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -17,6 +18,19 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let pausedByPauser = false;
 
     const isWalking = () => !paused && path.length > 0;
+
+    const getState = (): WalkerState => ({
+        active: path.length > 0,
+        paused,
+        path: [...path],
+        currentIndex: index,
+        target,
+        delay,
+    });
+
+    const emitUpdate = () => {
+        client.sendEvent('walker.update', getState());
+    };
 
     client.on('settings', (payload) => {
         const detail = (payload ?? {}) as { autoWalkDelay?: unknown } & Record<string, unknown>;
@@ -42,6 +56,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
                 const reached = target;
                 target = null;
                 client.sendEvent('clearLeadTo');
+                emitUpdate();
                 if (reached !== null) {
                     client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
                 }
@@ -54,6 +69,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             clearTimer();
             path = [];
             client.sendEvent('clearLeadTo');
+            emitUpdate();
             return;
         }
         const nextId = path[index + 1];
@@ -63,6 +79,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             clearTimer();
             path = [];
             client.sendEvent('clearLeadTo');
+            emitUpdate();
             return;
         }
 
@@ -73,6 +90,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             client.suppressMapMoveEvent = true;
             client.sendCommand(longToShort[dir] ?? dir);
             index += 1;
+            emitUpdate();
             scheduleStep();
         }, time);
     };
@@ -101,6 +119,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         client.sendEvent('leadTo', targetId);
         clearTimer();
         client.sendEvent('notify', { text: `[WALK] ${info} → ${targetId} (${delay.toFixed(2)}s)` });
+        emitUpdate();
         scheduleStep();
     };
 
@@ -112,6 +131,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             client.sendEvent('clearLeadTo');
             client.sendEvent('notify', { text: `[WALK] stopped` });
         }
+        emitUpdate();
     };
 
     const resumeWalk = (d?: number) => {
@@ -139,14 +159,44 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             paused = true;
             pausedByPauser = true;
             clearTimer();
+            emitUpdate();
         }
     });
     client.on('pauserEnd', () => {
         if (pausedByPauser) {
             paused = false;
             pausedByPauser = false;
+            emitUpdate();
             scheduleStep();
         }
+    });
+
+    // UI event listeners
+    client.on('walker.stop', stopWalk);
+    client.on('walker.resume', () => resumeWalk());
+    client.on('walker.setDelay', (d) => {
+        lastDelay = Math.max(0.5, d);
+        delay = lastDelay;
+        settings.autoWalkDelay = lastDelay;
+        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        emitUpdate();
+    });
+    client.on('walker.faster', () => {
+        lastDelay = Math.max(0.5, lastDelay - 0.5);
+        delay = Math.max(0.5, delay - 0.5);
+        settings.autoWalkDelay = lastDelay;
+        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        emitUpdate();
+    });
+    client.on('walker.slower', () => {
+        lastDelay += 0.5;
+        delay += 0.5;
+        settings.autoWalkDelay = lastDelay;
+        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        emitUpdate();
     });
 
     aliases.push({
@@ -201,6 +251,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            emitUpdate();
         }
     });
 
@@ -212,6 +263,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            emitUpdate();
         }
     });
 
@@ -223,6 +275,15 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             settings.autoWalkDelay = lastDelay;
             client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            emitUpdate();
+        }
+    });
+
+    // Alias to open walker popup
+    aliases.push({
+        pattern: /^\/walkerw$/,
+        callback: () => {
+            client.sendEvent('walker.popup.open');
         }
     });
 }
