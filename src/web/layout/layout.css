@@ -945,7 +945,7 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   background-color: var(--surface-elevated, #1e2128);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
+  z-index: 1020;
   overflow-y: auto;
   overflow-x: hidden;
 }
