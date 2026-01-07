@@ -241,7 +241,7 @@ describe('ObjectList', () => {
     expect(goldHighlighted).toBeNull();
   });
 
-  test('moves non-combat objects to the end with shortcuts starting at 50', () => {
+  test('moves non-combat objects to the end with shortcuts starting at 50', async () => {
     document.body.innerHTML = '<div id="objects-list"></div>';
     class TestClient {
       private emitter = new EventEmitter();
@@ -270,6 +270,8 @@ describe('ObjectList', () => {
       '3': { desc: 'Tree' },
     });
     client.sendEvent('gmcp.objects.nums', ['1', '2', '3']);
+    // Wait for scheduled render (uses queueMicrotask)
+    await Promise.resolve();
     const html = (
       document.querySelector('#objects-list .objects-list-content') as HTMLElement
     ).innerHTML.split('<br>');

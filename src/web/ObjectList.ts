@@ -36,6 +36,7 @@ export default class ObjectList {
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
     private viewMode: 'list' | 'card' | 'compact' = 'list';
     private isLayoutManagerEnabled = false;
+    private renderScheduled = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -54,13 +55,13 @@ export default class ObjectList {
             document.addEventListener("contextmenu", this.onDocumentContextMenu, true);
         }
         window.addEventListener("resize", this.clampToViewport);
-        this.client.on("attackQueueChange", () => this.render());
-        this.client.on("gmcp.objects.nums", () => this.render());
-        this.client.on("gmcp.objects.data", () => this.render());
-        this.client.on("gmcp.char.state", () => this.render());
-        this.client.on("enemy.paralyzed", () => this.render());
-        this.client.on("enemy.paralyzed.end", () => this.render());
-        this.client.on("enemy.broken_defense", () => this.render());
+        this.client.on("attackQueueChange", () => this.scheduleRender());
+        this.client.on("gmcp.objects.nums", () => this.scheduleRender());
+        this.client.on("gmcp.objects.data", () => this.scheduleRender());
+        this.client.on("gmcp.char.state", () => this.scheduleRender());
+        this.client.on("enemy.paralyzed", () => this.scheduleRender());
+        this.client.on("enemy.paralyzed.end", () => this.scheduleRender());
+        this.client.on("enemy.broken_defense", () => this.scheduleRender());
         this.client.on("output-sent", () => this.handleOutputUpdate());
         this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();
@@ -488,6 +489,22 @@ export default class ObjectList {
 
         showContextMenu(items, e.clientX, e.clientY);
     };
+
+    /**
+     * Schedules a render using queueMicrotask to ensure all event handlers
+     * (including plugins) have finished processing before rendering.
+     * This prevents showing stale queue data when multiple events fire rapidly.
+     */
+    private scheduleRender() {
+        if (this.renderScheduled) {
+            return;
+        }
+        this.renderScheduled = true;
+        queueMicrotask(() => {
+            this.renderScheduled = false;
+            this.render();
+        });
+    }
 
     private render() {
         if (!this.container || !this.content) return;
