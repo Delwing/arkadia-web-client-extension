@@ -25,12 +25,12 @@ describe('gates triggers', () => {
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
     const initCb = (client.FunctionalBind.set as jest.Mock).mock.calls[0][1];
     initCb();
-    expect(client.sendCommand).toHaveBeenCalledWith('zastukaj we wrota');
+    expect(client.sendCommand).toHaveBeenCalledWith('uderz we wrota');
 
     parse('Probujesz otworzyc masywne wrota.');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(2);
     const [label, cb] = (client.FunctionalBind.set as jest.Mock).mock.calls[1];
-    expect(label).toBe('zastukaj we wrota');
+    expect(label).toBe('uderz we wrota');
     cb();
     expect(client.sendCommand).toHaveBeenCalledTimes(2);
   });

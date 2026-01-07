@@ -3,12 +3,12 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 export default function initGates(client: Client) {
     const knock = () => {
-        client.sendCommand("zastukaj we wrota");
+        client.sendCommand("uderz we wrota");
     };
     client.FunctionalBind.set(null, knock);
 
     const showMessage = (line: AnsiAwareBuffer) => {
-        client.FunctionalBind.set("zastukaj we wrota", knock, false, true);
+        client.FunctionalBind.set("uderz we wrota", knock, false, true);
         return line;
     };
 
