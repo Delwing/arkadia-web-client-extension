@@ -43,6 +43,7 @@ export function applyLocalEvents(
             source: 'remote',
             ignored: false,
             isEnemy: false,
+            isAlly: false,
         });
     }
 
@@ -59,6 +60,7 @@ export function applyLocalEvents(
                     source: 'local',
                     ignored: false,
                     isEnemy: false,
+                    isAlly: false,
                     eventId: event.id,
                 });
                 break;
@@ -74,6 +76,7 @@ export function applyLocalEvents(
                     source: 'edited',
                     ignored: false,
                     isEnemy: original?.isEnemy ?? false,
+                    isAlly: original?.isAlly ?? false,
                     color: original?.color,
                     originalEntry: original
                         ? {
@@ -107,6 +110,19 @@ export function applyLocalEvents(
                     result.set(event.targetKey, {
                         ...existing,
                         isEnemy: true,
+                        eventId: event.id,
+                    });
+                }
+                break;
+            }
+
+            case 'mark-ally': {
+                if (!event.targetKey) break;
+                const existing = result.get(event.targetKey);
+                if (existing) {
+                    result.set(event.targetKey, {
+                        ...existing,
+                        isAlly: true,
                         eventId: event.id,
                     });
                 }
@@ -164,6 +180,15 @@ export function createMarkEnemyEvent(targetKey: string): PersonEditEvent {
     return {
         id: generateEventId(),
         type: 'mark-enemy',
+        timestamp: Date.now(),
+        targetKey,
+    };
+}
+
+export function createMarkAllyEvent(targetKey: string): PersonEditEvent {
+    return {
+        id: generateEventId(),
+        type: 'mark-ally',
         timestamp: Date.now(),
         targetKey,
     };

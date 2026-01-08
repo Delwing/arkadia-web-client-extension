@@ -39,12 +39,17 @@ export default function initAllyProtection(client: Client) {
 
     function rebuildAllySet() {
         const newSet = new Set<string>();
-        if (allyGuilds.length > 0) {
-            for (const person of peopleCache) {
-                if (allyGuilds.includes(person.guild) && !person.ignored && isProperName(person.name)) {
-                    // Add lowercase name for case-insensitive matching (obj.desc is the player name)
-                    newSet.add(person.name.toLowerCase());
-                }
+        for (const person of peopleCache) {
+            if (person.ignored) continue;
+            if (!isProperName(person.name)) continue;
+
+            // Include if: in ally guild OR individually marked as ally
+            const inAllyGuild = allyGuilds.length > 0 && allyGuilds.includes(person.guild);
+            const individualAlly = person.isAlly === true;
+
+            if (inAllyGuild || individualAlly) {
+                // Add lowercase name for case-insensitive matching (obj.desc is the player name)
+                newSet.add(person.name.toLowerCase());
             }
         }
         allyDescriptions = newSet;
@@ -75,10 +80,10 @@ export default function initAllyProtection(client: Client) {
                 if (allyDescriptions.has(lowerName)) {
                     // Find the ally info for the warning message
                     const ally = peopleCache.find(p =>
-                        allyGuilds.includes(p.guild) &&
                         !p.ignored &&
                         isProperName(p.name) &&
-                        p.name.toLowerCase() === lowerName
+                        p.name.toLowerCase() === lowerName &&
+                        (allyGuilds.includes(p.guild) || p.isAlly === true)
                     );
                     allyCache.set(num, { isAlly: true, name: ally?.name, guild: ally?.guild });
                 } else {
@@ -125,10 +130,10 @@ export default function initAllyProtection(client: Client) {
         console.log(`[AllyProtection] Checking "${lowerName}" in set: ${isInSet}`);
         if (isInSet) {
             const ally = peopleCache.find(p =>
-                allyGuilds.includes(p.guild) &&
                 !p.ignored &&
                 isProperName(p.name) &&
-                p.name.toLowerCase() === lowerName
+                p.name.toLowerCase() === lowerName &&
+                (allyGuilds.includes(p.guild) || p.isAlly === true)
             );
             console.log(`[AllyProtection] Found ally: ${ally?.name} (${ally?.guild})`);
             allyCache.set(objectNum, { isAlly: true, name: ally?.name, guild: ally?.guild });

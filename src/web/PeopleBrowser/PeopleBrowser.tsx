@@ -16,6 +16,8 @@ import {
     makePersonKey,
     markAsEnemy,
     unmarkAsEnemy,
+    markAsAlly,
+    unmarkAsAlly,
     setPersonColor,
     clearPersonColor,
 } from '@modules/data/peopleLoader';
@@ -133,6 +135,18 @@ const PeopleBrowser: React.FC = () => {
     const handleUnmarkEnemy = useCallback(() => {
         if (selectedPersonKey) {
             unmarkAsEnemy(selectedPersonKey);
+        }
+    }, [selectedPersonKey]);
+
+    const handleMarkAlly = useCallback(() => {
+        if (selectedPersonKey) {
+            markAsAlly(selectedPersonKey);
+        }
+    }, [selectedPersonKey]);
+
+    const handleUnmarkAlly = useCallback(() => {
+        if (selectedPersonKey) {
+            unmarkAsAlly(selectedPersonKey);
         }
     }, [selectedPersonKey]);
 
@@ -405,6 +419,8 @@ const PeopleBrowser: React.FC = () => {
                 onDelete={handleDelete}
                 onMarkEnemy={handleMarkEnemy}
                 onUnmarkEnemy={handleUnmarkEnemy}
+                onMarkAlly={handleMarkAlly}
+                onUnmarkAlly={handleUnmarkAlly}
                 onSetColor={handleSetColor}
                 onClearColor={handleClearColor}
                 person={selectedPerson}

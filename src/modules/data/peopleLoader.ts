@@ -19,6 +19,7 @@ import {
     createReplaceEvent,
     createIgnoreEvent,
     createMarkEnemyEvent,
+    createMarkAllyEvent,
     createSetColorEvent,
 } from './peopleLocalEvents';
 import storage from '@modules/core/storage';
@@ -123,9 +124,9 @@ export function addLocalPerson(entry: PersonEntry): void {
  * Edit an existing person entry (creates a replace event)
  */
 export function editPerson(targetKey: string, newEntry: PersonEntry): void {
-    // Remove existing replace/ignore events for this target, but preserve mark-enemy and set-color
+    // Remove existing replace/ignore events for this target, but preserve mark-enemy, mark-ally, and set-color
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'set-color'
+        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'mark-ally' || e.type === 'set-color'
     );
     const event = createReplaceEvent(targetKey, newEntry);
     localEventsSnapshot = {
@@ -194,6 +195,41 @@ export function markAsEnemy(targetKey: string): void {
 export function unmarkAsEnemy(targetKey: string): void {
     const filteredEvents = localEventsSnapshot.events.filter(
         (e) => !(e.targetKey === targetKey && e.type === 'mark-enemy')
+    );
+    if (filteredEvents.length === localEventsSnapshot.events.length) {
+        return; // No changes
+    }
+    localEventsSnapshot = {
+        events: filteredEvents,
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Mark a person as ally (individual ally flag)
+ */
+export function markAsAlly(targetKey: string): void {
+    // Remove any existing mark-ally events for this target
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'mark-ally')
+    );
+    const event = createMarkAllyEvent(targetKey);
+    localEventsSnapshot = {
+        events: [...filteredEvents, event],
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Unmark a person as ally (remove ally flag)
+ */
+export function unmarkAsAlly(targetKey: string): void {
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'mark-ally')
     );
     if (filteredEvents.length === localEventsSnapshot.events.length) {
         return; // No changes

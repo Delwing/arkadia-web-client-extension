@@ -14,6 +14,8 @@ export interface PersonEditModalProps {
     onDelete?: () => void;
     onMarkEnemy?: () => void;
     onUnmarkEnemy?: () => void;
+    onMarkAlly?: () => void;
+    onUnmarkAlly?: () => void;
     onSetColor?: (color: string) => void;
     onClearColor?: () => void;
     person?: PersonListEntry;
@@ -30,6 +32,8 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     onDelete,
     onMarkEnemy,
     onUnmarkEnemy,
+    onMarkAlly,
+    onUnmarkAlly,
     onSetColor,
     onClearColor,
     person,
@@ -70,6 +74,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     const hasOriginal = person?.originalEntry !== undefined;
     const isLocallyAdded = person?.source === 'local';
     const isMarkedEnemy = person?.isEnemy ?? false;
+    const isMarkedAlly = person?.isAlly ?? false;
     const currentColor = person?.color;
 
     return (
@@ -216,6 +221,26 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                         title="Odznacz jako wroga"
                                     >
                                         Wrog
+                                    </button>
+                                )}
+                                {mode === 'edit' && !isIgnored && !isMarkedAlly && onMarkAlly && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-success"
+                                        onClick={onMarkAlly}
+                                        title="Oznacz jako sojusznika"
+                                    >
+                                        Sojusznik
+                                    </button>
+                                )}
+                                {mode === 'edit' && !isIgnored && isMarkedAlly && onUnmarkAlly && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success"
+                                        onClick={onUnmarkAlly}
+                                        title="Odznacz jako sojusznika"
+                                    >
+                                        Sojusznik
                                     </button>
                                 )}
                                 {mode === 'edit' && !isIgnored && !isLocallyAdded && onIgnore && (

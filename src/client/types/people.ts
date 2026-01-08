@@ -5,7 +5,7 @@ export interface PersonEntry {
 }
 
 // Local edit event types
-export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'set-color';
+export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'mark-ally' | 'set-color';
 
 export interface PersonEditEvent {
     id: string;
@@ -26,6 +26,7 @@ export interface PersonListEntry extends PersonEntry {
     source: 'remote' | 'local' | 'edited';
     ignored: boolean;
     isEnemy: boolean;
+    isAlly: boolean;
     color?: string; // Individual color override (hex value)
     originalEntry?: PersonEntry;
     eventId?: string;
