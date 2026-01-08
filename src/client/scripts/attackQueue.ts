@@ -64,15 +64,15 @@ export default function initAttackQueue(
 
     const add = (matches: RegExpMatchArray) => {
         const resolved = resolveEnemy(client, matches[1] ?? matches[0]);
-        console.log('[DEBUG /q] Resolved enemy:', resolved, 'from input:', matches[1] ?? matches[0]);
+        console.log(`[DEBUG /q] Resolved enemy: ${JSON.stringify(resolved)} from input: ${matches[1] ?? matches[0]}`);
         if (!resolved) {
             client.println("Niepoprawne id przeciwnika.");
             return;
         }
         const { id, description } = resolved;
-        console.log('[DEBUG /q] Adding to queue, id:', id, 'description:', description);
+        console.log(`[DEBUG /q] Adding to queue, id: ${id}, description: ${description}`);
         const added = client.TeamManager.addEnemyToQueue(id);
-        console.log('[DEBUG /q] After add, queue:', client.TeamManager.getEnemyQueue?.() ?? 'N/A');
+        console.log(`[DEBUG /q] After add, queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         if (added) {
             const displayName = description ?? id;
             client.println(`Dodano ${displayName} do kolejki ataku.`);
@@ -82,14 +82,14 @@ export default function initAttackQueue(
     };
 
     const killNext = () => {
-        console.log('[DEBUG /nn] Before shift, queue:', client.TeamManager.getEnemyQueue?.() ?? 'N/A');
+        console.log(`[DEBUG /nn] Before shift, queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         const next = client.TeamManager.shiftEnemyFromQueue();
-        console.log('[DEBUG /nn] After shift, next target id:', next, 'remaining queue:', client.TeamManager.getEnemyQueue?.() ?? 'N/A');
+        console.log(`[DEBUG /nn] After shift, next target id: ${next}, remaining queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         if (!next) {
             client.println("Kolejka ataku jest pusta.");
             return;
         }
-        console.log('[DEBUG /nn] Attacking target id:', next);
+        console.log(`[DEBUG /nn] Attacking target id: ${next}`);
         attackController.attackById(next);
     };
 

@@ -342,7 +342,7 @@ export default class TeamManager {
     }
 
     addEnemyToQueue(id: number): boolean {
-        console.log('[DEBUG TeamManager.addEnemyToQueue] id:', id, 'current queue:', [...this.enemies]);
+        console.log(`[DEBUG TeamManager.addEnemyToQueue] id: ${id}, current queue: ${JSON.stringify(this.enemies)}`);
         if (!id) {
             console.log('[DEBUG TeamManager.addEnemyToQueue] rejected: no id');
             return false;
@@ -353,7 +353,7 @@ export default class TeamManager {
         }
         this.enemies.push(id);
         this.missingEnemyCounts.delete(id);
-        console.log('[DEBUG TeamManager.addEnemyToQueue] added, new queue:', [...this.enemies]);
+        console.log(`[DEBUG TeamManager.addEnemyToQueue] added, new queue: ${JSON.stringify(this.enemies)}`);
         this.notifyAttackQueueChange();
         return true;
     }
@@ -381,9 +381,9 @@ export default class TeamManager {
     }
 
     shiftEnemyFromQueue(): number | undefined {
-        console.log('[DEBUG TeamManager.shiftEnemyFromQueue] before shift, queue:', [...this.enemies]);
+        console.log(`[DEBUG TeamManager.shiftEnemyFromQueue] before shift, queue: ${JSON.stringify(this.enemies)}`);
         const next = this.enemies.shift();
-        console.log('[DEBUG TeamManager.shiftEnemyFromQueue] shifted:', next, 'remaining:', [...this.enemies]);
+        console.log(`[DEBUG TeamManager.shiftEnemyFromQueue] shifted: ${next}, remaining: ${JSON.stringify(this.enemies)}`);
         if (next) {
             this.missingEnemyCounts.delete(next);
             this.notifyAttackQueueChange();
@@ -392,7 +392,7 @@ export default class TeamManager {
     }
 
     getEnemyQueue(): number[] {
-        console.log('[DEBUG TeamManager.getEnemyQueue] returning:', [...this.enemies]);
+        console.log(`[DEBUG TeamManager.getEnemyQueue] returning: ${JSON.stringify(this.enemies)}`);
         return [...this.enemies];
     }
 
