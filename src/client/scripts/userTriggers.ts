@@ -16,11 +16,42 @@ export interface UserMacro {
     pluginConfig?: Record<string, any>;
 }
 
+export type TriggerType = 'pattern' | 'event';
+
 export interface UserTrigger {
-    pattern: string;
-    flags?: string;
+    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility
+    pattern?: string;    // for pattern triggers
+    event?: string;      // for event triggers (e.g., 'kill', 'combatState')
+    flags?: string;      // for pattern triggers only
     macros: UserMacro[];
 }
+
+export interface SupportedEvent {
+    id: string;
+    label: string;
+    category: string;
+}
+
+export const SUPPORTED_EVENTS: SupportedEvent[] = [
+    // Combat
+    { id: 'kill', label: 'Zabicie (ja/druzyna)', category: 'Walka' },
+    { id: 'enemyKilled', label: 'Wrog zabity', category: 'Walka' },
+    { id: 'allEnemiesKilled', label: 'Wszyscy wrogowie zabici', category: 'Walka' },
+    { id: 'combatState:true', label: 'Walka - start', category: 'Walka' },
+    { id: 'combatState:false', label: 'Walka - koniec', category: 'Walka' },
+    { id: 'enemy.paralyzed', label: 'Wrog sparalizowany', category: 'Walka' },
+    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec paralizacji', category: 'Walka' },
+    { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
+
+    // Connection
+    { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },
+    { id: 'client.disconnect', label: 'Rozlaczenie', category: 'Polaczenie' },
+
+    // Timers
+    { id: 'zaskTimer', label: 'Timer zaskoczenia', category: 'Timery' },
+    { id: 'coverTimer', label: 'Timer oslony', category: 'Timery' },
+    { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
+];
 
 const STORAGE_KEY = 'triggers';
 
@@ -85,58 +116,116 @@ function applyMacrosToMatch(
     });
 }
 
+function applyEventMacros(
+    client: Client,
+    macros: UserMacro[]
+): void {
+    macros?.forEach(macro => {
+        switch (macro.type) {
+            case 'beep':
+                client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
+                break;
+            case 'command':
+                if (macro.command) {
+                    client.sendCommand(macro.command);
+                }
+                break;
+            case 'functionalBind':
+                if (macro.command && macro.label) {
+                    client.FunctionalBind.set(macro.label, () => {
+                        client.sendCommand(macro.command!);
+                    });
+                }
+                break;
+            // Note: Plugin macros are not supported for event triggers
+            // because they require text context (line, match, matchRange)
+        }
+    });
+}
+
+type EventHandler = { event: string; handler: (data: unknown) => void };
+
 export default function initUserTriggers(client: Client) {
-    let registered: Trigger[] = [];
+    let registeredPatternTriggers: Trigger[] = [];
+    let registeredEventHandlers: EventHandler[] = [];
 
     const apply = (list: UserTrigger[] = []) => {
-        registered.forEach(t => client.Triggers.removeTrigger(t));
-        registered = [];
+        // Clean up pattern triggers
+        registeredPatternTriggers.forEach(t => client.Triggers.removeTrigger(t));
+        registeredPatternTriggers = [];
+
+        // Clean up event handlers
+        registeredEventHandlers.forEach(({ event, handler }) => {
+            client.off(event as any, handler);
+        });
+        registeredEventHandlers = [];
+
+        // Process each trigger
         list.forEach(item => {
-            const flags = item.flags || '';
-            const hasGlobalFlag = flags.includes('g');
-            const hasCaseInsensitiveFlag = flags.includes('i');
-            const hasMultilineFlag = flags.includes('m');
+            const triggerType = item.type || 'pattern';
 
-            // Build regexp flags without 'i' (handled by TriggerOptions) and without 'm' (handled by trigger type)
-            const regexpFlags = hasGlobalFlag ? 'g' : '';
+            if (triggerType === 'event' && item.event) {
+                // Event-based trigger
+                const [eventName, eventValue] = item.event.split(':');
 
-            let regexp: RegExp;
-            try {
-                regexp = new RegExp(item.pattern, regexpFlags);
-            } catch (e) {
-                console.error('Invalid trigger pattern', item.pattern, item.flags, e);
-                return;
-            }
-
-            const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
-                if (hasGlobalFlag) {
-                    // For global flag, find all matches and apply macros to each
-                    const globalRegexp = new RegExp(item.pattern, 'g' + (hasCaseInsensitiveFlag ? 'i' : ''));
-                    let match: RegExpExecArray | null;
-                    const allMatches: RegExpExecArray[] = [];
-
-                    while ((match = globalRegexp.exec(line.text)) !== null) {
-                        allMatches.push(match);
-                        if (match[0].length === 0) {
-                            globalRegexp.lastIndex++;
-                        }
+                const handler = (data: unknown) => {
+                    // For events like 'combatState:true', check the value
+                    if (eventValue !== undefined) {
+                        if (String(data) !== eventValue) return;
                     }
+                    applyEventMacros(client, item.macros);
+                };
 
-                    // Apply in reverse order to preserve indices
-                    for (let i = allMatches.length - 1; i >= 0; i--) {
-                        applyMacrosToMatch(client, line, allMatches[i], item.macros);
-                    }
-                } else {
-                    applyMacrosToMatch(client, line, matches, item.macros);
+                client.on(eventName as any, handler);
+                registeredEventHandlers.push({ event: eventName, handler });
+            } else if (item.pattern) {
+                // Pattern-based trigger
+                const flags = item.flags || '';
+                const hasGlobalFlag = flags.includes('g');
+                const hasCaseInsensitiveFlag = flags.includes('i');
+                const hasMultilineFlag = flags.includes('m');
+
+                // Build regexp flags without 'i' (handled by TriggerOptions) and without 'm' (handled by trigger type)
+                const regexpFlags = hasGlobalFlag ? 'g' : '';
+
+                let regexp: RegExp;
+                try {
+                    regexp = new RegExp(item.pattern, regexpFlags);
+                } catch (e) {
+                    console.error('Invalid trigger pattern', item.pattern, item.flags, e);
+                    return;
                 }
-                return line;
-            };
 
-            const trigger = hasMultilineFlag
-                ? client.Triggers.registerMultilineTrigger(regexp, callback, STORAGE_KEY, { caseInsensitive: hasCaseInsensitiveFlag })
-                : client.Triggers.registerTrigger(regexp, callback, STORAGE_KEY, { caseInsensitive: hasCaseInsensitiveFlag });
+                const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+                    if (hasGlobalFlag) {
+                        // For global flag, find all matches and apply macros to each
+                        const globalRegexp = new RegExp(item.pattern!, 'g' + (hasCaseInsensitiveFlag ? 'i' : ''));
+                        let match: RegExpExecArray | null;
+                        const allMatches: RegExpExecArray[] = [];
 
-            registered.push(trigger);
+                        while ((match = globalRegexp.exec(line.text)) !== null) {
+                            allMatches.push(match);
+                            if (match[0].length === 0) {
+                                globalRegexp.lastIndex++;
+                            }
+                        }
+
+                        // Apply in reverse order to preserve indices
+                        for (let i = allMatches.length - 1; i >= 0; i--) {
+                            applyMacrosToMatch(client, line, allMatches[i], item.macros);
+                        }
+                    } else {
+                        applyMacrosToMatch(client, line, matches, item.macros);
+                    }
+                    return line;
+                };
+
+                const trigger = hasMultilineFlag
+                    ? client.Triggers.registerMultilineTrigger(regexp, callback, STORAGE_KEY, { caseInsensitive: hasCaseInsensitiveFlag })
+                    : client.Triggers.registerTrigger(regexp, callback, STORAGE_KEY, { caseInsensitive: hasCaseInsensitiveFlag });
+
+                registeredPatternTriggers.push(trigger);
+            }
         });
     };
 
