@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { FloatingPanelState, PopupPanelConfig, PopupType } from '../types';
 import { useLayoutManagerOptional } from './useLayoutManager';
@@ -222,10 +222,8 @@ export function useDockablePopup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isManagedByLayout, popupId]);
 
-  // Remove from floating panels and docks when popup closes
-  useEffect(() => {
-    if (isOpen) return;
-
+  // Helper function for cleanup (used both on isOpen=false and on unmount)
+  const cleanupPopup = useCallback(() => {
     addedToFloatingRef.current = false;
 
     // Save current floating state before removing
@@ -245,8 +243,27 @@ export function useDockablePopup({
       // Also remove from dock if it was docked
       removePopupFromDock?.(popupId);
     }
+  }, [isManagedByLayout, findFloatingPanel, popupId, updatePopupDockState, removePopupFloating, removePopupFromDock]);
+
+  // Remove from floating panels and docks when popup closes
+  useEffect(() => {
+    if (isOpen) return;
+    cleanupPopup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, popupId]);
+
+  // Cleanup on unmount (handles plugin popups that unmount while isOpen=true)
+  useEffect(() => {
+    return () => {
+      // Only cleanup if we were managed by layout and still considered "open"
+      // (i.e., component unmounting without isOpen becoming false)
+      if (isManagedByLayout) {
+        removePopupFloating?.(popupId);
+        removePopupFromDock?.(popupId);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popupId, isManagedByLayout]);
 
   // Save floating state periodically when position/size changes (for persistence)
   useEffect(() => {
