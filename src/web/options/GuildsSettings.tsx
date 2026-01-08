@@ -7,6 +7,7 @@ import { Settings } from "./defaultSettings";
 function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
+    const [allySelected, setAllySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
     const [locked, setLocked] = useState(!getCurrentCharacter());
     const defaultColors = useMemo(() => {
@@ -33,10 +34,12 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
                 if (res && res.settings) {
                     setSelected(res.settings.guilds || []);
                     setEnemySelected(res.settings.enemyGuilds || []);
+                    setAllySelected(res.settings.allyGuilds || []);
                     setColors(res.settings.guildColors || {});
                 } else {
                     setSelected([]);
                     setEnemySelected([]);
+                    setAllySelected([]);
                     setColors({});
                 }
             });
@@ -49,6 +52,7 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
                 const s = changes.settings.newValue || {};
                 setSelected(s.guilds || []);
                 setEnemySelected(s.enemyGuilds || []);
+                setAllySelected(s.allyGuilds || []);
                 setColors(s.guildColors || {});
             }
         };
@@ -65,6 +69,10 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
 
     function onEnemyChange(guild: string, checked: boolean) {
         setEnemySelected(prev => checked ? [...prev, guild] : prev.filter(g => g !== guild));
+    }
+
+    function onAllyChange(guild: string, checked: boolean) {
+        setAllySelected(prev => checked ? [...prev, guild] : prev.filter(g => g !== guild));
     }
 
     function onColorChange(guild: string, color?: string) {
@@ -92,9 +100,10 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
             // Update the shared settings object with our values
             sharedSettings.guilds = selected;
             sharedSettings.enemyGuilds = enemySelected;
+            sharedSettings.allyGuilds = allySelected;
             sharedSettings.guildColors = colors;
         });
-    }, [registerSave, selected, enemySelected, colors]);
+    }, [registerSave, selected, enemySelected, allySelected, colors]);
 
     return (
         <div className="p-2 h-100">
@@ -103,10 +112,12 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
                     <GuildSection
                         selected={selected}
                         enemySelected={enemySelected}
+                        allySelected={allySelected}
                         colors={colors}
                         defaultColors={defaultColors}
                         onChange={onChange}
                         onEnemyChange={onEnemyChange}
+                        onAllyChange={onAllyChange}
                         onColorChange={onColorChange}
                         onChangeAll={onChangeAll}
                         onChangeAllEnemy={onChangeAllEnemy}

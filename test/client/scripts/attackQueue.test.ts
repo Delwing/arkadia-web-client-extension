@@ -5,6 +5,11 @@ jest.mock('@modules/core/storage', () => ({
   setItemSync: jest.fn(),
 }));
 
+jest.mock('@modules/data/peopleLoader', () => ({
+  subscribeMerged: jest.fn(),
+  refresh: jest.fn(() => Promise.resolve()),
+}));
+
 class FakeClient {
   TeamManager = {
     addEnemyToQueue: jest.fn(),
@@ -33,6 +38,7 @@ describe('attack queue aliases', () => {
     client.TeamManager.isLeader.mockClear();
     client.TeamManager.isLeader.mockReturnValue(true);
     client.ObjectManager.getObjectsOnLocation.mockReset();
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([]);
     client.println.mockClear();
     client.sendCommand.mockClear();
   });

@@ -5,19 +5,21 @@ interface Props {
     guild: string;
     selected: boolean;
     enemySelected: boolean;
+    allySelected: boolean;
     /** currently active color, undefined when disabled */
     color?: string;
     /** default color for the guild */
     defaultColor: string;
     onChange: (guild: string, checked: boolean) => void;
     onEnemyChange: (guild: string, checked: boolean) => void;
+    onAllyChange: (guild: string, checked: boolean) => void;
     /**
      * when color is undefined color should be disabled
      */
     onColorChange: (guild: string, color?: string) => void;
 }
 
-export default function GuildRow({guild, selected, enemySelected, color, defaultColor, onChange, onEnemyChange, onColorChange}: Props) {
+export default function GuildRow({guild, selected, enemySelected, allySelected, color, defaultColor, onChange, onEnemyChange, onAllyChange, onColorChange}: Props) {
     const [pickerColor, setPickerColor] = useState(color ?? defaultColor);
 
     useEffect(() => {
@@ -29,6 +31,10 @@ export default function GuildRow({guild, selected, enemySelected, color, default
 
     function handleEnemySelect(ev: ChangeEvent<HTMLInputElement>) {
         onEnemyChange(guild, ev.target.checked);
+    }
+
+    function handleAllySelect(ev: ChangeEvent<HTMLInputElement>) {
+        onAllyChange(guild, ev.target.checked);
     }
 
     function handleColorChange(ev: ChangeEvent<HTMLInputElement>) {
@@ -66,6 +72,16 @@ export default function GuildRow({guild, selected, enemySelected, color, default
                     checked={enemySelected}
                     onChange={handleEnemySelect}
                     className="me-2"
+                    disabled={allySelected}
+                />
+                <Form.Check
+                    type="checkbox"
+                    id={`ally-guild-${guild}`}
+                    label="Sojusz"
+                    checked={allySelected}
+                    onChange={handleAllySelect}
+                    className="me-2"
+                    disabled={enemySelected}
                 />
                 <Form.Check
                     type="checkbox"

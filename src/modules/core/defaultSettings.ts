@@ -40,6 +40,7 @@ export interface Settings {
     letterLineWidth: number;
     guilds?: string[];
     enemyGuilds?: string[];
+    allyGuilds?: string[];
     guildColors?: Record<string, string | undefined>;
     enemyBindsKeepUnchanged: boolean;
     enemyBindsShowMode: 'always' | 'whenBound' | 'never';
@@ -88,6 +89,7 @@ export const defaultSettings: Settings = {
     letterLineWidth: 72,
     guilds: [],
     enemyGuilds: [],
+    allyGuilds: [],
     guildColors: {},
     enemyBindsKeepUnchanged: false,
     enemyBindsShowMode: 'always',

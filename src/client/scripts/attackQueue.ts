@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
 import ObjectManager from "@client/ObjectManager.ts";
+import initAllyProtection from "./allyProtection";
 
 type ResolvedEnemy = {
     id: number;
@@ -61,6 +62,7 @@ export default function initAttackQueue(
     const list = aliases ?? client.aliases;
 
     const attackController = createAttackController(client);
+    const allyProtection = initAllyProtection(client);
 
     const add = (matches: RegExpMatchArray) => {
         const resolved = resolveEnemy(client, matches[1] ?? matches[0]);
@@ -87,6 +89,23 @@ export default function initAttackQueue(
         console.log(`[DEBUG /nn] After shift, next target id: ${next}, remaining queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         if (!next) {
             client.println("Kolejka ataku jest pusta.");
+            return;
+        }
+        // Check if target is an ally (cached on first encounter - just a Map lookup)
+        if (allyProtection.isAlly(next)) {
+            // Check if this is a confirmation (same command repeated within timeout)
+            if (allyProtection.checkPendingAttack(next, undefined)) {
+                // Confirmed - allow the attack
+                console.log(`[DEBUG /nn] Confirmed attack on ally, id: ${next}`);
+                attackController.attackById(next);
+                return;
+            }
+            // First attempt - warn and store pending, put target back in queue
+            const info = allyProtection.getAllyInfo(next);
+            allyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+            allyProtection.setPendingAttack(next, undefined);
+            // Re-add to front of queue so /nn can be repeated to confirm
+            client.TeamManager.addEnemyToQueue?.(next);
             return;
         }
         console.log(`[DEBUG /nn] Attacking target id: ${next}`);

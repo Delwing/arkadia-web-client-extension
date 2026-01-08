@@ -5,6 +5,11 @@ jest.mock('@modules/core/storage', () => ({
   getItemSync: jest.fn(() => ({})),
   setItemSync: jest.fn(),
 }));
+
+jest.mock('@modules/data/peopleLoader', () => ({
+  subscribeMerged: jest.fn(),
+  refresh: jest.fn(() => Promise.resolve()),
+}));
 import { setItemSync } from '@modules/core/storage';
 
 class FakeClient {
