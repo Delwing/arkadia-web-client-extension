@@ -118,7 +118,8 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
     "cachedColors",
     "magics",
     "magic_keys",
-    "herbs_data"
+    "herbs_data",
+    "mapperRoomId"
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
@@ -129,7 +130,6 @@ const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
     "deposits",
     "improve_counter",
     "kill_counter",
-    "mapperRoomId",
     "object_num",
     "Player"
 ]);
