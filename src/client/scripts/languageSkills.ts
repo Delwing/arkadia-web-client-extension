@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "../ansi/FormatState";
 import { getItemSync, setItemSync } from "@modules/core/storage";
 
@@ -142,7 +142,7 @@ export default function initLanguageSkills(
                     const gauge = createGauge(num, max);
                     // Pad level to max length (12 for "prawie pelna")
                     const paddedLevel = levelText + " ".repeat(Math.max(0, 12 - levelText.length));
-                    result.insert(result.text.length, paddedLevel + gauge, color);
+                    result.appendBuffer(colorString(paddedLevel + gauge, color));
                 } else {
                     result.append(levelText, originalFormatting);
                 }
