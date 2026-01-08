@@ -4,6 +4,7 @@ import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
+import { resumeAudioContext } from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
@@ -157,6 +158,23 @@ function preventTabSleep() {
     document.addEventListener('touchstart', enableNoSleep, {once: true});
     document.addEventListener('click', enableNoSleep, {once: true});
 }
+
+// Resume audio context on user interaction (browser autoplay policy)
+function setupAudioContextResume() {
+    const resumeOnInteraction = () => resumeAudioContext();
+    document.addEventListener('click', resumeOnInteraction);
+    document.addEventListener('keydown', resumeOnInteraction);
+    document.addEventListener('touchstart', resumeOnInteraction);
+
+    // Also resume when returning to the tab
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            resumeAudioContext();
+        }
+    });
+}
+
+setupAudioContextResume();
 
 function disableTabSleepPrevention() {
     if (!tabSleepPreventionActive) return;

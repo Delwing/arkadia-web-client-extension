@@ -1,9 +1,26 @@
-import type {Howl} from "howler";
+import type {Howl, Howler as HowlerType} from "howler";
 import storage from "@modules/core/storage";
 import { getCustomSound } from "@modules/core/customSounds";
 import type Client from "./Client";
 
 export type SoundKey = string;
+
+// Global reference to Howler for audio context management
+let howlerGlobal: typeof HowlerType | null = null;
+
+/**
+ * Resume the audio context if it's suspended.
+ * Should be called on user interaction to ensure sounds can play.
+ */
+export function resumeAudioContext(): void {
+    if (!howlerGlobal) return;
+    const ctx = (howlerGlobal as any).ctx as AudioContext | undefined;
+    if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch((err: unknown) => {
+            console.warn('Failed to resume audio context:', err);
+        });
+    }
+}
 
 export default class SoundManager {
     private sounds: Partial<Record<SoundKey, Howl>> = {};
@@ -55,6 +72,12 @@ export default class SoundManager {
     private async loadHowler(): Promise<typeof import('howler').Howl> {
         if (!this.howlConstructorPromise) {
             this.howlConstructorPromise = import('howler').then((module: any) => {
+                // Capture the global Howler reference for audio context management
+                if (module?.Howler) {
+                    howlerGlobal = module.Howler;
+                } else if (module?.default?.Howler) {
+                    howlerGlobal = module.default.Howler;
+                }
                 const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
                 return constructor as typeof import('howler').Howl;
             });
@@ -122,6 +145,9 @@ export default class SoundManager {
     }
 
     private async play(key: SoundKey) {
+        // Resume audio context if suspended (browser autoplay policy)
+        resumeAudioContext();
+
         const existing = this.sounds[key];
         if (existing) {
             this.playLoadedSound(existing);

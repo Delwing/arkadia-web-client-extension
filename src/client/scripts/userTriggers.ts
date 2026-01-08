@@ -39,8 +39,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'allEnemiesKilled', label: 'Wszyscy wrogowie zabici', category: 'Walka' },
     { id: 'combatState:true', label: 'Walka - start', category: 'Walka' },
     { id: 'combatState:false', label: 'Walka - koniec', category: 'Walka' },
-    { id: 'enemy.paralyzed', label: 'Wrog sparalizowany', category: 'Walka' },
-    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec paralizacji', category: 'Walka' },
+    { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
+    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
     { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
 
     // Connection

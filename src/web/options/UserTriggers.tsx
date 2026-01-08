@@ -45,8 +45,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'allEnemiesKilled', label: 'Wszyscy wrogowie zabici', category: 'Walka' },
     { id: 'combatState:true', label: 'Walka - start', category: 'Walka' },
     { id: 'combatState:false', label: 'Walka - koniec', category: 'Walka' },
-    { id: 'enemy.paralyzed', label: 'Wrog sparalizowany', category: 'Walka' },
-    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec paralizacji', category: 'Walka' },
+    { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
+    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
     { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
 
     // Connection
@@ -447,7 +447,11 @@ function UserTriggers() {
     }
 
     function addMacro() {
-        setMacros(prev => [...prev, { type: 'uppercase' }]);
+        const defaultType = triggerType === 'event' ? 'beep' : 'uppercase';
+        const newMacro: UserMacro = defaultType === 'beep'
+            ? { type: 'beep', soundKey: 'beep' }
+            : { type: defaultType };
+        setMacros(prev => [...prev, newMacro]);
     }
 
     function updateMacro(idx: number, macro: UserMacro) {
