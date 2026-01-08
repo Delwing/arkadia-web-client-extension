@@ -78,6 +78,10 @@ export default class SoundManager {
                 } else if (module?.default?.Howler) {
                     howlerGlobal = module.default.Howler;
                 }
+                // Disable auto-suspend to prevent audio context from being suspended after inactivity
+                if (howlerGlobal) {
+                    (howlerGlobal as any).autoSuspend = false;
+                }
                 const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
                 return constructor as typeof import('howler').Howl;
             });
