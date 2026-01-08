@@ -342,14 +342,18 @@ export default class TeamManager {
     }
 
     addEnemyToQueue(id: number): boolean {
+        console.log('[DEBUG TeamManager.addEnemyToQueue] id:', id, 'current queue:', [...this.enemies]);
         if (!id) {
+            console.log('[DEBUG TeamManager.addEnemyToQueue] rejected: no id');
             return false;
         }
         if (this.enemies.includes(id)) {
+            console.log('[DEBUG TeamManager.addEnemyToQueue] rejected: already in queue');
             return false;
         }
         this.enemies.push(id);
         this.missingEnemyCounts.delete(id);
+        console.log('[DEBUG TeamManager.addEnemyToQueue] added, new queue:', [...this.enemies]);
         this.notifyAttackQueueChange();
         return true;
     }
@@ -377,7 +381,9 @@ export default class TeamManager {
     }
 
     shiftEnemyFromQueue(): number | undefined {
+        console.log('[DEBUG TeamManager.shiftEnemyFromQueue] before shift, queue:', [...this.enemies]);
         const next = this.enemies.shift();
+        console.log('[DEBUG TeamManager.shiftEnemyFromQueue] shifted:', next, 'remaining:', [...this.enemies]);
         if (next) {
             this.missingEnemyCounts.delete(next);
             this.notifyAttackQueueChange();
@@ -386,6 +392,7 @@ export default class TeamManager {
     }
 
     getEnemyQueue(): number[] {
+        console.log('[DEBUG TeamManager.getEnemyQueue] returning:', [...this.enemies]);
         return [...this.enemies];
     }
 

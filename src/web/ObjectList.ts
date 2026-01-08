@@ -530,12 +530,16 @@ export default class ObjectList {
         }
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
         const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+        const fullQueue = tm?.getEnemyQueue?.() ?? [];
+        const nextQueuedId = fullQueue[0];
+        console.log('[DEBUG ObjectList.render] fullQueue:', fullQueue, 'nextQueuedId:', nextQueuedId);
+        console.log('[DEBUG ObjectList.render] objects on location:', objects.map((o: any) => ({ num: o.num, shortcut: o.shortcut, desc: o.desc })));
 
         // Verify the queued enemy actually exists in the current object list
         const queuedEnemyExists = nextQueuedId !== undefined &&
             objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
         const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
+        console.log('[DEBUG ObjectList.render] queuedEnemyExists:', queuedEnemyExists, 'validNextQueuedId:', validNextQueuedId);
 
         const teamAttacking = objects.some((o: any) => {
             return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
@@ -583,6 +587,9 @@ export default class ObjectList {
                 validNextQueuedId !== undefined &&
                 typeof obj.num !== "undefined" &&
                 validNextQueuedId === obj.num;
+            if (validNextQueuedId !== undefined) {
+                console.log('[DEBUG ObjectList.render] checking isNextQueued for shortcut:', num, 'obj.num:', obj.num, 'validNextQueuedId:', validNextQueuedId, 'isNextQueued:', isNextQueued);
+            }
             const numClasses = ["object-num"];
             if (isNextQueued) {
                 numClasses.push("object-num-next-target");
