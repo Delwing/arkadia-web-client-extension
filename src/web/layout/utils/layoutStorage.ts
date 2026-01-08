@@ -176,6 +176,20 @@ export function getPopupLockedState(popupId: string): boolean {
 }
 
 /**
+ * Get the persisted pinned state for a popup.
+ * Returns true if persistOpen is true (meaning the popup was pinned).
+ */
+export function getPopupPinnedState(popupId: string): boolean {
+  try {
+    const stored = getCachedLayoutState();
+    return stored?.popupPanels?.[popupId]?.persistOpen ?? false;
+  } catch {
+    // Ignore errors
+  }
+  return false;
+}
+
+/**
  * Get a specific setting value for a popup.
  * @param popupId The popup identifier
  * @param key The setting key

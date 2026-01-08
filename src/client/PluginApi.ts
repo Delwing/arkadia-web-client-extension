@@ -77,7 +77,7 @@ import {
   updateTriggerMacroPluginName
 } from "@modules/core/pluginTriggerMacroRegistry";
 import type {ButtonSetting} from "@web/mobileButtonSettings";
-import {shouldPopupAutoOpen} from "@web/layout/utils/layoutStorage";
+import {shouldPopupAutoOpen, getPopupPinnedState} from "@web/layout/utils/layoutStorage";
 import {
   registerPluginPopup,
   unregisterPluginPopup,
@@ -2457,11 +2457,15 @@ export class PluginApiImpl implements PluginApi {
     // Check if popup should be auto-restored (was docked or pinned)
     const shouldRestore = shouldPopupAutoOpen(popupId);
 
+    // Get persisted pinned state from storage (for restoring after reload)
+    const persistedPinned = getPopupPinnedState(popupId);
+
     // Internal state tracking
     let isCurrentlyOpen = false;
     let currentTitle = config.title;
     let currentBody: PopupContent = '';
-    let currentPinned = config.pinned ?? false;
+    // Restore pinned state from storage, or use config value, or default to false
+    let currentPinned = persistedPinned || config.pinned || false;
     let panelRef: HTMLDivElement | null = null;
     const closeCallbacks = new Set<() => void>();
 
