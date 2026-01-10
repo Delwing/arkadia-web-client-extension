@@ -40,15 +40,13 @@ export default function initKillTracker(client: Client) {
     client.on("parsedNums", ({ nums: currentNums }) => {
         diff = nums.filter(item => !currentNums.includes(item));
         nums = currentNums;
-        if (justKilled) {
-            const id = diff[0];
-            const desc = client.TeamManager.getAccumulatedObjectsData().get(id);
-
-            client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody: desc ? !isBodiless(desc.desc) : true, enemyDesc: desc?.desc });
-            if (diff.length > 1) {
-                console.log("DIFF handling not perfect");
+        if (justKilled && diff.length > 0) {
+            for (const id of diff) {
+                const desc = client.TeamManager.getAccumulatedObjectsData().get(id);
+                client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody: desc ? !isBodiless(desc.desc) : true, enemyDesc: desc?.desc });
             }
             killsOnLocation = true;
+            enemiesOnLocation = true;
             justKilled = undefined;
         }
         if (killsOnLocation && enemiesOnLocation && !client.ObjectManager.hasEnemiesOnLocation()) {
