@@ -13,7 +13,8 @@ jest.mock('@modules/data/peopleLoader', () => ({
 class FakeClient {
   TeamManager = {
     addEnemyToQueue: jest.fn(),
-    shiftEnemyFromQueue: jest.fn(),
+    peekEnemyFromQueue: jest.fn(),
+    getEnemyQueue: jest.fn(() => []),
     isLeader: jest.fn(() => true),
   };
   ObjectManager = {
@@ -34,7 +35,9 @@ describe('attack queue aliases', () => {
     aliases = [];
     initAttackQueue((client as unknown) as any, aliases);
     client.TeamManager.addEnemyToQueue.mockReset();
-    client.TeamManager.shiftEnemyFromQueue.mockReset();
+    client.TeamManager.peekEnemyFromQueue.mockReset();
+    client.TeamManager.getEnemyQueue.mockReset();
+    client.TeamManager.getEnemyQueue.mockReturnValue([]);
     client.TeamManager.isLeader.mockClear();
     client.TeamManager.isLeader.mockReturnValue(true);
     client.ObjectManager.getObjectsOnLocation.mockReset();
@@ -122,11 +125,11 @@ describe('attack queue aliases', () => {
 
   test('kills next enemy from queue', () => {
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('77');
+    client.TeamManager.peekEnemyFromQueue.mockReturnValue('77');
 
     execAlias(alias, '/nn');
 
-    expect(client.TeamManager.shiftEnemyFromQueue).toHaveBeenCalled();
+    expect(client.TeamManager.peekEnemyFromQueue).toHaveBeenCalled();
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_77');
   });
 
@@ -136,7 +139,7 @@ describe('attack queue aliases', () => {
       call => call[0] === 'attackMode',
     );
     const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
-    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('12');
+    client.TeamManager.peekEnemyFromQueue.mockReturnValue('12');
 
     attackModeListener?.('AW');
     execAlias(alias, '/nn');
@@ -151,7 +154,7 @@ describe('attack queue aliases', () => {
       call => call[0] === 'attackMode',
     );
     const attackModeListener = attackModeListenerCall && attackModeListenerCall[1];
-    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('34');
+    client.TeamManager.peekEnemyFromQueue.mockReturnValue('34');
 
     attackModeListener?.('AWR');
     execAlias(alias, '/nn');
@@ -167,7 +170,7 @@ describe('attack queue aliases', () => {
       call => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
-    client.TeamManager.shiftEnemyFromQueue.mockReturnValue('44');
+    client.TeamManager.peekEnemyFromQueue.mockReturnValue('44');
 
     settingsListener?.({ attackCommand: 'atak' });
     execAlias(alias, '/nn');
@@ -177,7 +180,7 @@ describe('attack queue aliases', () => {
 
   test('notifies when queue is empty', () => {
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    client.TeamManager.shiftEnemyFromQueue.mockReturnValue(undefined);
+    client.TeamManager.peekEnemyFromQueue.mockReturnValue(undefined);
 
     execAlias(alias, '/nn');
 

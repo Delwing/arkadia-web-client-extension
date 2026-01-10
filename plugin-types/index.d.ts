@@ -776,7 +776,7 @@ export interface ClientEvents {
   /** Combat timer */
   "combatTimer": number | null;
   /** Team leader target without avatar */
-  "teamLeaderTargetNoAvatar": string;
+  "teamLeaderTargetNoAvatar": number;
   /** Team leader target with avatar */
   "teamLeaderTargetAvatar": void;
   /** Team composition changed */
@@ -1340,6 +1340,7 @@ export interface BindApi {
      * @param printable - Command string to execute (or null to just use callback)
      * @param callback - Optional callback function to execute instead of sending command
      * @param clearAfterUse - If true, clear the bind after it's used once
+     * @param locationBound - If true, the bind will be automatically cleared when leaving the current location
      *
      * @example
      * ```typescript
@@ -1353,9 +1354,12 @@ export interface BindApi {
      *
      * // Bind with auto-clear after use
      * api.bind.set("use potion", undefined, true);
+     *
+     * // Bind that clears when leaving the location
+     * api.bind.set("board ship", undefined, false, true);
      * ```
      */
-    set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void;
+    set(printable: string | null, callback?: () => void, clearAfterUse?: boolean, locationBound?: boolean): void;
     /**
      * Clear the current function bind
      *
@@ -2258,6 +2262,24 @@ export interface AttackControllerApi {
      */
     attackById(id: number, command?: string): void;
     /**
+     * Support the team leader by attacking their target
+     *
+     * Sends the support command (default: "wesprzyj") and also
+     * sends the command targeting the leader's object ID.
+     *
+     * @param command - Optional support command override (uses character setting if not provided)
+     *
+     * @example
+     * ```typescript
+     * // Support the leader
+     * api.attackController.support();
+     *
+     * // Support with custom command
+     * api.attackController.support("pomoz");
+     * ```
+     */
+    support(command?: string): void;
+    /**
      * Get the current attack command from character settings
      *
      * @returns The configured attack command (e.g., "zabij", "zaatakuj")
@@ -2269,6 +2291,18 @@ export interface AttackControllerApi {
      * ```
      */
     getAttackCommand(): string;
+    /**
+     * Get the current support command from character settings
+     *
+     * @returns The configured support command (e.g., "wesprzyj")
+     *
+     * @example
+     * ```typescript
+     * const cmd = api.attackController.getSupportCommand();
+     * console.log(`Current support command: ${cmd}`);
+     * ```
+     */
+    getSupportCommand(): string;
 }
 
 /**

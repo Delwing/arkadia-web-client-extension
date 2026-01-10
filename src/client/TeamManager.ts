@@ -391,6 +391,10 @@ export default class TeamManager {
         return next;
     }
 
+    peekEnemyFromQueue(): number | undefined {
+        return this.enemies[0];
+    }
+
     getEnemyQueue(): number[] {
         console.log(`[DEBUG TeamManager.getEnemyQueue] returning: ${JSON.stringify(this.enemies)}`);
         return [...this.enemies];

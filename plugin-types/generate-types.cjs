@@ -945,7 +945,7 @@ export interface ClientEvents {
   /** Combat timer */
   "combatTimer": number | null;
   /** Team leader target without avatar */
-  "teamLeaderTargetNoAvatar": string;
+  "teamLeaderTargetNoAvatar": number;
   /** Team leader target with avatar */
   "teamLeaderTargetAvatar": void;
   /** Team composition changed */

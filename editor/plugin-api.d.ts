@@ -390,7 +390,7 @@ interface ColorsApi {
  * Function Bind API - Manage keyboard bindings
  */
 interface BindApi {
-  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void;
+  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean, locationBound?: boolean): void;
 
   clear(): void;
 
@@ -638,6 +638,22 @@ interface SettingsApi {
 }
 
 /**
+ * Attack Controller API - Execute attacks with proper team coordination
+ *
+ * Provides methods to attack targets by their object ID, respecting
+ * attack mode settings and team coordination (leader commands).
+ */
+interface AttackControllerApi {
+  attackById(id: number, command?: string): void;
+
+  support(command?: string): void;
+
+  getAttackCommand(): string;
+
+  getSupportCommand(): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -727,6 +743,7 @@ interface PluginApi {
   buttonMacros: ButtonMacrosApi;
   triggerMacros: TriggerMacrosApi;
   settings: SettingsApi;
+  attackController: AttackControllerApi;
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 

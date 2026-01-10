@@ -153,7 +153,7 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     // Persist on page unload
     window.addEventListener("beforeunload", persistHistory);
 
-    client.on("gmcp_msg.comm", (buffer) => {
+    function handleChatMessage(buffer: AnsiAwareBuffer) {
         if (!(buffer instanceof AnsiAwareBuffer) || !buffer.text.trim()) return;
 
         // Split multiline messages into separate history entries
@@ -163,7 +163,10 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
                 addEntry(line);
             }
         });
-    });
+    }
+
+    client.on("gmcp_msg.comm", handleChatMessage);
+    client.on("gmcp_msg.emote", handleChatMessage);
 
     function openPopup() {
         eventBus.emit("chat.popup.open");

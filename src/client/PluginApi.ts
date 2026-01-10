@@ -1540,6 +1540,25 @@ export interface AttackControllerApi {
   attackById(id: number, command?: string): void;
 
   /**
+   * Support the team leader by attacking their target
+   *
+   * Sends the support command (default: "wesprzyj") and also
+   * sends the command targeting the leader's object ID.
+   *
+   * @param command - Optional support command override (uses character setting if not provided)
+   *
+   * @example
+   * ```typescript
+   * // Support the leader
+   * api.attackController.support();
+   *
+   * // Support with custom command
+   * api.attackController.support("pomoz");
+   * ```
+   */
+  support(command?: string): void;
+
+  /**
    * Get the current attack command from character settings
    *
    * @returns The configured attack command (e.g., "zabij", "zaatakuj")
@@ -1551,6 +1570,19 @@ export interface AttackControllerApi {
    * ```
    */
   getAttackCommand(): string;
+
+  /**
+   * Get the current support command from character settings
+   *
+   * @returns The configured support command (e.g., "wesprzyj")
+   *
+   * @example
+   * ```typescript
+   * const cmd = api.attackController.getSupportCommand();
+   * console.log(`Current support command: ${cmd}`);
+   * ```
+   */
+  getSupportCommand(): string;
 }
 
 /**
@@ -2298,8 +2330,16 @@ export class PluginApiImpl implements PluginApi {
         this.client.AttackController.attackById(id, command);
       },
 
+      support: (command?: string): void => {
+        this.client.AttackController.support(command);
+      },
+
       getAttackCommand: (): string => {
         return this.client.AttackController.getAttackCommand();
+      },
+
+      getSupportCommand: (): string => {
+        return this.client.AttackController.getSupportCommand();
       }
     };
   }

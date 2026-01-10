@@ -84,9 +84,8 @@ export default function initAttackQueue(
     };
 
     const killNext = () => {
-        console.log(`[DEBUG /nn] Before shift, queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
-        const next = client.TeamManager.shiftEnemyFromQueue();
-        console.log(`[DEBUG /nn] After shift, next target id: ${next}, remaining queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
+        console.log(`[DEBUG /nn] Queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
+        const next = client.TeamManager.peekEnemyFromQueue?.();
         if (!next) {
             client.println("Kolejka ataku jest pusta.");
             return;
@@ -100,12 +99,10 @@ export default function initAttackQueue(
                 attackController.attackById(next);
                 return;
             }
-            // First attempt - warn and store pending, put target back in queue
+            // First attempt - warn and store pending
             const info = allyProtection.getAllyInfo(next);
             allyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
             allyProtection.setPendingAttack(next, undefined);
-            // Re-add to front of queue so /nn can be repeated to confirm
-            client.TeamManager.addEnemyToQueue?.(next);
             return;
         }
         console.log(`[DEBUG /nn] Attacking target id: ${next}`);
