@@ -4,23 +4,10 @@ import { useMapViewingState } from '@web/layout';
 import { useLayoutManager } from '@web/layout';
 import { PANEL_CONFIGS } from '../types';
 import eventBus from '@modules/core/eventBus';
-import { getItemSync } from '@modules/core/storage';
+import { getBuiltInPanelSetting } from '../utils/layoutStorage';
 
 interface MapPanelProps {
   mapElement: HTMLElement | null;
-}
-
-function getInitialLabelVisible(): boolean {
-  try {
-    const data = getItemSync('uiSettings');
-    const parsed = data?.uiSettings as any;
-    if (parsed && typeof parsed.mapLabelVisible === 'boolean') {
-      return parsed.mapLabelVisible;
-    }
-  } catch {
-    // ignore
-  }
-  return true;
 }
 
 export function MapPanel({ mapElement }: MapPanelProps) {
@@ -29,11 +16,11 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   const locationWrapperRef = useRef<HTMLElement | null>(null);
   const { updateBuiltInPanelState } = useLayoutManager();
   const mapViewingState = useMapViewingState();
-  const [labelVisible, setLabelVisible] = useState(getInitialLabelVisible);
+  const [labelVisible, setLabelVisible] = useState(() => getBuiltInPanelSetting('map', 'labelVisible', true));
   const [locationLabel, setLocationLabel] = useState('');
   const [isPaused, setIsPaused] = useState(false);
 
-  // Listen for label visibility changes
+  // Listen for label visibility changes from MapHeaderMenu
   useEffect(() => {
     const handleVisibility = (visible: boolean) => {
       setLabelVisible(visible);
@@ -117,8 +104,7 @@ export function MapPanel({ mapElement }: MapPanelProps) {
     if (locationWrapper) {
       containerRef.current.appendChild(locationWrapper);
       // Apply initial visibility based on saved setting
-      const initialVisible = getInitialLabelVisible();
-      locationWrapper.style.display = initialVisible ? '' : 'none';
+      locationWrapper.style.display = labelVisible ? '' : 'none';
     }
 
     // Ensure map fills container
@@ -138,6 +124,9 @@ export function MapPanel({ mapElement }: MapPanelProps) {
         window.dispatchEvent(new Event('resize'));
       }
     };
+    // Note: labelVisible is intentionally excluded to prevent re-running the entire effect
+    // when visibility changes - we have a separate effect for that
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapElement]);
 
   // Use ResizeObserver to trigger map resize when container size changes
