@@ -213,49 +213,6 @@ describe('TeamManager', () => {
     expect(manager.getEnemyQueue()).toEqual([]);
   });
 
-  test('removes enemy from queue when marked as not living', () => {
-    manager.addEnemyToQueue(8);
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
-    expect(manager.getEnemyQueue()).toEqual([]);
-  });
-
-  test('notifies about next enemy in queue when the current one dies', () => {
-    manager.addEnemyToQueue(8);
-    manager.addEnemyToQueue(9);
-    client.sendEvent('gmcp.objects.data', {
-      '9': { desc: 'Drugi przeciwnik', living: true },
-    });
-    client.println.mockClear();
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
-    expect(client.println).toHaveBeenCalledWith(
-      '<span style="color:orange">/nn zeby zaatakowac nastepny cel: Drugi przeciwnik</span>',
-    );
-  });
-
-  test('falls back to object id when description is missing', () => {
-    manager.addEnemyToQueue(8);
-    manager.addEnemyToQueue(10);
-    client.println.mockClear();
-    client.sendEvent('gmcp.objects.data', { '8': { living: false } });
-    expect(client.println).toHaveBeenCalledWith(
-      '<span style="color:orange">/nn zeby zaatakowac nastepny cel: ob_10</span>',
-    );
-  });
-
-  test('clears leader attack target when target dies', () => {
-    const avatarCallback = jest.fn();
-    client.on('teamLeaderTargetAvatar', avatarCallback);
-    // Setup leader attacking target 3
-    client.sendEvent('gmcp.objects.data', {
-      '1': { desc: 'Eamon', living: true, team: true, team_leader: true, attack_num: 3 },
-      '99': { desc: 'You', living: true, team: true, attack_num: false },
-    });
-    avatarCallback.mockClear();
-    // Target 3 dies
-    client.sendEvent('gmcp.objects.data', { '3': { living: false } });
-    expect(avatarCallback).toHaveBeenCalled();
-  });
-
   test('clears leader attack target when target disappears from objects.nums', () => {
     const avatarCallback = jest.fn();
     client.on('teamLeaderTargetAvatar', avatarCallback);

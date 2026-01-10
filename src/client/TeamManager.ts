@@ -99,12 +99,6 @@ export default class TeamManager {
             if (id === this.playerNum && obj.attack_num !== undefined) {
                 this.avatarAttackTargetId = typeof obj.attack_num === "boolean" ? undefined : Number(obj.attack_num);
             }
-            if (obj?.living === false) {
-                this.removeEnemyFromQueue(id);
-                if (this.leaderAttackTargetId === id) {
-                    this.leaderAttackTargetId = undefined;
-                }
-            }
         });
         if (this.leaderAttackTargetId && this.avatarAttackTargetId !== this.leaderAttackTargetId) {
             this.client.sendEvent('teamLeaderTargetNoAvatar', this.leaderAttackTargetId);
