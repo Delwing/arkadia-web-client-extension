@@ -670,6 +670,15 @@ interface SettingsApi {
 }
 
 /**
+ * Combat API - Access combat-related settings and commands
+ *
+ * Provides access to combat settings like weapon draw commands.
+ */
+interface CombatApi {
+  drawWeapon(): void;
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -776,6 +785,7 @@ interface PluginApi {
   triggerMacros: TriggerMacrosApi;
   settings: SettingsApi;
   attackController: AttackControllerApi;
+  combat: CombatApi;
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 

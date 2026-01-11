@@ -1066,6 +1066,10 @@ export interface ClientEvents {
   "clock.sunrise": ClockSunEventPayload;
   /** Clock sunset */
   "clock.sunset": ClockSunEventPayload;
+  /** Can wield weapon after knockoff */
+  "canWieldAfterKnockOff": void;
+  /** Team leader performed special exit follow */
+  "followSpecialExit": { exit: string };
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
   [key: \`gmcp.\${string}\`]: unknown;
   /** GMCP message events */

@@ -893,6 +893,10 @@ export interface ClientEvents {
   "clock.sunrise": ClockSunEventPayload;
   /** Clock sunset */
   "clock.sunset": ClockSunEventPayload;
+  /** Can wield weapon after knockoff */
+  "canWieldAfterKnockOff": void;
+  /** Team leader performed special exit follow */
+  "followSpecialExit": { exit: string };
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
   [key: `gmcp.${string}`]: unknown;
   /** GMCP message events */
@@ -2303,6 +2307,27 @@ export interface SettingsApi {
 }
 
 /**
+ * Combat API - Access combat-related settings and commands
+ *
+ * Provides access to combat settings like weapon draw commands.
+ */
+
+export interface CombatApi {
+    /**
+     * Draw all weapons using the configured draw weapon command
+     *
+     * Sends the appropriate command based on character settings
+     * (e.g., "dobadz wszystkich broni", "wyciagnij wszystkich broni")
+     *
+     * @example
+     * ```typescript
+     * api.combat.drawWeapon();
+     * ```
+     */
+    drawWeapon(): void;
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -2372,26 +2397,6 @@ export interface AttackControllerApi {
      * ```
      */
     getSupportCommand(): string;
-}
-
-/**
- * Combat API - Access combat-related settings and commands
- *
- * Provides access to combat settings like weapon draw commands.
- */
-export interface CombatApi {
-    /**
-     * Draw all weapons using the configured draw weapon command
-     *
-     * Sends the appropriate command based on character settings
-     * (e.g., "dobadz wszystkich broni", "wyciagnij wszystkich broni")
-     *
-     * @example
-     * ```typescript
-     * api.combat.drawWeapon();
-     * ```
-     */
-    drawWeapon(): void;
 }
 
 /**
