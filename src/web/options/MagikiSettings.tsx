@@ -31,6 +31,14 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
 
         loadSettings();
 
+        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+            if (changes.settings) {
+                loadSettings();
+            }
+        };
+
+        storage.onChanged?.addListener(listener);
+
         const unsubscribeTypes = subscribeToMagicTypes((types) => {
             if (types) {
                 setMagicTypes(types);
@@ -44,6 +52,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
 
         return () => {
+            storage.onChanged?.removeListener?.(listener);
             unsubscribeTypes();
             unsubscribeMagics();
         };
