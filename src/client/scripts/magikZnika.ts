@@ -4,7 +4,7 @@ import {createColorFormat} from "@modules/core/Colors";
 export default function initMagikZnika(client: Client) {
     const COLOR = createColorFormat("#ff6347");
     const tag = "magik-znika";
-    const prefix = "\n\t[  MAGIK ZNIKA   ]";
+    const prefix = "\n\t[  MAGIK ZNIKA   ] ";
 
 
     client.Triggers.registerTrigger(

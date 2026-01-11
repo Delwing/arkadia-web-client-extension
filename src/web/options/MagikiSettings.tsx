@@ -16,6 +16,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     const [allMagics, setAllMagics] = useState<string[]>([]);
     const [searchInput, setSearchInput] = useState<string>("");
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+    const [loaded, setLoaded] = useState<boolean>(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -27,6 +28,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
             const settings = (res?.settings || {}) as BaseSettings;
             setFavoriteMagicTypes(settings.favoriteMagicTypes || []);
             setFavoriteMagics(settings.favoriteMagicKeys || []);
+            setLoaded(true);
         };
 
         loadSettings();
@@ -88,10 +90,13 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
 
     useEffect(() => {
         registerSave((settings: any) => {
-            settings.favoriteMagicTypes = favoriteMagicTypes;
-            settings.favoriteMagicKeys = favoriteMagics;
+            // Only overwrite if settings have been loaded to prevent race condition
+            if (loaded) {
+                settings.favoriteMagicTypes = favoriteMagicTypes;
+                settings.favoriteMagicKeys = favoriteMagics;
+            }
         });
-    }, [registerSave, favoriteMagicTypes, favoriteMagics]);
+    }, [registerSave, favoriteMagicTypes, favoriteMagics, loaded]);
 
     const [locked, setLocked] = useState(!getCurrentCharacter());
 
