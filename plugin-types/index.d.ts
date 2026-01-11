@@ -2375,6 +2375,26 @@ export interface AttackControllerApi {
 }
 
 /**
+ * Combat API - Access combat-related settings and commands
+ *
+ * Provides access to combat settings like weapon draw commands.
+ */
+export interface CombatApi {
+    /**
+     * Draw all weapons using the configured draw weapon command
+     *
+     * Sends the appropriate command based on character settings
+     * (e.g., "dobadz wszystkich broni", "wyciagnij wszystkich broni")
+     *
+     * @example
+     * ```typescript
+     * api.combat.drawWeapon();
+     * ```
+     */
+    drawWeapon(): void;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -2489,6 +2509,8 @@ export interface PluginApi {
     settings: SettingsApi;
     /** Attack controller - execute attacks with team coordination */
     attackController: AttackControllerApi;
+    /** Combat - access combat-related settings */
+    combat: CombatApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

@@ -390,6 +390,10 @@ export default class Client {
         this.sendCommand('przestan kryc sie za zaslona')
     }
 
+    drawWeapon() {
+        this.sendCommand(`${this.drawWeaponCommand} wszystkich broni`)
+    }
+
     async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false, fromUserInput: boolean = false): Promise<void> {
         // Run command hooks early - before any processing
         for (const hook of this.commandHooks) {

@@ -1580,6 +1580,26 @@ export interface SettingsApi {
 }
 
 /**
+ * Combat API - Access combat-related settings and commands
+ *
+ * Provides access to combat settings like weapon draw commands.
+ */
+export interface CombatApi {
+  /**
+   * Draw all weapons using the configured draw weapon command
+   *
+   * Sends the appropriate command based on character settings
+   * (e.g., "dobadz wszystkich broni", "wyciagnij wszystkich broni")
+   *
+   * @example
+   * ```typescript
+   * api.combat.drawWeapon();
+   * ```
+   */
+  drawWeapon(): void;
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -1767,6 +1787,8 @@ export interface PluginApi {
   settings: SettingsApi;
   /** Attack controller - execute attacks with team coordination */
   attackController: AttackControllerApi;
+  /** Combat - access combat-related settings */
+  combat: CombatApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -1823,6 +1845,7 @@ export class PluginApiImpl implements PluginApi {
   public triggerMacros: TriggerMacrosApi;
   public settings: SettingsApi;
   public attackController: AttackControllerApi;
+  public combat: CombatApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -1853,6 +1876,7 @@ export class PluginApiImpl implements PluginApi {
     this.triggerMacros = this.createTriggerMacrosApi();
     this.settings = this.createSettingsApi();
     this.attackController = this.createAttackControllerApi();
+    this.combat = this.createCombatApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2412,6 +2436,18 @@ export class PluginApiImpl implements PluginApi {
 
       getSupportCommand: (): string => {
         return this.client.AttackController.getSupportCommand();
+      }
+    };
+  }
+
+  // ============================================================================
+  // Combat API
+  // ============================================================================
+
+  private createCombatApi(): CombatApi {
+    return {
+      drawWeapon: (): void => {
+        this.client.drawWeapon();
       }
     };
   }
