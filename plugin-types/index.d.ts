@@ -1693,6 +1693,51 @@ export interface HerbMoveOptions {
 }
 
 /**
+ * Herb grammatical forms (Polish declensions)
+ */
+
+export interface HerbForms {
+    /** Nominative singular (mianownik) */
+    mianownik: string;
+    /** Genitive singular (dopelniacz) */
+    dopelniacz: string;
+    /** Accusative singular (biernik) */
+    biernik: string;
+    /** Nominative plural (mnoga mianownik) */
+    mnoga_mianownik: string;
+    /** Genitive plural (mnoga dopelniacz) */
+    mnoga_dopelniacz: string;
+    /** Accusative plural (mnoga biernik) */
+    mnoga_biernik: string;
+}
+
+/**
+ * Herb use/effect definition
+ */
+
+export interface HerbUse {
+    /** Action command (e.g., "jedz", "pal") */
+    action: string;
+    /** Effect description */
+    effect: string;
+    /** If true, herb should not be bound when used */
+    dont_bind?: boolean;
+}
+
+/**
+ * Complete herb database structure
+ */
+
+export interface HerbsData {
+    /** Map of herb ID to grammatical forms */
+    herb_id_to_odmiana: Record<string, HerbForms>;
+    /** Database version number */
+    version: number;
+    /** Map of herb ID to array of uses/effects */
+    herb_id_to_use: Record<string, HerbUse[]>;
+}
+
+/**
  * Pretty Containers API - Access and extend container formatting
  */
 
@@ -1891,6 +1936,30 @@ export interface HerbsApi {
      * ```
      */
     move(options: HerbMoveOptions): Promise<void>;
+    /**
+     * Get the herb database containing herb forms and uses
+     * Returns data about herb conjugations (forms) and effects
+     *
+     * @returns Promise resolving to herb database or null if unavailable
+     *
+     * @example
+     * ```typescript
+     * const data = await api.herbs.getData();
+     * if (data) {
+     *   // Get herb forms for "ziolo_many"
+     *   const forms = data.herb_id_to_odmiana["ziolo_many"];
+     *   console.log("Nominative:", forms.mianownik);
+     *   console.log("Genitive:", forms.dopelniacz);
+     *
+     *   // Get herb uses
+     *   const uses = data.herb_id_to_use["ziolo_many"];
+     *   uses?.forEach(use => {
+     *     console.log(`Action: ${use.action}, Effect: ${use.effect}`);
+     *   });
+     * }
+     * ```
+     */
+    getData(): Promise<HerbsData | null>;
 }
 
 /**

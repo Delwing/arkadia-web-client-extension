@@ -247,6 +247,18 @@ export interface KnownEvents {
     "walker.setDelay": number;
     "walker.faster": void;
     "walker.slower": void;
+    // Lua gag events - combat/blocking
+    "tryingToBlock": string;
+    "hasBlocked": string;
+    "ateamFightingWithNoWeapon": void;
+    // Lua gag events - weapon knockoff
+    "canWieldAfterKnockOff": void;
+    "weaponKnockedOff": void;
+    "weaponKnockedOffNekroTilea": void;
+    "weapon_state": boolean;
+    // Lua gag events - stun
+    "stunStart": void;
+    "stunEnd": void;
 }
 
 export interface WalkerState {

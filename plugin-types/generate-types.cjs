@@ -110,7 +110,11 @@ function shouldExport(node) {
         name === 'FilterResult' ||
         name === 'EntryStyle' ||
         name === 'EntryContent' ||
-        name === 'ObjectData') {
+        name === 'ObjectData' ||
+        // Herb database types
+        name === 'HerbsData' ||
+        name === 'HerbForms' ||
+        name === 'HerbUse') {
       return true;
     }
   }

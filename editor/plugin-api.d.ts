@@ -507,6 +507,36 @@ interface HerbMoveOptions {
 }
 
 /**
+ * Herb grammatical forms (Polish declensions)
+ */
+interface HerbForms {
+  mianownik: string;
+  dopelniacz: string;
+  biernik: string;
+  mnoga_mianownik: string;
+  mnoga_dopelniacz: string;
+  mnoga_biernik: string;
+}
+
+/**
+ * Herb use/effect definition
+ */
+interface HerbUse {
+  action: string;
+  effect: string;
+  dont_bind?: boolean;
+}
+
+/**
+ * Complete herb database structure
+ */
+interface HerbsData {
+  herb_id_to_odmiana: Record<string, HerbForms>;
+  version: number;
+  herb_id_to_use: Record<string, HerbUse[]>;
+}
+
+/**
  * Pretty Containers API - Access and extend container formatting
  */
 interface PrettyContainersApi {
@@ -544,6 +574,8 @@ interface HerbsApi {
   put(herbId: string, amount: number, bag: number): Promise<number>;
 
   move(options: HerbMoveOptions): Promise<void>;
+
+  getData(): Promise<HerbsData | null>;
 }
 
 /**
