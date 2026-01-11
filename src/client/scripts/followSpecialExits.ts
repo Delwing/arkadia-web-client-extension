@@ -252,6 +252,7 @@ export default function initFollowSpecialExits(client: Client) {
             if (!containsLeader(line.text)) return undefined;
             const cmd = typeof command === "function" ? command(matches) : command;
             client.FunctionalBind.set(cmd);
+            client.sendEvent('followSpecialExit', {exit: cmd});
             return undefined;
         }, tag);
     });

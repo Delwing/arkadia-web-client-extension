@@ -259,6 +259,8 @@ export interface KnownEvents {
     // Lua gag events - stun
     "stunStart": void;
     "stunEnd": void;
+    // Team follow events
+    "followSpecialExit": { exit: string };
 }
 
 export interface WalkerState {
