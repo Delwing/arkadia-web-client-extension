@@ -443,6 +443,73 @@ body {
     background: #16825d;
 }
 
+#status-bar .spacer {
+    flex: 1;
+}
+
+#dev-server-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+#dev-server-status:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#dev-server-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+#dev-server-indicator.disconnected {
+    background: #6e6e6e;
+}
+
+#dev-server-indicator.connecting {
+    background: #dcdcaa;
+    animation: pulse 1s infinite;
+}
+
+#dev-server-indicator.connected {
+    background: #4ec9b0;
+}
+
+#dev-server-indicator.error {
+    background: #f48771;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+#dev-server-text {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+#dev-server-connection-status.success {
+    background: rgba(78, 201, 176, 0.2);
+    color: #4ec9b0;
+}
+
+#dev-server-connection-status.error {
+    background: rgba(244, 135, 113, 0.2);
+    color: #f48771;
+}
+
+#dev-server-connection-status.info {
+    background: rgba(220, 220, 170, 0.2);
+    color: #dcdcaa;
+}
+
 .modal-overlay {
     display: none;
     position: fixed;

@@ -56,6 +56,7 @@ import {
   showNewPluginModal,
 } from './modals'
 import {createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
+import { getDevServer, type DevServerStatus } from './devServer'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
 import {CodingAgentPanel} from './codingAgentPanel';
@@ -326,6 +327,9 @@ async function loadPlugin(pluginId: string) {
   state.currentPlugin = plugin
   state.currentFilePath = plugin.entryPoint
   state.modifiedFiles.clear()
+
+  // Notify dev server about current plugin
+  getDevServer().setCurrentPluginId(pluginId)
 
   const nameInput = document.getElementById('plugin-name') as HTMLInputElement
   nameInput.value = plugin.name
@@ -1126,6 +1130,192 @@ function showFilePickerHandler() {
   ;(modal as any)._cleanup = cleanup
 }
 
+// Dev server UI functions
+function updateDevServerUI(status: DevServerStatus, message?: string) {
+  const indicator = document.getElementById('dev-server-indicator')!
+  const text = document.getElementById('dev-server-text')!
+  const connectBtn = document.getElementById('dev-server-connect')!
+  const disconnectBtn = document.getElementById('dev-server-disconnect')!
+  const connectionStatus = document.getElementById('dev-server-connection-status')!
+
+  indicator.className = status
+
+  switch (status) {
+    case 'connected':
+      text.textContent = 'IDE: Connected'
+      connectBtn.style.display = 'none'
+      disconnectBtn.style.display = 'inline-block'
+      connectionStatus.textContent = message || 'Connected to dev server'
+      connectionStatus.className = 'success'
+      connectionStatus.style.display = 'block'
+      break
+    case 'connecting':
+      text.textContent = 'IDE: Connecting...'
+      connectBtn.style.display = 'none'
+      disconnectBtn.style.display = 'none'
+      connectionStatus.textContent = 'Connecting...'
+      connectionStatus.className = 'info'
+      connectionStatus.style.display = 'block'
+      break
+    case 'error':
+      text.textContent = 'IDE: Error'
+      connectBtn.style.display = 'inline-block'
+      disconnectBtn.style.display = 'none'
+      connectionStatus.textContent = message || 'Connection error'
+      connectionStatus.className = 'error'
+      connectionStatus.style.display = 'block'
+      break
+    case 'disconnected':
+    default:
+      text.textContent = 'IDE: Disconnected'
+      connectBtn.style.display = 'inline-block'
+      disconnectBtn.style.display = 'none'
+      if (message) {
+        connectionStatus.textContent = message
+        connectionStatus.className = 'info'
+        connectionStatus.style.display = 'block'
+      } else {
+        connectionStatus.style.display = 'none'
+      }
+      break
+  }
+}
+
+function showDevServerModal() {
+  const modal = document.getElementById('dev-server-modal')!
+  const devServer = getDevServer()
+  const config = devServer.getConfig()
+
+  // Populate form with current config
+  const hostInput = document.getElementById('dev-server-host') as HTMLInputElement
+  const portInput = document.getElementById('dev-server-port') as HTMLInputElement
+  const autoReconnectCheck = document.getElementById('dev-server-auto-reconnect') as HTMLInputElement
+
+  hostInput.value = config.host
+  portInput.value = config.port.toString()
+  autoReconnectCheck.checked = config.autoReconnect
+
+  // Update UI based on current status
+  updateDevServerUI(devServer.getStatus())
+
+  modal.style.display = 'flex'
+}
+
+function hideDevServerModal() {
+  const modal = document.getElementById('dev-server-modal')!
+  modal.style.display = 'none'
+}
+
+function setupDevServer() {
+  const devServer = getDevServer()
+
+  // Set the bundler function for compiling TypeScript
+  devServer.setBundlePlugin(bundlePlugin)
+
+  // Set up status change callback
+  devServer.setOnStatusChange((status, message) => {
+    updateDevServerUI(status, message)
+
+    // Close modal on successful connection
+    if (status === 'connected') {
+      hideDevServerModal()
+    }
+  })
+
+  // Set up plugin update callback
+  devServer.setOnPluginUpdate(async (pluginId, plugin) => {
+    console.log('[DevServer] Plugin updated:', pluginId)
+
+    // If this is the currently loaded plugin, update it
+    if (state.currentPluginId === pluginId) {
+      // Update the in-memory plugin data
+      state.currentPlugin = plugin
+
+      // Track which files were updated from IDE
+      const updatedFromIDE = new Set<string>()
+
+      // Update editor models with new file contents
+      for (const [filePath, file] of Object.entries(plugin.files)) {
+        const model = state.editorModels.get(filePath)
+        if (model) {
+          const currentValue = model.getValue()
+          if (currentValue !== file.content) {
+            updatedFromIDE.add(filePath)
+            model.setValue(file.content)
+          }
+        }
+      }
+
+      // Clear modified status for files updated from IDE
+      // (the model change listener would have re-added them)
+      for (const filePath of updatedFromIDE) {
+        state.modifiedFiles.delete(filePath)
+      }
+
+      // Re-render file tree
+      renderCurrentFileTree()
+      updateStatus(`Plugin updated from IDE: ${plugin.name}`, 'success')
+    }
+
+    // Refresh plugin list in case a new plugin was added
+    await refreshPluginList(state.currentPluginId)
+  })
+
+  // Set up reload request callback
+  devServer.setOnReloadRequest((pluginId) => {
+    console.log('[DevServer] Reload requested for plugin:', pluginId)
+    if (state.currentPluginId === pluginId) {
+      loadPlugin(pluginId)
+    }
+  })
+
+  // Set up plugin selected from IDE callback
+  devServer.setOnPluginSelectedFromIDE(async (pluginId) => {
+    console.log('[DevServer] IDE selected plugin:', pluginId)
+
+    // If this is already the current plugin, do nothing
+    if (state.currentPluginId === pluginId) {
+      return
+    }
+
+    // Warn if there are unsaved changes
+    if (state.modifiedFiles.size > 0) {
+      const confirmed = confirm(
+        'IDE wants to switch plugins. You have unsaved changes. Continue? All unsaved changes will be lost.'
+      )
+      if (!confirmed) {
+        return
+      }
+    }
+
+    // Load the plugin
+    await loadPlugin(pluginId)
+
+    // Update the dropdown
+    const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
+    pluginSelect.value = pluginId
+
+    updateStatus(`Switched to plugin from IDE: ${pluginId}`, 'success')
+  })
+
+  // Set up file focused from IDE callback
+  devServer.setOnFileFocusedFromIDE((filePath) => {
+    console.log('[DevServer] IDE focused file:', filePath)
+
+    // Check if this file exists in the current plugin
+    if (!state.currentPlugin?.files[filePath]) {
+      console.log('[DevServer] File not found in current plugin:', filePath)
+      return
+    }
+
+    // Switch to this file
+    switchToFile(filePath)
+  })
+
+  // Initialize UI
+  updateDevServerUI(devServer.getStatus())
+}
+
 // Event listeners setup
 function setupEventListeners() {
   const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
@@ -1144,6 +1334,12 @@ function setupEventListeners() {
         }
       }
       loadPlugin(target.value)
+
+      // Notify IDE about plugin selection
+      const devServer = getDevServer()
+      if (devServer.getStatus() === 'connected') {
+        devServer.sendPluginSelected(target.value)
+      }
     }
   })
 
@@ -1485,6 +1681,43 @@ function setupEventListeners() {
       document.body.style.userSelect = ''
     }
   })
+
+  // Dev server modal event listeners
+  const devServerStatus = document.getElementById('dev-server-status')!
+  devServerStatus.addEventListener('click', showDevServerModal)
+
+  const devServerCancel = document.getElementById('dev-server-cancel')!
+  devServerCancel.addEventListener('click', hideDevServerModal)
+
+  const devServerConnect = document.getElementById('dev-server-connect')!
+  devServerConnect.addEventListener('click', () => {
+    const devServer = getDevServer()
+    const hostInput = document.getElementById('dev-server-host') as HTMLInputElement
+    const portInput = document.getElementById('dev-server-port') as HTMLInputElement
+    const autoReconnectCheck = document.getElementById('dev-server-auto-reconnect') as HTMLInputElement
+
+    devServer.setConfig({
+      host: hostInput.value || 'localhost',
+      port: parseInt(portInput.value) || 9877,
+      autoReconnect: autoReconnectCheck.checked,
+    })
+
+    devServer.connect()
+  })
+
+  const devServerDisconnect = document.getElementById('dev-server-disconnect')!
+  devServerDisconnect.addEventListener('click', () => {
+    const devServer = getDevServer()
+    devServer.disconnect()
+  })
+
+  // Close modal on backdrop click
+  const devServerModal = document.getElementById('dev-server-modal')!
+  devServerModal.addEventListener('click', (e) => {
+    if (e.target === devServerModal) {
+      hideDevServerModal()
+    }
+  })
 }
 
 // Initialize
@@ -1510,6 +1743,7 @@ async function init() {
   await initEsbuild(updateStatus)
   await refreshPluginList(null)
   setupEventListeners()
+  setupDevServer()
 
   // Check if there's a plugin parameter in the URL
   const urlParams = new URLSearchParams(window.location.search)

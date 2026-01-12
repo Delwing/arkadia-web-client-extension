@@ -164,6 +164,11 @@
         </div>
         <div id="status-bar">
             <span id="status-text">Ready</span>
+            <div class="spacer"></div>
+            <div id="dev-server-status" title="Click to configure dev server connection">
+                <span id="dev-server-indicator" class="disconnected"></span>
+                <span id="dev-server-text">IDE: Disconnected</span>
+            </div>
         </div>
     </div>
 
@@ -280,6 +285,36 @@
             </div>
             <div class="modal-buttons">
                 <button id="agent-preview-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dev Server Settings Modal -->
+    <div id="dev-server-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px;">
+            <h2>IDE Connection Settings</h2>
+            <p style="font-size: 12px; color: #888; margin-bottom: 16px;">
+                Connect to a local WebSocket server (e.g., WebStorm plugin) to edit plugins from your IDE.
+            </p>
+            <div style="margin-bottom: 16px;">
+                <label for="dev-server-host">Host</label>
+                <input type="text" id="dev-server-host" placeholder="localhost" value="localhost" />
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="dev-server-port">Port</label>
+                <input type="number" id="dev-server-port" placeholder="9877" value="9877" />
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="dev-server-auto-reconnect" checked />
+                    Auto-reconnect on disconnect
+                </label>
+            </div>
+            <div id="dev-server-connection-status" style="margin-bottom: 16px; padding: 8px; border-radius: 4px; font-size: 12px; display: none;"></div>
+            <div class="modal-buttons">
+                <button id="dev-server-cancel">Close</button>
+                <button id="dev-server-disconnect" class="danger" style="display: none;">Disconnect</button>
+                <button id="dev-server-connect" class="primary">Connect</button>
             </div>
         </div>
     </div>
