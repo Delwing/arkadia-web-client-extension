@@ -573,6 +573,8 @@ interface PrettyContainersApi {
  */
 interface MagicsApi {
   getPatterns(): Promise<string[]>;
+
+  getRawData(): Promise<MagicsFile | undefined>;
 }
 
 /**
@@ -580,6 +582,8 @@ interface MagicsApi {
  */
 interface MagicKeysApi {
   getPatterns(): Promise<string[]>;
+
+  getRawData(): Promise<MagicKeysData | undefined>;
 }
 
 /**

@@ -1948,6 +1948,23 @@ export interface MagicsApi {
      * ```
      */
     getPatterns(): Promise<string[]>;
+    /**
+     * Get raw magics data
+     * Returns the complete magics data structure with item names, types, and patterns
+     *
+     * @returns Promise resolving to raw MagicsFile data or undefined if not loaded
+     *
+     * @example
+     * ```typescript
+     * const rawData = await api.magics.getRawData();
+     * if (rawData) {
+     *   for (const [name, magic] of Object.entries(rawData.magics)) {
+     *     console.log(`${name}: types=${magic.type.join(',')}, patterns=${magic.regexps?.length || 0}`);
+     *   }
+     * }
+     * ```
+     */
+    getRawData(): Promise<MagicsFile | undefined>;
 }
 
 /**
@@ -1972,6 +1989,21 @@ export interface MagicKeysApi {
      * ```
      */
     getPatterns(): Promise<string[]>;
+    /**
+     * Get raw magic keys data
+     * Returns the complete magic keys data structure
+     *
+     * @returns Promise resolving to raw MagicKeysData or undefined if not loaded
+     *
+     * @example
+     * ```typescript
+     * const rawData = await api.magicKeys.getRawData();
+     * if (rawData) {
+     *   console.log(`${rawData.magic_keys.length} magic keys loaded`);
+     * }
+     * ```
+     */
+    getRawData(): Promise<MagicKeysData | undefined>;
 }
 
 /**
