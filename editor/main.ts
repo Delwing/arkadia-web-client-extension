@@ -111,6 +111,9 @@ const state: EditorState = {
   esbuildInitialized: false,
 }
 
+// Flag to prevent feedback loop when receiving preview from IDE
+let isReceivingFromIDE = false
+
 // Store completion provider disposers
 let disposeImportPathProvider: (() => void) | null = null
 let disposeAutoImportProvider: (() => void) | null = null
@@ -257,6 +260,14 @@ export default value;`
         state.modifiedFiles.add(capturedFilePath)
         renderCurrentFileTree()
 
+        // Send preview to IDE (if not receiving from IDE to prevent loop)
+        if (!isReceivingFromIDE && capturedPluginId) {
+          const devServer = getDevServer()
+          if (devServer.getStatus() === 'connected') {
+            devServer.sendFilePreview(capturedPluginId, capturedFilePath, content)
+          }
+        }
+
         // Update Monaco's virtual file system (for JS/TS/JSON files)
         const fileLanguage = state.currentPlugin.files[capturedFilePath].language
         const uri = `file:///${capturedPluginId}/${capturedFilePath}`
@@ -365,6 +376,14 @@ async function loadPlugin(pluginId: string) {
         state.currentPlugin.files[capturedFilePath].content = content
         state.modifiedFiles.add(capturedFilePath)
         renderCurrentFileTree()
+
+        // Send preview to IDE (if not receiving from IDE to prevent loop)
+        if (!isReceivingFromIDE && capturedPluginId) {
+          const devServer = getDevServer()
+          if (devServer.getStatus() === 'connected') {
+            devServer.sendFilePreview(capturedPluginId, capturedFilePath, content)
+          }
+        }
 
         // Update Monaco's virtual file system
         const fileLanguage = state.currentPlugin.files[capturedFilePath].language
@@ -1310,6 +1329,57 @@ function setupDevServer() {
 
     // Switch to this file
     switchToFile(filePath)
+  })
+
+  // Set up file saved from IDE callback (clears modified status)
+  devServer.setOnFileSavedFromIDE((pluginId, filePaths) => {
+    if (state.currentPluginId !== pluginId) {
+      return
+    }
+
+    // Clear modified status for files that were saved in IDE
+    for (const filePath of filePaths) {
+      state.modifiedFiles.delete(filePath)
+    }
+    renderCurrentFileTree()
+  })
+
+  // Set up file preview callback (live sync as you type, without saving)
+  devServer.setOnFilePreview((pluginId, files) => {
+    // Only process if this is the current plugin
+    if (state.currentPluginId !== pluginId) {
+      return
+    }
+
+    // Set flag to prevent sending preview back to IDE
+    isReceivingFromIDE = true
+
+    for (const file of files) {
+      const model = state.editorModels.get(file.path)
+      if (model) {
+        const currentValue = model.getValue()
+        // Only update if content is different
+        if (currentValue !== file.content) {
+          // Preserve cursor position
+          const position = state.editor?.getPosition()
+          const selection = state.editor?.getSelection()
+
+          // Update model content directly (this won't trigger save to IndexedDB)
+          model.setValue(file.content)
+
+          // Restore cursor position if editing the same file
+          if (state.currentFilePath === file.path && state.editor) {
+            if (selection) {
+              state.editor.setSelection(selection)
+            } else if (position) {
+              state.editor.setPosition(position)
+            }
+          }
+        }
+      }
+    }
+
+    isReceivingFromIDE = false
   })
 
   // Initialize UI

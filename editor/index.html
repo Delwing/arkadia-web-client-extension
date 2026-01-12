@@ -293,8 +293,12 @@
     <div id="dev-server-modal" class="modal-overlay">
         <div class="modal" style="max-width: 400px;">
             <h2>IDE Connection Settings</h2>
+            <p style="font-size: 12px; color: #888; margin-bottom: 12px;">
+                Connect to a local WebSocket server to edit plugins from your IDE with live sync.
+            </p>
             <p style="font-size: 12px; color: #888; margin-bottom: 16px;">
-                Connect to a local WebSocket server (e.g., WebStorm plugin) to edit plugins from your IDE.
+                <a href="/arkadia-plugin-dev-server-1.0.0.zip" download style="color: #4fc3f7;">Download WebStorm/IntelliJ Plugin</a>
+                (Install via Settings &rarr; Plugins &rarr; Install from disk)
             </p>
             <div style="margin-bottom: 16px;">
                 <label for="dev-server-host">Host</label>
@@ -306,8 +310,8 @@
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="dev-server-auto-reconnect" checked />
-                    Auto-reconnect on disconnect
+                    <input type="checkbox" id="dev-server-auto-reconnect" checked style="margin: 0; flex-shrink: 0; width: 16px; height: 16px;" />
+                    <span style="white-space: nowrap;">Auto-reconnect on disconnect</span>
                 </label>
             </div>
             <div id="dev-server-connection-status" style="margin-bottom: 16px; padding: 8px; border-radius: 4px; font-size: 12px; display: none;"></div>

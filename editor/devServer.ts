@@ -57,6 +57,7 @@ export interface DevServerMessage {
   files?: Record<string, { path: string; content: string; language?: string }> | FileUpdate[]
   folders?: string[]
   version?: string
+  filePath?: string
 }
 
 type StatusChangeCallback = (status: DevServerStatus, message?: string) => void
@@ -64,6 +65,8 @@ type PluginUpdateCallback = (pluginId: string, plugin: EditorPluginData) => void
 type ReloadRequestCallback = (pluginId: string) => void
 type PluginSelectedCallback = (pluginId: string) => void
 type FileFocusedCallback = (filePath: string) => void
+type FilePreviewCallback = (pluginId: string, files: FileUpdate[]) => void
+type FileSavedCallback = (pluginId: string, filePaths: string[]) => void
 
 const DEFAULT_CONFIG: DevServerConfig = {
   host: 'localhost',
@@ -84,6 +87,8 @@ export class DevServerClient {
   private onReloadRequest: ReloadRequestCallback | null = null
   private onPluginSelectedFromIDE: PluginSelectedCallback | null = null
   private onFileFocusedFromIDE: FileFocusedCallback | null = null
+  private onFilePreview: FilePreviewCallback | null = null
+  private onFileSavedFromIDE: FileSavedCallback | null = null
 
   // Bundler function to compile TypeScript
   private bundlePlugin: ((files: Record<string, PluginFile>, entryPoint: string) => Promise<string>) | null = null
@@ -147,6 +152,14 @@ export class DevServerClient {
 
   setOnFileFocusedFromIDE(callback: FileFocusedCallback) {
     this.onFileFocusedFromIDE = callback
+  }
+
+  setOnFilePreview(callback: FilePreviewCallback) {
+    this.onFilePreview = callback
+  }
+
+  setOnFileSavedFromIDE(callback: FileSavedCallback) {
+    this.onFileSavedFromIDE = callback
   }
 
   setCurrentPluginId(pluginId: string | null) {
@@ -283,16 +296,31 @@ export class DevServerClient {
         break
 
       case 'file-focused':
-        if ((message as { filePath?: string }).filePath) {
-          const filePath = (message as { filePath: string }).filePath
-          console.log('[DevServer] IDE focused file:', filePath)
-          this.onFileFocusedFromIDE?.(filePath)
+        if (message.filePath) {
+          console.log('[DevServer] IDE focused file:', message.filePath)
+          this.onFileFocusedFromIDE?.(message.filePath)
         }
+        break
+
+      case 'file-preview':
+        await this.handleFilePreview(message)
         break
 
       default:
         console.log('[DevServer] Unknown message type:', message.type)
     }
+  }
+
+  private async handleFilePreview(message: DevServerMessage) {
+    if (!message.pluginId || !message.files) {
+      return
+    }
+
+    // Convert files to array format
+    const fileUpdates = Array.isArray(message.files) ? message.files : Object.values(message.files)
+
+    // Call the preview callback (which should update Monaco model without saving)
+    this.onFilePreview?.(message.pluginId, fileUpdates)
   }
 
   private async handleFileUpdate(message: DevServerMessage) {
@@ -339,8 +367,12 @@ export class DevServerClient {
     // Store updated plugin
     await storeEditorPlugin(plugin)
 
-    // Notify callback
+    // Notify callbacks
     this.onPluginUpdate?.(message.pluginId, plugin)
+
+    // Notify that files were saved from IDE (to clear modified status)
+    const savedPaths = fileUpdates.map(f => f.path)
+    this.onFileSavedFromIDE?.(message.pluginId, savedPaths)
   }
 
   private async handleFullSync(message: DevServerMessage) {
@@ -354,7 +386,8 @@ export class DevServerClient {
 
     // Convert files to proper format
     const files: Record<string, PluginFile> = {}
-    for (const [path, file] of Object.entries(message.files)) {
+    const messageFiles = message.files as Record<string, { path: string; content: string; language?: string }>
+    for (const [path, file] of Object.entries(messageFiles)) {
       files[path] = {
         path: file.path || path,
         content: file.content,
@@ -463,6 +496,17 @@ export class DevServerClient {
     this.send({
       type: 'plugin-selected',
       pluginId,
+    })
+  }
+
+  /**
+   * Send file preview to IDE (live sync as you type in browser)
+   */
+  sendFilePreview(pluginId: string, filePath: string, content: string) {
+    this.send({
+      type: 'file-preview',
+      pluginId,
+      files: [{ path: filePath, content }],
     })
   }
 
