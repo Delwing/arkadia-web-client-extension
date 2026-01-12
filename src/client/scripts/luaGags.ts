@@ -152,6 +152,7 @@ export default function registerLuaGagTriggers(client: Client) {
 
                 global.line = line;
                 global.matches = matches;
+                resetSelection();
 
                 // Set Lua variables with proper escaping
                 luaEnv.parse(`line = "${escapeLuaString(rawLine)}"`).exec();
@@ -420,6 +421,10 @@ export default function registerLuaGagTriggers(client: Client) {
             }
         }
 
+        const resetSelection = () => {
+            selection = [-1, -1];
+        };
+
         const luaEnv = luainjs.createEnv({})
         luaEnv.loadLib("mudlet", new luainjs.Table(mudlet))
         luaEnv.loadLib("rex", new luainjs.Table(rex))
@@ -428,7 +433,7 @@ export default function registerLuaGagTriggers(client: Client) {
         })
         luaEnv.loadLib("scripts", new luainjs.Table(scripts))
         luaEnv.loadLib("ateam", new luainjs.Table(ateam))
-        return {global, luaEnv};
+        return {global, luaEnv, resetSelection};
     }
 
     function escapeLuaString(str: string): string {
@@ -468,7 +473,7 @@ export default function registerLuaGagTriggers(client: Client) {
         client.sendEvent("sound:play", { key: "beep" })
     })
 
-    const {global, luaEnv} = createLuaEnv();
+    const {global, luaEnv, resetSelection} = createLuaEnv();
     const luaFiles = import.meta.glob("../lua/**/*.lua", {query: "?raw", eager: true});
     Object.values(luaFiles).forEach((file: any) => {
         luaEnv.parse(file.default).exec()
