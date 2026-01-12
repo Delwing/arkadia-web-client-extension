@@ -365,6 +365,19 @@ interface ContextMenuEntryHandle {
 }
 
 /**
+ * Handle for footer components
+ */
+interface FooterComponentHandle {
+  readonly element: HTMLSpanElement;
+
+  setContent(content: string | Node | ReactElement): void;
+
+  setVisible(visible: boolean): void;
+
+  remove(): void;
+}
+
+/**
  * UI helpers for plugins
  */
 interface UiApi {
@@ -375,6 +388,12 @@ interface UiApi {
   addPopupMenuEntry(label: string | Node, onSelect: () => void): PopupMenuEntryHandle;
 
   addContextMenuEntry(label: string | Node, action: () => void): ContextMenuEntryHandle;
+
+  registerFooterComponent(
+    id: string,
+    content: string | Node | ReactElement,
+    position?: 'start' | 'end' | number
+  ): FooterComponentHandle;
 }
 
 /**

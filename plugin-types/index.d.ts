@@ -1245,6 +1245,34 @@ export interface ContextMenuEntryHandle {
 }
 
 /**
+ * Handle for footer components
+ */
+
+export interface FooterComponentHandle {
+    /**
+     * The DOM element for this footer component.
+     * Can be used for direct DOM manipulation when using HTML or DOM node content.
+     */
+    readonly element: HTMLSpanElement;
+    /**
+     * Update the component content.
+     * Accepts HTML strings, DOM nodes, or React elements.
+     * When using React, the component will be re-rendered with the new element.
+     * @param content - HTML string, DOM node, or React element
+     */
+    setContent(content: string | Node | ReactElement): void;
+    /**
+     * Set component visibility
+     * @param visible - Whether the component should be visible
+     */
+    setVisible(visible: boolean): void;
+    /**
+     * Remove the component from the footer
+     */
+    remove(): void;
+}
+
+/**
  * UI helpers for plugins
  */
 
@@ -1308,6 +1336,94 @@ export interface UiApi {
      * @returns Handle for updating or removing the entry
      */
     addContextMenuEntry(label: string | Node, action: () => void): ContextMenuEntryHandle;
+    /**
+     * Register a footer bar component.
+     * Adds a custom component to the footer bar (next to built-in components like
+     * Rozkaz timer, Clock, Attack mode, etc.)
+     *
+     * Supports three content types:
+     * - HTML strings: Simple inline HTML
+     * - DOM nodes: Pre-created DOM elements
+     * - React elements: Full React components with state and hooks
+     *
+     * @param id - Unique identifier for this component (will be namespaced by plugin)
+     * @param content - HTML string, DOM node, or React element
+     * @param position - Where to insert: 'start', 'end' (default), or numeric index
+     * @returns Handle for updating, hiding, or removing the component
+     *
+     * @example
+     * ```typescript
+     * // Simple HTML string
+     * const timer = api.ui.registerFooterComponent(
+     *   'myTimer',
+     *   '<span style="color: yellow;">Timer: 0</span>'
+     * );
+     *
+     * // Update content periodically
+     * let seconds = 0;
+     * setInterval(() => {
+     *   seconds++;
+     *   timer.setContent(`<span style="color: yellow;">Timer: ${seconds}</span>`);
+     * }, 1000);
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // DOM node
+     * const statusSpan = document.createElement('span');
+     * statusSpan.style.color = 'springgreen';
+     * statusSpan.textContent = 'Ready';
+     *
+     * const status = api.ui.registerFooterComponent('status', statusSpan);
+     *
+     * // Direct DOM manipulation
+     * status.element.style.color = 'red';
+     * status.element.textContent = 'Busy';
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // React component with state
+     * import { useState, useEffect } from 'react';
+     *
+     * const MyTimer: React.FC = () => {
+     *   const [seconds, setSeconds] = useState(0);
+     *
+     *   useEffect(() => {
+     *     const interval = setInterval(() => setSeconds(s => s + 1), 1000);
+     *     return () => clearInterval(interval);
+     *   }, []);
+     *
+     *   return <span style={{ color: 'yellow' }}>Timer: {seconds}</span>;
+     * };
+     *
+     * // Register React component
+     * const timer = api.ui.registerFooterComponent('myTimer', <MyTimer />);
+     *
+     * // Can also update with new React element
+     * timer.setContent(<MyTimer key="reset" />);
+     * ```
+     *
+     * @example
+     * ```typescript
+     * // React component using client events (like built-in OrderTimer)
+     * import { useState } from 'react';
+     * import { useClientEvent } from '@web/hooks';
+     *
+     * const AttackStatus: React.FC = () => {
+     *   const [isAttacking, setIsAttacking] = useState(false);
+     *
+     *   useClientEvent('combatStart', () => setIsAttacking(true));
+     *   useClientEvent('combatEnd', () => setIsAttacking(false));
+     *
+     *   if (!isAttacking) return null;
+     *   return <span style={{ color: 'red' }}>COMBAT</span>;
+     * };
+     *
+     * api.ui.registerFooterComponent('attackStatus', <AttackStatus />);
+     * ```
+     */
+    registerFooterComponent(id: string, content: string | Node | ReactElement, position?: 'start' | 'end' | number): FooterComponentHandle;
 }
 
 /**
