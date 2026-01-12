@@ -1927,6 +1927,23 @@ export interface PrettyContainersApi {
 }
 
 /**
+ * Single magic item entry
+ */
+
+export interface MagicEntry {
+    type: string[];
+    regexps?: string[];
+}
+
+/**
+ * Raw magics data structure
+ */
+
+export interface MagicsFile {
+    magics: Record<string, MagicEntry>;
+}
+
+/**
  * Magics API - Access magic item patterns
  */
 
@@ -1965,6 +1982,14 @@ export interface MagicsApi {
      * ```
      */
     getRawData(): Promise<MagicsFile | undefined>;
+}
+
+/**
+ * Raw magic keys data structure
+ */
+
+export interface MagicKeysData {
+    magic_keys: string[];
 }
 
 /**

@@ -52,8 +52,8 @@ import {
   getGroupDefinitions,
   getTransformDefinitions
 } from "./scripts/prettyContainers";
-import loadMagics, { loadMagicsRaw, type MagicsFile } from "./scripts/magicsLoader";
-import loadMagicKeys, { loadMagicKeysRaw, type MagicKeysData } from "./scripts/magicKeyLoader";
+import loadMagics, { loadMagicsRaw } from "./scripts/magicsLoader";
+import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/magicKeyLoader";
 import loadHerbs from "./scripts/herbsLoader";
 import {
   type EntryContent,
@@ -1205,9 +1205,19 @@ export interface PrettyContainersApi {
 }
 
 /**
+ * Single magic item entry
+ */
+export interface MagicEntry {
+  type: string[];
+  regexps?: string[];
+}
+
+/**
  * Raw magics data structure
  */
-export type { MagicsFile };
+export interface MagicsFile {
+  magics: Record<string, MagicEntry>;
+}
 
 /**
  * Magics API - Access magic item patterns
@@ -1253,7 +1263,9 @@ export interface MagicsApi {
 /**
  * Raw magic keys data structure
  */
-export type { MagicKeysData };
+export interface MagicKeysData {
+  magic_keys: string[];
+}
 
 /**
  * Magic Keys API - Access magic key patterns

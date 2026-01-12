@@ -569,12 +569,34 @@ interface PrettyContainersApi {
 }
 
 /**
+ * Single magic item entry
+ */
+interface MagicEntry {
+  type: string[];
+  regexps?: string[];
+}
+
+/**
+ * Raw magics data structure
+ */
+interface MagicsFile {
+  magics: Record<string, MagicEntry>;
+}
+
+/**
  * Magics API - Access magic item patterns
  */
 interface MagicsApi {
   getPatterns(): Promise<string[]>;
 
   getRawData(): Promise<MagicsFile | undefined>;
+}
+
+/**
+ * Raw magic keys data structure
+ */
+interface MagicKeysData {
+  magic_keys: string[];
 }
 
 /**

@@ -114,7 +114,11 @@ function shouldExport(node) {
         // Herb database types
         name === 'HerbsData' ||
         name === 'HerbForms' ||
-        name === 'HerbUse') {
+        name === 'HerbUse' ||
+        // Magics data types
+        name === 'MagicEntry' ||
+        name === 'MagicsFile' ||
+        name === 'MagicKeysData') {
       return true;
     }
   }
