@@ -128,3 +128,15 @@ export function subscribeToMagicKeys(
     options,
   );
 }
+
+export async function loadMagicsRaw(): Promise<MagicsFile | undefined> {
+  const store = getMagicsStore();
+  try {
+    const snapshot = await store.refresh();
+    return snapshot?.data;
+  } catch (error) {
+    console.error('Failed to load raw magics:', error);
+    const fallback = await store.getSnapshot();
+    return fallback?.data;
+  }
+}

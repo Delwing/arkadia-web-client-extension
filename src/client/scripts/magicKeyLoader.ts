@@ -48,3 +48,15 @@ export function subscribeToMagicKeys(
     options,
   );
 }
+
+export async function loadMagicKeysRaw(): Promise<MagicKeysData | undefined> {
+  const store = getMagicKeysStore();
+  try {
+    const snapshot = await store.refresh();
+    return snapshot?.data;
+  } catch (error) {
+    console.error('Failed to load raw magic keys:', error);
+    const fallback = await store.getSnapshot();
+    return fallback?.data;
+  }
+}

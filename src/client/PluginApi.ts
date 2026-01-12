@@ -52,8 +52,8 @@ import {
   getGroupDefinitions,
   getTransformDefinitions
 } from "./scripts/prettyContainers";
-import loadMagics from "./scripts/magicsLoader";
-import loadMagicKeys from "./scripts/magicKeyLoader";
+import loadMagics, { loadMagicsRaw, type MagicsFile } from "./scripts/magicsLoader";
+import loadMagicKeys, { loadMagicKeysRaw, type MagicKeysData } from "./scripts/magicKeyLoader";
 import loadHerbs from "./scripts/herbsLoader";
 import {
   type EntryContent,
@@ -1205,6 +1205,11 @@ export interface PrettyContainersApi {
 }
 
 /**
+ * Raw magics data structure
+ */
+export type { MagicsFile };
+
+/**
  * Magics API - Access magic item patterns
  */
 export interface MagicsApi {
@@ -1225,7 +1230,30 @@ export interface MagicsApi {
    * ```
    */
   getPatterns(): Promise<string[]>;
+
+  /**
+   * Get raw magics data
+   * Returns the complete magics data structure with item names, types, and patterns
+   *
+   * @returns Promise resolving to raw MagicsFile data or undefined if not loaded
+   *
+   * @example
+   * ```typescript
+   * const rawData = await api.magics.getRawData();
+   * if (rawData) {
+   *   for (const [name, magic] of Object.entries(rawData.magics)) {
+   *     console.log(`${name}: types=${magic.type.join(',')}, patterns=${magic.regexps?.length || 0}`);
+   *   }
+   * }
+   * ```
+   */
+  getRawData(): Promise<MagicsFile | undefined>;
 }
+
+/**
+ * Raw magic keys data structure
+ */
+export type { MagicKeysData };
 
 /**
  * Magic Keys API - Access magic key patterns
@@ -1248,6 +1276,22 @@ export interface MagicKeysApi {
    * ```
    */
   getPatterns(): Promise<string[]>;
+
+  /**
+   * Get raw magic keys data
+   * Returns the complete magic keys data structure
+   *
+   * @returns Promise resolving to raw MagicKeysData or undefined if not loaded
+   *
+   * @example
+   * ```typescript
+   * const rawData = await api.magicKeys.getRawData();
+   * if (rawData) {
+   *   console.log(`${rawData.magic_keys.length} magic keys loaded`);
+   * }
+   * ```
+   */
+  getRawData(): Promise<MagicKeysData | undefined>;
 }
 
 /**
@@ -2343,6 +2387,9 @@ export class PluginApiImpl implements PluginApi {
     return {
       getPatterns: async () => {
         return await loadMagics();
+      },
+      getRawData: async () => {
+        return await loadMagicsRaw();
       }
     };
   }
@@ -2355,6 +2402,9 @@ export class PluginApiImpl implements PluginApi {
     return {
       getPatterns: async () => {
         return await loadMagicKeys();
+      },
+      getRawData: async () => {
+        return await loadMagicKeysRaw();
       }
     };
   }
