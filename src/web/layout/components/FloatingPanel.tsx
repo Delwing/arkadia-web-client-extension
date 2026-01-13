@@ -149,7 +149,7 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
 
   return (
     <div
-      className={`floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}${isLocked ? ' floating-panel--locked' : ''}`}
+      className={`managed-panel floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}${isLocked ? ' managed-panel--locked floating-panel--locked' : ''}`}
       style={{
         left: panel.x,
         top: panel.y,
@@ -158,41 +158,41 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
       }}
     >
       <div
-        className={`floating-panel__header${isLocked ? ' floating-panel__header--locked' : ''}`}
+        className={`managed-panel__header floating-panel__header${isLocked ? ' floating-panel__header--locked' : ''}`}
         onPointerDown={handleDragStartWrapper}
       >
-        <span className="floating-panel__title">{title}</span>
+        <span className="managed-panel__title floating-panel__title">{title}</span>
         <span
           className={`floating-panel__drag-hint${isCtrlHeld ? ' floating-panel__drag-hint--active' : ''}${!isBeingDragged ? ' floating-panel__drag-hint--hidden' : ''}`}
         >
           {isCtrlHeld ? 'Docking disabled' : 'Ctrl = prevent dock'}
         </span>
-        <div className="floating-panel__header-actions" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="managed-panel__header-actions floating-panel__header-actions" onPointerDown={(e) => e.stopPropagation()}>
           {/* Popup-specific header actions */}
           {popupInfo?.headerActions}
           {isPopup && popupInfo && (
             <>
               <button
                 type="button"
-                className="floating-panel__reset-button"
+                className="panel-button panel-button--reset floating-panel__reset-button"
                 onClick={handleReset}
                 title="Przywroc domyslna pozycje i rozmiar"
               />
               <button
                 type="button"
-                className={`floating-panel__lock-button${popupInfo.isLocked ? ' floating-panel__lock-button--active' : ''}`}
+                className={`panel-button panel-button--lock floating-panel__lock-button${popupInfo.isLocked ? ' is-active floating-panel__lock-button--active' : ''}`}
                 onClick={handleToggleLock}
                 title={popupInfo.isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
               />
               <button
                 type="button"
-                className={`floating-panel__pin-button${popupInfo.isPinned ? ' floating-panel__pin-button--active' : ''}`}
+                className={`panel-button panel-button--pin floating-panel__pin-button${popupInfo.isPinned ? ' is-active floating-panel__pin-button--active' : ''}`}
                 onClick={handleTogglePin}
                 title={popupInfo.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
               />
               <button
                 type="button"
-                className="floating-panel__close-button"
+                className="panel-button panel-button--close floating-panel__close-button"
                 onClick={handleClose}
                 title="Zamknij"
               />
@@ -205,14 +205,14 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
           {isBuiltIn && (
             <button
               type="button"
-              className={`floating-panel__lock-button${isLocked ? ' floating-panel__lock-button--active' : ''}`}
+              className={`panel-button panel-button--lock floating-panel__lock-button${isLocked ? ' is-active floating-panel__lock-button--active' : ''}`}
               onClick={handleToggleLock}
               title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
             />
           )}
         </div>
       </div>
-      <div className="floating-panel__content">{children}</div>
+      <div className="managed-panel__content floating-panel__content">{children}</div>
 
       {/* Edge resize handles - hidden when locked */}
       {!isLocked && (

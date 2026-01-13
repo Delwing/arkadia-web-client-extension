@@ -1,95 +1,41 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
-import eventBus from '@modules/core/eventBus';
+import React, { useCallback } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
+import { usePopupData } from './hooks/usePopupData';
+import { useAutoScroll } from './hooks/useAutoScroll';
 import { getChatHistory, ChatEntry } from '../client/scripts/chatHistory';
 
 const POPUP_ID = 'popup:chat';
 const DISPLAY_LIMIT = 100;
 
 const ChatPopup: React.FC = () => {
-    const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
-    const [messages, setMessages] = useState<ChatEntry[]>([]);
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+        openEvent: 'chat.popup.open',
+    });
     const [showTeamOnly, setShowTeamOnly] = usePopupSetting(POPUP_ID, 'showTeamOnly', false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [autoScroll, setAutoScroll] = useState(true);
 
-    // Load initial history when popup opens
-    useEffect(() => {
-        if (isOpen) {
-            setMessages([...getChatHistory()]);
-        }
-    }, [isOpen]);
-
-    // Listen for new messages
-    useEffect(() => {
-        const handleNewMessage = (entry: ChatEntry) => {
-            setMessages(prev => {
-                const updated = [...prev, entry];
-                // Keep only last DISPLAY_LIMIT messages
-                if (updated.length > DISPLAY_LIMIT) {
-                    return updated.slice(-DISPLAY_LIMIT);
-                }
-                return updated;
-            });
-        };
-
-        const handleCleared = () => {
-            setMessages([]);
-        };
-
-        eventBus.on('chat.newMessage', handleNewMessage);
-        eventBus.on('chat.cleared', handleCleared);
-
-        return () => {
-            eventBus.off('chat.newMessage', handleNewMessage);
-            eventBus.off('chat.cleared', handleCleared);
-        };
-    }, []);
-
-    // Auto-scroll to bottom when new messages arrive
-    // useLayoutEffect runs synchronously after DOM mutations
-    // We scroll twice: once immediately and once after rAF to handle managed layout mode
-    // where the container height may not be fully calculated until the next frame
-    useLayoutEffect(() => {
-        if (autoScroll && containerRef.current) {
-            const container = containerRef.current;
-            // Immediate scroll for regular popup mode
-            container.scrollTop = container.scrollHeight;
-            // Deferred scroll for managed layout mode where height calc may be delayed
-            requestAnimationFrame(() => {
-                container.scrollTop = container.scrollHeight;
-            });
-        }
-    }, [messages, autoScroll, showTeamOnly]);
-
-    // Handle scroll to detect if user scrolled up
-    const handleScroll = useCallback(() => {
-        if (!containerRef.current) return;
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-        // If user is near bottom (within 50px), enable auto-scroll
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
-        setAutoScroll(isNearBottom);
-    }, []);
-
-    // Listen for open event
-    useEffect(() => {
-        const handleOpen = () => {
-            setIsOpen(true);
-        };
-
-        eventBus.on('chat.popup.open', handleOpen);
-
-        return () => {
-            eventBus.off('chat.popup.open', handleOpen);
-        };
-    }, [setIsOpen]);
+    // Data management with automatic event subscription
+    const { data: messages } = usePopupData<ChatEntry[]>(isOpen, {
+        getInitialData: useCallback(() => [...getChatHistory()], []),
+        updateEvent: 'chat.newMessage',
+        transformUpdate: useCallback((entry: ChatEntry) => (prev: ChatEntry[]) => {
+            const updated = [...prev, entry];
+            return updated.length > DISPLAY_LIMIT ? updated.slice(-DISPLAY_LIMIT) : updated;
+        }, []),
+        clearEvent: 'chat.cleared',
+        clearedValue: [],
+    });
 
     // Filter messages based on mode
     const displayedMessages = showTeamOnly
         ? messages.filter(m => m.isTeamMember)
         : messages;
+
+    // Auto-scroll behavior
+    const { containerRef, handleScroll } = useAutoScroll({
+        deps: [displayedMessages],
+    });
 
     // Toggle button in header
     const headerActions = (

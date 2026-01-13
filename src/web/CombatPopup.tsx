@@ -1,8 +1,9 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
-import eventBus from '@modules/core/eventBus';
+import React, { useEffect, useCallback } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
+import { usePopupData } from './hooks/usePopupData';
+import { useAutoScroll } from './hooks/useAutoScroll';
 import {
     getCombatHistory,
     setCombatRedirectSetting,
@@ -25,10 +26,9 @@ const TOGGLES: ToggleConfig[] = [
 ];
 
 const CombatPopup: React.FC = () => {
-    const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
-    const [messages, setMessages] = useState<CombatEntry[]>([]);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [autoScroll, setAutoScroll] = useState(true);
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+        openEvent: 'combat.popup.open',
+    });
 
     // Toggle states for filtering which types to redirect
     const [showAvatar, setShowAvatar] = usePopupSetting(POPUP_ID, 'showAvatar', true);
@@ -48,70 +48,17 @@ const CombatPopup: React.FC = () => {
         setCombatRedirectSetting("combat.others", isOpen && showOthers);
     }, [isOpen, showOthers]);
 
-    // Load initial history when popup opens
-    useEffect(() => {
-        if (isOpen) {
-            setMessages([...getCombatHistory()]);
-        }
-    }, [isOpen]);
-
-    // Listen for new messages
-    useEffect(() => {
-        const handleNewMessage = (entry: CombatEntry) => {
-            setMessages(prev => {
-                const updated = [...prev, entry];
-                // Keep only last DISPLAY_LIMIT messages
-                if (updated.length > DISPLAY_LIMIT) {
-                    return updated.slice(-DISPLAY_LIMIT);
-                }
-                return updated;
-            });
-        };
-
-        const handleCleared = () => {
-            setMessages([]);
-        };
-
-        eventBus.on('combat.newMessage', handleNewMessage);
-        eventBus.on('combat.cleared', handleCleared);
-
-        return () => {
-            eventBus.off('combat.newMessage', handleNewMessage);
-            eventBus.off('combat.cleared', handleCleared);
-        };
-    }, []);
-
-    // Auto-scroll to bottom when new messages arrive
-    useLayoutEffect(() => {
-        if (autoScroll && containerRef.current) {
-            const container = containerRef.current;
-            container.scrollTop = container.scrollHeight;
-            requestAnimationFrame(() => {
-                container.scrollTop = container.scrollHeight;
-            });
-        }
-    }, [messages, autoScroll]);
-
-    // Handle scroll to detect if user scrolled up
-    const handleScroll = useCallback(() => {
-        if (!containerRef.current) return;
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
-        setAutoScroll(isNearBottom);
-    }, []);
-
-    // Listen for open event
-    useEffect(() => {
-        const handleOpen = () => {
-            setIsOpen(true);
-        };
-
-        eventBus.on('combat.popup.open', handleOpen);
-
-        return () => {
-            eventBus.off('combat.popup.open', handleOpen);
-        };
-    }, [setIsOpen]);
+    // Data management with automatic event subscription
+    const { data: messages } = usePopupData<CombatEntry[]>(isOpen, {
+        getInitialData: useCallback(() => [...getCombatHistory()], []),
+        updateEvent: 'combat.newMessage',
+        transformUpdate: useCallback((entry: CombatEntry) => (prev: CombatEntry[]) => {
+            const updated = [...prev, entry];
+            return updated.length > DISPLAY_LIMIT ? updated.slice(-DISPLAY_LIMIT) : updated;
+        }, []),
+        clearEvent: 'combat.cleared',
+        clearedValue: [],
+    });
 
     // Get current toggle states
     const toggleStates: Record<CombatMessageType, boolean> = {
@@ -141,6 +88,11 @@ const CombatPopup: React.FC = () => {
         const hasMsgAfter = arr.slice(index + 1).some(e => e.type !== "separator");
 
         return hasMsgBefore && hasMsgAfter;
+    });
+
+    // Auto-scroll behavior
+    const { containerRef, handleScroll } = useAutoScroll({
+        deps: [displayedMessages],
     });
 
     // Toggle buttons in header

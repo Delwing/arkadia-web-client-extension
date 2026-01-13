@@ -63,15 +63,9 @@ const ContractsPopup: React.FC = () => {
     });
 
     useEffect(() => {
-        const handleUpdate = (data: { contracts: Contract[] }) => {
+        return eventBus.on("contracts.updated", (data: { contracts: Contract[] }) => {
             setContracts(data.contracts);
-        };
-
-        eventBus.on("contracts.updated", handleUpdate);
-
-        return () => {
-            eventBus.off("contracts.updated", handleUpdate);
-        };
+        });
     }, []);
 
     const handleRemove = useCallback((id: string) => {

@@ -11,8 +11,11 @@ import {
 import { copyBufferAsImage } from './bufferToImage';
 
 const POPUP_ID = 'popup:postepy';
+
 const PostepyPopup: React.FC = () => {
-    const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+        openEvent: 'postepy.popup.open',
+    });
     const [data, setData] = useState<ImproveData | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [now, setNow] = useState(Date.now());
@@ -24,38 +27,19 @@ const PostepyPopup: React.FC = () => {
         }
     }, [isOpen]);
 
-    // Listen for data updates
+    // Listen for data updates from multiple sources
     useEffect(() => {
-        const handleUpdate = (newData: ImproveData) => {
-            setData(newData);
-        };
+        const handleUpdate = (newData: ImproveData) => setData(newData);
+        const handleKillsUpdate = () => setData(getImproveData());
 
-        // Refresh data when kills are updated
-        const handleKillsUpdate = () => {
-            setData(getImproveData());
-        };
-
-        eventBus.on('postepy.updated', handleUpdate);
-        eventBus.on('zabici.updated', handleKillsUpdate);
+        const unsub1 = eventBus.on('postepy.updated', handleUpdate);
+        const unsub2 = eventBus.on('zabici.updated', handleKillsUpdate);
 
         return () => {
-            eventBus.off('postepy.updated', handleUpdate);
-            eventBus.off('zabici.updated', handleKillsUpdate);
+            unsub1();
+            unsub2();
         };
     }, []);
-
-    // Listen for open event
-    useEffect(() => {
-        const handleOpen = () => {
-            setIsOpen(true);
-        };
-
-        eventBus.on('postepy.popup.open', handleOpen);
-
-        return () => {
-            eventBus.off('postepy.popup.open', handleOpen);
-        };
-    }, [setIsOpen]);
 
     // Update "now" every second for live time display
     useEffect(() => {
@@ -87,8 +71,6 @@ const PostepyPopup: React.FC = () => {
         : 0;
 
     // Calculate time and kills since last improve
-    // When waiting for first combat, show 0:00
-    // Use Math.max to prevent negative values from timing race conditions
     const timeSinceLast = waitingForFirstCombat ? 0 : Math.max(0, now - lastTime);
     const killsSinceLast = waitingForFirstCombat ? 0 : currentKills.my - lastKills.my;
     const teamKillsSinceLast = waitingForFirstCombat ? 0 : currentKills.team - lastKills.team;

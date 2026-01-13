@@ -194,31 +194,31 @@ const LetterComposer: React.FC = () => {
     return (
         <div
             ref={panelRef}
-            className={`letter-composer ${
-                position ? 'letter-composer--floating' : 'letter-composer--center'
+            className={`floating-window letter-composer ${
+                position ? 'floating-window--floating letter-composer--floating' : 'floating-window--center letter-composer--center'
             } ${isWideScreen ? 'letter-composer--wide' : ''}`}
             style={{
                 ...(position ? { left: `${position.left}px`, top: `${position.top}px` } : {}),
                 ...(size ? { width: `${size.width}px`, height: `${size.height}px` } : {})
             }}
         >
-            <div className="letter-composer-inner" ref={containerRef}>
-                <div className="letter-composer-header" onPointerDown={handlePointerDown}>
-                    <span>Nowy list</span>
+            <div className="floating-window__inner letter-composer-inner" ref={containerRef}>
+                <div className="window-header letter-composer-header" onPointerDown={handlePointerDown}>
+                    <span className="window-header__title">Nowy list</span>
                     <div
-                        className="window-header-actions"
+                        className="window-header__actions window-header-actions"
                         onPointerDownCapture={(event) => event.stopPropagation()}
                     >
                         <button
                             type="button"
-                            className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                            className={`panel-button panel-button--pin window-pin-button${isPinned ? ' is-active window-pin-button--active' : ''}`}
                             onClick={togglePinned}
                             title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
                         />
-                        <button type="button" className="btn-close btn-close-white" onClick={close} />
+                        <button type="button" className="panel-button panel-button--close btn-close btn-close-white" onClick={close} />
                     </div>
                 </div>
-                <div className="letter-composer-body">
+                <div className="window-body letter-composer-body">
                     <form className="letter-composer-form" onSubmit={handleSubmit}>
                         <div className="letter-composer-field">
                             <label htmlFor="letter-to" className="form-label">Do:</label>
@@ -308,7 +308,7 @@ const LetterComposer: React.FC = () => {
                     )}
                 </div>
                 <div
-                    className="letter-composer-resize-handle"
+                    className="resize-handle letter-composer-resize-handle"
                     onPointerDown={handleResizePointerDown}
                     title="Drag to resize"
                 />

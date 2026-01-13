@@ -53,26 +53,26 @@ export function DockedPanel({
   );
 
   const panelClassName = isPopup
-    ? `docked-panel docked-panel--${panelId} docked-panel--popup${isLocked ? ' docked-panel--locked' : ''}`
-    : `docked-panel docked-panel--${panelId}${isLocked ? ' docked-panel--locked' : ''}`;
+    ? `managed-panel docked-panel docked-panel--${panelId} docked-panel--popup${isLocked ? ' managed-panel--locked docked-panel--locked' : ''}`
+    : `managed-panel docked-panel docked-panel--${panelId}${isLocked ? ' managed-panel--locked docked-panel--locked' : ''}`;
 
   return (
     <div className={panelClassName} style={style} data-panel-id={panelId}>
       <div
-        className={`docked-panel__header${isLocked ? ' docked-panel__header--locked' : ''}`}
+        className={`managed-panel__header docked-panel__header${isLocked ? ' docked-panel__header--locked' : ''}`}
         onPointerDown={handleDragStartWrapper}
       >
-        <span className="docked-panel__title">{title}</span>
+        <span className="managed-panel__title docked-panel__title">{title}</span>
         {(headerActions || onReset || onLock || onPin || (closable && onClose)) && (
           <div
-            className="docked-panel__header-actions"
+            className="managed-panel__header-actions docked-panel__header-actions"
             onPointerDown={(e) => e.stopPropagation()}
           >
             {headerActions}
             {onReset && (
               <button
                 type="button"
-                className="docked-panel__reset-btn"
+                className="panel-button panel-button--reset docked-panel__reset-btn"
                 onClick={onReset}
                 title="Przywroc domyslna pozycje i rozmiar"
               />
@@ -80,7 +80,7 @@ export function DockedPanel({
             {onLock && (
               <button
                 type="button"
-                className={`docked-panel__lock-btn${isLocked ? ' docked-panel__lock-btn--active' : ''}`}
+                className={`panel-button panel-button--lock docked-panel__lock-btn${isLocked ? ' is-active docked-panel__lock-btn--active' : ''}`}
                 onClick={onLock}
                 title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
               />
@@ -88,7 +88,7 @@ export function DockedPanel({
             {onPin && (
               <button
                 type="button"
-                className={`docked-panel__pin-btn${isPinned ? ' docked-panel__pin-btn--active' : ''}`}
+                className={`panel-button panel-button--pin docked-panel__pin-btn${isPinned ? ' is-active docked-panel__pin-btn--active' : ''}`}
                 onClick={onPin}
                 title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
               />
@@ -96,7 +96,7 @@ export function DockedPanel({
             {closable && onClose && (
               <button
                 type="button"
-                className="docked-panel__close-btn"
+                className="panel-button panel-button--close docked-panel__close-btn"
                 onClick={onClose}
                 title="Zamknij"
               />
@@ -104,7 +104,7 @@ export function DockedPanel({
           </div>
         )}
       </div>
-      <div className="docked-panel__content">{children}</div>
+      <div className="managed-panel__content docked-panel__content">{children}</div>
     </div>
   );
 }
