@@ -902,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (target.closest('a, button, input, textarea, select, [data-output-clickable]')) {
+            if (target.closest('a, button, input, textarea, select, [contenteditable], [data-output-clickable], .plugin-window, .modal')) {
                 return;
             }
 
