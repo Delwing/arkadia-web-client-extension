@@ -292,9 +292,13 @@ interface OutputApi {
 }
 
 /**
- * Popup content that can be rendered inside plugin popups
+ * Popup content that can be rendered inside plugin popups.
+ * Can be:
+ * - string: HTML string rendered via dangerouslySetInnerHTML
+ * - Node: DOM node appended to container
+ * - React.ReactNode: React component/element rendered directly
  */
-type PopupContent = string | Node;
+type PopupContent = string | Node | React.ReactNode;
 
 /**
  * Handle returned when creating a popup window

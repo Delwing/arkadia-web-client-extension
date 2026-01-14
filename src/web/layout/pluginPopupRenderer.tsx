@@ -6,79 +6,14 @@
  * plugin popups register their configs here and this component renders them.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { DockablePopupWrapper } from './components/DockablePopupWrapper';
-import type { PluginPopupType } from './types';
 import { getPopupLockedState } from './utils/layoutStorage';
-
-export interface PluginPopupConfig {
-  popupId: string;
-  popupType: PluginPopupType;
-  title: string;
-  body: string | Node;
-  isPinned: boolean;
-  onClose: () => void;
-  onPinnedChange: (pinned: boolean) => void;
-  onLockedChange?: (locked: boolean) => void;
-  onPanelRef?: (element: HTMLDivElement | null) => void;
-}
-
-// Registry of active plugin popups
-const pluginPopupRegistry = new Map<string, PluginPopupConfig>();
-const listeners = new Set<() => void>();
-
-function notifyListeners(): void {
-  listeners.forEach(listener => {
-    try {
-      listener();
-    } catch (e) {
-      console.error('[PluginPopupRenderer] Listener error:', e);
-    }
-  });
-}
-
-/**
- * Register a plugin popup to be rendered within the main React tree.
- */
-export function registerPluginPopup(config: PluginPopupConfig): void {
-  pluginPopupRegistry.set(config.popupId, config);
-  notifyListeners();
-}
-
-/**
- * Unregister a plugin popup.
- */
-export function unregisterPluginPopup(popupId: string): void {
-  if (pluginPopupRegistry.delete(popupId)) {
-    notifyListeners();
-  }
-}
-
-/**
- * Update a plugin popup's config.
- */
-export function updatePluginPopup(popupId: string, updates: Partial<PluginPopupConfig>): void {
-  const existing = pluginPopupRegistry.get(popupId);
-  if (existing) {
-    pluginPopupRegistry.set(popupId, { ...existing, ...updates });
-    notifyListeners();
-  }
-}
-
-/**
- * Get all registered plugin popups.
- */
-export function getPluginPopups(): PluginPopupConfig[] {
-  return Array.from(pluginPopupRegistry.values());
-}
-
-/**
- * Subscribe to registry changes.
- */
-export function subscribeToPluginPopups(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
+import {
+  getPluginPopups,
+  subscribeToPluginPopups,
+  type PluginPopupConfig,
+} from './pluginPopupRegistry';
 
 // Compute viewport-aware initial width for plugin popups
 function getInitialPopupWidth(): number {
@@ -92,7 +27,7 @@ function getInitialPopupWidth(): number {
  */
 function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   const [title, setTitle] = useState(config.title);
-  const [body, setBody] = useState<string | Node>(config.body);
+  const [body, setBody] = useState<string | Node | React.ReactNode>(config.body);
   const [isPinned, setIsPinned] = useState(config.isPinned);
   const [isLocked, setIsLocked] = useState(() => getPopupLockedState(config.popupId));
   const onPanelRefCalled = useRef(false);
@@ -162,8 +97,10 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       <div ref={setContainerRef}>
         {typeof body === 'string' ? (
           <div dangerouslySetInnerHTML={{ __html: body }} />
-        ) : (
+        ) : body instanceof Node ? (
           <BodyNodeRenderer node={body} />
+        ) : (
+          body
         )}
       </div>
     </DockablePopupWrapper>

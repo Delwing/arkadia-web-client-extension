@@ -17,6 +17,7 @@
  * - Provides a controlled interface for plugin capabilities
  * - Makes it easier to maintain backward compatibility
  */
+import type React from 'react';
 import type Client from "./Client";
 import type { CommandHookCallback } from "./Client";
 import type {ClientEvents} from "@shared/events";
@@ -92,7 +93,7 @@ import {
   unregisterPluginPopup,
   updatePluginPopup,
   type PluginPopupConfig
-} from "@web/layout/pluginPopupRenderer";
+} from "@web/layout/pluginPopupRegistry";
 
 // Re-export filter types for plugin developers
 export type {
@@ -377,9 +378,13 @@ export interface OutputApi {
 }
 
 /**
- * Popup content that can be rendered inside plugin popups
+ * Popup content that can be rendered inside plugin popups.
+ * Can be:
+ * - string: HTML string rendered via dangerouslySetInnerHTML
+ * - Node: DOM node appended to container
+ * - React.ReactNode: React component/element rendered directly
  */
-export type PopupContent = string | Node;
+export type PopupContent = string | Node | React.ReactNode;
 
 /**
  * Handle returned when creating a popup window
