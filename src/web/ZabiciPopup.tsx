@@ -1,53 +1,24 @@
-import React, { useEffect, useState, useRef } from 'react';
-import eventBus from '@modules/core/eventBus';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
-import {
-    getKillData,
-    KillData,
-} from '../client/scripts/kill';
+import { usePopupData } from './hooks/usePopupData';
+import { getKillData, KillData } from '../client/scripts/kill';
 
 const POPUP_ID = 'popup:zabici';
 
 const ZabiciPopup: React.FC = () => {
-    const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
-    const [data, setData] = useState<KillData | null>(null);
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+        openEvent: 'zabici.popup.open',
+    });
     const containerRef = useRef<HTMLDivElement>(null);
     const [showTeam, setShowTeam] = usePopupSetting(POPUP_ID, 'showTeam', false);
 
-    // Load initial data when popup opens
-    useEffect(() => {
-        if (isOpen) {
-            setData(getKillData());
-        }
-    }, [isOpen]);
-
-    // Listen for data updates
-    useEffect(() => {
-        const handleUpdate = (newData: KillData) => {
-            setData(newData);
-        };
-
-        eventBus.on('zabici.updated', handleUpdate);
-
-        return () => {
-            eventBus.off('zabici.updated', handleUpdate);
-        };
-    }, []);
-
-    // Listen for open event
-    useEffect(() => {
-        const handleOpen = () => {
-            setIsOpen(true);
-        };
-
-        eventBus.on('zabici.popup.open', handleOpen);
-
-        return () => {
-            eventBus.off('zabici.popup.open', handleOpen);
-        };
-    }, [setIsOpen]);
+    // Data management with automatic event subscription
+    const { data } = usePopupData<KillData | null>(isOpen, {
+        getInitialData: useCallback(() => getKillData(), []),
+        updateEvent: 'zabici.updated',
+    });
 
     // Scroll to bottom when data changes
     useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { usePopupData } from './hooks/usePopupData';
 import type { WalkerState } from '@shared/events/clientEvents';
 
 const POPUP_ID = 'popup:walker';
@@ -16,35 +17,16 @@ const defaultState: WalkerState = {
 };
 
 const WalkerPopup: React.FC = () => {
-    const { wrapperProps, setIsOpen} = usePopup(POPUP_ID);
-    const [state, setState] = useState<WalkerState>(defaultState);
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+        openEvent: 'walker.popup.open',
+    });
     const [delayInput, setDelayInput] = useState('1.00');
 
-    // Listen for state updates
-    useEffect(() => {
-        const handleUpdate = (newState: WalkerState) => {
-            setState(newState);
-        };
-
-        eventBus.on('walker.update', handleUpdate);
-
-        return () => {
-            eventBus.off('walker.update', handleUpdate);
-        };
-    }, []);
-
-    // Listen for open event
-    useEffect(() => {
-        const handleOpen = () => {
-            setIsOpen(true);
-        };
-
-        eventBus.on('walker.popup.open', handleOpen);
-
-        return () => {
-            eventBus.off('walker.popup.open', handleOpen);
-        };
-    }, [setIsOpen]);
+    // State management with automatic event subscription
+    const { data: state } = usePopupData<WalkerState>(isOpen, {
+        getInitialData: useCallback(() => defaultState, []),
+        updateEvent: 'walker.update',
+    });
 
     // Sync delay input with state
     useEffect(() => {

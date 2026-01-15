@@ -425,55 +425,55 @@ export function DockablePopupWrapper({
   };
 
   const positionClassName = position
-    ? 'plugin-window--floating'
-    : 'plugin-window--center';
+    ? 'floating-window--floating plugin-window--floating'
+    : 'floating-window--center plugin-window--center';
 
   return (
-    <div className="plugin-window-container">
+    <div className="window-container plugin-window-container">
       <div
         ref={panelRef}
-        className={`plugin-window ${positionClassName}${isAutoHeight ? ' plugin-window--auto-height' : ''}${isLocked ? ' plugin-window--locked' : ''} ${className}`}
+        className={`floating-window plugin-window ${positionClassName}${isAutoHeight ? ' plugin-window--auto-height' : ''}${isLocked ? ' plugin-window--locked' : ''} ${className}`}
         style={positionStyle}
         tabIndex={-1}
       >
-        <div className="plugin-window-inner">
+        <div className="floating-window__inner plugin-window-inner">
           <div
-            className={`plugin-window-header${isLocked ? ' plugin-window-header--locked' : ''}`}
+            className={`window-header plugin-window-header${isLocked ? ' window-header--locked plugin-window-header--locked' : ''}`}
             onPointerDown={handlePointerDown}
           >
-            <h5 className="plugin-window-title">{title}</h5>
+            <h5 className="window-header__title plugin-window-title">{title}</h5>
             <div
-              className="window-header-actions"
+              className="window-header__actions window-header-actions"
               onPointerDown={(e) => e.stopPropagation()}
             >
               {headerActions}
               <button
                 type="button"
-                className="window-reset-button"
+                className="panel-button panel-button--reset window-reset-button"
                 onClick={handleResetClick}
                 title="Przywroc domyslna pozycje i rozmiar"
               />
               <button
                 type="button"
-                className={`window-lock-button${isLocked ? ' window-lock-button--active' : ''}`}
+                className={`panel-button panel-button--lock window-lock-button${isLocked ? ' is-active window-lock-button--active' : ''}`}
                 onClick={toggleLocked}
                 title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
               />
               <button
                 type="button"
-                className={`window-pin-button${isPinned ? ' window-pin-button--active' : ''}`}
+                className={`panel-button panel-button--pin window-pin-button${isPinned ? ' is-active window-pin-button--active' : ''}`}
                 onClick={togglePinned}
                 title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
               />
-              <button type="button" className="btn-close" onClick={onClose} />
+              <button type="button" className="panel-button panel-button--close btn-close" onClick={onClose} />
             </div>
           </div>
-          <div className={`plugin-window-body ${bodyClassName}`}>
+          <div className={`window-body plugin-window-body ${bodyClassName}`}>
             {children}
           </div>
           {!isLocked && (
             <div
-              className="plugin-window-resize-handle"
+              className="resize-handle plugin-window-resize-handle"
               onPointerDown={handleResizePointerDown}
               title="Drag to resize"
             />
