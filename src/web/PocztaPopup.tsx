@@ -65,6 +65,9 @@ const PocztaPopup: React.FC = () => {
     }, [activeTab]);
 
     const handleReadLetter = useCallback((number: number) => {
+        setMails(prev => prev.map(mail =>
+            mail.number === number ? { ...mail, isRead: true } : mail
+        ));
         eventBus.emit('poczta.read', { number });
     }, []);
 
@@ -120,10 +123,12 @@ const PocztaPopup: React.FC = () => {
                 <div className="poczta-empty">Brak listow.</div>
             ) : (
                 <div className="poczta-list">
-                    {[...mails].reverse().map((mail) => (
+                    {[...mails].reverse().map((mail) => {
+                        const isOutgoing = activeTab === 'wyslane' || activeTab === 'niewyslane';
+                        return (
                         <div
                             key={mail.number}
-                            className={`poczta-item${mail.isRead ? ' poczta-item--read' : ''}`}
+                            className={`poczta-item${mail.isRead && !isOutgoing ? ' poczta-item--read' : ''}`}
                             onClick={() => handleReadLetter(mail.number)}
                         >
                             <span className="poczta-item-number">{mail.number}.</span>
@@ -131,7 +136,8 @@ const PocztaPopup: React.FC = () => {
                             <span className="poczta-item-sender">{mail.sender}</span>
                             <span className="poczta-item-date">{mail.date}</span>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </DockablePopupWrapper>
