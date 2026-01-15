@@ -35,7 +35,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let letterBodyLines: string[] = [];
 
     const headerPattern = /^Listy (nieprzeczytane|odebrane|wyslane|niewyslane)(?: \(prezentowane jest pierwsz[eay] \d+\))?:$/;
-    const entryPattern = /^\s*(\d+)\. (\*R\* )?Temat: (.+)$/;
+    const entryPattern = /^\s*(\d+)\.\s+(?:(\*R\*)\s+)?Temat: (.+)$/;
     const senderPattern = /^Nadawca: (.+?)(?:\s{2,}(.+))?$/;
     const recipientPattern = /^Odbiorc[ay]: (.+?)(?:\s{2,}(.+))?$/;
     const emptyPattern = /^Nie masz zadnych (nieprzeczytanych |odebranych |wyslanych |niewyslanych )?listow\.$/;
