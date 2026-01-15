@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import eventBus from '@modules/core/eventBus';
-import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { usePopup } from './hooks/usePopup';
-import { usePopupSetting } from './hooks/usePopupSetting';
-import { gmcp } from '@client/gmcp';
-import type { MailEntry, MailType } from '@client/scripts/poczta';
+import {DockablePopupWrapper} from './layout/components/DockablePopupWrapper';
+import {usePopup} from './hooks/usePopup';
+import {usePopupSetting} from './hooks/usePopupSetting';
+import {gmcp} from '@client/gmcp';
+import type {MailEntry, MailType} from '@client/scripts/poczta';
 
 const POPUP_ID = 'popup:poczta';
 
@@ -12,21 +12,22 @@ const PocztaPopup: React.FC = () => {
     const [mails, setMails] = useState<MailEntry[]>([]);
     const [activeTab, setActiveTab] = usePopupSetting<MailType>(POPUP_ID, 'activeTab', 'nieprzeczytane');
     const [isLoading, setIsLoading] = useState(false);
-    const pendingFetchRef = useRef<MailType | null>(null);
+    const [hasFetched, setHasFetched] = useState(false);
 
-    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
+    const {wrapperProps} = usePopup(POPUP_ID, {
         openEvent: 'poczta.popup.open',
     });
 
+    const isConnected = Boolean(gmcp.char?.info);
+
     const fetchMails = useCallback((type: MailType) => {
         if (!gmcp.char?.info) {
-            pendingFetchRef.current = type;
-            setIsLoading(true);
             return;
         }
         setIsLoading(true);
         setMails([]);
-        eventBus.emit('poczta.fetch', { type });
+        setHasFetched(true);
+        eventBus.emit('poczta.fetch', {type});
     }, []);
 
     const handleTabChange = useCallback((type: MailType) => {
@@ -34,24 +35,9 @@ const PocztaPopup: React.FC = () => {
         fetchMails(type);
     }, [setActiveTab, fetchMails]);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchMails(activeTab);
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        const handleCharInfo = () => {
-            if (pendingFetchRef.current && isOpen) {
-                const type = pendingFetchRef.current;
-                pendingFetchRef.current = null;
-                setMails([]);
-                eventBus.emit('poczta.fetch', { type });
-            }
-        };
-
-        return eventBus.on('gmcp.char.info', handleCharInfo);
-    }, [isOpen]);
+    const handleRefresh = useCallback(() => {
+        fetchMails(activeTab);
+    }, [fetchMails, activeTab]);
 
     useEffect(() => {
         const handleLoaded = (data: { type: MailType; mails: MailEntry[] }) => {
@@ -66,9 +52,9 @@ const PocztaPopup: React.FC = () => {
 
     const handleReadLetter = useCallback((number: number) => {
         setMails(prev => prev.map(mail =>
-            mail.number === number ? { ...mail, isRead: true } : mail
+            mail.number === number ? {...mail, isRead: true} : mail
         ));
-        eventBus.emit('poczta.read', { number });
+        eventBus.emit('poczta.read', {number});
     }, []);
 
     const headerActions = (
@@ -101,6 +87,15 @@ const PocztaPopup: React.FC = () => {
             >
                 Niewyslane
             </button>
+            <button
+                type="button"
+                className="poczta-tab-btn poczta-refresh-btn"
+                onClick={handleRefresh}
+                disabled={!isConnected || isLoading}
+                title="Odswiez"
+            >
+                &#8635;
+            </button>
         </div>
     );
 
@@ -117,25 +112,28 @@ const PocztaPopup: React.FC = () => {
             bodyClassName="poczta-window-body"
             headerActions={headerActions}
         >
-            {isLoading ? (
+            {!isConnected ? (
+                <div className="poczta-empty">Nie polaczono.</div>
+            ) : isLoading ? (
                 <div className="poczta-loading">Ladowanie...</div>
             ) : mails.length === 0 ? (
-                <div className="poczta-empty">Brak listow.</div>
+                <div
+                    className="poczta-empty">{hasFetched ? 'Brak listow.' : 'Kliknij \u21BB aby zaladowac listy.'}</div>
             ) : (
                 <div className="poczta-list">
                     {[...mails].reverse().map((mail) => {
                         const isOutgoing = activeTab === 'wyslane' || activeTab === 'niewyslane';
                         return (
-                        <div
-                            key={mail.number}
-                            className={`poczta-item${mail.isRead && !isOutgoing ? ' poczta-item--read' : ''}`}
-                            onClick={() => handleReadLetter(mail.number)}
-                        >
-                            <span className="poczta-item-number">{mail.number}.</span>
-                            <span className="poczta-item-subject">{mail.subject}</span>
-                            <span className="poczta-item-sender">{mail.sender}</span>
-                            <span className="poczta-item-date">{mail.date}</span>
-                        </div>
+                            <div
+                                key={mail.number}
+                                className={`poczta-item${mail.isRead && !isOutgoing ? ' poczta-item--read' : ''}`}
+                                onClick={() => handleReadLetter(mail.number)}
+                            >
+                                <span className="poczta-item-number">{mail.number}.</span>
+                                <span className="poczta-item-subject">{mail.subject}</span>
+                                <span className="poczta-item-sender">{mail.sender}</span>
+                                <span className="poczta-item-date">{mail.date}</span>
+                            </div>
                         );
                     })}
                 </div>

@@ -33,6 +33,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let isReadingLetter = false;
     let currentLetter: Partial<LetterContent> | null = null;
     let letterBodyLines: string[] = [];
+    let lastHeaderField: 'from' | 'subject' | 'to' | 'cc' | 'date' | null = null;
 
     const headerPattern = /^Listy (nieprzeczytane|odebrane|wyslane|niewyslane)(?: \(prezentowane jest pierwsz[eay] \d+\))?:$/;
     const entryPattern = /^\s*(\d+)\.\s+(?:(\*R\*)\s+)?Temat: (.+)$/;
@@ -46,7 +47,8 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     const letterToPattern = /^Do\s*: ?(.*)$/;
     const letterCcPattern = /^DW\s*: ?(.+)$/;
     const letterDatePattern = /^Data\s*: ?(.+)$/;
-    const letterEndPattern = /^\[[\d\-]+ [^\]]+\] \(aktualny: \d+\) --$/;
+    const letterEndPattern = /^\[[\d\-]+ [^\]]+] \(aktualny: \d+\) --$/;
+    const letterContinuationPattern = /^\s{2,}(.+)$/;
 
     const finishCapturing = () => {
         if (pendingEntry && pendingEntry.number !== undefined) {
@@ -79,6 +81,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         isReadingLetter = false;
         currentLetter = null;
         letterBodyLines = [];
+        lastHeaderField = null;
     };
 
     client.Triggers.registerTrigger(headerPattern, (line, matches) => {
@@ -158,6 +161,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             cc: '',
         };
         letterBodyLines = [];
+        lastHeaderField = null;
         return null;
     }, tag);
 
@@ -165,6 +169,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter || !currentLetter) return line;
 
         currentLetter.from = matches[1].trim();
+        lastHeaderField = 'from';
         return null;
     }, tag);
 
@@ -172,6 +177,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter || !currentLetter) return line;
 
         currentLetter.subject = matches[1].trim();
+        lastHeaderField = 'subject';
         return null;
     }, tag);
 
@@ -179,6 +185,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter || !currentLetter) return line;
 
         currentLetter.to = matches[1].trim();
+        lastHeaderField = 'to';
         return null;
     }, tag);
 
@@ -186,6 +193,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter || !currentLetter) return line;
 
         currentLetter.cc = matches[1].trim();
+        lastHeaderField = 'cc';
         return null;
     }, tag);
 
@@ -193,6 +201,25 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter || !currentLetter) return line;
 
         currentLetter.date = matches[1].trim();
+        lastHeaderField = 'date';
+        return null;
+    }, tag);
+
+    client.Triggers.registerTrigger(letterContinuationPattern, (line, matches) => {
+        if (!isReadingLetter || !currentLetter || !lastHeaderField) return line;
+        // Only handle continuation during header parsing (before date is fully set or for fields before date)
+        if (currentLetter.date && lastHeaderField === 'date') return line;
+
+        const continuation = matches[1].trim();
+        if (lastHeaderField === 'to') {
+            currentLetter.to = (currentLetter.to || '') + ' ' + continuation;
+        } else if (lastHeaderField === 'cc') {
+            currentLetter.cc = (currentLetter.cc || '') + ' ' + continuation;
+        } else if (lastHeaderField === 'from') {
+            currentLetter.from = (currentLetter.from || '') + ' ' + continuation;
+        } else if (lastHeaderField === 'subject') {
+            currentLetter.subject = (currentLetter.subject || '') + ' ' + continuation;
+        }
         return null;
     }, tag);
 

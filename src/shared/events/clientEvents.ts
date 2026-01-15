@@ -8,6 +8,7 @@ import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
+import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -242,6 +243,11 @@ export interface KnownEvents {
     "layoutManagerStateChanged": { type?: 'import' } | void;
     "walker.popup.open": void;
     "walker.update": WalkerState;
+    "poczta.popup.open": void;
+    "poczta.fetch": { type: MailType };
+    "poczta.loaded": { type: MailType; mails: MailEntry[] };
+    "poczta.read": { number: number };
+    "poczta.letter.loaded": LetterContent;
     "walker.stop": void;
     "walker.resume": void;
     "walker.setDelay": number;
