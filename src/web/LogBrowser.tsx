@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import storage from "@modules/core/storage";
+import type { LogsExportWorkerResponse } from "./logsExport.shared";
+import LogsExportWorker from "./logsExport.worker?worker";
 
 interface LogEntry {
   text: string;
@@ -357,8 +359,11 @@ export function LogBrowser() {
   const [activeResultIndex, setActiveResultIndex] = useState(-1);
   const [highlightedIndices, setHighlightedIndices] = useState<Set<number>>(new Set());
   const [pendingScrollTarget, setPendingScrollTarget] = useState<SearchResult | null>(null);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number; sessionName: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const dbRef = useRef<IDBDatabase | null>(null);
+  const exportWorkerRef = useRef<Worker | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const searchRequestIdRef = useRef(0);
 
@@ -706,6 +711,80 @@ export function LogBrowser() {
     };
   }, [currentSession]);
 
+  // Download all logs as ZIP
+  const handleDownloadAll = useCallback(() => {
+    if (isExporting) return;
+
+    // Collect inline styles from current page
+    const inlineStyles: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        const rules = Array.from(sheet.cssRules);
+        inlineStyles.push(rules.map(r => r.cssText).join("\n"));
+      } catch {
+        // Skip cross-origin stylesheets
+      }
+    }
+
+    setIsExporting(true);
+    setExportProgress(null);
+
+    // Terminate existing worker if any
+    if (exportWorkerRef.current) {
+      exportWorkerRef.current.terminate();
+    }
+
+    const worker = new LogsExportWorker();
+    exportWorkerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<LogsExportWorkerResponse>) => {
+      const { data } = event;
+
+      if (data.type === "progress") {
+        setExportProgress({
+          current: data.current,
+          total: data.total,
+          sessionName: data.sessionName,
+        });
+      } else if (data.type === "success") {
+        setIsExporting(false);
+        setExportProgress(null);
+
+        const url = URL.createObjectURL(data.blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `logi_${new Date().toISOString().slice(0, 10)}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        worker.terminate();
+        exportWorkerRef.current = null;
+      } else if (data.type === "error") {
+        setIsExporting(false);
+        setExportProgress(null);
+        console.error("[LogsExport]", data.message);
+        alert(data.message);
+
+        worker.terminate();
+        exportWorkerRef.current = null;
+      }
+    };
+
+    worker.onerror = (error) => {
+      setIsExporting(false);
+      setExportProgress(null);
+      console.error("[LogsExport] Worker error:", error);
+
+      worker.terminate();
+      exportWorkerRef.current = null;
+    };
+
+    worker.postMessage({
+      type: "export",
+      inlineStyles: inlineStyles.join("\n"),
+    });
+  }, [isExporting]);
+
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -763,6 +842,21 @@ export function LogBrowser() {
           onClick={handleDownload}
         >
           Pobierz
+        </button>
+        <button
+          id="logs-download-all"
+          className="btn btn-secondary"
+          style={{ whiteSpace: "nowrap", position: "relative" }}
+          onClick={handleDownloadAll}
+          disabled={isExporting || sessions.length === 0}
+          title="Pobierz wszystkie logi jako ZIP"
+        >
+          <span style={{ visibility: isExporting ? "hidden" : "visible" }}>Pobierz wszystkie</span>
+          {isExporting && exportProgress && (
+            <span style={{ position: "absolute", left: 0, right: 0, textAlign: "center" }}>
+              {exportProgress.current}/{exportProgress.total}
+            </span>
+          )}
         </button>
       </div>
 

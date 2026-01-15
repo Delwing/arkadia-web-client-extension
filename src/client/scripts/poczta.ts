@@ -240,7 +240,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     aliases.push({
         pattern: /^\/poczta$/,
         callback: () => {
-            eventBus.emit("poczta.popup.open", {});
+            eventBus.emit("poczta.popup.open");
         },
     });
 
