@@ -18,6 +18,8 @@ import SkrotyPopup from '../SkrotyPopup';
 import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
 import ObjectListDemoPopup from '../ObjectListDemoPopup';
 import WalkerPopup from '../WalkerPopup';
+import PocztaPopup from '../PocztaPopup';
+import LetterViewPopup from '../LetterViewPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -71,6 +73,8 @@ export function LayoutManagerWrapper({
       <PeopleBrowser />
       <ObjectListDemoPopup />
       <WalkerPopup />
+      <PocztaPopup />
+      <LetterViewPopup />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />
       {/* Portal container for plugin popups (legacy fallback) */}

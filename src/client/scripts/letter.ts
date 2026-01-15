@@ -336,12 +336,31 @@ class Parchment3Template extends BaseLetterTemplate {
     }
 }
 
+class RawTemplate implements LetterTemplateRenderer {
+    createHeader(): string[] {
+        return [];
+    }
+
+    createFooter(): string[] {
+        return [];
+    }
+
+    getBodyWidth(): number {
+        return Infinity;
+    }
+
+    formatLine(line: string): string {
+        return line;
+    }
+}
+
 const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
     none: new NoneTemplate(),
     plain: new PlainTemplate(),
     parchment: new ParchmentTemplate(),
     parchment2: new Parchment2Template(),
     parchment3: new Parchment3Template(),
+    raw: new RawTemplate(),
 };
 
 function applyTemplate(lines: string[], width: number, renderer: LetterTemplateRenderer) {
@@ -355,7 +374,10 @@ function applyTemplate(lines: string[], width: number, renderer: LetterTemplateR
 function renderLetter(content: string, template: LetterTemplate) {
     const renderer = TEMPLATE_RENDERERS[template];
     const bodyWidth = renderer.getBodyWidth(lineWidth);
-    const baseLines = formatContent(content, bodyWidth);
+    // For "raw" template, preserve whitespace exactly as-is
+    const baseLines = template === "raw"
+        ? content.split(/\r?\n/)
+        : formatContent(content, bodyWidth);
     const lines = applyTemplate(baseLines, bodyWidth, renderer);
     const hasContent = baseLines.some(line => line.length > 0);
     return {lines, hasContent};

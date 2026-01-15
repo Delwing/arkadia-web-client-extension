@@ -153,12 +153,25 @@ const LetterComposer: React.FC = () => {
 
     // Listen for open event
     useEffect(() => {
-        const handleOpen = () => {
+        const handleOpen = (payload?: { to?: string; cc?: string; subject?: string; content?: string }) => {
             const savedTemplate = loadTemplateSelection();
             setTemplateSelection(savedTemplate);
             resetForm();
             setIsOpen(true);
             requestAnimationFrame(() => {
+                if (payload?.to && toInputRef.current) {
+                    toInputRef.current.value = payload.to;
+                }
+                if (payload?.cc && ccInputRef.current) {
+                    ccInputRef.current.value = payload.cc;
+                }
+                if (payload?.subject && subjectInputRef.current) {
+                    subjectInputRef.current.value = payload.subject;
+                }
+                if (payload?.content && contentInputRef.current) {
+                    contentInputRef.current.value = payload.content;
+                    setContentText(payload.content);
+                }
                 toInputRef.current?.focus();
             });
         };

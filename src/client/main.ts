@@ -109,6 +109,7 @@ import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
 import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
+import initPoczta from './scripts/poczta'
 import initLanguageTeacher from './scripts/languageTeacher'
 import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
@@ -256,6 +257,7 @@ export function registerScripts(client: Client) {
     initSunCalendarLogger(client)
     initWyroznienieOptions(client)
     initContracts(client, aliases)
+    initPoczta(client, aliases)
     initLanguageTeacher(client)
     initProfession(client, aliases)
     initIntroduced(client, aliases)

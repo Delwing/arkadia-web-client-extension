@@ -440,6 +440,12 @@ outputWrapper.addEventListener('contextmenu', event => {
                 eventBus.emit('zabici.popup.open');
             },
         },
+        {
+            label: 'Poczta',
+            action: () => {
+                eventBus.emit('poczta.popup.open');
+            },
+        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

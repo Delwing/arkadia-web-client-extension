@@ -1,4 +1,4 @@
-export const LETTER_TEMPLATES = ["none", "plain", "parchment", "parchment2", "parchment3"] as const;
+export const LETTER_TEMPLATES = ["none", "plain", "parchment", "parchment2", "parchment3", "raw"] as const;
 
 export type LetterTemplate = (typeof LETTER_TEMPLATES)[number];
 
@@ -38,6 +38,12 @@ const LETTER_TEMPLATE_DEFINITION_MAP: Record<LetterTemplate, LetterTemplateDefin
         value: "parchment3",
         displayLabel: "Pergamin III",
         previewLabel: "pergamin 3",
+        supportsJustification: true,
+    },
+    raw: {
+        value: "raw",
+        displayLabel: "Bez formatowania",
+        previewLabel: "bez formatowania",
         supportsJustification: true,
     },
 };
