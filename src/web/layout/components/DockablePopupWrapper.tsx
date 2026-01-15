@@ -121,10 +121,20 @@ export function DockablePopupWrapper({
 
   // State for non-layout-mode rendering
   const panelRef = useRef<HTMLDivElement>(null);
-  // Initialize position/size from persisted state if available
+  // Initialize position/size from persisted state if available, or compute initial position
   const [position, setPosition] = useState<Position | null>(() => {
     const saved = getPopupFloatingState(popupId);
     if (saved) return { left: saved.x, top: saved.y };
+    // For popups with initialWidth, compute centered position immediately to avoid CSS centering mode
+    if (initialWidth !== undefined) {
+      const margin = 32;
+      const effectiveWidth = Math.min(initialWidth, window.innerWidth - margin);
+      const left = Math.max(16, (window.innerWidth - effectiveWidth) / 2);
+      const top = initialHeight !== undefined
+        ? Math.max(16, (window.innerHeight - initialHeight) / 2)
+        : Math.max(16, window.innerHeight * 0.1);
+      return { left, top };
+    }
     return null;
   });
   const [size, setSize] = useState<Size | null>(() => {
@@ -368,7 +378,14 @@ export function DockablePopupWrapper({
       };
 
       setPosition((prev) => prev ?? { left: rect.left, top: rect.top });
-      setSize((prev) => prev ?? { width: rect.width, height: rect.height });
+      // For auto-height popups, capture the current rendered height when starting resize
+      // Preserve the state width to avoid unexpected width changes
+      setSize((prev) => {
+        if (!prev) return { width: rect.width, height: rect.height };
+        // If height was undefined (auto-height), capture the rendered height
+        // Keep the state width to avoid shrinking due to CSS constraints
+        return { width: prev.width, height: prev.height ?? rect.height };
+      });
 
       window.addEventListener('pointermove', handleResizePointerMove);
       window.addEventListener('pointerup', endResizePointerDrag);

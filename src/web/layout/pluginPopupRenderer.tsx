@@ -22,6 +22,13 @@ function getInitialPopupWidth(): number {
   return Math.min(700, Math.max(350, Math.floor(viewportWidth * 0.5)));
 }
 
+// Compute viewport-aware initial height for plugin popups
+function getInitialPopupHeight(): number {
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+  // Use 40% of viewport height, clamped between 250 and 500
+  return Math.min(500, Math.max(250, Math.floor(viewportHeight * 0.4)));
+}
+
 /**
  * Individual plugin popup component that wraps DockablePopupWrapper.
  */
@@ -30,9 +37,11 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   const [body, setBody] = useState<string | Node | React.ReactNode>(config.body);
   const [isPinned, setIsPinned] = useState(config.isPinned);
   const [isLocked, setIsLocked] = useState(() => getPopupLockedState(config.popupId));
+  const [resetCounter, setResetCounter] = useState(0);
   const onPanelRefCalled = useRef(false);
-  // Compute initial width once on mount
+  // Compute initial dimensions once on mount
   const [initialWidth] = useState(getInitialPopupWidth);
+  const [initialHeight] = useState(getInitialPopupHeight);
 
   // Store callbacks in refs to avoid stale closures and dependency issues
   const onCloseRef = useRef(config.onClose);
@@ -69,6 +78,10 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
     onCloseRef.current();
   }, []);
 
+  const handleReset = useCallback(() => {
+    setResetCounter((c) => c + 1);
+  }, []);
+
   // Report panel ref to parent using callback ref - only call once when first mounted
   const setContainerRef = useCallback((el: HTMLDivElement | null) => {
     if (el && !onPanelRefCalled.current) {
@@ -88,9 +101,12 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       onClose={handleClose}
       onPinnedChange={handlePinnedChange}
       onLockedChange={handleLockedChange}
+      onReset={handleReset}
+      resetCounter={resetCounter}
       minWidth={300}
       minHeight={150}
       initialWidth={initialWidth}
+      initialHeight={initialHeight}
       className="plugin-window"
       bodyClassName="plugin-window-body"
     >
