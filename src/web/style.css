@@ -225,46 +225,6 @@ body {
   border-bottom-right-radius: 0.5rem;
 }
 
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
-  background:
-    linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.2) 10%,
-      transparent 10%,
-      transparent 100%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 0%,
-      transparent 28%,
-      rgba(255, 255, 255, 0.2) 28%,
-      rgba(255, 255, 255, 0.2) 38%,
-      transparent 38%,
-      transparent 100%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 0%,
-      transparent 56%,
-      rgba(255, 255, 255, 0.2) 56%,
-      rgba(255, 255, 255, 0.2) 66%,
-      transparent 66%,
-      transparent 100%
-    );
-  border-radius: 0 0 2px 0;
-  opacity: 0.5;
-}
-
-.resize-handle:hover::after {
-  opacity: 1;
-}
 
 /* Overlay for modal backdrops */
 .window-overlay {
