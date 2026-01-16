@@ -232,7 +232,7 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                     resolve(token);
                 };
                 try {
-                    client.requestAccessToken({ prompt: promptType });
+                    client.requestAccessToken({ prompt: promptType as "" | "consent" });
                 } catch (err) {
                     reject(err instanceof Error ? err : new Error("Nie udalo sie uzyskac tokenu Google Drive."));
                 }

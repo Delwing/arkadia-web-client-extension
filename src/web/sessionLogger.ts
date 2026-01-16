@@ -134,6 +134,7 @@ export default async function initSessionLogger(client: SessionClient) {
   // but we still want them in the session logs
   eventBus.on('combat.newMessage', async (entry: CombatEntry) => {
     if (!loggingEnabled) return;
+    if (entry.type === 'separator') return;
     const htmlText = entry.buffer.toHtml();
     const currentDb = await ensureDb();
     if (currentDb) {

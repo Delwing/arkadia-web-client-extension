@@ -433,7 +433,7 @@ export async function checkCategoryConflict(
 // Check for conflicts on multiple categories using single collection read
 export async function checkCategoriesConflicts(
     categoryData: Partial<Record<SyncCategory, string>>,
-    passphrase?: string
+    _passphrase?: string
 ): Promise<{
     conflicts: CategoryConflictInfo[];
     errors: Partial<Record<SyncCategory, string>>;

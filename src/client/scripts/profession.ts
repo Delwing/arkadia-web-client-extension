@@ -89,10 +89,6 @@ function showPercentage(client: Client): void {
     );
 }
 
-function resetProfession(client: Client): void {
-    initTraining(client, 0);
-}
-
 export default function initProfession(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
