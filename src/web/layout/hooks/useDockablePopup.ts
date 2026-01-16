@@ -63,6 +63,7 @@ export function useDockablePopup({
   const removePopupFromDock = layoutContext?.removePopupFromDock;
   const findFloatingPanel = layoutContext?.findFloatingPanel;
   const findPanelDock = layoutContext?.findPanelDock;
+  const dockPopup = layoutContext?.dockPopup;
 
   // Track if we've added to floating panels for this open session
   const addedToFloatingRef = useRef(false);
@@ -168,13 +169,14 @@ export function useDockablePopup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isLocked, isManagedByLayout, popupId]);
 
-  // Clear persistOpen when popup closes while not pinned
+  // Clear persistOpen and isDocked when popup closes while not pinned
   useEffect(() => {
     if (isOpen) return;
 
     // Popup is closing, check if it should persist
     if (isManagedByLayout && !isPinnedRef.current) {
-      updatePopupDockState?.(popupId, { persistOpen: false });
+      // Clear both persistOpen and isDocked so popup doesn't auto-reopen or auto-redock
+      updatePopupDockState?.(popupId, { persistOpen: false, isDocked: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, popupId]);
@@ -189,12 +191,22 @@ export function useDockablePopup({
     const dockedIn = findPanelDock?.(popupId);
     if (dockedIn) return;
 
+    // Get saved state to check if popup should be restored to a dock
+    const savedState = getPopupDockState?.(popupId);
+
+    // If popup was previously docked, restore it to the dock
+    // This handles the case where the popup was removed from docks during page reload cleanup
+    // but should be restored because it was pinned/persisted
+    if (savedState?.isDocked && savedState.dockPosition && dockPopup) {
+      dockPopup(popupId, savedState.dockPosition, savedState.dockOrder ?? 0);
+      return;
+    }
+
     // Check if already in floating panels
     const existing = findFloatingPanel?.(popupId);
     if (existing) return;
 
     // Get saved floating state - only use if user has explicitly modified position/size
-    const savedState = getPopupDockState?.(popupId);
     const savedFloating = savedState?.userModifiedPosition ? savedState.floatingState : null;
     // Use a default width if not specified (for auto-sizing popups)
     const effectiveInitialWidth = initialWidth ?? 500;

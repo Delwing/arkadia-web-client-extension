@@ -4,13 +4,19 @@
  * This ensures plugin popups have proper access to LayoutContext for docking support.
  * Instead of creating separate React roots (which breaks context inheritance),
  * plugin popups register their configs here and this component renders them.
+ *
+ * Design: Registration is separate from opening. When a popup is registered,
+ * this component checks shouldPopupAutoOpen to decide if it should be opened
+ * automatically (for restoring docked/pinned popups on page reload).
  */
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { DockablePopupWrapper } from './components/DockablePopupWrapper';
-import { getPopupLockedState } from './utils/layoutStorage';
+import { getPopupLockedState, shouldPopupAutoOpen } from './utils/layoutStorage';
 import {
+  getOpenPluginPopups,
   getPluginPopups,
+  openPluginPopup,
   subscribeToPluginPopups,
   type PluginPopupConfig,
 } from './pluginPopupRegistry';
@@ -142,19 +148,48 @@ function BodyNodeRenderer({ node }: { node: Node }) {
 /**
  * Component that renders all registered plugin popups.
  * Must be placed inside LayoutProvider to have proper context access.
+ *
+ * This component also handles auto-opening popups that should be restored
+ * (based on persisted docked/pinned state).
  */
 export function PluginPopupRenderer() {
-  const [popups, setPopups] = useState<PluginPopupConfig[]>(() => getPluginPopups());
+  const [openPopups, setOpenPopups] = useState<PluginPopupConfig[]>(() => getOpenPluginPopups());
+  // Track which popups we've already checked for auto-open
+  const checkedPopupsRef = useRef(new Set<string>());
 
   useEffect(() => {
+    // Function to check newly registered popups for auto-open
+    const checkForAutoOpen = () => {
+      const allPopups = getPluginPopups();
+
+      for (const popup of allPopups) {
+        // Skip if we've already checked this popup
+        if (checkedPopupsRef.current.has(popup.popupId)) continue;
+        checkedPopupsRef.current.add(popup.popupId);
+
+        // Check if this popup should be auto-opened (was docked/pinned)
+        if (!popup.isOpen && shouldPopupAutoOpen(popup.popupId)) {
+          // Auto-open the popup
+          openPluginPopup(popup.popupId);
+        }
+      }
+
+      // Update the list of open popups
+      setOpenPopups(getOpenPluginPopups());
+    };
+
+    // Check on mount
+    checkForAutoOpen();
+
+    // Subscribe to registry changes
     return subscribeToPluginPopups(() => {
-      setPopups(getPluginPopups());
+      checkForAutoOpen();
     });
   }, []);
 
   return (
     <>
-      {popups.map(config => (
+      {openPopups.map(config => (
         <PluginPopupItem key={config.popupId} config={config} />
       ))}
     </>

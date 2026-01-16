@@ -913,7 +913,6 @@ export interface ClientEvents {
  * Valid event names from ClientEvents
  */
 
-export // Event system types
 /**
  * Valid event names from ClientEvents
  */

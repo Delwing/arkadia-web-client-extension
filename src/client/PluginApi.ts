@@ -92,6 +92,9 @@ import {
   registerPluginPopup,
   unregisterPluginPopup,
   updatePluginPopup,
+  openPluginPopup,
+  closePluginPopup,
+  getPluginPopup,
   type PluginPopupConfig
 } from "@web/layout/pluginPopupRegistry";
 
@@ -2747,17 +2750,21 @@ export class PluginApiImpl implements PluginApi {
           }
         });
 
+        // For non-persistent popups, unregister completely on close
         unregisterPluginPopup(popupId);
         this.popupHandles.delete(handle);
       };
 
       // Register popup to be rendered by PluginPopupRenderer inside LayoutProvider
+      // Non-persistent popups open immediately (isOpen: true)
       const popupConfig: PluginPopupConfig = {
         popupId,
         popupType,
         title: currentTitle,
+        createContent: () => currentBody,
         body: currentBody,
         isPinned,
+        isOpen: true, // Open immediately for non-persistent popups
         onClose: closePopup,
         onPinnedChange: (pinned) => {
           isPinned = pinned;
@@ -2808,23 +2815,18 @@ export class PluginApiImpl implements PluginApi {
     const popupType = `plugin:${this.pluginId}:${config.id}` as const;
     const popupId = `popup:${popupType}`;
 
-    // Check if popup should be auto-restored (was docked or pinned)
-    const shouldRestore = shouldPopupAutoOpen(popupId);
-
     // Get persisted pinned state from storage (for restoring after reload)
     const persistedPinned = getPopupPinnedState(popupId);
 
     // Internal state tracking
-    let isCurrentlyOpen = false;
     let currentTitle = config.title;
-    let currentBody: PopupContent = '';
     // Restore pinned state from storage, or use config value, or default to false
     let currentPinned = persistedPinned || config.pinned || false;
     let panelRef: HTMLDivElement | null = null;
     const closeCallbacks = new Set<() => void>();
 
+    // Close handler - called when popup is closed (but stays registered)
     const closePopup = () => {
-      isCurrentlyOpen = false;
       closeCallbacks.forEach(callback => {
         try {
           callback();
@@ -2832,45 +2834,43 @@ export class PluginApiImpl implements PluginApi {
           console.error('[PluginApi] Error in popup close callback:', error);
         }
       });
-      unregisterPluginPopup(popupId);
+      closePluginPopup(popupId);
     };
 
-    // Helper to create the actual popup
-    const createActualPopup = async (): Promise<void> => {
-      if (isCurrentlyOpen) return;
-
-      // Call the factory to get content
-      currentBody = await Promise.resolve(config.createContent());
-
-      // Register popup to be rendered by PluginPopupRenderer inside LayoutProvider
-      return new Promise((resolve) => {
-        const popupConfig: PluginPopupConfig = {
-          popupId,
-          popupType,
-          title: currentTitle,
-          body: currentBody,
-          isPinned: currentPinned,
-          onClose: closePopup,
-          onPinnedChange: (pinned) => {
-            currentPinned = pinned;
-          },
-          onPanelRef: (element) => {
-            panelRef = element;
-            if (element) {
-              isCurrentlyOpen = true;
-              resolve();
-            }
-          }
-        };
-
-        registerPluginPopup(popupConfig);
-      });
+    // Open handler - opens the popup (creates content if needed)
+    const openPopup = async (): Promise<void> => {
+      const current = getPluginPopup(popupId);
+      if (current?.isOpen) return;
+      await openPluginPopup(popupId);
     };
+
+    // Register the popup config immediately (but don't open it yet)
+    // The PluginPopupRenderer will check shouldPopupAutoOpen and open it if needed
+    const popupConfig: PluginPopupConfig = {
+      popupId,
+      popupType,
+      title: currentTitle,
+      createContent: config.createContent,
+      isPinned: currentPinned,
+      isOpen: false, // Start closed, PluginPopupRenderer will auto-open if needed
+      onClose: closePopup,
+      onPinnedChange: (pinned) => {
+        currentPinned = pinned;
+      },
+      onPanelRef: (element) => {
+        panelRef = element;
+      }
+    };
+
+    registerPluginPopup(popupConfig);
 
     // Create the persistent handle
     const persistentHandle: PersistentPopupHandle = {
       id: popupId,
-      wasRestored: shouldRestore,
+      // wasRestored will be true if the popup auto-opens (checked by PluginPopupRenderer)
+      get wasRestored(): boolean {
+        return shouldPopupAutoOpen(popupId);
+      },
       get element(): HTMLDivElement {
         if (!panelRef) {
           throw new Error('Popup is not open. Call open() first.');
@@ -2881,40 +2881,29 @@ export class PluginApiImpl implements PluginApi {
         return currentPinned;
       },
       get isOpen(): boolean {
-        return isCurrentlyOpen;
+        const current = getPluginPopup(popupId);
+        return current?.isOpen ?? false;
       },
       setTitle: (value) => {
         currentTitle = value;
-        if (isCurrentlyOpen) {
-          updatePluginPopup(popupId, { title: value });
-        }
+        updatePluginPopup(popupId, { title: value });
       },
       setBody: (content) => {
-        currentBody = content;
-        if (isCurrentlyOpen) {
-          updatePluginPopup(popupId, { body: content });
-        }
+        updatePluginPopup(popupId, { body: content });
       },
       setPinned: (pinned) => {
         currentPinned = pinned;
-        if (isCurrentlyOpen) {
-          updatePluginPopup(popupId, { isPinned: pinned });
-        }
+        updatePluginPopup(popupId, { isPinned: pinned });
       },
       onClose: (callback) => {
         closeCallbacks.add(callback);
       },
       close: closePopup,
-      open: createActualPopup
+      open: openPopup
     };
 
     // Store in our tracking map
     this.persistentPopupHandles.set(config.id, persistentHandle);
-
-    // Auto-restore if needed
-    if (shouldRestore) {
-      await createActualPopup();
-    }
 
     return persistentHandle;
   }

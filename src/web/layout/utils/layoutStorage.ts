@@ -137,8 +137,15 @@ export function shouldPopupAutoOpen(popupId: string): boolean {
     const stored = getCachedLayoutState();
     if (!stored?.enabled) return false;
 
+    const popupState = stored?.popupPanels?.[popupId];
+
     // Check if popup was explicitly marked as persistOpen (pinned)
-    if (stored?.popupPanels?.[popupId]?.persistOpen) {
+    if (popupState?.persistOpen) {
+      return true;
+    }
+
+    // Check if popup was previously docked (isDocked flag persists even if removed from slots during cleanup)
+    if (popupState?.isDocked) {
       return true;
     }
 
