@@ -453,6 +453,13 @@ export interface PersistentPopupConfig {
   createContent: () => PopupContent | Promise<PopupContent>;
 
   /**
+   * Custom actions to display in the popup header (buttons, etc.).
+   * These appear before the built-in lock/pin/close buttons.
+   * Can be a DOM node or React element.
+   */
+  headerActions?: Node | React.ReactNode;
+
+  /**
    * Initial pinned state (default: false).
    * When pinned, popup will be restored on page reload.
    */
@@ -485,6 +492,12 @@ export interface PersistentPopupHandle extends PopupHandle {
    * Calls createContent() to generate fresh content.
    */
   open(): Promise<void>;
+
+  /**
+   * Update the header actions (buttons displayed in popup header)
+   * @param actions - DOM node or React element for header actions
+   */
+  setHeaderActions(actions: Node | React.ReactNode): void;
 }
 
 /**
@@ -2851,6 +2864,7 @@ export class PluginApiImpl implements PluginApi {
       popupType,
       title: currentTitle,
       createContent: config.createContent,
+      headerActions: config.headerActions,
       isPinned: currentPinned,
       isOpen: false, // Start closed, PluginPopupRenderer will auto-open if needed
       onClose: closePopup,
@@ -2894,6 +2908,9 @@ export class PluginApiImpl implements PluginApi {
       setPinned: (pinned) => {
         currentPinned = pinned;
         updatePluginPopup(popupId, { isPinned: pinned });
+      },
+      setHeaderActions: (actions) => {
+        updatePluginPopup(popupId, { headerActions: actions });
       },
       onClose: (callback) => {
         closeCallbacks.add(callback);

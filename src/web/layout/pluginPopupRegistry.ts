@@ -22,6 +22,8 @@ export interface PluginPopupConfig {
   createContent: () => PopupContent | Promise<PopupContent>;
   /** Current content (set after createContent is called) */
   body?: PopupContent;
+  /** Custom actions to display in the popup header (buttons, etc.) */
+  headerActions?: Node | React.ReactNode;
   isPinned: boolean;
   /** Whether the popup is currently open */
   isOpen: boolean;

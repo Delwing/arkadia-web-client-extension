@@ -41,6 +41,7 @@ function getInitialPopupHeight(): number {
 function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   const [title, setTitle] = useState(config.title);
   const [body, setBody] = useState<string | Node | React.ReactNode>(config.body);
+  const [headerActions, setHeaderActions] = useState<Node | React.ReactNode>(config.headerActions);
   const [isPinned, setIsPinned] = useState(config.isPinned);
   const [isLocked, setIsLocked] = useState(() => getPopupLockedState(config.popupId));
   const [resetCounter, setResetCounter] = useState(0);
@@ -67,8 +68,9 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   useEffect(() => {
     setTitle(config.title);
     setBody(config.body);
+    setHeaderActions(config.headerActions);
     setIsPinned(config.isPinned);
-  }, [config.title, config.body, config.isPinned]);
+  }, [config.title, config.body, config.headerActions, config.isPinned]);
 
   const handlePinnedChange = useCallback((pinned: boolean) => {
     setIsPinned(pinned);
@@ -115,12 +117,13 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       initialHeight={initialHeight}
       className="plugin-window"
       bodyClassName="plugin-window-body"
+      headerActions={headerActions instanceof Node ? <NodeRenderer node={headerActions} /> : headerActions}
     >
       <div ref={setContainerRef}>
         {typeof body === 'string' ? (
           <div dangerouslySetInnerHTML={{ __html: body }} />
         ) : body instanceof Node ? (
-          <BodyNodeRenderer node={body} />
+          <NodeRenderer node={body} />
         ) : (
           body
         )}
@@ -132,7 +135,7 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
 /**
  * Renders a DOM Node as React content.
  */
-function BodyNodeRenderer({ node }: { node: Node }) {
+function NodeRenderer({ node }: { node: Node }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
