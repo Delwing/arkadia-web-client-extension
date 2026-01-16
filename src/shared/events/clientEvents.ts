@@ -121,6 +121,7 @@ export interface KnownEvents {
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLocationLabel": string;
     "requestMapLocationLabel": void;
+    "requestMapHighlights": void;
     "notify": NotificationPayload;
     "lampTimer": number | null;
     "coverTimer": number | null;

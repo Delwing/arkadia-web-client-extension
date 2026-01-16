@@ -200,6 +200,8 @@ export class EmbeddedMap {
             this.currentHighlights = data;
             this.refresh();
         });
+        // Request current highlights in case highlighters were created before map loaded
+        eventBus.emit('requestMapHighlights');
 
         eventBus.on('map.centerOn', (data: { roomId: number }) => {
             const targetRoom = this.reader.getRoom(data.roomId);

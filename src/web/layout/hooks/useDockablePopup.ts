@@ -152,12 +152,10 @@ export function useDockablePopup({
 
   // Update persistOpen when pinned state changes in layout mode
   useEffect(() => {
-    if (!isManagedByLayout) return;
+    if (!isManagedByLayout || !isOpen) return;
 
-    if (isOpen && isPinned) {
-      // Popup is pinned, persist it for reload
-      updatePopupDockState?.(popupId, { persistOpen: true });
-    }
+    // Persist pinned state for reload (both true and false)
+    updatePopupDockState?.(popupId, { persistOpen: isPinned });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isPinned, isManagedByLayout, popupId]);
 
@@ -303,13 +301,14 @@ export function useDockablePopup({
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
 
-    // Check if popup is docked - docked popups shouldn't close on outside click
-    const dockedIn = findPanelDock?.(popupId);
-    if (dockedIn) return;
-
     const handlePointerDown = (event: PointerEvent) => {
       // Don't close if pinned
       if (isPinnedRef.current) return;
+
+      // Check if popup is docked - docked popups shouldn't close on outside click
+      // This check is inside the handler to handle dynamic dock state changes
+      const dockedIn = findPanelDock?.(popupId);
+      if (dockedIn) return;
 
       const target = event.target as Element | null;
       if (!target) return;
@@ -331,15 +330,19 @@ export function useDockablePopup({
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
 
-    // Check if popup is docked - docked popups shouldn't close on Escape
-    const dockedIn = findPanelDock?.(popupId);
-    if (dockedIn) return;
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isPinnedRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-      }
+      if (event.key !== 'Escape') return;
+
+      // Don't close if pinned
+      if (isPinnedRef.current) return;
+
+      // Check if popup is docked - docked popups shouldn't close on Escape
+      // This check is inside the handler to handle dynamic dock state changes
+      const dockedIn = findPanelDock?.(popupId);
+      if (dockedIn) return;
+
+      event.preventDefault();
+      onCloseRef.current();
     };
 
     window.addEventListener('keydown', handleKeyDown);
