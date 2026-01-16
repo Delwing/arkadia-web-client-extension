@@ -14,6 +14,7 @@ const ChatPopup: React.FC = () => {
         openEvent: 'chat.popup.open',
     });
     const [showTeamOnly, setShowTeamOnly] = usePopupSetting(POPUP_ID, 'showTeamOnly', false);
+    const [noWrap, setNoWrap] = usePopupSetting(POPUP_ID, 'noWrap', false);
 
     // Data management with automatic event subscription
     const { data: messages } = usePopupData<ChatEntry[]>(isOpen, {
@@ -37,16 +38,26 @@ const ChatPopup: React.FC = () => {
         deps: [displayedMessages],
     });
 
-    // Toggle button in header
+    // Toggle buttons in header
     const headerActions = (
-        <button
-            type="button"
-            className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
-            onClick={() => setShowTeamOnly(!showTeamOnly)}
-            title={showTeamOnly ? 'Pokaz wszystkie wiadomosci' : 'Pokaz tylko wiadomosci druzyny'}
-        >
-            Druzyna
-        </button>
+        <>
+            <button
+                type="button"
+                className={`chat-popup__team-toggle${!noWrap ? ' chat-popup__team-toggle--active' : ''}`}
+                onClick={() => setNoWrap(!noWrap)}
+                title={noWrap ? 'Wlacz zawijanie tekstu' : 'Wylacz zawijanie tekstu'}
+            >
+                Zawijaj
+            </button>
+            <button
+                type="button"
+                className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
+                onClick={() => setShowTeamOnly(!showTeamOnly)}
+                title={showTeamOnly ? 'Pokaz wszystkie wiadomosci' : 'Pokaz tylko wiadomosci druzyny'}
+            >
+                Druzyna
+            </button>
+        </>
     );
 
     return (
@@ -63,7 +74,7 @@ const ChatPopup: React.FC = () => {
             headerActions={headerActions}
         >
             <div
-                className="chat-popup__messages"
+                className={`chat-popup__messages${noWrap ? ' chat-popup__messages--no-wrap' : ''}`}
                 ref={containerRef}
                 onScroll={handleScroll}
             >
