@@ -913,6 +913,7 @@ export interface ClientEvents {
  * Valid event names from ClientEvents
  */
 
+export // Event system types
 /**
  * Valid event names from ClientEvents
  */
@@ -1077,6 +1078,17 @@ export interface EventsApi {
 }
 
 /**
+ * Options for creating a location highlighter
+ */
+
+export interface LocationHighlighterOptions {
+    /** Highlight color (CSS color string). Defaults to "yellow" */
+    color?: string;
+    /** Whether the highlighter starts enabled. Defaults to true */
+    enabled?: boolean;
+}
+
+/**
  * Map API - Access and modify map location
  */
 
@@ -1121,6 +1133,31 @@ export interface MapApi {
      * api.map.stepBack();
      */
     stepBack(): void;
+    /**
+     * Create a location highlighter for highlighting rooms on the map.
+     * Multiple highlighters can exist simultaneously with different colors.
+     * Each highlighter can be enabled/disabled independently.
+     *
+     * @param options - Optional configuration for the highlighter
+     * @returns A LocationHighlighter instance
+     *
+     * @example
+     * // Create a red highlighter for quest locations
+     * const questHighlighter = api.map.createHighlighter({ color: "red" });
+     * questHighlighter.add([100, 200, 300]);
+     *
+     * // Create a blue highlighter for shops
+     * const shopHighlighter = api.map.createHighlighter({ color: "blue" });
+     * shopHighlighter.add([400, 500]);
+     *
+     * // Toggle visibility
+     * questHighlighter.disable();
+     * questHighlighter.enable();
+     *
+     * // Clean up when done
+     * questHighlighter.destroy();
+     */
+    createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
 }
 
 /**
@@ -1205,6 +1242,11 @@ export interface PersistentPopupHandle extends PopupHandle {
      * Calls createContent() to generate fresh content.
      */
     open(): Promise<void>;
+    /**
+     * Update the header actions (buttons displayed in popup header)
+     * @param actions - DOM node or React element for header actions
+     */
+    setHeaderActions(actions: Node | React.ReactNode): void;
 }
 
 /**

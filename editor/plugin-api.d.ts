@@ -263,6 +263,40 @@ interface EventsApi {
 }
 
 /**
+ * Options for creating a location highlighter
+ */
+interface LocationHighlighterOptions {
+  color?: string;
+  enabled?: boolean;
+}
+
+/**
+ * A location highlighter that can highlight rooms on the map.
+ * Multiple highlighters can be active simultaneously with different colors.
+ */
+interface LocationHighlighter {
+  add(roomIds: number | number[]): void;
+
+  remove(roomIds: number | number[]): void;
+
+  clear(): void;
+
+  enable(): void;
+
+  disable(): void;
+
+  isEnabled(): boolean;
+
+  setColor(color: string): void;
+
+  getColor(): string;
+
+  getRoomIds(): number[];
+
+  destroy(): void;
+}
+
+/**
  * Area information exposed via Map API
  */
 interface AreaInfo {
@@ -282,6 +316,8 @@ interface MapApi {
   setLocation(roomId: number): void;
 
   stepBack(): void;
+
+  createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
 }
 
 /**
@@ -329,6 +365,8 @@ interface PersistentPopupConfig {
 
   createContent: () => PopupContent | Promise<PopupContent>;
 
+  headerActions?: Node | React.ReactNode;
+
   pinned?: boolean;
 }
 
@@ -344,6 +382,8 @@ interface PersistentPopupHandle extends PopupHandle {
   readonly isOpen: boolean;
 
   open(): Promise<void>;
+
+  setHeaderActions(actions: Node | React.ReactNode): void;
 }
 
 /**
