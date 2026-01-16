@@ -24,6 +24,13 @@ export default function initMove(client: Client) {
         return line
     }, tag)
 
+    client.Triggers.registerTrigger(/^Skryty za .* zaczynasz plynac na (?<direction>\w+)\.$/, (line, matches) => {
+        if (matches?.groups?.direction) {
+            client.Map.followMove((matches.groups as any).direction)
+        }
+        return line
+    }, tag)
+
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
     ], (line) => {
