@@ -142,16 +142,19 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; fir
     const includeTimestamps = areOutputTimestampsVisible();
     const spans = extractStyledText(container, defaultColor, includeTimestamps);
 
-    // Apply ancestor color only to spans before the first newline (first line content)
+    // Apply ancestor color only to initial consecutive default-colored spans (first line content)
+    // Stop as soon as we hit a span with explicit color - that span came from
+    // an element after the colored ancestor, so it and subsequent spans should keep their colors
     if (ancestorColor && spans.length > 0) {
         for (const span of spans) {
             if (span.text.includes('\n')) {
-                // Split at newline - only color content before it
                 break;
             }
-            if (span.color === defaultColor) {
-                span.color = ancestorColor;
+            if (span.color !== defaultColor) {
+                // Hit a span with explicit color, stop applying ancestor color
+                break;
             }
+            span.color = ancestorColor;
         }
     }
 
