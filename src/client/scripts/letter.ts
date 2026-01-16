@@ -398,7 +398,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         aliases.push({
             pattern: /^\/list$/,
             callback: () => {
-                client.sendEvent("letterComposer", {open: true});
+                client.sendEvent("letterComposer", {});
             }
         });
     }
@@ -409,9 +409,10 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     });
 
     client.on("letterComposer.submit", (payload) => {
-        const {to, cc, subject, content, template: rawTemplate} = payload ?? {};
+        const {to, cc, udw, subject, content, template: rawTemplate} = payload ?? {};
         const recipient = to.trim();
         const carbonCopy = cc.trim();
+        const blindCopy = udw.trim();
         const subjectLine = subject.trim();
         const template = normalizeTemplate(rawTemplate);
         const {lines} = renderLetter(content, template);
@@ -426,6 +427,12 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
                     }
                 });
                 client.sendCommand("**");
+                if (blindCopy) {
+                    const recipients = blindCopy.split(/\s+/).filter(name => name.length > 0);
+                    recipients.forEach(name => {
+                        client.sendCommand(`~udw ${name}`, true, {preserveCase: true});
+                    });
+                }
                 return line;
             },
             TRIGGER_TAG

@@ -47,6 +47,7 @@ const LetterComposer: React.FC = () => {
 
     const toInputRef = useRef<HTMLInputElement>(null);
     const ccInputRef = useRef<HTMLInputElement>(null);
+    const udwInputRef = useRef<HTMLInputElement>(null);
     const subjectInputRef = useRef<HTMLInputElement>(null);
     const contentInputRef = useRef<HTMLTextAreaElement>(null);
     const templateSelectRef = useRef<HTMLSelectElement>(null);
@@ -101,6 +102,7 @@ const LetterComposer: React.FC = () => {
         return {
             to: toInputRef.current?.value ?? "",
             cc: ccInputRef.current?.value ?? "",
+            udw: udwInputRef.current?.value ?? "",
             subject: subjectInputRef.current?.value ?? "",
             content: contentInputRef.current?.value ?? "",
             template,
@@ -110,6 +112,7 @@ const LetterComposer: React.FC = () => {
     const resetForm = useCallback(() => {
         if (toInputRef.current) toInputRef.current.value = "";
         if (ccInputRef.current) ccInputRef.current.value = "";
+        if (udwInputRef.current) udwInputRef.current.value = "";
         if (subjectInputRef.current) subjectInputRef.current.value = "";
         if (contentInputRef.current) contentInputRef.current.value = "";
         setContentText("");
@@ -153,7 +156,7 @@ const LetterComposer: React.FC = () => {
 
     // Listen for open event
     useEffect(() => {
-        const handleOpen = (payload?: { to?: string; cc?: string; subject?: string; content?: string }) => {
+        const handleOpen = (payload?: { to?: string; cc?: string; udw?: string; subject?: string; content?: string }) => {
             const savedTemplate = loadTemplateSelection();
             setTemplateSelection(savedTemplate);
             resetForm();
@@ -164,6 +167,9 @@ const LetterComposer: React.FC = () => {
                 }
                 if (payload?.cc && ccInputRef.current) {
                     ccInputRef.current.value = payload.cc;
+                }
+                if (payload?.udw && udwInputRef.current) {
+                    udwInputRef.current.value = payload.udw;
                 }
                 if (payload?.subject && subjectInputRef.current) {
                     subjectInputRef.current.value = payload.subject;
@@ -250,6 +256,17 @@ const LetterComposer: React.FC = () => {
                                 ref={ccInputRef}
                                 id="letter-cc"
                                 name="letter-cc"
+                                className="form-control form-control-sm"
+                                type="text"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="letter-composer-field">
+                            <label htmlFor="letter-udw" className="form-label">UDW:</label>
+                            <input
+                                ref={udwInputRef}
+                                id="letter-udw"
+                                name="letter-udw"
                                 className="form-control form-control-sm"
                                 type="text"
                                 autoComplete="off"

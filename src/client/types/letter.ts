@@ -65,6 +65,7 @@ export const LETTER_TEMPLATE_PREVIEW_LABELS: Readonly<Record<LetterTemplate, str
 export interface LetterSubmitPayload {
     to: string;
     cc: string;
+    udw: string;
     subject: string;
     content: string;
     template: LetterTemplate;

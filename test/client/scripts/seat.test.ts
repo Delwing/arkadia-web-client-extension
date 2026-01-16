@@ -61,4 +61,18 @@ describe('seat trigger', () => {
     callback();
     expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy czystym stole');
   });
+
+  test('returns buffer with clickable options', () => {
+    const result = parse('Gdzie chcesz usiasc? Przy stole czy przy oknie?');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
+    const segments = (result as AnsiAwareBuffer).toHyperlinkSegments();
+    const clickableSegments = segments.filter(s => s.hyperlink?.onClick);
+    expect(clickableSegments.length).toBe(2);
+    // Click first option
+    clickableSegments[0].hyperlink?.onClick?.({} as MouseEvent);
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy stole');
+    // Click second option
+    clickableSegments[1].hyperlink?.onClick?.({} as MouseEvent);
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz przy oknie');
+  });
 });

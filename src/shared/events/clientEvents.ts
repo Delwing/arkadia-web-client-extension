@@ -133,7 +133,7 @@ export interface KnownEvents {
     "enterLocation": { id: number; room: unknown; direction: string | null };
     "highlights": [number[]];
     "multibinds": MultibindList;
-    "letterComposer": { open: boolean };
+    "letterComposer": { to?: string; cc?: string; udw?: string; subject?: string; content?: string };
     "letterComposer.submit": LetterSubmitPayload;
     "letterComposer.preview": LetterSubmitPayload;
     "npc": unknown;

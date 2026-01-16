@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { AnsiAwareBuffer } from "../ansi/FormatState";
 
 export default function initSeat(client: Client) {
     const tag = "seat";
@@ -15,7 +16,19 @@ export default function initSeat(client: Client) {
         const choice = options[Math.floor(Math.random() * options.length)];
         const command = `usiadz ${choice}`.toLowerCase();
         client.FunctionalBind.set(command, () => client.sendCommand(command));
-        return line;
+
+        // Create buffer with clickable options
+        const buffer = line instanceof AnsiAwareBuffer ? line.clone() : new AnsiAwareBuffer(String(line));
+
+        for (const option of options) {
+            const optionCommand = `usiadz ${option}`.toLowerCase();
+            buffer.createLinksForText(option, {
+                onClick: () => client.sendCommand(optionCommand),
+                title: optionCommand
+            }, { caseInsensitive: true });
+        }
+
+        return buffer;
     }, tag);
 
     client.Triggers.registerTrigger(sitPrompt, (line) => {
