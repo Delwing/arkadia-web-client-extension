@@ -80,6 +80,8 @@ export default class MapHelper {
     private _destinations: number[] = [];
     private highlights: number[] = [];
     private pendingBindAbort?: AbortController;
+    private highlighterIdCounter = 0;
+    private highlighters: Map<string, { roomIds: Set<number>; color: string; enabled: boolean }> = new Map();
 
     get destinations(): number[] {
         return this._destinations;
@@ -510,6 +512,81 @@ export default class MapHelper {
         this.emitDrawData();
     }
 
+    createHighlighter(options?: { color?: string; enabled?: boolean }): {
+        id: string;
+        add: (roomIds: number | number[]) => void;
+        remove: (roomIds: number | number[]) => void;
+        clear: () => void;
+        enable: () => void;
+        disable: () => void;
+        isEnabled: () => boolean;
+        setColor: (color: string) => void;
+        getColor: () => string;
+        getRoomIds: () => number[];
+        destroy: () => void;
+    } {
+        const id = `highlighter_${++this.highlighterIdCounter}`;
+        const state = {
+            roomIds: new Set<number>(),
+            color: options?.color ?? "yellow",
+            enabled: options?.enabled ?? true
+        };
+        this.highlighters.set(id, state);
+
+        const emitIfNeeded = () => {
+            if (state.enabled) {
+                this.emitHighlights();
+            }
+        };
+
+        return {
+            id,
+            add: (roomIds: number | number[]) => {
+                const ids = Array.isArray(roomIds) ? roomIds : [roomIds];
+                ids.forEach(roomId => state.roomIds.add(roomId));
+                emitIfNeeded();
+            },
+            remove: (roomIds: number | number[]) => {
+                const ids = Array.isArray(roomIds) ? roomIds : [roomIds];
+                ids.forEach(roomId => state.roomIds.delete(roomId));
+                emitIfNeeded();
+            },
+            clear: () => {
+                state.roomIds.clear();
+                emitIfNeeded();
+            },
+            enable: () => {
+                if (!state.enabled) {
+                    state.enabled = true;
+                    this.emitHighlights();
+                }
+            },
+            disable: () => {
+                if (state.enabled) {
+                    state.enabled = false;
+                    this.emitHighlights();
+                }
+            },
+            isEnabled: () => state.enabled,
+            setColor: (color: string) => {
+                state.color = color;
+                emitIfNeeded();
+            },
+            getColor: () => state.color,
+            getRoomIds: () => Array.from(state.roomIds),
+            destroy: () => {
+                this.highlighters.delete(id);
+                this.emitHighlights();
+            }
+        };
+    }
+
+    removeHighlighter(id: string) {
+        if (this.highlighters.delete(id)) {
+            this.emitHighlights();
+        }
+    }
+
     checkDestinationReached(roomId: number) {
         const index = this._destinations.indexOf(roomId);
         if (index > -1) {
@@ -538,7 +615,23 @@ export default class MapHelper {
     }
 
     emitHighlights() {
-        this.client.sendEvent("mapHighlights", this.highlights.map(roomId => ({roomId, color: "yellow"})));
+        const allHighlights: { roomId: number; color: string }[] = [];
+
+        // Add legacy highlights (from setHighlights/zaznaczaj)
+        for (const roomId of this.highlights) {
+            allHighlights.push({ roomId, color: "yellow" });
+        }
+
+        // Add highlights from all enabled highlighters
+        for (const state of this.highlighters.values()) {
+            if (state.enabled) {
+                for (const roomId of state.roomIds) {
+                    allHighlights.push({ roomId, color: state.color });
+                }
+            }
+        }
+
+        this.client.sendEvent("mapHighlights", allHighlights);
     }
 
     emitLocationLabel() {

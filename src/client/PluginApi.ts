@@ -309,6 +309,103 @@ export interface EventsApi {
 }
 
 /**
+ * Options for creating a location highlighter
+ */
+export interface LocationHighlighterOptions {
+  /** Highlight color (CSS color string). Defaults to "yellow" */
+  color?: string;
+  /** Whether the highlighter starts enabled. Defaults to true */
+  enabled?: boolean;
+}
+
+/**
+ * A location highlighter that can highlight rooms on the map.
+ * Multiple highlighters can be active simultaneously with different colors.
+ */
+export interface LocationHighlighter {
+  /**
+   * Add room(s) to the highlight set
+   * @param roomIds - Single room ID or array of room IDs to highlight
+   *
+   * @example
+   * highlighter.add(12345);
+   * highlighter.add([100, 200, 300]);
+   */
+  add(roomIds: number | number[]): void;
+
+  /**
+   * Remove room(s) from the highlight set
+   * @param roomIds - Single room ID or array of room IDs to remove
+   *
+   * @example
+   * highlighter.remove(12345);
+   * highlighter.remove([100, 200]);
+   */
+  remove(roomIds: number | number[]): void;
+
+  /**
+   * Clear all rooms from the highlight set
+   *
+   * @example
+   * highlighter.clear();
+   */
+  clear(): void;
+
+  /**
+   * Enable this highlighter (shows highlights on map)
+   *
+   * @example
+   * highlighter.enable();
+   */
+  enable(): void;
+
+  /**
+   * Disable this highlighter (hides highlights without removing them)
+   *
+   * @example
+   * highlighter.disable();
+   */
+  disable(): void;
+
+  /**
+   * Check if the highlighter is currently enabled
+   * @returns true if enabled, false if disabled
+   */
+  isEnabled(): boolean;
+
+  /**
+   * Set the highlight color
+   * @param color - CSS color string (e.g., "red", "#FF0000", "rgb(255,0,0)")
+   *
+   * @example
+   * highlighter.setColor("#FF5500");
+   * highlighter.setColor("cyan");
+   */
+  setColor(color: string): void;
+
+  /**
+   * Get the current highlight color
+   * @returns The current CSS color string
+   */
+  getColor(): string;
+
+  /**
+   * Get all room IDs currently in the highlight set
+   * @returns Array of room IDs
+   */
+  getRoomIds(): number[];
+
+  /**
+   * Destroy this highlighter and remove all its highlights from the map.
+   * After calling destroy(), the highlighter should not be used.
+   *
+   * @example
+   * highlighter.destroy();
+   */
+  destroy(): void;
+}
+
+/**
  * Area information exposed via Map API
  */
 export interface AreaInfo {
@@ -367,6 +464,32 @@ export interface MapApi {
    * api.map.stepBack();
    */
   stepBack(): void;
+
+  /**
+   * Create a location highlighter for highlighting rooms on the map.
+   * Multiple highlighters can exist simultaneously with different colors.
+   * Each highlighter can be enabled/disabled independently.
+   *
+   * @param options - Optional configuration for the highlighter
+   * @returns A LocationHighlighter instance
+   *
+   * @example
+   * // Create a red highlighter for quest locations
+   * const questHighlighter = api.map.createHighlighter({ color: "red" });
+   * questHighlighter.add([100, 200, 300]);
+   *
+   * // Create a blue highlighter for shops
+   * const shopHighlighter = api.map.createHighlighter({ color: "blue" });
+   * shopHighlighter.add([400, 500]);
+   *
+   * // Toggle visibility
+   * questHighlighter.disable();
+   * questHighlighter.enable();
+   *
+   * // Clean up when done
+   * questHighlighter.destroy();
+   */
+  createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
 }
 
 /**
@@ -2218,6 +2341,22 @@ export class PluginApiImpl implements PluginApi {
 
       stepBack: () => {
         this.client.Map.moveBack();
+      },
+
+      createHighlighter: (options?: LocationHighlighterOptions): LocationHighlighter => {
+        const handle = this.client.Map.createHighlighter(options);
+        return {
+          add: handle.add,
+          remove: handle.remove,
+          clear: handle.clear,
+          enable: handle.enable,
+          disable: handle.disable,
+          isEnabled: handle.isEnabled,
+          setColor: handle.setColor,
+          getColor: handle.getColor,
+          getRoomIds: handle.getRoomIds,
+          destroy: handle.destroy
+        };
       }
     };
   }
