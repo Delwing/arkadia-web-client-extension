@@ -222,6 +222,7 @@ export interface KnownEvents {
     "locationNote.edit": { roomId: number; roomName?: string; areaName?: string };
     "locationNote.open": { roomId: number };
     "locationNote.changed": { roomId: number };
+    "pluginLocationNote.changed": { roomId: number; pluginId: string };
     "chat.newMessage": ChatEntry;
     "chat.cleared": void;
     "chat.popup.open": void;
@@ -239,6 +240,7 @@ export interface KnownEvents {
     "map.setLocation": { roomId: number };
     "map.showPath": { toRoomId: number };
     "mapLabelVisibility": boolean;
+    "mapAlwaysShowNote": boolean;
     "objectListViewMode": "list" | "card" | "compact";
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;

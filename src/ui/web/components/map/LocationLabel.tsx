@@ -2,12 +2,14 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useClientEvent } from "../../hooks";
 import eventBus from "@modules/core/eventBus";
 import { getNote, type LocationNote } from "@web/options/locationNotesStorage";
+import { getPluginLocationNotes, type PluginLocationNote } from "@modules/core/pluginLocationNotesRegistry";
 
 export const LocationLabel = () => {
     const [label, setLabel] = useState("");
     const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
+    const [pluginNotes, setPluginNotes] = useState<PluginLocationNote[]>([]);
     const [showPopup, setShowPopup] = useState(false);
     const popupRef = useRef<HTMLDivElement>(null);
     const iconRef = useRef<HTMLSpanElement>(null);
@@ -26,21 +28,29 @@ export const LocationLabel = () => {
         eventBus.emit("requestMapLocationLabel");
     }, []);
 
-    const refreshNote = useCallback(() => {
+    const refreshNotes = useCallback(() => {
         if (currentRoomId === null) {
             setNote(null);
+            setPluginNotes([]);
             return;
         }
         getNote(currentRoomId).then(setNote);
+        setPluginNotes(getPluginLocationNotes(currentRoomId));
     }, [currentRoomId]);
 
     useEffect(() => {
-        refreshNote();
-    }, [refreshNote]);
+        refreshNotes();
+    }, [refreshNotes]);
 
     useClientEvent("locationNote.changed", (data: { roomId: number }) => {
         if (data.roomId === currentRoomId) {
-            refreshNote();
+            refreshNotes();
+        }
+    });
+
+    useClientEvent("pluginLocationNote.changed", (data: { roomId: number }) => {
+        if (data.roomId === currentRoomId) {
+            setPluginNotes(getPluginLocationNotes(currentRoomId));
         }
     });
 
@@ -77,7 +87,7 @@ export const LocationLabel = () => {
         };
     }, [showPopup]);
 
-    const hasAnyNote = note || mapNote;
+    const hasAnyNote = note || mapNote || pluginNotes.length > 0;
 
     return (
         <>
@@ -96,8 +106,12 @@ export const LocationLabel = () => {
             {showPopup && hasAnyNote && (
                 <div ref={popupRef} className="location-note-popup">
                     {mapNote && <div>{mapNote}</div>}
-                    {mapNote && note && <hr style={{ margin: '0.5rem 0', borderColor: 'rgba(255,255,255,0.3)' }} />}
+                    {mapNote && (note || pluginNotes.length > 0) && <hr style={{ margin: '0.5rem 0', borderColor: 'rgba(255,255,255,0.3)' }} />}
                     {note && <div>{note.note}</div>}
+                    {note && pluginNotes.length > 0 && <hr style={{ margin: '0.5rem 0', borderColor: 'rgba(255,255,255,0.3)' }} />}
+                    {pluginNotes.map((pn, idx) => (
+                        <div key={`${pn.pluginId}-${idx}`}>{pn.note}</div>
+                    ))}
                 </div>
             )}
         </>

@@ -3,6 +3,7 @@ import { Button, Form, Modal } from 'react-bootstrap';
 import eventBus from "@modules/core/eventBus";
 import type { ClientEvents } from "@modules/core/eventBus";
 import { getNote, saveNote, deleteNote, type LocationNote } from "./options/locationNotesStorage";
+import { getPluginLocationNotes, type PluginLocationNote } from "@modules/core/pluginLocationNotesRegistry";
 import { getClientInstance } from "@shared/runtime";
 
 function LocationNoteEditor() {
@@ -12,6 +13,8 @@ function LocationNoteEditor() {
     const [areaName, setAreaName] = useState<string>('');
     const [noteText, setNoteText] = useState('');
     const [originalNote, setOriginalNote] = useState('');
+    const [pluginNotes, setPluginNotes] = useState<PluginLocationNote[]>([]);
+    const [mapNote, setMapNote] = useState<string | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const loadNote = useCallback(async (id: number) => {
@@ -25,17 +28,18 @@ function LocationNoteEditor() {
             setNoteText('');
             setOriginalNote('');
         }
+        setPluginNotes(getPluginLocationNotes(id));
     }, []);
 
     const getRoomInfo = useCallback((id: number) => {
         const client = getClientInstance();
-        if (!client) return { roomName: '', areaName: '' };
+        if (!client) return { roomName: '', areaName: '', mapNote: null as string | null };
 
         const reader = client.Map?.tryGetMapReader?.();
-        if (!reader) return { roomName: '', areaName: '' };
+        if (!reader) return { roomName: '', areaName: '', mapNote: null as string | null };
 
         const room = reader.getRoom?.(id);
-        if (!room) return { roomName: '', areaName: '' };
+        if (!room) return { roomName: '', areaName: '', mapNote: null as string | null };
 
         const name = room.name || '';
         const areaId = room.area;
@@ -47,7 +51,9 @@ function LocationNoteEditor() {
             area = areaObj?.getAreaName?.() || client.Map?.getAreaName?.(String(areaId)) || '';
         }
 
-        return { roomName: name, areaName: area };
+        const roomMapNote = (room as any).userData?.note ?? null;
+
+        return { roomName: name, areaName: area, mapNote: roomMapNote };
     }, []);
 
     useEffect(() => {
@@ -57,6 +63,7 @@ function LocationNoteEditor() {
             const info = getRoomInfo(id);
             setRoomName(rn || info.roomName);
             setAreaName(an || info.areaName);
+            setMapNote(info.mapNote);
 
             loadNote(id);
             setShow(true);
@@ -68,6 +75,7 @@ function LocationNoteEditor() {
             const info = getRoomInfo(id);
             setRoomName(info.roomName);
             setAreaName(info.areaName);
+            setMapNote(info.mapNote);
 
             loadNote(id);
             setShow(true);
@@ -146,6 +154,22 @@ function LocationNoteEditor() {
                         placeholder="Wpisz notatke..."
                     />
                 </Form.Group>
+                {(mapNote || pluginNotes.length > 0) && (
+                    <div className="mt-3">
+                        {mapNote && (
+                            <div className="readonly-note-entry mb-2 p-2 rounded">
+                                <div className="readonly-note-label small mb-1">Mapa</div>
+                                <div className="readonly-note-text">{mapNote}</div>
+                            </div>
+                        )}
+                        {pluginNotes.map((pn, idx) => (
+                            <div key={`${pn.pluginId}-${idx}`} className="readonly-note-entry mb-2 p-2 rounded">
+                                <div className="readonly-note-label small mb-1">{pn.pluginName}</div>
+                                <div className="readonly-note-text">{pn.note}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </Modal.Body>
             <Modal.Footer className="d-flex justify-content-between">
                 <div>

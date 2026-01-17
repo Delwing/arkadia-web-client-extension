@@ -768,6 +768,20 @@ interface CombatApi {
 }
 
 /**
+ * Location Notes API - Add plugin-contributed notes to locations
+ *
+ * Plugins can add notes to locations that appear alongside user notes.
+ * Plugin notes are read-only for users and displayed with the plugin name.
+ */
+interface LocationNotesApi {
+  set(roomId: number, note: string): void;
+
+  remove(roomId: number): void;
+
+  get(roomId: number): PluginLocationNote[];
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -875,6 +889,7 @@ interface PluginApi {
   settings: SettingsApi;
   attackController: AttackControllerApi;
   combat: CombatApi;
+  locationNotes: LocationNotesApi;
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 

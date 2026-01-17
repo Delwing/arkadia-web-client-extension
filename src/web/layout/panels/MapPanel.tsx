@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapReturnButton } from '../components/MapReturnButton';
+import { MapNoteDisplay } from '../components/MapNoteDisplay';
 import { useMapViewingState } from '@web/layout';
 import { useLayoutManager } from '@web/layout';
 import { PANEL_CONFIGS } from '../types';
@@ -148,6 +149,7 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   return (
     <div ref={containerRef} className="map-panel-container">
       <MapReturnButton />
+      <MapNoteDisplay />
     </div>
   );
 }

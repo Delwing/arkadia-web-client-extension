@@ -838,6 +838,39 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
+.map-header-menu__item--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-header-menu__checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.map-header-menu__checkbox--checked {
+  background: rgba(96, 165, 250, 0.3);
+  border-color: #60a5fa;
+}
+
+.map-header-menu__checkbox--checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #60a5fa;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 /* ============================================
    Map Panel Container
    ============================================ */
@@ -872,4 +905,34 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
 .map-return-button:hover {
   background-color: rgba(96, 165, 250, 0.2);
   border-color: #60a5fa;
+}
+
+/* ============================================
+   Map Note Display
+   ============================================ */
+
+.map-note-display {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  max-height: 4rem;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  z-index: 1010;
+  pointer-events: auto;
+}
+
+.map-note-display hr {
+  margin: 0.3rem 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
 }

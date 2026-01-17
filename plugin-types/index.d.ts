@@ -2546,6 +2546,58 @@ export interface CombatApi {
 }
 
 /**
+ * Location Notes API - Add plugin-contributed notes to locations
+ *
+ * Plugins can add notes to locations that appear alongside user notes.
+ * Plugin notes are read-only for users and displayed with the plugin name.
+ */
+
+export interface LocationNotesApi {
+    /**
+     * Set a note for a location
+     *
+     * Setting an empty note removes it.
+     *
+     * @param roomId - Room ID to add note to
+     * @param note - Note content (empty string to remove)
+     *
+     * @example
+     * ```typescript
+     * // Add a note to room 12345
+     * api.locationNotes.set(12345, "Quest NPC here");
+     *
+     * // Remove the note
+     * api.locationNotes.set(12345, "");
+     * ```
+     */
+    set(roomId: number, note: string): void;
+    /**
+     * Remove a note for a location
+     *
+     * @param roomId - Room ID to remove note from
+     *
+     * @example
+     * ```typescript
+     * api.locationNotes.remove(12345);
+     * ```
+     */
+    remove(roomId: number): void;
+    /**
+     * Get all plugin notes for a location (from all plugins)
+     *
+     * @param roomId - Room ID to get notes for
+     * @returns Array of plugin notes for the location
+     *
+     * @example
+     * ```typescript
+     * const notes = api.locationNotes.get(12345);
+     * notes.forEach(n => console.log(`${n.pluginId}: ${n.note}`));
+     * ```
+     */
+    get(roomId: number): PluginLocationNote[];
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -2734,6 +2786,8 @@ export interface PluginApi {
     attackController: AttackControllerApi;
     /** Combat - access combat-related settings */
     combat: CombatApi;
+    /** Location notes - add plugin-contributed notes to locations */
+    locationNotes: LocationNotesApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

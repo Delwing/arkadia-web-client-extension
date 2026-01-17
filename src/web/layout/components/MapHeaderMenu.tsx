@@ -20,6 +20,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
   const [labelVisible, setLabelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
+  const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -27,6 +28,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   useEffect(() => {
     eventBus.emit('mapLabelVisibility', labelVisible);
   }, [labelVisible]);
+
+  // Emit alwaysShowNote state on mount and when it changes
+  useEffect(() => {
+    eventBus.emit('mapAlwaysShowNote', alwaysShowNote);
+  }, [alwaysShowNote]);
 
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
@@ -222,6 +228,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [setLabelVisible, closeMenu]);
 
+  const handleToggleAlwaysShowNote = useCallback(() => {
+    setAlwaysShowNote((prev) => !prev);
+    closeMenu();
+  }, [setAlwaysShowNote, closeMenu]);
+
   return (
     <div ref={menuRef} className={`map-header-menu ${className}`}>
       <button
@@ -328,10 +339,19 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               </button>
               <button
                 type="button"
-                className="map-header-menu__item"
+                className="map-header-menu__item map-header-menu__item--checkbox"
                 onClick={handleToggleLabel}
               >
-                {labelVisible ? 'Ukryj etykiete' : 'Pokaz etykiete'}
+                <span className={`map-header-menu__checkbox${!labelVisible ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Etykieta w naglowku
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item map-header-menu__item--checkbox"
+                onClick={handleToggleAlwaysShowNote}
+              >
+                <span className={`map-header-menu__checkbox${alwaysShowNote ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Notatka zawsze widoczna
               </button>
             </>
           )}

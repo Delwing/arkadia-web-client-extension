@@ -97,6 +97,14 @@ import {
   getPluginPopup,
   type PluginPopupConfig
 } from "@web/layout/pluginPopupRegistry";
+import {
+  setPluginLocationNote,
+  removePluginLocationNote,
+  removeAllPluginNotes,
+  getPluginLocationNotes,
+  updatePluginNotesName,
+  type PluginLocationNote
+} from "@modules/core/pluginLocationNotesRegistry";
 
 // Re-export filter types for plugin developers
 export type {
@@ -117,6 +125,9 @@ export type {
   TriggerMacroContext,
   ButtonSetting
 };
+
+// Re-export location note types for plugin developers
+export type { PluginLocationNote };
 
 // Re-export command hook type for plugin developers
 export type { CommandHookCallback } from "./Client";
@@ -1931,6 +1942,59 @@ export interface CombatApi {
 }
 
 /**
+ * Location Notes API - Add plugin-contributed notes to locations
+ *
+ * Plugins can add notes to locations that appear alongside user notes.
+ * Plugin notes are read-only for users and displayed with the plugin name.
+ */
+export interface LocationNotesApi {
+  /**
+   * Set a note for a location
+   *
+   * Setting an empty note removes it.
+   *
+   * @param roomId - Room ID to add note to
+   * @param note - Note content (empty string to remove)
+   *
+   * @example
+   * ```typescript
+   * // Add a note to room 12345
+   * api.locationNotes.set(12345, "Quest NPC here");
+   *
+   * // Remove the note
+   * api.locationNotes.set(12345, "");
+   * ```
+   */
+  set(roomId: number, note: string): void;
+
+  /**
+   * Remove a note for a location
+   *
+   * @param roomId - Room ID to remove note from
+   *
+   * @example
+   * ```typescript
+   * api.locationNotes.remove(12345);
+   * ```
+   */
+  remove(roomId: number): void;
+
+  /**
+   * Get all plugin notes for a location (from all plugins)
+   *
+   * @param roomId - Room ID to get notes for
+   * @returns Array of plugin notes for the location
+   *
+   * @example
+   * ```typescript
+   * const notes = api.locationNotes.get(12345);
+   * notes.forEach(n => console.log(`${n.pluginId}: ${n.note}`));
+   * ```
+   */
+  get(roomId: number): PluginLocationNote[];
+}
+
+/**
  * Attack Controller API - Execute attacks with proper team coordination
  *
  * Provides methods to attack targets by their object ID, respecting
@@ -2120,6 +2184,8 @@ export interface PluginApi {
   attackController: AttackControllerApi;
   /** Combat - access combat-related settings */
   combat: CombatApi;
+  /** Location notes - add plugin-contributed notes to locations */
+  locationNotes: LocationNotesApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -2178,6 +2244,7 @@ export class PluginApiImpl implements PluginApi {
   public settings: SettingsApi;
   public attackController: AttackControllerApi;
   public combat: CombatApi;
+  public locationNotes: LocationNotesApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -2209,6 +2276,7 @@ export class PluginApiImpl implements PluginApi {
     this.settings = this.createSettingsApi();
     this.attackController = this.createAttackControllerApi();
     this.combat = this.createCombatApi();
+    this.locationNotes = this.createLocationNotesApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2223,6 +2291,8 @@ export class PluginApiImpl implements PluginApi {
     // Update any macros that were registered during init (before name was set)
     updateButtonMacroPluginName(this.pluginId, name);
     updateTriggerMacroPluginName(this.pluginId, name);
+    // Update any location notes that were registered during init
+    updatePluginNotesName(this.pluginId, name);
   }
 
   /**
@@ -2808,6 +2878,26 @@ export class PluginApiImpl implements PluginApi {
   }
 
   // ============================================================================
+  // Location Notes API
+  // ============================================================================
+
+  private createLocationNotesApi(): LocationNotesApi {
+    return {
+      set: (roomId: number, note: string): void => {
+        setPluginLocationNote(this.pluginId, this.pluginName, roomId, note);
+      },
+
+      remove: (roomId: number): void => {
+        removePluginLocationNote(this.pluginId, roomId);
+      },
+
+      get: (roomId: number): PluginLocationNote[] => {
+        return getPluginLocationNotes(roomId);
+      }
+    };
+  }
+
+  // ============================================================================
   // Cleanup
   // ============================================================================
 
@@ -2874,6 +2964,9 @@ export class PluginApiImpl implements PluginApi {
       unsubscribe();
     }
     this.stateChangeUnsubscribers = [];
+
+    // Remove all location notes registered by this plugin
+    removeAllPluginNotes(this.pluginId);
   }
 
   private createPopup(title: string, body: PopupContent): Promise<PopupHandle> {
