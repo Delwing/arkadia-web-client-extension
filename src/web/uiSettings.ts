@@ -244,22 +244,6 @@ function apply(settings: UiSettings) {
     if (objectsList) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
     }
-    const combatTimer = document.getElementById('combat-timer');
-    if (combatTimer) {
-        combatTimer.dataset.enabled = settings.showCombatTimer ? '1' : '0';
-        if (!settings.showCombatTimer) {
-            combatTimer.style.display = 'none';
-            combatTimer.textContent = '';
-            combatTimer.className = '';
-        }
-    }
-    const clockDisplay = document.getElementById('clock-display');
-    if (clockDisplay) {
-        clockDisplay.dataset.enabled = settings.showClockDisplay ? '1' : '0';
-        if (!settings.showClockDisplay) {
-            clockDisplay.style.display = 'none';
-        }
-    }
     applyFooterComponents(settings.footerComponents);
     const objects = document.getElementById('objects-list');
     if (objects) {
@@ -328,9 +312,6 @@ function apply(settings: UiSettings) {
         footerMode: settings.footerMode,
         fightTitleIcon: settings.fightTitleIcon,
         clearInputOnSend: settings.clearInputOnSend,
-        showTransportLabel: settings.showTransportLabel,
-        showCombatTimer: settings.showCombatTimer,
-        showClockDisplay: settings.showClockDisplay,
         autoLowercaseCommands: settings.autoLowercaseCommands,
     };
     eventBus.emit('uiSettings', payload);
@@ -389,15 +370,6 @@ async function load(): Promise<UiSettings> {
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultUiSettings.clearInputOnSend;
-            const showTransportLabel = typeof parsed.showTransportLabel === 'boolean'
-                ? parsed.showTransportLabel
-                : defaultUiSettings.showTransportLabel;
-            const showCombatTimer = typeof parsed.showCombatTimer === 'boolean'
-                ? parsed.showCombatTimer
-                : defaultUiSettings.showCombatTimer;
-            const showClockDisplay = typeof parsed.showClockDisplay === 'boolean'
-                ? parsed.showClockDisplay
-                : defaultUiSettings.showClockDisplay;
             const autoLowercaseCommands = typeof parsed.autoLowercaseCommands === 'boolean'
                 ? parsed.autoLowercaseCommands
                 : defaultUiSettings.autoLowercaseCommands;
@@ -452,9 +424,6 @@ async function load(): Promise<UiSettings> {
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
                 clearInputOnSend,
-                showTransportLabel,
-                showCombatTimer,
-                showClockDisplay,
                 fontFamily,
                 customFontUrl: normalizedCustomFontUrl,
                 customFontFamily,
@@ -509,9 +478,6 @@ export default async function initUiSettings() {
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
-    const showTransportLabelInput = modalEl.querySelector('#ui-show-transport-label') as HTMLInputElement;
-    const showCombatTimerInput = modalEl.querySelector('#ui-show-combat-timer') as HTMLInputElement;
-    const showClockDisplayInput = modalEl.querySelector('#ui-show-clock-display') as HTMLInputElement;
     const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
     const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
     const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
@@ -805,9 +771,6 @@ export default async function initUiSettings() {
         transparentLabelsInput.checked = settings.transparentLabels;
         outputBackgroundInput.value = settings.outputBackground;
         clearInputOnSendInput.checked = settings.clearInputOnSend;
-        showTransportLabelInput.checked = settings.showTransportLabel;
-        showCombatTimerInput.checked = settings.showCombatTimer;
-        showClockDisplayInput.checked = settings.showClockDisplay;
         fontFamilyInput.value = settings.fontFamily;
         customFontUrlInput.value = settings.customFontUrl;
         customFontFamilyInput.value = settings.customFontFamily;
@@ -1191,9 +1154,6 @@ export default async function initUiSettings() {
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
-            showTransportLabel: showTransportLabelInput.checked,
-            showCombatTimer: showCombatTimerInput.checked,
-            showClockDisplay: showClockDisplayInput.checked,
             fontFamily: isUiFontSelection(fontFamilyInput.value) ? fontFamilyInput.value : defaultUiSettings.fontFamily,
             customFontUrl: (() => {
                 const value = customFontUrlInput.value.trim();

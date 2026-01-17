@@ -270,9 +270,6 @@ export async function triggerSettingsReload(): Promise<void> {
             footerMode: uiSettings.footerMode,
             fightTitleIcon: uiSettings.fightTitleIcon,
             clearInputOnSend: uiSettings.clearInputOnSend,
-            showTransportLabel: uiSettings.showTransportLabel,
-            showCombatTimer: uiSettings.showCombatTimer,
-            showClockDisplay: uiSettings.showClockDisplay,
             autoLowercaseCommands: uiSettings.autoLowercaseCommands,
         });
     } catch (err) {

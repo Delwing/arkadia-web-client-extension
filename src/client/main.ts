@@ -115,6 +115,7 @@ import initPoczta from './scripts/poczta'
 import initLanguageTeacher from './scripts/languageTeacher'
 import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
+import initAligatorEmoji from './scripts/aligatorEmoji'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -265,5 +266,6 @@ export function registerScripts(client: Client) {
     initLanguageTeacher(client)
     initProfession(client, aliases)
     initIntroduced(client, aliases)
+    initAligatorEmoji(client)
 
 }

@@ -41,18 +41,4 @@ describe("CombatTimer", () => {
     client.emit("combatTimer", 5);
     expect(container.className).toBe("green");
   });
-
-  test("respects ui setting toggle", () => {
-    client.emit("combatTimer", 12);
-    expect(container.style.display).toBe("block");
-
-    client.emit("uiSettings", { showCombatTimer: false });
-    expect(container.style.display).toBe("none");
-    expect(container.textContent).toBe("");
-
-    client.emit("uiSettings", { showCombatTimer: true });
-    client.emit("combatTimer", 8);
-    expect(container.style.display).toBe("block");
-    expect(container.textContent).toBe("Walka: 8");
-  });
 });

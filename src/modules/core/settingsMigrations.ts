@@ -1,5 +1,6 @@
 import type { Settings, CollectOverride } from './defaultSettings';
 import storage from './storage';
+import type { FooterComponentConfig } from '@web/defaultUiSettings';
 
 const MIGRATIONS_VERSION_KEY = 'settingsMigrationsVersion';
 
@@ -57,6 +58,11 @@ const migrations: Migration[] = [
     {
         version: 3,
         description: 'Migrate buttonSize multiplier from uiSettings to mobileButtonSettings (handled by migrateButtonSizeMultiplier)',
+        migrate: settings => settings, // No-op for core Settings, actual migration is async
+    },
+    {
+        version: 4,
+        description: 'Migrate showTransportLabel/showCombatTimer/showClockDisplay to footerComponents (handled by migrateFooterComponentVisibility)',
         migrate: settings => settings, // No-op for core Settings, actual migration is async
     },
 ];
@@ -243,5 +249,82 @@ export async function migrateButtonSizeMultiplier(): Promise<void> {
         }
     } catch (e) {
         console.error('[SettingsMigrations] Failed to migrate buttonSize multiplier:', e);
+    }
+}
+
+/**
+ * Migrate showTransportLabel, showCombatTimer, showClockDisplay to footerComponents.
+ * This is migration version 4 that converts the old boolean visibility settings
+ * to the new footerComponents array visibility flags.
+ */
+export async function migrateFooterComponentVisibility(): Promise<void> {
+    const currentVersion = getMigrationsVersion();
+
+    // This is migration version 4
+    if (currentVersion >= 4) {
+        return;
+    }
+
+    try {
+        const uiData = await storage.getItem('uiSettings');
+        const uiSettings = uiData?.uiSettings;
+
+        if (!uiSettings) {
+            return;
+        }
+
+        const showTransportLabel = uiSettings.showTransportLabel;
+        const showCombatTimer = uiSettings.showCombatTimer;
+        const showClockDisplay = uiSettings.showClockDisplay;
+
+        // Only migrate if any of the old settings are explicitly set to false
+        const needsMigration =
+            showTransportLabel === false ||
+            showCombatTimer === false ||
+            showClockDisplay === false;
+
+        if (!needsMigration) {
+            return;
+        }
+
+        // Map old settings to footer component IDs
+        const visibilityMap: Record<string, boolean | undefined> = {
+            'transport-timer': showTransportLabel,
+            'combat-timer': showCombatTimer,
+            'clock-display': showClockDisplay,
+        };
+
+        // Get or create footerComponents
+        let footerComponents: FooterComponentConfig[] = uiSettings.footerComponents;
+        if (!Array.isArray(footerComponents)) {
+            // Use default footer components if not present
+            const { defaultFooterComponents } = await import('@web/defaultUiSettings');
+            footerComponents = defaultFooterComponents.map((c: FooterComponentConfig) => ({ ...c }));
+        }
+
+        // Apply visibility from old settings
+        let migrated = false;
+        for (const config of footerComponents) {
+            const oldVisibility = visibilityMap[config.id];
+            if (oldVisibility === false) {
+                config.visible = false;
+                migrated = true;
+            }
+        }
+
+        if (migrated) {
+            // Save updated footerComponents
+            uiSettings.footerComponents = footerComponents;
+
+            // Remove old settings
+            delete uiSettings.showTransportLabel;
+            delete uiSettings.showCombatTimer;
+            delete uiSettings.showClockDisplay;
+
+            await storage.setItem('uiSettings', uiSettings);
+            console.log('[SettingsMigrations] Migrated footer component visibility settings');
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to migrate footer component visibility:', e);
     }
 }

@@ -53,16 +53,4 @@ describe("TransportTimer", () => {
     expect(container.className).toBe("");
     expect(container.style.display).toBe("block");
   });
-
-  test("hides label when option disabled", () => {
-    client.emit("uiSettings", { showTransportLabel: false });
-    client.emit("transportTimer", { label: "Kreutzhofen → Hagge", remaining: 125, total: 140 });
-    expect(container.style.display).toBe("none");
-    expect(container.textContent).toBe("");
-    expect(container.className).toBe("");
-
-    client.emit("transportTimer", { label: "Kreutzhofen → Tajemnicze miejsce", remaining: null, total: null });
-    expect(container.style.display).toBe("none");
-    expect(container.textContent).toBe("");
-  });
 });

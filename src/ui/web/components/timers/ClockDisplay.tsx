@@ -30,17 +30,9 @@ const SEASON_COLORS = [
 export const ClockDisplay: React.FC = () => {
     const [clockData, setClockData] = useState<ClockData | null>(null);
     const [activeDomain, setActiveDomain] = useState<"Empire" | "Ishtar" | null>(null);
-    const [showClock, setShowClock] = useState(true);
 
     // Use ref to avoid closure issues in event handlers
     const activeDomainRef = useRef<"Empire" | "Ishtar" | null>(null);
-
-    // Listen for UI settings changes
-    useClientEvent<{ showClockDisplay?: boolean }>("uiSettings", (data) => {
-        if (typeof data.showClockDisplay === "boolean") {
-            setShowClock(data.showClockDisplay);
-        }
-    });
 
     // Listen for active domain changes
     useClientEvent<{ domain: "Empire" | "Ishtar" }>("clock.domain.active", (data) => {
@@ -81,15 +73,6 @@ export const ClockDisplay: React.FC = () => {
         const container = document.getElementById("clock-display");
         if (!container) return;
 
-        // If clock display is disabled in settings, hide completely
-        if (!showClock) {
-            container.style.display = "none";
-            container.innerHTML = "";
-            container.style.cursor = "default";
-            container.onclick = null;
-            return;
-        }
-
         // If no clock data yet, show placeholder
         if (!clockData) {
             container.style.display = "block";
@@ -123,7 +106,7 @@ export const ClockDisplay: React.FC = () => {
         container.title = "Kliknij aby otworzyc szczegoly zegara";
         container.innerHTML = `<span style="color: ${dayColor};">${clockData.dayLabel}</span> | <span style="color: ${timeColor};">${timeValue}</span>${precisionValue ? ` <span style="color: gray;">${precisionValue}</span>` : ""}`;
         container.onclick = handleClick;
-    }, [clockData, handleClick, showClock]);
+    }, [clockData, handleClick]);
 
     return null;
 };

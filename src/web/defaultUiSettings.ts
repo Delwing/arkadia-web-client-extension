@@ -44,9 +44,6 @@ export interface UiSettings {
     transparentLabels: boolean;
     outputBackground: string;
     clearInputOnSend: boolean;
-    showTransportLabel: boolean;
-    showCombatTimer: boolean;
-    showClockDisplay: boolean;
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
@@ -84,9 +81,6 @@ export const defaultUiSettings: UiSettings = {
     transparentLabels: true,
     outputBackground: '#242424',
     clearInputOnSend: false,
-    showTransportLabel: true,
-    showCombatTimer: true,
-    showClockDisplay: true,
     fontFamily: 'default',
     customFontUrl: '',
     customFontFamily: '',
