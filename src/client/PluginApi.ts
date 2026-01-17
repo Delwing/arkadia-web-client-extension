@@ -3102,6 +3102,7 @@ export class PluginApiImpl implements PluginApi {
       onClose: closePopup,
       onPinnedChange: (pinned) => {
         currentPinned = pinned;
+        updatePluginPopup(popupId, { isPinned: pinned });
       },
       onPanelRef: (element) => {
         panelRef = element;
