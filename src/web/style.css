@@ -5191,6 +5191,23 @@ body.mobile-command-radial-active {
   animation: ansi-rapid-blink 1s infinite;
 }
 
+/* Dim animation with customizable properties via CSS variables */
+@keyframes ansi-dim {
+  0% {
+    opacity: var(--dim-start, 1);
+  }
+  50% {
+    opacity: var(--dim-end, 0.3);
+  }
+  100% {
+    opacity: var(--dim-start, 1);
+  }
+}
+
+.ansi-dim {
+  animation: ansi-dim var(--dim-duration, 1000ms) var(--dim-easing, ease-in-out) infinite;
+}
+
 /* Clock Window - size overrides */
 .clock-window {
   --fw-width: 480px;

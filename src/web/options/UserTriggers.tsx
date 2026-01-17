@@ -10,7 +10,9 @@ import {
 } from "@modules/core/pluginTriggerMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
+
+export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -20,6 +22,11 @@ export interface UserMacro {
     soundKey?: string;
     label?: string;
     pluginConfig?: Record<string, any>;
+    // Dim effect options
+    dimStartOpacity?: number;
+    dimEndOpacity?: number;
+    dimDuration?: number;
+    dimEasing?: DimEasing;
 }
 
 export type TriggerType = 'pattern' | 'event';
@@ -118,6 +125,7 @@ function MacroEditor({
                     <option value="command">Komenda</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
+                    {!isEventTrigger && <option value="dim">Pulsowanie</option>}
                     <option value="functionalBind">Funkcyjny bind</option>
                     {(() => {
                         // Group macros by plugin
@@ -199,6 +207,59 @@ function MacroEditor({
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
                         />
                     </>
+                )}
+                {macro.type === 'dim' && (
+                    <div className="d-flex flex-wrap gap-2 mt-1">
+                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
+                            <Form.Label className="mb-0 small">Jasnosc poczatkowa</Form.Label>
+                            <Form.Control
+                                type="number"
+                                size="sm"
+                                min={0}
+                                max={1}
+                                step={0.1}
+                                value={macro.dimStartOpacity ?? 1}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimStartOpacity: parseFloat(e.target.value) })}
+                            />
+                        </Form.Group>
+                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
+                            <Form.Label className="mb-0 small">Jasnosc koncowa</Form.Label>
+                            <Form.Control
+                                type="number"
+                                size="sm"
+                                min={0}
+                                max={1}
+                                step={0.1}
+                                value={macro.dimEndOpacity ?? 0.3}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimEndOpacity: parseFloat(e.target.value) })}
+                            />
+                        </Form.Group>
+                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
+                            <Form.Label className="mb-0 small">Czas (ms)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                size="sm"
+                                min={100}
+                                step={100}
+                                value={macro.dimDuration ?? 1000}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimDuration: parseInt(e.target.value, 10) })}
+                            />
+                        </Form.Group>
+                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
+                            <Form.Label className="mb-0 small">Przejscie</Form.Label>
+                            <Form.Select
+                                size="sm"
+                                value={macro.dimEasing ?? 'ease-in-out'}
+                                onChange={e => onChange({ ...macro, dimEasing: e.target.value as DimEasing })}
+                            >
+                                <option value="linear">Liniowe</option>
+                                <option value="ease">Ease</option>
+                                <option value="ease-in">Ease In</option>
+                                <option value="ease-out">Ease Out</option>
+                                <option value="ease-in-out">Ease In-Out</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </div>
                 )}
             </div>
             {macro.type === 'color' && (

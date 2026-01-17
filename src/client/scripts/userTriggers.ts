@@ -1,10 +1,10 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
-import {AnsiAwareBuffer, TextRange} from "@client/ansi/FormatState";
+import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -14,6 +14,11 @@ export interface UserMacro {
     soundKey?: string;
     label?: string;
     pluginConfig?: Record<string, any>;
+    // Dim effect options
+    dimStartOpacity?: number;
+    dimEndOpacity?: number;
+    dimDuration?: number;
+    dimEasing?: DimEasing;
 }
 
 export type TriggerType = 'pattern' | 'event';
@@ -93,6 +98,16 @@ function applyMacrosToMatch(
                 break;
             case 'rapidBlink':
                 line.applyFormat(matchRange, { rapidBlink: true });
+                break;
+            case 'dim':
+                line.applyFormat(matchRange, {
+                    dim: {
+                        startOpacity: macro.dimStartOpacity ?? 1,
+                        endOpacity: macro.dimEndOpacity ?? 0.3,
+                        duration: macro.dimDuration ?? 1000,
+                        easing: macro.dimEasing,
+                    }
+                });
                 break;
             case 'functionalBind':
                 if (macro.command && macro.label) {

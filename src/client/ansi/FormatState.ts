@@ -28,6 +28,15 @@ export interface HexColor {
 
 export type FormatColor = IndexedColor | RgbColor | HexColor
 
+export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
+
+export interface DimEffect {
+    startOpacity: number;  // 0-1
+    endOpacity: number;    // 0-1
+    duration: number;      // ms
+    easing?: DimEasing;    // defaults to 'ease-in-out'
+}
+
 export interface FormatStateSnapshot {
     foreground?: FormatColor;
     background?: FormatColor;
@@ -38,6 +47,7 @@ export interface FormatStateSnapshot {
     strikethrough?: boolean;
     slowBlink?: boolean;
     rapidBlink?: boolean;
+    dim?: DimEffect;
     hyperlink?: FormatHyperlink;
 }
 
@@ -94,7 +104,19 @@ function hasVisualFormatting(state?: FormatStateSnapshot): boolean {
         state.inverse ||
         state.strikethrough ||
         state.slowBlink ||
-        state.rapidBlink
+        state.rapidBlink ||
+        state.dim
+    );
+}
+
+function dimEffectsEqual(a?: DimEffect, b?: DimEffect): boolean {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.startOpacity === b.startOpacity &&
+        a.endOpacity === b.endOpacity &&
+        a.duration === b.duration &&
+        (a.easing || 'ease-in-out') === (b.easing || 'ease-in-out')
     );
 }
 
@@ -114,6 +136,7 @@ function cloneState(state?: FormatStateSnapshot): FormatStateSnapshot | undefine
         strikethrough: state.strikethrough,
         slowBlink: state.slowBlink,
         rapidBlink: state.rapidBlink,
+        dim: state.dim ? {...state.dim} : undefined,
         hyperlink: state.hyperlink ? {...state.hyperlink} : undefined,
     };
 }
@@ -131,6 +154,7 @@ function statesEqual(a?: FormatStateSnapshot, b?: FormatStateSnapshot): boolean 
         !!a.strikethrough === !!b.strikethrough &&
         !!a.slowBlink === !!b.slowBlink &&
         !!a.rapidBlink === !!b.rapidBlink &&
+        dimEffectsEqual(a.dim, b.dim) &&
         hyperlinksEqual(a.hyperlink, b.hyperlink)
     );
 }
@@ -148,6 +172,7 @@ class FormatState {
     strikethrough?: boolean;
     slowBlink?: boolean;
     rapidBlink?: boolean;
+    dim?: DimEffect;
     hyperlink?: FormatHyperlink;
 
     constructor(initial?: FormatStateSnapshot) {
@@ -166,6 +191,7 @@ class FormatState {
         this.strikethrough = snapshot.strikethrough ? true : undefined;
         this.slowBlink = snapshot.slowBlink ? true : undefined;
         this.rapidBlink = snapshot.rapidBlink ? true : undefined;
+        this.dim = snapshot.dim ? {...snapshot.dim} : undefined;
         this.hyperlink = snapshot.hyperlink ? {...snapshot.hyperlink} : undefined;
     }
 
@@ -179,6 +205,7 @@ class FormatState {
         this.strikethrough = undefined;
         this.slowBlink = undefined;
         this.rapidBlink = undefined;
+        this.dim = undefined;
     }
 
     toSnapshot(): FormatStateSnapshot {
@@ -192,6 +219,7 @@ class FormatState {
             strikethrough: this.strikethrough ? true : undefined,
             slowBlink: this.slowBlink ? true : undefined,
             rapidBlink: this.rapidBlink ? true : undefined,
+            dim: this.dim ? {...this.dim} : undefined,
             hyperlink: this.hyperlink ? {...this.hyperlink} : undefined,
         };
     }
@@ -868,17 +896,28 @@ export class AnsiAwareBuffer {
                 }
             }
 
+            // Apply dim effect CSS custom properties
+            if (state.dim) {
+                styles.push(`--dim-start: ${state.dim.startOpacity}`);
+                styles.push(`--dim-end: ${state.dim.endOpacity}`);
+                styles.push(`--dim-duration: ${state.dim.duration}ms`);
+                styles.push(`--dim-easing: ${state.dim.easing || 'ease-in-out'}`);
+            }
+
             if (styles.length > 0) {
                 element.style.cssText = styles.join("; ");
             }
 
-            // Apply blink CSS classes
+            // Apply blink and dim CSS classes
             const classes: string[] = [];
             if (state.slowBlink) {
                 classes.push('ansi-slow-blink');
             }
             if (state.rapidBlink) {
                 classes.push('ansi-rapid-blink');
+            }
+            if (state.dim) {
+                classes.push('ansi-dim');
             }
             if (classes.length > 0) {
                 element.className = classes.join(' ');

@@ -9,7 +9,7 @@ export default function initAligatorEmoji(client: Client) {
     ];
     const LIGHT_GREEN_BOLD: FormatStateSnapshot = {
         foreground: {space: "hex", color: "#2ffb2f"} as HexColor,
-        bold: true
+        dim: {duration: 1000, startOpacity: 1, endOpacity: 0.5},
     };
 
     patterns.forEach(pattern => {
