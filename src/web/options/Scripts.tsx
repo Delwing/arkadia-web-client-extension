@@ -1,12 +1,15 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
-import { FiEdit2, FiExternalLink } from "react-icons/fi";
+import { FiEdit2, FiExternalLink, FiUpload } from "react-icons/fi";
 import { Modal } from "bootstrap";
 import storage from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
 import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
+import { storeEditorPlugin, type EditorPluginData } from "@client/utils/pluginEditorStorage";
+import type { PluginImportWorkerResponse } from "../pluginImport.shared";
+import PluginImportWorker from "../pluginImport.worker?worker";
 
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
@@ -15,6 +18,8 @@ function Scripts() {
     const [storedPluginMetadata, setStoredPluginMetadata] = useState<Map<string, any>>(new Map());
     const [input, setInput] = useState("");
     const [codeModal, setCodeModal] = useState<Modal | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Refresh plugin info from PluginManager
     const refreshPluginInfo = () => {
@@ -208,8 +213,117 @@ function Scripts() {
         window.open(`editor/index.html?plugin=${pluginId}`, '_blank');
     };
 
+    const handleZipUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Reset input so same file can be selected again
+        e.target.value = '';
+
+        setUploadStatus({ message: 'Importowanie...', type: 'loading' });
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const worker = new PluginImportWorker();
+
+            worker.onmessage = async (event: MessageEvent<PluginImportWorkerResponse>) => {
+                const response = event.data;
+
+                if (response.type === 'progress') {
+                    setUploadStatus({ message: response.message, type: 'loading' });
+                    return;
+                }
+
+                worker.terminate();
+
+                if (response.type === 'error') {
+                    setUploadStatus({ message: response.message, type: 'error' });
+                    setTimeout(() => setUploadStatus(null), 5000);
+                    return;
+                }
+
+                try {
+                    const { id, name, compiled, files, folders, entryPoint, metadata } = response.plugin;
+
+                    const now = Date.now();
+
+                    // Store in Editor format (so it appears in Editor)
+                    const editorPluginData: EditorPluginData = {
+                        id,
+                        name,
+                        compiled,
+                        files,
+                        folders,
+                        entryPoint,
+                        metadata: metadata ? {
+                            name: metadata.name,
+                            version: metadata.version || '1.0.0',
+                            author: metadata.author || 'Imported',
+                            description: metadata.description || 'Imported from ZIP',
+                        } : {
+                            name,
+                            version: '1.0.0',
+                            author: 'Imported',
+                            description: 'Imported from ZIP',
+                        },
+                        createdAt: now,
+                        updatedAt: now,
+                        lastCompiledAt: now,
+                    };
+
+                    await storeEditorPlugin(editorPluginData);
+
+                    // Also store compiled JS for runtime
+                    await storePluginScript(id, compiled, editorPluginData.metadata);
+
+                    // Reload stored scripts list
+                    await loadStoredScriptsFromDB();
+
+                    // Trigger storage event to reload plugins
+                    const ids = await getAllStoredPluginIds();
+                    storage.setItem("stored_scripts", ids);
+
+                    // Trigger localStorage update for other tabs
+                    localStorage.setItem('stored_scripts_updated', Date.now().toString());
+
+                    setUploadStatus({
+                        message: `Zaimportowano: ${name}`,
+                        type: 'success',
+                    });
+                    setTimeout(() => setUploadStatus(null), 3000);
+                } catch (err) {
+                    console.error('Failed to store plugin:', err);
+                    setUploadStatus({
+                        message: 'Blad podczas zapisywania pluginu.',
+                        type: 'error',
+                    });
+                    setTimeout(() => setUploadStatus(null), 5000);
+                }
+            };
+
+            worker.onerror = (err) => {
+                console.error('Worker error:', err);
+                worker.terminate();
+                setUploadStatus({ message: 'Blad podczas importu.', type: 'error' });
+                setTimeout(() => setUploadStatus(null), 5000);
+            };
+
+            worker.postMessage({ type: 'import', file: arrayBuffer });
+        } catch {
+            setUploadStatus({ message: 'Nie udalo sie odczytac pliku.', type: 'error' });
+            setTimeout(() => setUploadStatus(null), 5000);
+        }
+    };
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip"
+                onChange={handleZipUpload}
+                style={{ display: 'none' }}
+            />
             <div className="d-flex flex-wrap gap-2 align-items-center">
                 <Form.Control
                     type="text"
@@ -229,11 +343,21 @@ function Scripts() {
                 <Button size="sm" variant="success" onClick={() => codeModal?.show()}>
                     Wklej kod
                 </Button>
+                <Button size="sm" variant="warning" onClick={() => fileInputRef.current?.click()}>
+                    <FiUpload className="me-1" />
+                    Importuj ZIP
+                </Button>
                 <Button size="sm" variant="info" onClick={openEditor}>
                     <FiExternalLink className="me-1" />
-                    Otwórz edytor
+                    Edytor
                 </Button>
             </div>
+            {uploadStatus && (
+                <div className={`alert alert-${uploadStatus.type === 'error' ? 'danger' : uploadStatus.type === 'loading' ? 'info' : 'success'} py-1 px-2 mb-0`} style={{ fontSize: '0.85rem' }}>
+                    {uploadStatus.type === 'loading' && <Spinner animation="border" size="sm" className="me-2" />}
+                    {uploadStatus.message}
+                </div>
+            )}
 
             <div className="d-flex flex-column gap-2">
                 {allScripts.map(identifier => {
