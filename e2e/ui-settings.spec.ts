@@ -66,8 +66,19 @@ test.describe('UI settings', () => {
         await ensureChecked('#ui-emoji-labels');
         await ensureUnchecked('#ui-fight-title-icon');
         await ensureChecked('#ui-clear-input');
-        await ensureUnchecked('#ui-show-transport-label');
-        await ensureUnchecked('#ui-show-combat-timer');
+
+        // Toggle footer component visibility (transport-timer and combat-timer)
+        // Wait for the footer components React component to render
+        await modal.locator('#ui-footer-components-settings').waitFor({state: 'visible'});
+        await page.waitForTimeout(100); // Give React time to render
+        const transportSwitch = modal.locator('#fc-transport-timer');
+        const combatSwitch = modal.locator('#fc-combat-timer');
+        if (await transportSwitch.isChecked()) {
+            await transportSwitch.uncheck();
+        }
+        if (await combatSwitch.isChecked()) {
+            await combatSwitch.uncheck();
+        }
 
         await modal.locator('#ui-settings-save').click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
@@ -95,6 +106,7 @@ test.describe('UI settings', () => {
             const objects = document.getElementById('objects-list')!;
             const charState = document.getElementById('char-state')!;
             const combatTimer = document.getElementById('combat-timer')!;
+            const transportTimer = document.getElementById('transport-timer')!;
             const splitBottom = document.getElementById('split-bottom')!;
             const contentArea = document.getElementById('content-area')!;
             return {
@@ -105,8 +117,8 @@ test.describe('UI settings', () => {
                 splitBackground: getComputedStyle(splitBottom).backgroundColor,
                 charStateFontSize: getComputedStyle(charState).fontSize,
                 footerMode: charState.getAttribute('data-footer-mode'),
-                combatTimerDisplay: getComputedStyle(combatTimer).display,
-                combatTimerEnabled: combatTimer.dataset.enabled,
+                combatTimerFooterHidden: combatTimer.dataset.footerHidden,
+                transportTimerFooterHidden: transportTimer.dataset.footerHidden,
                 bodyMapPosition: document.body.dataset.mapPosition,
                 contentMapPosition: contentArea.getAttribute('data-map-position'),
                 mapSize: contentArea.style.getPropertyValue('--map-size'),
@@ -120,8 +132,8 @@ test.describe('UI settings', () => {
         expect(styles.contentBackground, 'should apply configured output background color').toBe('rgb(18, 52, 86)');
         expect(styles.splitBackground, 'should sync split background with output background').toBe('rgb(18, 52, 86)');
         expect(styles.footerMode, 'should persist selected footer mode').toBe('2');
-        expect(styles.combatTimerDisplay, 'should hide combat timer when disabled').toBe('none');
-        expect(styles.combatTimerEnabled, 'should mark combat timer disabled state').toBe('0');
+        expect(styles.combatTimerFooterHidden, 'should mark combat timer as hidden via footer component').toBe('1');
+        expect(styles.transportTimerFooterHidden, 'should mark transport timer as hidden via footer component').toBe('1');
         expect(styles.bodyMapPosition, 'should update body map position data attribute').toBe('bottom');
         expect(styles.contentMapPosition, 'should update content map position attribute').toBe('bottom');
         expect(styles.mapSize, 'should apply configured map height').toBe('40vh');
@@ -176,10 +188,14 @@ test.describe('UI settings', () => {
                 emojiLabels: true,
                 fightTitleIcon: false,
                 clearInputOnSend: true,
-                showTransportLabel: false,
-                showCombatTimer: false,
             }),
         );
+        // Verify footer components visibility
+        expect(storedSettings.footerComponents, 'should persist footerComponents array').toBeDefined();
+        const transportConfig = storedSettings.footerComponents.find((c: any) => c.id === 'transport-timer');
+        const combatConfig = storedSettings.footerComponents.find((c: any) => c.id === 'combat-timer');
+        expect(transportConfig?.visible, 'transport-timer should be hidden').toBe(false);
+        expect(combatConfig?.visible, 'combat-timer should be hidden').toBe(false);
     });
 
     test('persist settings after reload', async ({page}) => {

@@ -798,10 +798,23 @@ test.describe('Firebase Sync', () => {
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            // Disable combat timer
+            // Disable combat timer using the new footerComponents format
             await page.evaluate(() => {
                 const uiSettings = {
-                    showCombatTimer: false,
+                    footerComponents: [
+                        { id: 'clock-display', visible: true, order: 0 },
+                        { id: 'transport-timer', visible: true, order: 1 },
+                        { id: 'lamp-timer', visible: true, order: 2 },
+                        { id: 'break-item-warning', visible: true, order: 3 },
+                        { id: 'mail-status', visible: true, order: 4 },
+                        { id: 'package-status', visible: true, order: 5 },
+                        { id: 'weapon-state', visible: true, order: 6 },
+                        { id: 'attack-mode', visible: true, order: 7 },
+                        { id: 'release-guard-timer', visible: true, order: 8 },
+                        { id: 'zask-timer', visible: true, order: 9 },
+                        { id: 'order-timer', visible: true, order: 10 },
+                        { id: 'combat-timer', visible: false, order: 11 },
+                    ],
                 };
                 localStorage.setItem('uiSettings', JSON.stringify(uiSettings));
             });
@@ -814,14 +827,12 @@ test.describe('Firebase Sync', () => {
                 const timer = document.getElementById('combat-timer');
                 if (!timer) return null;
                 return {
-                    display: getComputedStyle(timer).display,
-                    enabled: timer.dataset.enabled,
+                    footerHidden: timer.dataset.footerHidden,
                 };
             });
 
             expect(combatTimerState).toBeTruthy();
-            expect(combatTimerState!.display).toBe('none');
-            expect(combatTimerState!.enabled).toBe('0');
+            expect(combatTimerState!.footerHidden).toBe('1');
         });
 
         test('footer mode is applied from uiSettings', async ({ page }) => {
