@@ -55,9 +55,10 @@ function formatSpellOnMe(line: AnsiAwareBuffer, spellName: string): AnsiAwareBuf
 
 function formatSpellOnOthers(line: AnsiAwareBuffer, spellName: string, target?: string): AnsiAwareBuffer {
     const prefix = new AnsiAwareBuffer();
-    prefix.append("\n[");
+    prefix.append("\n[", COLOR_WHITE);
     prefix.append(` ${spellName} `, COLOR_OTHERS);
-    prefix.append("] ");
+    prefix.append("]", COLOR_WHITE);
+    prefix.append(" ");
 
     const result = new AnsiAwareBuffer();
     result.appendBuffer(prefix);
@@ -96,9 +97,10 @@ function formatDamageSpellOnOthers(line: AnsiAwareBuffer, spellName: string, dmg
     const dmg = DAMAGE_LEVELS[dmgText] ?? DAMAGE_LEVELS_ADJECTIVE[dmgText] ?? DAMAGE_LEVELS_PLURAL[dmgText] ?? -1;
 
     const prefix = new AnsiAwareBuffer();
-    prefix.append("\n[");
+    prefix.append("\n[", COLOR_WHITE);
     prefix.append(` ${spellName} ${dmg}/6 `, COLOR_OTHERS);
-    prefix.append("] ");
+    prefix.append("]", COLOR_WHITE);
+    prefix.append(" ");
 
     const result = new AnsiAwareBuffer();
     result.appendBuffer(prefix);
