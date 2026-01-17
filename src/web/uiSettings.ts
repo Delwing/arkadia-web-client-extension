@@ -2,13 +2,15 @@ import Modal from "bootstrap/js/dist/modal";
 import {Settings} from "mudlet-map-renderer";
 import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 import eventBus from "@modules/core/eventBus";
+import { createRoot, type Root } from "react-dom/client";
+import { createElement } from "react";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import { loadLayoutState, saveLayoutState, resetLayoutState } from "@web/layout";
-import { defaultUiSettings, type UiSettings } from "./defaultUiSettings";
+import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig } from "./defaultUiSettings";
 
 // Re-export for backwards compatibility
-export { defaultUiSettings, type UiSettings } from "./defaultUiSettings";
+export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig } from "./defaultUiSettings";
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -53,6 +55,40 @@ function normalizeMapScale(value: unknown, fallback = defaultUiSettings.mapScale
         return Math.max(fallback, MIN_MAP_SCALE);
     }
     return clampMapScale(numericValue);
+}
+
+function validateFooterComponents(parsed: unknown): FooterComponentConfig[] {
+    if (!Array.isArray(parsed)) {
+        return defaultFooterComponents.map(c => ({ ...c }));
+    }
+    const validIds = new Set(defaultFooterComponents.map(c => c.id));
+    const seenIds = new Set<string>();
+    const result: FooterComponentConfig[] = [];
+    for (const item of parsed) {
+        if (
+            item &&
+            typeof item === 'object' &&
+            typeof (item as any).id === 'string' &&
+            validIds.has((item as any).id) &&
+            !seenIds.has((item as any).id)
+        ) {
+            const id = (item as any).id as string;
+            seenIds.add(id);
+            result.push({
+                id,
+                visible: typeof (item as any).visible === 'boolean' ? (item as any).visible : true,
+                order: typeof (item as any).order === 'number' ? (item as any).order : result.length,
+            });
+        }
+    }
+    // Add any missing components from defaults
+    for (const def of defaultFooterComponents) {
+        if (!seenIds.has(def.id)) {
+            result.push({ ...def, order: result.length });
+        }
+    }
+    // Normalize order values
+    return result.map((c, index) => ({ ...c, order: index }));
 }
 
 const genericFontFamilyNames = new Set([
@@ -158,6 +194,18 @@ function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: s
     }
 }
 
+function applyFooterComponents(footerComponents: FooterComponentConfig[]) {
+    const charState = document.getElementById('char-state');
+    if (!charState) return;
+    for (const config of footerComponents) {
+        const element = charState.querySelector(`#${config.id}`) as HTMLElement | null;
+        if (element) {
+            element.style.order = String(config.order);
+            element.dataset.footerHidden = config.visible ? '0' : '1';
+        }
+    }
+}
+
 function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
@@ -212,6 +260,7 @@ function apply(settings: UiSettings) {
             clockDisplay.style.display = 'none';
         }
     }
+    applyFooterComponents(settings.footerComponents);
     const objects = document.getElementById('objects-list');
     if (objects) {
         if (resolvedFontFamily) {
@@ -385,6 +434,7 @@ async function load(): Promise<UiSettings> {
             const objectContextMenuCommands = Array.isArray(parsed.objectContextMenuCommands)
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
+            const footerComponents = validateFooterComponents(parsed.footerComponents);
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -420,6 +470,7 @@ async function load(): Promise<UiSettings> {
                 mapPlayerMarkerSizeFactor,
                 mapPlayerMarkerDashEnabled,
                 objectContextMenuCommands,
+                footerComponents,
             };
         }
     } catch {
@@ -492,6 +543,7 @@ export default async function initUiSettings() {
     let customSounds: CustomSound[] = [];
     const customSoundsRef = { current: customSounds };
     let objectContextMenuCommands: string[] = [...current.objectContextMenuCommands];
+    let footerComponentsConfig: FooterComponentConfig[] = [...current.footerComponents];
 
     // Create wrapper and close button for input to look like a badge when typing
     let inputWrapper: HTMLSpanElement | null = null;
@@ -780,7 +832,12 @@ export default async function initUiSettings() {
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
         objectContextMenuCommands = [...settings.objectContextMenuCommands];
         renderObjectContextMenuCommands();
+        footerComponentsConfig = [...settings.footerComponents];
+        renderFooterComponentSettings();
     };
+
+    // Will be defined later after the component is set up
+    let renderFooterComponentSettings = () => {};
 
     populateFormInputs(current);
 
@@ -883,6 +940,25 @@ export default async function initUiSettings() {
         outputBackgroundInput.value = defaultUiSettings.outputBackground;
     });
     apply(current);
+
+    // Mount Footer Component Settings React component
+    const footerComponentsContainer = modalEl.querySelector('#ui-footer-components-settings') as HTMLElement | null;
+    let footerComponentsRoot: Root | null = null;
+    renderFooterComponentSettings = () => {
+        if (!footerComponentsContainer) return;
+        import("./options/FooterComponentSettings").then(({ default: FooterComponentSettings }) => {
+            if (!footerComponentsRoot) {
+                footerComponentsRoot = createRoot(footerComponentsContainer);
+            }
+            footerComponentsRoot.render(createElement(FooterComponentSettings, {
+                components: footerComponentsConfig,
+                onChange: (updated: FooterComponentConfig[]) => {
+                    footerComponentsConfig = updated;
+                },
+            }));
+        });
+    };
+    renderFooterComponentSettings();
 
     transparentLabelsInput.addEventListener('change', updateLabelRenderModeState);
     fontFamilyInput.addEventListener('change', () => {
@@ -1136,6 +1212,7 @@ export default async function initUiSettings() {
             mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultUiSettings.mapPlayerMarkerSizeFactor,
             mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
             objectContextMenuCommands: [...objectContextMenuCommands],
+            footerComponents: [...footerComponentsConfig],
         };
     }
 

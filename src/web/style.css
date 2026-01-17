@@ -966,6 +966,11 @@ h1 {
   display: none;
 }
 
+#char-state > span[data-footer-hidden="1"],
+#char-state > div[data-footer-hidden="1"] {
+  display: none !important;
+}
+
 #char-state-bars {
   display: none;
   flex-grow: 0;

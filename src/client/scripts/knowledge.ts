@@ -301,6 +301,10 @@ function buildKnowledgeDetailsReportPayload(
                 if (normalizedCanonical.length === 0 || seenCanonical.has(normalizedCanonical)) {
                     continue;
                 }
+                // Skip removed entries
+                if (canonical === 'Usuniete' || normalizedCanonical === 'usuniete') {
+                    continue;
+                }
                 seenCanonical.add(normalizedCanonical);
                 canonicalEntries.push({
                     canonical,
@@ -431,6 +435,10 @@ function buildKnowledgeDetailsReportPayloadWithoutProgress(
                 const canonical = canonicalizeKnowledgeEntryGender(entry);
                 const normalizedCanonical = normalizeKnowledgeEntry(canonical);
                 if (normalizedCanonical.length === 0 || seenCanonical.has(normalizedCanonical)) {
+                    continue;
+                }
+                // Skip removed entries
+                if (canonical === 'Usuniete' || normalizedCanonical === 'usuniete') {
                     continue;
                 }
                 seenCanonical.add(normalizedCanonical);

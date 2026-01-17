@@ -388,7 +388,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 selection = [startIndex, startIndex + string.length];
             },
             raiseEvent(event: string, ...args: any[]) {
-                client.sendEvent(event, args)
+                client.sendEvent(event, ...args)
             },
             setFgColor(rgb: number[]) {
                 const hexColor = '#' + rgb

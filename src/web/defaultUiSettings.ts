@@ -2,6 +2,27 @@ type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-ov
 
 type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
 
+export interface FooterComponentConfig {
+    id: string;
+    visible: boolean;
+    order: number;
+}
+
+export const defaultFooterComponents: FooterComponentConfig[] = [
+    { id: 'clock-display', visible: true, order: 0 },
+    { id: 'transport-timer', visible: true, order: 1 },
+    { id: 'lamp-timer', visible: true, order: 2 },
+    { id: 'break-item-warning', visible: true, order: 3 },
+    { id: 'mail-status', visible: true, order: 4 },
+    { id: 'package-status', visible: true, order: 5 },
+    { id: 'weapon-state', visible: true, order: 6 },
+    { id: 'attack-mode', visible: true, order: 7 },
+    { id: 'release-guard-timer', visible: true, order: 8 },
+    { id: 'zask-timer', visible: true, order: 9 },
+    { id: 'order-timer', visible: true, order: 10 },
+    { id: 'combat-timer', visible: true, order: 11 },
+];
+
 export interface UiSettings {
     contentFontSize: number;
     objectsFontSize: number;
@@ -41,6 +62,7 @@ export interface UiSettings {
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
     objectContextMenuCommands: string[];
+    footerComponents: FooterComponentConfig[];
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -80,4 +102,5 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
+    footerComponents: defaultFooterComponents,
 };

@@ -1,6 +1,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button, Form } from "react-bootstrap";
 import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
     loadSettings,
     saveSettings,
     applySettings,
@@ -98,9 +115,90 @@ function RadialPreview({ commands }: { commands: RadialCommandSetting[] }) {
     );
 }
 
+interface SortableRadialItemProps {
+    cmd: RadialCommandSetting;
+    disabled: boolean;
+    onUpdate: (id: string, field: "label" | "command", value: string) => void;
+    onRemove: (id: string) => void;
+}
+
+function SortableRadialItem({ cmd, disabled, onUpdate, onRemove }: SortableRadialItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: cmd.id, disabled });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 1 : 0,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            className="border rounded p-2 d-flex flex-column flex-lg-row gap-2"
+            style={{ ...style, background: 'var(--surface-raised)' }}
+        >
+            <div className="d-flex align-items-center">
+                <span
+                    {...attributes}
+                    {...listeners}
+                    className={disabled ? "text-muted opacity-50" : "text-muted"}
+                    style={{ cursor: disabled ? 'not-allowed' : 'grab', userSelect: 'none', touchAction: 'none', fontSize: '1.2rem', padding: '0 0.25rem' }}
+                >
+                    &#x2630;
+                </span>
+            </div>
+            <Form.Group className="flex-grow-1">
+                <Form.Label className="small mb-1">Etykieta</Form.Label>
+                <Form.Control
+                    size="sm"
+                    type="text"
+                    value={cmd.label}
+                    placeholder="Nazwa przycisku"
+                    disabled={disabled}
+                    onChange={e => onUpdate(cmd.id, "label", e.target.value)}
+                />
+            </Form.Group>
+            <Form.Group className="flex-grow-1">
+                <Form.Label className="small mb-1">Komenda</Form.Label>
+                <Form.Control
+                    size="sm"
+                    type="text"
+                    value={cmd.command}
+                    placeholder="Tekst komendy"
+                    disabled={disabled}
+                    onChange={e => onUpdate(cmd.id, "command", e.target.value)}
+                />
+            </Form.Group>
+            <div className="d-flex align-items-end">
+                <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={disabled}
+                    onClick={() => onRemove(cmd.id)}
+                >
+                    Usuń
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 function MobileRadialCommands() {
     const [settings, setSettings] = useState<Settings | null>(null);
     const radialEnabled = settings?.radial?.enabled !== false;
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
 
     useEffect(() => {
         loadSettings().then(setSettings);
@@ -225,29 +323,24 @@ function MobileRadialCommands() {
         });
     }
 
-    function moveRadialCommand(id: string, direction: "up" | "down") {
-        setSettings(prev => {
-            if (!prev) {
-                return prev;
-            }
-            const commands = [...(prev.radial?.commands || [])];
-            const index = commands.findIndex(cmd => cmd.id === id);
-            if (index === -1) {
-                return prev;
-            }
-            const newIndex = direction === "up" ? index - 1 : index + 1;
-            if (newIndex < 0 || newIndex >= commands.length) {
-                return prev;
-            }
-            [commands[index], commands[newIndex]] = [commands[newIndex], commands[index]];
-            return {
-                ...prev,
-                radial: {
-                    ...prev.radial,
-                    commands,
-                },
-            };
-        });
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setSettings(prev => {
+                if (!prev) return prev;
+                const commands = [...(prev.radial?.commands || [])];
+                const oldIndex = commands.findIndex(cmd => cmd.id === active.id);
+                const newIndex = commands.findIndex(cmd => cmd.id === over.id);
+                if (oldIndex === -1 || newIndex === -1) return prev;
+                return {
+                    ...prev,
+                    radial: {
+                        ...prev.radial,
+                        commands: arrayMove(commands, oldIndex, newIndex),
+                    },
+                };
+            });
+        }
     }
 
     const commands = settings?.radial?.commands || [];
@@ -276,69 +369,24 @@ function MobileRadialCommands() {
             )}
             <div>
                 <Form.Label className="mb-2">Komendy menu kołowego</Form.Label>
-                <div className="d-flex flex-column gap-2">
-                    {commands.length === 0 && (
-                        <p className="text-muted small mb-0">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
-                    )}
-                    {commands.map((cmd, index) => (
-                        <div key={cmd.id} className="border rounded p-2 d-flex flex-column flex-lg-row gap-2">
-                            <div className="d-flex flex-column justify-content-center gap-1">
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    disabled={!radialEnabled || index === 0}
-                                    onClick={() => moveRadialCommand(cmd.id, "up")}
-                                    style={{ padding: "0.1rem 0.4rem", lineHeight: 1 }}
-                                    title="Przesuń w górę"
-                                >
-                                    ▲
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    disabled={!radialEnabled || index === commands.length - 1}
-                                    onClick={() => moveRadialCommand(cmd.id, "down")}
-                                    style={{ padding: "0.1rem 0.4rem", lineHeight: 1 }}
-                                    title="Przesuń w dół"
-                                >
-                                    ▼
-                                </Button>
-                            </div>
-                            <Form.Group className="flex-grow-1">
-                                <Form.Label className="small mb-1">Etykieta</Form.Label>
-                                <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={cmd.label}
-                                    placeholder="Nazwa przycisku"
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={commands.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                        <div className="d-flex flex-column gap-2">
+                            {commands.length === 0 && (
+                                <p className="text-muted small mb-0">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
+                            )}
+                            {commands.map(cmd => (
+                                <SortableRadialItem
+                                    key={cmd.id}
+                                    cmd={cmd}
                                     disabled={!radialEnabled}
-                                    onChange={e => updateRadialCommand(cmd.id, "label", e.target.value)}
+                                    onUpdate={updateRadialCommand}
+                                    onRemove={removeRadialCommand}
                                 />
-                            </Form.Group>
-                            <Form.Group className="flex-grow-1">
-                                <Form.Label className="small mb-1">Komenda</Form.Label>
-                                <Form.Control
-                                    size="sm"
-                                    type="text"
-                                    value={cmd.command}
-                                    placeholder="Tekst komendy"
-                                    disabled={!radialEnabled}
-                                    onChange={e => updateRadialCommand(cmd.id, "command", e.target.value)}
-                                />
-                            </Form.Group>
-                            <div className="d-flex align-items-end">
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    disabled={!radialEnabled}
-                                    onClick={() => removeRadialCommand(cmd.id)}
-                                >
-                                    Usuń
-                                </Button>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                </DndContext>
             </div>
         </div>
     );
