@@ -487,17 +487,47 @@ export async function pushGmcp(page: Page, path: string, payload: unknown): Prom
 const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')}\n`;
 
 export async function ensureGameSocket(page: Page): Promise<void> {
-    const connectButton = page.locator('#connect-button');
-    const connectButtonInline = page.locator('#connect-button-inline');
-    if (await connectButton.isVisible()) {
-        await connectButton.click();
-    } else if (await connectButtonInline.isVisible()) {
-        await connectButtonInline.click();
-    }
-    await page.waitForFunction(() => {
+    // Wait for mock WebSocket to be installed
+    await page.waitForFunction(
+        () => typeof (window as any).__mockSockets !== 'undefined',
+        {timeout: 10000}
+    );
+
+    // Check if already connected
+    const alreadyConnected = await page.evaluate(() => {
         const sockets: any[] = (window as any).__mockSockets ?? [];
         return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
     });
+
+    if (!alreadyConnected) {
+        // Wait for either connect button to be visible and click it
+        const connectButton = page.locator('#connect-button');
+        const connectButtonInline = page.locator('#connect-button-inline');
+
+        try {
+            // Try the main connect button first
+            await connectButton.waitFor({state: 'visible', timeout: 5000});
+            await connectButton.click();
+        } catch {
+            // Fall back to inline connect button
+            try {
+                await connectButtonInline.waitFor({state: 'visible', timeout: 5000});
+                await connectButtonInline.click();
+            } catch {
+                // Neither button found - might already be connected or auto-connect is enabled
+            }
+        }
+    }
+
+    // Wait for socket connection with explicit timeout
+    await page.waitForFunction(
+        () => {
+            const sockets: any[] = (window as any).__mockSockets ?? [];
+            return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
+        },
+        {timeout: 15000}
+    );
+
     await page.evaluate(() => {
         const globalScope: any = window;
         if (typeof globalScope.__resetCommandLog === 'function') {
