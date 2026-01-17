@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    const messageInput = document.getElementById('message-input') as HTMLInputElement;
+    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const uiSettingsData = getItemSync('uiSettings');
     let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
@@ -1809,20 +1809,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sendMessage(focus = true) {
-        const message = messageInput.value.trim();
-        if (message) {
+        const lines = messageInput.value.split('\n');
+        const commands = lines.map(line => line.trim()).filter(line => line.length > 0);
+
+        if (commands.length > 0) {
             // Only add command to history if we've received the first GMCP event
             if (arkadiaClient.hasReceivedFirstGmcp()) {
-                // Add command to history if it's different from the last one
-                if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== message) {
-                    commandHistory.push(message);
+                // Add each command to history if it's different from the last one
+                for (const command of commands) {
+                    if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== command) {
+                        commandHistory.push(command);
+                    }
                 }
                 // Reset history index
                 resetHistoryNavigation();
                 currentInput = '';
                 resetTabState();
 
-                client.sendCommand(message, true, undefined, false, true);
+                // Send each command
+                for (const command of commands) {
+                    client.sendCommand(command, true, undefined, false, true);
+                }
                 if (clearInputOnSend) {
                     messageInput.value = '';
                     if (focus) messageInput.focus();
@@ -1831,7 +1838,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
-                client.sendCommand(message, true, undefined, false, true);
+                for (const command of commands) {
+                    client.sendCommand(command, true, undefined, false, true);
+                }
                 messageInput.value = '';
                 if (focus) messageInput.focus();
             }
@@ -1851,6 +1860,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+            // Shift+Enter allows new line in textarea
+            if (e.shiftKey) {
+                return;
+            }
             const active = document.activeElement as HTMLElement | null;
             const modalOpen = document.querySelector('.modal.show');
             if (modalOpen && (!active || active.id !== 'message-input')) {

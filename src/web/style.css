@@ -3283,6 +3283,11 @@ h1 {
   -webkit-user-select: text;
   user-select: text;
   touch-action: manipulation;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.2;
+  field-sizing: content;
+  max-height: 6em;
 }
 
 #message-input:focus {
