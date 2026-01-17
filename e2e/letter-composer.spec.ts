@@ -25,7 +25,7 @@ test.describe('Letter composer', () => {
 
         // Check form fields are present
         await expect(composer.locator('#letter-to'), 'should have "To" field').toBeVisible();
-        await expect(composer.locator('#letter-cc'), 'should have "CC" field').toBeVisible();
+        await expect(composer.locator('#letter-dw'), 'should have "DW" field').toBeVisible();
         await expect(composer.locator('#letter-subject'), 'should have "Subject" field').toBeVisible();
         await expect(composer.locator('#letter-content'), 'should have "Content" field').toBeVisible();
         await expect(composer.locator('#letter-template'), 'should have template selector').toBeVisible();
@@ -44,13 +44,13 @@ test.describe('Letter composer', () => {
 
         // Fill in all form fields
         await composer.locator('#letter-to').fill('Gandalf');
-        await composer.locator('#letter-cc').fill('Frodo');
+        await composer.locator('#letter-dw').fill('Frodo');
         await composer.locator('#letter-subject').fill('Test temat');
         await composer.locator('#letter-content').fill('To jest tresc testowego listu.');
 
         // Verify values are set
         await expect(composer.locator('#letter-to'), 'should set "To" value').toHaveValue('Gandalf');
-        await expect(composer.locator('#letter-cc'), 'should set "CC" value').toHaveValue('Frodo');
+        await expect(composer.locator('#letter-dw'), 'should set "DW" value').toHaveValue('Frodo');
         await expect(composer.locator('#letter-subject'), 'should set "Subject" value').toHaveValue('Test temat');
         await expect(composer.locator('#letter-content'), 'should set "Content" value').toHaveValue('To jest tresc testowego listu.');
     });
@@ -193,7 +193,7 @@ test.describe('Letter composer', () => {
 
         // Fill in form
         await composer.locator('#letter-to').fill('Gandalf');
-        await composer.locator('#letter-cc').fill('Frodo');
+        await composer.locator('#letter-dw').fill('Frodo');
         await composer.locator('#letter-subject').fill('Test');
         await composer.locator('#letter-content').fill('Content');
 
@@ -206,7 +206,7 @@ test.describe('Letter composer', () => {
 
         // All fields should be empty
         await expect(composer.locator('#letter-to'), 'should reset "To" field').toHaveValue('');
-        await expect(composer.locator('#letter-cc'), 'should reset "CC" field').toHaveValue('');
+        await expect(composer.locator('#letter-dw'), 'should reset "DW" field').toHaveValue('');
         await expect(composer.locator('#letter-subject'), 'should reset "Subject" field').toHaveValue('');
         await expect(composer.locator('#letter-content'), 'should reset "Content" field').toHaveValue('');
     });

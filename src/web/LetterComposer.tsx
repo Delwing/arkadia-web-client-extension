@@ -46,7 +46,7 @@ const LetterComposer: React.FC = () => {
     const [isWideScreen, setIsWideScreen] = useState(false);
 
     const toInputRef = useRef<HTMLInputElement>(null);
-    const ccInputRef = useRef<HTMLInputElement>(null);
+    const dwInputRef = useRef<HTMLInputElement>(null);
     const udwInputRef = useRef<HTMLInputElement>(null);
     const subjectInputRef = useRef<HTMLInputElement>(null);
     const contentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -101,7 +101,7 @@ const LetterComposer: React.FC = () => {
         saveTemplateSelection(template);
         return {
             to: toInputRef.current?.value ?? "",
-            cc: ccInputRef.current?.value ?? "",
+            cc: dwInputRef.current?.value ?? "",
             udw: udwInputRef.current?.value ?? "",
             subject: subjectInputRef.current?.value ?? "",
             content: contentInputRef.current?.value ?? "",
@@ -111,7 +111,7 @@ const LetterComposer: React.FC = () => {
 
     const resetForm = useCallback(() => {
         if (toInputRef.current) toInputRef.current.value = "";
-        if (ccInputRef.current) ccInputRef.current.value = "";
+        if (dwInputRef.current) dwInputRef.current.value = "";
         if (udwInputRef.current) udwInputRef.current.value = "";
         if (subjectInputRef.current) subjectInputRef.current.value = "";
         if (contentInputRef.current) contentInputRef.current.value = "";
@@ -165,8 +165,8 @@ const LetterComposer: React.FC = () => {
                 if (payload?.to && toInputRef.current) {
                     toInputRef.current.value = payload.to;
                 }
-                if (payload?.cc && ccInputRef.current) {
-                    ccInputRef.current.value = payload.cc;
+                if (payload?.cc && dwInputRef.current) {
+                    dwInputRef.current.value = payload.cc;
                 }
                 if (payload?.udw && udwInputRef.current) {
                     udwInputRef.current.value = payload.udw;
@@ -248,17 +248,19 @@ const LetterComposer: React.FC = () => {
                                 className="form-control form-control-sm"
                                 type="text"
                                 autoComplete="off"
+                                tabIndex={1}
                             />
                         </div>
                         <div className="letter-composer-field">
-                            <label htmlFor="letter-cc" className="form-label">CC:</label>
+                            <label htmlFor="letter-dw" className="form-label">DW:</label>
                             <input
-                                ref={ccInputRef}
-                                id="letter-cc"
-                                name="letter-cc"
+                                ref={dwInputRef}
+                                id="letter-dw"
+                                name="letter-dw"
                                 className="form-control form-control-sm"
                                 type="text"
                                 autoComplete="off"
+                                tabIndex={4}
                             />
                         </div>
                         <div className="letter-composer-field">
@@ -270,6 +272,7 @@ const LetterComposer: React.FC = () => {
                                 className="form-control form-control-sm"
                                 type="text"
                                 autoComplete="off"
+                                tabIndex={5}
                             />
                         </div>
                         <div className="letter-composer-field">
@@ -281,6 +284,7 @@ const LetterComposer: React.FC = () => {
                                 className="form-control form-control-sm"
                                 type="text"
                                 autoComplete="off"
+                                tabIndex={2}
                             />
                         </div>
                         <div className="letter-composer-field letter-composer-field--grow">
@@ -292,6 +296,7 @@ const LetterComposer: React.FC = () => {
                                 className="form-control"
                                 onChange={handleContentChange}
                                 onKeyDown={handleKeyDown}
+                                tabIndex={3}
                             />
                         </div>
                         <div className="letter-composer-actions">
