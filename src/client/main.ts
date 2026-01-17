@@ -17,6 +17,7 @@ import initCoverTimer from './scripts/coverTimer'
 import initOrderTimer from './scripts/orderTimer'
 import initCombatState from './scripts/combatState'
 import initCombatTimer from './scripts/combatTimer'
+import initWeaponState from './scripts/weaponState'
 import initZaskTimer from './scripts/zaskTimer'
 import initBinds from './scripts/binds'
 import initTempBinds from './scripts/tempBinds'
@@ -165,6 +166,7 @@ export function registerScripts(client: Client) {
     initOrderTimer(client)
     initCombatState(client)
     initCombatTimer(client)
+    initWeaponState(client)
     initZaskTimer(client)
     initBinds(client, aliases)
     initTempBinds(client, aliases)

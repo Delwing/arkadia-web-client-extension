@@ -6,3 +6,4 @@ export { CharState } from "./CharState";
 export { AttackMode } from "./AttackMode";
 export { PackageStatus } from "./PackageStatus";
 export { MailStatus } from "./MailStatus";
+export { WeaponState } from "./WeaponState";

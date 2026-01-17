@@ -2078,6 +2078,13 @@ h1 {
   cursor: pointer;
 }
 
+#weapon-state .weapon-on {
+  color: springgreen;
+}
+
+#weapon-state .weapon-off {
+  color: #888;
+}
 
 #attack-mode {
   display: none;

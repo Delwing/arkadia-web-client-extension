@@ -1,0 +1,341 @@
+[
+  {
+    "name": "weapon_on",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_on()",
+    "patterns": [
+      {
+        "pattern": "Wiedziony naglym instynktem siegasz po",
+        "type": 2
+      },
+      {
+        "pattern": "Ostrze kosy rozblyska nieziemskim blaskiem, gdy dobywasz broni w obie rece.",
+        "type": 2
+      },
+      {
+        "pattern": "Trzymasz oburacz",
+        "type": 2
+      },
+      {
+        "pattern": "^Trzymasz .* w (prawej|lewej) rece.*",
+        "type": 1
+      },
+      {
+        "pattern": "Z latwoscia dobywasz ogromnego ognistego trojzebu, czujac pulsujaca moc w zaciskajacych sie na drzewcu rekach.",
+        "type": 2
+      },
+      {
+        "pattern": "^[ >]*Siegasz do .*, dobywajac z nie[a-z]+ .*\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Gwaltownym ruchem wyszarpujesz zza plecow",
+        "type": 2
+      },
+      {
+        "pattern": "Jednym plynnym ruchem dobywasz",
+        "type": 2
+      },
+      {
+        "pattern": "Szybkim i bezszelestnym ruchem dobywasz",
+        "type": 2
+      },
+      {
+        "pattern": "Plynnym, pelnym pewnosci ruchem dobywasz",
+        "type": 2
+      },
+      {
+        "pattern": "Z trudem dobywasz gigantycznego granitowego mlota.",
+        "type": 2
+      },
+      {
+        "pattern": "Pewnym chwytem dobywasz",
+        "type": 2
+      },
+      {
+        "pattern": "Gdy dobywasz [a-z ]+, klinga broni rozgrzewa sie do czerwonosci\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Czujesz, jak przez twoje palce przebiega delikatne, elektryzujace drzenie, jakby bulawa witala sie z uteskniona dlonia.",
+        "type": 2
+      },
+      {
+        "pattern": "Z lekkoscia dobywasz jasniejacego zdobionego jatagana, a ten rozblyskuje jeszcze mocniejsza poswiata.",
+        "type": 2
+      },
+      {
+        "pattern": "Zgrzytajac demostracyjnie klinga wysuwasz powoli",
+        "type": 0
+      },
+      {
+        "pattern": "Zamaszystym ruchem wznosisz wielki kamienny kafar do gory, by wesprzec go na ramieniu.",
+        "type": 2
+      },
+      {
+        "pattern": "Ujmujesz rezonujacy krysztalowy mlot i czujesz, jak metalowy trzonek delikatnie wibruje w twojej dloni.",
+        "type": 2
+      },
+      {
+        "pattern": "Chwytasz stylisko misternego obosiecznego topora w garsc",
+        "type": 0
+      },
+      {
+        "pattern": "Pod wplywem twego pewnego chwytu zdobiony jasniejacy chepesz rozblyskuje jasnym swiatlem, ",
+        "type": 0
+      },
+      {
+        "pattern": "Ostroznie chwytasz oburacz trzonek koscianego kilofa",
+        "type": 0
+      },
+      {
+        "pattern": "Pelnym pewnosci siebie ruchem dobywasz",
+        "type": 0
+      },
+      {
+        "pattern": "Plynnymi, pelnymi pewnosci ruchami dobywasz",
+        "type": 0
+      },
+      {
+        "pattern": "Poprawiasz uchwyt na polyskliwym smuklym espadonie i wywijasz nim kilka mlyncow, sprawdzajac wywazenie broni.",
+        "type": 2
+      },
+      {
+        "pattern": "^Poprawiasz uchwyt na .* i wywijasz \\w kilka mlyncow, sprawdzajac wywazenie broni\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Czujesz w sobie niezwykla moc, gdy dobywasz adamantytowego mlota bojowego.",
+        "type": 2
+      },
+      {
+        "pattern": "Gdy dobywasz foremnego iskrzacego mlota, pelzajace po broni wyladowania elektryczne przeskakuja na twa dlon i przedramie oplatajac je siateczka jasniejacych wici.",
+        "type": 2
+      },
+      {
+        "pattern": "Pod wplywem twego pewnego chwytu zdobiony jasniejacy mlot rozblyskuje jasnym swiatlem, ",
+        "type": 1
+      },
+      {
+        "pattern": "Czujesz jak zalewa cie fala ogromnej pewnosci siebie i satysfakcji.",
+        "type": 0
+      },
+      {
+        "pattern": "Juz dzierzysz",
+        "type": 2
+      },
+      {
+        "pattern": "Z mrozaca krew w zylach gracja dobywasz waskiego zebatego palasza, a twoje spojrzenie staje siezimne jak lod.",
+        "type": 2
+      },
+      {
+        "pattern": "Chwytasz za rekojesc obosiecznego gwiezdnego topora, unoszac go na wysokosc swej twarzy. W odpowiedzi na twoj dotyk, czarne jak noc zelezce zaczyna mienic sie blaskiem tysiaca gwiazd.",
+        "type": 2
+      },
+      {
+        "pattern": "Chwytasz partyzane pewnie w swoje rece zataczajac nia kolo nad glowa",
+        "type": 2
+      },
+      {
+        "pattern": "Chwytasz wielka smolista maczuga i czujesz, jak do twoich dloni przywiera lepka, czarna maz ktora pokrywa te bron na calej powierzchni.",
+        "type": 2
+      },
+      {
+        "pattern": "Gdy tylko dobywasz czarnoblekitnego pulsujacego morgensterna, runy rozblyskuja srebrzystym swiatlem, a ty czujesz jak bron wibruje w twej dloni. Po chwili to wrazenie ustaje, znaki gasna, jednak caly czas czujesz przeplywajaca przez ciebie energie.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywajac koscianej jednorecznej maczugi wykonujesz kilka szybkich ruchow, sprawdzajac jej porecznosc.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywajac czarnego smuklego ",
+        "type": 2
+      },
+      {
+        "pattern": "Gdy dobywasz lodowego lsniacego sztyletu fala obezwladniajacego chlodu przeplywa przez twe cialo. Przymykasz oczy starajac sie zawladnac ta potezna bronia i po chwili czujesz, ze jestes jej panem.",
+        "type": 2
+      },
+      {
+        "pattern": "Zdecydowanym ruchem zapinasz opaske na swym przedramieniu. Szybkie szarpniecie reki sprawia, ze skryte dotad ostrza stalowych smoczych pazurow wysuwaja sie z metalicznym szczekiem.",
+        "type": 2
+      },
+      {
+        "pattern": "Nieznacznym, wprawnym poruszeniem nadgarstk",
+        "type": 2
+      },
+      {
+        "pattern": "Z trudem dobywasz snieznobialego lsniacego sztyletu, gdy przed oczami przebiegaja ci obrazy krwi, smierci i zniszczenia. Twoje cialo ogarnia niesamowity chlod.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywajac szylkretowego falistego sztyletu, czujesz niebywala jednosc z ta na pozor zwyczajna bronia.",
+        "type": 2
+      },
+      {
+        "pattern": "Nie jestes w stanie powstrzymac lekkiego usmieszku, na mysl o tym czego mozna dokonac tak grozna bronia jak ta.",
+        "type": 2
+      },
+      {
+        "pattern": "Przekladasz jedna dlon przez skorzana petle przy stylisku i obiema rekami sciskasz najezony potezny morgenstern, dobywajac oreza.",
+        "type": 2
+      },
+      {
+        "pattern": "^Blyskawicznie dobywasz .* gotujac sie do nadchodzacego boju\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Eleganckim ruchem dobywasz .* przybierajac pelna gracji pozycje walki\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Gwaltownie siegasz po .* szykujac sie do rychlego starcia\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Pozornie niespiesznym ruchem dobywasz .* zamierajac w wystudiowanej postawie walki\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Umiejetnie chwytasz za .* bez leku oczekujac nadchodzacej walki\\.$",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "weapon_on_2",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_on()",
+    "patterns": [
+      {
+        "pattern": "^Zataczasz .* swiszczacego mlynca, przyjmujac przy tym dogodna do wyprowadzenia ciosu pozycje\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Powolnym, demonstracyjnym wrecz gestem siegasz po",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "weapon_on",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_on()",
+    "patterns": [
+      {
+        "pattern": "Dobywasz oburacz",
+        "type": 2
+      },
+      {
+        "pattern": "^Dobywasz .* reka\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Dobywasz dwurecznego krysztalowego korbacza czujac, ze stales sie panem tej poteznej broni.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywasz [a-z ]+ zaciskajac dlon na rekojesci.",
+        "type": 1
+      },
+      {
+        "pattern": "Dobywasz kruczoczarnego misternego miecza, a jego lsniace ostrze na krotka chwile rozswietla sie jasnym, czerwonym blaskiem. ",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywasz niematerialnego ulotnego szamszira prawa reka, a bron skreca sie i zwija, rosnac i kurczac sie naprzemiennie, ",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywasz waskiego kunsztownego sihilla, a runa smierci na jego klindze ozywa na chwile.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywasz opalizujacego runicznego topora obosiecznego. Ciarki przechodza ci po plecach, gdy twe rece bezwiednie dopasowuja sie do uchwytu, a runy na ostrzu rozblyskuja bladoczerwonym swiatlem.",
+        "type": 2
+      },
+      {
+        "pattern": "Dobywasz krysztalowego korbacza czujac",
+        "type": 2
+      },
+      {
+        "pattern": "^Dobywasz .* pewnym chwytem, szykujac sie do walki\\.$",
+        "type": 1
+      }
+    ],
+    "parents": [
+      {
+        "name": "Dobywasz...",
+        "patterns": [
+          {
+            "pattern": "Dobywasz ",
+            "type": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "weapon_on",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_on()",
+    "patterns": [
+      {
+        "pattern": "Zaciskasz dlon na egzotycznym jadeitowym palaszu i przez chwile czujesz, jak bron wibruje od zgromadzonej w niej mocy.",
+        "type": 3
+      },
+      {
+        "pattern": "Zaciskasz dlon na niezwyklym koscianym toporze i przez chwile czujesz, jak bron wibruje od zgromadzonej w niej mocy.",
+        "type": 3
+      },
+      {
+        "pattern": "Zaciskasz dlon na rekojesci szponiastej dwusegmentowej maczugi powodujac, ze jej najezona ostrzami glowica kolysze sie ociezale na boki.",
+        "type": 3
+      },
+      {
+        "pattern": "Zaciskasz dlon na misternym snieznobialym harpunie i przez chwile czujesz, jak bron wibruje od zgromadzonej w niej mocy.",
+        "type": 3
+      },
+      {
+        "pattern": "Zaciskasz dlonie na rekojesci lodowatej dlugiej maczugi.",
+        "type": 2
+      },
+      {
+        "pattern": "Zaciskasz dlon na srebrzystym wulkanicznym kindzale i przez chwile czujesz, jak bron wibruje od zgromadzonej w niej mocy.",
+        "type": 2
+      }
+    ],
+    "parents": [
+      {
+        "name": "Zaciskasz...",
+        "patterns": [
+          {
+            "pattern": "Zaciskasz ",
+            "type": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Chwytasz",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_on()",
+    "patterns": [
+      {
+        "pattern": "^Chwytasz .* (lewa|prawa) reka\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Chwytasz oburacz .*\\.$",
+        "type": 1
+      }
+    ],
+    "parents": [
+      {
+        "name": "Chwytasz...",
+        "patterns": [
+          {
+            "pattern": "Chwytasz",
+            "type": 2
+          }
+        ]
+      }
+    ]
+  }
+]

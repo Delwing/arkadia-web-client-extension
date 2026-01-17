@@ -1,0 +1,80 @@
+[
+  {
+    "name": "weapon_off",
+    "script": "trigger_func_skrypty_ui_footer_elements_weapon_off()",
+    "patterns": [
+      {
+        "pattern": "^[ >]*Powoli opuszczasz .*, raz jeszcze, dla pewnosci, ogarniajac wzrokiem cala okolice\\.",
+        "type": 1
+      },
+      {
+        "pattern": "Przechodzi cie nagly dreszcz, gdy opuszczasz srebrzysta kose bojowa.",
+        "type": 3
+      },
+      {
+        "pattern": "^[ >]*Opuszczasz (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Wprawnym ruchem przewieszasz",
+        "type": 2
+      },
+      {
+        "pattern": "^(?!.*przez)(.+?) peka!$",
+        "type": 1
+      },
+      {
+        "pattern": "Rozgladajac sie uwaznie, opuszczasz cicho",
+        "type": 0
+      },
+      {
+        "pattern": "Niechetnie opuszczasz swoj zlowrogi orez.",
+        "type": 2
+      },
+      {
+        "pattern": "Gdy rozluzniasz chwyt na iskrzacej zdobionej bulawie, pomiedzy cwiekami na glowicy broni przestaja rzeskakiwac iskry.",
+        "type": 0
+      },
+      {
+        "pattern": "Szybkim ruchem opuszczasz jasniejacy zdobiony jatagan, a luna wokol broni nieznacznie przygasa.",
+        "type": 2
+      },
+      {
+        "pattern": "Wraz z opuszczeniem zdobionego jasniejacego chepesza zanika wypelniajace do tej pory twe serce uczucie niezlomnosci i mestwa,",
+        "type": 2
+      },
+      {
+        "pattern": "Czujesz nienaturalna tesknote, gdy tylko twoje palce zwalniaja chwyt na egzotycznym jadeitowym palaszu.",
+        "type": 0
+      },
+      {
+        "pattern": "Rozluzniasz swoj uchwyt na opalizujacym runicznym toporze obosiecznym. Przez chwile czujesz ogromna, nieokreslona pustke. Swiecace runy na ostrzu topora przygasaja.",
+        "type": 2
+      },
+      {
+        "pattern": "Czujesz nieokreslona pustke, gdy opuszczasz adamantytowy mlot bojowy.",
+        "type": 0
+      },
+      {
+        "pattern": "Wraz z opuszczeniem zdobionego jasniejacego mlota zanika wypelniajace do tej pory twe serce uczucie niezlomnosci",
+        "type": 0
+      },
+      {
+        "pattern": "Rozluzniasz chwyt na rezonujacym krysztalowym mlocie i przez chwile zmagasz sie ze zdretwialymi palcami.",
+        "type": 2
+      },
+      {
+        "pattern": "Rozluzniasz swoj uchwyt na lodowym lsniacym sztylecie. Przez chwile czujesz ogromna, nieokreslona pustke. Swiecace runy na ostrzu sztyletu przygasaja.",
+        "type": 2
+      },
+      {
+        "pattern": "Ostrza stalowych smoczych pazurow skrywaja sie w prowadnicach. Odpinasz bransolete i opuszczasz reke, pozwalajac aby opaska zsunela sie swobodnie z twego przedramienia.",
+        "type": 2
+      },
+      {
+        "pattern": "Nie mogac zniesc natezenia tego dzwieku, opuszczasz bron zaslaniajac uszy.",
+        "type": 2
+      }
+    ]
+  }
+]
