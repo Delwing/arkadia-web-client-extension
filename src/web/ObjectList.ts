@@ -34,7 +34,7 @@ export default class ObjectList {
     private cachedPipHtml = "";
     private attackController: ReturnType<typeof createAttackController>;
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
-    private viewMode: 'list' | 'card' | 'compact' = 'list';
+    private viewMode: 'list' | 'card' | 'compact' | 'compact-dots' = 'list';
     private isLayoutManagerEnabled = false;
     private renderScheduled = false;
 
@@ -81,7 +81,7 @@ export default class ObjectList {
         this.isLayoutManagerEnabled = layoutState.enabled;
         this.syncViewModeWithLayoutState(this.isLayoutManagerEnabled);
         // Subscribe to view mode changes from the header toggle
-        eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact') => {
+        eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact' | 'compact-dots') => {
             if (!this.isLayoutManagerEnabled) {
                 return;
             }
@@ -104,7 +104,7 @@ export default class ObjectList {
 
     private syncViewModeWithLayoutState(isLayoutEnabled: boolean) {
         const nextViewMode = isLayoutEnabled
-            ? getBuiltInPanelSetting<'list' | 'card' | 'compact'>('objectList', 'viewMode', 'list')
+            ? getBuiltInPanelSetting<'list' | 'card' | 'compact' | 'compact-dots'>('objectList', 'viewMode', 'list')
             : 'list';
         if (this.viewMode !== nextViewMode) {
             this.viewMode = nextViewMode;
@@ -171,13 +171,13 @@ export default class ObjectList {
             pointerType === "mouse" || (pointerType === "" && !this.isMobile);
 
         // In card view, don't interfere with clicks on card elements (allows context menu)
-        if (isMousePointer && (this.viewMode === 'card' || this.viewMode === 'compact') && target?.closest(".object-card")) {
+        if (isMousePointer && (this.viewMode === 'card' || this.viewMode === 'compact' || this.viewMode === 'compact-dots') && target?.closest(".object-card")) {
             return;
         }
 
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar-vertical, .object-card__number, .object-card__name")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar-vertical, .object-card__hp-dots, .object-card__number, .object-card__name")
         ) {
             return;
         }
@@ -326,9 +326,9 @@ export default class ObjectList {
             this.focusInput();
             return;
         }
-        // Handle card view HP bar click - send /prze command (horizontal and vertical)
+        // Handle card view HP bar click - send /prze command (horizontal, vertical, and dots)
         const cardHpBarEl = target.closest(
-            ".object-card__hp-bar[data-object-num], .object-card__hp-bar-vertical[data-object-num]"
+            ".object-card__hp-bar[data-object-num], .object-card__hp-bar-vertical[data-object-num], .object-card__hp-dots[data-object-num]"
         ) as HTMLElement | null;
         if (cardHpBarEl) {
             const num = cardHpBarEl.getAttribute("data-object-num");
@@ -459,7 +459,7 @@ export default class ObjectList {
         let objectId: string | null = null;
 
         // In card view, find the parent card element
-        if (this.viewMode === 'card' || this.viewMode === 'compact') {
+        if (this.viewMode === 'card' || this.viewMode === 'compact' || this.viewMode === 'compact-dots') {
             const cardEl = target.closest(".object-card") as HTMLElement | null;
             if (cardEl) {
                 objectId = cardEl.getAttribute("data-object-id");
@@ -526,6 +526,10 @@ export default class ObjectList {
         }
         if (this.viewMode === 'compact') {
             this.renderCompactCardView(objects);
+            return;
+        }
+        if (this.viewMode === 'compact-dots') {
+            this.renderCompactDotsView(objects);
             return;
         }
         const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
@@ -1052,6 +1056,183 @@ export default class ObjectList {
                 <div class="object-card__compact-content">
                     ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
+                    ${attackersHtml}
+                </div>
+            </div>`;
+        });
+
+        this.content.innerHTML = `<div class="objects-list-cards objects-list-cards--compact">${cards.join('')}</div>`;
+
+        // Attach contextmenu handler directly to the cards container (use capture phase)
+        const cardsContainer = this.content.querySelector('.objects-list-cards');
+        if (cardsContainer && !this.isMobile) {
+            cardsContainer.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
+        }
+
+        this.rebuildPictureInPictureHtml();
+    }
+
+    private renderCompactDotsView(objects: any[]) {
+        if (!this.content) return;
+
+        const tm = this.client.TeamManager;
+        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
+
+        // Verify the queued enemy actually exists in the current object list
+        const queuedEnemyExists = nextQueuedId !== undefined &&
+            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
+        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
+
+        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
+        const teamAttacking = objects.some((o: any) => {
+            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
+        });
+
+        const cards = objects.map((obj: any) => {
+            const num = String(obj.shortcut);
+            const isPlayer = obj.shortcut === '@';
+            const rawDesc = obj.desc || "";
+            const isTeammate = tm?.isInTeam?.(rawDesc);
+            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
+            const isNextQueued =
+                !isPlayer &&
+                validNextQueuedId !== undefined &&
+                typeof obj.num !== "undefined" &&
+                validNextQueuedId === obj.num;
+            const isTarget = obj.avatar_target || false;
+
+            // Apply filters before rendering
+            const filterContext: EntryContext = {
+                object: obj,
+                displayNum: parseInt(num, 10),
+                isTarget,
+                isNextTarget: isNextQueued,
+                isTeammate: isTeammate || false,
+                rawDescription: rawDesc,
+                isAttacking,
+                attackCommand: this.attackController.getAttackCommand()
+            };
+            const filterResult = objectListFilters.apply(filterContext);
+
+            // Card classes
+            const cardClasses = ['object-card', 'object-card--compact', 'object-card--compact-dots'];
+            if (isPlayer) cardClasses.push('object-card--player');
+            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
+            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
+            if (isNextQueued) cardClasses.push('object-card--next-queued');
+            if (obj.attack_target) cardClasses.push('object-card--attack-target');
+            if (obj.defense_target) cardClasses.push('object-card--defense-target');
+
+            // Apply filter CSS classes to card
+            if (filterResult.style?.cssClasses) {
+                cardClasses.push(...filterResult.style.cssClasses);
+            }
+
+            // Number badge classes
+            const numberClasses = ['object-card__number'];
+            if (isNextQueued) numberClasses.push('object-card__number--next-target');
+
+            // Name classes
+            const nameClasses = ['object-card__name'];
+            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
+            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
+            if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+
+            // Apply teammate not attacking italic style
+            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
+                nameClasses.push('object-card__name--teammate-not-attacking');
+            }
+
+            // Apply filter italic override
+            if (filterResult.style?.italic) {
+                nameClasses.push('object-card__name--teammate-not-attacking');
+            }
+
+            // Build name style from filter overrides
+            let nameStyle = '';
+            if (filterResult.style?.descriptionColor) {
+                nameStyle += `color:${filterResult.style.descriptionColor};`;
+            }
+            if (filterResult.style?.descriptionBackgroundColor) {
+                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
+            }
+
+            // Use filtered description if provided
+            const displayDesc = filterResult.content?.description !== undefined
+                ? filterResult.content.description
+                : rawDesc;
+
+            // Apply prefix and suffix from filters
+            const customPrefix = filterResult.style?.prefix || "";
+            const customSuffix = filterResult.style?.suffix || "";
+            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
+
+            // Build HP dots with color based on health level (0-6 scale, 7 levels)
+            let hpDotsHtml = '';
+            if (typeof obj.hp === 'number') {
+                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
+                // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
+                const hpColors: Record<number, string> = {
+                    1: '#dc2626',
+                    2: '#dc2626',
+                    3: '#ef4444',
+                    4: '#f97316',
+                    5: '#eab308',
+                    6: '#84cc16',
+                    7: '#22c55e'
+                };
+                let hpColor = hpColors[hpLevel] || '#22c55e';
+
+                // Apply filter HP bar color override
+                if (filterResult.style?.hpBarColor) {
+                    hpColor = filterResult.style.hpBarColor;
+                }
+
+                // Build dots - filled dots for current HP, empty smaller gray dots for missing HP
+                const dots: string[] = [];
+                for (let i = 0; i < 7; i++) {
+                    if (i < hpLevel) {
+                        dots.push(`<span class="object-card__hp-dot object-card__hp-dot--filled" style="background-color: ${hpColor}"></span>`);
+                    } else {
+                        dots.push(`<span class="object-card__hp-dot object-card__hp-dot--empty"></span>`);
+                    }
+                }
+
+                hpDotsHtml = `<div class="object-card__hp-dots" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${dots.join('')}</div>`;
+            }
+
+            // Build attackers inline with name
+            const attackers = objects
+                .filter((o: any) => o.attack_num === obj.num)
+                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
+                .join('');
+            const attackersHtml = attackers ? `<span class="object-card__attackers-inline">${attackers}</span>` : '';
+
+            // Build name element with optional style
+            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
+
+            // Build target dot for leader functionality
+            const isLeader = tm?.isLeader?.();
+            let targetDotHtml = '';
+            if (isLeader) {
+                if (isPlayer || isTeammate) {
+                    // Self or teammate - defense target (greenyellow)
+                    const activeClass = obj.defense_target ? 'object-card__target-dot--active' : '';
+                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--defense ${activeClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>`;
+                } else {
+                    // Enemy - attack target (orangered)
+                    const activeClass = obj.attack_target ? 'object-card__target-dot--active' : '';
+                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--attack ${activeClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>`;
+                }
+            }
+
+            // Compact dots card structure - HP dots instead of vertical bar
+            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
+                <div class="object-card__compact-content">
+                    ${targetDotHtml}
+                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    ${hpDotsHtml}
                     <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
                     ${attackersHtml}
                 </div>

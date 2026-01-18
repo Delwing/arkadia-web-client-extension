@@ -4,20 +4,22 @@ import { useEffect } from 'react';
 
 const PANEL_ID = 'objectList';
 
-export type ObjectListViewMode = 'list' | 'card' | 'compact';
+export type ObjectListViewMode = 'list' | 'card' | 'compact' | 'compact-dots';
 
-const VIEW_MODE_CYCLE: ObjectListViewMode[] = ['list', 'card', 'compact'];
+const VIEW_MODE_CYCLE: ObjectListViewMode[] = ['list', 'card', 'compact', 'compact-dots'];
 
 const VIEW_MODE_LABELS: Record<ObjectListViewMode, string> = {
     list: 'Lista',
     card: 'Karty',
-    compact: 'Kompakt'
+    compact: 'Kompakt',
+    'compact-dots': 'Kropki'
 };
 
 const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
     list: 'Widok listy',
     card: 'Widok kart',
-    compact: 'Widok kompaktowy'
+    compact: 'Widok kompaktowy',
+    'compact-dots': 'Widok kompaktowy z kropkami'
 };
 
 export function ObjectListHeaderActions() {

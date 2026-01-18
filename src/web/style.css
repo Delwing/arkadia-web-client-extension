@@ -2684,6 +2684,51 @@ h1 {
   box-shadow: 0 0 4px orangered;
 }
 
+/* HP Dots for compact-dots mode */
+.object-card__hp-dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.object-card__hp-dots:hover {
+  opacity: 0.8;
+}
+
+.object-card__hp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.object-card__hp-dot--filled {
+  /* Filled dots use the full 6px space */
+}
+
+.object-card__hp-dot--empty {
+  background-color: transparent;
+}
+
+.object-card__hp-dot--empty::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #555;
+}
+
+/* Compact dots mode - no left HP bar */
+.object-card--compact-dots .object-card__hp-bar-vertical {
+  display: none;
+}
+
 /* Object List Demo Popup */
 .object-list-demo-popup__body {
   padding: 0;
