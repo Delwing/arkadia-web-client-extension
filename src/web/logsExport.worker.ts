@@ -181,7 +181,11 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
                 zip.file(`${sessionName}.html`, html);
             }
 
-            const blob = await zip.generateAsync({ type: 'blob' });
+            const blob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 9 },
+            });
 
             ctx.postMessage({
                 type: 'success',
