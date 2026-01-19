@@ -789,7 +789,7 @@ export default class ObjectList {
             const nameClasses = ['object-card__name'];
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
 
             // Apply teammate not attacking italic style
             if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
@@ -967,7 +967,7 @@ export default class ObjectList {
             const nameClasses = ['object-card__name'];
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
 
             // Apply teammate not attacking italic style
             if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
@@ -1137,7 +1137,7 @@ export default class ObjectList {
             const nameClasses = ['object-card__name'];
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate) nameClasses.push('object-card__name--attacking');
+            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
 
             // Apply teammate not attacking italic style
             if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
