@@ -143,7 +143,7 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
-            pattern: /^\/za_id ((?:ob_)?[0-9]+)$/,
+            pattern: /^\/z_id ((?:ob_)?[0-9]+)$/,
             callback: (m: RegExpMatchArray) => {
                 const idStr = m[1].replace(/^ob_/, '');
                 const id = parseInt(idStr, 10);
