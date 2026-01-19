@@ -1549,6 +1549,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentInput = '';
     let historySearchTerm: string | null = null;
     let historyMatches: number[] = [];
+    let isNavigatingHistory = false; // Flag to prevent spurious resets during navigation
+    let lastProgrammaticValue: string | null = null; // Track values set by sendMessage or history navigation
+
+    // Expose state for debugging/testing
+    (window as any).__historyDebug = () => ({
+        historyIndex,
+        historyMatches: [...historyMatches],
+        commandHistory: [...commandHistory],
+        currentInput,
+        historySearchTerm,
+        lastProgrammaticValue,
+    });
 
     interface TabState {
         matches: string[];
@@ -1567,6 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         historyIndex = -1;
         historyMatches = [];
         historySearchTerm = null;
+        lastProgrammaticValue = null;
     }
 
     function computeHistoryMatches(term: string): number[] {
@@ -1751,18 +1764,26 @@ document.addEventListener('DOMContentLoaded', () => {
         resetTabState();
 
         if (historyIndex === -1) {
-            currentInput = messageInput.value;
             let searchTerm = messageInput.value;
             const selectionStart = messageInput.selectionStart;
             const selectionEnd = messageInput.selectionEnd;
-            if (
+            // Use empty search term (browse all history) if:
+            // 1. All text is selected in the focused input, OR
+            // 2. The current value was set programmatically (by sendMessage or history navigation)
+            const isAllSelected =
                 document.activeElement === messageInput &&
                 selectionStart !== null &&
                 selectionEnd !== null &&
                 selectionStart === 0 &&
-                selectionEnd === searchTerm.length
-            ) {
+                selectionEnd === searchTerm.length;
+            const isProgrammaticValue = lastProgrammaticValue !== null && searchTerm === lastProgrammaticValue;
+            if (isAllSelected || isProgrammaticValue) {
+                // If value is programmatic, the user's original input was empty
+                currentInput = '';
                 searchTerm = '';
+            } else {
+                // User typed something, save it as current input
+                currentInput = messageInput.value;
             }
             historySearchTerm = searchTerm;
             historyMatches = computeHistoryMatches(historySearchTerm);
@@ -1792,9 +1813,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (historyIndex > 0) {
                 newIndex = historyIndex - 1;
             } else if (historyIndex === 0) {
+                const restoreValue = currentInput;
+                isNavigatingHistory = true;
                 resetHistoryNavigation();
-                messageInput.value = currentInput;
+                messageInput.value = restoreValue;
+                lastProgrammaticValue = restoreValue;
                 selectEntireInput();
+                isNavigatingHistory = false;
                 return;
             } else {
                 return;
@@ -1803,9 +1828,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const matchIndex = historyMatches[newIndex];
         if (matchIndex !== undefined) {
-            messageInput.value = commandHistory[matchIndex];
+            isNavigatingHistory = true;
+            const newValue = commandHistory[matchIndex];
+            messageInput.value = newValue;
+            lastProgrammaticValue = newValue;
             selectEntireInput();
             historyIndex = newIndex;
+            isNavigatingHistory = false;
         }
     }
 
@@ -1833,9 +1862,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (clearInputOnSend) {
                     messageInput.value = '';
+                    lastProgrammaticValue = '';
                     if (focus) messageInput.focus();
-                } else if (focus) {
-                    messageInput.select();
+                } else {
+                    // Input keeps its value (selected), track it as programmatic
+                    lastProgrammaticValue = messageInput.value;
+                    if (focus) messageInput.select();
                 }
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
@@ -1896,7 +1928,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     messageInput.addEventListener('input', () => {
-        if (historyIndex !== -1) {
+        // Only reset history navigation if not in the middle of programmatic navigation
+        if (historyIndex !== -1 && !isNavigatingHistory) {
             resetHistoryNavigation();
         }
         resetTabState();
