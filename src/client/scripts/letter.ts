@@ -421,18 +421,18 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         client.Triggers.registerOneTimeTrigger(
             PROMPT_PATTERN,
             (line) => {
-                lines.forEach(line => {
-                    if (line.length > 0) {
-                        client.sendCommand(line, true, {preserveCase: true});
-                    }
-                });
-                client.sendCommand("**");
                 if (blindCopy) {
                     const recipients = blindCopy.split(/\s+/).filter(name => name.length > 0);
                     recipients.forEach(name => {
                         client.sendCommand(`~udw ${name}`, true, {preserveCase: true});
                     });
                 }
+                lines.forEach(line => {
+                    if (line.length > 0) {
+                        client.sendCommand(line, true, {preserveCase: true});
+                    }
+                });
+                client.sendCommand("**");
                 return line;
             },
             TRIGGER_TAG
