@@ -60,6 +60,16 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 |---------|------|
 | `/note` | Otworz edytor notatki dla biezacej lokacji |
 
+## Okno mapy
+
+| Komenda | Opis |
+|---------|------|
+| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |
+| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |
+| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |
+
+> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz "Otworz okno mapy" aby otworzyc okno na wybranej lokacji.
+
 ## Multibindy lokacji
 
 | Komenda | Opis |
