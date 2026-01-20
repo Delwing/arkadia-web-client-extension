@@ -100,7 +100,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     const embedded = getEmbedded();
     if (!embedded?.renderer || !embedded?.reader) return;
     const currentZoom = embedded.renderer.getZoom();
-    embedded.setZoom(currentZoom * 1.1);
+    embedded.zoomToCenter(currentZoom * 1.1);
     closeMenu();
   }, [getEmbedded, closeMenu]);
 
@@ -108,7 +108,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     const embedded = getEmbedded();
     if (!embedded?.renderer || !embedded?.reader) return;
     const currentZoom = embedded.renderer.getZoom();
-    embedded.setZoom(currentZoom / 1.1);
+    embedded.zoomToCenter(currentZoom / 1.1);
     closeMenu();
   }, [getEmbedded, closeMenu]);
 

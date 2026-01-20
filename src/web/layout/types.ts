@@ -20,7 +20,8 @@ export type BuiltInPopupType =
   | 'walker'
   | 'poczta'
   | 'fishing'
-  | 'letter-view';
+  | 'letter-view'
+  | 'staticmap';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

@@ -7014,3 +7014,138 @@ body.mobile-command-radial-active {
 .readonly-note-text {
   color: rgba(200, 210, 230, 0.85);
 }
+
+/* ============================================
+   Static Map Popup
+   ============================================ */
+
+.static-map-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--surface-elevated);
+}
+
+.static-map-popup__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.static-map-popup__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.static-map-popup__dropdown-container {
+  position: relative;
+}
+
+.static-map-popup__btn {
+  padding: 0.2rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.static-map-popup__btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.static-map-popup__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.static-map-popup__btn--small {
+  padding: 0.2rem 0.4rem;
+  min-width: 1.5rem;
+}
+
+.static-map-popup__zoom-controls {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.static-map-popup__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 150px;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: var(--surface-elevated, #1e2530);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-top: 2px;
+}
+
+.static-map-popup__dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  background: none;
+  border: none;
+  color: rgba(241, 245, 249, 0.8);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.static-map-popup__dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.static-map-popup__dropdown-item--active {
+  background-color: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+.static-map-popup__notes {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.static-map-popup__notes hr {
+  margin: 0.3rem 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.static-map-popup__map {
+  flex: 1;
+  min-height: 150px;
+  overflow: hidden;
+  position: relative;
+  background-color: #000;
+}

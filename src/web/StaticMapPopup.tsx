@@ -1,0 +1,738 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Renderer, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
+import eventBus from '@modules/core/eventBus';
+import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { getClientInstance } from '@shared/runtime';
+import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
+import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
+
+interface StaticMapInstance {
+    id: string;
+    initialRoomId?: number;
+    initialAreaId?: number;
+}
+
+interface StaticMapState {
+    viewedAreaId: number | null;
+    viewedLevel: number;
+    zoom: number;
+    currentRoom: number | null;
+    initialHighlightRoom: number | null;
+    titleRoomId: number | null;
+    titleAreaName: string;
+}
+
+type SubmenuType = 'none' | 'areas' | 'levels';
+
+const levelsCache = new Map<number, number[]>();
+
+function StaticMapMenu({
+    rendererRef,
+    state,
+    setState,
+    loadLevels,
+    renderPathsAndHighlights,
+}: {
+    rendererRef: React.MutableRefObject<Renderer | null>;
+    state: StaticMapState;
+    setState: React.Dispatch<React.SetStateAction<StaticMapState>>;
+    loadLevels: (areaId: number) => void;
+    renderPathsAndHighlights: () => void;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [submenu, setSubmenu] = useState<SubmenuType>('none');
+    const [areas, setAreas] = useState<{ id: number; name: string }[]>([]);
+    const [levels, setLevels] = useState<number[]>([]);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const toggleRef = useRef<HTMLButtonElement>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
+
+    const getEmbedded = useCallback(() => (globalThis as any).embedded, []);
+
+    const calculateDropdownPosition = useCallback(() => {
+        if (toggleRef.current) {
+            const rect = toggleRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const availableSpace = viewportHeight - rect.bottom - 16;
+            const maxHeight = Math.max(100, Math.min(300, availableSpace));
+            setDropdownStyle({
+                position: 'fixed',
+                top: rect.bottom + 4,
+                right: window.innerWidth - rect.right,
+                maxHeight,
+            });
+        }
+    }, []);
+
+    const toggleMenu = useCallback(() => {
+        setIsOpen((prev) => {
+            if (!prev) calculateDropdownPosition();
+            return !prev;
+        });
+        setSubmenu('none');
+    }, [calculateDropdownPosition]);
+
+    const closeMenu = useCallback(() => {
+        setIsOpen(false);
+        setSubmenu('none');
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleClickOutside = (event: PointerEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                closeMenu();
+            }
+        };
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeMenu();
+        };
+        window.addEventListener('pointerdown', handleClickOutside);
+        window.addEventListener('keydown', handleEscape);
+        return () => {
+            window.removeEventListener('pointerdown', handleClickOutside);
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [isOpen, closeMenu]);
+
+    const handleShowAreas = useCallback(() => {
+        const embedded = getEmbedded();
+        if (!embedded?.reader) return;
+        const reader = embedded.reader;
+        if (typeof reader.getAreas !== 'function') return;
+
+        const rawAreas = reader.getAreas() ?? [];
+        const areaList = rawAreas
+            .map((area: any) => {
+                const areaRooms = area?.getRooms?.() ?? [];
+                if (areaRooms.length === 0) return null;
+                const id = area?.getAreaId?.() ?? area?.areaId ?? area?.id;
+                const name = area?.getAreaName?.() ?? area?.areaName ?? area?.name;
+                if (id === undefined || id === null) return null;
+                return { id, name: name || `Area ${id}` };
+            })
+            .filter((area: any) => area !== null)
+            .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setAreas(areaList);
+        setSubmenu('areas');
+    }, [getEmbedded]);
+
+    const handleSelectArea = useCallback((areaId: number) => {
+        const embedded = getEmbedded();
+        const renderer = rendererRef.current;
+        if (!embedded?.reader || !renderer) return;
+
+        renderer.drawArea(areaId, 0);
+
+        const area = embedded.reader.getArea?.(areaId);
+        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${areaId}`;
+        const rooms = area?.getRooms?.() ?? [];
+        const roomsAtLevel = rooms.filter((r: any) => r.z === 0);
+
+        if (roomsAtLevel.length > 0) {
+            let sumX = 0, sumY = 0;
+            for (const room of roomsAtLevel) {
+                sumX += room.x;
+                sumY += room.y;
+            }
+            const avgX = sumX / roomsAtLevel.length;
+            const avgY = sumY / roomsAtLevel.length;
+            let closestRoom = roomsAtLevel[0];
+            let minDist = Infinity;
+            for (const room of roomsAtLevel) {
+                const dist = Math.abs(room.x - avgX) + Math.abs(room.y - avgY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestRoom = room;
+                }
+            }
+            renderer.setPosition(closestRoom.id);
+        }
+
+        // Update player marker to actual position (will hide if not on this area/level)
+        const actualPlayerRoom = embedded.currentRoom;
+        if (actualPlayerRoom) {
+            renderer.updatePositionMarker(actualPlayerRoom);
+        }
+
+        loadLevels(areaId);
+        setState(currentState => {
+            // Check if this is the initial area
+            const isInitialArea = currentState.initialHighlightRoom !== null &&
+                embedded.reader.getRoom(currentState.initialHighlightRoom)?.area === areaId;
+
+            return {
+                ...currentState,
+                viewedAreaId: areaId,
+                viewedLevel: 0,
+                // Only show room number if viewing initial area
+                titleRoomId: isInitialArea ? currentState.initialHighlightRoom : null,
+                titleAreaName: areaName,
+            };
+        });
+        renderPathsAndHighlights();
+        closeMenu();
+    }, [getEmbedded, rendererRef, loadLevels, setState, renderPathsAndHighlights, closeMenu]);
+
+    const handleShowLevels = useCallback(() => {
+        if (state.viewedAreaId === null) return;
+        let sortedLevels = levelsCache.get(state.viewedAreaId);
+        if (!sortedLevels) {
+            const embedded = getEmbedded();
+            const area = embedded?.reader?.getArea?.(state.viewedAreaId);
+            const rooms = area?.getRooms?.() ?? [];
+            const levelSet = new Set<number>();
+            for (const room of rooms) levelSet.add(room.z);
+            sortedLevels = Array.from(levelSet).sort((a, b) => b - a);
+            levelsCache.set(state.viewedAreaId, sortedLevels);
+        }
+        setLevels(sortedLevels);
+        setSubmenu('levels');
+    }, [getEmbedded, state.viewedAreaId]);
+
+    const handleSelectLevel = useCallback((level: number) => {
+        const embedded = getEmbedded();
+        const renderer = rendererRef.current;
+        if (!embedded?.reader || !renderer || state.viewedAreaId === null) return;
+
+        renderer.drawArea(state.viewedAreaId, level);
+
+        const area = embedded.reader.getArea?.(state.viewedAreaId);
+        const rooms = area?.getRooms?.() ?? [];
+        const roomsAtLevel = rooms.filter((r: any) => r.z === level);
+
+        if (roomsAtLevel.length > 0) {
+            let sumX = 0, sumY = 0;
+            for (const room of roomsAtLevel) {
+                sumX += room.x;
+                sumY += room.y;
+            }
+            const avgX = sumX / roomsAtLevel.length;
+            const avgY = sumY / roomsAtLevel.length;
+            let closestRoom = roomsAtLevel[0];
+            let minDist = Infinity;
+            for (const room of roomsAtLevel) {
+                const dist = Math.abs(room.x - avgX) + Math.abs(room.y - avgY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestRoom = room;
+                }
+            }
+            renderer.setPosition(closestRoom.id);
+        }
+
+        // Update player marker to actual position (will hide if not on this area/level)
+        const actualPlayerRoom = embedded.currentRoom;
+        if (actualPlayerRoom) {
+            renderer.updatePositionMarker(actualPlayerRoom);
+        }
+
+        setState(currentState => {
+            // Check if this is the initial level on initial area
+            const initialRoom = currentState.initialHighlightRoom !== null
+                ? embedded.reader.getRoom(currentState.initialHighlightRoom)
+                : null;
+            const isInitialLevel = initialRoom &&
+                initialRoom.area === state.viewedAreaId &&
+                initialRoom.z === level;
+
+            return {
+                ...currentState,
+                viewedLevel: level,
+                // Only show room number if viewing initial area and level
+                titleRoomId: isInitialLevel ? currentState.initialHighlightRoom : null,
+            };
+        });
+        renderPathsAndHighlights();
+        closeMenu();
+    }, [getEmbedded, rendererRef, state.viewedAreaId, setState, renderPathsAndHighlights, closeMenu]);
+
+    const handleZoomIn = useCallback(() => {
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        const newZoom = renderer.getZoom() * 1.2;
+        renderer.zoomToCenter(newZoom);
+        setState(s => ({ ...s, zoom: newZoom }));
+        closeMenu();
+    }, [rendererRef, setState, closeMenu]);
+
+    const handleZoomOut = useCallback(() => {
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        const newZoom = renderer.getZoom() / 1.2;
+        renderer.zoomToCenter(newZoom);
+        setState(s => ({ ...s, zoom: newZoom }));
+        closeMenu();
+    }, [rendererRef, setState, closeMenu]);
+
+    const handleCenterOnPlayer = useCallback(() => {
+        const embedded = getEmbedded();
+        const renderer = rendererRef.current;
+        if (!embedded?.reader || !renderer || !embedded.currentRoom) return;
+
+        const room = embedded.reader.getRoom(embedded.currentRoom);
+        if (!room) return;
+
+        renderer.drawArea(room.area, room.z);
+        renderer.setPosition(embedded.currentRoom);
+        // Ensure player marker is shown after area change
+        renderer.updatePositionMarker(embedded.currentRoom);
+
+        const area = embedded.reader.getArea?.(room.area);
+        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+
+        setState(s => {
+            // Check if centering on player brings us back to initial room
+            const isInitialRoom = s.initialHighlightRoom !== null &&
+                s.initialHighlightRoom === embedded.currentRoom;
+
+            return {
+                ...s,
+                viewedAreaId: room.area,
+                viewedLevel: room.z,
+                currentRoom: embedded.currentRoom,
+                titleRoomId: isInitialRoom ? s.initialHighlightRoom : null,
+                titleAreaName: areaName,
+            };
+        });
+        loadLevels(room.area);
+        renderPathsAndHighlights();
+        closeMenu();
+    }, [getEmbedded, rendererRef, setState, loadLevels, renderPathsAndHighlights, closeMenu]);
+
+    const handleBackToMenu = useCallback(() => setSubmenu('none'), []);
+
+    return (
+        <div ref={menuRef} className="map-header-menu">
+            <button
+                ref={toggleRef}
+                type="button"
+                className="map-header-menu__toggle"
+                onClick={toggleMenu}
+                title="Menu mapy"
+            >
+                <span className="map-header-menu__hamburger" />
+            </button>
+            {isOpen && (
+                <div className="map-header-menu__dropdown" style={dropdownStyle ?? undefined}>
+                    {submenu === 'areas' ? (
+                        <>
+                            <button type="button" className="map-header-menu__item map-header-menu__item--back" onClick={handleBackToMenu}>
+                                &larr; Powrot
+                            </button>
+                            <div className="map-header-menu__area-list" style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}>
+                                {areas.map((area) => (
+                                    <button
+                                        key={area.id}
+                                        type="button"
+                                        className={`map-header-menu__item${area.id === state.viewedAreaId ? ' map-header-menu__item--active' : ''}`}
+                                        onClick={() => handleSelectArea(area.id)}
+                                    >
+                                        {area.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    ) : submenu === 'levels' ? (
+                        <>
+                            <button type="button" className="map-header-menu__item map-header-menu__item--back" onClick={handleBackToMenu}>
+                                &larr; Powrot
+                            </button>
+                            <div className="map-header-menu__area-list" style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}>
+                                {levels.map((level) => (
+                                    <button
+                                        key={level}
+                                        type="button"
+                                        className={`map-header-menu__item${level === state.viewedLevel ? ' map-header-menu__item--active' : ''}`}
+                                        onClick={() => handleSelectLevel(level)}
+                                    >
+                                        Poziom {level}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <button type="button" className="map-header-menu__item" onClick={handleShowAreas}>Zmien obszar</button>
+                            <button type="button" className="map-header-menu__item" onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmien poziom</button>
+                            <button type="button" className="map-header-menu__item" onClick={handleZoomIn}>Zbliz</button>
+                            <button type="button" className="map-header-menu__item" onClick={handleZoomOut}>Oddal</button>
+                            <button type="button" className="map-header-menu__item" onClick={handleCenterOnPlayer}>Idz do gracza</button>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; onClose: () => void }) {
+    const popupId = `popup:staticmap:${instance.id}`;
+
+    const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+    const rendererRef = useRef<Renderer | null>(null);
+    const [isOpen, setIsOpen] = useState(true);
+    const [isPinned, setIsPinned] = useState(false);
+    const [state, setState] = useState<StaticMapState>({
+        viewedAreaId: null,
+        viewedLevel: 0,
+        zoom: 0.30,
+        currentRoom: null,
+        initialHighlightRoom: null,
+        titleRoomId: null,
+        titleAreaName: '',
+    });
+    const [note, setNote] = useState<LocationNote | null>(null);
+    const [mapNote, setMapNote] = useState<string | null>(null);
+    const [pluginNotes, setPluginNotes] = useState<PluginLocationNote[]>([]);
+
+    const currentPathRef = useRef<{ path: number[]; color: string } | null>(null);
+    const currentHighlightsRef = useRef<{ roomId: number; color: string }[]>([]);
+    const initialHighlightRoomRef = useRef<number | null>(null);
+
+    const getEmbedded = useCallback(() => (globalThis as any).embedded, []);
+
+    const renderPathsAndHighlights = useCallback(() => {
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+
+        renderer.clearPaths();
+        if (currentPathRef.current) {
+            renderer.renderPath(currentPathRef.current.path, currentPathRef.current.color);
+        }
+
+        renderer.clearHighlights();
+        // Always render the initial highlight room first (if set)
+        if (initialHighlightRoomRef.current !== null) {
+            renderer.renderHighlight(initialHighlightRoomRef.current, '#ffcc00');
+        }
+        currentHighlightsRef.current.forEach(({ roomId, color }) => {
+            renderer.renderHighlight(roomId, color);
+        });
+    }, []);
+
+    const loadLevels = useCallback((areaId: number) => {
+        const embedded = getEmbedded();
+        if (!embedded?.reader) return;
+
+        if (!levelsCache.has(areaId)) {
+            const area = embedded.reader.getArea?.(areaId);
+            const rooms = area?.getRooms?.() ?? [];
+            const levelSet = new Set<number>();
+            for (const room of rooms) {
+                levelSet.add(room.z);
+            }
+            const sortedLevels = Array.from(levelSet).sort((a, b) => b - a);
+            levelsCache.set(areaId, sortedLevels);
+        }
+    }, [getEmbedded]);
+
+    // Initialize renderer when popup opens
+    useEffect(() => {
+        if (!isOpen || !containerEl) return;
+
+        const embedded = getEmbedded();
+        if (!embedded?.reader) return;
+
+        const parentContainer = containerEl;
+        let container: HTMLDivElement | null = null;
+        let pathHandler: ((data: { path: number[]; color: string } | null) => void) | null = null;
+        let highlightHandler: ((data: { roomId: number; color: string }[]) => void) | null = null;
+        let moveHandler: ((ev: { id: number }) => void) | null = null;
+        let contextMenuHandler: ((ev: Event) => void) | null = null;
+        let zoomHandler: (() => void) | null = null;
+
+        const initTimeout = requestAnimationFrame(() => {
+            if (!parentContainer) return;
+
+            container = document.createElement('div');
+            container.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;';
+            container.style.touchAction = 'none';
+            parentContainer.appendChild(container);
+
+            const renderer = new Renderer(container, embedded.reader);
+            rendererRef.current = renderer;
+
+            renderer.centerOnResize = false;
+            renderer.setZoom(0.30);
+
+            const actualPlayerRoom = embedded.currentRoom;
+
+            // Handle opening by area ID (no specific room)
+            if (instance.initialAreaId && !instance.initialRoomId) {
+                const areaId = instance.initialAreaId;
+                const area = embedded.reader.getArea?.(areaId);
+                const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${areaId}`;
+                const rooms = area?.getRooms?.() ?? [];
+
+                renderer.drawArea(areaId, 0);
+
+                // Center on area center (average position of rooms at level 0)
+                const roomsAtLevel = rooms.filter((r: any) => r.z === 0);
+                if (roomsAtLevel.length > 0) {
+                    let sumX = 0, sumY = 0;
+                    for (const room of roomsAtLevel) {
+                        sumX += room.x;
+                        sumY += room.y;
+                    }
+                    const avgX = sumX / roomsAtLevel.length;
+                    const avgY = sumY / roomsAtLevel.length;
+                    // Find room closest to center
+                    let closestRoom = roomsAtLevel[0];
+                    let minDist = Infinity;
+                    for (const room of roomsAtLevel) {
+                        const dist = Math.abs(room.x - avgX) + Math.abs(room.y - avgY);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestRoom = room;
+                        }
+                    }
+                    renderer.setPosition(closestRoom.id); // Center on this room
+                }
+
+                // Show player marker if in this area
+                if (actualPlayerRoom) {
+                    renderer.updatePositionMarker(actualPlayerRoom);
+                }
+
+                setState(s => ({
+                    ...s,
+                    viewedAreaId: areaId,
+                    viewedLevel: 0,
+                    currentRoom: actualPlayerRoom ?? null,
+                    initialHighlightRoom: null,
+                    titleRoomId: null,
+                    titleAreaName: areaName,
+                }));
+
+                // Cache levels
+                if (!levelsCache.has(areaId)) {
+                    const levelSet = new Set<number>();
+                    for (const r of rooms) levelSet.add(r.z);
+                    const sortedLevels = Array.from(levelSet).sort((a, b) => b - a);
+                    levelsCache.set(areaId, sortedLevels);
+                }
+            } else {
+                // Handle opening by room ID
+                let initialRoom = instance.initialRoomId;
+                if (!initialRoom && actualPlayerRoom) {
+                    initialRoom = actualPlayerRoom;
+                }
+
+                if (initialRoom) {
+                    const room = embedded.reader.getRoom(initialRoom);
+                    if (room) {
+                        renderer.drawArea(room.area, room.z);
+                        // Center on the requested room
+                        renderer.setPosition(initialRoom);
+                        // Highlight the requested room and store it for persistence
+                        initialHighlightRoomRef.current = initialRoom;
+                        renderer.renderHighlight(initialRoom, '#ffcc00');
+
+                        // If the requested room is different from actual player position,
+                        // update marker to show actual player (or hide if not on same area/level)
+                        if (actualPlayerRoom && actualPlayerRoom !== initialRoom) {
+                            renderer.updatePositionMarker(actualPlayerRoom);
+                        }
+
+                        // Get area name for title
+                        const area = embedded.reader.getArea?.(room.area);
+                        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+
+                        setState(s => ({
+                            ...s,
+                            viewedAreaId: room.area,
+                            viewedLevel: room.z,
+                            currentRoom: actualPlayerRoom ?? initialRoom!,
+                            initialHighlightRoom: initialRoom!,
+                            titleRoomId: initialRoom!,
+                            titleAreaName: areaName,
+                        }));
+
+                        // Load notes for the highlighted room
+                        const roomMapNote = (room as any).userData?.note ?? null;
+                        setMapNote(roomMapNote);
+                        getNote(initialRoom).then(setNote);
+                        setPluginNotes(getPluginLocationNotes(initialRoom));
+
+                        // Cache levels
+                        if (!levelsCache.has(room.area)) {
+                            const rooms = area?.getRooms?.() ?? [];
+                            const levelSet = new Set<number>();
+                            for (const r of rooms) levelSet.add(r.z);
+                            const sortedLevels = Array.from(levelSet).sort((a, b) => b - a);
+                            levelsCache.set(room.area, sortedLevels);
+                        }
+                    }
+                }
+            }
+
+            pathHandler = (data: { path: number[]; color: string } | null) => {
+                currentPathRef.current = data;
+                renderPathsAndHighlights();
+            };
+
+            highlightHandler = (data: { roomId: number; color: string }[]) => {
+                currentHighlightsRef.current = data;
+                renderPathsAndHighlights();
+            };
+
+            moveHandler = (ev: { id: number }) => {
+                const renderer = rendererRef.current;
+                if (renderer) {
+                    renderer.updatePositionMarker(ev.id);
+                }
+                setState(currentState => ({ ...currentState, currentRoom: ev.id }));
+            };
+
+            const containerForMenu = container;
+            contextMenuHandler = (ev: Event) => {
+                const customEv = ev as CustomEvent<RoomContextMenuEventDetail>;
+                customEv.preventDefault();
+                const room = customEv.detail.roomId;
+                if (room && containerForMenu) {
+                    const client = getClientInstance();
+                    const rect = containerForMenu.getBoundingClientRect();
+                    const viewportX = customEv.detail.position.x + rect.left;
+                    const viewportY = customEv.detail.position.y + rect.top;
+                    client?.openMapContextMenu?.(room, viewportX, viewportY);
+                }
+            };
+
+            zoomHandler = () => {
+                if (rendererRef.current) {
+                    const newZoom = rendererRef.current.getZoom();
+                    setState(s => ({ ...s, zoom: newZoom }));
+                }
+            };
+
+            eventBus.on('mapPath', pathHandler);
+            eventBus.on('mapHighlights', highlightHandler);
+            eventBus.on('enterLocation', moveHandler);
+            container.addEventListener('roomcontextmenu', contextMenuHandler);
+            container.addEventListener('zoom', zoomHandler);
+
+            const resizeObserver = new ResizeObserver(() => {
+                container?.dispatchEvent(new Event('resize'));
+            });
+            resizeObserver.observe(parentContainer);
+
+            eventBus.emit('requestMapHighlights');
+            renderPathsAndHighlights();
+
+            (container as any).__resizeObserver = resizeObserver;
+        });
+
+        return () => {
+            cancelAnimationFrame(initTimeout);
+            if (pathHandler) eventBus.off('mapPath', pathHandler);
+            if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
+            if (moveHandler) eventBus.off('enterLocation', moveHandler);
+            if (container && contextMenuHandler) {
+                container.removeEventListener('roomcontextmenu', contextMenuHandler);
+            }
+            if (container && zoomHandler) {
+                container.removeEventListener('zoom', zoomHandler);
+            }
+            if (container) {
+                const resizeObserver = (container as any).__resizeObserver;
+                if (resizeObserver) resizeObserver.disconnect();
+                container.remove();
+            }
+            rendererRef.current = null;
+        };
+    }, [isOpen, containerEl, getEmbedded, instance.initialRoomId, instance.initialAreaId, renderPathsAndHighlights]);
+
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+        onClose();
+    }, [onClose]);
+
+    if (!isOpen) return null;
+
+    const headerActions = (
+        <StaticMapMenu
+            rendererRef={rendererRef}
+            state={state}
+            setState={setState}
+            loadLevels={loadLevels}
+            renderPathsAndHighlights={renderPathsAndHighlights}
+        />
+    );
+
+    // Build title: "Mapa #roomId areaName" or "Mapa areaName" or fallback
+    const title = state.titleRoomId
+        ? `Mapa #${state.titleRoomId} ${state.titleAreaName}`
+        : state.titleAreaName
+            ? `Mapa ${state.titleAreaName}`
+            : `Mapa #${instance.id.slice(-4)}`;
+
+    const hasNotes = note || mapNote || pluginNotes.length > 0;
+
+    return (
+        <DockablePopupWrapper
+            popupId={popupId}
+            popupType="staticmap"
+            title={title}
+            isOpen={isOpen}
+            isPinned={isPinned}
+            onClose={handleClose}
+            onPinnedChange={setIsPinned}
+            minWidth={250}
+            minHeight={200}
+            initialWidth={600}
+            initialHeight={525}
+            className="static-map-popup"
+            bodyClassName="static-map-popup-body"
+            headerActions={headerActions}
+        >
+            <div className="static-map-popup__map" ref={setContainerEl}>
+                {hasNotes && (
+                    <div className="static-map-popup__notes">
+                        {mapNote && <div>{mapNote}</div>}
+                        {mapNote && (note || pluginNotes.length > 0) && <hr />}
+                        {note && <div>{note.note}</div>}
+                        {note && pluginNotes.length > 0 && <hr />}
+                        {pluginNotes.map((pn, idx) => (
+                            <div key={`${pn.pluginId}-${idx}`}>{pn.note}</div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </DockablePopupWrapper>
+    );
+}
+
+const StaticMapPopupManager: React.FC = () => {
+    const [instances, setInstances] = useState<StaticMapInstance[]>([]);
+
+    useEffect(() => {
+        const handler = (payload: { roomId?: number; areaId?: number; instanceId?: string }) => {
+            const id = payload?.instanceId || Date.now().toString(36);
+            setInstances(prev => [...prev, { id, initialRoomId: payload?.roomId, initialAreaId: payload?.areaId }]);
+        };
+
+        eventBus.on('staticmap.popup.open', handler);
+        return () => {
+            eventBus.off('staticmap.popup.open', handler);
+        };
+    }, []);
+
+    const handleClose = useCallback((id: string) => {
+        setInstances(prev => prev.filter(inst => inst.id !== id));
+    }, []);
+
+    return (
+        <>
+            {instances.map(instance => (
+                <StaticMapWindow
+                    key={instance.id}
+                    instance={instance}
+                    onClose={() => handleClose(instance.id)}
+                />
+            ))}
+        </>
+    );
+};
+
+export default StaticMapPopupManager;

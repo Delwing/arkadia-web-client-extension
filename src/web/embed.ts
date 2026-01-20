@@ -342,6 +342,16 @@ export class EmbeddedMap {
         this.renderer.setZoom(clampedZoom);
     }
 
+    /**
+     * Zooms relative to the center of the viewport.
+     * Use this for UI controls (buttons, menus) where there's no mouse position.
+     */
+    zoomToCenter(zoom: number) {
+        const clampedZoom = this.clampZoom(zoom);
+        this.zoom = clampedZoom;
+        this.renderer.zoomToCenter(clampedZoom);
+    }
+
     private clampZoom(zoom: number): number {
         if (!Number.isFinite(zoom)) {
             return MIN_ZOOM;

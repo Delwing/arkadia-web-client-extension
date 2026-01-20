@@ -117,6 +117,7 @@ import initLanguageTeacher from './scripts/languageTeacher'
 import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
 import initAligatorEmoji from './scripts/aligatorEmoji'
+import initStaticMapWindow from './scripts/staticMapWindow'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -269,5 +270,6 @@ export function registerScripts(client: Client) {
     initProfession(client, aliases)
     initIntroduced(client, aliases)
     initAligatorEmoji(client)
+    initStaticMapWindow(client, aliases)
 
 }

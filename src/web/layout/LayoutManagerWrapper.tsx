@@ -21,6 +21,7 @@ import ObjectListDemoPopup from '../ObjectListDemoPopup';
 import WalkerPopup from '../WalkerPopup';
 import PocztaPopup from '../PocztaPopup';
 import LetterViewPopup from '../LetterViewPopup';
+import StaticMapPopupManager from '../StaticMapPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -77,6 +78,7 @@ export function LayoutManagerWrapper({
       <WalkerPopup />
       <PocztaPopup />
       <LetterViewPopup />
+      <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />
       {/* Portal container for plugin popups (legacy fallback) */}

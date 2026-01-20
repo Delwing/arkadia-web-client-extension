@@ -107,6 +107,10 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
             label: 'Notatka',
             action: () => eventBus.emit('locationNote.edit', { roomId }),
         },
+        {
+            label: 'Otworz okno mapy',
+            action: () => eventBus.emit('staticmap.popup.open', { roomId }),
+        },
     ];
 
     showContextMenu(items, x, y, {
