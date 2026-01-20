@@ -18,6 +18,90 @@ const COLOR_BITING = createColorFormat("#fbbf24");    // Yellow/amber - fish bit
 const COLOR_PULLING = createColorFormat("#34d399");   // Green - pulling fish
 const COLOR_CAUGHT = createColorFormat("#22c55e");    // Bright green - fish caught
 const COLOR_BROKEN = createColorFormat("#ef4444");    // Red - rod broken
+const COLOR_FISH_HINT = createColorFormat("#a78bfa"); // Purple - fish type hint
+
+// Fish color descriptions to fish names mapping
+const FISH_HINTS: Record<string, string> = {
+    'zlocistobrazow': 'Amarel',
+    'ciemnozielon': 'Amur/Sandacz/Szczupak',
+    'czerwonaw': 'Antias/Skalnik',
+    'jasnopomaranczow': 'Apogon',
+    'zielonkaw': 'Ateryna',
+    'zielonkawobrazow': 'Barrakuda/Brama/Makrelosz',
+    'brazowoczerwon': 'Barwena',
+    'ciemnoniebieski': 'Belona',
+    'ciemnoczerwon': 'Beryks',
+    'jasnomiedzian': 'Bielmik',
+    'blekitnaw': 'Bolen',
+    'czarn': 'Bulawik/Topornik',
+    'srebrzyst': 'Certa/Kielec/Labraks/Salpa/Sieja',
+    'zielonkawoszar': 'Chelon/Glowacica',
+    'brazow': 'Chromis/Sajka',
+    'mosieznozlot': 'Czarniak',
+    'metaliczn': 'Dorada',
+    'jasnoszar': 'Dorsz',
+    'pasiast': 'Drum',
+    'srebrzystoszar': 'Dubiel/Kulbin',
+    'szar': 'Glowacz',
+    'plamist': 'Granik/Nawaga',
+    'czarnoniebieski': 'Gromadnik',
+    'brazowaw': 'Iglik/Karas/Mietus/Rdzawiec',
+    'czerwonobrazow': 'Jaskron/Kaprosz/Mostelka',
+    'oliwkowozielon': 'Jazgarz',
+    'stalowoszar': 'Jelec',
+    'brazowoszar': 'Jesiotr',
+    'purpurow': 'Kabryl',
+    'okraglaw': 'Kantar',
+    'szarobrazow': 'Karp',
+    'czerwonozlot': 'Karpienczyk',
+    'niebieskawobrazow': 'Kielb',
+    'zoltaw': 'Kolen/Murena/Piotrosz',
+    'wezowat': 'Konger/Wegorz',
+    'blekitnawozielon': 'Koryfena',
+    'niebieskoszar': 'Kosogon',
+    'ciemnoszar': 'Lamna',
+    'zielonnobrunatn': 'Lin',
+    'srebrzystobial': 'Lipien',
+    'oliwkowosrebrzyst': 'Losos/Makrelosz',
+    'plask': 'Makrela',
+    'prazkowan': 'Mauryk',
+    'rozowaw': 'Morlesz',
+    'szarosrebrzyst': 'Oblada/Pagrus',
+    'marmurkow': 'Ogak',
+    'pregowan': 'Okon',
+    'zielononiebieski': 'Ostrobok',
+    'zoltobrazow': 'Ostrosz/Pilczyk/Wezyna',
+    'ciemnobrazow': 'Piskorz',
+    'niebieskozielon': 'Plotka',
+    'nakrapian': 'Pstrag',
+    'sardynk': 'Sardynka',
+    'srebrnolusk': 'Sardynka',
+    'niebieskosrebrzyst': 'Seriola',
+    'niebieskaw': 'Sierpnik/Szprot',
+    'srebrzystozielon': 'Sledz',
+    'wylupiastook': 'Sola',
+    'fioletowoniebiesk': 'Strojnik',
+    'wzorzyst': 'Strzepiel',
+    'wasat': 'Sum',
+    'olowianoszar': 'Tolpyga',
+    'stalowoblekitn': 'Tunczyk',
+    'szarozielon': 'Ukleja',
+    'barwn': 'Widlak',
+    'brazowozielon': 'Wzdrega',
+};
+
+// Function to find fish name hint based on color description
+function findFishHint(colorDesc: string): string | null {
+    const normalized = colorDesc.toLowerCase();
+    // Sort keys by length (longest first) to match most specific color first
+    const sortedKeys = Object.keys(FISH_HINTS).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+        if (normalized.startsWith(key)) {
+            return FISH_HINTS[key];
+        }
+    }
+    return null;
+}
 
 export interface FishingStatePayload {
     state: FishingState;
@@ -127,6 +211,30 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
     client.Triggers.registerTrigger(rodNotCastPattern, (line) => {
         setState('idle');
         client.FunctionalBind.clear();
+        return line;
+    }, 'fishing');
+
+    // Trigger: Fish hint - match fish color descriptions and add hint
+    // Matches patterns like "brazowoszara ryba", "brazowoszare ryby", "brazowoszarych ryb"
+    const fishDescPattern = /(\w+) (ryb[aey]|ryb)\b/gi;
+
+    client.Triggers.registerTrigger(fishDescPattern, (line) => {
+        const text = line.text;
+        let offset = 0;
+
+        // Find all fish descriptions and add hints
+        let match;
+        const regex = /(\w+) (ryb[aey]|ryb)\b/gi;
+        while ((match = regex.exec(text)) !== null) {
+            const colorDesc = match[1];
+            const hint = findFishHint(colorDesc);
+            if (hint) {
+                const insertPos = match.index + match[0].length + offset;
+                const hintText = ` (${hint})`;
+                line.insert(insertPos, hintText, COLOR_FISH_HINT);
+                offset += hintText.length;
+            }
+        }
         return line;
     }, 'fishing');
 
