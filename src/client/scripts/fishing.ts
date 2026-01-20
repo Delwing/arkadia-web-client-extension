@@ -18,7 +18,6 @@ const COLOR_BITING = createColorFormat("#fbbf24");    // Yellow/amber - fish bit
 const COLOR_PULLING = createColorFormat("#34d399");   // Green - pulling fish
 const COLOR_CAUGHT = createColorFormat("#22c55e");    // Bright green - fish caught
 const COLOR_BROKEN = createColorFormat("#ef4444");    // Red - rod broken
-const COLOR_FISH_HINT = createColorFormat("#a78bfa"); // Purple - fish type hint
 
 // Fish color descriptions to fish names mapping
 const FISH_HINTS: Record<string, string> = {
@@ -214,25 +213,25 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
         return line;
     }, 'fishing');
 
-    // Trigger: Fish hint - match fish color descriptions and add hint
+    // Trigger: Fish hint - match fish color descriptions and add hint on hover
     // Matches patterns like "brazowoszara ryba", "brazowoszare ryby", "brazowoszarych ryb"
     const fishDescPattern = /(\w+) (ryb[aey]|ryb)\b/gi;
 
     client.Triggers.registerTrigger(fishDescPattern, (line) => {
         const text = line.text;
-        let offset = 0;
 
-        // Find all fish descriptions and add hints
+        // Find all fish descriptions and add hover hints
         let match;
         const regex = /(\w+) (ryb[aey]|ryb)\b/gi;
         while ((match = regex.exec(text)) !== null) {
             const colorDesc = match[1];
             const hint = findFishHint(colorDesc);
             if (hint) {
-                const insertPos = match.index + match[0].length + offset;
-                const hintText = ` (${hint})`;
-                line.insert(insertPos, hintText, COLOR_FISH_HINT);
-                offset += hintText.length;
+                const start = match.index;
+                const end = match.index + match[0].length;
+                line.applyFormat([start, end], {
+                    hyperlink: { title: hint }
+                });
             }
         }
         return line;
