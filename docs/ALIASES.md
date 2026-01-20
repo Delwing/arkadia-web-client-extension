@@ -17,6 +17,7 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 | `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |
 | `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |
 | `/list` | Otworz edytor pisania listow w kliencie |
+| `/poczta` | Otworz okno poczty z lista listow |
 
 > **Wskazowka:** W oknie czatu przycisk "Druzyna" filtruje wiadomosci od czlonkow druzyny.
 

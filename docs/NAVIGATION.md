@@ -22,6 +22,7 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 | `/opoz sekundy` | Ustaw domyslne opoznienie krokow |
 | `/szybciej` | Zmniejsz opoznienie o 0.5 s |
 | `/wolniej` | Zwieksz opoznienie o 0.5 s |
+| `/walkerw` | Otworz okno walkera |
 
 ## Komendy przed/po kroku
 
