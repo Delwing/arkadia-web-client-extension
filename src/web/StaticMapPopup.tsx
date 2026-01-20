@@ -21,6 +21,7 @@ interface StaticMapState {
     initialHighlightRoom: number | null;
     titleRoomId: number | null;
     titleAreaName: string;
+    followPlayer: boolean;
 }
 
 type SubmenuType = 'none' | 'areas' | 'levels';
@@ -303,6 +304,11 @@ function StaticMapMenu({
 
     const handleBackToMenu = useCallback(() => setSubmenu('none'), []);
 
+    const handleToggleFollow = useCallback(() => {
+        setState(s => ({ ...s, followPlayer: !s.followPlayer }));
+        closeMenu();
+    }, [setState, closeMenu]);
+
     return (
         <div ref={menuRef} className="map-header-menu">
             <button
@@ -359,6 +365,14 @@ function StaticMapMenu({
                             <button type="button" className="map-header-menu__item" onClick={handleZoomIn}>Zbliz</button>
                             <button type="button" className="map-header-menu__item" onClick={handleZoomOut}>Oddal</button>
                             <button type="button" className="map-header-menu__item" onClick={handleCenterOnPlayer}>Idz do gracza</button>
+                            <button
+                                type="button"
+                                className="map-header-menu__item map-header-menu__item--checkbox"
+                                onClick={handleToggleFollow}
+                            >
+                                <span className={`map-header-menu__checkbox${state.followPlayer ? ' map-header-menu__checkbox--checked' : ''}`} />
+                                Sledz gracza
+                            </button>
                         </>
                     )}
                 </div>
@@ -382,6 +396,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         initialHighlightRoom: null,
         titleRoomId: null,
         titleAreaName: '',
+        followPlayer: false,
     });
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
@@ -390,6 +405,10 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const currentPathRef = useRef<{ path: number[]; color: string } | null>(null);
     const currentHighlightsRef = useRef<{ roomId: number; color: string }[]>([]);
     const initialHighlightRoomRef = useRef<number | null>(null);
+    const followPlayerRef = useRef(false);
+
+    // Keep ref in sync with state
+    followPlayerRef.current = state.followPlayer;
 
     const getEmbedded = useCallback(() => (globalThis as any).embedded, []);
 
@@ -581,10 +600,35 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
             moveHandler = (ev: { id: number }) => {
                 const renderer = rendererRef.current;
-                if (renderer) {
+                const embedded = getEmbedded();
+                if (!renderer || !embedded?.reader) return;
+
+                if (followPlayerRef.current) {
+                    // Follow mode: switch area/level if needed and center on player
+                    const room = embedded.reader.getRoom(ev.id);
+                    if (room) {
+                        renderer.drawArea(room.area, room.z);
+                        renderer.setPosition(ev.id);
+
+                        const area = embedded.reader.getArea?.(room.area);
+                        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+
+                        setState(currentState => ({
+                            ...currentState,
+                            viewedAreaId: room.area,
+                            viewedLevel: room.z,
+                            currentRoom: ev.id,
+                            titleRoomId: null,
+                            titleAreaName: areaName,
+                        }));
+                        loadLevels(room.area);
+                        renderPathsAndHighlights();
+                    }
+                } else {
+                    // Static mode: just update the marker
                     renderer.updatePositionMarker(ev.id);
+                    setState(currentState => ({ ...currentState, currentRoom: ev.id }));
                 }
-                setState(currentState => ({ ...currentState, currentRoom: ev.id }));
             };
 
             const containerForMenu = container;
@@ -669,7 +713,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             }
             rendererRef.current = null;
         };
-    }, [isOpen, containerEl, getEmbedded, instance.initialRoomId, instance.initialAreaId, renderPathsAndHighlights]);
+    }, [isOpen, containerEl, getEmbedded, instance.initialRoomId, instance.initialAreaId, renderPathsAndHighlights, loadLevels]);
 
     const handleClose = useCallback(() => {
         setIsOpen(false);
