@@ -286,6 +286,63 @@ export function getPopupFloatingState(popupId: string): { x: number; y: number; 
 }
 
 /**
+ * Get all popup IDs that match a prefix and should auto-open (pinned or docked).
+ * Used for restoring dynamic popups like static map windows.
+ */
+export function getPinnedPopupsByPrefix(prefix: string): string[] {
+  try {
+    const stored = getCachedLayoutState();
+    if (!stored?.enabled) return [];
+
+    const result: string[] = [];
+    const popupPanels = stored?.popupPanels;
+    const docks = stored?.docks;
+
+    if (popupPanels) {
+      for (const popupId of Object.keys(popupPanels)) {
+        if (!popupId.startsWith(prefix)) continue;
+
+        const popupState = popupPanels[popupId];
+
+        // Check if pinned
+        if (popupState?.persistOpen) {
+          result.push(popupId);
+          continue;
+        }
+
+        // Check if docked
+        if (popupState?.isDocked) {
+          result.push(popupId);
+          continue;
+        }
+
+        // Check if in dock slots
+        if (docks) {
+          let inDock = false;
+          for (const dockKey of ['left', 'top', 'right'] as const) {
+            const dock = docks[dockKey];
+            if (dock?.slots?.some((slot: { panels: Array<{ id: string }> }) =>
+              slot.panels?.some((p) => p.id === popupId)
+            )) {
+              inDock = true;
+              break;
+            }
+          }
+          if (inDock) {
+            result.push(popupId);
+          }
+        }
+      }
+    }
+
+    return result;
+  } catch {
+    // Ignore errors
+  }
+  return [];
+}
+
+/**
  * Get a specific setting value for a built-in panel (map, objectList).
  * @param panelId The panel identifier ('map' or 'objectList')
  * @param key The setting key

@@ -5,6 +5,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
+import { getPinnedPopupsByPrefix, getPopupSetting, setPopupSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 
 interface StaticMapInstance {
     id: string;
@@ -372,7 +373,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
     const rendererRef = useRef<Renderer | null>(null);
     const [isOpen, setIsOpen] = useState(true);
-    const [isPinned, setIsPinned] = useState(false);
+    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
     const [state, setState] = useState<StaticMapState>({
         viewedAreaId: null,
         viewedLevel: 0,
@@ -441,6 +442,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let moveHandler: ((ev: { id: number }) => void) | null = null;
         let contextMenuHandler: ((ev: Event) => void) | null = null;
         let zoomHandler: (() => void) | null = null;
+        let settingsHandler: (() => void) | null = null;
 
         const initTimeout = requestAnimationFrame(() => {
             if (!parentContainer) return;
@@ -606,9 +608,34 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
             };
 
+            // Listen for map settings changes to refresh renderer without centering
+            settingsHandler = () => {
+                const renderer = rendererRef.current;
+                const embedded = getEmbedded();
+                if (!renderer || !embedded) return;
+
+                // Use state values for current view
+                setState(currentState => {
+                    if (currentState.viewedAreaId !== null) {
+                        // Redraw area (this preserves stage position)
+                        renderer.drawArea(currentState.viewedAreaId, currentState.viewedLevel);
+
+                        // Update player marker without centering
+                        if (embedded.currentRoom) {
+                            renderer.updatePositionMarker(embedded.currentRoom);
+                        }
+
+                        // Re-render paths and highlights
+                        renderPathsAndHighlights();
+                    }
+                    return currentState; // Don't change state
+                });
+            };
+
             eventBus.on('mapPath', pathHandler);
             eventBus.on('mapHighlights', highlightHandler);
             eventBus.on('enterLocation', moveHandler);
+            eventBus.on('uiSettings', settingsHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
             container.addEventListener('zoom', zoomHandler);
 
@@ -628,6 +655,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (pathHandler) eventBus.off('mapPath', pathHandler);
             if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
+            if (settingsHandler) eventBus.off('uiSettings', settingsHandler);
             if (container && contextMenuHandler) {
                 container.removeEventListener('roomcontextmenu', contextMenuHandler);
             }
@@ -703,12 +731,46 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     );
 }
 
+const STATIC_MAP_POPUP_PREFIX = 'popup:staticmap:';
+
 const StaticMapPopupManager: React.FC = () => {
     const [instances, setInstances] = useState<StaticMapInstance[]>([]);
+    const restoredRef = useRef(false);
+
+    // Restore pinned/docked static map windows on mount
+    useEffect(() => {
+        if (restoredRef.current) return;
+        restoredRef.current = true;
+
+        const pinnedPopupIds = getPinnedPopupsByPrefix(STATIC_MAP_POPUP_PREFIX);
+        if (pinnedPopupIds.length === 0) return;
+
+        const restoredInstances: StaticMapInstance[] = [];
+        for (const popupId of pinnedPopupIds) {
+            const id = popupId.replace(STATIC_MAP_POPUP_PREFIX, '');
+            const initialRoomId = getPopupSetting<number | undefined>(popupId, 'initialRoomId', undefined);
+            const initialAreaId = getPopupSetting<number | undefined>(popupId, 'initialAreaId', undefined);
+            restoredInstances.push({ id, initialRoomId, initialAreaId });
+        }
+
+        if (restoredInstances.length > 0) {
+            setInstances(restoredInstances);
+        }
+    }, []);
 
     useEffect(() => {
         const handler = (payload: { roomId?: number; areaId?: number; instanceId?: string }) => {
             const id = payload?.instanceId || Date.now().toString(36);
+            const popupId = `${STATIC_MAP_POPUP_PREFIX}${id}`;
+
+            // Save init params for persistence
+            if (payload?.roomId !== undefined) {
+                setPopupSetting(popupId, 'initialRoomId', payload.roomId);
+            }
+            if (payload?.areaId !== undefined) {
+                setPopupSetting(popupId, 'initialAreaId', payload.areaId);
+            }
+
             setInstances(prev => [...prev, { id, initialRoomId: payload?.roomId, initialAreaId: payload?.areaId }]);
         };
 
