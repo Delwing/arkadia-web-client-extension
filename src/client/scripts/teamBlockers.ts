@@ -2,6 +2,8 @@ import Client from "../Client";
 
 const teamBlockerPatterns: RegExp[] = [
     /^Probujesz sie ruszyc na .*, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatal.s, uniemozliwiaja ci to\.$/,
+    /^Probujesz sie ruszyc przed siebie, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatales, uniemozliwiaja ci to\.$/,
+    /^Ruszasz razno na .+, lecz geste pajeczyny zagradzaja ci droge\.$/,
     /^Ogromne stwory przysiadaja przed brama, blokujac do niej dostepu\.$/,
     /^Ruszasz w dalsza droge ale nagle stajesz w pol kroku\. Masz dziwne odczucie, ze w tym miejscu grozi ci jakies niebezpieczenstwo\.$/,
     /^Nagle czujesz, ze cos oplata twa noge\.\.\. ziemia w zawrotnym tepie zamienia sie miejscami z niebem\. Zwisasz teraz, przywiazany za noge rzemieniem, dyndajac jak kukielka\.$/,
