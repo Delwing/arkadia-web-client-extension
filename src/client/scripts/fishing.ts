@@ -60,7 +60,7 @@ const FISH_HINTS: Record<string, string> = {
     'blekitnawozielon': 'Koryfena',
     'niebieskoszar': 'Kosogon',
     'ciemnoszar': 'Lamna',
-    'zielonnobrunatn': 'Lin',
+    'zielonobrunatn': 'Lin',
     'srebrzystobial': 'Lipien',
     'oliwkowosrebrzyst': 'Losos/Makrelosz',
     'plask': 'Makrela',
