@@ -240,6 +240,7 @@ export default function initFollowSpecialExits(client: Client) {
         },
         {pattern: /zeskakuje na dol\./, command: "zeskocz na dol"},
         {pattern: /zeskakuje na skalna polke\./, command: "zeskocz na polke"},
+        {pattern: /zaczyna przeciskac sie przez odplyw\./, command: "przecisnij sie przed odplyw"},
     ];
 
     function containsLeader(line: string) {
