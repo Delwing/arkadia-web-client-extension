@@ -19,6 +19,7 @@ export type BuiltInPopupType =
   | 'objectListDemo'
   | 'walker'
   | 'poczta'
+  | 'fishing'
   | 'letter-view';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}

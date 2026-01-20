@@ -9,6 +9,7 @@ import type {Contract} from "@client/scripts/contracts.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
+import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -215,6 +216,11 @@ export interface KnownEvents {
     "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };
+    "fishing.popup.open": FishingStatePayload;
+    "fishing.state": FishingStatePayload;
+    "fishing.cast": { bait: BaitType };
+    "fishing.pull": void;
+    "fishing.strike": void;
     "pluginButtonMacrosChanged": void;
     "pluginButtonMacroStateChanged": { macroType: string; newState: string; oldState: string | undefined };
     "pluginTriggerMacrosChanged": void;

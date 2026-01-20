@@ -44,3 +44,11 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 | Komenda | Opis |
 |---------|------|
 | `/binds` | Wyswietl liste skonfigurowanych bindow |
+
+## Lowienie ryb
+
+| Komenda | Opis |
+|---------|------|
+| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |
+
+> **Wskazowka:** Gdy ryba bierze, kliknij przycisk "Zatnij rybe" lub uzyj funkcjonalnego bindu (domyslnie `]`).

@@ -447,6 +447,12 @@ outputWrapper.addEventListener('contextmenu', event => {
                 eventBus.emit('poczta.popup.open');
             },
         },
+        {
+            label: 'Wedka',
+            action: () => {
+                eventBus.emit('sendCommand', {command: '/wedka'});
+            },
+        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

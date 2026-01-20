@@ -5,6 +5,7 @@ import { setPopupPortalContainer } from './popupPortal';
 import { PluginPopupRenderer } from './pluginPopupRenderer';
 import ClockPopup from '../ClockPopup';
 import ContractsPopup from '../ContractsPopup';
+import FishingPopup from '../FishingPopup';
 import LetterComposer from '../LetterComposer';
 import HerbManager from '../herbs/HerbManager';
 import HerbTextWindow from '../herbs/HerbTextWindow';
@@ -60,6 +61,7 @@ export function LayoutManagerWrapper({
       {/* Popup components - rendered inside LayoutProvider for docking support */}
       <ClockPopup />
       <ContractsPopup />
+      <FishingPopup />
       <LetterComposer />
       <HerbManager />
       <HerbTextWindow />
