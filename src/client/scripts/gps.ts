@@ -25,6 +25,10 @@ export default function initGps(client: Client) {
                     return;
                 }
                 entries.forEach((entry, idx) => {
+                    // Ensure within_room_ids are numbers (JSON may have strings)
+                    if (entry.within_room_ids) {
+                        entry.within_room_ids = entry.within_room_ids.map(id => Number(id));
+                    }
                     const lines = entry.gps_string_lines;
                     if (!lines || lines.length === 0) {
                         return;

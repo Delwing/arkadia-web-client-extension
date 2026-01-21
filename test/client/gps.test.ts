@@ -62,6 +62,92 @@ describe('gps triggers', () => {
     expect(client.sendEvent).not.toHaveBeenCalled();
   });
 
+  test('gps with within_room_ids as strings matches when in correct room', () => {
+    const mapData = [
+      {
+        areaName: 'Area',
+        areaId: 'Area',
+        rooms: [
+          {
+            id: 24415,
+            area: 1,
+            x: 0,
+            y: 0,
+            z: 0,
+            weight: 1,
+            symbol: '',
+            userData: { gps: JSON.stringify([{
+              gps_string_lines: ['test line'],
+              room_id: 24415,
+              within_room_ids: ['24733', '24734']  // strings, not numbers
+            }]) },
+            customLines: {},
+            stubs: [],
+            doors: {},
+            env: 0,
+            exits: {},
+            specialExits: {},
+            hash: ''
+          }
+        ],
+        labels: []
+      }
+    ];
+
+    client = new FakeClient();
+    client.Map.onMapReady = (cb: any) => cb(mapData);
+    initGps(client as unknown as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    client.Map.currentRoom.id = 24733;  // numeric ID
+
+    jest.clearAllMocks();
+    parse('test line');
+    expect(client.Map.setMapRoomById).toHaveBeenCalledWith(24415);
+  });
+
+  test('gps with within_room_ids does not match when in wrong room', () => {
+    const mapData = [
+      {
+        areaName: 'Area',
+        areaId: 'Area',
+        rooms: [
+          {
+            id: 24415,
+            area: 1,
+            x: 0,
+            y: 0,
+            z: 0,
+            weight: 1,
+            symbol: '',
+            userData: { gps: JSON.stringify([{
+              gps_string_lines: ['test line'],
+              room_id: 24415,
+              within_room_ids: [24733, 24734]
+            }]) },
+            customLines: {},
+            stubs: [],
+            doors: {},
+            env: 0,
+            exits: {},
+            specialExits: {},
+            hash: ''
+          }
+        ],
+        labels: []
+      }
+    ];
+
+    client = new FakeClient();
+    client.Map.onMapReady = (cb: any) => cb(mapData);
+    initGps(client as unknown as any);
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    client.Map.currentRoom.id = 99999;  // not in within_room_ids
+
+    jest.clearAllMocks();
+    parse('test line');
+    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
+  });
+
   test('gps with 3 lines does not match if sequence is broken', () => {
     const mapData = [
       {
