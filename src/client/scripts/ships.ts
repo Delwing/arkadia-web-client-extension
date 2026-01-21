@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {isType} from "../Triggers";
+import type {TransportTimerPayload} from "@client/types/transport";
 
 const BOARD_CMDS = [
     "wem",
@@ -19,7 +20,16 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
 }
 
 export default function initShips(client: Client) {
+    let isOnBoard = false;
+
+    client.on("transportTimer", (payload: TransportTimerPayload | null) => {
+        isOnBoard = payload !== null;
+    });
+
     const board = (beep: boolean) => (line: any) => {
+        if (isOnBoard) {
+            return line;
+        }
         bindShip(client, BOARD_CMDS, BOARD_LABEL, beep);
         return line;
     };

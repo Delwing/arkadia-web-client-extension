@@ -166,6 +166,13 @@ export async function uploadCategories(
         const now = Date.now();
         const deviceId = getDeviceId();
 
+        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+
+        // Read existing document to compare checksums and check existence
+        const snapshot = await getDoc(docRef);
+        const existingData = snapshot.exists() ? snapshot.data() as UnifiedSyncData : null;
+        const existingCategories = existingData?.categories || {};
+
         // Build category payloads - use dot notation for updateDoc
         const categoryUpdates: { [key: string]: CategoryPayload } = {};
 
@@ -175,6 +182,13 @@ export async function uploadCategories(
 
             try {
                 const checksum = await calculateChecksum(data);
+
+                // Skip upload if checksum matches cloud data (no changes)
+                const cloudPayload = existingCategories[category];
+                if (cloudPayload && cloudPayload.checksum === checksum) {
+                    continue;
+                }
+
                 let finalData: string;
 
                 if (options.encrypted && options.passphrase) {
@@ -201,14 +215,17 @@ export async function uploadCategories(
             }
         }
 
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+        // Skip write if no categories have changed
+        if (Object.keys(categoryUpdates).length === 0) {
+            console.log(`[Firebase] uploadCategories: no changes to upload`);
+            return { success: true, errors, timestamps };
+        }
 
-        // Check if document exists
-        const snapshot = await getDoc(docRef);
+        const changedCount = Object.keys(categoryUpdates).length;
 
         if (snapshot.exists()) {
             // Use updateDoc - it interprets dots as paths
-            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${categories.length} categories`);
+            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories`);
             await updateDoc(docRef, {
                 ...categoryUpdates,
                 updatedAt: serverTimestamp(),
@@ -221,7 +238,7 @@ export async function uploadCategories(
                 const category = key.replace('categories.', '');
                 nestedCategories[category] = categoryUpdates[key];
             }
-            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${categories.length} categories`);
+            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories`);
             await setDoc(docRef, {
                 categories: nestedCategories,
                 updatedAt: serverTimestamp(),

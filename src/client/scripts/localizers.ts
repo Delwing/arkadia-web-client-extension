@@ -61,6 +61,7 @@ export default function initLocalizers(client: Client) {
         { pattern: 'Postoj, plac Gillesa le Breton', roomId: 4659 },
         { pattern: 'Postoj, centrum wioski Montlac', roomId: 7786 },
         { pattern: 'Postoj, w wiosce Merceaux-Descloux', roomId: 7744 },
+        { pattern: 'Postoj, plac przed zajazdem.', roomId: 26659 },
         // wyzima-oxen
         { pattern: 'Postoj - pod Wyzima', roomId: 729 },
         { pattern: 'Postoj - wies Anchor', roomId: 3760 },
