@@ -40,6 +40,7 @@ import {
     canPerformSyncCheck,
     updateLastSyncCheckTime,
     syncDebounceManager,
+    calculateChecksum,
 } from "@modules/firebase";
 import {
     collectCharacters,
@@ -249,10 +250,38 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                     setConflicts(conflicts);
                     setShowConflictModal(true);
                 } else {
-                    // No conflicts - auto-apply cloud data if we have any
-                    const categoriesToImport = Object.keys(result.data) as SyncCategory[];
+                    // No conflicts from different devices - but we should ONLY auto-apply
+                    // cloud data if checksums match (meaning local and cloud are identical).
+                    // If local differs from cloud (same device, pending sync didn't fire),
+                    // we keep local data to avoid losing unsaved changes.
+                    const categoriesToImport: SyncCategory[] = [];
+                    const cloudData: Partial<Record<SyncCategory, string>> = {};
+
+                    for (const category of Object.keys(result.data) as SyncCategory[]) {
+                        const cloudCategoryData = result.data[category];
+                        const localCategoryData = localData[category];
+                        const cloudMeta = result.payloads[category];
+
+                        if (!cloudCategoryData || !cloudMeta) continue;
+
+                        // Calculate local checksum and compare with cloud
+                        const localChecksum = localCategoryData
+                            ? await calculateChecksum(localCategoryData)
+                            : null;
+
+                        if (localChecksum === cloudMeta.checksum) {
+                            // Checksums match - safe to import (no-op, data is same)
+                            categoriesToImport.push(category);
+                            cloudData[category] = cloudCategoryData;
+                        } else {
+                            // Local differs from cloud - keep local, don't overwrite
+                            // This handles the case where local changes weren't synced yet
+                            console.log(`[Auto-sync] Keeping local data for ${category} (checksum differs from cloud)`);
+                        }
+                    }
+
                     if (categoriesToImport.length > 0) {
-                        const importResult = await importCategories(result.data);
+                        const importResult = await importCategories(cloudData);
                         if (importResult.success) {
                             // Update local sync times
                             const now = Date.now();
