@@ -1,12 +1,26 @@
 import initShips from '@client/scripts/ships';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import type { TransportTimerPayload } from '@client/types/transport';
+
+type TransportTimerCallback = (payload: TransportTimerPayload | null) => void;
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
   sendEvent = jest.fn();
   sendCommand = jest.fn();
+  private transportTimerCallback: TransportTimerCallback | null = null;
+
+  on(event: string, callback: TransportTimerCallback) {
+    if (event === 'transportTimer') {
+      this.transportTimerCallback = callback;
+    }
+  }
+
+  emitTransportTimer(payload: TransportTimerPayload | null) {
+    this.transportTimerCallback?.(payload);
+  }
 }
 
 describe('ships triggers', () => {
@@ -90,13 +104,21 @@ describe('ships triggers', () => {
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
 
-  test('boarding command binds again when already on ship', () => {
+  test('boarding command does NOT bind when on ship', () => {
+    // Simulate being on board by emitting a transport timer payload
+    client.emitTransportTimer({ label: 'Tratwa', remaining: 30, total: 60 });
     parse('Tratwa przybija do brzegu.');
-    const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
-    boardCallback();
-    client.FunctionalBind.set.mockClear();
+    // Should not bind the board commands when already on board
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
+  test('boarding command binds when not on ship', () => {
+    // Not on board
+    client.emitTransportTimer(null);
     parse('Tratwa przybija do brzegu.');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
   });
 
   test('prom without punctuation binds and beeps', () => {
