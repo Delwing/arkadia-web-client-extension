@@ -101,6 +101,7 @@ const SimpleBarChart: React.FC<{
                 {displayData.map((item, index) => (
                     <div key={index} className="postepy2-chart__bar-container">
                         <div className="postepy2-chart__bar-wrapper">
+                            <span className="postepy2-chart__bar-value">{item.value}</span>
                             <div
                                 className="postepy2-chart__bar"
                                 style={{ height: `${(item.value / maxValue) * 100}%` }}
