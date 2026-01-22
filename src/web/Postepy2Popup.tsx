@@ -93,6 +93,7 @@ const SimpleBarChart: React.FC<{
 }> = ({ data, maxBars = 30 }) => {
     const displayData = data.slice(-maxBars);
     const maxValue = Math.max(...displayData.map(d => d.value), 1);
+    const maxLabelLength = Math.max(...displayData.map(d => d.label.length));
 
     return (
         <div className="postepy2-chart">
@@ -106,7 +107,7 @@ const SimpleBarChart: React.FC<{
                                 title={`${item.label}: ${item.value}`}
                             />
                         </div>
-                        <span className="postepy2-chart__bar-label">{item.label}</span>
+                        <span className="postepy2-chart__bar-label">{item.label.padStart(maxLabelLength)}</span>
                     </div>
                 ))}
             </div>

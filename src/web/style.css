@@ -6305,10 +6305,8 @@ body.mobile-command-radial-active {
   text-orientation: mixed;
   transform: rotate(180deg);
   margin-top: 0.25rem;
-  max-height: 3rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
   flex-shrink: 0;
+  white-space: pre;
 }
 
 /* Zabici Popup */
