@@ -5,7 +5,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
-import { getPinnedPopupsByPrefix, getPopupSetting, setPopupSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 
 interface StaticMapInstance {
     id: string;
@@ -388,6 +388,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const rendererRef = useRef<Renderer | null>(null);
     const [isOpen, setIsOpen] = useState(true);
     const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
+    const [isLocked, setIsLocked] = useState(() => getPopupLockedState(popupId));
     const [state, setState] = useState<StaticMapState>({
         viewedAreaId: null,
         viewedLevel: 0,
@@ -748,8 +749,10 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             title={title}
             isOpen={isOpen}
             isPinned={isPinned}
+            isLocked={isLocked}
             onClose={handleClose}
             onPinnedChange={setIsPinned}
+            onLockedChange={setIsLocked}
             minWidth={250}
             minHeight={200}
             initialWidth={600}
