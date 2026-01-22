@@ -68,7 +68,7 @@ export function formatDuration(ms: number): string {
     const sec = Math.floor(ms / 1000);
     const m = Math.floor(sec / 60);
     const s = sec % 60;
-    return `${m.toString().padStart(2, " ")}:${s.toString().padStart(2, "0")}`;
+    return `${m.toString().padStart(3, " ")}:${s.toString().padStart(2, "0")}`;
 }
 
 function createPad(width: number, left: number, right: number) {

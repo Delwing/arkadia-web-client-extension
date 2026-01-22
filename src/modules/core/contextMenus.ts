@@ -7,6 +7,7 @@ import eventBus from "@modules/core/eventBus";
 export interface ContextMenuItem {
     label: string;
     action: () => void;
+    opensWindow?: boolean;
 }
 
 const DEFAULT_AMOUNTS = [1, 3, 5];
@@ -102,14 +103,17 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
         {
             label: 'Dodaj skrót',
             action: () => eventBus.emit('shortcuts.addWithRoom', { roomId }),
+            opensWindow: true,
         },
         {
             label: 'Notatka',
             action: () => eventBus.emit('locationNote.edit', { roomId }),
+            opensWindow: true,
         },
         {
             label: 'Otworz okno mapy',
             action: () => eventBus.emit('staticmap.popup.open', { roomId }),
+            opensWindow: true,
         },
     ];
 

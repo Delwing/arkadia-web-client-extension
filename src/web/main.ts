@@ -388,78 +388,91 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => {
                 eventBus.emit('sendCommand', {command: '/wiedza'});
             },
+            opensWindow: true,
         },
         {
             label: 'Biblioteki',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/biblioteki'});
             },
+            opensWindow: true,
         },
         {
             label: 'Zioła',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/ziola'});
             },
+            opensWindow: true,
         },
         {
             label: 'Zioła (tekst)',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/ziola2'});
             },
+            opensWindow: true,
         },
         {
             label: 'Zlecenia',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/zlecenia'});
             },
+            opensWindow: true,
         },
         {
             label: 'Skróty',
             action: () => {
                 eventBus.emit('skroty.popup.open');
             },
+            opensWindow: true,
         },
         {
             label: 'Zegar',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/czas'});
             },
+            opensWindow: true,
         },
         {
             label: 'Chat',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/chatw'});
             },
+            opensWindow: true,
         },
         {
             label: 'Walka',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/walkaw'});
             },
+            opensWindow: true,
         },
         {
             label: 'Postepy',
             action: () => {
                 eventBus.emit('postepy.popup.open');
             },
+            opensWindow: true,
         },
         {
             label: 'Zabici',
             action: () => {
                 eventBus.emit('zabici.popup.open');
             },
+            opensWindow: true,
         },
         {
             label: 'Poczta',
             action: () => {
                 eventBus.emit('poczta.popup.open');
             },
+            opensWindow: true,
         },
         {
             label: 'Wedka',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/wedka'});
             },
+            opensWindow: true,
         },
     );
     getPluginContextMenuEntries().forEach(entry => {

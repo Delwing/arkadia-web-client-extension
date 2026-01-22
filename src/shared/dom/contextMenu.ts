@@ -1,6 +1,7 @@
 export type ContextMenuEntry = {
     label: string | Node;
     action: () => void;
+    opensWindow?: boolean;
 };
 
 export type ContextMenuOptions = {
@@ -75,6 +76,9 @@ export function showContextMenu(
 
     items.forEach((item) => {
         const btn = document.createElement('button');
+        if (item.opensWindow) {
+            btn.classList.add('opens-window');
+        }
         if (typeof item.label === 'string') {
             btn.textContent = item.label;
         } else {

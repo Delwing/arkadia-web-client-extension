@@ -66,12 +66,12 @@ describe('improve counter', () => {
     jest.advanceTimersByTime(30000);
     client.dispatch('gmcp.char.state', { improve: 3 });
     const orange = createColorFormat('#ffa500');
-    const message = colorString('\tWlasnie wbiles postepy: male (czas:  0:30)', orange);
+    const message = colorString('\tWlasnie wbiles postepy: male (czas:   0:30)', orange);
     expect(client.println).toHaveBeenCalledWith(message);
     show();
     const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/2\. male/);
-    expect(printed).toMatch(/czas  0:30/);
+    expect(printed).toMatch(/czas   0:30/);
     expect(printed).toMatch(/zabici 1\/1/);
   });
 

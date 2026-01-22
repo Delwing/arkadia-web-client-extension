@@ -2,11 +2,17 @@ import {useEffect, useState} from "react";
 import {useClientEvent} from "../../hooks";
 import eventBus from "@modules/core/eventBus";
 import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
+import {getItemSync} from "@modules/core/storage";
 
 interface DisplayMultibind {
   index: number;
   action: string;
   label: string;
+}
+
+function getInitialKeepVisible(): boolean {
+  const data = getItemSync("uiSettings");
+  return data?.uiSettings?.keepMultibindsVisible === true;
 }
 
 /**
@@ -21,7 +27,7 @@ interface DisplayMultibind {
  */
 export const MultiBinds: React.FC = () => {
   const [binds, setBinds] = useState<DisplayMultibind[]>([]);
-  const [keepVisible, setKeepVisible] = useState(false);
+  const [keepVisible, setKeepVisible] = useState(getInitialKeepVisible);
 
   // Listen to client event for multibinds updates (includes room binds and drinkable binds)
   useClientEvent<{ list?: DisplayMultibind[] }>("multibinds", (payload) => {
