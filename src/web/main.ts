@@ -46,7 +46,7 @@ import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import { LayoutManagerWrapper } from "@web/layout"
-import {copyOutputAsImage} from "./copyOutputAsImage";
+import {copyOutputAsImage, saveOutputAsHtml} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
@@ -370,6 +370,14 @@ outputWrapper.addEventListener('contextmenu', event => {
             action: () => {
                 copyOutputAsImage().catch(err => {
                     console.error('Failed to copy as image:', err);
+                });
+            },
+        });
+        items.push({
+            label: 'Zapisz jako HTML',
+            action: () => {
+                saveOutputAsHtml().catch(err => {
+                    console.error('Failed to save as HTML:', err);
                 });
             },
         });

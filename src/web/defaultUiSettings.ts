@@ -60,6 +60,7 @@ export interface UiSettings {
     mapPlayerMarkerDashEnabled: boolean;
     objectContextMenuCommands: string[];
     footerComponents: FooterComponentConfig[];
+    keepMultibindsVisible: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -97,4 +98,5 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerDashEnabled: true,
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,
+    keepMultibindsVisible: false,
 };

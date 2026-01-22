@@ -313,6 +313,7 @@ function apply(settings: UiSettings) {
         fightTitleIcon: settings.fightTitleIcon,
         clearInputOnSend: settings.clearInputOnSend,
         autoLowercaseCommands: settings.autoLowercaseCommands,
+        keepMultibindsVisible: settings.keepMultibindsVisible,
     };
     eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
@@ -407,6 +408,9 @@ async function load(): Promise<UiSettings> {
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
             const footerComponents = validateFooterComponents(parsed.footerComponents);
+            const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
+                ? parsed.keepMultibindsVisible
+                : defaultUiSettings.keepMultibindsVisible;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -440,6 +444,7 @@ async function load(): Promise<UiSettings> {
                 mapPlayerMarkerDashEnabled,
                 objectContextMenuCommands,
                 footerComponents,
+                keepMultibindsVisible,
             };
         }
     } catch {
@@ -483,6 +488,7 @@ export default async function initUiSettings() {
     const customFontUrlInput = modalEl.querySelector('#ui-custom-font-url') as HTMLInputElement;
     const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
+    const keepMultibindsVisibleInput = modalEl.querySelector('#ui-keep-multibinds-visible') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
@@ -775,6 +781,7 @@ export default async function initUiSettings() {
         customFontUrlInput.value = settings.customFontUrl;
         customFontFamilyInput.value = settings.customFontFamily;
         autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
+        keepMultibindsVisibleInput.checked = settings.keepMultibindsVisible;
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
@@ -1161,6 +1168,7 @@ export default async function initUiSettings() {
             })(),
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
+            keepMultibindsVisible: keepMultibindsVisibleInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
             mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultUiSettings.mapRoomSize,
             mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultUiSettings.mapLineWidth,

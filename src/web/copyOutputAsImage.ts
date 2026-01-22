@@ -398,3 +398,124 @@ export async function copyOutputAsImage(): Promise<void> {
         new ClipboardItem({ 'image/png': blob }),
     ]);
 }
+
+export async function saveOutputAsHtml(): Promise<void> {
+    const { spans, hasSelection } = getSelectedContent();
+    if (!hasSelection || spans.length === 0) {
+        throw new Error('Brak zaznaczenia');
+    }
+
+    const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
+    const bgColor = outputWrapper?.style.backgroundColor || '#242424';
+    const computedStyle = outputWrapper ? window.getComputedStyle(outputWrapper) : null;
+    const fontSize = computedStyle?.fontSize || '14px';
+    const fontFamily = computedStyle?.fontFamily || 'monospace';
+
+    // Split spans into logical lines
+    const logicalLines: StyledSpan[][] = [];
+    let currentLine: StyledSpan[] = [];
+
+    for (const span of spans) {
+        const parts = span.text.split('\n');
+        for (let i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                logicalLines.push(currentLine);
+                currentLine = [];
+            }
+            if (parts[i]) {
+                currentLine.push({ text: parts[i], color: span.color, bold: span.bold });
+            }
+        }
+    }
+    if (currentLine.length > 0) {
+        logicalLines.push(currentLine);
+    }
+
+    // Check if we have any timestamps - if so, lines without timestamps need to be indented
+    // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
+    const hasAnyTimestamp = logicalLines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
+
+    // Build HTML content with inline styles
+    // Use divs with hanging indent so wrapped lines maintain the timestamp column
+    const htmlLines: string[] = [];
+
+    for (const line of logicalLines) {
+        const lineHasTimestamp = line.length > 0 && line[0].color === TIMESTAMP_COLOR;
+        let lineHtml = '';
+
+        for (const span of line) {
+            const text = span.text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            const styles: string[] = [`color: ${span.color}`];
+            if (span.bold) {
+                styles.push('font-weight: bold');
+            }
+
+            lineHtml += `<span style="${styles.join('; ')}">${text}</span>`;
+        }
+
+        // Wrap in div with appropriate class for styling
+        if (hasAnyTimestamp) {
+            if (lineHasTimestamp) {
+                // Line with timestamp: use hanging indent (negative text-indent + padding)
+                htmlLines.push(`<div class="line-with-ts">${lineHtml}</div>`);
+            } else {
+                // Line without timestamp: just padding
+                htmlLines.push(`<div class="line-no-ts">${lineHtml}</div>`);
+            }
+        } else {
+            // No timestamps at all, no special styling needed
+            htmlLines.push(`<div>${lineHtml}</div>`);
+        }
+    }
+
+    const htmlContent = htmlLines.join('\n');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+    background-color: ${bgColor};
+    font-family: ${fontFamily};
+    font-size: ${fontSize};
+    line-height: 1.4;
+    padding: 16px;
+    margin: 0;
+}
+div {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.line-with-ts {
+    padding-left: 13ch;
+    text-indent: -13ch;
+}
+.line-no-ts {
+    padding-left: 13ch;
+}
+</style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `arkadia_${timestamp}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}

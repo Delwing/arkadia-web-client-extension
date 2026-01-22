@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {useClientEvent} from "../../hooks";
 import eventBus from "@modules/core/eventBus";
+import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
 
 interface DisplayMultibind {
   index: number;
@@ -20,6 +21,7 @@ interface DisplayMultibind {
  */
 export const MultiBinds: React.FC = () => {
   const [binds, setBinds] = useState<DisplayMultibind[]>([]);
+  const [keepVisible, setKeepVisible] = useState(false);
 
   // Listen to client event for multibinds updates (includes room binds and drinkable binds)
   useClientEvent<{ list?: DisplayMultibind[] }>("multibinds", (payload) => {
@@ -27,17 +29,24 @@ export const MultiBinds: React.FC = () => {
     setBinds(list);
   });
 
+  // Listen to uiSettings for keepMultibindsVisible setting
+  useClientEvent<UiSettingsEventPayload>("uiSettings", (payload) => {
+    if (typeof payload?.keepMultibindsVisible === "boolean") {
+      setKeepVisible(payload.keepMultibindsVisible);
+    }
+  });
+
   // Manage the "active" class on the container element
   useEffect(() => {
     const container = document.getElementById("multi-binds");
     if (container) {
-      if (binds.length > 0) {
+      if (binds.length > 0 || keepVisible) {
         container.classList.add("active");
       } else {
         container.classList.remove("active");
       }
     }
-  }, [binds.length]);
+  }, [binds.length, keepVisible]);
 
   const handleBindClick = (action: string) => (event: React.MouseEvent) => {
     event.preventDefault();
@@ -49,22 +58,26 @@ export const MultiBinds: React.FC = () => {
   // Return buttons directly without wrapper div
   return (
     <>
-      {binds
-        .slice()
-        .sort((a, b) => a.index - b.index)
-        .map((bind) => (
-          <button
-            key={bind.index}
-            type="button"
-            className="multi-bind"
-            title={bind.action}
-            onClick={handleBindClick(bind.action)}
-            disabled={!bind.action.trim()}
-          >
-            <span className="multi-bind-key">[{bind.label}]</span>
-            <span className="multi-bind-action">{bind.action}</span>
-          </button>
-        ))}
+      {binds.length === 0 && keepVisible ? (
+        <span className="multi-bind-empty">Brak akcji</span>
+      ) : (
+        binds
+          .slice()
+          .sort((a, b) => a.index - b.index)
+          .map((bind) => (
+            <button
+              key={bind.index}
+              type="button"
+              className="multi-bind"
+              title={bind.action}
+              onClick={handleBindClick(bind.action)}
+              disabled={!bind.action.trim()}
+            >
+              <span className="multi-bind-key">[{bind.label}]</span>
+              <span className="multi-bind-action">{bind.action}</span>
+            </button>
+          ))
+      )}
     </>
   );
 };

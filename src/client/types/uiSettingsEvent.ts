@@ -9,5 +9,6 @@ export type UiSettingsEventPayload = {
     fightTitleIcon?: boolean;
     clearInputOnSend?: boolean;
     autoLowercaseCommands?: boolean;
+    keepMultibindsVisible?: boolean;
 } & Record<string, unknown>;
 

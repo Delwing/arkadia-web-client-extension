@@ -946,6 +946,17 @@ h1 {
   color: rgba(255, 255, 255, 0.8);
 }
 
+#multi-binds .multi-bind-empty {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid transparent;
+}
+
 #multi-binds.active + #char-state {
   border-top: none;
 }
