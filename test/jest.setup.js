@@ -58,3 +58,10 @@ if (typeof globalThis.pako === 'undefined') {
 }
 
 jest.mock('mudlet-map-renderer', () => require('./__mocks__/mudlet-map-renderer.js'));
+
+jest.mock('@modules/data/peopleStore', () => ({
+  subscribe: jest.fn(() => jest.fn()),
+  refresh: jest.fn().mockResolvedValue(undefined),
+  forceRefresh: jest.fn().mockResolvedValue(undefined),
+  clear: jest.fn().mockResolvedValue(undefined),
+}));
