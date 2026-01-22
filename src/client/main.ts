@@ -11,6 +11,7 @@ import initBuses from './scripts/buses'
 import initGates from './scripts/gates'
 import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
+import initWarningTriggers from './scripts/warningTriggers'
 import initAttackQueue from './scripts/attackQueue'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
@@ -19,6 +20,7 @@ import initCombatState from './scripts/combatState'
 import initCombatTimer from './scripts/combatTimer'
 import initWeaponState from './scripts/weaponState'
 import initZaskTimer from './scripts/zaskTimer'
+import initWorldDestructionTimer from './scripts/worldDestructionTimer'
 import initBinds from './scripts/binds'
 import initTempBinds from './scripts/tempBinds'
 import initWalkCommands from './scripts/walkCommands'
@@ -118,6 +120,7 @@ import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
 import initAligatorEmoji from './scripts/aligatorEmoji'
 import initStaticMapWindow from './scripts/staticMapWindow'
+import initAttackModeAlias from './scripts/attackModeAlias'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -164,7 +167,9 @@ export function registerScripts(client: Client) {
     initGates(client)
     initSeat(client)
     initAttackBeep(client)
+    initWarningTriggers(client)
     initAttackQueue(client, aliases)
+    initAttackModeAlias(client, aliases)
     initLamp(client)
     initCoverTimer(client)
     initOrderTimer(client)
@@ -172,6 +177,7 @@ export function registerScripts(client: Client) {
     initCombatTimer(client)
     initWeaponState(client)
     initZaskTimer(client)
+    initWorldDestructionTimer(client)
     initBinds(client, aliases)
     initTempBinds(client, aliases)
     initWalkCommands(client, aliases)

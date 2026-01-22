@@ -21,6 +21,7 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'zask-timer', visible: true, order: 9 },
     { id: 'order-timer', visible: true, order: 10 },
     { id: 'combat-timer', visible: true, order: 11 },
+    { id: 'world-destruction-timer', visible: true, order: 12 },
 ];
 
 export interface UiSettings {

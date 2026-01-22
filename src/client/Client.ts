@@ -39,6 +39,7 @@ export interface CommandHook {
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import {createAttackController} from "./utils/attackController";
+import initAllyProtection from "./scripts/allyProtection";
 import SoundManager from "./SoundManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
@@ -82,6 +83,7 @@ export default class Client {
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);
     public AttackController = createAttackController(this);
+    public AllyProtection = initAllyProtection(this);
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     private soundManager = new SoundManager(this);
@@ -157,8 +159,19 @@ export default class Client {
             ) {
                 const id = this.TeamManager.getAttackTargetId?.()
                 if (id) {
-                    const command = `${this.attackCommand} ob_${id}`;
-                    this.sendCommand(command)
+                    if (this.AllyProtection.isAlly(id)) {
+                        if (this.AllyProtection.checkPendingAttack(id, 'attackBind')) {
+                            const command = `${this.attackCommand} ob_${id}`;
+                            this.sendCommand(command)
+                        } else {
+                            const info = this.AllyProtection.getAllyInfo(id);
+                            this.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+                            this.AllyProtection.setPendingAttack(id, 'attackBind');
+                        }
+                    } else {
+                        const command = `${this.attackCommand} ob_${id}`;
+                        this.sendCommand(command)
+                    }
                 }
                 ev.preventDefault()
             }
@@ -168,7 +181,18 @@ export default class Client {
                 !!this.supportBind.alt === ev.altKey &&
                 !!this.supportBind.shift === ev.shiftKey
             ) {
-                this.support()
+                const targetId = this.TeamManager.getAttackTargetId?.()
+                if (targetId && this.AllyProtection.isAlly(targetId)) {
+                    if (this.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
+                        this.support()
+                    } else {
+                        const info = this.AllyProtection.getAllyInfo(targetId);
+                        this.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+                        this.AllyProtection.setPendingAttack(targetId, 'supportBind');
+                    }
+                } else {
+                    this.support()
+                }
                 ev.preventDefault()
             }
             this.customBinds.forEach(cb => {

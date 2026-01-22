@@ -2,6 +2,14 @@
 
 Komendy do walki, zaslaniania i zarzadzania celami ataku.
 
+## Tryb ataku
+
+| Komenda | Opis |
+|---------|------|
+| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |
+
+> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik "Atk:" w stopce.
+
 ## Atakowanie
 
 | Komenda | Opis |
