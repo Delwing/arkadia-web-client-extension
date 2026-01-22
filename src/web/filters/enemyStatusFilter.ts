@@ -2,7 +2,7 @@ import Client from "@client/Client";
 import {objectListFilters} from "../objectListFilters";
 import {fuzzyMatchScore} from "@client/utils/fuzzyMatch";
 
-const MIN_FUZZY_THRESHOLD = 0.4;
+const MIN_FUZZY_THRESHOLD = 0.7;
 const PARALYZED_TIMEOUT_MS = 15000;
 const BROKEN_DEFENSE_TIMEOUT_MS = 3000;
 
