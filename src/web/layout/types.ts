@@ -13,6 +13,7 @@ export type BuiltInPopupType =
   | 'chat'
   | 'combat'
   | 'postepy'
+  | 'postepy2'
   | 'zabici'
   | 'skroty'
   | 'peopleBrowser'

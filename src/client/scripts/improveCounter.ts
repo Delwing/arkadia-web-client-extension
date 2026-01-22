@@ -39,7 +39,7 @@ function titleCase(str: string): string {
     return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatCount(count: number): string {
+export function formatCount(count: number): string {
     if (count <= 0) return String(count);
     const whole = Math.floor(count / 15);
     const rem = count % 15;
@@ -146,6 +146,15 @@ export function getImproveData(): ImproveData | null {
     return improveCounterInstance?.getData() ?? null;
 }
 
+export type LifetimeEntry = {
+    date: string;
+    count: number;
+};
+
+export function getLifetimeData(): LifetimeEntry[] {
+    return improveCounterInstance?.getLifetimeData() ?? [];
+}
+
 export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
     return improveCounterInstance?.getFormattedTable() ?? null;
 }
@@ -242,6 +251,10 @@ export default class ImproveCounter {
             currentKills: this.getKills(),
             waitingForFirstCombat: this.waitingForFirstCombat,
         };
+    }
+
+    getLifetimeData(): LifetimeEntry[] {
+        return [...this.lifetime];
     }
 
     private emitUpdate() {
@@ -662,6 +675,7 @@ export function initImproveCounter(
         aliases.push({pattern: /\/postepyw$/, callback: () => eventBus.emit("postepy.popup.open")});
         aliases.push({pattern: /\/postepy_reset$/, callback: () => counter.reset()});
         aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
+        aliases.push({pattern: /\/postepy2w$/, callback: () => eventBus.emit("postepy2.popup.open")});
         aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});
         aliases.push({pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false)});
         aliases.push({pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true)});

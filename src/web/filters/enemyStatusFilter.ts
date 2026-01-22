@@ -1,8 +1,8 @@
 import Client from "@client/Client";
 import {objectListFilters} from "../objectListFilters";
-import {fuzzyMatch} from "@client/utils/fuzzyMatch";
+import {fuzzyMatchScore} from "@client/utils/fuzzyMatch";
 
-const FUZZY_THRESHOLD = 0.6;
+const MIN_FUZZY_THRESHOLD = 0.4;
 const PARALYZED_TIMEOUT_MS = 15000;
 const BROKEN_DEFENSE_TIMEOUT_MS = 3000;
 
@@ -38,13 +38,38 @@ function clearBrokenDefenseTimer(status: EnemyStatus) {
     }
 }
 
+function calculateWordListScore(a: string, b: string): number {
+    const aWords = a.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const bWords = b.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+
+    if (aWords.length === 0 || bWords.length === 0) return 0;
+
+    const [shorter, longer] = aWords.length <= bWords.length
+        ? [aWords, bWords]
+        : [bWords, aWords];
+
+    let totalScore = 0;
+    for (const word of shorter) {
+        const bestMatch = Math.max(...longer.map(other => fuzzyMatchScore(word, other)));
+        totalScore += bestMatch;
+    }
+
+    return totalScore / shorter.length;
+}
+
 function findMatchingEnemy(eventName: string): string | null {
+    let bestMatch: string | null = null;
+    let bestScore = MIN_FUZZY_THRESHOLD;
+
     for (const name of enemyStatusMap.keys()) {
-        if (fuzzyMatch(name, eventName, FUZZY_THRESHOLD)) {
-            return name;
+        const score = calculateWordListScore(name, eventName);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = name;
         }
     }
-    return null;
+
+    return bestMatch;
 }
 
 export function registerEnemyStatusFilter(client: Client) {
@@ -92,14 +117,20 @@ export function registerEnemyStatusFilter(client: Client) {
     objectListFilters.register("enemy-status", (context, result) => {
         const desc = context.rawDescription;
 
+        let bestMatch: EnemyStatus | null = null;
+        let bestScore = MIN_FUZZY_THRESHOLD;
+
         for (const [name, status] of enemyStatusMap.entries()) {
-            if (fuzzyMatch(desc, name, FUZZY_THRESHOLD)) {
-                if (status.paralyzed || status.brokenDefense) {
-                    result.style.descriptionBackgroundColor = result.style.descriptionColor || "#ffffff";
-                    result.style.descriptionColor = "#000000";
-                }
-                break;
+            const score = calculateWordListScore(desc, name);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = status;
             }
+        }
+
+        if (bestMatch && (bestMatch.paralyzed || bestMatch.brokenDefense)) {
+            result.style.descriptionBackgroundColor = result.style.descriptionColor || "#ffffff";
+            result.style.descriptionColor = "#000000";
         }
     }, 100);
 }

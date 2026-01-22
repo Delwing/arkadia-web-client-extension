@@ -454,6 +454,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             opensWindow: true,
         },
         {
+            label: 'Postepy 2',
+            action: () => {
+                eventBus.emit('postepy2.popup.open');
+            },
+            opensWindow: true,
+        },
+        {
             label: 'Zabici',
             action: () => {
                 eventBus.emit('zabici.popup.open');

@@ -14,6 +14,7 @@ import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
 import ChatPopup from '../ChatPopup';
 import CombatPopup from '../CombatPopup';
 import PostepyPopup from '../PostepyPopup';
+import Postepy2Popup from '../Postepy2Popup';
 import ZabiciPopup from '../ZabiciPopup';
 import SkrotyPopup from '../SkrotyPopup';
 import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
@@ -71,6 +72,7 @@ export function LayoutManagerWrapper({
       <ChatPopup />
       <CombatPopup />
       <PostepyPopup />
+      <Postepy2Popup />
       <ZabiciPopup />
       <SkrotyPopup />
       <PeopleBrowser />

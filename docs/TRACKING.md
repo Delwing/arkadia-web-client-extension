@@ -25,6 +25,7 @@ Liczniki zabitych, postepow, stazu i zlecen.
 | Komenda | Opis |
 |---------|------|
 | `/postepy2` | Wyswietl globalny licznik postepow |
+| `/postepy2w` | Otworz okno z globalnym licznikiem postepow (zakladki: dni, miesiace, lata, wykresy) |
 | `/postepy2+` | Dodaj jeden postep do globalnego licznika |
 | `/postepy2+ ile` | Dodaj *ile* postepow (maksymalnie 15) |
 | `/postepy2+ id ile` | Kopiuj *ile* postepow z wpisu o numerze *id* |
