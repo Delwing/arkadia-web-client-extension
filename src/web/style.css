@@ -6266,6 +6266,7 @@ body.mobile-command-radial-active {
   align-items: flex-end;
   gap: 2px;
   height: 100px;
+  padding-top: 1.5rem;
 }
 
 .postepy2-chart__bar-container {
@@ -6280,32 +6281,40 @@ body.mobile-command-radial-active {
 .postepy2-chart__bar-wrapper {
   flex: 1;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  position: relative;
 }
 
 .postepy2-chart__bar {
-  width: 100%;
-  align-self: stretch;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background-color: #6a5acd;
   border-radius: 2px 2px 0 0;
   min-height: 2px;
-  transition: height 0.2s ease;
 }
 
 .postepy2-chart__bar:hover {
   background-color: #8a7aed;
 }
 
+.postepy2-chart__bar--noform {
+  background-color: #808080;
+}
+
+.postepy2-chart__bar--noform:hover {
+  background-color: #999999;
+}
+
 .postepy2-chart__bar-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
   font-size: 0.65rem;
   color: rgba(241, 245, 249, 0.7);
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  transform: rotate(180deg);
-  flex-shrink: 0;
+  white-space: nowrap;
   margin-bottom: 0.25rem;
 }
 

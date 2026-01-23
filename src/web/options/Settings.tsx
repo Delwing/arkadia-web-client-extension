@@ -1,6 +1,7 @@
 import "../style.css";
 import {useEffect, useState} from "react";
 import {Form, Button} from "react-bootstrap";
+import {FiHelpCircle} from "react-icons/fi";
 import storage, {getCurrentCharacter} from "@modules/core/storage";
 import {defaultSettings} from "./defaultSettings";
 import type {Settings as BaseSettings} from "./defaultSettings";
@@ -188,7 +189,7 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             <Form.Check
                                 type="checkbox"
                                 id="fullHpMessage"
-                                label="Informacja o pelnym zdrowiu"
+                                label={<>Informacja o pelnym zdrowiu <FiHelpCircle title="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
                                 checked={settings.fullHpMessage}
                                 onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                                 className="me-2"

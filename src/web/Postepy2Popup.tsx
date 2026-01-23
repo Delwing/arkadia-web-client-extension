@@ -18,11 +18,13 @@ type MonthlyEntry = {
     year: number;
     month: number;
     count: number;
+    noFormCount: number;
 };
 
 type YearlyEntry = {
     year: number;
     count: number;
+    noFormCount: number;
 };
 
 function parseDate(dateStr: string): { year: number; month: number; day: number } | null {
@@ -57,8 +59,9 @@ function aggregateMonthly(entries: LifetimeEntry[]): MonthlyEntry[] {
         const existing = map.get(key);
         if (existing) {
             existing.count += entry.count;
+            existing.noFormCount += entry.noFormCount || 0;
         } else {
-            map.set(key, { year: parsed.year, month: parsed.month, count: entry.count });
+            map.set(key, { year: parsed.year, month: parsed.month, count: entry.count, noFormCount: entry.noFormCount || 0 });
         }
     }
 
@@ -78,39 +81,63 @@ function aggregateYearly(entries: LifetimeEntry[]): YearlyEntry[] {
         const existing = map.get(parsed.year);
         if (existing) {
             existing.count += entry.count;
+            existing.noFormCount += entry.noFormCount || 0;
         } else {
-            map.set(parsed.year, { year: parsed.year, count: entry.count });
+            map.set(parsed.year, { year: parsed.year, count: entry.count, noFormCount: entry.noFormCount || 0 });
         }
     }
 
     return Array.from(map.values()).sort((a, b) => a.year - b.year);
 }
 
-// Simple bar chart component
+// Simple bar chart component with stacked bars support
 const SimpleBarChart: React.FC<{
-    data: { label: string; value: number }[];
+    data: { label: string; value: number; noFormValue?: number }[];
     maxBars?: number;
 }> = ({ data, maxBars = 30 }) => {
     const displayData = data.slice(-maxBars);
-    const maxValue = Math.max(...displayData.map(d => d.value), 1);
+    const maxValue = Math.max(...displayData.map(d => d.value + (d.noFormValue || 0)), 1);
     const maxLabelLength = Math.max(...displayData.map(d => d.label.length));
 
     return (
         <div className="postepy2-chart">
             <div className="postepy2-chart__bars">
-                {displayData.map((item, index) => (
-                    <div key={index} className="postepy2-chart__bar-container">
-                        <div className="postepy2-chart__bar-wrapper">
-                            <span className="postepy2-chart__bar-value">{item.value}</span>
+                {displayData.map((item, index) => {
+                    const total = item.value + (item.noFormValue || 0);
+                    const hasNoForm = !!(item.noFormValue && item.noFormValue > 0);
+                    const normalHeightPct = (item.value / maxValue) * 100;
+                    const noFormHeightPct = hasNoForm ? ((item.noFormValue || 0) / maxValue) * 100 : 0;
+                    return (
+                        <div key={index} className="postepy2-chart__bar-container">
                             <div
-                                className="postepy2-chart__bar"
-                                style={{ height: `${(item.value / maxValue) * 100}%` }}
-                                title={`${item.label}: ${item.value}`}
-                            />
+                                className="postepy2-chart__bar-wrapper"
+                                title={hasNoForm ? `${item.label}: ${item.value} + ${item.noFormValue} bez formy` : `${item.label}: ${item.value}`}
+                            >
+                                {(item.value > 0 || hasNoForm) && (
+                                    <span
+                                        className="postepy2-chart__bar-value"
+                                        style={{ bottom: `${normalHeightPct + noFormHeightPct}%` }}
+                                    >
+                                        {item.value}
+                                    </span>
+                                )}
+                                {hasNoForm && (
+                                    <div
+                                        className="postepy2-chart__bar postepy2-chart__bar--noform"
+                                        style={{ height: `${noFormHeightPct}%`, bottom: `${normalHeightPct}%` }}
+                                    />
+                                )}
+                                {item.value > 0 && (
+                                    <div
+                                        className="postepy2-chart__bar"
+                                        style={{ height: `${normalHeightPct}%` }}
+                                    />
+                                )}
+                            </div>
+                            <span className="postepy2-chart__bar-label">{item.label.padStart(maxLabelLength)}</span>
                         </div>
-                        <span className="postepy2-chart__bar-label">{item.label.padStart(maxLabelLength)}</span>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
@@ -203,11 +230,13 @@ const Postepy2Popup: React.FC = () => {
         const dailyChartData = data.slice(-30).map(e => ({
             label: e.date.split('/').slice(1).join('/'),
             value: e.count,
+            noFormValue: e.noFormCount || 0,
         }));
 
         const monthlyChartData = monthlyData.slice(-12).map(e => ({
             label: `${getMonthName(e.month)}`,
             value: e.count,
+            noFormValue: e.noFormCount || 0,
         }));
 
         return (

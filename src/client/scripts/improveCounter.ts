@@ -149,6 +149,7 @@ export function getImproveData(): ImproveData | null {
 export type LifetimeEntry = {
     date: string;
     count: number;
+    noFormCount?: number;
 };
 
 export function getLifetimeData(): LifetimeEntry[] {
@@ -163,10 +164,10 @@ export default class ImproveCounter {
     private client: Client;
     private killCounter: any;
     private entries: ImproveEntry[] = [];
-    private lifetime: { date: string; count: number }[] = [];
+    private lifetime: { date: string; count: number; noFormCount?: number }[] = [];
     private lifetimeEnabled = true;
     private lifetimeLoaded = false;
-    private pendingLifetime: { count: number; time: number }[] = [];
+    private pendingLifetime: { count: number; time: number; noForm?: boolean }[] = [];
     private lastTime: number = 0;
     private lastKills = {my: 0, team: 0};
     private level: number = -1;
@@ -175,6 +176,8 @@ export default class ImproveCounter {
     private pendingLevel?: number;
     private initialized = false;
     private waitingForFirstCombat = false;
+    private stateForm: number = 0;
+    private optionsForm: number = 0;
     private static readonly STORAGE_KEY = "improve_counter";
     private static readonly LIFETIME_KEY = "improve_counter_lifetime";
 
@@ -198,7 +201,7 @@ export default class ImproveCounter {
                 this.lifetimeLoaded = true;
                 if (this.pendingLifetime.length) {
                     for (const p of this.pendingLifetime) {
-                        this.addToLifetime(p.count, p.time);
+                        this.addToLifetime(p.count, p.time, p.noForm);
                     }
                     this.pendingLifetime = [];
                 }
@@ -219,9 +222,19 @@ export default class ImproveCounter {
         });
 
         this.client.on("gmcp.char.state", (state) => {
-            const level = (state as { improve?: number })?.improve;
-            if (typeof level === "number") {
-                this.handleLevel(level);
+            const s = state as { improve?: number; form?: number };
+            if (typeof s.form === "number") {
+                this.stateForm = s.form;
+            }
+            if (typeof s.improve === "number") {
+                this.handleLevel(s.improve);
+            }
+        });
+
+        this.client.on("gmcp.char.options", (options) => {
+            const o = options as { form?: number };
+            if (typeof o.form === "number") {
+                this.optionsForm = o.form;
             }
         });
 
@@ -348,20 +361,29 @@ export default class ImproveCounter {
         }
     }
 
-    private addToLifetime(count: number, time: number) {
+    private isNoForm(): boolean {
+        return this.optionsForm === 1 && this.stateForm === 0;
+    }
+
+    private addToLifetime(count: number, time: number, noForm?: boolean) {
         if (!this.lifetimeEnabled) return;
+        const isNoFormEntry = noForm ?? this.isNoForm();
         if (!this.lifetimeLoaded) {
-            this.pendingLifetime.push({count, time});
+            this.pendingLifetime.push({count, time, noForm: isNoFormEntry});
             return;
         }
         const d = new Date(time);
         const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
         let day = this.lifetime[this.lifetime.length - 1];
         if (!day || day.date !== date) {
-            day = {date, count: 0};
+            day = {date, count: 0, noFormCount: 0};
             this.lifetime.push(day);
         }
-        day.count += count;
+        if (isNoFormEntry) {
+            day.noFormCount = (day.noFormCount || 0) + count;
+        } else {
+            day.count += count;
+        }
         this.persistLifetime();
     }
 
