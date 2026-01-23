@@ -362,7 +362,7 @@ export default class ImproveCounter {
     }
 
     private isNoForm(): boolean {
-        return this.optionsForm === 1 && this.stateForm === 0;
+        return this.optionsForm === 1 && this.stateForm < 3;
     }
 
     private addToLifetime(count: number, time: number, noForm?: boolean) {
