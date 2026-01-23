@@ -185,7 +185,7 @@ export default class TeamManager {
     private checkTeamLeader(obj: ObjectData, id: number) {
         if (obj.team_leader) {
             const changed = this.leaderId !== id;
-            this.leader = obj.desc;
+            this.leader = obj.desc ?? this.accumulatedObjectsData.get(id)?.desc;
             this.leaderId = id;
             if (changed) {
                 this.client.sendEvent('teamChange');

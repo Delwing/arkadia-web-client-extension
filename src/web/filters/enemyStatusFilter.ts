@@ -11,6 +11,8 @@ type EnemyStatus = {
     brokenDefense: boolean;
     paralyzedTimer: ReturnType<typeof setTimeout> | null;
     brokenDefenseTimer: ReturnType<typeof setTimeout> | null;
+    bestMatchObjectNum: number | null;
+    bestMatchScore: number;
 };
 
 const enemyStatusMap = new Map<string, EnemyStatus>();
@@ -18,7 +20,7 @@ const enemyStatusMap = new Map<string, EnemyStatus>();
 function getOrCreateStatus(name: string): EnemyStatus {
     let status = enemyStatusMap.get(name);
     if (!status) {
-        status = { paralyzed: false, brokenDefense: false, paralyzedTimer: null, brokenDefenseTimer: null };
+        status = { paralyzed: false, brokenDefense: false, paralyzedTimer: null, brokenDefenseTimer: null, bestMatchObjectNum: null, bestMatchScore: 0 };
         enemyStatusMap.set(name, status);
     }
     return status;
@@ -72,6 +74,32 @@ function findMatchingEnemy(eventName: string): string | null {
     return bestMatch;
 }
 
+function resetBestMatches() {
+    for (const status of enemyStatusMap.values()) {
+        status.bestMatchObjectNum = null;
+        status.bestMatchScore = 0;
+    }
+}
+
+function updateBestMatches(objects: Map<number, { desc?: string }>) {
+    resetBestMatches();
+
+    for (const [num, obj] of objects.entries()) {
+        const desc = obj.desc;
+        if (!desc) continue;
+
+        for (const [name, status] of enemyStatusMap.entries()) {
+            if (!status.paralyzed && !status.brokenDefense) continue;
+
+            const score = calculateWordListScore(desc, name);
+            if (score > MIN_FUZZY_THRESHOLD && score > status.bestMatchScore) {
+                status.bestMatchScore = score;
+                status.bestMatchObjectNum = num;
+            }
+        }
+    }
+}
+
 export function registerEnemyStatusFilter(client: Client) {
     const startParalyzedTimer = (status: EnemyStatus) => {
         clearParalyzedTimer(status);
@@ -114,23 +142,22 @@ export function registerEnemyStatusFilter(client: Client) {
         }, BROKEN_DEFENSE_TIMEOUT_MS);
     });
 
-    objectListFilters.register("enemy-status", (context, result) => {
-        const desc = context.rawDescription;
-
-        let bestMatch: EnemyStatus | null = null;
-        let bestScore = MIN_FUZZY_THRESHOLD;
-
-        for (const [name, status] of enemyStatusMap.entries()) {
-            const score = calculateWordListScore(desc, name);
-            if (score > bestScore) {
-                bestScore = score;
-                bestMatch = status;
-            }
+    client.on("parsedObjects", () => {
+        const objects = client.TeamManager?.getAccumulatedObjectsData();
+        if (objects) {
+            updateBestMatches(objects as Map<number, { desc?: string }>);
         }
+    });
 
-        if (bestMatch && (bestMatch.paralyzed || bestMatch.brokenDefense)) {
-            result.style.descriptionBackgroundColor = result.style.descriptionColor || "#ffffff";
-            result.style.descriptionColor = "#000000";
+    objectListFilters.register("enemy-status", (context, result) => {
+        const objectNum = context.object.num;
+
+        for (const status of enemyStatusMap.values()) {
+            if ((status.paralyzed || status.brokenDefense) && status.bestMatchObjectNum === objectNum) {
+                result.style.descriptionBackgroundColor = result.style.descriptionColor || "#ffffff";
+                result.style.descriptionColor = "#000000";
+                return;
+            }
         }
     }, 100);
 }
