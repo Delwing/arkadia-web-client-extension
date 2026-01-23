@@ -943,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (target.closest('a, button, input, textarea, select, [contenteditable], [data-output-clickable], .plugin-window, .modal')) {
+            if (target.closest('a, button, input, textarea, select, [contenteditable], [data-output-clickable], .plugin-window, .modal, .managed-panel')) {
                 return;
             }
 
