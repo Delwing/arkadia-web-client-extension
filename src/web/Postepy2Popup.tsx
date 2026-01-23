@@ -12,7 +12,7 @@ import { getCurrentCharacter } from '@modules/core/storage';
 
 const POPUP_ID = 'popup:postepy2';
 
-type TabType = 'daily' | 'monthly' | 'yearly' | 'graphs';
+type TabType = 'daily' | 'monthly' | 'yearly' | 'noform' | 'graphs';
 
 type MonthlyEntry = {
     year: number;
@@ -103,7 +103,6 @@ const SimpleBarChart: React.FC<{
         <div className="postepy2-chart">
             <div className="postepy2-chart__bars">
                 {displayData.map((item, index) => {
-                    const total = item.value + (item.noFormValue || 0);
                     const hasNoForm = !!(item.noFormValue && item.noFormValue > 0);
                     const normalHeightPct = (item.value / maxValue) * 100;
                     const noFormHeightPct = hasNoForm ? ((item.noFormValue || 0) / maxValue) * 100 : 0;
@@ -184,10 +183,15 @@ const Postepy2Popup: React.FC = () => {
                 <div className="postepy2-empty">Brak danych.</div>
             ) : (
                 data.map((entry, index) => (
-                    <div key={index} className="postepy2-entry">
+                    <div key={index} className="postepy2-entry postepy2-entry--with-noform">
                         <span className="postepy2-entry__num">[{(index + 1).toString().padStart(4, ' ')}]</span>
                         <span className="postepy2-entry__date">{formatDateLabel(entry.date)}</span>
-                        <span className="postepy2-entry__count">{formatCount(entry.count)}</span>
+                        <span className="postepy2-entry__counts">
+                            <span className="postepy2-entry__count">{formatCount(entry.count)}</span>
+                            {!!(entry.noFormCount && entry.noFormCount > 0) && (
+                                <span className="postepy2-entry__count postepy2-entry__count--noform">{formatCount(entry.noFormCount)}</span>
+                            )}
+                        </span>
                     </div>
                 ))
             )}
@@ -222,6 +226,30 @@ const Postepy2Popup: React.FC = () => {
                         <span className="postepy2-entry__count">{formatCount(entry.count)}</span>
                     </div>
                 ))
+            )}
+        </div>
+    );
+
+    const noFormData = useMemo(() => data.filter(e => e.noFormCount && e.noFormCount > 0), [data]);
+    const totalNoForm = useMemo(() => data.reduce((sum, e) => sum + (e.noFormCount || 0), 0), [data]);
+
+    const renderNoFormTab = () => (
+        <div className="postepy2-entries">
+            {noFormData.length === 0 ? (
+                <div className="postepy2-empty">Brak postepow bez formy.</div>
+            ) : (
+                <>
+                    {noFormData.map((entry, index) => (
+                        <div key={index} className="postepy2-entry">
+                            <span className="postepy2-entry__num">[{(index + 1).toString().padStart(4, ' ')}]</span>
+                            <span className="postepy2-entry__date">{formatDateLabel(entry.date)}</span>
+                            <span className="postepy2-entry__count postepy2-entry__count--noform">{formatCount(entry.noFormCount || 0)}</span>
+                        </div>
+                    ))}
+                    <div className="postepy2-noform-total">
+                        Lacznie bez formy: {totalNoForm}
+                    </div>
+                </>
             )}
         </div>
     );
@@ -304,6 +332,13 @@ const Postepy2Popup: React.FC = () => {
                 </button>
                 <button
                     type="button"
+                    className={`postepy2-tab-button ${activeTab === 'noform' ? 'postepy2-tab-button--active' : ''}`}
+                    onClick={() => handleTabClick('noform')}
+                >
+                    Bez formy
+                </button>
+                <button
+                    type="button"
                     className={`postepy2-tab-button ${activeTab === 'graphs' ? 'postepy2-tab-button--active' : ''}`}
                     onClick={() => handleTabClick('graphs')}
                 >
@@ -315,12 +350,16 @@ const Postepy2Popup: React.FC = () => {
                 {activeTab === 'daily' && renderDailyTab()}
                 {activeTab === 'monthly' && renderMonthlyTab()}
                 {activeTab === 'yearly' && renderYearlyTab()}
+                {activeTab === 'noform' && renderNoFormTab()}
                 {activeTab === 'graphs' && renderGraphsTab()}
             </div>
 
             <div className="postepy2-footer">
                 <span className="postepy2-footer__label">Lacznie:</span>
                 <span className="postepy2-footer__total">{total} postepow</span>
+                {totalNoForm > 0 && (
+                    <span className="postepy2-footer__noform">+ {totalNoForm} bez formy</span>
+                )}
                 <span className="postepy2-footer__approx">(~{(total / 15).toFixed(2)} niebotycznych)</span>
             </div>
         </DockablePopupWrapper>

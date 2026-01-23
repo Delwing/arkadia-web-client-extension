@@ -541,6 +541,28 @@ export default class ImproveCounter {
         );
     }
 
+    addDemoData() {
+        const now = new Date();
+        const demoData: { date: string; count: number; noFormCount?: number }[] = [];
+
+        // Add 10 days of demo data
+        for (let i = 9; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+            const count = Math.floor(Math.random() * 20) + 5; // 5-25 normal
+            const noFormCount = Math.random() > 0.5 ? Math.floor(Math.random() * 10) + 1 : 0; // 0-10 noform
+            demoData.push({ date, count, noFormCount: noFormCount || undefined });
+        }
+
+        this.lifetime = demoData;
+        this.persistLifetime();
+        eventBus.emit("postepy2.updated");
+        this.client.println(
+            colorString("Dodano dane demo do postepy2.", SECTION_COLOR)
+        );
+    }
+
     setLifetimeEnabled(on: boolean) {
         this.lifetimeEnabled = on;
         this.persistLifetime();
@@ -699,6 +721,7 @@ export function initImproveCounter(
         aliases.push({pattern: /\/postepy2$/, callback: () => counter.showLifetime()});
         aliases.push({pattern: /\/postepy2w$/, callback: () => eventBus.emit("postepy2.popup.open")});
         aliases.push({pattern: /\/postepy2_reset$/, callback: () => counter.resetLifetime()});
+        aliases.push({pattern: /\/postepy2_demo$/, callback: () => counter.addDemoData()});
         aliases.push({pattern: /\/postepy2_off$/, callback: () => counter.setLifetimeEnabled(false)});
         aliases.push({pattern: /\/postepy2_on$/, callback: () => counter.setLifetimeEnabled(true)});
         aliases.push({pattern: /\/postepy2\+$/, callback: () => counter.addLifetime(1)});
