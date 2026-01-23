@@ -110,12 +110,20 @@ export function registerEnemyStatusFilter(client: Client) {
         }, PARALYZED_TIMEOUT_MS);
     };
 
+    const triggerBestMatchUpdate = () => {
+        const objects = client.TeamManager?.getAccumulatedObjectsData();
+        if (objects) {
+            updateBestMatches(objects as Map<number, { desc?: string }>);
+        }
+    };
+
     client.on("enemy.paralyzed", ({ name }) => {
         const existingMatch = findMatchingEnemy(name);
         const targetName = existingMatch || name;
         const status = getOrCreateStatus(targetName);
         status.paralyzed = true;
         startParalyzedTimer(status);
+        triggerBestMatchUpdate();
     });
 
     client.on("enemy.paralyzed.end", ({ name }) => {
@@ -140,14 +148,10 @@ export function registerEnemyStatusFilter(client: Client) {
             status.brokenDefenseTimer = null;
             client.sendEvent("enemy.broken_defense", { name: "" });
         }, BROKEN_DEFENSE_TIMEOUT_MS);
+        triggerBestMatchUpdate();
     });
 
-    client.on("parsedObjects", () => {
-        const objects = client.TeamManager?.getAccumulatedObjectsData();
-        if (objects) {
-            updateBestMatches(objects as Map<number, { desc?: string }>);
-        }
-    });
+    client.on("parsedObjects", triggerBestMatchUpdate);
 
     objectListFilters.register("enemy-status", (context, result) => {
         const objectNum = context.object.num;
