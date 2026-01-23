@@ -3,8 +3,6 @@ import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
 import initPausers from './scripts/pausers'
-
-import blockers from './blockers.json'
 import initShips from './scripts/ships'
 import initTransportStops from './scripts/transportStops'
 import initBuses from './scripts/buses'
@@ -142,14 +140,6 @@ export function registerScripts(client: Client) {
     })
     initMapAliases(client, aliases)
     initZaznaczaj(client, aliases)
-
-    blockers.forEach(blocker => {
-        const blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern)
-        client.Triggers.registerTrigger(blockerPattern, (line) => {
-            client.Map.moveBack()
-            return line
-        }, 'blocker')
-    })
 
     initTeamBlockers(client)
     initMove(client)

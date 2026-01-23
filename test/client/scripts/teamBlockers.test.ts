@@ -37,23 +37,25 @@ describe('team blockers', () => {
   const blockerLine =
     'Probujesz sie ruszyc na polnoc, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatales, uniemozliwiaja ci to.';
 
-  test('does not move back when player is not in team', () => {
+  test('moves back when player is not in team but does not set blockable', () => {
     client.Map.isBlockable = true;
     client.TeamManager.isInAnyTeam.mockReturnValue(false);
 
     parse(blockerLine);
 
-    expect(client.Map.moveBack).not.toHaveBeenCalled();
+    expect(client.Map.moveBack).toHaveBeenCalled();
+    expect(client.Map.setBlockable).not.toHaveBeenCalled();
   });
 
-  test('does not move back when player is team leader', () => {
+  test('moves back when player is team leader but does not set blockable', () => {
     client.Map.isBlockable = true;
     client.TeamManager.isInAnyTeam.mockReturnValue(true);
     client.TeamManager.isLeader.mockReturnValue(true);
 
     parse(blockerLine);
 
-    expect(client.Map.moveBack).not.toHaveBeenCalled();
+    expect(client.Map.moveBack).toHaveBeenCalled();
+    expect(client.Map.setBlockable).not.toHaveBeenCalled();
   });
 
   test('does not move back when movement is not blockable', () => {

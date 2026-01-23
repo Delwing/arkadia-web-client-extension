@@ -1,4 +1,6 @@
 import Client from "../Client";
+import blockers from '../blockers.json'
+import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 const teamBlockerPatterns: RegExp[] = [
     /^Probujesz sie ruszyc na .*, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatal.s, uniemozliwiaja ci to\.$/,
@@ -12,21 +14,36 @@ const teamBlockerPatterns: RegExp[] = [
     /^Zbyt raptowanie probujesz znowu ruszyc na .*, przez co tylko jeszcze bardziej placzesz sobie nogi w gestwinie pajeczych sieci\.$/
 ];
 
-export default function initTeamBlockers(client: Client) {
-    teamBlockerPatterns.forEach(pattern => {
-        client.Triggers.registerTrigger(pattern, (line) => {
-            if (!client.TeamManager.isInAnyTeam()) {
-                return line;
-            }
-            if (client.TeamManager.isLeader()) {
-                return line;
-            }
-            if (!client.Map.isBlockable) {
-                return line;
-            }
+function createBlockerHandler(client: Client) {
+    return (line: AnsiAwareBuffer) => {
+        if (!client.TeamManager.isInAnyTeam()) {
             client.Map.moveBack();
-            client.Map.setBlockable(false);
             return line;
-        }, 'blocker');
+        }
+        if (client.TeamManager.isLeader()) {
+            client.Map.moveBack();
+            return line;
+        }
+        if (!client.Map.isBlockable) {
+            return line;
+        }
+        client.Map.moveBack();
+        client.Map.setBlockable(false);
+        return line;
+    };
+}
+
+export default function initTeamBlockers(client: Client) {
+    const handler = createBlockerHandler(client);
+
+    // Register team blocker patterns (RegExp)
+    teamBlockerPatterns.forEach(pattern => {
+        client.Triggers.registerTrigger(pattern, handler, 'blocker');
+    });
+
+    // Register blockers from blockers.json
+    blockers.forEach(blocker => {
+        const blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern);
+        client.Triggers.registerTrigger(blockerPattern, handler, 'blocker');
     });
 }
