@@ -223,6 +223,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [closeMenu]);
 
+  const handleOpenTripPlanner = useCallback(() => {
+    eventBus.emit('tripPlanner.popup.open');
+    closeMenu();
+  }, [closeMenu]);
+
   const handleToggleLabel = useCallback(() => {
     setLabelVisible((prev) => !prev);
     closeMenu();
@@ -396,6 +401,13 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
                 onClick={handleOpenSkroty}
               >
                 Skroty
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item"
+                onClick={handleOpenTripPlanner}
+              >
+                Planer trasy
               </button>
               <button
                 type="button"

@@ -128,6 +128,7 @@ export interface SyncedDeviceSettings {
         uiSettings?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;
+        tripRoutes?: string;
     };
 }
 

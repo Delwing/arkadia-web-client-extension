@@ -200,8 +200,9 @@ export class EmbeddedMap {
             this.currentHighlights = data;
             this.refresh();
         });
-        // Request current highlights in case highlighters were created before map loaded
+        // Request current highlights and path in case they were created before map loaded
         eventBus.emit('requestMapHighlights');
+        eventBus.emit('requestMapPath');
 
         eventBus.on('map.centerOn', (data: { roomId: number }) => {
             const targetRoom = this.reader.getRoom(data.roomId);
@@ -229,7 +230,7 @@ export class EmbeddedMap {
             if (currentRoom && pathFinder) {
                 const path = pathFinder.findPath(currentRoom, data.toRoomId);
                 if (path) {
-                    this.currentPath = { path, color: '#66E64D' };
+                    this.currentPath = { path, color: '#7FFF00' };
                     this.refresh();
                 } else {
                     eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
@@ -403,8 +404,6 @@ export class EmbeddedMap {
         const playerRoom = this.reader.getRoom(this.currentRoom);
         const isPlayerVisible = playerRoom && playerRoom.area === areaId && playerRoom.z === z;
 
-        this.renderer.clearPosition()
-
         if (isPlayerVisible) {
             // Player is in this area/level, render normally
             this.renderer.drawArea(areaId, z);
@@ -466,9 +465,8 @@ export class EmbeddedMap {
 
         if (isPlayerVisible) {
             this.renderer.setPosition(this.currentRoom);
-        } else {
-            this.renderer.clearPosition();
         }
+        // When player is not visible, the position marker is simply not rendered
     }
 
     /**
@@ -522,7 +520,6 @@ export class EmbeddedMap {
         const room = this.reader.getRoom(this.currentRoom);
         if (!room) return;
 
-        this.renderer.clearPosition();
         this.renderer.drawArea(room.area, room.z);
         this.renderRoom(this.currentRoom);
         this.setViewingPlayerPosition(true);

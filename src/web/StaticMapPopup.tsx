@@ -690,6 +690,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             resizeObserver.observe(parentContainer);
 
             eventBus.emit('requestMapHighlights');
+            eventBus.emit('requestMapPath');
             renderPathsAndHighlights();
 
             (container as any).__resizeObserver = resizeObserver;

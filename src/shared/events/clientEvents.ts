@@ -118,11 +118,15 @@ export interface KnownEvents {
     "stepBack": void;
     "leadTo": number;
     "clearLeadTo": void;
+    "tripPlanner.leadTo": number[];
+    "tripPlanner.addStop": { roomId: number };
+    "tripPlanner.popup.open": void;
     "mapPath": { path: number[]; color: string } | null;
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLocationLabel": string;
     "requestMapLocationLabel": void;
     "requestMapHighlights": void;
+    "requestMapPath": void;
     "notify": NotificationPayload;
     "lampTimer": number | null;
     "coverTimer": number | null;

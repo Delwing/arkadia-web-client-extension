@@ -141,6 +141,10 @@ export default class MapHelper {
             this.clearLeadTo();
         });
 
+        this.client.on("tripPlanner.leadTo", (targets: number[]) => {
+            this.setMultiDestinations(targets);
+        });
+
         this.client.on("highlights", (highlights: number[]) => {
             this.setHighlights(highlights);
         });
@@ -151,6 +155,10 @@ export default class MapHelper {
 
         this.client.on("requestMapHighlights", () => {
             this.emitHighlights();
+        });
+
+        this.client.on("requestMapPath", () => {
+            this.emitPath();
         });
 
         this.client.sendEvent("refreshPositionWhenAble");
@@ -506,6 +514,11 @@ export default class MapHelper {
         this.emitDrawData();
     }
 
+    setMultiDestinations(ids: number[]) {
+        this._destinations = ids;
+        this.emitDrawData();
+    }
+
     clearLeadTo() {
         this._destinations = [];
         this.emitDrawData();
@@ -608,10 +621,23 @@ export default class MapHelper {
     emitPath() {
         const currentId = this.currentRoom?.id;
         if (this._destinations.length > 0 && currentId) {
-            const destId = this._destinations[0];
-            const path = this.pathFinder?.findPath(currentId, destId) ?? null;
-            if (path) {
-                this.client.sendEvent("mapPath", {path, color: "#66E64D"});
+            // Build combined path through all destinations
+            const combinedPath: number[] = [];
+            let fromId = currentId;
+            for (const destId of this._destinations) {
+                const segment = this.pathFinder?.findPath(fromId, destId);
+                if (segment && segment.length > 0) {
+                    // Avoid duplicating the connecting node
+                    if (combinedPath.length > 0) {
+                        combinedPath.push(...segment.slice(1));
+                    } else {
+                        combinedPath.push(...segment);
+                    }
+                    fromId = destId;
+                }
+            }
+            if (combinedPath.length > 0) {
+                this.client.sendEvent("mapPath", {path: combinedPath, color: "#7FFF00"});
                 return;
             }
         }
@@ -660,13 +686,27 @@ export default class MapHelper {
         let text = showRoomName ? `#${currentId} ${roomName} (${areaName})` : `#${currentId} ${areaName}`;
 
         if (this._destinations.length > 0) {
-            const destId = this._destinations[0];
-            const path = this.pathFinder?.findPath(currentId, destId) ?? null;
-            const distance = path ? path.length - 1 : 0;
-            const destRoom = this.mapReader?.getRoom(destId);
+            // Calculate total distance through all destinations
+            let totalDistance = 0;
+            let fromId = currentId;
+            for (const destId of this._destinations) {
+                const segment = this.pathFinder?.findPath(fromId, destId);
+                if (segment) {
+                    totalDistance += segment.length - 1;
+                    fromId = destId;
+                }
+            }
+
+            const finalDestId = this._destinations[this._destinations.length - 1];
+            const destRoom = this.mapReader?.getRoom(finalDestId);
             const destArea = destRoom ? this.mapReader.getArea(destRoom.area) : null;
-            const destName = destArea ? destArea.getAreaName() : String(destId);
-            text += ` → #${destId} ${destName} (${distance})`;
+            const destName = destArea ? destArea.getAreaName() : String(finalDestId);
+
+            if (this._destinations.length > 1) {
+                text += ` → #${finalDestId} ${destName} (${totalDistance}, ${this._destinations.length} przystankow)`;
+            } else {
+                text += ` → #${finalDestId} ${destName} (${totalDistance})`;
+            }
         }
 
         return text;

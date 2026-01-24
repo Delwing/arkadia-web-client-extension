@@ -106,6 +106,11 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
             opensWindow: true,
         },
         {
+            label: 'Dodaj przystanek',
+            action: () => eventBus.emit('tripPlanner.addStop', { roomId }),
+            opensWindow: true,
+        },
+        {
             label: 'Notatka',
             action: () => eventBus.emit('locationNote.edit', { roomId }),
             opensWindow: true,

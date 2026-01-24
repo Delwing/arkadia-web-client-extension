@@ -6555,6 +6555,292 @@ body.mobile-command-radial-active {
   border-color: #60a5fa;
 }
 
+/* Trip Planner Popup */
+.trip-planner-window-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  overflow: auto;
+  background-color: var(--surface-elevated);
+}
+
+.trip-planner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trip-planner-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trip-planner-label {
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.trip-planner-empty {
+  color: rgba(241, 245, 249, 0.5);
+  text-align: center;
+  padding: 0.75rem;
+  font-style: italic;
+  font-size: 0.75rem;
+}
+
+.trip-planner-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.trip-planner-stop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 0.25rem;
+}
+
+.trip-planner-stop:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.trip-planner-stop--unreachable {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.trip-planner-stop-handle {
+  color: rgba(241, 245, 249, 0.4);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  font-size: 0.75rem;
+}
+
+.trip-planner-stop-handle:hover {
+  color: rgba(241, 245, 249, 0.7);
+}
+
+.trip-planner-stop-warning {
+  color: #fbbf24;
+  font-size: 0.75rem;
+}
+
+.trip-planner-stop-distance {
+  color: rgba(96, 165, 250, 0.8);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  background-color: rgba(96, 165, 250, 0.15);
+  border-radius: 0.2rem;
+  flex-shrink: 0;
+}
+
+.trip-planner-total {
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.75rem;
+  text-align: right;
+  padding: 0.35rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.trip-planner-warning {
+  color: #fbbf24;
+  font-size: 0.7rem;
+  padding: 0.35rem 0.5rem;
+  background-color: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.trip-planner-stop-number {
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.75rem;
+  min-width: 1.2rem;
+}
+
+.trip-planner-stop-id {
+  color: #7cfc00;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.trip-planner-stop-name {
+  color: rgba(255, 165, 0, 0.7);
+  font-size: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-planner-stop-remove {
+  background: none;
+  border: none;
+  color: rgba(241, 245, 249, 0.4);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.trip-planner-stop-remove:hover {
+  color: #ef4444;
+}
+
+.trip-planner-mode-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.trip-planner-mode-tab {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.6);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trip-planner-mode-tab:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.trip-planner-mode-tab--active {
+  background-color: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+.trip-planner-input-row {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.trip-planner-input,
+.trip-planner-select {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.trip-planner-input::placeholder {
+  color: rgba(241, 245, 249, 0.4);
+}
+
+.trip-planner-input:focus,
+.trip-planner-select:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.trip-planner-select option {
+  background-color: #1e293b;
+  color: var(--text-primary);
+}
+
+.trip-planner-btn {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trip-planner-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.trip-planner-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trip-planner-btn--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.trip-planner-btn--danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+.trip-planner-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trip-planner-action-btn {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trip-planner-action-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.trip-planner-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trip-planner-action-btn--primary {
+  background-color: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+.trip-planner-action-btn--primary:hover:not(:disabled) {
+  background-color: rgba(96, 165, 250, 0.3);
+  border-color: #60a5fa;
+}
+
+.trip-planner-action-btn--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.trip-planner-action-btn--danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
 /* People Browser Popup */
 .people-browser-body {
   display: flex;
