@@ -569,8 +569,10 @@ Promise.all([mapDataPromise, colorsPromise])
             createRoot(pauseIconElement).render(createElement(PauseIcon));
         }
 
-        const {startId, reader} = client.Map.initialize(mapData, colors);
-        (globalThis as any).embedded = new EmbeddedMap(reader, startId);
+        const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
+        const embedded = new EmbeddedMap(reader, startId);
+        (embedded as any).pathFinder = pathFinder;
+        (globalThis as any).embedded = embedded;
     })
     .catch(error => {
         progressContainer.style.display = 'none';

@@ -75,19 +75,21 @@ function getEmbedded() {
 
 function getCurrentRoomId(): number | null {
     const embedded = getEmbedded();
-    return embedded?.currentRoom ?? null;
+    const room = embedded?.currentRoom;
+    return typeof room === 'number' ? room : null;
 }
 
-function canReach(fromId: number | null, toId: number): boolean | null {
-    if (fromId === null) return null; // Unknown - don't show warning
+function canReach(fromId: number | null, toId: number): boolean {
+    if (fromId === null) return true; // Can't check without current location - assume reachable
     if (fromId === toId) return true; // Same location
     const embedded = getEmbedded();
-    if (!embedded?.pathFinder) return null; // Can't check - don't show warning
+    if (!embedded?.pathFinder?.findPath) return true; // Can't check - assume reachable
     try {
         const path = embedded.pathFinder.findPath(fromId, toId);
+        // findPath returns null/undefined or empty array when no path exists
         return path && path.length > 0;
     } catch {
-        return null; // Error - don't show warning
+        return true; // Error - assume reachable
     }
 }
 
@@ -205,6 +207,16 @@ const TripPlannerPopup: React.FC = () => {
         return eventBus.on('enterLocation', handleEnterLocation);
     }, []);
 
+    // Refresh current room ID when popup opens (in case it wasn't available initially)
+    useEffect(() => {
+        if (wrapperProps.isOpen) {
+            const roomId = getCurrentRoomId();
+            if (roomId !== null) {
+                setCurrentRoomId(roomId);
+            }
+        }
+    }, [wrapperProps.isOpen]);
+
     // Handle adding stop from context menu
     useEffect(() => {
         const handleAddStop = (payload: { roomId: number }) => {
@@ -262,9 +274,7 @@ const TripPlannerPopup: React.FC = () => {
             if (dist !== null) {
                 total += dist;
             }
-            // Only mark as unreachable if we know for sure it's not reachable (false)
-            // null means unknown/can't check, so we don't show a warning
-            if (reachable === false) {
+            if (!reachable) {
                 unreachable.add(stop.uid);
             }
             prevId = stop.id;
