@@ -41,6 +41,7 @@ export interface ExportOptions {
     recordings: boolean;
     visitedRooms: boolean;
     locationNotes: boolean;
+    peopleEdits: boolean;      // Local edits to people database
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -57,6 +58,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
     recordings: true,
     visitedRooms: true,
     locationNotes: true,
+    peopleEdits: true,
 };
 
 // Map specific global keys to their export options
@@ -185,6 +187,10 @@ export function exportLocalStorage(selectedCharacters: string[], options: Export
             if (!selectedSet.has(parsed.name)) continue;
             if (parsed.baseKey && isExcludedLocalStorageKey(parsed.baseKey)) {
                 continue;
+            }
+            // Handle peopleLocalEvents separately based on peopleEdits option
+            if (parsed.baseKey === 'peopleLocalEvents') {
+                if (!options.peopleEdits) continue;
             }
             if (!characters[parsed.name]) {
                 characters[parsed.name] = {};
@@ -514,6 +520,7 @@ export interface CategoryData {
     improveCounts?: Record<string, string>;   // CharacterName -> improve_counter_lifetime JSON
     deposits?: Record<string, string>;        // CharacterName -> deposits JSON
     containers?: Record<string, string>;      // CharacterName -> containers JSON
+    peopleEdits?: Record<string, string>;     // CharacterName -> peopleLocalEvents JSON
 }
 
 // Export a single category as JSON string
@@ -683,8 +690,21 @@ export async function exportCategory(
                 return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
             }
             case 'peopleEdits': {
-                const raw = localStorage.getItem('peopleLocalEvents');
-                return raw ? JSON.stringify({ peopleLocalEvents: raw }) : null;
+                const result: Record<string, string> = {};
+                const selectedSet = new Set(selectedCharacters);
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (!key) continue;
+                    const colonIdx = key.indexOf(':');
+                    if (colonIdx <= 0) continue;
+                    const charName = key.slice(0, colonIdx);
+                    const baseKey = key.slice(colonIdx + 1);
+                    if (baseKey !== 'peopleLocalEvents') continue;
+                    if (!selectedSet.has(charName)) continue;
+                    const raw = localStorage.getItem(key);
+                    if (raw) result[charName] = raw;
+                }
+                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
             }
             default:
                 return null;
@@ -829,9 +849,10 @@ export async function importCategory(
                 break;
             }
             case 'peopleEdits': {
-                if (data.peopleLocalEvents && typeof data.peopleLocalEvents === 'string') {
-                    localStorage.setItem('peopleLocalEvents', data.peopleLocalEvents);
-                }
+                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
+                    if (typeof raw !== 'string') return;
+                    localStorage.setItem(`${charName}:peopleLocalEvents`, raw);
+                });
                 break;
             }
             default:

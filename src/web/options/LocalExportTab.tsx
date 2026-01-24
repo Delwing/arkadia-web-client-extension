@@ -217,6 +217,7 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                                 recordings: false,
                                 visitedRooms: false,
                                 locationNotes: false,
+                                peopleEdits: false,
                             })}
                         >
                             Nic
@@ -325,6 +326,13 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                             label="Notatki lokacji"
                             checked={exportOptions.locationNotes}
                             onChange={e => setExportOptions(prev => ({ ...prev, locationNotes: e.target.checked }))}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="export-option-peopleEdits"
+                            label="Edycje bazy postaci"
+                            checked={exportOptions.peopleEdits}
+                            onChange={e => setExportOptions(prev => ({ ...prev, peopleEdits: e.target.checked }))}
                         />
                     </div>
                 </div>
