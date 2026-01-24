@@ -75,7 +75,7 @@ export class EmbeddedMap {
     private explorationMode = false;
     private visited = new Set<number>();
     private readonly totalRooms: number;
-    private currentPath: { path: number[]; color: string } | null = null;
+    private currentPath: { segments: Array<{ path: number[]; color: string }> } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
@@ -191,7 +191,7 @@ export class EmbeddedMap {
             this.renderRoomById(id);
         });
 
-        eventBus.on('mapPath', (data: { path: number[]; color: string } | null) => {
+        eventBus.on('mapPath', (data: { segments: Array<{ path: number[]; color: string }> } | null) => {
             this.currentPath = data;
             this.refresh();
         });
@@ -230,7 +230,7 @@ export class EmbeddedMap {
             if (currentRoom && pathFinder) {
                 const path = pathFinder.findPath(currentRoom, data.toRoomId);
                 if (path) {
-                    this.currentPath = { path, color: '#7FFF00' };
+                    this.currentPath = { segments: [{ path, color: '#7FFF00' }] };
                     this.refresh();
                 } else {
                     eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
@@ -302,7 +302,9 @@ export class EmbeddedMap {
     private renderCurrentPathAndHighlights() {
         this.renderer.clearPaths()
         if (this.currentPath) {
-            this.renderer.renderPath(this.currentPath.path, this.currentPath.color);
+            for (const segment of this.currentPath.segments) {
+                this.renderer.renderPath(segment.path, segment.color);
+            }
         }
 
         this.renderer.clearHighlights()

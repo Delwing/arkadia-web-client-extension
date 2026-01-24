@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import storage from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { SEGMENT_COLORS } from '@shared/map/MapHelper';
 import {
     DndContext,
     closestCenter,
@@ -43,6 +44,7 @@ interface SortableStopProps {
     index: number;
     isUnreachable: boolean;
     distance: number | null;
+    color: string;
     onRemove: (uid: string) => void;
 }
 
@@ -118,7 +120,7 @@ function getDistance(fromId: number | null, toId: number): number | null {
     }
 }
 
-function SortableStop({ stop, index, isUnreachable, distance, onRemove }: SortableStopProps) {
+function SortableStop({ stop, index, isUnreachable, distance, color, onRemove }: SortableStopProps) {
     const {
         attributes,
         listeners,
@@ -141,6 +143,11 @@ function SortableStop({ stop, index, isUnreachable, distance, onRemove }: Sortab
             className={`trip-planner-stop${isUnreachable ? ' trip-planner-stop--unreachable' : ''}`}
             style={style}
         >
+            <span
+                className="trip-planner-stop-color"
+                style={{ backgroundColor: color }}
+                title="Kolor segmentu na mapie"
+            />
             <span
                 {...attributes}
                 {...listeners}
@@ -223,6 +230,8 @@ const TripPlannerPopup: React.FC = () => {
             const id = payload.roomId;
             const name = getRoomName(id);
             setStops(prev => [...prev, { id, name, uid: `stop-${++uidCounter}` }]);
+            // Open the popup if it's not already open
+            eventBus.emit('tripPlanner.popup.open');
         };
         return eventBus.on('tripPlanner.addStop', handleAddStop);
     }, []);
@@ -451,6 +460,7 @@ const TripPlannerPopup: React.FC = () => {
                                             index={index}
                                             isUnreachable={unreachableStops.has(stop.uid)}
                                             distance={stopDistances.get(stop.uid) ?? null}
+                                            color={SEGMENT_COLORS[index % SEGMENT_COLORS.length]}
                                             onRemove={removeStop}
                                         />
                                     ))}

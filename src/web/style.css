@@ -6617,6 +6617,13 @@ body.mobile-command-radial-active {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+.trip-planner-stop-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 .trip-planner-stop-handle {
   color: rgba(241, 245, 249, 0.4);
   cursor: grab;

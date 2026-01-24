@@ -58,6 +58,30 @@ const defaultStorage: MapStorage = {
     setItem: setItemSync,
 };
 
+// 20-color palette for trip planner segments - visually distinct colors
+export const SEGMENT_COLORS = [
+    '#7FFF00', // chartreuse (green-yellow)
+    '#FF6B6B', // coral red
+    '#4ECDC4', // teal
+    '#FFE66D', // yellow
+    '#95E1D3', // mint
+    '#F38181', // salmon
+    '#AA96DA', // lavender
+    '#FCBAD3', // pink
+    '#A8D8EA', // light blue
+    '#FF9F43', // orange
+    '#26DE81', // green
+    '#FC5C65', // red
+    '#45AAF2', // sky blue
+    '#FED330', // gold
+    '#2BCBBA', // turquoise
+    '#EB3B5A', // crimson
+    '#FA8231', // tangerine
+    '#20BF6B', // emerald
+    '#8854D0', // purple
+    '#3867D6', // royal blue
+];
+
 export default class MapHelper {
     public currentRoom!: MapData.Room;
     public readonly locationHistory: number[] = [];
@@ -621,23 +645,23 @@ export default class MapHelper {
     emitPath() {
         const currentId = this.currentRoom?.id;
         if (this._destinations.length > 0 && currentId) {
-            // Build combined path through all destinations
-            const combinedPath: number[] = [];
+            // Build path segments through all destinations, each with a different color
+            const segments: Array<{ path: number[]; color: string }> = [];
             let fromId = currentId;
+            let colorIndex = 0;
             for (const destId of this._destinations) {
                 const segment = this.pathFinder?.findPath(fromId, destId);
                 if (segment && segment.length > 0) {
-                    // Avoid duplicating the connecting node
-                    if (combinedPath.length > 0) {
-                        combinedPath.push(...segment.slice(1));
-                    } else {
-                        combinedPath.push(...segment);
-                    }
+                    segments.push({
+                        path: segment,
+                        color: SEGMENT_COLORS[colorIndex % SEGMENT_COLORS.length]
+                    });
+                    colorIndex++;
                     fromId = destId;
                 }
             }
-            if (combinedPath.length > 0) {
-                this.client.sendEvent("mapPath", {path: combinedPath, color: "#7FFF00"});
+            if (segments.length > 0) {
+                this.client.sendEvent("mapPath", { segments });
                 return;
             }
         }

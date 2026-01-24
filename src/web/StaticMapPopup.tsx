@@ -403,7 +403,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const [mapNote, setMapNote] = useState<string | null>(null);
     const [pluginNotes, setPluginNotes] = useState<PluginLocationNote[]>([]);
 
-    const currentPathRef = useRef<{ path: number[]; color: string } | null>(null);
+    const currentPathRef = useRef<{ segments: Array<{ path: number[]; color: string }> } | null>(null);
     const currentHighlightsRef = useRef<{ roomId: number; color: string }[]>([]);
     const initialHighlightRoomRef = useRef<number | null>(null);
     const followPlayerRef = useRef(false);
@@ -419,7 +419,9 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
         renderer.clearPaths();
         if (currentPathRef.current) {
-            renderer.renderPath(currentPathRef.current.path, currentPathRef.current.color);
+            for (const segment of currentPathRef.current.segments) {
+                renderer.renderPath(segment.path, segment.color);
+            }
         }
 
         renderer.clearHighlights();
@@ -589,7 +591,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
             }
 
-            pathHandler = (data: { path: number[]; color: string } | null) => {
+            pathHandler = (data: { segments: Array<{ path: number[]; color: string }> } | null) => {
                 currentPathRef.current = data;
                 renderPathsAndHighlights();
             };
