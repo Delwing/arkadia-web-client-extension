@@ -159,6 +159,7 @@ export interface KnownEvents {
     "knowledgeReportAction": KnowledgeReportAction;
     "requestKnowledgeReport": void;
     "requestKnowledgeDetailsReport": void;
+    "knowledgeHints": { enabled: boolean; hideCompleted: boolean };
     "sendCommand": SendCommandEvent;
     "requestHerbCounts": void;
     "herbManagerClose": void;

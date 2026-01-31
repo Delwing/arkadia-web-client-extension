@@ -33,6 +33,49 @@ import {
 import {getCurrentCharacter} from '@modules/core/storage';
 import {stripPolishCharacters} from '../stripPolishCharacters';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
+import {
+    setPluginLocationNote,
+    removeAllPluginNotes,
+} from '@modules/core/pluginLocationNotesRegistry';
+import knowledgeData from '../knowledge.json';
+
+interface KnowledgeJsonEntry {
+    Rodzaj: string;
+    Wiedza: string;
+    id: number | null;
+    lokalizacja?: string;
+    note?: string;
+}
+
+type KnowledgeEntryInfo = {
+    id: number | null;
+    lokalizacja?: string;
+    note?: string;
+};
+
+const knowledgeEntryLookup: Map<string, KnowledgeEntryInfo> = (() => {
+    const map = new Map<string, KnowledgeEntryInfo>();
+    for (const entry of knowledgeData as KnowledgeJsonEntry[]) {
+        if (!entry.Wiedza) continue;
+        const key = normalizeKnowledgeLookupKey(entry.Wiedza);
+        if (key.length > 0 && !map.has(key)) {
+            map.set(key, {
+                id: entry.id,
+                lokalizacja: entry.lokalizacja,
+                note: entry.note,
+            });
+        }
+    }
+    return map;
+})();
+
+function normalizeKnowledgeLookupKey(value: string): string {
+    return stripPolishCharacters(value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.!?]+$/u, ''));
+}
+
+function lookupKnowledgeEntryInfo(canonical: string): KnowledgeEntryInfo | undefined {
+    return knowledgeEntryLookup.get(normalizeKnowledgeLookupKey(canonical));
+}
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
@@ -335,10 +378,17 @@ function buildKnowledgeDetailsReportPayload(
             for (const entry of canonicalEntries) {
                 const isKnown = knownSet.has(entry.normalized);
                 const displayEntry = entry.display;
-                entriesList.push({
+                const info = lookupKnowledgeEntryInfo(entry.canonical);
+                const reportEntry: KnowledgeDetailsReportTypeEntry = {
                     name: displayEntry,
                     status: isKnown ? 'known' : 'missing',
-                });
+                };
+                if (info) {
+                    reportEntry.id = info.id;
+                    if (info.lokalizacja) reportEntry.lokalizacja = info.lokalizacja;
+                    if (info.note) reportEntry.note = info.note;
+                }
+                entriesList.push(reportEntry);
                 if (!isKnown) {
                     missing.push(displayEntry);
                 }
@@ -457,10 +507,17 @@ function buildKnowledgeDetailsReportPayloadWithoutProgress(
             const missing: string[] = [];
             const entriesList: KnowledgeDetailsReportTypeEntry[] = [];
             for (const entry of canonicalEntries) {
-                entriesList.push({
+                const info = lookupKnowledgeEntryInfo(entry.canonical);
+                const reportEntry: KnowledgeDetailsReportTypeEntry = {
                     name: entry.display,
                     status: 'missing',
-                });
+                };
+                if (info) {
+                    reportEntry.id = info.id;
+                    if (info.lokalizacja) reportEntry.lokalizacja = info.lokalizacja;
+                    if (info.note) reportEntry.note = info.note;
+                }
+                entriesList.push(reportEntry);
                 missing.push(entry.display);
             }
 
@@ -576,6 +633,9 @@ type KnowledgeReportPayload = {
 type KnowledgeDetailsReportTypeEntry = {
     name: string;
     status: 'known' | 'missing';
+    id?: number | null;
+    lokalizacja?: string;
+    note?: string;
 };
 
 type KnowledgeDetailsReportTypeSummary = {
@@ -822,6 +882,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     },
                 };
             })
+            .then(() => {
+                refreshKnowledgeHintsIfNeeded();
+            })
             .catch((error) => {
                 console.error('Failed to mark knowledge entry as known:', error);
             });
@@ -974,17 +1037,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                         return line;
                     }
 
-                    const startIndex =
-                        typeof matches.index === 'number' && matches.index >= 0
-                            ? matches.index
-                            : line.text.indexOf(tokenText);
-
-                    if (startIndex >= 0) {
-                        const endIndex = startIndex + tokenText.length;
-                        line.createLink([startIndex, endIndex], {
-                            title: tooltip,
-                        });
-                    }
+                    line.createLinksForText(tokenText, {
+                        title: tooltip,
+                    });
 
                     return line;
                 },
@@ -1913,5 +1968,113 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         client.sendEvent('knowledgeReport', report);
+    }
+
+    // Knowledge hints: orange highlights + plugin location notes
+    const KNOWLEDGE_HINTS_PLUGIN_ID = '__knowledge_hints__';
+    const KNOWLEDGE_HINTS_PLUGIN_NAME = 'Wiedza';
+    let knowledgeHintsHighlighter: ReturnType<typeof client.Map.createHighlighter> | null = null;
+    let knowledgeHintsEnabled = false;
+    let knowledgeHintsHideCompleted = false;
+
+    function buildKnownEntriesSet(): Set<string> {
+        const known = new Set<string>();
+        if (!knowledgeDetailsSnapshot) return known;
+        const characterKey = getCharacterProgressKey();
+        const characterProgress = knowledgeDetailsSnapshot.data.progress[characterKey];
+        if (!characterProgress) return known;
+        for (const category of KNOWLEDGE_CATEGORY_ORDER) {
+            const progress = characterProgress[category];
+            if (!progress?.entries) continue;
+            for (const type of KNOWLEDGE_DETAILS_TYPES) {
+                const entries = progress.entries[type];
+                if (!Array.isArray(entries)) continue;
+                for (const entry of entries) {
+                    if (typeof entry === 'string') {
+                        known.add(normalizeKnowledgeEntry(entry));
+                    }
+                }
+            }
+        }
+        return known;
+    }
+
+    function enableKnowledgeHints(hideCompleted: boolean) {
+        // Clear previous state without resetting flags
+        if (knowledgeHintsHighlighter) {
+            knowledgeHintsHighlighter.destroy();
+            knowledgeHintsHighlighter = null;
+        }
+        removeAllPluginNotes(KNOWLEDGE_HINTS_PLUGIN_ID);
+
+        knowledgeHintsEnabled = true;
+        knowledgeHintsHideCompleted = hideCompleted;
+        knowledgeHintsHighlighter = client.Map.createHighlighter({color: '#FF9F43'});
+
+        const knownEntries = hideCompleted ? buildKnownEntriesSet() : null;
+        const roomIds: number[] = [];
+        for (const entry of knowledgeData as KnowledgeJsonEntry[]) {
+            if (entry.id == null) continue;
+            if (knownEntries && knownEntries.has(normalizeKnowledgeLookupKey(entry.Wiedza))) continue;
+            roomIds.push(entry.id);
+            const parts: string[] = [];
+            if (entry.lokalizacja) parts.push(entry.lokalizacja);
+            if (entry.note) parts.push(entry.note);
+            if (parts.length > 0) {
+                setPluginLocationNote(
+                    KNOWLEDGE_HINTS_PLUGIN_ID,
+                    KNOWLEDGE_HINTS_PLUGIN_NAME,
+                    entry.id,
+                    `[${entry.Rodzaj}] ${entry.Wiedza}\n${parts.join(' — ')}`,
+                );
+            }
+        }
+        knowledgeHintsHighlighter.add(roomIds);
+    }
+
+    function disableKnowledgeHints() {
+        knowledgeHintsEnabled = false;
+        knowledgeHintsHideCompleted = false;
+        if (knowledgeHintsHighlighter) {
+            knowledgeHintsHighlighter.destroy();
+            knowledgeHintsHighlighter = null;
+        }
+        removeAllPluginNotes(KNOWLEDGE_HINTS_PLUGIN_ID);
+    }
+
+    function refreshKnowledgeHintsIfNeeded() {
+        if (knowledgeHintsEnabled) {
+            enableKnowledgeHints(knowledgeHintsHideCompleted);
+        }
+    }
+
+    function readPersistedHintsSettings(): { showHints: boolean; hideCompleted: boolean } {
+        try {
+            const raw = localStorage.getItem('layoutManagerState');
+            if (!raw) return {showHints: false, hideCompleted: false};
+            const state = JSON.parse(raw);
+            const settings = state?.popupPanels?.['popup:knowledgeDetails']?.settings;
+            return {
+                showHints: settings?.showHints === true,
+                hideCompleted: settings?.hideCompleted === true,
+            };
+        } catch {
+            return {showHints: false, hideCompleted: false};
+        }
+    }
+
+    client.on('knowledgeHints', (detail) => {
+        const payload = detail as { enabled: boolean; hideCompleted: boolean } | undefined;
+        if (payload?.enabled) {
+            enableKnowledgeHints(payload.hideCompleted);
+        } else {
+            disableKnowledgeHints();
+        }
+    });
+
+    // Restore hints from persisted settings on init
+    const persistedHints = readPersistedHintsSettings();
+    if (persistedHints.showHints) {
+        enableKnowledgeHints(persistedHints.hideCompleted);
     }
 }

@@ -19,12 +19,20 @@ const TYPE_CONFIG: { key: KnowledgeDetailsType; label: string; showDetails: bool
   { key: 'exploration', label: 'Z eksploracji', showDetails: true },
 ];
 
+type KnowledgeDetailsReportEntry = {
+  name: string;
+  status: 'known' | 'missing';
+  id?: number | null;
+  lokalizacja?: string;
+  note?: string;
+};
+
 type KnowledgeDetailsReportTypeSummary = {
   total: number;
   known: number;
   missing: string[];
   unknown: string[];
-  entries: { name: string; status: 'known' | 'missing' }[];
+  entries: KnowledgeDetailsReportEntry[];
   level?: string;
   levelIndex?: number;
   levelMax: number;
@@ -54,7 +62,7 @@ function formatTimestamp(value: number | null): string | null {
 
 function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string {
   if (!summary.level) {
-    return '—';
+    return '\u2014';
   }
 
   if (summary.levelIndex == null) {
@@ -68,10 +76,44 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
   return `${summary.level} (${summary.levelIndex})`;
 }
 
+function getEmbedded() {
+  return (globalThis as any).embedded;
+}
+
+function getAreaForRoom(roomId: number): string | undefined {
+  const embedded = getEmbedded();
+  if (!embedded?.reader) return undefined;
+  const room = embedded.reader.getRoom(roomId);
+  if (!room) return undefined;
+  const area = embedded.reader.getArea?.(room.area);
+  if (!area) return undefined;
+  return area.getAreaName?.() ?? area.areaName;
+}
+
+function getCurrentArea(): string | undefined {
+  const embedded = getEmbedded();
+  const roomId = embedded?.currentRoom;
+  if (typeof roomId !== 'number') return undefined;
+  return getAreaForRoom(roomId);
+}
+
+type AreaSection = {
+  areaName: string;
+  known: number;
+  total: number;
+  categories: {
+    categoryName: string;
+    entries: KnowledgeDetailsReportEntry[];
+  }[];
+};
+
 const KnowledgeDetailsReport: React.FC = () => {
   const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeDetailsReportPayload | null>(null);
   const [hideCompleted, setHideCompleted] = usePopupSetting(POPUP_ID, 'hideCompleted', false);
+  const [showHints, setShowHints] = usePopupSetting(POPUP_ID, 'showHints', false);
+  const [activeTab, setActiveTab] = usePopupSetting<'categories' | 'areas'>(POPUP_ID, 'activeTab', 'categories');
+  const [selectedArea, setSelectedArea] = usePopupSetting(POPUP_ID, 'selectedArea', '');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
@@ -112,8 +154,19 @@ const KnowledgeDetailsReport: React.FC = () => {
     });
   }, [data, isOpen]);
 
+  useEffect(() => {
+    eventBus.emit('knowledgeHints', { enabled: showHints, hideCompleted });
+    if (!showHints && activeTab === 'areas') {
+      setActiveTab('categories');
+    }
+  }, [showHints, hideCompleted]);
+
   const handleBuildKnowledge = useCallback(() => {
     eventBus.emit('sendCommand', { command: '/wiedza_buduj' });
+  }, []);
+
+  const handleLeadToEntry = useCallback((locationId: number) => {
+    eventBus.emit('sendCommand', { command: `/prowadz ${locationId}` });
   }, []);
 
   const navItems = useMemo<{ id: string; label: string }[]>(() => {
@@ -151,6 +204,33 @@ const KnowledgeDetailsReport: React.FC = () => {
 
     container.scrollTo({ top: targetTop, behavior: 'smooth' });
   }, []);
+
+  const renderEntry = useCallback((entry: KnowledgeDetailsReportEntry, keyPrefix: string) => (
+    <li
+      key={`${keyPrefix}-${entry.name}`}
+      className={`knowledge-details-entry knowledge-details-entry--${entry.status}`}
+    >
+      <span
+        className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${entry.status}`}
+      />
+      <span className="knowledge-details-entry-name">{entry.name}</span>
+      {showHints && entry.lokalizacja && (
+        <button
+          type="button"
+          className="knowledge-details-entry-location"
+          title={entry.lokalizacja}
+          onClick={entry.id != null ? () => handleLeadToEntry(entry.id!) : undefined}
+        >
+          {entry.lokalizacja}
+        </button>
+      )}
+      {showHints && entry.note && (
+        <span className="knowledge-details-entry-note" title={entry.note}>
+          {entry.note}
+        </span>
+      )}
+    </li>
+  ), [showHints, handleLeadToEntry]);
 
   const categoriesContent = useMemo(() => {
     if (!data) {
@@ -224,17 +304,7 @@ const KnowledgeDetailsReport: React.FC = () => {
               if (hasEntries) {
                 entriesContent = (
                   <ul className="knowledge-details-entries">
-                    {filteredEntries.map((entry) => (
-                      <li
-                        key={`${key}-${entry.name}`}
-                        className={`knowledge-details-entry knowledge-details-entry--${entry.status}`}
-                      >
-                        <span
-                          className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${entry.status}`}
-                        />
-                        <span className="knowledge-details-entry-name">{entry.name}</span>
-                      </li>
-                    ))}
+                    {filteredEntries.map((entry) => renderEntry(entry, key))}
                   </ul>
                 );
               } else if (summary.entries.length === 0) {
@@ -284,7 +354,124 @@ const KnowledgeDetailsReport: React.FC = () => {
         </section>
       );
     });
+  }, [data, hideCompleted, showHints, handleLeadToEntry, renderEntry]);
+
+  const areaSections = useMemo<AreaSection[]>(() => {
+    if (!data) {
+      return [];
+    }
+
+    const areaMap = new Map<string, Map<string, KnowledgeDetailsReportEntry[]>>();
+    const areaKnown = new Map<string, number>();
+    const areaTotal = new Map<string, number>();
+
+    for (const category of data.categories) {
+      for (const { key, showDetails } of TYPE_CONFIG) {
+        if (!showDetails) continue;
+        const summary = category.types[key];
+        if (!summary) continue;
+
+        for (const entry of summary.entries) {
+          if (hideCompleted && entry.status === 'known') continue;
+
+          let areaName = 'Inne';
+          if (entry.id != null) {
+            areaName = getAreaForRoom(entry.id) ?? 'Inne';
+          }
+
+          let catMap = areaMap.get(areaName);
+          if (!catMap) {
+            catMap = new Map();
+            areaMap.set(areaName, catMap);
+          }
+
+          let catEntries = catMap.get(category.name);
+          if (!catEntries) {
+            catEntries = [];
+            catMap.set(category.name, catEntries);
+          }
+          catEntries.push(entry);
+        }
+
+        // Count totals per area (regardless of hideCompleted)
+        for (const entry of summary.entries) {
+          let areaName = 'Inne';
+          if (entry.id != null) {
+            areaName = getAreaForRoom(entry.id) ?? 'Inne';
+          }
+          areaTotal.set(areaName, (areaTotal.get(areaName) ?? 0) + 1);
+          if (entry.status === 'known') {
+            areaKnown.set(areaName, (areaKnown.get(areaName) ?? 0) + 1);
+          }
+        }
+      }
+    }
+
+    const currentArea = getCurrentArea();
+    const sections: AreaSection[] = [];
+
+    for (const [areaName, catMap] of areaMap) {
+      const categories: AreaSection['categories'] = [];
+      for (const [categoryName, entries] of catMap) {
+        categories.push({ categoryName, entries });
+      }
+      sections.push({
+        areaName,
+        known: areaKnown.get(areaName) ?? 0,
+        total: areaTotal.get(areaName) ?? 0,
+        categories,
+      });
+    }
+
+    sections.sort((a, b) => {
+      if (currentArea) {
+        const aIsCurrent = a.areaName === currentArea;
+        const bIsCurrent = b.areaName === currentArea;
+        if (aIsCurrent && !bIsCurrent) return -1;
+        if (!aIsCurrent && bIsCurrent) return 1;
+      }
+      if (a.areaName === 'Inne') return 1;
+      if (b.areaName === 'Inne') return -1;
+      return a.areaName.localeCompare(b.areaName);
+    });
+
+    return sections;
   }, [data, hideCompleted]);
+
+  const filteredAreaSections = useMemo(() => {
+    if (!selectedArea) return areaSections;
+    return areaSections.filter((s) => s.areaName === selectedArea);
+  }, [areaSections, selectedArea]);
+
+  const areasContent = useMemo(() => {
+    if (filteredAreaSections.length === 0) {
+      return null;
+    }
+
+    return filteredAreaSections.map((section) => (
+      <section key={section.areaName} className="knowledge-details-area">
+        <div className="knowledge-details-area-header">
+          <span className="knowledge-details-name">{section.areaName}</span>
+          <span
+            className="knowledge-details-badge knowledge-details-badge--entries"
+            title={`Znane wpisy: ${section.known} z ${section.total}`}
+          >
+            {section.known}/{section.total}
+          </span>
+        </div>
+        {section.categories.map(({ categoryName, entries }) => (
+          <div key={categoryName} className="knowledge-details-area-category">
+            <div className="knowledge-details-type-heading">
+              <span className="knowledge-details-type-label">{categoryName}</span>
+            </div>
+            <ul className="knowledge-details-entries">
+              {entries.map((entry) => renderEntry(entry, `area-${section.areaName}-${categoryName}`))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    ));
+  }, [filteredAreaSections, renderEntry]);
 
   const overallProgress = useMemo(() => {
     if (!data) {
@@ -336,6 +523,41 @@ const KnowledgeDetailsReport: React.FC = () => {
         <div className="knowledge-details-content" ref={scrollContainerRef}>
           <div className="knowledge-details-sticky">
             <div className="knowledge-details-toolbar">
+              <div className="knowledge-tabs">
+                <button
+                  type="button"
+                  className={`knowledge-tab-button${
+                    activeTab === 'categories' ? ' knowledge-tab-button--active' : ''
+                  }`}
+                  onClick={() => setActiveTab('categories')}
+                >
+                  Kategorie
+                </button>
+                <button
+                  type="button"
+                  className={`knowledge-tab-button${
+                    activeTab === 'areas' ? ' knowledge-tab-button--active' : ''
+                  }`}
+                  onClick={() => setActiveTab('areas')}
+                  disabled={!showHints}
+                >
+                  Regiony
+                </button>
+              </div>
+              {activeTab === 'areas' && areaSections.length > 0 && (
+                <select
+                  className="knowledge-details-area-select"
+                  value={selectedArea}
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                >
+                  <option value="">Wszystkie regiony</option>
+                  {areaSections.map((s) => (
+                    <option key={s.areaName} value={s.areaName}>
+                      {s.areaName} ({s.known}/{s.total})
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 type="button"
                 className={`knowledge-details-toggle-button${
@@ -347,13 +569,22 @@ const KnowledgeDetailsReport: React.FC = () => {
               </button>
               <button
                 type="button"
+                className={`knowledge-details-toggle-button${
+                  showHints ? ' knowledge-details-toggle-button--active' : ''
+                }`}
+                onClick={() => setShowHints(!showHints)}
+              >
+                {showHints ? 'Ukryj podpowiedzi' : 'Pokaż podpowiedzi'}
+              </button>
+              <button
+                type="button"
                 className="knowledge-details-build-button"
                 onClick={handleBuildKnowledge}
               >
                 Odbuduj raport
               </button>
             </div>
-            {navItems.length > 0 && (
+            {activeTab === 'categories' && navItems.length > 0 && (
               <div className="knowledge-details-nav">
                 {navItems.map((item) => (
                   <button
@@ -368,7 +599,9 @@ const KnowledgeDetailsReport: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="knowledge-details-categories">{categoriesContent}</div>
+          <div className="knowledge-details-categories">
+            {activeTab === 'categories' ? categoriesContent : areasContent}
+          </div>
         </div>
       )}
     </DockablePopupWrapper>
