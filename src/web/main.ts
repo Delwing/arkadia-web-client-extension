@@ -796,9 +796,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Activate tab sleep prevention for all devices
-    preventTabSleep();
-    console.log('Tab sleep prevention activated');
+    // Activate tab sleep prevention if enabled in settings (default: on)
+    const initialWakeLock = getItemSync('uiSettings')?.uiSettings?.wakeLock;
+    if (initialWakeLock !== false) {
+        preventTabSleep();
+        console.log('Tab sleep prevention activated');
+    }
 
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
@@ -843,6 +846,13 @@ document.addEventListener('DOMContentLoaded', () => {
     client.on('uiSettings', (payload) => {
         if (typeof payload?.clearInputOnSend === 'boolean') {
             clearInputOnSend = payload.clearInputOnSend;
+        }
+        if (typeof payload?.wakeLock === 'boolean') {
+            if (payload.wakeLock) {
+                preventTabSleep();
+            } else {
+                disableTabSleepPrevention();
+            }
         }
     });
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
@@ -1960,6 +1970,23 @@ document.addEventListener('DOMContentLoaded', () => {
             handleTabCompletion(e.shiftKey ? 'backward' : 'forward');
         } else {
             resetTabState();
+        }
+    });
+
+    // Intercept Enter on mobile virtual keyboards before it replaces selected text.
+    // The document-level keydown handler works on desktop, but mobile browsers may
+    // modify the textarea content before keydown fires. beforeinput fires first.
+    let shiftDown = false;
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Shift') shiftDown = true;
+    });
+    messageInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift') shiftDown = false;
+    });
+    messageInput.addEventListener('beforeinput', (e) => {
+        if ((e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') && !shiftDown) {
+            e.preventDefault();
+            sendMessage();
         }
     });
 

@@ -314,6 +314,7 @@ function apply(settings: UiSettings) {
         clearInputOnSend: settings.clearInputOnSend,
         autoLowercaseCommands: settings.autoLowercaseCommands,
         keepMultibindsVisible: settings.keepMultibindsVisible,
+        wakeLock: settings.wakeLock,
     };
     eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
@@ -411,6 +412,9 @@ async function load(): Promise<UiSettings> {
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
+            const wakeLock = typeof parsed.wakeLock === 'boolean'
+                ? parsed.wakeLock
+                : defaultUiSettings.wakeLock;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -445,6 +449,7 @@ async function load(): Promise<UiSettings> {
                 objectContextMenuCommands,
                 footerComponents,
                 keepMultibindsVisible,
+                wakeLock,
             };
         }
     } catch {
@@ -489,6 +494,7 @@ export default async function initUiSettings() {
     const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
     const keepMultibindsVisibleInput = modalEl.querySelector('#ui-keep-multibinds-visible') as HTMLInputElement;
+    const wakeLockInput = modalEl.querySelector('#ui-wake-lock') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
@@ -782,6 +788,7 @@ export default async function initUiSettings() {
         customFontFamilyInput.value = settings.customFontFamily;
         autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
         keepMultibindsVisibleInput.checked = settings.keepMultibindsVisible;
+        wakeLockInput.checked = settings.wakeLock;
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
@@ -1169,6 +1176,7 @@ export default async function initUiSettings() {
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
             keepMultibindsVisible: keepMultibindsVisibleInput.checked,
+            wakeLock: wakeLockInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
             mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultUiSettings.mapRoomSize,
             mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultUiSettings.mapLineWidth,

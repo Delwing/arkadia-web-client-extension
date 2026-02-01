@@ -62,6 +62,7 @@ export interface UiSettings {
     objectContextMenuCommands: string[];
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
+    wakeLock: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -100,4 +101,5 @@ export const defaultUiSettings: UiSettings = {
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,
     keepMultibindsVisible: false,
+    wakeLock: true,
 };

@@ -10,5 +10,6 @@ export type UiSettingsEventPayload = {
     clearInputOnSend?: boolean;
     autoLowercaseCommands?: boolean;
     keepMultibindsVisible?: boolean;
+    wakeLock?: boolean;
 } & Record<string, unknown>;
 

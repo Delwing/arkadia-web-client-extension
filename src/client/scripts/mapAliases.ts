@@ -2,6 +2,7 @@ import Client from "../Client";
 import { longToShort } from "@shared/map/directions";
 import {getShortcut} from "./shortcuts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
 
 type SearchableRoom = {
     id: number;
@@ -134,6 +135,16 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                                 client.sendEvent('leadTo', match.id);
                             },
                             title: `Kliknij aby prowadzić do: ${match.name}`
+                        });
+
+                        lineBuffer.append(' ');
+                        const showStart = lineBuffer.length;
+                        lineBuffer.append('[ pokaz ]');
+                        lineBuffer.createLink([showStart, showStart + '[ pokaz ]'.length], {
+                            onClick: () => {
+                                eventBus.emit('staticmap.popup.open', { roomId: match.id });
+                            },
+                            title: `Pokaz na mapie: ${match.name}`
                         });
 
                         output.appendBuffer(lineBuffer);
