@@ -1911,8 +1911,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (focus) messageInput.focus();
                 } else {
                     // Input keeps its value (selected), track it as programmatic
-                    lastProgrammaticValue = messageInput.value;
-                    if (focus) messageInput.select();
+                    const savedValue = messageInput.value;
+                    lastProgrammaticValue = savedValue;
+                    if (focus) {
+                        messageInput.select();
+                        // On some Android browsers, the IME may modify the textarea
+                        // despite preventDefault(). Restore the value if it changed.
+                        requestAnimationFrame(() => {
+                            if (messageInput.value !== savedValue) {
+                                messageInput.value = savedValue;
+                                lastProgrammaticValue = savedValue;
+                                messageInput.select();
+                            }
+                        });
+                    }
                 }
             } else {
                 // If we haven't received the first GMCP event yet, clear the input field
@@ -1983,7 +1995,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Shift') shiftDown = false;
     });
     messageInput.addEventListener('beforeinput', (e) => {
-        if ((e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') && !shiftDown) {
+        if (!shiftDown && (
+            e.inputType === 'insertLineBreak' ||
+            e.inputType === 'insertParagraph' ||
+            (e.inputType === 'insertText' && e.data === '\n')
+        )) {
             e.preventDefault();
             sendMessage();
         }
