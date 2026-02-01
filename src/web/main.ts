@@ -658,6 +658,10 @@ arkadiaClient.on('client.connect', () => {
     isDisconnecting = false;
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
+    const wakeLockSetting = getItemSync('uiSettings')?.uiSettings?.wakeLock;
+    if (wakeLockSetting !== false) {
+        preventTabSleep();
+    }
     console.log('Client connected to Arkadia server.');
 });
 
@@ -668,6 +672,7 @@ arkadiaClient.on('client.disconnect', () => {
     isDisconnecting = false;
     authClosed = false;
     updateConnectButtons();
+    disableTabSleepPrevention();
     client.println('Rozłączono z serwerem Arkadii.');
     console.log('Client disconnected from Arkadia server.');
 });
@@ -796,12 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Activate tab sleep prevention if enabled in settings (default: on)
-    const initialWakeLock = getItemSync('uiSettings')?.uiSettings?.wakeLock;
-    if (initialWakeLock !== false) {
-        preventTabSleep();
-        console.log('Tab sleep prevention activated');
-    }
 
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
@@ -848,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInputOnSend = payload.clearInputOnSend;
         }
         if (typeof payload?.wakeLock === 'boolean') {
-            if (payload.wakeLock) {
+            if (payload.wakeLock && isConnected) {
                 preventTabSleep();
             } else {
                 disableTabSleepPrevention();
