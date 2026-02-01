@@ -1,0 +1,121 @@
+import {expect, test} from './support/fixtures';
+import {ensureGameSocket, getLastOutgoingCommand, waitForCommandInput} from './support/mocks';
+import type {Page} from '@playwright/test';
+
+async function pressNumpadKey(page: Page, code: string): Promise<void> {
+    await page.keyboard.down(code);
+    await page.keyboard.up(code);
+    await page.waitForTimeout(50);
+}
+
+async function resetCommands(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        const globalScope = window as any;
+        if (typeof globalScope.__resetCommandLog === 'function') {
+            globalScope.__resetCommandLog();
+        }
+    });
+}
+
+test.describe('Direction key bindings', () => {
+    test.beforeEach(async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    });
+
+    const DEFAULT_BINDINGS: [string, string][] = [
+        ['Numpad8', 'n'],
+        ['Numpad2', 's'],
+        ['Numpad4', 'w'],
+        ['Numpad6', 'e'],
+        ['Numpad7', 'nw'],
+        ['Numpad9', 'ne'],
+        ['Numpad1', 'sw'],
+        ['Numpad3', 'se'],
+        ['NumpadMultiply', 'u'],
+        ['NumpadSubtract', 'd'],
+    ];
+
+    for (const [code, direction] of DEFAULT_BINDINGS) {
+        test(`${code} sends "${direction}"`, async ({page}) => {
+            await resetCommands(page);
+
+            await page.locator('#message-input').focus();
+            await pressNumpadKey(page, code);
+
+            const lastCommand = await getLastOutgoingCommand(page);
+            expect(lastCommand).toBe(direction);
+        });
+    }
+
+    test('Numpad5 sends "zerknij"', async ({page}) => {
+        await resetCommands(page);
+        await page.locator('#message-input').focus();
+        await pressNumpadKey(page, 'Numpad5');
+
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand).toBe('zerknij');
+    });
+
+    test('NumpadDivide sends "d"', async ({page}) => {
+        await resetCommands(page);
+        await page.locator('#message-input').focus();
+        await pressNumpadKey(page, 'NumpadDivide');
+
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand).toBe('d');
+    });
+
+    test('direction keys do NOT fire when a modal is open', async ({page}) => {
+        await resetCommands(page);
+
+        // Open options modal via the menu dropdown
+        await page.click('#menu-button');
+        await page.click('#options-button');
+        await page.waitForSelector('.modal.show', {timeout: 5000});
+
+        await pressNumpadKey(page, 'Numpad8');
+        await page.waitForTimeout(100);
+
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand).toBeNull();
+
+        // Close modal
+        await page.keyboard.press('Escape');
+    });
+
+    test('direction keys do NOT fire when a different input has focus', async ({page}) => {
+        await resetCommands(page);
+
+        // Add a temporary input element and focus it
+        await page.evaluate(() => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'test-other-input';
+            document.body.appendChild(input);
+            input.focus();
+        });
+
+        await pressNumpadKey(page, 'Numpad8');
+        await page.waitForTimeout(100);
+
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand).toBeNull();
+
+        // Cleanup
+        await page.evaluate(() => {
+            document.getElementById('test-other-input')?.remove();
+        });
+    });
+
+    test('direction keys DO fire when #message-input has focus', async ({page}) => {
+        await resetCommands(page);
+
+        await page.locator('#message-input').focus();
+        await pressNumpadKey(page, 'Numpad6');
+
+        const lastCommand = await getLastOutgoingCommand(page);
+        expect(lastCommand).toBe('e');
+    });
+});
