@@ -96,6 +96,7 @@ import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initNoExitHighlight from './scripts/noExitHighlight'
+import initTideWarningHighlight from './scripts/tideWarningHighlight'
 import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
@@ -146,6 +147,7 @@ export function registerScripts(client: Client) {
     initMove(client)
 
     initNoExitHighlight(client)
+    initTideWarningHighlight(client)
 
     client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
         client.sendCommand('')

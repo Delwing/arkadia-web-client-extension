@@ -66,7 +66,7 @@ export default function initLamp(client: Client) {
         /nie jest zapalona\.$/,
         /^[ >]*Probujesz zapalic [a-z ]+ jest wyczerpana\.$/,
         /(?<!fajka) wypala sie i gasnie\.$/,
-        /^Woda szybko gasi .* lampe\.$/
+        /^[ >]*Woda szybko gasi(?: .*)? lampe\.$/
     ]
     const refillPattern = /^[ >]*Dopelniasz(?: [a-z ]+)? [a-z]+ oleju/
     const emptyPatterns = [
