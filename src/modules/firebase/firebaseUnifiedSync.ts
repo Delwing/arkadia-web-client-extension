@@ -225,7 +225,7 @@ export async function uploadCategories(
 
         if (snapshot.exists()) {
             // Use updateDoc - it interprets dots as paths
-            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories`);
+            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates).map(k => k.replace('categories.', '')));
             await updateDoc(docRef, {
                 ...categoryUpdates,
                 updatedAt: serverTimestamp(),
@@ -238,7 +238,7 @@ export async function uploadCategories(
                 const category = key.replace('categories.', '');
                 nestedCategories[category] = categoryUpdates[key];
             }
-            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories`);
+            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories:`, Object.keys(nestedCategories));
             await setDoc(docRef, {
                 categories: nestedCategories,
                 updatedAt: serverTimestamp(),

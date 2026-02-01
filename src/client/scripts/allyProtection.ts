@@ -55,7 +55,6 @@ export default function initAllyProtection(client: Client) {
         allyDescriptions = newSet;
         // Clear cache when ally set changes - will be rebuilt on next encounter
         allyCache.clear();
-        console.log(`[AllyProtection] Rebuilt ally set: ${allyDescriptions.size} names, allyGuilds: ${JSON.stringify(allyGuilds)}, peopleCache: ${peopleCache.length}`);
     }
 
     client.on('settings', (settings) => {
@@ -107,27 +106,22 @@ export default function initAllyProtection(client: Client) {
     function checkAndCacheObject(objectNum: number): boolean {
         if (allyCache.has(objectNum)) {
             const cached = allyCache.get(objectNum)!.isAlly;
-            console.log(`[AllyProtection] Cache hit for ${objectNum}: isAlly=${cached}`);
             return cached;
         }
 
         // Not cached - check now
-        console.log(`[AllyProtection] Cache miss for ${objectNum}, checking... allyDescriptions.size=${allyDescriptions.size}`);
         if (allyDescriptions.size === 0) {
-            console.log(`[AllyProtection] No ally descriptions, returning false`);
             return false;
         }
 
         const objects = client.ObjectManager.getObjectsOnLocation();
         const obj = objects.find(o => o.num === objectNum);
-        console.log(`[AllyProtection] Object ${objectNum} desc: "${obj?.desc}"`);
         if (!obj?.desc) {
             return false;
         }
 
         const lowerName = obj.desc.toLowerCase();
         const isInSet = allyDescriptions.has(lowerName);
-        console.log(`[AllyProtection] Checking "${lowerName}" in set: ${isInSet}`);
         if (isInSet) {
             const ally = peopleCache.find(p =>
                 !p.ignored &&
@@ -135,7 +129,6 @@ export default function initAllyProtection(client: Client) {
                 p.name.toLowerCase() === lowerName &&
                 (allyGuilds.includes(p.guild) || p.isAlly === true)
             );
-            console.log(`[AllyProtection] Found ally: ${ally?.name} (${ally?.guild})`);
             allyCache.set(objectNum, { isAlly: true, name: ally?.name, guild: ally?.guild });
             return true;
         } else {

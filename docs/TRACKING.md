@@ -61,6 +61,14 @@ Liczniki zabitych, postepow, stazu i zlecen.
 | `/wiedza` | Otworz okno raportu wiedzy |
 | `/wiedza_buduj` | Wykonaj komendy `wiedza o ...` i aktualizuj raport dla biezacej postaci |
 
+## Paczki
+
+| Komenda | Opis |
+|---------|------|
+| `/paczki` | Wyswietl statystyki dostarczonych paczek (dzis, tydzien, miesiac, lacznie) |
+
+> **Wskazowka:** Statystyki zapisuja sie automatycznie po kazdym dostarczeniu paczki. Spoznione dostawy sa oznaczane osobno.
+
 ## Zlecenia
 
 | Komenda | Opis |
