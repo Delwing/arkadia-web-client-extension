@@ -76,6 +76,16 @@ function formatLevelDisplay(summary: KnowledgeDetailsReportTypeSummary): string 
   return `${summary.level} (${summary.levelIndex})`;
 }
 
+function isBlank(value: string | undefined | null): value is undefined | null | '' {
+  return !value || /^-+$/.test(value);
+}
+
+function isUnavailable(entry: KnowledgeDetailsReportEntry): boolean {
+  return [entry.name, entry.lokalizacja, entry.note].some(
+    (v) => typeof v === 'string' && v.toLowerCase().includes('niedostepna'),
+  );
+}
+
 function getEmbedded() {
   return (globalThis as any).embedded;
 }
@@ -169,6 +179,10 @@ const KnowledgeDetailsReport: React.FC = () => {
     eventBus.emit('sendCommand', { command: `/prowadz ${locationId}` });
   }, []);
 
+  const handleShowOnMap = useCallback((roomId: number) => {
+    eventBus.emit('staticmap.popup.open', { roomId });
+  }, []);
+
   const navItems = useMemo<{ id: string; label: string }[]>(() => {
     if (!data) {
       return [];
@@ -205,32 +219,54 @@ const KnowledgeDetailsReport: React.FC = () => {
     container.scrollTo({ top: targetTop, behavior: 'smooth' });
   }, []);
 
-  const renderEntry = useCallback((entry: KnowledgeDetailsReportEntry, keyPrefix: string) => (
-    <li
-      key={`${keyPrefix}-${entry.name}`}
-      className={`knowledge-details-entry knowledge-details-entry--${entry.status}`}
-    >
-      <span
-        className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${entry.status}`}
-      />
-      <span className="knowledge-details-entry-name">{entry.name}</span>
-      {showHints && entry.lokalizacja && (
-        <button
-          type="button"
-          className="knowledge-details-entry-location"
-          title={entry.lokalizacja}
-          onClick={entry.id != null ? () => handleLeadToEntry(entry.id!) : undefined}
-        >
-          {entry.lokalizacja}
-        </button>
-      )}
-      {showHints && entry.note && (
-        <span className="knowledge-details-entry-note" title={entry.note}>
-          {entry.note}
-        </span>
-      )}
-    </li>
-  ), [showHints, handleLeadToEntry]);
+  const renderEntry = useCallback((entry: KnowledgeDetailsReportEntry, keyPrefix: string) => {
+    const unavailable = entry.status !== 'known' && isUnavailable(entry);
+    const lokalizacja = isBlank(entry.lokalizacja) || entry.lokalizacja!.toLowerCase().includes('niedostepna') ? undefined : entry.lokalizacja;
+    const note = isBlank(entry.note) ? undefined : entry.note;
+    const statusClass = unavailable ? 'unavailable' : entry.status;
+
+    return (
+      <li
+        key={`${keyPrefix}-${entry.name}`}
+        className={`knowledge-details-entry knowledge-details-entry--${statusClass}`}
+      >
+        <span
+          className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${statusClass}`}
+        />
+        <span className="knowledge-details-entry-name">{entry.name}</span>
+        {showHints && lokalizacja && (
+          <button
+            type="button"
+            className="knowledge-details-entry-location"
+            title={lokalizacja}
+            onClick={entry.id != null ? () => handleLeadToEntry(entry.id!) : undefined}
+          >
+            {lokalizacja}
+          </button>
+        )}
+        {showHints && entry.id != null && (
+          <button
+            type="button"
+            className="knowledge-details-entry-map"
+            title="Pokaz na mapie"
+            onClick={() => handleShowOnMap(entry.id!)}
+          >
+            &#x1f50d;
+          </button>
+        )}
+        {showHints && unavailable && (
+          <span className="knowledge-details-entry-note" title="Obecnie niedostepne">
+            Obecnie niedostepne
+          </span>
+        )}
+        {showHints && !unavailable && note && (
+          <span className="knowledge-details-entry-note" title={note}>
+            {note}
+          </span>
+        )}
+      </li>
+    );
+  }, [showHints, handleLeadToEntry, handleShowOnMap]);
 
   const categoriesContent = useMemo(() => {
     if (!data) {

@@ -267,7 +267,9 @@
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
     "Wiedza": "Rozmawiales z Lowca Savinienem Moreau o zrodle magii w kanalach Quenelles",
     "id": null,
-    "Domena": "Imperium"
+    "Domena": "Imperium",
+    "lokalizacja": "---------------------> WIEDZA NIEDOSTEPNA <----------------",
+    "note": "------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
@@ -1736,7 +1738,10 @@
   {
     "Rodzaj": "Wiedza o golemach",
     "Wiedza": "Byles swiadkiem uwolnienia sie gnoma z cielska stalowego olbrzyma",
-    "id": null
+    "id": null,
+    "Domena": "---------------------------",
+    "lokalizacja": "---------------------> WIEDZA NIEDOSTEPNA <----------------",
+    "note": "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o golemach",
@@ -1798,7 +1803,9 @@
     "Rodzaj": "Wiedza o golemach",
     "Wiedza": "Widziales golema ze zwlok, straznika krysztalu w zamku Drachenfels",
     "id": null,
-    "Domena": "Imperium"
+    "Domena": "Imperium",
+    "lokalizacja": "---------------------> WIEDZA NIEDOSTEPNA <----------------",
+    "note": "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o golemach",
@@ -1891,7 +1898,10 @@
   {
     "Rodzaj": "Wiedza o golemach",
     "Wiedza": "Wysluchales historii gnoma ukrytego w stalowym olbrzymie",
-    "id": null
+    "id": null,
+    "Domena": "---------------------------",
+    "lokalizacja": "---------------------> WIEDZA NIEDOSTEPNA <----------------",
+    "note": "-------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o golemach",
@@ -1984,7 +1994,10 @@
   {
     "Rodzaj": "Wiedza o istotach demonicznych",
     "Wiedza": "Byles swiadkiem uwolnienia demona",
-    "id": null
+    "id": null,
+    "Domena": "--------------------------",
+    "lokalizacja": "---------------------------------------------------------------------------------------------------------------",
+    "note": "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o istotach demonicznych",
@@ -2119,6 +2132,7 @@
     "Wiedza": "Byles swiadkiem jak ktos glupi licho na swiat wypuscil",
     "id": null,
     "Domena": "Ishtar",
+    "lokalizacja": "---------------------------------------------------------------------------------------------------------------",
     "note": "Jesli bedziesz swiadkiem wyklucia licha, zdobedziesz ta wiedze."
   },
   {
@@ -2180,10 +2194,10 @@
   {
     "Rodzaj": "Wiedza o istotach demonicznych",
     "Wiedza": "Dowiedziales sie wiecej o naturze klatwy, ktora oblozone jest miasto Parravon",
-    "id": 16719,
+    "id": 26719,
     "Domena": "Imperium",
     "lokalizacja": "Parravon - Palac",
-    "note": "Idz do palacu i posluchaj o czym rozmawiaja tam Npce \"przedstaw sie\" Mauric i Antoinnete ktorzy siedza w Patio."
+    "note": "Idz do palacu i posluchaj o czym rozmawiaja tam Npce \"przedstaw sie\" Mauric i Antoinnete ktorzy siedza w Patio.(wymagany jezyk bretonski)"
   },
   {
     "Rodzaj": "Wiedza o istotach demonicznych",
@@ -2308,7 +2322,10 @@
   {
     "Rodzaj": "Wiedza o jaszczuroludziach",
     "Wiedza": "Usuniete",
-    "id": null
+    "id": null,
+    "Domena": "---------------------------",
+    "lokalizacja": "---------------------------------------------------------------------------------------------------------------",
+    "note": "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o jaszczuroludziach",
@@ -2548,7 +2565,7 @@
     "id": 348,
     "Domena": "Ishtar",
     "lokalizacja": "Poludniowa Temeria - Wioska przy trakcie",
-    "note": "Ciemnowlosa zmeczona kobieta \"zapytaj kobiete o strzyge\", \"zapytaj kobiete o kolek\" . Kobieta sie przemieszcza o tej wioseczce. Da ci osikowy kolek by zabic strzyge."
+    "note": "Ciemnowlosa zmeczona kobieta \"zapytaj kobiete o strzyge\", \"zapytaj kobiete o kolek\" . Kobieta sie przemieszcza po tej wioseczce. Da ci osikowy kolek by zabic strzyge."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -2660,7 +2677,7 @@
     "id": 2417,
     "Domena": "Ishtar",
     "lokalizacja": "Okolice Novigradu - Zwierzyniec",
-    "note": "\"ob zachodnia klatke\" Pod Novigradem czesto mozna ogladac w klatkach rozne stowry pokoniukcyjne, przejsc po nim calym \"ob tabliczke\" \"ob xxx klatke\". Jesli chodzi o kotolaka pora dzien/noc ma znaczenie."
+    "note": "\"ob zachodnia klatke\" Pod Novigradem czesto mozna ogladac w klatkach rozne stwory pokoniukcyjne, przejsc po nim calym \"ob tabliczke\" \"ob xxx klatke\". Jesli chodzi o kotolaka pora dzien/noc ma znaczenie."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -2721,7 +2738,7 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales zywiolaka ognia",
-    "id": 19073,
+    "id": null,
     "Domena": "Ishtar/Imperium",
     "lokalizacja": "Skarbiec: Wieza Zywiolakow / Skarbiec: Nekromanta Profesor Marcus",
     "note": "\"ob zywiolaka\""
@@ -2729,7 +2746,7 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales zywiolaka powietrza",
-    "id": 19087,
+    "id": null,
     "Domena": "Ishtar/Imperium",
     "lokalizacja": "Skarbiec: Wieza Zywiolakow / Skarbiec: Nekromanta Profesor Marcus",
     "note": "\"ob zywiolaka\""
@@ -2737,7 +2754,7 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales zywiolaka wody",
-    "id": 19102,
+    "id": null,
     "Domena": "Ishtar/Imperium",
     "lokalizacja": "Skarbiec: Wieza Zywiolakow / Skarbiec: Nekromanta Profesor Marcus",
     "note": "\"ob zywiolaka\""
@@ -2745,7 +2762,7 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales zywiolaka ziemi",
-    "id": 2838,
+    "id": null,
     "Domena": "Ishtar/Imperium",
     "lokalizacja": "Skarbiec: Wieza Zywiolakow / Skarbiec: Nekromanta Profesor Marcus",
     "note": "\"ob zywiolaka\""
@@ -2796,7 +2813,7 @@
     "id": 12960,
     "Domena": "Ishtar",
     "lokalizacja": "Skarbiec: Druidka",
-    "note": "\"ob widmowe zwierze\""
+    "note": "ogladaj wyskakujace widomowe zwierzeta podczas przedzierania sie przez skarbiec."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -6923,7 +6940,8 @@
     "Wiedza": "Poznales skutecznosc skavenskiej magii i alchemii",
     "id": null,
     "Domena": "Imperium",
-    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------"
+    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------",
+    "note": "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o szczuroludziach",
@@ -6946,7 +6964,8 @@
     "Wiedza": "Spotkales skavena Skitzskrota",
     "id": null,
     "Domena": "Imperium",
-    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------"
+    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------",
+    "note": "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
   },
   {
     "Rodzaj": "Wiedza o szczuroludziach",

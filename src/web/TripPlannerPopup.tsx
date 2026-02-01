@@ -4,6 +4,7 @@ import storage from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { SEGMENT_COLORS } from '@shared/map/MapHelper';
+import { getClientInstance } from '@shared/runtime';
 import {
     DndContext,
     closestCenter,
@@ -214,13 +215,24 @@ const TripPlannerPopup: React.FC = () => {
         return eventBus.on('enterLocation', handleEnterLocation);
     }, []);
 
-    // Refresh current room ID when popup opens (in case it wasn't available initially)
+    // Refresh current room ID and populate stops from active destinations when popup opens
     useEffect(() => {
         if (wrapperProps.isOpen) {
             const roomId = getCurrentRoomId();
             if (roomId !== null) {
                 setCurrentRoomId(roomId);
             }
+            // If stops are empty but there are active destinations (from /prowadz), populate
+            setStops(prev => {
+                if (prev.length > 0) return prev;
+                const destinations = getClientInstance()?.Map?.destinations as number[] | undefined;
+                if (!destinations || destinations.length === 0) return prev;
+                return destinations.map(id => ({
+                    id,
+                    name: getRoomName(id),
+                    uid: `stop-${++uidCounter}`,
+                }));
+            });
         }
     }, [wrapperProps.isOpen]);
 

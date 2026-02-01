@@ -1707,6 +1707,15 @@ h1 {
   color: rgba(250, 204, 21, 0.92);
 }
 
+.knowledge-details-entry-indicator--unavailable {
+  border-color: rgba(250, 204, 21, 0.8);
+  background-color: rgba(250, 204, 21, 0.25);
+}
+
+.knowledge-details-entry--unavailable .knowledge-details-entry-name {
+  color: rgba(250, 204, 21, 0.92);
+}
+
 .knowledge-details-entry-location {
   flex: 0 0 auto;
   padding: 0.05rem 0.4rem;
@@ -1725,6 +1734,26 @@ h1 {
 .knowledge-details-entry-location:hover {
   background: rgba(59, 130, 246, 0.25);
   color: rgba(191, 219, 254, 1);
+}
+
+.knowledge-details-entry-map {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.78rem;
+  background: rgba(34, 197, 94, 0.1);
+  color: rgba(134, 239, 172, 0.85);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.knowledge-details-entry-map:hover {
+  background: rgba(34, 197, 94, 0.25);
+  color: rgba(187, 247, 208, 1);
+}
+
+.knowledge-details-entry--known .knowledge-details-entry-map {
+  opacity: 0.5;
 }
 
 .knowledge-details-entry-note {
