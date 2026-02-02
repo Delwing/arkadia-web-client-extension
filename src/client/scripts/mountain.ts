@@ -11,7 +11,7 @@ export default function initMountain(client: Client) {
         return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger([/Zaczynasz wspinac sie/, /wchodzisz powoli do gory/], (line) => {
+    client.Triggers.registerTrigger([/zaczynasz wspinac sie/i, /wchodzisz powoli do gory/], (line) => {
         mountainMovingDir = "up";
         return line.color([0, line.length], YELLOW);
     }, tag);

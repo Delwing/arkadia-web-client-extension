@@ -29,6 +29,12 @@ describe('mountain triggers', () => {
     expect(result).toBeInstanceOf(AnsiAwareBuffer);
   });
 
+  test('colors climbing via roots line yellow', () => {
+    const result = parse('Korzystajac z korzeni jak ze szczebli drabiny zaczynasz wspinac sie na powierzchnie.');
+    expect(result?.text).toBe('Korzystajac z korzeni jak ze szczebli drabiny zaczynasz wspinac sie na powierzchnie.');
+    expect(result).toBeInstanceOf(AnsiAwareBuffer);
+  });
+
   test('colors reaching top line yellow', () => {
     const result = parse('Docierasz na gore.');
     expect(result?.text).toBe('Docierasz na gore.');
