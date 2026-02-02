@@ -296,11 +296,22 @@ export default class MapHelper {
                 this.currentRoom.specialExits ?? {}
             );
             const potentialExit = getLongDir(direction);
-            if (!this.currentRoom.exits || !this.currentRoom.exits[potentialExit]) {
+            if (this.currentRoom.specialExits) {
+                const specialExitMatch = Object.entries(this.currentRoom.specialExits)
+                    .filter(([_, id]) => {
+                        const target = this.mapReader.getRoom(id);
+                        return this.findRoomByExit(this.currentRoom, target, potentialExit);
+                    })
+                    .map(([exit]) => exit);
+                if (specialExitMatch.length > 0) {
+                    actualDirection = getShortDir(specialExitMatch[0]);
+                }
+            }
+            if (actualDirection === direction && (!this.currentRoom.exits || !this.currentRoom.exits[potentialExit])) {
                 const exits = Object.entries(allExits)
                     .filter(([_, id]) => {
                         const target = this.mapReader.getRoom(id);
-                        return this.findRoomByExit(this.currentRoom, target, getLongDir(direction));
+                        return this.findRoomByExit(this.currentRoom, target, potentialExit);
                     })
                     .map(([exit]) => exit);
                 if (exits.length > 0) {
