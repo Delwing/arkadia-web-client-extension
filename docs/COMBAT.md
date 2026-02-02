@@ -73,6 +73,12 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |
 | `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |
 
+## Reset skrotow druzyny
+
+| Komenda | Opis |
+|---------|------|
+| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |
+
 ## Okno walki
 
 | Komenda | Opis |

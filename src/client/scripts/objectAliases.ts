@@ -284,6 +284,13 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
+            pattern: /^\/walka_restart$/,
+            callback: () => {
+                client.ObjectManager.resetTeamShortcuts();
+                client.println('<span style="color:orange">Skroty druzyny zresetowane.</span>');
+            }
+        });
+        aliases.push({
             pattern: /^\/demo_kondycje$/,
             callback: () => eventBus.emit("objectListDemo.popup.open")
         });

@@ -19,7 +19,7 @@ export default class ObjectManager {
     private data: Map<number, ObjectData> = new Map();
     private playerNum?: number;
     private teamShortcutHistory: Map<string, string> = new Map();
-    private nextTeamShortcutCode = 'A'.charCodeAt(0);
+    private nextTeamShortcutIndex = 0;
 
     constructor(client: Client) {
         this.client = client;
@@ -174,6 +174,22 @@ export default class ObjectManager {
         return this.getObjectsOnLocation().filter(item => item.__category == "rest").length > 0;
     }
 
+    public resetTeamShortcuts() {
+        this.teamShortcutHistory.clear();
+        this.nextTeamShortcutIndex = 0;
+        this.client.emit('parsedObjects');
+    }
+
+    private indexToShortcut(index: number): string {
+        let result = '';
+        let n = index;
+        do {
+            result = String.fromCharCode(65 + (n % 26)) + result;
+            n = Math.floor(n / 26) - 1;
+        } while (n >= 0);
+        return result;
+    }
+
     private getTeamShortcut(num: number): string {
         const key = String(num);
         const existingShortcut = this.teamShortcutHistory.get(key);
@@ -181,7 +197,7 @@ export default class ObjectManager {
             return existingShortcut;
         }
 
-        const shortcut = String.fromCharCode(this.nextTeamShortcutCode++);
+        const shortcut = this.indexToShortcut(this.nextTeamShortcutIndex++);
         this.teamShortcutHistory.set(key, shortcut);
         return shortcut;
     }
