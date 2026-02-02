@@ -226,7 +226,7 @@ describe('prettyContainers with real Client', () => {
       const tableText = getEmittedTable();
 
       const lines = tableText.split('\n');
-      expect(lines[0]).toMatch(/^\/[-]+\\$/);
+      expect(lines[0]).toMatch(/^\/-+\\$/);
     });
 
     test('table ends with closing border', () => {
@@ -239,7 +239,7 @@ describe('prettyContainers with real Client', () => {
 
       const lines = tableText.trim().split('\n');
       const lastLine = lines[lines.length - 1];
-      expect(lastLine).toMatch(/^\\[-]+\/$/);
+      expect(lastLine).toMatch(/^\\-+\/$/);
     });
 
     test('table includes title', () => {
@@ -449,6 +449,25 @@ describe('prettyContainers with real Client', () => {
         const plainLine = line.replace(/\x1b\[[0-9;]*m/g, '');
         expect(plainLine.length).toBeLessThanOrEqual(40);
       });
+    });
+  });
+
+  describe('items containing " i " in name', () => {
+    test('preserves " i " within item names and splits only the last " i " connector', () => {
+      const input = 'Otwarty czarny skorzany plecak zawiera wypieczony podplomyk z rozmarynem i sola, swietlista zdobiona wlocznie i cztery gronostajowe skory.';
+
+      const results = client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      expect(results).toHaveLength(0);
+      expect(mockAdapter.output).toHaveBeenCalled();
+
+      const tableText = getEmittedTable();
+
+      // "podplomyk z rozmarynem i sola" should be kept as a single item
+      expect(tableText).toMatch(/podplomyk z rozmarynem i sola/);
+      expect(tableText).toMatch(/wlocznie/);
+      expect(tableText).toMatch(/gronostajowe skory/);
     });
   });
 });
