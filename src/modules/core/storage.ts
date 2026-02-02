@@ -1,5 +1,5 @@
 import { defaultSettings } from './defaultSettings';
-import { LUA_GAGS_STORAGE_KEY, LUA_GAGS_COLORS_STORAGE_KEY } from "@client/luaGagsSettings";
+import { LUA_GAGS_STORAGE_KEY, LUA_GAGS_COLORS_STORAGE_KEY, LUA_GAGS_WALKA_CONFIG_STORAGE_KEY } from "@client/luaGagsSettings";
 
 interface Storage {
     getItem(key: string): Promise<any>;
@@ -47,6 +47,7 @@ const characterScopedKeys = new Set([
     'peopleLocalEvents',
     LUA_GAGS_STORAGE_KEY,
     LUA_GAGS_COLORS_STORAGE_KEY,
+    LUA_GAGS_WALKA_CONFIG_STORAGE_KEY,
 ]);
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');

@@ -4,13 +4,17 @@ import storage, {getCurrentCharacter, getItemSync, setItemSync} from "@modules/c
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
     DEFAULT_LUA_GAGS_COLORS,
+    DEFAULT_LUA_GAGS_WALKA_CONFIG,
     LUA_GAG_LINE_TYPES,
     LUA_GAGS_STORAGE_KEY,
     LUA_GAGS_COLORS_STORAGE_KEY,
+    LUA_GAGS_WALKA_CONFIG_STORAGE_KEY,
     LuaGagDeleteMode,
     LuaGagLineType,
+    LuaGagsWalkaConfig,
     normalizeLuaGagsDeleteLines,
     normalizeLuaGagsColors,
+    normalizeLuaGagsWalkaConfig,
 } from "@client/luaGagsSettings";
 
 import {Settings} from "./defaultSettings";
@@ -41,6 +45,9 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
     const [colors, setColors] = useState<ColorState>(() => ({
         ...DEFAULT_LUA_GAGS_COLORS,
     }));
+    const [walkaConfig, setWalkaConfig] = useState<LuaGagsWalkaConfig>(() => ({
+        ...DEFAULT_LUA_GAGS_WALKA_CONFIG,
+    }));
 
     useEffect(() => {
         const update = () => setLocked(!getCurrentCharacter());
@@ -55,6 +62,7 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
     const loadFromStorage = useCallback(() => {
         setDeleteLines(normalizeLuaGagsDeleteLines(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]));
         setColors(normalizeLuaGagsColors(getItemSync(LUA_GAGS_COLORS_STORAGE_KEY)?.[LUA_GAGS_COLORS_STORAGE_KEY]));
+        setWalkaConfig(normalizeLuaGagsWalkaConfig(getItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY)?.[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]));
     }, []);
 
     useEffect(() => {
@@ -70,6 +78,11 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
                     normalizeLuaGagsColors(changes[LUA_GAGS_COLORS_STORAGE_KEY].newValue),
                 );
             }
+            if (changes[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]) {
+                setWalkaConfig(
+                    normalizeLuaGagsWalkaConfig(changes[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY].newValue),
+                );
+            }
         };
         storage.onChanged?.addListener(listener);
         return () => {
@@ -81,8 +94,9 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
         registerSave((_sharedSettings: Settings) => {
             setItemSync(LUA_GAGS_STORAGE_KEY, deleteLines);
             setItemSync(LUA_GAGS_COLORS_STORAGE_KEY, colors);
+            setItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, walkaConfig);
         });
-    }, [registerSave, deleteLines, colors]);
+    }, [registerSave, deleteLines, colors, walkaConfig]);
 
     const labels = useMemo(() => {
         const map: Record<LuaGagLineType, string> = {} as Record<LuaGagLineType, string>;
@@ -124,6 +138,41 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
         <div className="p-2 h-100">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <div className="character-settings-layout">
+                    <section className="character-settings-section character-settings-section--full">
+                        <h5 className="character-settings-section-title">Prefiksy</h5>
+                        <div className="character-settings-stack">
+                            <Form.Group
+                                className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                controlId="walka-ownSpecPrefix"
+                            >
+                                <Form.Label className="mb-0 me-2">Prefiks moje spece</Form.Label>
+                                <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    className="w-auto"
+                                    style={{maxWidth: "120px"}}
+                                    value={walkaConfig.ownSpecPrefix}
+                                    placeholder=""
+                                    onChange={e => setWalkaConfig(prev => ({...prev, ownSpecPrefix: e.target.value}))}
+                                />
+                            </Form.Group>
+                            <Form.Group
+                                className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                controlId="walka-finPrefix"
+                            >
+                                <Form.Label className="mb-0 me-2">Prefiks finishera</Form.Label>
+                                <Form.Control
+                                    size="sm"
+                                    type="text"
+                                    className="w-auto"
+                                    style={{maxWidth: "120px"}}
+                                    value={walkaConfig.finPrefix}
+                                    placeholder="FIN"
+                                    onChange={e => setWalkaConfig(prev => ({...prev, finPrefix: e.target.value}))}
+                                />
+                            </Form.Group>
+                        </div>
+                    </section>
                     <section className="character-settings-section character-settings-section--full">
                         <h5 className="character-settings-section-title">Ustawienia walki</h5>
                         <div className="character-settings-stack">

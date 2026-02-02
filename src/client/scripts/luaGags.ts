@@ -13,12 +13,16 @@ import Client from "../Client";
 import {getItemSync} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
+    DEFAULT_LUA_GAGS_WALKA_CONFIG,
     LUA_GAG_LINE_TYPES,
     LUA_GAGS_STORAGE_KEY,
     LUA_GAGS_COLORS_STORAGE_KEY,
+    LUA_GAGS_WALKA_CONFIG_STORAGE_KEY,
     LuaGagDeleteMode,
+    LuaGagsWalkaConfig,
     normalizeLuaGagsDeleteLines,
     normalizeLuaGagsColors,
+    normalizeLuaGagsWalkaConfig,
 } from "../luaGagsSettings";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
@@ -96,6 +100,14 @@ function applyDeleteLinesConfig(value: unknown) {
     });
 }
 
+const walkaConfig: LuaGagsWalkaConfig = { ...DEFAULT_LUA_GAGS_WALKA_CONFIG };
+
+function applyWalkaConfig(value: unknown) {
+    const normalized = normalizeLuaGagsWalkaConfig(value);
+    walkaConfig.ownSpecPrefix = normalized.ownSpecPrefix;
+    walkaConfig.finPrefix = normalized.finPrefix;
+}
+
 function getDeleteMode(type: string): LuaGagDeleteMode {
     const mode = deleteLines[type];
     if (mode === 0 || mode === 1 || mode === 2) {
@@ -106,18 +118,24 @@ function getDeleteMode(type: string): LuaGagDeleteMode {
 
 export default function registerLuaGagTriggers(client: Client) {
     applyDeleteLinesConfig(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]);
+    applyWalkaConfig(getItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY)?.[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]);
 
     client.on("storage", ({ key, value }) => {
         if (key === LUA_GAGS_STORAGE_KEY) {
             applyDeleteLinesConfig(value);
         }
+        if (key === LUA_GAGS_WALKA_CONFIG_STORAGE_KEY) {
+            applyWalkaConfig(value);
+        }
     });
 
     client.on("port-connected", () => {
         client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
+        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
     });
 
     client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
+    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
 
     function toPattern(p: PatternObj) {
         if (p.type === 1) {
@@ -205,7 +223,7 @@ export default function registerLuaGagTriggers(client: Client) {
         let selection = [0, 0]
 
         const gags = {
-            fin_prefix: "FIN",
+            get fin_prefix() { return walkaConfig.finPrefix; },
             gag(_, value: string, totalValue: string, type: string) {
                 gags.gag_prefix(null, `${value}/${totalValue}`, type)
             },
@@ -221,7 +239,8 @@ export default function registerLuaGagTriggers(client: Client) {
                 global.line.prefix(`[${prefix}] `, colorCodes[type])
             },
             gag_own_spec: (_, power: string, maxPower: string) => {
-                let prefix = `${power}`
+                const ownPrefix = walkaConfig.ownSpecPrefix;
+                let prefix = ownPrefix ? `${ownPrefix} ${power}` : `${power}`;
                 if (maxPower) {
                     prefix += `/${maxPower}`
                 }

@@ -1,5 +1,6 @@
 export const LUA_GAGS_STORAGE_KEY = "lua_gags_delete_lines" as const;
 export const LUA_GAGS_COLORS_STORAGE_KEY = "lua_gags_colors" as const;
+export const LUA_GAGS_WALKA_CONFIG_STORAGE_KEY = "lua_gags_walka_config" as const;
 
 export const LUA_GAG_LINE_TYPES = [
     "moje_ciosy",
@@ -71,6 +72,30 @@ export function normalizeLuaGagsDeleteLines(
                 normalized[key] = raw;
             }
         });
+    }
+    return normalized;
+}
+
+export interface LuaGagsWalkaConfig {
+    ownSpecPrefix: string;
+    finPrefix: string;
+}
+
+export const DEFAULT_LUA_GAGS_WALKA_CONFIG: LuaGagsWalkaConfig = {
+    ownSpecPrefix: "",
+    finPrefix: "FIN",
+};
+
+export function normalizeLuaGagsWalkaConfig(value: unknown): LuaGagsWalkaConfig {
+    const normalized: LuaGagsWalkaConfig = { ...DEFAULT_LUA_GAGS_WALKA_CONFIG };
+    if (value && typeof value === "object") {
+        const raw = value as Record<string, unknown>;
+        if (typeof raw.ownSpecPrefix === "string") {
+            normalized.ownSpecPrefix = raw.ownSpecPrefix;
+        }
+        if (typeof raw.finPrefix === "string") {
+            normalized.finPrefix = raw.finPrefix;
+        }
     }
     return normalized;
 }
