@@ -88,6 +88,7 @@ interface FormatStateSnapshot {
     strikethrough?: boolean;
     slowBlink?: boolean;
     rapidBlink?: boolean;
+    dim?: DimEffect;
     hyperlink?: FormatHyperlink;
 }
 
@@ -798,6 +799,27 @@ interface AttackControllerApi {
 }
 
 /**
+ * People API - Manage people database entries
+ */
+interface PeopleApi {
+  add(entry: { name: string; description: string; guild: string }): void;
+  edit(targetKey: string, entry: { name: string; description: string; guild: string }): void;
+  remove(eventId: string): void;
+  ignore(targetKey: string): void;
+  restore(targetKey: string): void;
+  markEnemy(targetKey: string): void;
+  unmarkEnemy(targetKey: string): void;
+  markAlly(targetKey: string): void;
+  unmarkAlly(targetKey: string): void;
+  setColor(targetKey: string, color: string): void;
+  clearColor(targetKey: string): void;
+  find(name: string, description: string): PersonListEntry | undefined;
+  findByKey(key: string): PersonListEntry | undefined;
+  getAll(): PersonListEntry[];
+  makeKey(name: string, description: string): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -890,6 +912,7 @@ interface PluginApi {
   attackController: AttackControllerApi;
   combat: CombatApi;
   locationNotes: LocationNotesApi;
+  people: PeopleApi;
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 

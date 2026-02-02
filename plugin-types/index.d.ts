@@ -2670,6 +2670,36 @@ export interface AttackControllerApi {
 }
 
 /**
+ * People API - Manage people database entries
+ */
+
+export interface PeopleApi {
+    add(entry: {
+        name: string;
+        description: string;
+        guild: string;
+    }): void;
+    edit(targetKey: string, entry: {
+        name: string;
+        description: string;
+        guild: string;
+    }): void;
+    remove(eventId: string): void;
+    ignore(targetKey: string): void;
+    restore(targetKey: string): void;
+    markEnemy(targetKey: string): void;
+    unmarkEnemy(targetKey: string): void;
+    markAlly(targetKey: string): void;
+    unmarkAlly(targetKey: string): void;
+    setColor(targetKey: string, color: string): void;
+    clearColor(targetKey: string): void;
+    find(name: string, description: string): PersonListEntry | undefined;
+    findByKey(key: string): PersonListEntry | undefined;
+    getAll(): PersonListEntry[];
+    makeKey(name: string, description: string): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -2788,6 +2818,8 @@ export interface PluginApi {
     combat: CombatApi;
     /** Location notes - add plugin-contributed notes to locations */
     locationNotes: LocationNotesApi;
+    /** People database - manage people entries */
+    people: PeopleApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *
