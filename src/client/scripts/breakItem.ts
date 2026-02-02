@@ -13,8 +13,8 @@ export default function initBreakItem(client: Client) {
         { pattern: /^Niestety zbyt mocnym ruchem rozrywasz (?:\w+ )+(\w+), drac go na bezwartosciowe pasy materialu\.$/ },
         { pattern: /^Probujesz zalozyc (?:\w+ )+line(?: z hakiem)?, ale ta peka ci w rekach ze starosci\.$/ },
         { pattern: /^Czujesz, ze (?:\w+ )+(\w+) po prostu rozpada ci sie w rekach\.$/ },
-        { pattern: /^[A-Z][a-z]+ (?:[a-z]+ ){1,3}peka(?:ja)?!$/, command: "odloz zlamana bron" },
-        { pattern: /^[A-Z][a-z]+ (?:[a-z]+ ){1,3}rozpada(?:ja)? sie!$/, command: "odloz zniszczona zbroje" },
+        { pattern: /^[A-Z][a-z]+ (?:[a-z]+ ){1,7}peka(?:ja)?!$/, command: "odloz zlamana bron" },
+        { pattern: /^[A-Z][a-z]+ (?:[a-z]+ ){1,7}rozpada(?:ja)? sie!$/, command: "odloz zniszczona zbroje" },
         { pattern: /^(?:[A-Z][a-z-]+ ?){1,3} ([A-Z][a-z]+ |(?:\w+ ){3,4})rozpada(?:ja)? sie!/, command: "odloz zniszczona zbroje" },
     ];
 
