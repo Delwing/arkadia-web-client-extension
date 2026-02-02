@@ -105,6 +105,22 @@ import {
   updatePluginNotesName,
   type PluginLocationNote
 } from "@modules/core/pluginLocationNotesRegistry";
+import {
+  addLocalPerson,
+  editPerson,
+  deleteLocalPerson,
+  ignorePerson,
+  restorePerson,
+  markAsEnemy,
+  unmarkAsEnemy,
+  markAsAlly,
+  unmarkAsAlly,
+  setPersonColor,
+  clearPersonColor,
+  getMergedSnapshot,
+  makePersonKey,
+  type PersonListEntry
+} from "@modules/data/peopleLoader";
 
 // Re-export filter types for plugin developers
 export type {
@@ -128,6 +144,9 @@ export type {
 
 // Re-export location note types for plugin developers
 export type { PluginLocationNote };
+
+// Re-export people types for plugin developers
+export type { PersonListEntry };
 
 // Re-export command hook type for plugin developers
 export type { CommandHookCallback } from "./Client";
@@ -2069,6 +2088,27 @@ export interface AttackControllerApi {
 }
 
 /**
+ * People API - Manage people database entries
+ */
+export interface PeopleApi {
+  add(entry: { name: string; description: string; guild: string }): void;
+  edit(targetKey: string, entry: { name: string; description: string; guild: string }): void;
+  remove(eventId: string): void;
+  ignore(targetKey: string): void;
+  restore(targetKey: string): void;
+  markEnemy(targetKey: string): void;
+  unmarkEnemy(targetKey: string): void;
+  markAlly(targetKey: string): void;
+  unmarkAlly(targetKey: string): void;
+  setColor(targetKey: string, color: string): void;
+  clearColor(targetKey: string): void;
+  find(name: string, description: string): PersonListEntry | undefined;
+  findByKey(key: string): PersonListEntry | undefined;
+  getAll(): PersonListEntry[];
+  makeKey(name: string, description: string): string;
+}
+
+/**
  * Plugin API Interface
  *
  * This is the main interface that plugins interact with.
@@ -2186,6 +2226,8 @@ export interface PluginApi {
   combat: CombatApi;
   /** Location notes - add plugin-contributed notes to locations */
   locationNotes: LocationNotesApi;
+  /** People database - manage people entries */
+  people: PeopleApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -2245,6 +2287,7 @@ export class PluginApiImpl implements PluginApi {
   public attackController: AttackControllerApi;
   public combat: CombatApi;
   public locationNotes: LocationNotesApi;
+  public people: PeopleApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -2277,6 +2320,7 @@ export class PluginApiImpl implements PluginApi {
     this.attackController = this.createAttackControllerApi();
     this.combat = this.createCombatApi();
     this.locationNotes = this.createLocationNotesApi();
+    this.people = this.createPeopleApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2893,6 +2937,75 @@ export class PluginApiImpl implements PluginApi {
 
       get: (roomId: number): PluginLocationNote[] => {
         return getPluginLocationNotes(roomId);
+      }
+    };
+  }
+
+  private createPeopleApi(): PeopleApi {
+    return {
+      add: (entry: { name: string; description: string; guild: string }): void => {
+        addLocalPerson(entry);
+      },
+
+      edit: (targetKey: string, entry: { name: string; description: string; guild: string }): void => {
+        editPerson(targetKey, entry);
+      },
+
+      remove: (eventId: string): void => {
+        deleteLocalPerson(eventId);
+      },
+
+      ignore: (targetKey: string): void => {
+        ignorePerson(targetKey);
+      },
+
+      restore: (targetKey: string): void => {
+        restorePerson(targetKey);
+      },
+
+      markEnemy: (targetKey: string): void => {
+        markAsEnemy(targetKey);
+      },
+
+      unmarkEnemy: (targetKey: string): void => {
+        unmarkAsEnemy(targetKey);
+      },
+
+      markAlly: (targetKey: string): void => {
+        markAsAlly(targetKey);
+      },
+
+      unmarkAlly: (targetKey: string): void => {
+        unmarkAsAlly(targetKey);
+      },
+
+      setColor: (targetKey: string, color: string): void => {
+        setPersonColor(targetKey, color);
+      },
+
+      clearColor: (targetKey: string): void => {
+        clearPersonColor(targetKey);
+      },
+
+      find: (name: string, description: string): PersonListEntry | undefined => {
+        const key = makePersonKey(name, description);
+        const snapshot = getMergedSnapshot();
+        if (!snapshot) return undefined;
+        return snapshot.find((p) => makePersonKey(p.name, p.description) === key);
+      },
+
+      findByKey: (key: string): PersonListEntry | undefined => {
+        const snapshot = getMergedSnapshot();
+        if (!snapshot) return undefined;
+        return snapshot.find((p) => makePersonKey(p.name, p.description) === key);
+      },
+
+      getAll: (): PersonListEntry[] => {
+        return getMergedSnapshot() ?? [];
+      },
+
+      makeKey: (name: string, description: string): string => {
+        return makePersonKey(name, description);
       }
     };
   }
