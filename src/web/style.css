@@ -7021,6 +7021,7 @@ body.mobile-command-radial-active {
 }
 
 .people-browser__guild-filter select,
+.people-browser__status-filter select,
 .people-browser__page-size select {
   width: 100%;
   font-size: 0.75rem;
@@ -7032,6 +7033,10 @@ body.mobile-command-radial-active {
 
 .people-browser__guild-filter {
   min-width: 115px;
+}
+
+.people-browser__status-filter {
+  min-width: 105px;
 }
 
 .people-browser__page-size {
@@ -7148,8 +7153,17 @@ body.mobile-command-radial-active {
   color: #ef4444;
 }
 
+.people-browser__badge--ally {
+  background-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
 .people-browser__item--enemy .people-browser__item-name {
   color: #ef4444;
+}
+
+.people-browser__item--ally .people-browser__item-name {
+  color: #22c55e;
 }
 
 .people-browser__badge--color {

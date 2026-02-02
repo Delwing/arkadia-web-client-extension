@@ -1,8 +1,11 @@
 import type { PersonListEntry } from '@client/types/people';
 
+export type StatusFilter = '' | 'enemy' | 'ally';
+
 export interface PeopleBrowserQuery {
     searchTerm: string;
     guildFilter: string;
+    statusFilter: StatusFilter;
     pageSize: PageSize;
     page: number;
     localOnly: boolean;

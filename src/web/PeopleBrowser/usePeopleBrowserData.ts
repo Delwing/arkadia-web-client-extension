@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {loadPeople, subscribeMerged} from '@modules/data/peopleLoader';
 import {getPeopleBrowserService} from './PeopleBrowserService';
-import type {PageSize, PeopleBrowserResult} from './PeopleBrowserTypes';
+import type {PageSize, PeopleBrowserResult, StatusFilter} from './PeopleBrowserTypes';
 
 interface UsePeopleBrowserDataOptions {
     isOpen: boolean;
@@ -11,6 +11,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTermState] = useState('');
     const [guildFilter, setGuildFilterState] = useState('');
+    const [statusFilter, setStatusFilterState] = useState<StatusFilter>('');
     const [localOnly, setLocalOnlyState] = useState(false);
     const [pageSize, setPageSizeState] = useState<PageSize>(20);
     const [page, setPage] = useState(0);
@@ -48,12 +49,13 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         const query = {
             searchTerm,
             guildFilter,
+            statusFilter,
             localOnly,
             pageSize,
             page,
         };
         setResult(service.query(query));
-    }, [isOpen, searchTerm, guildFilter, localOnly, pageSize, page, service, dataVersion]);
+    }, [isOpen, searchTerm, guildFilter, statusFilter, localOnly, pageSize, page, service, dataVersion]);
 
     const setSearchTerm = useCallback((value: string) => {
         setSearchTermState(value);
@@ -62,6 +64,11 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
 
     const setGuildFilter = useCallback((value: string) => {
         setGuildFilterState(value);
+        setPage(0);
+    }, []);
+
+    const setStatusFilter = useCallback((value: StatusFilter) => {
+        setStatusFilterState(value);
         setPage(0);
     }, []);
 
@@ -81,11 +88,13 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         availableGuilds,
         searchTerm,
         guildFilter,
+        statusFilter,
         localOnly,
         pageSize,
         page,
         setSearchTerm,
         setGuildFilter,
+        setStatusFilter,
         setLocalOnly,
         setPageSize,
         setPage,

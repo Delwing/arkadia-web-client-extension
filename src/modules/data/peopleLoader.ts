@@ -294,10 +294,27 @@ export function removeLocalEvent(eventId: string): void {
 }
 
 /**
- * Delete a locally added person (removes the add event)
+ * Delete a locally added person (removes the add event and all related events)
  */
 export function deleteLocalPerson(eventId: string): void {
-    removeLocalEvent(eventId);
+    const addEvent = localEventsSnapshot.events.find(e => e.id === eventId && e.type === 'add');
+    if (addEvent?.entry) {
+        const personKey = makePersonKey(addEvent.entry.name, addEvent.entry.description);
+        const filteredEvents = localEventsSnapshot.events.filter(
+            (e) => e.id !== eventId && e.targetKey !== personKey
+        );
+        if (filteredEvents.length === localEventsSnapshot.events.length) {
+            return;
+        }
+        localEventsSnapshot = {
+            events: filteredEvents,
+            timestamp: Date.now(),
+        };
+        saveLocalEvents(localEventsSnapshot);
+        recomputeMerged();
+    } else {
+        removeLocalEvent(eventId);
+    }
 }
 
 /**

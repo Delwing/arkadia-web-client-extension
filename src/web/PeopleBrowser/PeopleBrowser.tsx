@@ -4,7 +4,7 @@ import { DockablePopupWrapper } from '../layout/components/DockablePopupWrapper'
 import { usePopup } from '../hooks/usePopup';
 import { usePopupSetting } from '../hooks/usePopupSetting';
 import { usePeopleBrowserData } from './usePeopleBrowserData';
-import { PAGE_SIZE_OPTIONS, type PageSize } from './PeopleBrowserTypes';
+import { PAGE_SIZE_OPTIONS, type PageSize, type StatusFilter } from './PeopleBrowserTypes';
 import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
 import type { PersonEntry, PersonListEntry } from '@client/types/people';
 import {
@@ -41,11 +41,13 @@ const PeopleBrowser: React.FC = () => {
         result,
         searchTerm,
         guildFilter,
+        statusFilter,
         localOnly,
         pageSize,
         page,
         setSearchTerm,
         setGuildFilter,
+        setStatusFilter,
         setLocalOnly,
         setPageSize,
         setPage,
@@ -85,8 +87,13 @@ const PeopleBrowser: React.FC = () => {
         if (modalMode === 'add') {
             addLocalPerson(entry);
         } else if (selectedPerson) {
-            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
-            editPerson(targetKey, entry);
+            const changed = entry.name !== selectedPerson.name
+                || entry.description !== selectedPerson.description
+                || entry.guild !== selectedPerson.guild;
+            if (changed) {
+                const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
+                editPerson(targetKey, entry);
+            }
         }
         handleModalClose();
     }, [modalMode, selectedPerson, handleModalClose]);
@@ -260,6 +267,18 @@ const PeopleBrowser: React.FC = () => {
                     </select>
                 </div>
 
+                <div className="people-browser__status-filter">
+                    <select
+                        className="form-select form-select-sm"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                    >
+                        <option value="">Wszyscy</option>
+                        <option value="enemy">Wrogowie</option>
+                        <option value="ally">Sojusznicy</option>
+                    </select>
+                </div>
+
                 <div className="people-browser__local-only">
                     <label className="form-check-label d-flex align-items-center gap-1">
                         <input
@@ -292,7 +311,7 @@ const PeopleBrowser: React.FC = () => {
                     <div className="people-browser__loading">Ladowanie...</div>
                 ) : !result || result.items.length === 0 ? (
                     <div className="people-browser__empty">
-                        {searchTerm || guildFilter
+                        {searchTerm || guildFilter || statusFilter
                             ? 'Brak wynikow pasujacych do filtrow.'
                             : 'Brak danych o ludziach.'}
                     </div>
@@ -303,12 +322,13 @@ const PeopleBrowser: React.FC = () => {
                             const isLocal = person.source === 'local';
                             const isEdited = person.source === 'edited';
                             const isMarkedEnemy = person.isEnemy;
+                            const isMarkedAlly = person.isAlly;
                             const hasColor = !!person.color;
 
                             return (
                                 <div
                                     key={`${person.name}-${person.guild}-${person.description}-${index}`}
-                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''} ${isMarkedEnemy ? 'people-browser__item--enemy' : ''}`}
+                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''} ${isMarkedEnemy ? 'people-browser__item--enemy' : ''} ${isMarkedAlly ? 'people-browser__item--ally' : ''}`}
                                 >
                                     <span className="people-browser__item-name" style={hasColor && !isMarkedEnemy ? { color: person.color } : undefined}>
                                         {person.name}
@@ -318,6 +338,14 @@ const PeopleBrowser: React.FC = () => {
                                                 title="Oznaczony jako wrog"
                                             >
                                                 !
+                                            </span>
+                                        )}
+                                        {isMarkedAlly && !isMarkedEnemy && (
+                                            <span
+                                                className="people-browser__badge people-browser__badge--ally"
+                                                title="Oznaczony jako sojusznik"
+                                            >
+                                                ♦
                                             </span>
                                         )}
                                         {hasColor && !isMarkedEnemy && (

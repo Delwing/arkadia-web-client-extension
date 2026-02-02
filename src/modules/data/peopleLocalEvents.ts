@@ -71,21 +71,23 @@ export function applyLocalEvents(
                 const original = result.get(event.targetKey);
                 result.delete(event.targetKey);
                 const replaceKey = makePersonKey(event.entry.name, event.entry.description);
+                const wasLocal = original?.source === 'local';
                 result.set(replaceKey, {
                     ...event.entry,
-                    source: 'edited',
+                    source: wasLocal ? 'local' : 'edited',
                     ignored: false,
                     isEnemy: original?.isEnemy ?? false,
                     isAlly: original?.isAlly ?? false,
                     color: original?.color,
-                    originalEntry: original
-                        ? {
-                              name: original.name,
-                              description: original.description,
-                              guild: original.guild,
-                          }
-                        : undefined,
-                    eventId: event.id,
+                    originalEntry: original?.originalEntry
+                        ?? (original && original.source === 'remote'
+                            ? {
+                                  name: original.name,
+                                  description: original.description,
+                                  guild: original.guild,
+                              }
+                            : undefined),
+                    eventId: wasLocal ? (original?.eventId ?? event.id) : event.id,
                 });
                 break;
             }

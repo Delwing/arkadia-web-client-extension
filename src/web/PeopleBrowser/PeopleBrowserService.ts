@@ -24,7 +24,7 @@ export class PeopleBrowserService {
     }
 
     query(query: PeopleBrowserQuery): PeopleBrowserResult {
-        const { searchTerm, guildFilter, pageSize, page, localOnly } = query;
+        const { searchTerm, guildFilter, statusFilter, pageSize, page, localOnly } = query;
         const searchLower = searchTerm.toLowerCase().trim();
 
         const filtered = this.people.filter((person) => {
@@ -34,6 +34,14 @@ export class PeopleBrowserService {
             }
 
             if (guildFilter && person.guild !== guildFilter) {
+                return false;
+            }
+
+            if (statusFilter === 'enemy' && !person.isEnemy) {
+                return false;
+            }
+
+            if (statusFilter === 'ally' && !person.isAlly) {
                 return false;
             }
 
