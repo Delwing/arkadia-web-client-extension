@@ -176,9 +176,9 @@ export function restorePerson(targetKey: string): void {
  * Mark a person as enemy (individual enemy flag)
  */
 export function markAsEnemy(targetKey: string): void {
-    // Remove any existing mark-enemy events for this target
+    // Remove any existing mark-enemy and mark-ally events for this target
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => !(e.targetKey === targetKey && e.type === 'mark-enemy')
+        (e) => !(e.targetKey === targetKey && (e.type === 'mark-enemy' || e.type === 'mark-ally'))
     );
     const event = createMarkEnemyEvent(targetKey);
     localEventsSnapshot = {
@@ -211,9 +211,9 @@ export function unmarkAsEnemy(targetKey: string): void {
  * Mark a person as ally (individual ally flag)
  */
 export function markAsAlly(targetKey: string): void {
-    // Remove any existing mark-ally events for this target
+    // Remove any existing mark-ally and mark-enemy events for this target
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => !(e.targetKey === targetKey && e.type === 'mark-ally')
+        (e) => !(e.targetKey === targetKey && (e.type === 'mark-ally' || e.type === 'mark-enemy'))
     );
     const event = createMarkAllyEvent(targetKey);
     localEventsSnapshot = {
