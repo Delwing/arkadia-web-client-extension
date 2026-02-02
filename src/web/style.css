@@ -824,6 +824,12 @@ h1 {
   outline: 1px solid rgba(255, 193, 7, 0.6);
 }
 
+.logs-manage-table { width: 100%; font-size: 0.85rem; }
+.logs-manage-table th, .logs-manage-table td { padding: 0.35rem 0.5rem; vertical-align: middle; }
+.logs-manage-table th { position: sticky; top: 0; background: var(--bs-body-bg); z-index: 2; }
+.logs-manage-year td { position: sticky; background: var(--bs-body-bg); z-index: 1; font-weight: bold; }
+.logs-manage-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
 .logs-loading-overlay {
   position: absolute;
   top: 0;
@@ -7877,4 +7883,357 @@ body.mobile-command-radial-active {
 
 .static-map-popup__image-btn:active {
   background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ===== Object List Documentation ===== */
+
+.ol-doc {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ol-doc h2 {
+  font-size: 1.05rem;
+  margin-top: 1.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.ol-doc h3 {
+  font-size: 0.92rem;
+  margin-top: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.ol-doc .subtitle {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-top: 0;
+}
+
+/* List view demo container (replaces #objects-list styling) */
+.ol-doc .demo-box-list {
+  padding: 0.5vh 1vh;
+  font-family: monospace;
+  font-size: 0.6rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 0.1vh solid silver;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ol-doc .demo-box-list .objects-list-content {
+  white-space: pre;
+}
+
+.ol-doc .demo-box-list .object-num,
+.ol-doc .demo-box-list .object-desc,
+.ol-doc .demo-box-list .object-hp-bar,
+.ol-doc .demo-box-list .object-hp-bar-teammate {
+  cursor: pointer;
+}
+
+.ol-doc .demo-box-list .target-dot {
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.ol-doc .demo-box-list .target-dot.target-dot-active {
+  opacity: 1;
+}
+
+.ol-doc .demo-box-list .team-not-attacking {
+  display: inline-block;
+  transform: skewX(-10deg);
+}
+
+/* Card view demo container */
+.ol-doc .demo-box {
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 0.1vh solid silver;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Tabs */
+.ol-doc .ol-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0;
+}
+
+.ol-doc .ol-tab {
+  padding: 0.5rem 1.2rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+
+.ol-doc .ol-tab:hover {
+  color: #94a3b8;
+  background: #253347;
+}
+
+.ol-doc .ol-tab.active {
+  color: #60a5fa;
+  background: #1e293b;
+  border-color: #60a5fa;
+  border-bottom-color: #1e293b;
+  position: relative;
+  z-index: 1;
+}
+
+.ol-doc .ol-tab-panels {
+  border: 1px solid #334155;
+  border-radius: 0 6px 6px 6px;
+  background: #1e293b;
+  margin-top: -1px;
+}
+
+.ol-doc .ol-tab-panel {
+  display: none;
+  padding: 1.5rem;
+}
+
+.ol-doc .ol-tab-panel.active {
+  display: block;
+}
+
+/* Anatomy diagram (list view segments) */
+.ol-doc .anatomy {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 1.2rem 1rem 1rem;
+  font-family: monospace;
+  font-size: 13px;
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.ol-doc .anatomy-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-bottom: 0.5rem;
+}
+
+.ol-doc .anatomy-seg {
+  padding: 3px 6px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.ol-doc .anatomy-seg::after {
+  content: attr(data-idx);
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ol-doc .seg-prefix { background: rgba(173, 255, 47, 0.15); border: 1px solid rgba(173, 255, 47, 0.4); }
+.ol-doc .seg-num { background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.4); }
+.ol-doc .seg-hp { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.4); }
+.ol-doc .seg-name { background: rgba(96, 165, 250, 0.15); border: 1px solid rgba(96, 165, 250, 0.4); }
+.ol-doc .seg-arrow { background: rgba(100, 116, 139, 0.15); border: 1px solid rgba(100, 116, 139, 0.4); }
+
+/* Anatomy legend */
+.ol-doc .anatomy-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.ol-doc .anatomy-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ol-doc .anatomy-legend b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Anatomy using real card markup */
+.ol-doc .anatomy-real {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 1.2rem 1rem 1rem;
+  margin-top: 1rem;
+}
+
+.ol-doc .anatomy-real .objects-list-cards {
+  max-width: 300px;
+}
+
+.ol-doc .anatomy-real .object-card {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .object-card__hp-bar,
+.ol-doc .anatomy-real .object-card__hp-bar--teammate,
+.ol-doc .anatomy-real .object-card__hp-bar-vertical,
+.ol-doc .anatomy-real .object-card__hp-bar-vertical--teammate {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .object-card__hp-fill {
+  border-radius: 0 0 0 5px;
+}
+
+.ol-doc .anatomy-real .object-card__name {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .marker {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.55rem;
+  font-style: normal;
+  font-weight: 700;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ol-doc .action-table .mn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 700;
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* Action tables */
+.ol-doc .action-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+}
+
+.ol-doc .action-table th {
+  text-align: left;
+  color: #64748b;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-bottom: 1px solid #334155;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: transparent;
+}
+
+.ol-doc .action-table td {
+  padding: 0.4rem 0.75rem;
+  color: #cbd5e1;
+  border: none;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ol-doc .action-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ol-doc .action-table tr:nth-child(even) {
+  background: transparent;
+}
+
+.ol-doc .cmd {
+  color: #fbbf24;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* Color reference */
+.ol-doc .color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ol-doc .color-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  padding: 0.3rem 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ol-doc .color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.ol-doc .note {
+  background: rgba(96, 165, 250, 0.08);
+  border-left: 3px solid #60a5fa;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 4px 4px 0;
+  margin: 0.75rem 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
 }

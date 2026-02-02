@@ -9,15 +9,19 @@ import herbsMd from "../../docs/HERBS.md?raw";
 import bindsMd from "../../docs/BINDS.md?raw";
 import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 import aliasesMd from "../../docs/ALIASES.md?raw";
+import { objectListDocHtml, objectListDocInit } from "./objectListDoc";
 
 interface DocDef {
   key: string;
   title: string;
-  md: string;
+  md?: string;
+  html?: string;
+  init?: (container: HTMLElement) => void;
 }
 const docs: DocDef[] = [
   { key: "overview", title: "Przeglad", md: overviewMd },
   { key: "combat", title: "Walka", md: combatMd },
+  { key: "objectlist", title: "Lista obiektow", html: objectListDocHtml, init: objectListDocInit },
   { key: "navigation", title: "Mapa i nawigacja", md: navigationMd },
   { key: "inventory", title: "Ekwipunek", md: inventoryMd },
   { key: "tracking", title: "Postepy", md: trackingMd },
@@ -38,7 +42,7 @@ function searchDocs(query: string): SearchResult[] {
   const results: SearchResult[] = [];
 
   for (const doc of docs) {
-    if (doc.key === "overview") continue;
+    if (doc.key === "overview" || !doc.md) continue;
     const lines = doc.md.split("\n");
     for (const line of lines) {
       if (line.startsWith("#")) continue;
@@ -138,8 +142,13 @@ function initDocs() {
     const doc = docs.find((d) => d.key === key);
     if (!doc) return;
     currentDoc = key;
-    const html = await marked.parse(doc.md);
-    content.innerHTML = html as string;
+    if (doc.html) {
+      content.innerHTML = doc.html;
+      doc.init?.(content);
+    } else if (doc.md) {
+      const html = await marked.parse(doc.md);
+      content.innerHTML = html as string;
+    }
     toggleBtn.textContent = doc.title;
     if (clearSearch) {
       searchInput.value = "";

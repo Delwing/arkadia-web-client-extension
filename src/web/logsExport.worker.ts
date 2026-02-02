@@ -153,7 +153,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
                 return;
             }
 
-            const sessions = await getSessionsWithContent(db);
+            const sessions = data.sessionNames ?? await getSessionsWithContent(db);
             if (sessions.length === 0) {
                 ctx.postMessage({
                     type: 'error',

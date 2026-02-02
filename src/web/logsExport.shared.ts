@@ -7,6 +7,7 @@ export interface LogEntry {
 export interface LogsExportWorkerRequest {
     type: 'export';
     inlineStyles: string;
+    sessionNames?: string[];
 }
 
 export interface LogsExportProgressMessage {
