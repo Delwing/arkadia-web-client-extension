@@ -1,14 +1,14 @@
 import Client from "../Client";
 import { gmcp } from "../gmcp";
-import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
-import type { PersonEntry } from '../types/people';
+import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
+import type { PersonListEntry } from '../types/people';
 
 export default function initInvite(client: Client) {
     const tag = "invite";
     let enemyGuilds: string[] = [];
-    let peopleCache: PersonEntry[] = [];
+    let peopleCache: PersonListEntry[] = [];
 
-    subscribeToPeopleStore(snapshot => {
+    subscribeMerged(snapshot => {
         peopleCache = snapshot ?? [];
     });
 
@@ -21,19 +21,12 @@ export default function initInvite(client: Client) {
 
     ensurePeopleLoaded().catch(() => undefined);
 
-    // Function to find a person's guild by their name
-    function findPersonGuild(name: string): string | null {
+    function isEnemy(name: string): boolean {
         const person = peopleCache.find(p => p.name === name);
-        return person ? person.guild : null;
-    }
-
-    // Function to check if person is in enemy guild
-    function isInEnemyGuild(name: string): boolean {
-        if (enemyGuilds.length === 0) {
-            return false; // If no enemy guilds selected, allow all invites
-        }
-        const guild = findPersonGuild(name);
-        return guild ? enemyGuilds.includes(guild) : false; // If guild not found, allow invite
+        if (!person) return false;
+        if (person.isAlly) return false;
+        if (person.isEnemy) return true;
+        return enemyGuilds.includes(person.guild);
     }
 
     // Function to find object ID for a person by their name
@@ -71,7 +64,7 @@ export default function initInvite(client: Client) {
     client.Triggers.registerTrigger(invitePattern, (line, matches) => {
         const inviterName = matches[1];
 
-        if (isInEnemyGuild(inviterName)) {
+        if (isEnemy(inviterName)) {
             // If inviter is in enemy guild, block the invite
             return line;
         } else {
