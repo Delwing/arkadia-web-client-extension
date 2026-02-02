@@ -2318,7 +2318,8 @@ h1 {
 
 #objects-list .object-num,
 #objects-list .object-desc,
-#objects-list .object-hp-bar {
+#objects-list .object-hp-bar,
+#objects-list .object-hp-bar-teammate {
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -2554,7 +2555,8 @@ h1 {
 }
 
 /* HP bar at bottom */
-.object-card__hp-bar {
+.object-card__hp-bar,
+.object-card__hp-bar--teammate {
   height: 6px;
   background: rgba(0, 0, 0, 0.15);
   border-radius: 0 0 5px 5px;
@@ -2564,7 +2566,8 @@ h1 {
 }
 
 /* Vertical dividers for HP levels (7 levels = 6 dividers) */
-.object-card__hp-bar::after {
+.object-card__hp-bar::after,
+.object-card__hp-bar--teammate::after {
   content: '';
   position: absolute;
   top: 0;
@@ -2603,7 +2606,8 @@ h1 {
   );
 }
 
-.object-card__hp-bar:hover {
+.object-card__hp-bar:hover,
+.object-card__hp-bar--teammate:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -2695,7 +2699,8 @@ h1 {
 }
 
 /* Vertical HP bar for compact mode */
-.object-card__hp-bar-vertical {
+.object-card__hp-bar-vertical,
+.object-card__hp-bar-vertical--teammate {
   width: 8px;
   min-width: 8px;
   display: flex;
@@ -2708,7 +2713,8 @@ h1 {
 }
 
 /* Horizontal dividers for HP levels (7 levels = 6 dividers) */
-.object-card__hp-bar-vertical::after {
+.object-card__hp-bar-vertical::after,
+.object-card__hp-bar-vertical--teammate::after {
   content: '';
   position: absolute;
   top: 0;
@@ -2747,7 +2753,8 @@ h1 {
   );
 }
 
-.object-card__hp-bar-vertical:hover {
+.object-card__hp-bar-vertical:hover,
+.object-card__hp-bar-vertical--teammate:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -2814,7 +2821,8 @@ h1 {
 }
 
 /* HP Dots for compact-dots mode */
-.object-card__hp-dots {
+.object-card__hp-dots,
+.object-card__hp-dots--teammate {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -2823,7 +2831,8 @@ h1 {
   flex-shrink: 0;
 }
 
-.object-card__hp-dots:hover {
+.object-card__hp-dots:hover,
+.object-card__hp-dots--teammate:hover {
   opacity: 0.8;
 }
 
@@ -2854,7 +2863,8 @@ h1 {
 }
 
 /* Compact dots mode - no left HP bar */
-.object-card--compact-dots .object-card__hp-bar-vertical {
+.object-card--compact-dots .object-card__hp-bar-vertical,
+.object-card--compact-dots .object-card__hp-bar-vertical--teammate {
   display: none;
 }
 

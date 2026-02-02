@@ -177,7 +177,7 @@ export default class ObjectList {
 
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar-vertical, .object-card__hp-dots, .object-card__number, .object-card__name")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-hp-bar-teammate, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar--teammate, .object-card__hp-bar-vertical, .object-card__hp-bar-vertical--teammate, .object-card__hp-dots, .object-card__hp-dots--teammate, .object-card__number, .object-card__name")
         ) {
             return;
         }
@@ -326,14 +326,29 @@ export default class ObjectList {
             this.focusInput();
             return;
         }
-        // Handle card view HP bar click - send /prze command (horizontal, vertical, and dots)
+        // Handle teammate HP bar click - send /w command (list view)
+        const teammateHpBarEl = target.closest(
+            ".object-hp-bar-teammate[data-object-num]"
+        ) as HTMLElement | null;
+        if (teammateHpBarEl) {
+            const num = teammateHpBarEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/w ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
+        // Handle card view HP bar click - send /prze or /w command (horizontal, vertical, and dots)
         const cardHpBarEl = target.closest(
-            ".object-card__hp-bar[data-object-num], .object-card__hp-bar-vertical[data-object-num], .object-card__hp-dots[data-object-num]"
+            ".object-card__hp-bar[data-object-num], .object-card__hp-bar--teammate[data-object-num], .object-card__hp-bar-vertical[data-object-num], .object-card__hp-bar-vertical--teammate[data-object-num], .object-card__hp-dots[data-object-num], .object-card__hp-dots--teammate[data-object-num]"
         ) as HTMLElement | null;
         if (cardHpBarEl) {
             const num = cardHpBarEl.getAttribute("data-object-num");
             if (num) {
-                this.client.sendCommand(`/prze ${num}`);
+                const isTeammateBar = cardHpBarEl.classList.contains("object-card__hp-bar--teammate")
+                    || cardHpBarEl.classList.contains("object-card__hp-bar-vertical--teammate")
+                    || cardHpBarEl.classList.contains("object-card__hp-dots--teammate");
+                this.client.sendCommand(isTeammateBar ? `/w ${num}` : `/prze ${num}`);
             }
             this.focusInput();
             return;
@@ -702,9 +717,11 @@ export default class ObjectList {
                 const filled = "#".repeat(hp);
                 const empty = "-".repeat(7 - hp);
                 const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
-                // Make HP bar clickable for enemies (not player or teammates)
+                // Make HP bar clickable for enemies and teammates (not player)
                 if (!isPlayer && !isTeammate) {
                     bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
+                } else if (isTeammate) {
+                    bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj sie">${hpBarContent}</span>`;
                 } else {
                     bar = hpBarContent;
                 }
@@ -888,7 +905,7 @@ export default class ObjectList {
                 <div class="object-card__row2">
                     <span class="object-card__attackers">${attackers}</span>
                 </div>
-                <div class="object-card__hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarFill}</div>
+                <div class="${isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar'}" data-object-num="${num}" data-object-id="${obj.num}" title="${isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam'}">${hpBarFill}</div>
             </div>`;
         });
 
@@ -1020,7 +1037,9 @@ export default class ObjectList {
                     hpColor = filterResult.style.hpBarColor;
                 }
 
-                hpBarHtml = `<div class="object-card__hp-bar-vertical" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">
+                const hpBarVerticalClass = isTeammate && !isPlayer ? 'object-card__hp-bar-vertical--teammate' : 'object-card__hp-bar-vertical';
+                const hpBarVerticalTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
+                hpBarHtml = `<div class="${hpBarVerticalClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarVerticalTitle}">
                     <div class="object-card__hp-fill-vertical" style="height: ${hpPercent}%; background-color: ${hpColor}"></div>
                 </div>`;
             }
@@ -1199,7 +1218,9 @@ export default class ObjectList {
                     }
                 }
 
-                hpDotsHtml = `<div class="object-card__hp-dots" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${dots.join('')}</div>`;
+                const hpDotsClass = isTeammate && !isPlayer ? 'object-card__hp-dots--teammate' : 'object-card__hp-dots';
+                const hpDotsTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
+                hpDotsHtml = `<div class="${hpDotsClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpDotsTitle}">${dots.join('')}</div>`;
             }
 
             // Build attackers inline with name
@@ -1544,7 +1565,8 @@ html, body {
 }
 #objects-list-pip .object-num,
 #objects-list-pip .object-desc,
-#objects-list-pip .object-hp-bar {
+#objects-list-pip .object-hp-bar,
+#objects-list-pip .object-hp-bar-teammate {
     cursor: pointer;
 }
 #objects-list-pip .target-dot {
@@ -1835,6 +1857,8 @@ html, body {
                 const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
                 if (!isPlayer && !isTeammate) {
                     bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
+                } else if (isTeammate) {
+                    bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj sie">${hpBarContent}</span>`;
                 } else {
                     bar = hpBarContent;
                 }
