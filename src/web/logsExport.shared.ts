@@ -32,3 +32,8 @@ export type LogsExportWorkerResponse =
     | LogsExportProgressMessage
     | LogsExportSuccessMessage
     | LogsExportErrorMessage;
+
+export interface LogExportData {
+    version: 1;
+    sessions: Record<string, LogEntry[]>;
+}

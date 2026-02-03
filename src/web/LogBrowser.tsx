@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type MutableRefObject } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type RefObject } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import storage from "@modules/core/storage";
-import type { LogsExportWorkerResponse } from "./logsExport.shared";
+import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
 
 interface LogEntry {
@@ -228,7 +228,7 @@ async function openDb(): Promise<IDBDatabase | null> {
   });
 }
 
-async function getSessionData(db: IDBDatabase, storeName: string): Promise<ParsedLogGroup[]> {
+async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
   return new Promise(resolve => {
     let tx: IDBTransaction;
     try {
@@ -239,15 +239,17 @@ async function getSessionData(db: IDBDatabase, storeName: string): Promise<Parse
       return;
     }
     const req = tx.objectStore(storeName).getAll();
-    req.onsuccess = () => {
-      const logs = req.result as LogEntry[];
-      resolve(parseLogEntries(logs));
-    };
+    req.onsuccess = () => resolve(req.result as LogEntry[]);
     req.onerror = () => {
       console.error(`Failed to read from ${storeName}:`, req.error);
       resolve([]);
     };
   });
+}
+
+async function getSessionData(db: IDBDatabase, storeName: string): Promise<ParsedLogGroup[]> {
+  const logs = await getRawSessionData(db, storeName);
+  return parseLogEntries(logs);
 }
 
 // --- Downloaded status persistence via separate IndexedDB ---
@@ -388,7 +390,7 @@ function LogManager({
   onSessionsChanged,
   onViewSession,
 }: {
-  dbRef: MutableRefObject<IDBDatabase | null>;
+  dbRef: RefObject<IDBDatabase | null>;
   sessions: SessionInfo[];
   onSessionsChanged: () => void;
   onViewSession: (name: string) => void;
@@ -399,7 +401,10 @@ function LogManager({
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isJsonExporting, setIsJsonExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const exportWorkerRef = useRef<Worker | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const theadRef = useRef<HTMLTableSectionElement>(null);
   const [theadHeight, setTheadHeight] = useState(0);
 
@@ -553,7 +558,7 @@ function LogManager({
       db.close();
       dbRef.current = null;
 
-      const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbRef.current = await new Promise<IDBDatabase>((resolve, reject) => {
         const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
         req.onupgradeneeded = () => {
           const upgradeDb = req.result;
@@ -567,7 +572,6 @@ function LogManager({
         req.onerror = () => reject(req.error);
       });
 
-      dbRef.current = newDb;
       setSelected(new Set());
       onSessionsChanged();
     } catch (error) {
@@ -578,6 +582,128 @@ function LogManager({
       setIsDeleting(false);
     }
   }, [sessions, selected, dbRef, onSessionsChanged]);
+
+  const handleJsonExport = useCallback(async () => {
+    const names = sessions.filter(s => selected.has(s.name)).map(s => s.name);
+    if (names.length === 0) return;
+
+    const db = dbRef.current;
+    if (!db) return;
+
+    setIsJsonExporting(true);
+    try {
+      const exportData: LogExportData = { version: 1, sessions: {} };
+      for (const name of names) {
+        const entries = await getRawSessionData(db, name);
+        if (entries.length > 0) {
+          exportData.sessions[name] = entries;
+        }
+      }
+
+      const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `logi_eksport_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("[LogManager] JSON export failed:", error);
+    } finally {
+      setIsJsonExporting(false);
+    }
+  }, [sessions, selected, dbRef]);
+
+  const handleImport = useCallback(async (file: File) => {
+    const db = dbRef.current;
+    if (!db) return;
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      let data: LogExportData;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        alert("Niepoprawny plik JSON.");
+        return;
+      }
+
+      if (data.version !== 1 || !data.sessions || typeof data.sessions !== "object") {
+        alert("Niepoprawny format pliku eksportu.");
+        return;
+      }
+
+      const sessionNames = Object.keys(data.sessions);
+      if (sessionNames.length === 0) {
+        alert("Plik nie zawiera zadnych sesji.");
+        return;
+      }
+
+      // Determine which sessions already exist
+      const existingStores = new Set<string>();
+      for (let i = 0; i < db.objectStoreNames.length; i++) {
+        const name = db.objectStoreNames.item(i);
+        if (name) existingStores.add(name);
+      }
+
+      const toImport = sessionNames.filter(name => !existingStores.has(name));
+      const skipped = sessionNames.length - toImport.length;
+
+      if (toImport.length === 0) {
+        alert(`Pominieto ${skipped} duplikatow. Brak nowych sesji do zaimportowania.`);
+        return;
+      }
+
+      // Close current DB, upgrade to create new object stores
+      const currentVersion = db.version;
+      db.close();
+      dbRef.current = null;
+
+      const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
+        const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
+        req.onupgradeneeded = () => {
+          const upgradeDb = req.result;
+          for (const name of toImport) {
+            if (!upgradeDb.objectStoreNames.contains(name)) {
+              upgradeDb.createObjectStore(name, { autoIncrement: true });
+            }
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+
+      // Insert entries into new object stores
+      for (const name of toImport) {
+        const entries = data.sessions[name];
+        if (!entries || entries.length === 0) continue;
+        await new Promise<void>((resolve, reject) => {
+          const tx = newDb.transaction(name, "readwrite");
+          const store = tx.objectStore(name);
+          for (const entry of entries) {
+            store.add(entry);
+          }
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      dbRef.current = newDb;
+      alert(`Zaimportowano ${toImport.length} sesji, pominieto ${skipped} duplikatow.`);
+      onSessionsChanged();
+    } catch (error) {
+      console.error("[LogManager] Import failed:", error);
+      if (!dbRef.current) {
+        dbRef.current = await openDb();
+      }
+    } finally {
+      setIsImporting(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
+    }
+  }, [dbRef, onSessionsChanged]);
 
   return (
     <div className="d-flex flex-column gap-2">
@@ -612,8 +738,32 @@ function LogManager({
           Zaznacz niepobrane
         </button>
         <button
+          className="btn btn-primary btn-sm"
+          disabled={selected.size === 0 || isExporting || isDeleting || isJsonExporting || isImporting}
+          onClick={handleJsonExport}
+        >
+          {isJsonExporting ? "Eksportowanie..." : `Eksportuj zaznaczone (${selected.size})`}
+        </button>
+        <button
+          className="btn btn-secondary btn-sm"
+          disabled={isExporting || isDeleting || isJsonExporting || isImporting}
+          onClick={() => importInputRef.current?.click()}
+        >
+          {isImporting ? "Importowanie..." : "Importuj"}
+        </button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleImport(file);
+          }}
+        />
+        <button
           className="btn btn-danger btn-sm"
-          disabled={selected.size === 0 || isExporting || isDeleting}
+          disabled={selected.size === 0 || isExporting || isDeleting || isJsonExporting || isImporting}
           onClick={handleDeleteSelected}
         >
           {isDeleting ? "Usuwanie..." : `Usun zaznaczone (${selected.size})`}
@@ -1361,7 +1511,7 @@ export function LogBrowser() {
       db.close();
       dbRef.current = null;
 
-      const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbRef.current = await new Promise<IDBDatabase>((resolve, reject) => {
         const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
         req.onupgradeneeded = () => {
           const upgradeDb = req.result;
@@ -1373,7 +1523,6 @@ export function LogBrowser() {
         req.onerror = () => reject(req.error);
       });
 
-      dbRef.current = newDb;
       setFlatLines([]);
       setCurrentSession(null);
       reloadSessions();
@@ -1650,7 +1799,7 @@ export function LogBrowser() {
 
 let initialized = false;
 
-export function initLogBrowser(): boolean {
+function initLogBrowser(): boolean {
   if (initialized) {
     console.log("[Logs] Already initialized, skipping");
     return true;
