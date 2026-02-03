@@ -161,10 +161,11 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     /**
-     * Check if the first GMCP event has been received
+     * Returns true when history/echo should be active:
+     * available before connection, disabled after connect until gmcp.char.info
      */
     hasReceivedFirstGmcp(): boolean {
-        return this.receivedFirstGmcp;
+        return !this.isSocketOpen() || this.receivedFirstGmcp;
     }
 
     /**
@@ -172,7 +173,9 @@ class ArkadiaClient implements ClientAdapter {
      */
     send(message: string, echo: boolean = true, options?: CommandOptions): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not connected');
+            if (echo && message) {
+                this.output("→ " + message, 'command');
+            }
             return;
         }
 

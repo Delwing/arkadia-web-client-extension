@@ -201,8 +201,8 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                         )}
                     </div>
                     <div className="modal-footer">
-                        <div className="d-flex w-100 justify-content-between">
-                            <div className="d-flex gap-2">
+                        <div className="d-flex w-100 justify-content-between flex-wrap gap-2">
+                            <div className="d-flex gap-2 flex-wrap">
                                 {mode === 'edit' && !isIgnored && !isMarkedEnemy && onMarkEnemy && (
                                     <button
                                         type="button"
