@@ -49,7 +49,8 @@ export type KnowledgeReportAction =
 
 export type PackageStatus = {
     recipient: string;
-    seconds?: number
+    seconds?: number;
+    location?: number;
 }
 
 type ClockUpdatePayload = {

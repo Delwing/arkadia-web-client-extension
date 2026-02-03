@@ -1,7 +1,10 @@
 import Client from "../Client";
-import { prettyPrintContainer, parseItems, ContainerItem } from "./prettyContainers";
+import { prettyPrintContainer, parseItems, getTransformDefinitions, ContainerItem } from "./prettyContainers";
+import { convertCurrency } from "./priceEvaluation";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
+
+const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
 interface DepositInfo {
     name: string;
@@ -28,10 +31,6 @@ function cloneDeposits(source: Record<number, DepositInfo> | undefined | null): 
     });
     return result;
 }
-
-const BANK_LABEL_COLOR = createColorFormat('#6a5acd');
-const BANK_NAME_COLOR = createColorFormat('#ff6347');
-const ITEM_NAME_COLOR = createColorFormat('#00ff7f');
 
 function isBankRoom(room: any): boolean {
     return !!room?.userData?.bind && room.userData.bind.includes("depozyt");
@@ -111,7 +110,6 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
     client.Triggers.registerTrigger(matchNone, (line) => { update(null); return line; });
 
     function printDeposits() {
-        const output = new AnsiAwareBuffer();
         const depositEntries = Object.values(deposits);
 
         if (depositEntries.length === 0) {
@@ -119,50 +117,127 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
             return;
         }
 
-        depositEntries.forEach(({ name, items }, index) => {
-            if (index > 0) {
-                output.append('\n');
-            }
+        const transforms = getTransformDefinitions();
+        const pad = 1;
 
-            const line = new AnsiAwareBuffer();
+        type Card = { title: string; lines: AnsiAwareBuffer[]; contentWidth: number };
+        const cards: Card[] = [];
 
-            // Add colored "bank:" label
-            const bankLabel = new AnsiAwareBuffer('bank:');
-            bankLabel.color([0, bankLabel.length], BANK_LABEL_COLOR);
-            line.appendBuffer(bankLabel);
-            line.append('    ');
-
-            // Add colored bank name
-            const bankName = new AnsiAwareBuffer(name);
-            bankName.color([0, bankName.length], BANK_NAME_COLOR);
-            line.appendBuffer(bankName);
+        for (const { name, items } of depositEntries) {
+            const lines: AnsiAwareBuffer[] = [];
+            let contentWidth = name.length;
 
             if (items === null) {
-                line.append(' brak depozytu');
-                output.appendBuffer(line);
-                return;
-            }
-            if (items.length === 0) {
-                line.append(' (pusty)');
-                output.appendBuffer(line);
-                return;
+                const line = new AnsiAwareBuffer('brak depozytu');
+                lines.push(line);
+                contentWidth = Math.max(contentWidth, line.text.length);
+            } else if (items.length === 0) {
+                const line = new AnsiAwareBuffer('(pusty)');
+                lines.push(line);
+                contentWidth = Math.max(contentWidth, line.text.length);
+            } else {
+                for (const item of items) {
+                    const countStr = String(item.count).padStart(3, ' ');
+                    const itemLine = new AnsiAwareBuffer(`${countStr} | `);
+                    let nameBuffer = new AnsiAwareBuffer(item.name);
+                    for (const tr of transforms) {
+                        nameBuffer = tr.transform(nameBuffer, item, '');
+                    }
+                    itemLine.appendBuffer(nameBuffer);
+                    contentWidth = Math.max(contentWidth, itemLine.text.length);
+                    lines.push(itemLine);
+                }
             }
 
-            output.appendBuffer(line);
+            cards.push({ title: name, lines, contentWidth });
+        }
 
-            items.forEach(it => {
+        // Calculate total coin wealth across all deposits
+        let totalCopper = 0;
+        for (const { items } of depositEntries) {
+            if (!items) continue;
+            for (const item of items) {
+                const count = typeof item.count === 'number' ? item.count : 0;
+                if (count <= 0) continue;
+                if (item.name.match(/mithryl\w+ monet/)) totalCopper += count * 24000;
+                else if (item.name.match(/zlot\w+ monet/)) totalCopper += count * 240;
+                else if (item.name.match(/srebrn\w+ monet/)) totalCopper += count * 12;
+                else if (item.name.match(/miedzian\w+ monet/)) totalCopper += count;
+            }
+        }
+
+        const colContentWidth = Math.max(...cards.map(c => c.contentWidth));
+        const colWidth = colContentWidth + pad * 2 + 2;
+        const gap = 2;
+
+        let numCols = cards.length;
+        while (numCols > 1 && numCols * colWidth + (numCols - 1) * gap > width) {
+            numCols--;
+        }
+
+        const horiz = '-'.repeat(colContentWidth + pad * 2);
+        const padStr = ' '.repeat(pad);
+        const gapStr = ' '.repeat(gap);
+        const output = new AnsiAwareBuffer();
+
+        for (let rowStart = 0; rowStart < cards.length; rowStart += numCols) {
+            const rowCards = cards.slice(rowStart, rowStart + numCols);
+            const maxLines = Math.max(...rowCards.map(c => c.lines.length));
+
+            if (rowStart > 0) output.append('\n');
+
+            // top border
+            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr) + '\n');
+
+            // title row
+            const titleLine = new AnsiAwareBuffer();
+            for (let c = 0; c < rowCards.length; c++) {
+                if (c > 0) titleLine.append(gapStr);
+                const title = rowCards[c].title;
+                titleLine.append(`|${padStr}`);
+                const titleBuf = new AnsiAwareBuffer(title);
+                titleBuf.color([0, titleBuf.length], BANK_NAME_COLOR);
+                titleLine.appendBuffer(titleBuf);
+                titleLine.append(`${' '.repeat(colContentWidth - title.length)}${padStr}|`, {});
+            }
+            output.appendBuffer(titleLine);
+            output.append('\n');
+
+            // separator
+            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr) + '\n');
+
+            // item rows
+            for (let i = 0; i < maxLines; i++) {
+                const rowLine = new AnsiAwareBuffer();
+                for (let c = 0; c < rowCards.length; c++) {
+                    if (c > 0) rowLine.append(gapStr);
+                    const card = rowCards[c];
+                    if (i < card.lines.length) {
+                        const line = card.lines[i];
+                        rowLine.append(`|${padStr}`);
+                        rowLine.appendBuffer(line);
+                        const remaining = colContentWidth - line.text.length;
+                        if (remaining > 0) rowLine.append(' '.repeat(remaining), {});
+                        rowLine.append(`${padStr}|`, {});
+                    } else {
+                        rowLine.append(`|${' '.repeat(colContentWidth + pad * 2)}|`);
+                    }
+                }
+                output.appendBuffer(rowLine);
                 output.append('\n');
-                const itemLine = new AnsiAwareBuffer();
-                const count = String(it.count).padStart(3, ' ');
-                itemLine.append(`    ${count} | `);
+            }
 
-                const itemName = new AnsiAwareBuffer(it.name);
-                itemName.color([0, itemName.length], ITEM_NAME_COLOR);
-                itemLine.appendBuffer(itemName);
+            // bottom border
+            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr));
+        }
 
-                output.appendBuffer(itemLine);
-            });
-        });
+        if (totalCopper > 0) {
+            const totalWidth = numCols * colWidth + (numCols - 1) * gap;
+            output.append('\n\n🪙 ');
+            output.appendBuffer(convertCurrency(totalCopper));
+            output.append('\n', {});
+            output.append('-'.repeat(totalWidth));
+        }
 
         client.println(output);
     }

@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {useClientEvent} from "../../hooks";
 import {PackageStatus as PackageStatusEvent} from "../../../../shared/events";
+import eventBus from "@modules/core/eventBus";
 
 const formatLabel = (status: PackageStatusEvent): string => {
     let label = `📦: ${status.recipient}`;
@@ -23,10 +24,17 @@ export const PackageStatus = () => {
         return null
     }
 
-    const label = status ? formatLabel(status) : "";
+    const handleClick = () => {
+        if (status.location) {
+            eventBus.emit("leadTo", status.location);
+        }
+    };
+
+    const label = formatLabel(status);
+    const clickable = !!status.location;
 
     return (
-        <span>
+        <span onClick={handleClick} style={clickable ? { cursor: "pointer" } : undefined}>
             {label}
         </span>
     );

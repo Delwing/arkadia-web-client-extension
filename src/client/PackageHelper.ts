@@ -80,7 +80,7 @@ export default function initPackageHelper(client: Client) {
             if (!currentPackage || currentPackage.name !== name) {
                 currentPackage = { name }
             }
-            client.sendEvent('packageStatus', { recipient: name })
+            client.sendEvent('packageStatus', { recipient: name, location: findNpcLocation(name) })
             if (!deliveryTrigger) {
                 registerDeliveryTrigger()
             }
@@ -379,14 +379,14 @@ export default function initPackageHelper(client: Client) {
             clearInterval(timer)
         }
         if (hours == null) {
-            client.sendEvent('packageStatus', {recipient: currentPackage.name})
+            client.sendEvent('packageStatus', {recipient: currentPackage.name, location: findNpcLocation(currentPackage.name)})
             timer = undefined
             return
         }
         const total = hours * 120
         const update = () => {
             const left = total - Math.floor((Date.now() - listTime) / 1000)
-            client.sendEvent('packageStatus', {recipient: currentPackage!.name, seconds: left})
+            client.sendEvent('packageStatus', {recipient: currentPackage!.name, seconds: left, location: findNpcLocation(currentPackage!.name)})
             if (left <= 0 && timer) {
                 clearInterval(timer)
                 timer = undefined
