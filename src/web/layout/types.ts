@@ -23,7 +23,8 @@ export type BuiltInPopupType =
   | 'fishing'
   | 'letter-view'
   | 'roomInfo'
-  | 'staticmap';
+  | 'staticmap'
+  | 'tripPlanner';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

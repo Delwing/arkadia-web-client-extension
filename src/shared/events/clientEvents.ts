@@ -119,7 +119,7 @@ export interface KnownEvents {
     "stepBack": void;
     "leadTo": number;
     "clearLeadTo": void;
-    "tripPlanner.leadTo": number[];
+    "tripPlanner.leadTo": [number[]];
     "tripPlanner.addStop": { roomId: number };
     "tripPlanner.popup.open": void;
     "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
@@ -148,6 +148,7 @@ export interface KnownEvents {
     "ping": number | null;
     "transportTimer": TransportTimerPayload | null;
     "combatTimer": number | null;
+    "worldDestructionTimer": number | null;
     "combatState": boolean;
     "teamLeaderTargetNoAvatar": number;
     "teamLeaderTargetAvatar": void;
@@ -255,7 +256,7 @@ export interface KnownEvents {
     "map.showPath": { toRoomId: number };
     "mapLabelVisibility": boolean;
     "mapAlwaysShowNote": boolean;
-    "objectListViewMode": "list" | "card" | "compact";
+    "objectListViewMode": "list" | "card" | "compact" | "compact-dots";
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;
     "walker.popup.open": void;

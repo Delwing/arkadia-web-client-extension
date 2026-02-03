@@ -459,7 +459,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
         const parentContainer = containerEl;
         let container: HTMLDivElement | null = null;
-        let pathHandler: ((data: { path: number[]; color: string } | null) => void) | null = null;
+        let pathHandler: ((data: { segments: Array<{ path: number[]; color: string }> } | null) => void) | null = null;
         let highlightHandler: ((data: { roomId: number; color: string }[]) => void) | null = null;
         let moveHandler: ((ev: { id: number }) => void) | null = null;
         let contextMenuHandler: ((ev: Event) => void) | null = null;

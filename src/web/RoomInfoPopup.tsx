@@ -399,7 +399,7 @@ const RoomInfoPopup: React.FC = () => {
                 {description && (
                     <div className="room-info-popup__section">
                         <div className="room-info-popup__section-title">Opis</div>
-                        <pre className="room-info-popup__description">{description.replaceAll('\\n', '\n')}</pre>
+                        <pre className="room-info-popup__description">{description.split('\\n').join('\n')}</pre>
                     </div>
                 )}
 

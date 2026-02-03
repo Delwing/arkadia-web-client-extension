@@ -63,6 +63,8 @@ export interface UiSettings {
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
     wakeLock: boolean;
+    showCombatTimer?: boolean;
+    showTransportLabel?: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
