@@ -22,6 +22,7 @@ export type BuiltInPopupType =
   | 'poczta'
   | 'fishing'
   | 'letter-view'
+  | 'roomInfo'
   | 'staticmap';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}

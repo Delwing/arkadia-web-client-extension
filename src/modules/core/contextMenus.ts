@@ -116,6 +116,11 @@ export function openMapContextMenu(client: Client, roomId: number, x: number, y:
             opensWindow: true,
         },
         {
+            label: 'Informacje o lokacji',
+            action: () => eventBus.emit('roomInfo.popup.open', { roomId }),
+            opensWindow: true,
+        },
+        {
             label: 'Otworz okno mapy',
             action: () => eventBus.emit('staticmap.popup.open', { roomId }),
             opensWindow: true,

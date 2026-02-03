@@ -23,6 +23,7 @@ import ObjectListDemoPopup from '../ObjectListDemoPopup';
 import WalkerPopup from '../WalkerPopup';
 import PocztaPopup from '../PocztaPopup';
 import LetterViewPopup from '../LetterViewPopup';
+import RoomInfoPopup from '../RoomInfoPopup';
 import StaticMapPopupManager from '../StaticMapPopup';
 
 interface LayoutManagerWrapperProps {
@@ -82,6 +83,7 @@ export function LayoutManagerWrapper({
       <WalkerPopup />
       <PocztaPopup />
       <LetterViewPopup />
+      <RoomInfoPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />

@@ -8237,3 +8237,145 @@ body.mobile-command-radial-active {
   font-size: 0.82rem;
   color: #94a3b8;
 }
+
+/* Room Info Popup */
+.room-info-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--surface-elevated);
+}
+
+.room-info-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-info-popup__empty {
+  padding: 1rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.room-info-popup__section {
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 0.25rem;
+}
+
+.room-info-popup__section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.room-info-popup__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.125rem 0;
+  gap: 0.5rem;
+}
+
+.room-info-popup__label {
+  color: rgba(241, 245, 249, 0.7);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.room-info-popup__label--special {
+  font-style: italic;
+}
+
+.room-info-popup__value {
+  color: rgba(241, 245, 249, 0.9);
+  text-align: right;
+  word-break: break-word;
+}
+
+.room-info-popup__env-color {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+.room-info-popup__door {
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.75rem;
+}
+
+.room-info-popup__note {
+  padding: 0.25rem 0;
+}
+
+.room-info-popup__note-label {
+  display: block;
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.7rem;
+  margin-bottom: 0.125rem;
+}
+
+.room-info-popup__note-text {
+  color: rgba(241, 245, 249, 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.room-info-popup__npc {
+  padding: 0.125rem 0;
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.room-info-popup__npc-source {
+  color: rgba(241, 245, 249, 0.4);
+  font-size: 0.75rem;
+}
+
+.room-info-popup__description {
+  color: rgba(241, 245, 249, 0.85);
+  line-height: 1.3;
+  margin: 0;
+  white-space: pre;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  overflow-x: auto;
+}
+
+.room-info-popup__gps-entry {
+  padding: 0.25rem 0;
+}
+
+.room-info-popup__gps-entry + .room-info-popup__gps-entry {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 0.25rem;
+}
+
+.room-info-popup__gps-lines {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(241, 245, 249, 0.6);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+  margin: 0.125rem 0;
+}
+
+.room-info-popup__gps-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

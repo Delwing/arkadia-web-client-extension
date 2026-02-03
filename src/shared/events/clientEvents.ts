@@ -264,6 +264,7 @@ export interface KnownEvents {
     "poczta.loaded": { type: MailType; mails: MailEntry[] };
     "poczta.read": { number: number };
     "poczta.letter.loaded": LetterContent;
+    "roomInfo.popup.open": { roomId: number };
     "staticmap.popup.open": { roomId?: number; areaId?: number; instanceId?: string };
     "walker.stop": void;
     "walker.resume": void;
