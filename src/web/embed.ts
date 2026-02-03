@@ -289,6 +289,9 @@ export class EmbeddedMap {
 
     renderRoomById(id: number) {
         this.renderRoom(id);
+        if (!this._isViewingPlayerPosition) {
+            this.setViewingPlayerPosition(true);
+        }
     }
 
     renderRoom(roomId: number) {
