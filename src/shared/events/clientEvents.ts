@@ -121,7 +121,7 @@ export interface KnownEvents {
     "tripPlanner.leadTo": number[];
     "tripPlanner.addStop": { roomId: number };
     "tripPlanner.popup.open": void;
-    "mapPath": { path: number[]; color: string } | null;
+    "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLocationLabel": string;
     "requestMapLocationLabel": void;

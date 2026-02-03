@@ -293,6 +293,7 @@ export class EmbeddedMap {
 
     renderRoom(roomId: number) {
         this.renderer.setPosition(roomId)
+        this.renderer.updatePositionMarker(roomId);
         this.renderer.setZoom(this.zoom);
         this.currentRoom = roomId;
 
@@ -414,6 +415,9 @@ export class EmbeddedMap {
         } else {
             // Draw the area at the specified level
             this.renderer.drawArea(areaId, z);
+
+            // Update player marker - will hide since player is not on this area/level
+            this.renderer.updatePositionMarker(this.currentRoom);
 
             // Find center of rooms at this level
             const area = this.reader.getArea?.(areaId);
