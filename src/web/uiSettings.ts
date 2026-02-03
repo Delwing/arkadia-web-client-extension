@@ -234,6 +234,7 @@ function apply(settings: UiSettings) {
         }
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
+        content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
     const charState = document.getElementById('char-state');
     if (charState) {
@@ -315,6 +316,7 @@ function apply(settings: UiSettings) {
         autoLowercaseCommands: settings.autoLowercaseCommands,
         keepMultibindsVisible: settings.keepMultibindsVisible,
         wakeLock: settings.wakeLock,
+        commandEcho: settings.commandEcho,
     };
     eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
@@ -415,6 +417,12 @@ async function load(): Promise<UiSettings> {
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
+            const commandEcho = typeof parsed.commandEcho === 'boolean'
+                ? parsed.commandEcho
+                : defaultUiSettings.commandEcho;
+            const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
+                ? parsed.outputBottomPadding
+                : defaultUiSettings.outputBottomPadding;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -450,6 +458,8 @@ async function load(): Promise<UiSettings> {
                 footerComponents,
                 keepMultibindsVisible,
                 wakeLock,
+                commandEcho,
+                outputBottomPadding,
             };
         }
     } catch {
@@ -495,6 +505,8 @@ export default async function initUiSettings() {
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
     const keepMultibindsVisibleInput = modalEl.querySelector('#ui-keep-multibinds-visible') as HTMLInputElement;
     const wakeLockInput = modalEl.querySelector('#ui-wake-lock') as HTMLInputElement;
+    const commandEchoInput = modalEl.querySelector('#ui-command-echo') as HTMLInputElement;
+    const outputBottomPaddingInput = modalEl.querySelector('#ui-output-bottom-padding') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
@@ -789,6 +801,8 @@ export default async function initUiSettings() {
         autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
         keepMultibindsVisibleInput.checked = settings.keepMultibindsVisible;
         wakeLockInput.checked = settings.wakeLock;
+        commandEchoInput.checked = settings.commandEcho;
+        outputBottomPaddingInput.value = String(settings.outputBottomPadding);
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
@@ -1189,6 +1203,8 @@ export default async function initUiSettings() {
             mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
             objectContextMenuCommands: [...objectContextMenuCommands],
             footerComponents: [...footerComponentsConfig],
+            commandEcho: commandEchoInput.checked,
+            outputBottomPadding: Math.max(0, parseInt(outputBottomPaddingInput.value) || 0),
         };
     }
 

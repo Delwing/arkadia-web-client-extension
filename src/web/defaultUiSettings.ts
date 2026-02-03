@@ -63,6 +63,8 @@ export interface UiSettings {
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
     wakeLock: boolean;
+    commandEcho: boolean;
+    outputBottomPadding: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
 }
@@ -104,4 +106,6 @@ export const defaultUiSettings: UiSettings = {
     footerComponents: defaultFooterComponents,
     keepMultibindsVisible: false,
     wakeLock: true,
+    commandEcho: true,
+    outputBottomPadding: 0,
 };

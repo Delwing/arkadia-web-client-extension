@@ -38,6 +38,7 @@ class ArkadiaClient implements ClientAdapter {
     private readonly activeRecorders = new Set<Recorder>();
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
     private autoLowercaseCommands: boolean = false;
+    private commandEcho: boolean = true;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -71,6 +72,9 @@ class ArkadiaClient implements ClientAdapter {
         this.on('uiSettings', (settings) => {
             if (typeof settings?.autoLowercaseCommands === 'boolean') {
                 this.autoLowercaseCommands = settings.autoLowercaseCommands;
+            }
+            if (typeof settings?.commandEcho === 'boolean') {
+                this.commandEcho = settings.commandEcho;
             }
         });
     }
@@ -172,8 +176,9 @@ class ArkadiaClient implements ClientAdapter {
      * Send a message through the WebSocket
      */
     send(message: string, echo: boolean = true, options?: CommandOptions): void {
+        const shouldEcho = echo && this.commandEcho;
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            if (echo && message) {
+            if (shouldEcho && message) {
                 this.output("→ " + message, 'command');
             }
             return;
@@ -192,7 +197,7 @@ class ArkadiaClient implements ClientAdapter {
         try {
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
-            if (echo && this.receivedFirstGmcp && message) {
+            if (shouldEcho && this.receivedFirstGmcp && message) {
                 this.output("→ " + message, 'command');
             }
         } catch (error) {
