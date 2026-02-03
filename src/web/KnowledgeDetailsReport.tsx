@@ -136,17 +136,20 @@ const KnowledgeDetailsReport: React.FC = () => {
       return;
     }
     setData(detail);
-    setIsOpen(true);
   }, [isPinned, setIsOpen]);
 
   useEffect(() => {
-    const unsubscribe = eventBus.on('knowledgeDetailsReport', (payload) => {
+    const unsubReport = eventBus.on('knowledgeDetailsReport', (payload) => {
       handleReport(payload as KnowledgeDetailsReportPayload | null | undefined);
     });
+    const unsubOpen = eventBus.on('knowledgeDetails.popup.open', () => {
+      setIsOpen(true);
+    });
     return () => {
-      unsubscribe();
+      unsubReport();
+      unsubOpen();
     };
-  }, [handleReport]);
+  }, [handleReport, setIsOpen]);
 
   // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
   useEffect(() => {
@@ -162,7 +165,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     requestAnimationFrame(() => {
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
     });
-  }, [data, isOpen]);
+  }, [isOpen]);
 
   useEffect(() => {
     eventBus.emit('knowledgeHints', { enabled: showHints, hideCompleted });

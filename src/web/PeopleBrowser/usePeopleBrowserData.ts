@@ -18,6 +18,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
     const [result, setResult] = useState<PeopleBrowserResult | null>(null);
     const [availableGuilds, setAvailableGuilds] = useState<string[]>([]);
     const [dataVersion, setDataVersion] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const service = useMemo(() => getPeopleBrowserService(), []);
 
@@ -82,6 +83,14 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         setPage(0);
     }, []);
 
+    const refreshData = useCallback(() => {
+        setIsRefreshing(true);
+        loadPeople(true)
+            .finally(() => {
+                setIsRefreshing(false);
+            });
+    }, []);
+
     return {
         isLoading,
         result,
@@ -100,5 +109,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         setPage,
         service,
         dataVersion,
+        isRefreshing,
+        refreshData,
     };
 }

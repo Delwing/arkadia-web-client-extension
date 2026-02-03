@@ -53,6 +53,8 @@ const PeopleBrowser: React.FC = () => {
         setPage,
         service,
         dataVersion,
+        isRefreshing,
+        refreshData,
     } = usePeopleBrowserData({ isOpen });
 
     // Modal state
@@ -211,11 +213,24 @@ const PeopleBrowser: React.FC = () => {
     const totalCount = result?.totalCount ?? 0;
     const displayTitle = totalCount > 0 ? `Baza postaci (${totalCount})` : 'Baza postaci';
 
+    const headerActions = (
+        <button
+            type="button"
+            className={`people-browser__refresh${isRefreshing ? ' people-browser__refresh--active' : ''}`}
+            onClick={refreshData}
+            disabled={isRefreshing}
+            title="Odswiez baze postaci"
+        >
+            {isRefreshing ? 'Odswiezanie...' : 'Odswiez'}
+        </button>
+    );
+
     return (
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="peopleBrowser"
             title={displayTitle}
+            headerActions={headerActions}
             minWidth={400}
             minHeight={300}
             initialWidth={550}

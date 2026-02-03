@@ -158,6 +158,7 @@ export interface KnownEvents {
     "refreshPositionWhenAble": void;
     "knowledgeReport": unknown | null;
     "knowledgeDetailsReport": unknown | null;
+    "knowledgeDetails.popup.open": void;
     "knowledgeReportAction": KnowledgeReportAction;
     "requestKnowledgeReport": void;
     "requestKnowledgeDetailsReport": void;

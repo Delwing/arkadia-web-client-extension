@@ -798,6 +798,24 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     } | null = null;
     const pendingEntryUpdates: KnowledgeEntryTriggerTarget[] = [];
     let suppressEntryHighlighting = false;
+    let reportUpdateTimer: ReturnType<typeof setTimeout> | undefined;
+
+    function scheduleReportUpdate() {
+        if (reportUpdateTimer != null) return;
+        reportUpdateTimer = setTimeout(() => {
+            reportUpdateTimer = undefined;
+            if (!knowledgeDetailsSnapshot) return;
+            const characterKey = getCharacterProgressKey();
+            const payload = buildKnowledgeDetailsReportPayload(
+                knowledgeDetailsSnapshot,
+                characterKey,
+                currentCharacterGender,
+            );
+            if (payload) {
+                client.sendEvent('knowledgeDetailsReport', payload);
+            }
+        }, 0);
+    }
 
     function markKnowledgeEntryKnown(
         category: KnowledgeCategoryBaseName,
@@ -1125,6 +1143,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 markKnowledgeEntryKnown(update.category, update.type, update.canonical);
             }
         }
+
+        scheduleReportUpdate();
 
         if (!pendingGenderUpdate || !knowledgeDetailsSnapshot) {
             if (knowledgeDetailsSnapshot && pendingGenderUpdate) {
@@ -1674,10 +1694,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 return;
             }
 
+            client.sendEvent('knowledgeDetails.popup.open');
             client.sendEvent('knowledgeDetailsReport', emptyPayload);
             return;
         }
 
+        client.sendEvent('knowledgeDetails.popup.open');
         client.sendEvent('knowledgeDetailsReport', payload);
     }
 

@@ -6981,6 +6981,35 @@ body.mobile-command-radial-active {
 }
 
 /* People Browser Popup */
+/* People browser refresh header action */
+.people-browser__refresh {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.5);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.people-browser__refresh:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(241, 245, 249, 0.8);
+}
+
+.people-browser__refresh--active {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+  cursor: wait;
+}
+
+.people-browser__refresh:disabled {
+  cursor: wait;
+}
+
 .people-browser-body {
   display: flex;
   flex-direction: column;

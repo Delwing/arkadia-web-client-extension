@@ -968,6 +968,8 @@ export interface ClientEvents {
   "knowledgeReport": unknown | null;
   /** Knowledge details report */
   "knowledgeDetailsReport": unknown | null;
+  /** Open knowledge details popup */
+  "knowledgeDetails.popup.open": void;
   /** Knowledge report action */
   "knowledgeReportAction": KnowledgeReportAction;
   /** Send command to server */
