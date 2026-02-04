@@ -2132,7 +2132,7 @@
     "Wiedza": "Byles swiadkiem jak ktos glupi licho na swiat wypuscil",
     "id": null,
     "Domena": "Ishtar",
-    "lokalizacja": "---------------------------------------------------------------------------------------------------------------",
+    "lokalizacja": "Podczas Saovine",
     "note": "Jesli bedziesz swiadkiem wyklucia licha, zdobedziesz ta wiedze."
   },
   {
@@ -2274,7 +2274,7 @@
   {
     "Rodzaj": "Wiedza o jaszczuroludziach",
     "Wiedza": "Ogladales prymitywne rysunki i symbole w jaskiniach troglodytow",
-    "id": 11378,
+    "id": 11478,
     "Domena": "Imperium",
     "lokalizacja": "Ebino (Tilea) - Jaskinie Troglodytow",
     "note": "Po jaskiniach najlepiej przebiec sobie z ciagiem komend \" ob glaz;ob rysunki;ob chaty;ob ciala;ob legowisko;ob leze;ob sciany;ob malowidla;ob malunki;ob troglodytow;ob reptiliona;sp;ob symbole;ob szkielet”"
@@ -3533,7 +3533,7 @@
     "id": 3089,
     "Domena": "Ishtar",
     "lokalizacja": "Brugge - Wioska zjaw",
-    "note": "\"ob notatnik\" \"przeczytaj notatnik\""
+    "note": "\"ob notatnik\" \"przeczytaj notatnik\" ( Int trzeba miec 6/10 bystry by rozczytac wystarczajaca ilosc tekstu )"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -5580,7 +5580,7 @@
     "Wiedza": "Odnalazles starozytny monolit w redanskiej puszczy",
     "id": 16657,
     "Domena": "Ishtar",
-    "lokalizacja": "Pustynia Zerrikanska",
+    "lokalizacja": "Hagge - Puszcza Redanska",
     "note": "Monolity pozostaja na tym samym terenie ale zmieniaja lokalizacje co apoke. \"ob monolit\""
   },
   {

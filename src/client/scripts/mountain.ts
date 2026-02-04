@@ -26,10 +26,11 @@ export default function initMountain(client: Client) {
         return line.color([0, line.length], YELLOW);
     }, tag);
 
-    client.Triggers.registerTrigger(/Odpadasz od sciany i lecisz w dol/, (line) => {
+    client.Triggers.registerTrigger(/Odpadasz od \S+ i lecisz w dol/, (line) => {
         if (mountainMovingDir === "up") {
             client.Map.moveBack();
         }
+        mountainMovingDir = undefined;
         return line.color([0, line.length], YELLOW);
     }, tag);
 }
