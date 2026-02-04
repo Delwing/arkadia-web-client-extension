@@ -2035,6 +2035,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
         const knownEntries = hideCompleted ? buildKnownEntriesSet() : null;
         const roomIds: number[] = [];
+        const notesByRoom = new Map<number, string[]>();
         for (const entry of knowledgeData as KnowledgeJsonEntry[]) {
             if (entry.id == null) continue;
             if (knownEntries && knownEntries.has(normalizeKnowledgeLookupKey(entry.Wiedza))) continue;
@@ -2043,13 +2044,22 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             if (entry.lokalizacja) parts.push(entry.lokalizacja);
             if (entry.note) parts.push(entry.note);
             if (parts.length > 0) {
-                setPluginLocationNote(
-                    KNOWLEDGE_HINTS_PLUGIN_ID,
-                    KNOWLEDGE_HINTS_PLUGIN_NAME,
-                    entry.id,
-                    `[${entry.Rodzaj}] ${entry.Wiedza}\n${parts.join(' — ')}`,
-                );
+                const line = `[${entry.Rodzaj}] ${entry.Wiedza}\n${parts.join(' — ')}`;
+                const existing = notesByRoom.get(entry.id);
+                if (existing) {
+                    existing.push(line);
+                } else {
+                    notesByRoom.set(entry.id, [line]);
+                }
             }
+        }
+        for (const [roomId, lines] of notesByRoom) {
+            setPluginLocationNote(
+                KNOWLEDGE_HINTS_PLUGIN_ID,
+                KNOWLEDGE_HINTS_PLUGIN_NAME,
+                roomId,
+                lines.join('\n\n'),
+            );
         }
         knowledgeHintsHighlighter.add(roomIds);
     }
