@@ -138,7 +138,7 @@ export class EmbeddedMap {
         Settings.transparentLabels = transparentLabels;
         Settings.labelRenderMode = labelRenderMode;
         Settings.playerMarker.dash = [0.05, 0.05]
-        Settings.gridColor = 'rgba(255, 255, 255, 0.12)';
+        Settings.gridColor = 'rgba(255, 255, 255, 0.25)';
 
         // Initialize map rendering settings from storage
         try {

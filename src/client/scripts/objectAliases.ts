@@ -287,7 +287,7 @@ export default function initObjectAliases(
             pattern: /^\/walka_restart$/,
             callback: () => {
                 client.ObjectManager.resetTeamShortcuts();
-                client.println('<span style="color:orange">Skroty druzyny zresetowane.</span>');
+                client.print(colorString('Skroty druzyny zresetowane.', createColorFormat("#FFA500")));
             }
         });
         aliases.push({
